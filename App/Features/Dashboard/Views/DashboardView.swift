@@ -35,6 +35,11 @@ struct DashboardView: View {
                     Label("Budget", systemImage: "chart.pie.fill")
                 }
 
+            AccountListView()
+                .tabItem {
+                    Label("Dompet", systemImage: "wallet.pass.fill")
+                }
+
             ProfileView()
                 .environmentObject(authViewModel)
                 .tabItem {
