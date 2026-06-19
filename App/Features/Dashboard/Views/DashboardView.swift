@@ -11,17 +11,18 @@ struct DashboardView: View {
                     Label("Beranda", systemImage: "house.fill")
                 }
 
-            placeholderList("Transaksi")
+            TransactionListView()
                 .tabItem {
                     Label("Transaksi", systemImage: "arrow.left.arrow.right")
                 }
 
-            placeholderList("Budget")
+            BudgetListView()
                 .tabItem {
                     Label("Budget", systemImage: "chart.pie.fill")
                 }
 
-            profileView
+            ProfileView()
+                .environmentObject(authViewModel)
                 .tabItem {
                     Label("Akun", systemImage: "person.fill")
                 }
@@ -156,51 +157,6 @@ struct DashboardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    private var profileView: some View {
-        NavigationStack {
-            List {
-                Section {
-                    VStack(spacing: Spacing.sm) {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.appPrimary)
-                        Text(authViewModel.currentUser?.fullName ?? "User")
-                            .font(.headline)
-                        Text(authViewModel.currentUser?.email ?? "")
-                            .font(.caption)
-                            .foregroundColor(.appTextSecondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical)
-                }
-
-                Section {
-                    Button(role: .destructive) {
-                        authViewModel.logout()
-                    } label: {
-                        Label("Keluar", systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                }
-            }
-            .navigationTitle("Akun")
-        }
-    }
-
-    private func placeholderList(_ title: String) -> some View {
-        NavigationStack {
-            VStack {
-                Image(systemName: "sparkles")
-                    .font(.largeTitle)
-                    .foregroundColor(.appTextSecondary)
-                Text("\(title) akan segera hadir")
-                    .font(.subheadline)
-                    .foregroundColor(.appTextSecondary)
-            }
-            .navigationTitle(title)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.appGroupedBackground)
-        }
-    }
 }
 
 struct BudgetProgressRow: View {

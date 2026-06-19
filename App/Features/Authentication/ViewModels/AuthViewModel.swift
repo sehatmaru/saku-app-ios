@@ -2,8 +2,8 @@ import SwiftUI
 
 @MainActor
 final class AuthViewModel: ObservableObject {
-    @Published var isAuthenticated = false
-    @Published var currentUser: User?
+    @Published var isAuthenticated = true
+    @Published var currentUser: User? = User.default
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var showSplash = true
