@@ -43,10 +43,10 @@ struct BudgetListView: View {
     private func summaryItem(title: String, amount: Double, color: Color = .appText) -> some View {
         VStack(spacing: Spacing.xs) {
             Text(title)
-                .font(.caption2)
+                .font(.jakarta(11))
                 .foregroundColor(.appTextSecondary)
             Text(amount.formattedAsCurrency())
-                .font(.caption.weight(.semibold))
+                .font(.jakarta(12, weight: .semibold))
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
@@ -55,10 +55,10 @@ struct BudgetListView: View {
     private var emptyState: some View {
         VStack(spacing: Spacing.md) {
             Image(systemName: "chart.pie")
-                .font(.system(size: 40))
+                .font(.jakarta(40))
                 .foregroundColor(.appTextSecondary)
             Text("Belum ada budget")
-                .font(.subheadline)
+                .font(.jakarta(15))
                 .foregroundColor(.appTextSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -77,13 +77,13 @@ struct BudgetCardView: View {
         VStack(spacing: Spacing.sm) {
             HStack {
                 Image(systemName: category?.icon ?? "questionmark")
-                    .font(.body)
+                    .font(.jakarta(17))
                     .foregroundColor(.appPrimary)
                 Text(category?.name ?? "Kategori")
-                    .font(.subheadline.weight(.medium))
+                    .font(.jakarta(15, weight: .medium))
                 Spacer()
                 Text("\(Int(budget.progress * 100))%")
-                    .font(.caption.weight(.semibold))
+.font(.jakarta(12, weight: .semibold))
                     .foregroundColor(progressColor)
             }
 
@@ -92,16 +92,16 @@ struct BudgetCardView: View {
 
             HStack {
                 Text("\(budget.spent.formattedAsCurrency()) / \(budget.amount.formattedAsCurrency())")
-                    .font(.caption)
+                    .font(.jakarta(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
                 if budget.remaining > 0 {
                     Text("Sisa \(budget.remaining.formattedAsCurrency())")
-                        .font(.caption2)
+                        .font(.jakarta(11))
                         .foregroundColor(.appTextSecondary)
                 } else {
                     Text("Kelebihan \(abs(budget.remaining).formattedAsCurrency())")
-                        .font(.caption2)
+                        .font(.jakarta(11))
                         .foregroundColor(.appError)
                 }
             }

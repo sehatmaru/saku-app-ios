@@ -56,10 +56,10 @@ struct TransactionListView: View {
         VStack(spacing: Spacing.md) {
             Spacer()
             Image(systemName: "tray")
-                .font(.system(size: 40))
+                .font(.jakarta(40))
                 .foregroundColor(.appTextSecondary)
             Text("Belum ada transaksi")
-                .font(.subheadline)
+                .font(.jakarta(15))
                 .foregroundColor(.appTextSecondary)
             Spacer()
         }
@@ -75,7 +75,7 @@ struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.subheadline)
+                .font(.jakarta(15))
                 .fontWeight(isSelected ? .semibold : .regular)
                 .padding(.horizontal, Spacing.lg)
                 .padding(.vertical, Spacing.sm)

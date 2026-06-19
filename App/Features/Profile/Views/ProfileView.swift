@@ -9,12 +9,12 @@ struct ProfileView: View {
                 Section {
                     VStack(spacing: Spacing.sm) {
                         Image(systemName: "person.circle.fill")
-                            .font(.system(size: 60))
+                            .font(.jakarta(60))
                             .foregroundColor(.appPrimary)
                         Text(authViewModel.currentUser?.fullName ?? "User")
-                            .font(.headline)
+                            .font(.jakarta(17, weight: .semibold))
                         Text(authViewModel.currentUser?.email ?? "")
-                            .font(.caption)
+                            .font(.jakarta(12))
                             .foregroundColor(.appTextSecondary)
                     }
                     .frame(maxWidth: .infinity)

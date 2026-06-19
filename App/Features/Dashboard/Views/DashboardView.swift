@@ -47,25 +47,17 @@ struct DashboardView: View {
             }
             .background(Color.appGroupedBackground)
             .navigationTitle("SakuQ")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Keluar") {
-                        authViewModel.logout()
-                    }
-                    .foregroundColor(.appError)
-                }
-            }
         }
     }
 
     private var balanceSection: some View {
         VStack(spacing: Spacing.sm) {
             Text("Total Saldo")
-                .font(.subheadline)
+                .font(.jakarta(15))
                 .foregroundColor(.appTextSecondary)
 
             Text(viewModel.balance.formattedAsCurrency())
-                .font(.system(size: 34, weight: .bold))
+                .font(.jakarta(34, weight: .bold))
                 .foregroundColor(.appText)
         }
         .frame(maxWidth: .infinity)
@@ -90,10 +82,10 @@ struct DashboardView: View {
     private func cashflowItem(title: String, amount: Double, color: Color) -> some View {
         VStack(spacing: Spacing.xs) {
             Text(title)
-                .font(.caption2)
+                .font(.jakarta(11))
                 .foregroundColor(.appTextSecondary)
             Text(amount.formattedAsCurrency())
-                .font(.caption.weight(.semibold))
+                .font(.jakarta(12, weight: .semibold))
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
@@ -104,7 +96,7 @@ struct DashboardView: View {
             Image(systemName: "lightbulb.fill")
                 .foregroundColor(.appWarning)
             Text(viewModel.insight)
-                .font(.caption)
+                .font(.jakarta(12))
                 .foregroundColor(.appTextSecondary)
             Spacer()
         }
@@ -116,7 +108,7 @@ struct DashboardView: View {
     private var budgetSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             Text("Budget Bulan Ini")
-                .font(.headline)
+                .font(.jakarta(17, weight: .semibold))
 
             ForEach(viewModel.budgets.prefix(3)) { budget in
                 BudgetProgressRow(budget: budget)
@@ -124,7 +116,7 @@ struct DashboardView: View {
 
             if viewModel.budgets.isEmpty {
                 Text("Belum ada budget")
-                    .font(.subheadline)
+                    .font(.jakarta(15))
                     .foregroundColor(.appTextSecondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Spacing.xl)
@@ -138,7 +130,7 @@ struct DashboardView: View {
     private var recentTransactionsSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             Text("Transaksi Terbaru")
-                .font(.headline)
+                .font(.jakarta(17, weight: .semibold))
 
             ForEach(viewModel.recentTransactions.prefix(5)) { transaction in
                 TransactionRow(transaction: transaction)
@@ -146,7 +138,7 @@ struct DashboardView: View {
 
             if viewModel.recentTransactions.isEmpty {
                 Text("Belum ada transaksi")
-                    .font(.subheadline)
+                    .font(.jakarta(15))
                     .foregroundColor(.appTextSecondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Spacing.xl)
@@ -166,10 +158,10 @@ struct BudgetProgressRow: View {
         VStack(spacing: Spacing.xs) {
             HStack {
                 Text(Category.sample.first(where: { $0.id == budget.categoryId })?.name ?? "Kategori")
-                    .font(.subheadline)
+                    .font(.jakarta(15))
                 Spacer()
                 Text("\(budget.spent.formattedAsCurrency()) / \(budget.amount.formattedAsCurrency())")
-                    .font(.caption)
+                    .font(.jakarta(12))
                     .foregroundColor(.appTextSecondary)
             }
 
@@ -178,7 +170,7 @@ struct BudgetProgressRow: View {
 
             if budget.remaining > 0 {
                 Text("Sisa \(budget.remaining.formattedAsCurrency())")
-                    .font(.caption2)
+                    .font(.jakarta(11))
                     .foregroundColor(.appTextSecondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -196,22 +188,22 @@ struct TransactionRow: View {
                 .frame(width: 40, height: 40)
                 .overlay {
                     Image(systemName: transaction.type == .income ? "arrow.down" : "arrow.up")
-                        .font(.caption)
+                        .font(.jakarta(12))
                         .foregroundColor(.white)
                 }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.note ?? (transaction.type == .income ? "Pemasukan" : "Pengeluaran"))
-                    .font(.subheadline.weight(.medium))
+                    .font(.jakarta(15, weight: .medium))
                 Text(transaction.date.formatted(date: .numeric, time: .omitted))
-                    .font(.caption)
+                    .font(.jakarta(12))
                     .foregroundColor(.appTextSecondary)
             }
 
             Spacer()
 
             Text(transaction.amount.formattedAsCurrency())
-                .font(.subheadline.weight(.semibold))
+                .font(.jakarta(15, weight: .semibold))
                 .foregroundColor(transaction.type == .income ? .appIncome : .appExpense)
         }
         .padding(.vertical, 4)

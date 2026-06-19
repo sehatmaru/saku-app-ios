@@ -11,21 +11,21 @@ struct SplashView: View {
             Spacer()
 
             Image(systemName: "leaf.fill")
-                .font(.system(size: 60))
+                .font(.jakarta(60))
                 .foregroundColor(.appPrimary)
 
             Text("SakuQ")
-                .font(.largeTitle.weight(.bold))
+                .font(.jakarta(34, weight: .bold))
                 .foregroundColor(.appPrimary)
 
             Text("Personal Finance")
-                .font(.subheadline)
+                .font(.jakarta(15))
                 .foregroundColor(.appTextSecondary)
 
             Spacer()
 
             Text("v1.0")
-                .font(.caption)
+                .font(.jakarta(12))
                 .foregroundColor(.appTextSecondary)
                 .padding(.bottom, Spacing.xxl)
         }

@@ -17,10 +17,10 @@ struct SignUpView: View {
 
                 VStack(spacing: Spacing.sm) {
                     Image(systemName: "leaf.fill")
-                        .font(.system(size: 36))
+                        .font(.jakarta(36))
                         .foregroundColor(.appPrimary)
                     Text("Buat Akun")
-                        .font(.title2.weight(.bold))
+                        .font(.jakarta(22, weight: .bold))
                 }
 
                 Spacer().frame(height: Spacing.md)
@@ -28,7 +28,7 @@ struct SignUpView: View {
                 VStack(spacing: Spacing.lg) {
                     VStack(alignment: .leading, spacing: Spacing.xs) {
                         Text("Nama Lengkap")
-                            .font(.caption)
+                            .font(.jakarta(12))
                             .foregroundColor(.appTextSecondary)
                         TextField("Nama Anda", text: $fullName)
                             .appTextFieldStyle()
@@ -37,7 +37,7 @@ struct SignUpView: View {
 
                     VStack(alignment: .leading, spacing: Spacing.xs) {
                         Text("Email")
-                            .font(.caption)
+                            .font(.jakarta(12))
                             .foregroundColor(.appTextSecondary)
                         TextField("email@example.com", text: $email)
                             .appTextFieldStyle()
@@ -48,7 +48,7 @@ struct SignUpView: View {
 
                     VStack(alignment: .leading, spacing: Spacing.xs) {
                         Text("Password")
-                            .font(.caption)
+                            .font(.jakarta(12))
                             .foregroundColor(.appTextSecondary)
                         SecureField("Minimal 6 karakter", text: $password)
                             .appTextFieldStyle()
@@ -56,7 +56,7 @@ struct SignUpView: View {
 
                     VStack(alignment: .leading, spacing: Spacing.xs) {
                         Text("Konfirmasi Password")
-                            .font(.caption)
+                            .font(.jakarta(12))
                             .foregroundColor(.appTextSecondary)
                         SecureField("Ulangi password", text: $confirmPassword)
                             .appTextFieldStyle()
@@ -64,13 +64,13 @@ struct SignUpView: View {
 
                     if let error = authViewModel.errorMessage {
                         Text(error)
-                            .font(.caption)
+                            .font(.jakarta(12))
                             .foregroundColor(.appError)
                     }
 
                     if let error = passwordError {
                         Text(error)
-                            .font(.caption)
+                            .font(.jakarta(12))
                             .foregroundColor(.appError)
                     }
 
@@ -89,8 +89,8 @@ struct SignUpView: View {
                     Button {
                         dismiss()
                     } label: {
-                        Text("Sudah punya akun? **Masuk**")
-                            .font(.subheadline)
+                            Text("Sudah punya akun? **Masuk**")
+                                .font(.jakarta(15))
                             .foregroundColor(.appTextSecondary)
                     }
                 }

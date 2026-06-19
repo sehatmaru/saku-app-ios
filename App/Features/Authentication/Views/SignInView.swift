@@ -14,10 +14,10 @@ struct SignInView: View {
 
                     VStack(spacing: Spacing.sm) {
                         Image(systemName: "leaf.fill")
-                            .font(.system(size: 40))
+                            .font(.jakarta(40))
                             .foregroundColor(.appPrimary)
                         Text("SakuQ")
-                            .font(.title.weight(.bold))
+                            .font(.jakarta(28, weight: .bold))
                             .foregroundColor(.appPrimary)
                     }
 
@@ -26,7 +26,7 @@ struct SignInView: View {
                     VStack(spacing: Spacing.lg) {
                         VStack(alignment: .leading, spacing: Spacing.xs) {
                             Text("Email")
-                                .font(.caption)
+                                .font(.jakarta(12))
                                 .foregroundColor(.appTextSecondary)
                             TextField("demo@sakuq.app", text: $email)
                                 .appTextFieldStyle()
@@ -37,7 +37,7 @@ struct SignInView: View {
 
                         VStack(alignment: .leading, spacing: Spacing.xs) {
                             Text("Password")
-                                .font(.caption)
+                                .font(.jakarta(12))
                                 .foregroundColor(.appTextSecondary)
                             SecureField("••••••••", text: $password)
                                 .appTextFieldStyle()
@@ -45,7 +45,7 @@ struct SignInView: View {
 
                         if let error = authViewModel.errorMessage {
                             Text(error)
-                                .font(.caption)
+                                .font(.jakarta(12))
                                 .foregroundColor(.appError)
                         }
 
@@ -60,7 +60,7 @@ struct SignInView: View {
                             showSignUp = true
                         } label: {
                             Text("Belum punya akun? **Daftar**")
-                                .font(.subheadline)
+                                .font(.jakarta(15))
                                 .foregroundColor(.appTextSecondary)
                         }
                     }
