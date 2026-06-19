@@ -3,13 +3,27 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel = DashboardViewModel()
+    @State private var showAddSheet = false
 
     var body: some View {
         TabView {
-            mainContent
-                .tabItem {
-                    Label("Beranda", systemImage: "house.fill")
-                }
+            NavigationStack {
+                mainContent
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button {
+                                showAddSheet = true
+                            } label: {
+                                Image(systemName: "plus")
+                                    .font(.jakarta(17, weight: .semibold))
+                            }
+                            .tint(.appPrimary)
+                        }
+                    }
+            }
+            .tabItem {
+                Label("Beranda", systemImage: "house.fill")
+            }
 
             TransactionListView()
                 .tabItem {
@@ -30,6 +44,9 @@ struct DashboardView: View {
         .tint(.appPrimary)
         .onAppear {
             viewModel.loadDashboard()
+        }
+        .sheet(isPresented: $showAddSheet) {
+            AddTransactionView()
         }
     }
 

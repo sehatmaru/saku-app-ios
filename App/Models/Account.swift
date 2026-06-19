@@ -1,6 +1,6 @@
 import Foundation
 
-struct Account: Identifiable, Codable {
+struct Account: Identifiable, Codable, Hashable {
     let id: String
     let name: String
     let type: AccountType
