@@ -1,0 +1,74 @@
+# Xcode
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.bundle
+*.app
+*.framework
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcbkptlist
+
+# CocoaPods
+Pods/
+
+# Swift Package Manager
+.build/
+Packages/
+*.swp
+*.swo
+
+# Carthage
+Carthage/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# Xcode Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift
+.swiftpm/
+xcodebuild.log
+
+# Mint
+Mintfile
+
+# Agent tooling
+.agents/
+skills-lock.json
+
+# Local product source
+PRD.md
+
+# macOS
+.DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+.localized
+
+# Android Studio / IntelliJ (if Flutter)
+*.iml
+.idea/
+
+# Flutter
+.dart_tool/
+.packages
+.pub/
+build/
+*.log
+*.pid
