@@ -18,13 +18,53 @@ struct Transaction: Identifiable, Codable {
 }
 
 extension Transaction {
-    static let sample: [Transaction] = [
-        Transaction(id: "tx-1", accountId: "acc-1", categoryId: "cat-1", subcategoryId: nil, amount: 75_000, type: .expense, note: "Nasi Goreng", date: Date()),
-        Transaction(id: "tx-2", accountId: "acc-2", categoryId: "cat-2", subcategoryId: nil, amount: 5_000_000, type: .income, note: "Gaji Bulanan", date: Date()),
-        Transaction(id: "tx-3", accountId: "acc-3", categoryId: "cat-3", subcategoryId: nil, amount: 25_000, type: .expense, note: "Kopi", date: Date()),
-        Transaction(id: "tx-4", accountId: "acc-1", categoryId: "cat-4", subcategoryId: nil, amount: 200_000, type: .expense, note: "Bensin", date: Date()),
-        Transaction(id: "tx-5", accountId: "acc-2", categoryId: "cat-5", subcategoryId: nil, amount: 1_500_000, type: .expense, note: "Sewa Kost", date: Date()),
-        Transaction(id: "tx-6", accountId: "acc-1", categoryId: "cat-6", subcategoryId: nil, amount: 350_000, type: .expense, note: "Baju", date: Date()),
-        Transaction(id: "tx-7", accountId: "acc-3", categoryId: "cat-7", subcategoryId: nil, amount: 45_000, type: .expense, note: "Netflix", date: Date()),
-    ]
+    static var sample: [Transaction] {
+        let calendar = Calendar.current
+        let now = Date()
+        var all: [Transaction] = []
+        var id = 1
+
+        func day(_ offset: Int, _ monthOffset: Int = 0) -> Date {
+            var comp = calendar.dateComponents([.year, .month], from: now)
+            comp.month = (comp.month ?? 1) - monthOffset
+            comp.day = offset
+            comp.hour = 10
+            comp.minute = 0
+            return calendar.date(from: comp) ?? now
+        }
+
+        // MARK: Cash (acc-1) — daily spending
+        for m in 0..<5 {
+            all += [
+                Transaction(id: "tx-\(id)", accountId: "acc-1", categoryId: "cat-1", subcategoryId: nil, amount: 75_000, type: .expense, note: "Nasi Goreng", date: day(3, m)),
+                Transaction(id: "tx-\(id+1)", accountId: "acc-1", categoryId: "cat-4", subcategoryId: nil, amount: 200_000, type: .expense, note: "Bensin", date: day(7, m)),
+                Transaction(id: "tx-\(id+2)", accountId: "acc-1", categoryId: "cat-6", subcategoryId: nil, amount: 350_000, type: .expense, note: "Belanja Bulanan", date: day(10, m)),
+                Transaction(id: "tx-\(id+3)", accountId: "acc-1", categoryId: "cat-1", subcategoryId: nil, amount: 50_000, type: .expense, note: "Bakso", date: day(14, m)),
+                Transaction(id: "tx-\(id+4)", accountId: "acc-1", categoryId: "cat-8", subcategoryId: nil, amount: 120_000, type: .expense, note: "Vitamin", date: day(18, m)),
+            ]
+            id += 5
+        }
+
+        // MARK: BCA (acc-2) — salary & bills
+        for m in 0..<5 {
+            all += [
+                Transaction(id: "tx-\(id)", accountId: "acc-2", categoryId: "cat-2", subcategoryId: nil, amount: 5_000_000, type: .income, note: "Gaji Bulanan", date: day(1, m)),
+                Transaction(id: "tx-\(id+1)", accountId: "acc-2", categoryId: "cat-5", subcategoryId: nil, amount: 1_500_000, type: .expense, note: "Sewa Kost", date: day(2, m)),
+                Transaction(id: "tx-\(id+2)", accountId: "acc-2", categoryId: "cat-1", subcategoryId: nil, amount: 300_000, type: .expense, note: "Belanja Bulanan", date: day(5, m)),
+            ]
+            id += 3
+        }
+
+        // MARK: GoPay (acc-3) — e-wallet daily
+        for m in 0..<5 {
+            all += [
+                Transaction(id: "tx-\(id)", accountId: "acc-3", categoryId: "cat-3", subcategoryId: nil, amount: 25_000, type: .expense, note: "Kopi Kenangan", date: day(4, m)),
+                Transaction(id: "tx-\(id+1)", accountId: "acc-3", categoryId: "cat-7", subcategoryId: nil, amount: 49_000, type: .expense, note: "Netflix", date: day(8, m)),
+                Transaction(id: "tx-\(id+2)", accountId: "acc-3", categoryId: "cat-6", subcategoryId: nil, amount: 85_000, type: .expense, note: "Top Up Shopee", date: day(15, m)),
+            ]
+            id += 3
+        }
+
+        return all
+    }
 }

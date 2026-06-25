@@ -3,30 +3,119 @@ import SwiftUI
 struct AccountListView: View {
     @StateObject private var viewModel = AccountListViewModel()
     @State private var showAddWallet = false
+    @State private var showArchived = false
+
+    private var activeAccounts: [Account] {
+        viewModel.accounts.filter { $0.isActive }
+    }
+
+    private var archivedAccounts: [Account] {
+        viewModel.accounts.filter { !$0.isActive }
+    }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: Spacing.lg) {
-                    totalBalanceCard
+            VStack(spacing: 0) {
+                totalBalanceCard
 
-                    ForEach(viewModel.accounts) { account in
-                        AccountCard(account: account)
+                ScrollView {
+                    VStack(spacing: Spacing.lg) {
+                        ForEach(activeAccounts) { account in
+                            NavigationLink(destination: WalletDetailView(
+                                account: account,
+                                onSave: { updated in
+                                    viewModel.updateAccount(updated)
+                                },
+                                onDelete: { id in
+                                    viewModel.removeAccount(id)
+                                },
+                                onToggleArchive: { id in
+                                    viewModel.toggleAccountArchive(id)
+                                }
+                            )) {
+                                AccountCard(account: account)
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if !archivedAccounts.isEmpty {
+                            archiveSection
+                        }
                     }
+                    .padding()
                 }
-                .padding()
             }
             .background(Color.appGroupedBackground)
             .navigationTitle("Dompet")
             .onAppear {
                 viewModel.loadAccounts()
             }
-            .alert("Tambah Dompet", isPresented: $showAddWallet) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Fitur akan segera tersedia.")
+            .sheet(isPresented: $showAddWallet) {
+                AddWalletView { account in
+                    viewModel.addAccount(account)
+                }
             }
         }
+    }
+
+    private var archiveSection: some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation {
+                    showArchived.toggle()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
+                        .font(.jakarta(12))
+                        .foregroundColor(.appWarning)
+                    Text("Dompet Diarsipkan")
+                        .font(.jakarta(13, weight: .medium))
+                        .foregroundColor(.appText)
+                    Spacer()
+                    Text("\(archivedAccounts.count)")
+                        .font(.jakarta(12, weight: .semibold))
+                        .foregroundColor(.appTextSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color.appTextSecondary.opacity(0.15))
+                        .clipShape(Capsule())
+                    Image(systemName: "chevron.down")
+                        .font(.jakarta(10))
+                        .foregroundColor(.appTextSecondary)
+                        .rotationEffect(.degrees(showArchived ? 180 : 0))
+                }
+                .padding(.vertical, 12)
+                .padding(.horizontal, Spacing.lg)
+            }
+            .buttonStyle(.plain)
+
+            if showArchived {
+                VStack(spacing: Spacing.lg) {
+                    ForEach(archivedAccounts) { account in
+                        NavigationLink(destination: WalletDetailView(
+                            account: account,
+                            onSave: { updated in
+                                viewModel.updateAccount(updated)
+                            },
+                            onDelete: { id in
+                                viewModel.removeAccount(id)
+                            },
+                            onToggleArchive: { id in
+                                viewModel.toggleAccountArchive(id)
+                            }
+                        )) {
+                            AccountCard(account: account)
+                                .opacity(0.7)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.top, Spacing.sm)
+            }
+        }
+        .background(Color.appCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     private var totalBalanceCard: some View {
@@ -58,7 +147,7 @@ struct AccountListView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.jakarta(11))
                     .foregroundColor(.appPrimary)
-                Text("\(viewModel.accounts.count) Akun Terdaftar")
+                Text("\(activeAccounts.count) Dompet Aktif")
                     .font(.jakarta(13))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
@@ -95,21 +184,34 @@ struct AccountListView: View {
                 .foregroundColor(.appPrimary.opacity(0.08))
                 .offset(x: -12, y: -4)
         }
+        .padding(.horizontal)
+        .padding(.top)
+        .padding(.bottom, 4)
     }
 }
 
 struct AccountCard: View {
     let account: Account
 
+    private var walletIcon: WalletIcon? {
+        WalletIcon.allIcons.first { $0.id == account.icon }
+    }
+
     var body: some View {
         HStack(spacing: Spacing.md) {
             Circle()
-                .fill(accountTypeColor)
+                .fill(walletIcon?.color ?? accountTypeColor)
                 .frame(width: 44, height: 44)
                 .overlay {
-                    Image(systemName: accountTypeIcon)
-                        .font(.body)
-                        .foregroundColor(.white)
+                    if let icon = walletIcon {
+                        Text(icon.shortName)
+                            .font(.jakarta(9, weight: .bold))
+                            .foregroundColor(.white)
+                    } else {
+                        Image(systemName: accountTypeIcon)
+                            .font(.body)
+                            .foregroundColor(.white)
+                    }
                 }
 
             VStack(alignment: .leading, spacing: 2) {
