@@ -7,20 +7,7 @@ struct DashboardView: View {
 
     var body: some View {
         TabView {
-            NavigationStack {
-                mainContent
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button {
-                                showAddSheet = true
-                            } label: {
-                                Image(systemName: "plus")
-                                    .font(.jakarta(17, weight: .semibold))
-                            }
-                            .tint(.appPrimary)
-                        }
-                    }
-            }
+            NavigationStack { mainContent }
             .tabItem {
                 Label("Beranda", systemImage: "house.fill")
             }
@@ -60,7 +47,6 @@ struct DashboardView: View {
             ScrollView {
                 VStack(spacing: Spacing.lg) {
                     balanceSection
-                    cashflowRow
                     insightCard
                     budgetSection
                     recentTransactionsSection
@@ -73,41 +59,77 @@ struct DashboardView: View {
     }
 
     private var balanceSection: some View {
-        VStack(spacing: Spacing.sm) {
-            Text("Total Saldo")
-                .font(.jakarta(15))
-                .foregroundColor(.appTextSecondary)
+        VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "leaf.fill")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appPrimary)
+                Text("Total Saldo")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appTextSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.xl)
 
             Text(viewModel.balance.formattedAsCurrency())
                 .font(.jakarta(34, weight: .bold))
                 .foregroundColor(.appText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.sm)
+
+            Divider()
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.lg)
+
+            HStack(spacing: 0) {
+                statItem(title: "Pemasukan", amount: viewModel.totalIncome, color: .appIncome)
+                Divider().frame(height: 28)
+                statItem(title: "Pengeluaran", amount: viewModel.totalExpense, color: .appExpense)
+                Divider().frame(height: 28)
+                statItem(title: "Cashflow", amount: viewModel.netCashflow, color: viewModel.netCashflow >= 0 ? .appIncome : .appExpense)
+            }
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
+
+            Button {
+                showAddSheet = true
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "plus")
+                        .font(.jakarta(15, weight: .semibold))
+                    Text("Tambah Transaksi")
+                        .font(.jakarta(15, weight: .semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.appPrimary)
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.lg)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Spacing.xl)
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.appCardBackground)
+        )
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.appPrimary.opacity(0.08))
+                .offset(x: -12, y: -4)
+        }
     }
 
-    private var cashflowRow: some View {
-        HStack(spacing: Spacing.md) {
-            cashflowItem(title: "Pemasukan", amount: viewModel.totalIncome, color: .appIncome)
-            Divider().frame(height: 40)
-            cashflowItem(title: "Pengeluaran", amount: viewModel.totalExpense, color: .appExpense)
-            Divider().frame(height: 40)
-            cashflowItem(title: "Cashflow", amount: viewModel.netCashflow, color: viewModel.netCashflow >= 0 ? .appIncome : .appExpense)
-        }
-        .padding()
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func cashflowItem(title: String, amount: Double, color: Color) -> some View {
-        VStack(spacing: Spacing.xs) {
+    private func statItem(title: String, amount: Double, color: Color) -> some View {
+        VStack(spacing: 4) {
             Text(title)
                 .font(.jakarta(11))
                 .foregroundColor(.appTextSecondary)
             Text(amount.formattedAsCurrency())
-                .font(.jakarta(12, weight: .semibold))
+                .font(.jakarta(13, weight: .semibold))
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)

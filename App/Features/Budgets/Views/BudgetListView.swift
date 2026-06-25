@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BudgetListView: View {
     @StateObject private var viewModel = BudgetListViewModel()
+    @State private var showAddBudget = false
 
     var body: some View {
         NavigationStack {
@@ -24,32 +25,94 @@ struct BudgetListView: View {
             .onAppear {
                 viewModel.loadBudgets()
             }
+            .alert("Tambah Budget", isPresented: $showAddBudget) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Fitur akan segera tersedia.")
+            }
         }
     }
 
     private var summaryCard: some View {
-        HStack(spacing: Spacing.xl) {
-            summaryItem(title: "Total Budget", amount: viewModel.totalBudget)
-            Divider().frame(height: 40)
-            summaryItem(title: "Terpakai", amount: viewModel.totalSpent)
-            Divider().frame(height: 40)
-            summaryItem(title: "Sisa", amount: viewModel.totalBudget - viewModel.totalSpent, color: (viewModel.totalBudget - viewModel.totalSpent) >= 0 ? .appIncome : .appExpense)
-        }
-        .padding()
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
+        let remaining = viewModel.totalBudget - viewModel.totalSpent
+        let ratio = viewModel.totalBudget > 0 ? viewModel.totalSpent / viewModel.totalBudget : 0
 
-    private func summaryItem(title: String, amount: Double, color: Color = .appText) -> some View {
-        VStack(spacing: Spacing.xs) {
-            Text(title)
-                .font(.jakarta(11))
-                .foregroundColor(.appTextSecondary)
-            Text(amount.formattedAsCurrency())
-                .font(.jakarta(12, weight: .semibold))
-                .foregroundColor(color)
+        return VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "chart.pie.fill")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appPrimary)
+                Text("Ringkasan Budget")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appTextSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.xl)
+
+            Text(viewModel.totalBudget.formattedAsCurrency())
+                .font(.jakarta(34, weight: .bold))
+                .foregroundColor(.appText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.sm)
+
+            Divider()
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.lg)
+
+            VStack(spacing: Spacing.sm) {
+                ProgressView(value: ratio)
+                    .tint(ratio >= 1 ? .appError : ratio >= 0.8 ? .appWarning : .appPrimary)
+
+                HStack {
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.appExpense).frame(width: 8, height: 8)
+                        Text("Terpakai \(viewModel.totalSpent.formattedAsCurrency())")
+                            .font(.jakarta(12))
+                            .foregroundColor(.appTextSecondary)
+                    }
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Circle().fill(remaining >= 0 ? Color.appIncome : Color.appError).frame(width: 8, height: 8)
+                        Text("Sisa \(remaining.formattedAsCurrency())")
+                            .font(.jakarta(12))
+                            .foregroundColor(.appTextSecondary)
+                    }
+                }
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
+
+            Button {
+                showAddBudget = true
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "plus")
+                        .font(.jakarta(15, weight: .semibold))
+                    Text("Tambah Budget")
+                        .font(.jakarta(15, weight: .semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.appPrimary)
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.lg)
         }
-        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.appCardBackground)
+        )
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: "chart.pie.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.appPrimary.opacity(0.08))
+                .offset(x: -12, y: -4)
+        }
     }
 
     private var emptyState: some View {
