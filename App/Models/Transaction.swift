@@ -34,7 +34,7 @@ extension Transaction {
         }
 
         // MARK: Cash (acc-1) — daily spending
-        for m in 0..<5 {
+        for m in 0..<30 {
             all += [
                 Transaction(id: "tx-\(id)", accountId: "acc-1", categoryId: "cat-1", subcategoryId: nil, amount: 75_000, type: .expense, note: "Nasi Goreng", date: day(3, m)),
                 Transaction(id: "tx-\(id+1)", accountId: "acc-1", categoryId: "cat-4", subcategoryId: nil, amount: 200_000, type: .expense, note: "Bensin", date: day(7, m)),
@@ -46,7 +46,7 @@ extension Transaction {
         }
 
         // MARK: BCA (acc-2) — salary & bills
-        for m in 0..<5 {
+        for m in 0..<30 {
             all += [
                 Transaction(id: "tx-\(id)", accountId: "acc-2", categoryId: "cat-2", subcategoryId: nil, amount: 5_000_000, type: .income, note: "Gaji Bulanan", date: day(1, m)),
                 Transaction(id: "tx-\(id+1)", accountId: "acc-2", categoryId: "cat-5", subcategoryId: nil, amount: 1_500_000, type: .expense, note: "Sewa Kost", date: day(2, m)),
@@ -56,7 +56,7 @@ extension Transaction {
         }
 
         // MARK: GoPay (acc-3) — e-wallet daily
-        for m in 0..<5 {
+        for m in 0..<30 {
             all += [
                 Transaction(id: "tx-\(id)", accountId: "acc-3", categoryId: "cat-3", subcategoryId: nil, amount: 25_000, type: .expense, note: "Kopi Kenangan", date: day(4, m)),
                 Transaction(id: "tx-\(id+1)", accountId: "acc-3", categoryId: "cat-7", subcategoryId: nil, amount: 49_000, type: .expense, note: "Netflix", date: day(8, m)),

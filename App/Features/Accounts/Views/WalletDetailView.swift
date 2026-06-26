@@ -71,62 +71,60 @@ struct WalletDetailView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: Spacing.xl) {
+        ScrollView {
+            VStack(spacing: 0) {
                 headerSection
-            }
-            .padding(.horizontal)
-            .padding(.top)
-            .padding(.bottom, Spacing.md)
+                    .padding(.horizontal)
+                    .padding(.top)
 
-            if !account.isActive {
-                HStack(spacing: Spacing.md) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.appWarning.opacity(0.15))
-                            .frame(width: 36, height: 36)
-                        Image(systemName: "archivebox.fill")
-                            .font(.jakarta(14))
-                            .foregroundColor(.appWarning)
+                if !account.isActive {
+                    HStack(spacing: Spacing.md) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.appWarning.opacity(0.15))
+                                .frame(width: 36, height: 36)
+                            Image(systemName: "archivebox.fill")
+                                .font(.jakarta(14))
+                                .foregroundColor(.appWarning)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Dompet Diarsipkan")
+                                .font(.jakarta(13, weight: .semibold))
+                                .foregroundColor(.appText)
+                            Text("Tidak dapat digunakan untuk transaksi baru")
+                                .font(.jakarta(11))
+                                .foregroundColor(.appTextSecondary)
+                        }
+
+                        Spacer()
                     }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Dompet Diarsipkan")
-                            .font(.jakarta(13, weight: .semibold))
-                            .foregroundColor(.appText)
-                        Text("Tidak dapat digunakan untuk transaksi baru")
-                            .font(.jakarta(11))
-                            .foregroundColor(.appTextSecondary)
-                    }
-
-                    Spacer()
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.vertical, 12)
+                    .background(Color.appCardBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.appWarning.opacity(0.3), lineWidth: 1)
+                    )
+                    .padding(.horizontal)
+                    .padding(.top, Spacing.md)
                 }
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, 12)
-                .background(Color.appCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.appWarning.opacity(0.3), lineWidth: 1)
-                )
+
+                HStack {
+                    Text("Transaksi Terbaru")
+                        .font(.jakarta(15, weight: .semibold))
+                    Spacer()
+                    Text("\(transactions.count) transaksi")
+                        .font(.jakarta(12))
+                        .foregroundColor(.appTextSecondary)
+                }
                 .padding(.horizontal)
-                .padding(.bottom, Spacing.sm)
-            }
+                .padding(.top, Spacing.md)
 
-            HStack {
-                Text("Transaksi Terbaru")
-                    .font(.jakarta(15, weight: .semibold))
-                Spacer()
-                Text("\(transactions.count) transaksi")
-                    .font(.jakarta(12))
-                    .foregroundColor(.appTextSecondary)
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 4)
-
-            ScrollView {
                 transactionListContent
                     .padding([.horizontal, .top])
+                    .padding(.bottom)
             }
         }
         .background(Color.appGroupedBackground)
@@ -491,17 +489,3 @@ struct WalletDetailView: View {
     }
 }
 
-private extension String {
-    var formattedWithThousandSeparator: String {
-        guard !isEmpty else { return "" }
-        var result = ""
-        let chars = Array(self)
-        for (index, char) in chars.enumerated() {
-            if index > 0 && (chars.count - index) % 3 == 0 {
-                result.append(".")
-            }
-            result.append(char)
-        }
-        return result
-    }
-}

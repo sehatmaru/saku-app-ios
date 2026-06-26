@@ -209,7 +209,7 @@ struct BudgetProgressRow: View {
                     .foregroundColor(.appTextSecondary)
             }
 
-            ProgressView(value: budget.progress)
+            ProgressView(value: min(budget.progress, 1.0))
                 .tint(budget.progress >= 1.0 ? .appError : budget.progress >= 0.8 ? .appWarning : .appPrimary)
 
             if budget.remaining > 0 {

@@ -15,35 +15,33 @@ struct AccountListView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                totalBalanceCard
+            ScrollView {
+                VStack(spacing: Spacing.lg) {
+                    totalBalanceCard
 
-                ScrollView {
-                    VStack(spacing: Spacing.lg) {
-                        ForEach(activeAccounts) { account in
-                            NavigationLink(destination: WalletDetailView(
-                                account: account,
-                                onSave: { updated in
-                                    viewModel.updateAccount(updated)
-                                },
-                                onDelete: { id in
-                                    viewModel.removeAccount(id)
-                                },
-                                onToggleArchive: { id in
-                                    viewModel.toggleAccountArchive(id)
-                                }
-                            )) {
-                                AccountCard(account: account)
+                    ForEach(activeAccounts) { account in
+                        NavigationLink(destination: WalletDetailView(
+                            account: account,
+                            onSave: { updated in
+                                viewModel.updateAccount(updated)
+                            },
+                            onDelete: { id in
+                                viewModel.removeAccount(id)
+                            },
+                            onToggleArchive: { id in
+                                viewModel.toggleAccountArchive(id)
                             }
-                            .buttonStyle(.plain)
+                        )) {
+                            AccountCard(account: account)
                         }
-
-                        if !archivedAccounts.isEmpty {
-                            archiveSection
-                        }
+                        .buttonStyle(.plain)
                     }
-                    .padding()
+
+                    if !archivedAccounts.isEmpty {
+                        archiveSection
+                    }
                 }
+                .padding()
             }
             .background(Color.appGroupedBackground)
             .navigationTitle("Dompet")
@@ -69,7 +67,7 @@ struct AccountListView: View {
                     Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
                         .font(.jakarta(12))
                         .foregroundColor(.appWarning)
-                    Text("Dompet Diarsipkan")
+                    Text("Diarsipkan")
                         .font(.jakarta(13, weight: .medium))
                         .foregroundColor(.appText)
                     Spacer()
@@ -85,6 +83,8 @@ struct AccountListView: View {
                         .foregroundColor(.appTextSecondary)
                         .rotationEffect(.degrees(showArchived ? 180 : 0))
                 }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
                 .padding(.vertical, 12)
                 .padding(.horizontal, Spacing.lg)
             }
@@ -184,9 +184,6 @@ struct AccountListView: View {
                 .foregroundColor(.appPrimary.opacity(0.08))
                 .offset(x: -12, y: -4)
         }
-        .padding(.horizontal)
-        .padding(.top)
-        .padding(.bottom, 4)
     }
 }
 
