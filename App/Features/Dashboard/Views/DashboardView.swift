@@ -225,19 +225,43 @@ struct BudgetProgressRow: View {
 struct TransactionRow: View {
     let transaction: Transaction
 
+    private var typeColor: Color {
+        switch transaction.type {
+        case .income: .appIncome
+        case .expense: .appExpense
+        case .transfer: .appPrimary
+        }
+    }
+
+    private var typeIcon: String {
+        switch transaction.type {
+        case .income: "arrow.down"
+        case .expense: "arrow.up"
+        case .transfer: "arrow.left.arrow.right"
+        }
+    }
+
+    private var typeLabel: String {
+        switch transaction.type {
+        case .income: "Pemasukan"
+        case .expense: "Pengeluaran"
+        case .transfer: "Transfer"
+        }
+    }
+
     var body: some View {
         HStack(spacing: Spacing.md) {
             Circle()
-                .fill(transaction.type == .income ? Color.appIncome : Color.appExpense)
+                .fill(typeColor)
                 .frame(width: 40, height: 40)
                 .overlay {
-                    Image(systemName: transaction.type == .income ? "arrow.down" : "arrow.up")
+                    Image(systemName: typeIcon)
                         .font(.jakarta(12))
                         .foregroundColor(.white)
                 }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(transaction.note ?? (transaction.type == .income ? "Pemasukan" : "Pengeluaran"))
+                Text(transaction.note ?? typeLabel)
                     .font(.jakarta(15, weight: .medium))
                 Text(transaction.date.formatted(date: .numeric, time: .omitted))
                     .font(.jakarta(12))
@@ -248,7 +272,7 @@ struct TransactionRow: View {
 
             Text(transaction.amount.formattedAsCurrency())
                 .font(.jakarta(15, weight: .semibold))
-                .foregroundColor(transaction.type == .income ? .appIncome : .appExpense)
+                .foregroundColor(typeColor)
         }
         .padding(.vertical, 4)
     }

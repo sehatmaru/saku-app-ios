@@ -6,7 +6,7 @@ final class AuthViewModel: ObservableObject {
     @Published var currentUser: User? = User.default
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var showSplash = true
+    @Published var showSplash = false
 
     private let authService = AuthService.shared
 

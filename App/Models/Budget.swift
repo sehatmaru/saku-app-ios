@@ -45,12 +45,12 @@ struct Budget: Identifiable, Codable {
 
 extension Budget {
     static let sample: [Budget] = [
-        Budget(id: "bud-1", categoryId: "cat-1", amount: 1_500_000, spent: 800_000),
-        Budget(id: "bud-2", categoryId: "cat-4", amount: 500_000, spent: 20_000),
-        Budget(id: "bud-3", categoryId: "cat-5", amount: 2_000_000, spent: 400_000),
-        Budget(id: "bud-4", categoryId: "cat-7", amount: 500_000, spent: 80_000),
-        Budget(id: "bud-5", categoryId: "cat-6", amount: 1_000_000, spent: 1_450_000),
-        Budget(id: "bud-6", categoryId: "cat-8", amount: 300_000, spent: 20_000),
-        Budget(id: "bud-7", categoryId: "cat-3", amount: 1_000_000, spent: 950_000),
+        Budget(id: "bud-1", categoryId: "cat-exp-1", amount: 1_500_000, spent: 800_000),
+        Budget(id: "bud-2", categoryId: "cat-exp-7", amount: 500_000, spent: 20_000),
+        Budget(id: "bud-3", categoryId: "cat-exp-6", amount: 2_000_000, spent: 400_000),
+        Budget(id: "bud-4", categoryId: "cat-exp-5", amount: 500_000, spent: 80_000),
+        Budget(id: "bud-5", categoryId: "cat-exp-4", amount: 1_000_000, spent: 1_450_000),
+        Budget(id: "bud-6", categoryId: "cat-exp-8", amount: 300_000, spent: 20_000),
+        Budget(id: "bud-7", categoryId: "cat-exp-2", amount: 1_000_000, spent: 950_000),
     ]
 }
