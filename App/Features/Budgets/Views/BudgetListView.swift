@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BudgetListView: View {
     @StateObject private var viewModel = BudgetListViewModel()
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var showUnsetBudget = false
     @State private var showOverallHistory = false
 
@@ -163,7 +164,9 @@ struct BudgetListView: View {
             .padding(.top, Spacing.xl)
 
             HStack(alignment: .top, spacing: Spacing.sm) {
-                Text(viewModel.totalRemaining >= 0 ? viewModel.totalRemaining.formattedAsCurrency() : "Rp0")
+                Text(isBalanceVisible
+                     ? (viewModel.totalRemaining >= 0 ? viewModel.totalRemaining.formattedAsCurrency() : "Rp0")
+                     : "Rp********")
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
                 Text(viewModel.totalRemaining >= 0 ? "\(Int(viewModel.totalBudget > 0 ? viewModel.totalRemaining / viewModel.totalBudget * 100 : 0))%" : "0%")
@@ -184,7 +187,7 @@ struct BudgetListView: View {
                     Text("Total Budget")
                         .font(.jakarta(11))
                         .foregroundColor(.appTextSecondary)
-                    Text(viewModel.totalBudget.formattedAsCurrency())
+                    Text(isBalanceVisible ? viewModel.totalBudget.formattedAsCurrency() : "Rp********")
                         .font(.jakarta(14, weight: .semibold))
                         .foregroundColor(.appText)
                 }
@@ -193,7 +196,7 @@ struct BudgetListView: View {
                     Text("Terpakai")
                         .font(.jakarta(11))
                         .foregroundColor(.appTextSecondary)
-                    Text(viewModel.totalSpent.formattedAsCurrency())
+                    Text(isBalanceVisible ? viewModel.totalSpent.formattedAsCurrency() : "Rp********")
                         .font(.jakarta(14, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
@@ -264,6 +267,7 @@ struct BudgetCardView: View {
     let category: Category
     var onSetBudget: ((Budget) -> Void)?
 
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var showSetBudget = false
     @State private var amountText = ""
     @State private var amountDigits = ""
@@ -396,7 +400,9 @@ struct BudgetCardView: View {
                 .tint(progressColor(budget))
 
             HStack {
-                Text("\(budget.spent.formattedAsCurrency()) / \(budget.amount.formattedAsCurrency())")
+                Text(isBalanceVisible
+                     ? "\(budget.spent.formattedAsCurrency()) / \(budget.amount.formattedAsCurrency())"
+                     : "Rp*** / Rp***")
                     .font(.jakarta(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
@@ -405,7 +411,7 @@ struct BudgetCardView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.down.left")
                             .font(.jakarta(9))
-                        Text(budget.remaining.formattedAsCurrency())
+                        Text(isBalanceVisible ? budget.remaining.formattedAsCurrency() : "Rp***")
                             .font(.jakarta(11))
                     }
                     .foregroundColor(.appTextSecondary)
@@ -413,7 +419,7 @@ struct BudgetCardView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.jakarta(9))
-                        Text("\(budget.dailyRemaining.formattedAsCurrency())/hari")
+                        Text(isBalanceVisible ? "\(budget.dailyRemaining.formattedAsCurrency())/hari" : "Rp***/hari")
                             .font(.jakarta(11))
                     }
                     .foregroundColor(.appWarning)
@@ -421,7 +427,7 @@ struct BudgetCardView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.up.right")
                             .font(.jakarta(9))
-                        Text(abs(budget.remaining).formattedAsCurrency())
+                        Text(isBalanceVisible ? abs(budget.remaining).formattedAsCurrency() : "Rp***")
                             .font(.jakarta(11))
                     }
                     .foregroundColor(.appError)

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AccountListView: View {
     @StateObject private var viewModel = AccountListViewModel()
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var showAddWallet = false
     @State private var showArchived = false
 
@@ -132,7 +133,7 @@ struct AccountListView: View {
             .padding(.horizontal, Spacing.xl)
             .padding(.top, Spacing.xl)
 
-            Text(viewModel.totalBalance.formattedAsCurrency())
+            Text(isBalanceVisible ? viewModel.totalBalance.formattedAsCurrency() : "Rp********")
                 .font(.jakarta(34, weight: .bold))
                 .foregroundColor(.appText)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -189,6 +190,7 @@ struct AccountListView: View {
 
 struct AccountCard: View {
     let account: Account
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
 
     private var walletIcon: WalletIcon? {
         WalletIcon.allIcons.first { $0.id == account.icon }
@@ -221,7 +223,7 @@ struct AccountCard: View {
 
             Spacer()
 
-            Text(account.balance.formattedAsCurrency())
+            Text(isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp***")
                 .font(.jakarta(15, weight: .semibold))
         }
         .padding()

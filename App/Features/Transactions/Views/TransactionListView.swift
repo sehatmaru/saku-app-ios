@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TransactionListView: View {
     @StateObject private var viewModel = TransactionListViewModel()
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var filter = TransactionFilter()
     @State private var expandedMonths: Set<String> = []
     @State private var searchText = ""
@@ -104,9 +105,11 @@ struct TransactionListView: View {
                 Text("Rp")
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
-                Text(viewModel.thisMonthBalance >= 0
-                     ? viewModel.thisMonthBalance.formattedAsCurrency().replacingOccurrences(of: "Rp", with: "")
-                     : "0")
+                Text(isBalanceVisible
+                     ? (viewModel.thisMonthBalance >= 0
+                        ? viewModel.thisMonthBalance.formattedAsCurrency().replacingOccurrences(of: "Rp", with: "")
+                        : "0")
+                     : "********")
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
                 Spacer()
@@ -163,7 +166,7 @@ struct TransactionListView: View {
                 Text(label)
                     .font(.jakarta(10))
                     .foregroundColor(.appTextSecondary)
-                Text(amount > 0 ? abbreviatedAmount(amount) : "Rp0")
+                Text(isBalanceVisible ? (amount > 0 ? abbreviatedAmount(amount) : "Rp0") : "Rp***")
                     .font(.jakarta(14, weight: .semibold))
                     .foregroundColor(color)
             }
