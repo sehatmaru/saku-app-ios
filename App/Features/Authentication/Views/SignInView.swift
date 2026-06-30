@@ -34,6 +34,7 @@ struct SignInView: View {
 
             VStack(spacing: Spacing.md) {
                 Spacer().frame(height: Spacing.xxl)
+
                 socialButton(
                     label: "Lanjutkan dengan Google",
                     backgroundColor: googleButtonBg,
@@ -53,12 +54,13 @@ struct SignInView: View {
                     foregroundColor: appleButtonFg,
                     hasBorder: false,
                     isLoading: authViewModel.isAppleLoading,
-                    action: authViewModel.signInWithApple
+                    action: {}
                 ) {
                     Image(systemName: "applelogo")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                 }
+                .disabled(true)
 
                 HStack(spacing: Spacing.sm) {
                     Color(.systemGray5)
@@ -95,20 +97,20 @@ struct SignInView: View {
         }
     }
 
-    private var googleButtonBg: Color {
-        .white
-    }
-
-    private var googleButtonFg: Color {
-        colorScheme == .dark ? .black : .appText
-    }
-
     private var appleButtonBg: Color {
         colorScheme == .dark ? .white : .black
     }
 
     private var appleButtonFg: Color {
         colorScheme == .dark ? .black : .white
+    }
+
+    private var googleButtonBg: Color {
+        .white
+    }
+
+    private var googleButtonFg: Color {
+        colorScheme == .dark ? .black : .appText
     }
 
     private var guestButtonOpacity: Double {

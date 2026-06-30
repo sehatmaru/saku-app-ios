@@ -44,24 +44,28 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    deinit {}
-
     // MARK: - Session Restore
 
     private func restoreSession() async {
         do {
             let session = try await SupabaseSDK.client.auth.session
-            let profile = try await SupabaseSDK.fetchProfile(authUserId: session.user.id)
-            currentUser = User(
-                id: profile.id.uuidString,
-                authUserId: session.user.id.uuidString,
-                email: session.user.email ?? "",
-                displayName: profile.displayName,
-                defaultCurrencyCode: profile.defaultCurrencyCode
-            )
-            isAuthenticated = true
+            try await fetchProfileAndSetUser(authUserId: session.user.id)
         } catch {
             isAuthenticated = false
+        }
+    }
+
+    private func fetchProfileAndSetUser(authUserId: UUID) async throws {
+        let profile = try await SupabaseSDK.fetchProfile(authUserId: authUserId)
+        currentUser = User(
+            id: profile.id.uuidString,
+            authUserId: authUserId.uuidString,
+            email: profile.displayName ?? "",
+            displayName: profile.displayName,
+            defaultCurrencyCode: profile.defaultCurrencyCode
+        )
+        withAnimation(.easeInOut(duration: 0.4)) {
+            isAuthenticated = true
         }
     }
 
@@ -93,15 +97,7 @@ final class AuthViewModel: ObservableObject {
                     )
                 )
 
-                let profile = try await SupabaseSDK.fetchProfile(authUserId: authResponse.user.id)
-                currentUser = User(
-                    id: profile.id.uuidString,
-                    authUserId: authResponse.user.id.uuidString,
-                    email: authResponse.user.email ?? "",
-                    displayName: profile.displayName,
-                    defaultCurrencyCode: profile.defaultCurrencyCode
-                )
-                isAuthenticated = true
+                try await fetchProfileAndSetUser(authUserId: authResponse.user.id)
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -109,7 +105,7 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Apple Sign-In
+    // MARK: - Apple Sign-In (OAuth)
 
     func signInWithApple() {
         isAppleLoading = true
@@ -122,15 +118,7 @@ final class AuthViewModel: ObservableObject {
                     session.prefersEphemeralWebBrowserSession = true
                 }
 
-                let profile = try await SupabaseSDK.fetchProfile(authUserId: authResponse.user.id)
-                currentUser = User(
-                    id: profile.id.uuidString,
-                    authUserId: authResponse.user.id.uuidString,
-                    email: authResponse.user.email ?? "",
-                    displayName: profile.displayName,
-                    defaultCurrencyCode: profile.defaultCurrencyCode
-                )
-                isAuthenticated = true
+                try await fetchProfileAndSetUser(authUserId: authResponse.user.id)
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -138,20 +126,20 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Guest (placeholder)
+
+    func signInAsGuest(name: String) {}
+
     // MARK: - Logout
 
     func logout() {
         Task {
             try? await SupabaseSDK.client.auth.signOut()
             currentUser = nil
-            isAuthenticated = false
+            withAnimation(.easeInOut(duration: 0.4)) {
+                isAuthenticated = false
+            }
         }
-    }
-
-    // MARK: - Guest (placeholder)
-
-    func signInAsGuest(name: String) {
-        // TODO: Implement guest sign-in
     }
 
     // MARK: - Splash
