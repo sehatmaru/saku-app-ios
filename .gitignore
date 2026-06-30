@@ -47,6 +47,7 @@ Mintfile
 # Agent tooling
 .agents/
 skills-lock.json
+.claude/
 
 # Local product source
 PRD.md

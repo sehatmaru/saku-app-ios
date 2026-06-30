@@ -30,9 +30,22 @@
     <array>
         <string>armv7</string>
     </array>
-    <key>UISupportedInterfaceOrientations</key>
-    <array>
-        <string>UIInterfaceOrientationPortrait</string>
-    </array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>GIDClientID</key>
+	<string>799706557725-smklpamdcf8m4bmngclootnphbfp1ttf.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.799706557725-smklpamdcf8m4bmngclootnphbfp1ttf</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

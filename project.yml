@@ -5,6 +5,14 @@ options:
     iOS: "18.0"
   xcodeVersion: "16.0"
 
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.47.0
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: 9.2.0
+
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -23,3 +31,10 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.sakuq.app
         INFOPLIST_FILE: App/Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - package: Supabase
+        product: Supabase
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift

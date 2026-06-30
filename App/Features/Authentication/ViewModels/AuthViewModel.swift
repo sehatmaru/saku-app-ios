@@ -1,24 +1,60 @@
 import SwiftUI
+import GoogleSignIn
+
+enum AuthPresentationError: LocalizedError {
+    case noWindowScene
+    case noGoogleIdToken
+
+    var errorDescription: String? {
+        switch self {
+        case .noWindowScene: return "Gagal memulai sign in"
+        case .noGoogleIdToken: return "Tidak dapat memperoleh token Google"
+        }
+    }
+}
 
 @MainActor
 final class AuthViewModel: ObservableObject {
-    @Published var isAuthenticated = true
-    @Published var currentUser: User? = User.default
+    @Published var isAuthenticated = false
+    @Published var currentUser: User?
     @Published var isLoading = false
     @Published var isGoogleLoading = false
     @Published var isAppleLoading = false
     @Published var errorMessage: String?
     @Published var showSplash = false
 
-    private let authService = AuthService.shared
-
     func signInWithGoogle() {
         isGoogleLoading = true
         errorMessage = nil
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            currentUser = User.default
-            isAuthenticated = true
+            do {
+                guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                      let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+                else {
+                    throw AuthPresentationError.noWindowScene
+                }
+
+                let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootVC)
+
+                guard let idToken = result.user.idToken?.tokenString else {
+                    throw AuthPresentationError.noGoogleIdToken
+                }
+
+                let accessToken = result.user.accessToken.tokenString
+                let authResult = try await SupabaseSDK.signInWithGoogle(
+                    idToken: idToken,
+                    accessToken: accessToken
+                )
+
+                currentUser = User(
+                    id: authResult.id,
+                    email: authResult.email,
+                    fullName: authResult.fullName
+                )
+                isAuthenticated = true
+            } catch {
+                errorMessage = error.localizedDescription
+            }
             isGoogleLoading = false
         }
     }
@@ -27,15 +63,30 @@ final class AuthViewModel: ObservableObject {
         isAppleLoading = true
         errorMessage = nil
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            currentUser = User.default
-            isAuthenticated = true
+            do {
+                let authSession = try await SupabaseSDK.client.auth.signInWithOAuth(
+                    provider: .apple
+                ) { session in
+                    session.prefersEphemeralWebBrowserSession = true
+                }
+                let supaUser = authSession.user
+                currentUser = User(
+                    id: supaUser.id.uuidString,
+                    email: supaUser.email ?? "",
+                    fullName: supaUser.userMetadata["full_name"]?.stringValue
+                        ?? supaUser.userMetadata["name"]?.stringValue
+                        ?? ""
+                )
+                isAuthenticated = true
+            } catch {
+                errorMessage = error.localizedDescription
+            }
             isAppleLoading = false
         }
     }
 
-    func signInAsGuest() {
-        currentUser = User(id: UUID().uuidString, email: "guest@sakuq.app", fullName: "Tamu")
+    func signInAsGuest(name: String) {
+        currentUser = User(id: UUID().uuidString, email: "guest@sakuq.app", fullName: name)
         isAuthenticated = true
     }
 
@@ -79,4 +130,6 @@ final class AuthViewModel: ObservableObject {
             showSplash = false
         }
     }
+
+    private let authService = AuthService.shared
 }

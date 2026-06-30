@@ -2,6 +2,9 @@ import SwiftUI
 
 struct SignInView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var showGuestSheet = false
+    @State private var guestName = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,8 +36,8 @@ struct SignInView: View {
                 Spacer().frame(height: Spacing.xxl)
                 socialButton(
                     label: "Lanjutkan dengan Google",
-                    backgroundColor: .white,
-                    foregroundColor: .appText,
+                    backgroundColor: googleButtonBg,
+                    foregroundColor: googleButtonFg,
                     hasBorder: true,
                     isLoading: authViewModel.isGoogleLoading,
                     action: authViewModel.signInWithGoogle
@@ -46,8 +49,8 @@ struct SignInView: View {
 
                 socialButton(
                     label: "Lanjutkan dengan Apple",
-                    backgroundColor: .black,
-                    foregroundColor: .white,
+                    backgroundColor: appleButtonBg,
+                    foregroundColor: appleButtonFg,
                     hasBorder: false,
                     isLoading: authViewModel.isAppleLoading,
                     action: authViewModel.signInWithApple
@@ -68,7 +71,7 @@ struct SignInView: View {
                 }
 
                 Button {
-                    authViewModel.signInAsGuest()
+                    showGuestSheet = true
                 } label: {
                     Text("Lanjutkan sebagai Tamu")
                         .font(.jakarta(15, weight: .medium))
@@ -77,7 +80,7 @@ struct SignInView: View {
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(Color.appPrimary.opacity(0.08))
+                .background(Color.appPrimary.opacity(guestButtonOpacity))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             .padding(.horizontal, Spacing.xl)
@@ -86,6 +89,68 @@ struct SignInView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBackground)
         .onAppear { authViewModel.errorMessage = nil }
+        .sheet(isPresented: $showGuestSheet) {
+            guestSheet
+        }
+    }
+
+    private var googleButtonBg: Color {
+        .white
+    }
+
+    private var googleButtonFg: Color {
+        colorScheme == .dark ? .black : .appText
+    }
+
+    private var appleButtonBg: Color {
+        colorScheme == .dark ? .white : .black
+    }
+
+    private var appleButtonFg: Color {
+        colorScheme == .dark ? .black : .white
+    }
+
+    private var guestButtonOpacity: Double {
+        colorScheme == .dark ? 0.15 : 0.08
+    }
+
+    private var guestSheet: some View {
+        VStack(spacing: Spacing.xl) {
+            VStack(spacing: Spacing.sm) {
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: 56))
+                    .foregroundColor(.appPrimary)
+
+                Text("Perkenalkan dirimu")
+                    .font(.jakarta(22, weight: .bold))
+                    .foregroundColor(.appText)
+
+                Text("Masukkan namamu untuk memulai")
+                    .font(.jakarta(14))
+                    .foregroundColor(.appTextSecondary)
+            }
+            .padding(.top, Spacing.xxl)
+
+            TextField("Nama kamu", text: $guestName)
+                .textFieldStyle(.plain)
+                .font(.jakarta(17))
+                .padding()
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, Spacing.xl)
+
+            PrimaryButton(
+                title: "Simpan",
+                isLoading: false,
+                action: {
+                    authViewModel.signInAsGuest(name: guestName)
+                }
+            )
+            .padding(.horizontal, Spacing.xl)
+
+            Spacer()
+        }
+        .interactiveDismissDisabled(guestName.trimmingCharacters(in: .whitespaces).isEmpty)
     }
 
     private func socialButton(
