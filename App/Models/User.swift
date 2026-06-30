@@ -2,12 +2,20 @@ import Foundation
 
 struct User: Identifiable, Codable {
     let id: String
+    let authUserId: String
     let email: String
-    let fullName: String
+    let displayName: String?
+    let defaultCurrencyCode: String
 
-    static let `default` = User(
-        id: "static-user-001",
-        email: "demo@sakuq.app",
-        fullName: "Demo User"
-    )
+    enum CodingKeys: String, CodingKey {
+        case id
+        case authUserId = "auth_user_id"
+        case email
+        case displayName = "display_name"
+        case defaultCurrencyCode = "default_currency_code"
+    }
+}
+
+extension User {
+    var fullName: String { displayName ?? "User" }
 }

@@ -82,6 +82,7 @@ struct SignInView: View {
                 .padding(.vertical, 14)
                 .background(Color.appPrimary.opacity(guestButtonOpacity))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .disabled(true)
             }
             .padding(.horizontal, Spacing.xl)
             .padding(.bottom, Spacing.xxl + 16)

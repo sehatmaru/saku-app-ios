@@ -1,5 +1,6 @@
 import SwiftUI
 import GoogleSignIn
+import Supabase
 
 enum AuthPresentationError: LocalizedError {
     case noWindowScene
@@ -21,12 +22,55 @@ final class AuthViewModel: ObservableObject {
     @Published var isGoogleLoading = false
     @Published var isAppleLoading = false
     @Published var errorMessage: String?
-    @Published var showSplash = false
+    @Published var showSplash = true
+
+    private var authListener: Any?
+
+    init() {
+        Task {
+            await setupAuthListener()
+            await restoreSession()
+        }
+    }
+
+    private func setupAuthListener() async {
+        authListener = await SupabaseSDK.client.auth.onAuthStateChange { [weak self] event, _ in
+            Task { @MainActor in
+                if event == .signedOut {
+                    self?.currentUser = nil
+                    self?.isAuthenticated = false
+                }
+            }
+        }
+    }
+
+    deinit {}
+
+    // MARK: - Session Restore
+
+    private func restoreSession() async {
+        do {
+            let session = try await SupabaseSDK.client.auth.session
+            let profile = try await SupabaseSDK.fetchProfile(authUserId: session.user.id)
+            currentUser = User(
+                id: profile.id.uuidString,
+                authUserId: session.user.id.uuidString,
+                email: session.user.email ?? "",
+                displayName: profile.displayName,
+                defaultCurrencyCode: profile.defaultCurrencyCode
+            )
+            isAuthenticated = true
+        } catch {
+            isAuthenticated = false
+        }
+    }
+
+    // MARK: - Google Sign-In
 
     func signInWithGoogle() {
         isGoogleLoading = true
         errorMessage = nil
-        Task { @MainActor in
+        Task {
             do {
                 guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                       let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
@@ -41,15 +85,21 @@ final class AuthViewModel: ObservableObject {
                 }
 
                 let accessToken = result.user.accessToken.tokenString
-                let authResult = try await SupabaseSDK.signInWithGoogle(
-                    idToken: idToken,
-                    accessToken: accessToken
+                let authResponse = try await SupabaseSDK.client.auth.signInWithIdToken(
+                    credentials: OpenIDConnectCredentials(
+                        provider: .google,
+                        idToken: idToken,
+                        accessToken: accessToken
+                    )
                 )
 
+                let profile = try await SupabaseSDK.fetchProfile(authUserId: authResponse.user.id)
                 currentUser = User(
-                    id: authResult.id,
-                    email: authResult.email,
-                    fullName: authResult.fullName
+                    id: profile.id.uuidString,
+                    authUserId: authResponse.user.id.uuidString,
+                    email: authResponse.user.email ?? "",
+                    displayName: profile.displayName,
+                    defaultCurrencyCode: profile.defaultCurrencyCode
                 )
                 isAuthenticated = true
             } catch {
@@ -59,23 +109,26 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Apple Sign-In
+
     func signInWithApple() {
         isAppleLoading = true
         errorMessage = nil
-        Task { @MainActor in
+        Task {
             do {
-                let authSession = try await SupabaseSDK.client.auth.signInWithOAuth(
+                let authResponse = try await SupabaseSDK.client.auth.signInWithOAuth(
                     provider: .apple
                 ) { session in
                     session.prefersEphemeralWebBrowserSession = true
                 }
-                let supaUser = authSession.user
+
+                let profile = try await SupabaseSDK.fetchProfile(authUserId: authResponse.user.id)
                 currentUser = User(
-                    id: supaUser.id.uuidString,
-                    email: supaUser.email ?? "",
-                    fullName: supaUser.userMetadata["full_name"]?.stringValue
-                        ?? supaUser.userMetadata["name"]?.stringValue
-                        ?? ""
+                    id: profile.id.uuidString,
+                    authUserId: authResponse.user.id.uuidString,
+                    email: authResponse.user.email ?? "",
+                    displayName: profile.displayName,
+                    defaultCurrencyCode: profile.defaultCurrencyCode
                 )
                 isAuthenticated = true
             } catch {
@@ -85,51 +138,27 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    func signInAsGuest(name: String) {
-        currentUser = User(id: UUID().uuidString, email: "guest@sakuq.app", fullName: name)
-        isAuthenticated = true
-    }
-
-    func login(email: String, password: String) {
-        isLoading = true
-        errorMessage = nil
-
-        do {
-            let user = try authService.login(email: email, password: password)
-            currentUser = user
-            isAuthenticated = true
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-
-        isLoading = false
-    }
-
-    func register(email: String, password: String, fullName: String) {
-        isLoading = true
-        errorMessage = nil
-
-        do {
-            let user = try authService.register(email: email, password: password, fullName: fullName)
-            currentUser = user
-            isAuthenticated = true
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-
-        isLoading = false
-    }
+    // MARK: - Logout
 
     func logout() {
-        currentUser = nil
-        isAuthenticated = false
+        Task {
+            try? await SupabaseSDK.client.auth.signOut()
+            currentUser = nil
+            isAuthenticated = false
+        }
     }
+
+    // MARK: - Guest (placeholder)
+
+    func signInAsGuest(name: String) {
+        // TODO: Implement guest sign-in
+    }
+
+    // MARK: - Splash
 
     func dismissSplash() {
         withAnimation(.easeInOut(duration: 0.5)) {
             showSplash = false
         }
     }
-
-    private let authService = AuthService.shared
 }

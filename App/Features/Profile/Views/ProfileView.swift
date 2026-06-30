@@ -40,7 +40,7 @@ struct ProfileView: View {
                         Image(systemName: "person.circle.fill")
                             .font(.jakarta(60))
                             .foregroundColor(.appPrimary)
-                        Text(authViewModel.currentUser?.fullName ?? "User")
+                        Text(authViewModel.currentUser?.displayName ?? "User")
                             .font(.jakarta(17, weight: .semibold))
                         Text(authViewModel.currentUser?.email ?? "")
                             .font(.jakarta(12))
