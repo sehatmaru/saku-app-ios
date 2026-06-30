@@ -1,10 +1,12 @@
 import SwiftUI
 
 struct BudgetListView: View {
+    @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel = BudgetListViewModel()
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var showUnsetBudget = false
     @State private var showOverallHistory = false
+    @State private var allExpenseTransactions: [Transaction] = []
 
     private var setItems: [BudgetListItem] {
         viewModel.budgetItems.filter { $0.budget != nil }
@@ -20,7 +22,7 @@ struct BudgetListView: View {
         let currentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
 
         let budgetCategoryIds = Set(viewModel.budgetItems.filter { $0.budget != nil }.map { $0.category.id })
-        let expenseTransactions = Transaction.sample.filter {
+        let expenseTransactions = allExpenseTransactions.filter {
             guard let catId = $0.categoryId else { return false }
             return budgetCategoryIds.contains(catId) && $0.type == .expense
         }
@@ -47,15 +49,32 @@ struct BudgetListView: View {
                         NavigationLink(destination: BudgetDetailView(
                             budget: item.budget!,
                             category: item.category,
+                            allTransactions: allExpenseTransactions.filter { $0.categoryId == item.category.id },
                             onAdjustBudget: { updated in
-                                viewModel.updateBudget(updated)
+                                Task {
+                                    let categoryId = updated.categoryId
+                                    let name = updated.name
+                                    let amount = updated.amount
+                                    let periodUnit = updated.periodUnit
+                                    let periodInterval = updated.periodInterval
+                                    let startDate = updated.startDate
+                                    let endDate = updated.endDate
+                                    let isActive = updated.isActive
+                                    guard let userId = authViewModel.currentUser?.id else { return }
+                                    await viewModel.updateBudget(id: updated.id, name: name, amount: amount, periodUnit: periodUnit, periodInterval: periodInterval, startDate: startDate, endDate: endDate, isActive: isActive)
+                                }
                             },
                             onUnsetBudget: {
-                                viewModel.removeBudget(categoryId: item.category.id)
+                                Task {
+                                    await viewModel.removeBudget(id: item.budget!.id)
+                                }
                             }
                         )) {
                             BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
-                                viewModel.addBudget(budget)
+                                Task {
+                                    guard let userId = authViewModel.currentUser?.id else { return }
+                                    await viewModel.addBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
+                                }
                             })
                         }
                         .buttonStyle(.plain)
@@ -69,11 +88,13 @@ struct BudgetListView: View {
             }
             .background(Color.appGroupedBackground)
             .navigationTitle("Budget")
-            .onAppear {
-                viewModel.loadBudgets()
+            .task {
+                guard let userId = authViewModel.currentUser?.id else { return }
+                await viewModel.loadBudgets(userId: userId)
+                allExpenseTransactions = (try? await SupabaseRepository.shared.fetchTransactions(userId: userId)) ?? []
             }
             .sheet(isPresented: $showOverallHistory) {
-                OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems)
+                OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: allExpenseTransactions)
             }
         }
     }
@@ -116,7 +137,10 @@ struct BudgetListView: View {
                 VStack(spacing: Spacing.lg) {
                     ForEach(unsetItems) { item in
                         BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
-                            viewModel.addBudget(budget)
+                            Task {
+                                guard let userId = authViewModel.currentUser?.id else { return }
+                                await viewModel.addBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
+                            }
                         })
                     }
                 }
@@ -292,9 +316,9 @@ struct BudgetCardView: View {
 
     private var unsetCard: some View {
         HStack(spacing: Spacing.md) {
-            Image(systemName: category.icon)
-                .font(.jakarta(17))
-                .foregroundColor(.appPrimary)
+                    Image(systemName: category.icon ?? "tag")
+                        .font(.jakarta(17))
+                        .foregroundColor(.appPrimary)
 
             Text(category.name)
                 .font(.jakarta(15, weight: .medium))
@@ -328,7 +352,7 @@ struct BudgetCardView: View {
                         Circle()
                             .fill(Color.appPrimary.opacity(0.12))
                             .frame(width: 64, height: 64)
-                        Image(systemName: category.icon)
+                        Image(systemName: category.icon ?? "tag")
                             .font(.jakarta(26, weight: .medium))
                             .foregroundColor(.appPrimary)
                     }
@@ -385,7 +409,7 @@ struct BudgetCardView: View {
     private func setCard(_ budget: Budget) -> some View {
         VStack(spacing: Spacing.sm) {
             HStack {
-                Image(systemName: category.icon)
+                Image(systemName: category.icon ?? "tag")
                     .font(.jakarta(17))
                     .foregroundColor(budget.spendingStatus == .overbudget ? .appError : budget.spendingStatus == .warning ? .appWarning : .appPrimary)
                 Text(category.name)
@@ -446,10 +470,17 @@ struct BudgetCardView: View {
 
     private func save() {
         guard let amount = Double(amountDigits), amount > 0 else { return }
+        let startDate = ISO8601DateFormatter().string(from: Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!)
         let budget = Budget(
             id: UUID().uuidString,
             categoryId: category.id,
+            name: category.name,
             amount: amount,
+            periodUnit: "monthly",
+            periodInterval: 1,
+            startDate: startDate,
+            endDate: nil,
+            isActive: true,
             spent: 0
         )
         onSetBudget?(budget)
@@ -485,6 +516,7 @@ struct OverallBudgetHistoryView: View {
     let totalBudget: Double
     let monthlyHistory: [OverallHistoryItem]
     let budgetItems: [BudgetListItem]
+    let allExpenseTransactions: [Transaction]
 
     @Environment(\.dismiss) private var dismiss
     @State private var expandedYears: Set<Int> = []
@@ -543,7 +575,7 @@ struct OverallBudgetHistoryView: View {
                             if expandedYears.contains(group.year) {
                                 VStack(spacing: 0) {
                                     ForEach(Array(group.items.enumerated()), id: \.element.id) { index, history in
-                                        NavigationLink(destination: OverallMonthDetailView(totalBudget: totalBudget, month: history.month, budgetItems: budgetItems)) {
+                                        NavigationLink(destination: OverallMonthDetailView(totalBudget: totalBudget, month: history.month, budgetItems: budgetItems, allExpenseTransactions: allExpenseTransactions)) {
                                             historyRow(history)
                                         }
                                         .buttonStyle(.plain)
@@ -637,6 +669,7 @@ struct OverallMonthDetailView: View {
     let totalBudget: Double
     let month: Date
     let budgetItems: [BudgetListItem]
+    let allExpenseTransactions: [Transaction]
 
     private var monthLabel: String {
         let formatter = DateFormatter()
@@ -649,8 +682,8 @@ struct OverallMonthDetailView: View {
         let calendar = Calendar.current
         guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: month)),
               let nextMonth = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return [] }
-        return Transaction.sample
-            .filter { $0.type == .expense && $0.date >= monthStart && $0.date < nextMonth }
+        return allExpenseTransactions
+            .filter { $0.date >= monthStart && $0.date < nextMonth }
             .sorted { $0.date > $1.date }
     }
 
@@ -742,7 +775,7 @@ struct OverallMonthDetailView: View {
 
                 VStack(spacing: Spacing.sm) {
                     ForEach(budgetItems.filter { $0.budget != nil }) { item in
-                        NavigationLink(destination: BudgetDetailView(budget: item.budget!, category: item.category, showHistoryButton: false)) {
+                        NavigationLink(destination: BudgetDetailView(budget: item.budget!, category: item.category, allTransactions: [], showHistoryButton: false)) {
                             budgetCardContent(item.budget!, item.category)
                         }
                         .buttonStyle(.plain)
@@ -763,7 +796,7 @@ struct OverallMonthDetailView: View {
     private func budgetCardContent(_ budget: Budget, _ category: Category) -> some View {
         VStack(spacing: Spacing.sm) {
             HStack {
-                Image(systemName: category.icon)
+                Image(systemName: category.icon ?? "tag")
                     .font(.jakarta(17))
                     .foregroundColor(budget.spendingStatus == .overbudget ? .appError : budget.spendingStatus == .warning ? .appWarning : .appPrimary)
                 Text(category.name)

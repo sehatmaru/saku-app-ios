@@ -3,12 +3,14 @@ import SwiftUI
 struct AdvancedSearchView: View {
     @Binding var filter: TransactionFilter
     @Environment(\.dismiss) private var dismiss
+    let categories: [Category]
 
     @State private var draft: TransactionFilter
     @State private var showAllExpense = false
 
-    init(filter: Binding<TransactionFilter>) {
+    init(filter: Binding<TransactionFilter>, categories: [Category]) {
         self._filter = filter
+        self.categories = categories
         self._draft = State(initialValue: filter.wrappedValue)
     }
 
@@ -104,6 +106,10 @@ struct AdvancedSearchView: View {
         }
     }
 
+    private var expenseCategories: [Category] {
+        categories.filter { $0.type == .expense }
+    }
+
     // MARK: Expense Categories
 
     private var expenseCategorySection: some View {
@@ -111,8 +117,8 @@ struct AdvancedSearchView: View {
             sectionHeader("Kategori Pengeluaran", icon: "arrow.up")
 
             let items = showAllExpense
-                ? Category.expenseCategories
-                : Array(Category.expenseCategories.prefix(4))
+                ? expenseCategories
+                : Array(expenseCategories.prefix(4))
 
             LazyVGrid(
                 columns: Array(repeating: .init(.flexible(), spacing: Spacing.sm), count: 2),
@@ -132,12 +138,12 @@ struct AdvancedSearchView: View {
                 }
             }
 
-            if Category.expenseCategories.count > 4 {
+            if expenseCategories.count > 4 {
                 Button {
                     withAnimation { showAllExpense.toggle() }
                 } label: {
                     HStack(spacing: Spacing.xs) {
-                        Text(showAllExpense ? "Ringkas" : "Lihat Semua (\(Category.expenseCategories.count))")
+                        Text(showAllExpense ? "Ringkas" : "Lihat Semua (\(expenseCategories.count))")
                             .font(.jakarta(13, weight: .medium))
                         Image(systemName: "chevron.down")
                             .font(.jakarta(10))
@@ -155,7 +161,7 @@ struct AdvancedSearchView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             sectionHeader("Kategori Pemasukan", icon: "arrow.down")
 
-            let incomeCategories = Category.sample.filter { $0.type == .income }
+            let incomeCategories = categories.filter { $0.type == .income }
             if incomeCategories.isEmpty {
                 Text("Tidak ada kategori pemasukan")
                     .font(.jakarta(13))
@@ -375,7 +381,7 @@ struct AdvancedSearchView: View {
     private func categoryChip(category: Category, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: Spacing.sm) {
-                Image(systemName: category.icon)
+                Image(systemName: category.icon ?? "tag")
                     .font(.jakarta(14))
 
                 Text(category.name)

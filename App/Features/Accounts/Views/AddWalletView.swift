@@ -11,7 +11,7 @@ struct AddWalletView: View {
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
 
-    let onSave: (Account) -> Void
+    let onSave: (String, Account.AccountType, Double, String?) async -> Void
 
     var body: some View {
         NavigationStack {
@@ -151,16 +151,14 @@ struct AddWalletView: View {
             return
         }
 
-        let account = Account(
-            id: UUID().uuidString,
-            name: name.trimmingCharacters(in: .whitespaces),
-            type: category,
-            balance: balance,
-            isActive: true,
-            icon: selectedIcon?.id ?? "cash"
-        )
-        onSave(account)
-        dismiss()
+        Task {
+            await onSave(
+                name.trimmingCharacters(in: .whitespaces),
+                category,
+                balance,
+                selectedIcon?.id ?? "cash"
+            )
+            dismiss()
+        }
     }
 }
-

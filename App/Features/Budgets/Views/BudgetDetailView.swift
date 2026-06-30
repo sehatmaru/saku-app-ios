@@ -3,6 +3,7 @@ import SwiftUI
 struct BudgetDetailView: View {
     let budget: Budget
     let category: Category
+    let allTransactions: [Transaction]
     var showHistoryButton: Bool = true
     var onAdjustBudget: ((Budget) -> Void)?
     var onUnsetBudget: (() -> Void)?
@@ -24,12 +25,6 @@ struct BudgetDetailView: View {
     }
 
     @State private var adjustScope: AdjustScope = .thisMonth
-
-    private var allTransactions: [Transaction] {
-        Transaction.sample
-            .filter { $0.categoryId == category.id && $0.type == .expense }
-            .sorted { $0.date > $1.date }
-    }
 
     private var transactions: [Transaction] {
         let calendar = Calendar.current
@@ -89,7 +84,7 @@ struct BudgetDetailView: View {
         .navigationTitle(category.name)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showHistory) {
-            BudgetHistoryView(budget: budget, category: category, monthlyHistory: monthlyHistory)
+            BudgetHistoryView(budget: budget, category: category, monthlyHistory: monthlyHistory, allTransactions: allTransactions)
         }
         .sheet(isPresented: $showAdjustBudget) {
             adjustBudgetSheet
@@ -102,7 +97,13 @@ struct BudgetDetailView: View {
                 let updated = Budget(
                     id: budget.id,
                     categoryId: budget.categoryId,
+                    name: budget.name,
                     amount: pendingAmount,
+                    periodUnit: budget.periodUnit,
+                    periodInterval: budget.periodInterval,
+                    startDate: budget.startDate,
+                    endDate: budget.endDate,
+                    isActive: budget.isActive,
                     spent: budget.spent
                 )
                 onAdjustBudget?(updated)
@@ -129,7 +130,7 @@ struct BudgetDetailView: View {
                     Circle()
                         .fill(Color.appPrimary.opacity(0.12))
                         .frame(width: 40, height: 40)
-                    Image(systemName: category.icon)
+                    Image(systemName: category.icon ?? "tag")
                         .font(.jakarta(17, weight: .medium))
                         .foregroundColor(.appPrimary)
                 }
@@ -533,6 +534,7 @@ fileprivate struct BudgetHistoryView: View {
     let budget: Budget
     let category: Category
     let monthlyHistory: [MonthlySpending]
+    let allTransactions: [Transaction]
 
     @Environment(\.dismiss) private var dismiss
     @State private var expandedYears: Set<Int> = []
@@ -591,7 +593,7 @@ fileprivate struct BudgetHistoryView: View {
                             if expandedYears.contains(group.year) {
                                 VStack(spacing: 0) {
                                     ForEach(Array(group.items.enumerated()), id: \.element.id) { index, history in
-                                        NavigationLink(destination: BudgetMonthDetailView(budget: budget, category: category, month: history.month)) {
+                                        NavigationLink(destination: BudgetMonthDetailView(budget: budget, category: category, month: history.month, allTransactions: allTransactions)) {
                                             historyRow(history)
                                         }
                                         .buttonStyle(.plain)
@@ -684,6 +686,7 @@ fileprivate struct BudgetMonthDetailView: View {
     let budget: Budget
     let category: Category
     let month: Date
+    let allTransactions: [Transaction]
 
     private var monthLabel: String {
         let formatter = DateFormatter()
@@ -696,8 +699,8 @@ fileprivate struct BudgetMonthDetailView: View {
         let calendar = Calendar.current
         guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: month)),
               let nextMonth = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return [] }
-        return Transaction.sample
-            .filter { $0.categoryId == category.id && $0.type == .expense && $0.date >= monthStart && $0.date < nextMonth }
+        return allTransactions
+            .filter { $0.date >= monthStart && $0.date < nextMonth }
             .sorted { $0.date > $1.date }
     }
 
@@ -730,7 +733,7 @@ fileprivate struct BudgetMonthDetailView: View {
                             Circle()
                                 .fill(Color.appPrimary.opacity(0.12))
                                 .frame(width: 40, height: 40)
-                            Image(systemName: category.icon)
+                            Image(systemName: category.icon ?? "tag")
                                 .font(.jakarta(17, weight: .medium))
                                 .foregroundColor(.appPrimary)
                         }

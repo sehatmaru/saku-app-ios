@@ -2,9 +2,10 @@ import SwiftUI
 
 struct WalletDetailView: View {
     let account: Account
-    let onSave: ((Account) -> Void)?
-    let onDelete: ((String) -> Void)?
-    let onToggleArchive: ((String) -> Void)?
+    let transactions: [Transaction]
+    let onSave: ((String, String, Account.AccountType, Double, String?, Bool) async -> Void)?
+    let onDelete: ((String) async -> Void)?
+    let onToggleArchive: ((String, Bool) async -> Void)?
 
     @State private var balanceText = ""
     @State private var balanceDigits = ""
@@ -23,8 +24,12 @@ struct WalletDetailView: View {
 
     private let initialDigits: String
 
-    init(account: Account, onSave: ((Account) -> Void)? = nil, onDelete: ((String) -> Void)? = nil, onToggleArchive: ((String) -> Void)? = nil) {
+    init(account: Account, transactions: [Transaction] = [],
+         onSave: ((String, String, Account.AccountType, Double, String?, Bool) async -> Void)? = nil,
+         onDelete: ((String) async -> Void)? = nil,
+         onToggleArchive: ((String, Bool) async -> Void)? = nil) {
         self.account = account
+        self.transactions = transactions
         self.onSave = onSave
         self.onDelete = onDelete
         self.onToggleArchive = onToggleArchive
@@ -33,7 +38,7 @@ struct WalletDetailView: View {
         _balanceText = State(initialValue: digits.formattedWithThousandSeparator)
         _balanceDigits = State(initialValue: digits)
         _editedName = State(initialValue: account.name)
-        _editedIconId = State(initialValue: account.icon)
+        _editedIconId = State(initialValue: account.icon ?? "")
     }
 
     private var walletIcon: WalletIcon? {
@@ -46,12 +51,6 @@ struct WalletDetailView: View {
             editedIconId != account.icon ||
             balanceDigits != String(Int(account.balance))
         )
-    }
-
-    private var transactions: [Transaction] {
-        Transaction.sample
-            .filter { $0.accountId == account.id }
-            .sorted { $0.date > $1.date }
     }
 
     private var thisMonthTransactions: [Transaction] {
@@ -175,8 +174,10 @@ struct WalletDetailView: View {
         .alert("Arsipkan Dompet?", isPresented: $showArchiveAlert) {
             Button("Batal", role: .cancel) {}
             Button("Arsipkan") {
-                onToggleArchive?(account.id)
-                dismiss()
+                Task {
+                    await onToggleArchive?(account.id, true)
+                    dismiss()
+                }
             }
         } message: {
             Text("\(account.name) akan diarsipkan dan tidak bisa digunakan untuk transaksi baru.")
@@ -184,8 +185,10 @@ struct WalletDetailView: View {
         .alert("Aktifkan Dompet?", isPresented: $showUnarchiveAlert) {
             Button("Batal", role: .cancel) {}
             Button("Aktifkan") {
-                onToggleArchive?(account.id)
-                dismiss()
+                Task {
+                    await onToggleArchive?(account.id, false)
+                    dismiss()
+                }
             }
         } message: {
             Text("\(account.name) akan diaktifkan kembali dan bisa digunakan untuk transaksi.")
@@ -193,8 +196,10 @@ struct WalletDetailView: View {
         .alert("Hapus Dompet?", isPresented: $showDeleteAlert) {
             Button("Batal", role: .cancel) {}
             Button("Hapus", role: .destructive) {
-                onDelete?(account.id)
-                dismiss()
+                Task {
+                    await onDelete?(account.id)
+                    dismiss()
+                }
             }
         } message: {
             Text("\(account.name) dan seluruh transaksinya akan dihapus permanen.")
@@ -391,16 +396,10 @@ struct WalletDetailView: View {
 
     private func confirmChanges() {
         guard let balance = Double(balanceDigits) else { return }
-        let updated = Account(
-            id: account.id,
-            name: editedName.trimmingCharacters(in: .whitespaces),
-            type: account.type,
-            balance: balance,
-            isActive: account.isActive,
-            icon: editedIconId
-        )
-        hasConfirmed = true
-        onSave?(updated)
+        Task {
+            await onSave?(account.id, editedName.trimmingCharacters(in: .whitespaces), account.type, balance, editedIconId, account.isArchived)
+            hasConfirmed = true
+        }
     }
 
     private func abbreviatedAmount(_ amount: Double) -> String {
@@ -488,4 +487,3 @@ struct WalletDetailView: View {
         .padding(.vertical, Spacing.sm)
     }
 }
-

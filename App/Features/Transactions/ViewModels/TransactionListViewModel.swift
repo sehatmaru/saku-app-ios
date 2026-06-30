@@ -10,18 +10,30 @@ struct TransactionSection: Identifiable {
 @MainActor
 final class TransactionListViewModel: ObservableObject {
     @Published var allTransactions: [Transaction] = []
+    @Published var categories: [Category] = []
+    @Published var accounts: [Account] = []
     @Published var thisMonthIncome: Double = 0
     @Published var thisMonthExpense: Double = 0
+    @Published var isLoading = false
 
     var thisMonthBalance: Double { thisMonthIncome - thisMonthExpense }
 
-    init() {
-        loadTransactions()
-    }
-
-    func loadTransactions() {
-        allTransactions = Transaction.sample.sorted { $0.date > $1.date }
-        calculateThisMonthSummary()
+    func loadTransactions(userId: String) async {
+        isLoading = true
+        do {
+            async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
+            async let categoriesTask = SupabaseRepository.shared.fetchCategories()
+            async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
+            allTransactions = try await transactionsTask
+            categories = try await categoriesTask
+            accounts = try await accountsTask
+            calculateThisMonthSummary()
+        } catch {
+            allTransactions = []
+            categories = []
+            accounts = []
+        }
+        isLoading = false
     }
 
     private func calculateThisMonthSummary() {

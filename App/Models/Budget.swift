@@ -9,8 +9,14 @@ enum SpendingStatus: Comparable {
 struct Budget: Identifiable, Codable {
     let id: String
     let categoryId: String
+    let name: String
     let amount: Double
-    let spent: Double
+    let periodUnit: String
+    let periodInterval: Int
+    let startDate: String
+    let endDate: String?
+    let isActive: Bool
+    var spent: Double = 0
 
     var remaining: Double { amount - spent }
     var progress: Double { amount > 0 ? spent / amount : 0 }
@@ -41,16 +47,14 @@ struct Budget: Identifiable, Codable {
         if dailyRemaining < idealDailyBudget * 0.5 { return .warning }
         return .normal
     }
-}
 
-extension Budget {
-    static let sample: [Budget] = [
-        Budget(id: "bud-1", categoryId: "cat-exp-1", amount: 1_500_000, spent: 800_000),
-        Budget(id: "bud-2", categoryId: "cat-exp-7", amount: 500_000, spent: 20_000),
-        Budget(id: "bud-3", categoryId: "cat-exp-6", amount: 2_000_000, spent: 400_000),
-        Budget(id: "bud-4", categoryId: "cat-exp-5", amount: 500_000, spent: 80_000),
-        Budget(id: "bud-5", categoryId: "cat-exp-4", amount: 1_000_000, spent: 1_450_000),
-        Budget(id: "bud-6", categoryId: "cat-exp-8", amount: 300_000, spent: 20_000),
-        Budget(id: "bud-7", categoryId: "cat-exp-2", amount: 1_000_000, spent: 950_000),
-    ]
+    enum CodingKeys: String, CodingKey {
+        case id, name, amount
+        case categoryId = "category_id"
+        case periodUnit = "period_unit"
+        case periodInterval = "period_interval"
+        case startDate = "start_date"
+        case endDate = "end_date"
+        case isActive = "is_active"
+    }
 }

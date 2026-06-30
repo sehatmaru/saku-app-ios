@@ -1,10 +1,12 @@
 import SwiftUI
 
 struct AccountListView: View {
+    @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel = AccountListViewModel()
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var showAddWallet = false
     @State private var showArchived = false
+    @State private var accountTransactions: [String: [Transaction]] = [:]
 
     private var activeAccounts: [Account] {
         viewModel.accounts.filter { $0.isActive }
@@ -23,14 +25,15 @@ struct AccountListView: View {
                     ForEach(activeAccounts) { account in
                         NavigationLink(destination: WalletDetailView(
                             account: account,
-                            onSave: { updated in
-                                viewModel.updateAccount(updated)
+                            transactions: accountTransactions[account.id] ?? [],
+                            onSave: { id, name, type, balance, icon, isArchived in
+                                await viewModel.updateAccount(id: id, name: name, type: type, openingBalance: balance, icon: icon, isArchived: isArchived)
                             },
                             onDelete: { id in
-                                viewModel.removeAccount(id)
+                                await viewModel.removeAccount(id: id)
                             },
-                            onToggleArchive: { id in
-                                viewModel.toggleAccountArchive(id)
+                            onToggleArchive: { id, archived in
+                                await viewModel.toggleAccountArchive(id: id)
                             }
                         )) {
                             AccountCard(account: account)
@@ -46,15 +49,30 @@ struct AccountListView: View {
             }
             .background(Color.appGroupedBackground)
             .navigationTitle("Dompet")
-            .onAppear {
-                viewModel.loadAccounts()
+            .task {
+                guard let userId = authViewModel.currentUser?.id else { return }
+                await viewModel.loadAccounts(userId: userId)
+                await loadAccountTransactions(userId: userId)
             }
             .sheet(isPresented: $showAddWallet) {
-                AddWalletView { account in
-                    viewModel.addAccount(account)
+                if let userId = authViewModel.currentUser?.id {
+                    AddWalletView { name, type, balance, icon in
+                        await viewModel.addAccount(name: name, type: type, openingBalance: balance, icon: icon, userId: userId)
+                        await loadAccountTransactions(userId: userId)
+                    }
                 }
             }
         }
+    }
+
+    private func loadAccountTransactions(userId: String) async {
+        var result: [String: [Transaction]] = [:]
+        for account in viewModel.accounts {
+            if let txs = try? await SupabaseRepository.shared.fetchTransactions(accountId: account.id, userId: userId) {
+                result[account.id] = txs
+            }
+        }
+        accountTransactions = result
     }
 
     private var archiveSection: some View {
@@ -96,14 +114,15 @@ struct AccountListView: View {
                     ForEach(archivedAccounts) { account in
                         NavigationLink(destination: WalletDetailView(
                             account: account,
-                            onSave: { updated in
-                                viewModel.updateAccount(updated)
+                            transactions: accountTransactions[account.id] ?? [],
+                            onSave: { id, name, type, balance, icon, isArchived in
+                                await viewModel.updateAccount(id: id, name: name, type: type, openingBalance: balance, icon: icon, isArchived: isArchived)
                             },
                             onDelete: { id in
-                                viewModel.removeAccount(id)
+                                await viewModel.removeAccount(id: id)
                             },
-                            onToggleArchive: { id in
-                                viewModel.toggleAccountArchive(id)
+                            onToggleArchive: { id, archived in
+                                await viewModel.toggleAccountArchive(id: id)
                             }
                         )) {
                             AccountCard(account: account)

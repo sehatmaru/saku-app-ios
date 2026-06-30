@@ -13,10 +13,12 @@ final class DashboardViewModel: ObservableObject {
     @Published var categorySpending: [(Category, amount: Double)] = []
     @Published var totalBudget: Double = 0
     @Published var totalSpent: Double = 0
+    @Published var currentMonthTransactionCount = 0
+    @Published var accounts: [Account] = []
+    @Published var categories: [Category] = []
+    @Published var isLoading = false
 
     var totalRemaining: Double { totalBudget - totalSpent }
-
-    @Published var currentMonthTransactionCount = 0
 
     var averageDailySpending: Double {
         let now = Date()
@@ -137,52 +139,60 @@ final class DashboardViewModel: ObservableObject {
         return tips
     }
 
-    // MARK: Financial Health Score
-
     @Published var healthScore: Int = 0
     @Published var healthScoreLabel: String = ""
     @Published var cashflowScore: Int = 0
     @Published var budgetScore: Int = 0
     @Published var diversityScore: Int = 0
 
-    private let categories = Category.sample
     private let calendar = Calendar.current
 
-    func loadDashboard() {
-        let transactions = Transaction.sample
-        let budgetList = Budget.sample
-        let accountsList = Account.sample
+    func loadDashboard(userId: String) async {
+        isLoading = true
+        do {
+            async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
+            async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
+            async let categoriesTask = SupabaseRepository.shared.fetchCategories()
+            async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)
 
-        balance = accountsList.reduce(0) { $0 + $1.balance }
+            let (fetchedAccounts, transactions, fetchedCategories, budgets) = try await (accountsTask, transactionsTask, categoriesTask, budgetsTask)
+            accounts = fetchedAccounts
+            categories = fetchedCategories
 
-        let thisMonthTransactions = transactions.filter { isCurrentMonth($0.date) }
-        currentMonthTransactionCount = thisMonthTransactions.count
-        totalIncome = thisMonthTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
-        totalExpense = thisMonthTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
-        netCashflow = totalIncome - totalExpense
+            balance = fetchedAccounts.reduce(0) { $0 + $1.balance }
 
-        openingBalance = balance - netCashflow
+            let thisMonthTransactions = transactions.filter { isCurrentMonth($0.date) }
+            currentMonthTransactionCount = thisMonthTransactions.count
+            totalIncome = thisMonthTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+            totalExpense = thisMonthTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+            netCashflow = totalIncome - totalExpense
 
-        recentTransactions = transactions.sorted { $0.date > $1.date }
+            openingBalance = balance - netCashflow
 
-        totalBudget = budgetList.reduce(0) { $0 + $1.amount }
-        totalSpent = budgetList.reduce(0) { $0 + $1.spent }
+            recentTransactions = Array(transactions.prefix(10))
 
-        var categorySpendingMap: [String: Double] = [:]
-        for tx in thisMonthTransactions where tx.type == .expense {
-            guard let catId = tx.categoryId else { continue }
-            categorySpendingMap[catId, default: 0] += tx.amount
-        }
+            totalBudget = budgets.reduce(0) { $0 + $1.amount }
+            totalSpent = budgets.reduce(0) { $0 + $1.spent }
 
-        categorySpending = categorySpendingMap
-            .sorted { $0.value > $1.value }
-            .compactMap { id, amount in
-                guard let cat = categories.first(where: { $0.id == id }) else { return nil }
-                return (cat, amount)
+            var categorySpendingMap: [String: Double] = [:]
+            for tx in thisMonthTransactions where tx.type == .expense {
+                guard let catId = tx.categoryId else { continue }
+                categorySpendingMap[catId, default: 0] += tx.amount
             }
 
-        monthlyCashflow = computeMonthlyCashflow(transactions: transactions, months: 5)
-        computeHealthScore()
+            categorySpending = categorySpendingMap
+                .sorted { $0.value > $1.value }
+                .compactMap { id, amount in
+                    guard let cat = categories.first(where: { $0.id == id }) else { return nil }
+                    return (cat, amount)
+                }
+
+            monthlyCashflow = computeMonthlyCashflow(transactions: transactions, months: 5)
+            computeHealthScore()
+        } catch {
+            // silently fail — data stays at defaults
+        }
+        isLoading = false
     }
 
     private func computeHealthScore() {

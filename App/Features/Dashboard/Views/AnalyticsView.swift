@@ -186,7 +186,7 @@ struct AnalyticsView: View {
             ForEach(viewModel.categorySpending, id: \.0.id) { cat, amount in
                 VStack(spacing: 4) {
                     HStack {
-                        Image(systemName: cat.icon)
+                        Image(systemName: cat.icon ?? "tag")
                             .font(.jakarta(12))
                             .foregroundColor(.appPrimary)
                             .frame(width: 24)

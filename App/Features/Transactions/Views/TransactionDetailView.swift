@@ -2,6 +2,9 @@ import SwiftUI
 
 struct TransactionDetailView: View {
     let transaction: Transaction
+    let categories: [Category]
+    let accounts: [Account]
+    let onUpdate: ((Transaction) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @State private var amountText = ""
@@ -23,8 +26,11 @@ struct TransactionDetailView: View {
 
     private let initialDigits: String
 
-    init(transaction: Transaction) {
+    init(transaction: Transaction, categories: [Category], accounts: [Account], onUpdate: ((Transaction) -> Void)? = nil) {
         self.transaction = transaction
+        self.categories = categories
+        self.accounts = accounts
+        self.onUpdate = onUpdate
         let digits = String(Int(transaction.amount))
         initialDigits = digits
         _amountText = State(initialValue: digits.formattedWithThousandSeparator)
@@ -37,11 +43,11 @@ struct TransactionDetailView: View {
 
     private var selectedCategory: Category? {
         guard let id = selectedCategoryId else { return nil }
-        return Category.sample.first { $0.id == id }
+        return categories.first { $0.id == id }
     }
 
     private var selectedAccount: Account? {
-        Account.sample.first { $0.id == selectedAccountId }
+        accounts.first { $0.id == selectedAccountId }
     }
 
     private var walletIcon: WalletIcon? {
@@ -49,12 +55,12 @@ struct TransactionDetailView: View {
     }
 
     private var activeAccounts: [Account] {
-        Account.sample.filter { $0.isActive }
+        accounts.filter { $0.isActive }
     }
 
     private var filteredCategories: [Category] {
         let target: CategoryType = transaction.type == .income ? .income : .expense
-        return Category.sample.filter { $0.type == target }
+        return categories.filter { $0.type == target }
     }
 
     private var typeColor: Color {
@@ -112,7 +118,10 @@ struct TransactionDetailView: View {
         .alert("Hapus Transaksi?", isPresented: $showDeleteConfirmation) {
             Button("Batal", role: .cancel) {}
             Button("Hapus", role: .destructive) {
-                dismiss()
+                Task {
+                    try? await SupabaseRepository.shared.softDeleteTransaction(id: transaction.id)
+                    dismiss()
+                }
             }
         } message: {
             Text("Transaksi akan dihapus permanen.")
@@ -142,6 +151,30 @@ struct TransactionDetailView: View {
     }
 
     private func saveChanges() {
+        let amount = Double(amountDigits) ?? transaction.amount
+        let updated = Transaction(
+            id: transaction.id,
+            accountId: selectedAccountId,
+            categoryId: selectedCategoryId,
+            amount: amount,
+            type: transaction.type,
+            description: transaction.description,
+            note: editedTitle.isEmpty ? nil : editedTitle,
+            date: selectedDate
+        )
+        Task {
+            try? await SupabaseRepository.shared.updateTransaction(
+                id: updated.id,
+                accountId: updated.accountId,
+                categoryId: updated.categoryId,
+                amount: updated.amount,
+                type: updated.type,
+                description: updated.description,
+                note: updated.note,
+                date: updated.date
+            )
+            onUpdate?(updated)
+        }
         withAnimation {
             showToast = true
         }
@@ -506,7 +539,7 @@ struct TransactionDetailView: View {
                                     .fill(typeColor.opacity(0.15))
                                     .frame(width: 44, height: 44)
                                     .overlay {
-                                        Image(systemName: cat.icon)
+                                        Image(systemName: cat.icon ?? "tag")
                                             .font(.jakarta(16))
                                             .foregroundColor(typeColor)
                                     }

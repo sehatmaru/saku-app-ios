@@ -37,11 +37,26 @@ struct DashboardView: View {
         }
         .tint(.appPrimary)
         .onAppear {
-            viewModel.loadDashboard()
             isBalanceVisible = isBalanceVisibleStorage
+            if let userId = authViewModel.currentUser?.id {
+                Task {
+                    await viewModel.loadDashboard(userId: userId)
+                }
+            }
         }
         .sheet(isPresented: $showAddSheet) {
-            AddTransactionView()
+            if let userId = authViewModel.currentUser?.id {
+                AddTransactionView(
+                    categories: viewModel.categories,
+                    accounts: viewModel.accounts,
+                    userId: userId,
+                    onSave: {
+                        Task {
+                            await viewModel.loadDashboard(userId: userId)
+                        }
+                    }
+                )
+            }
         }
     }
 
@@ -547,7 +562,7 @@ struct DashboardView: View {
 
             ForEach(viewModel.categorySpending.prefix(4), id: \.0.id) { cat, amount in
                 HStack(spacing: Spacing.sm) {
-                    Image(systemName: cat.icon)
+                    Image(systemName: cat.icon ?? "tag")
                         .font(.jakarta(11))
                         .foregroundColor(.appPrimary)
                         .frame(width: 20)

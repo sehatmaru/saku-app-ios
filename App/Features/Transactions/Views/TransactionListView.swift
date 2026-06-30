@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TransactionListView: View {
+    @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel = TransactionListViewModel()
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var filter = TransactionFilter()
@@ -56,6 +57,10 @@ struct TransactionListView: View {
                         expandedMonths = Set(sections.prefix(2).map { $0.id })
                     }
                 }
+                .task {
+                    guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }
+                    await viewModel.loadTransactions(userId: userId)
+                }
                 .overlay(alignment: .bottomTrailing) {
                     if showBackToTop {
                         Button {
@@ -78,7 +83,7 @@ struct TransactionListView: View {
                 }
                 .animation(.easeInOut(duration: 0.2), value: showBackToTop)
                 .sheet(isPresented: $showAdvancedSearch) {
-                    AdvancedSearchView(filter: $filter)
+                    AdvancedSearchView(filter: $filter, categories: viewModel.categories)
                         .presentationDetents([.medium, .large])
                 }
             }
@@ -368,7 +373,7 @@ struct TransactionListView: View {
                     if expandedMonths.contains(section.id) {
                         LazyVStack(spacing: 0) {
                             ForEach(Array(section.transactions.enumerated()), id: \.element.id) { index, transaction in
-                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                NavigationLink(destination: TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts)) {
                                     transactionRow(transaction)
                                 }
                                 .buttonStyle(.plain)
@@ -475,7 +480,7 @@ struct TransactionListView: View {
             case .transfer: return "arrow.left.arrow.right"
             }
         }
-        let category = Category.sample.first { $0.id == categoryId }
+        let category = viewModel.categories.first { $0.id == categoryId }
         return category?.icon ?? (transaction.type == .income ? "arrow.down" : "arrow.up")
     }
 
