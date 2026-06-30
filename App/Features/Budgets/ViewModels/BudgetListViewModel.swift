@@ -13,6 +13,11 @@ final class BudgetListViewModel: ObservableObject {
     @Published var totalBudget: Double = 0
     @Published var totalSpent: Double = 0
     @Published var isLoading = false
+    @Published var isRefreshing = false
+    @Published var hasLoadedOnce = false
+    @Published var allExpenseTransactions: [Transaction] = []
+
+    private var loadedUserId: String?
 
     var totalRemaining: Double { totalBudget - totalSpent }
 
@@ -35,16 +40,46 @@ final class BudgetListViewModel: ObservableObject {
         categories.filter { $0.type == .expense }
     }
 
-    func loadBudgets(userId: String) async {
-        isLoading = true
+    func loadBudgets(userId: String, forceRefresh: Bool = false) async {
+        guard !isLoading, !isRefreshing else { return }
+
+        if !forceRefresh, hasLoadedOnce, loadedUserId == userId {
+            return
+        }
+
+        if !forceRefresh, let cached = AppDataCache.shared.budgetState(for: userId) {
+            loadedUserId = userId
+            hasLoadedOnce = true
+            budgets = cached.budgets
+            categories = cached.categories
+            allExpenseTransactions = cached.allExpenseTransactions
+            recalculate()
+            return
+        }
+
+        if forceRefresh, hasLoadedOnce {
+            isRefreshing = true
+        } else {
+            isLoading = true
+        }
+        defer {
+            isLoading = false
+            isRefreshing = false
+        }
+
         do {
             async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)
             async let categoriesTask = SupabaseRepository.shared.fetchCategories()
-            budgets = try await budgetsTask
-            categories = try await categoriesTask
+            async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
+
+            let (fetchedBudgets, fetchedCategories, fetchedTransactions) = try await (
+                budgetsTask,
+                categoriesTask,
+                transactionsTask
+            )
 
             var budgetsWithSpent: [Budget] = []
-            for var budget in budgets {
+            for var budget in fetchedBudgets {
                 let spent = try? await SupabaseRepository.shared.fetchBudgetSpent(
                     categoryId: budget.categoryId,
                     userId: userId,
@@ -54,13 +89,22 @@ final class BudgetListViewModel: ObservableObject {
                 budget.spent = spent ?? 0
                 budgetsWithSpent.append(budget)
             }
+
             budgets = budgetsWithSpent
+            categories = fetchedCategories
+            allExpenseTransactions = fetchedTransactions
             recalculate()
+            loadedUserId = userId
+            hasLoadedOnce = true
+            AppDataCache.shared.setBudgetState(.init(
+                budgets: budgets,
+                categories: categories,
+                allExpenseTransactions: allExpenseTransactions
+            ), for: userId)
         } catch {
-            budgets = []
-            categories = []
+            // Keep the last rendered data when refresh fails.
+            hasLoadedOnce = true
         }
-        isLoading = false
     }
 
     func addBudget(categoryId: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, userId: String) async {
@@ -72,8 +116,10 @@ final class BudgetListViewModel: ObservableObject {
             )
             budgets.append(budget)
             recalculate()
+            cacheCurrentState()
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
         } catch {
-            // silently fail
+            print("❌ addBudget failed: \(error)")
         }
     }
 
@@ -88,8 +134,10 @@ final class BudgetListViewModel: ObservableObject {
                 budgets[idx] = updated
             }
             recalculate()
+            cacheCurrentState()
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
         } catch {
-            // silently fail
+            print("❌ updateBudget failed: \(error)")
         }
     }
 
@@ -98,13 +146,24 @@ final class BudgetListViewModel: ObservableObject {
             try await SupabaseRepository.shared.softDeleteBudget(id: id)
             budgets.removeAll { $0.id == id }
             recalculate()
+            cacheCurrentState()
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
         } catch {
-            // silently fail
+            print("❌ removeBudget failed: \(error)")
         }
     }
 
     private func recalculate() {
         totalBudget = budgets.reduce(0) { $0 + $1.amount }
         totalSpent = budgets.reduce(0) { $0 + $1.spent }
+    }
+
+    private func cacheCurrentState() {
+        guard let userId = loadedUserId else { return }
+        AppDataCache.shared.setBudgetState(.init(
+            budgets: budgets,
+            categories: categories,
+            allExpenseTransactions: allExpenseTransactions
+        ), for: userId)
     }
 }

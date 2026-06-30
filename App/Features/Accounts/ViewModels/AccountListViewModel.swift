@@ -5,16 +5,45 @@ final class AccountListViewModel: ObservableObject {
     @Published var accounts: [Account] = []
     @Published var totalBalance: Double = 0
     @Published var isLoading = false
+    @Published var isRefreshing = false
+    @Published var hasLoadedOnce = false
+    private var loadedUserId: String?
 
-    func loadAccounts(userId: String) async {
-        isLoading = true
-        do {
-            accounts = try await SupabaseRepository.shared.fetchAccounts(userId: userId)
+    func loadAccounts(userId: String, forceRefresh: Bool = false) async {
+        guard !isLoading, !isRefreshing else { return }
+
+        if !forceRefresh, let cached = AppDataCache.shared.accounts(for: userId) {
+            loadedUserId = userId
+            accounts = cached
             recalculateBalance()
-        } catch {
-            accounts = []
+            hasLoadedOnce = true
+            return
         }
-        isLoading = false
+
+        if forceRefresh, hasLoadedOnce {
+            isRefreshing = true
+        } else {
+            isLoading = true
+        }
+        defer {
+            isLoading = false
+            isRefreshing = false
+        }
+
+        do {
+            async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
+            async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
+            let (fetchedAccounts, transactions) = try await (accountsTask, transactionsTask)
+            accounts = BalanceCalculator.applyBalances(to: fetchedAccounts, from: transactions)
+            recalculateBalance()
+            AppDataCache.shared.setAccounts(accounts, for: userId)
+            AppDataCache.shared.setAccountTransactions(groupTransactionsByAccount(transactions), for: userId)
+            loadedUserId = userId
+            hasLoadedOnce = true
+        } catch {
+            // Keep the last rendered data when refresh fails.
+            hasLoadedOnce = true
+        }
     }
 
     func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String) async {
@@ -22,6 +51,9 @@ final class AccountListViewModel: ObservableObject {
             let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId)
             accounts.append(account)
             recalculateBalance()
+            AppDataCache.shared.setAccounts(accounts, for: userId)
+            loadedUserId = userId
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
         } catch {
             // silently fail
         }
@@ -34,6 +66,10 @@ final class AccountListViewModel: ObservableObject {
                 accounts[index] = updated
             }
             recalculateBalance()
+            if let loadedUserId {
+                AppDataCache.shared.setAccounts(accounts, for: loadedUserId)
+            }
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
         } catch {
             // silently fail
         }
@@ -44,6 +80,10 @@ final class AccountListViewModel: ObservableObject {
             try await SupabaseRepository.shared.softDeleteAccount(id: id)
             accounts.removeAll { $0.id == id }
             recalculateBalance()
+            if let loadedUserId {
+                AppDataCache.shared.setAccounts(accounts, for: loadedUserId)
+            }
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
         } catch {
             // silently fail
         }
@@ -65,12 +105,33 @@ final class AccountListViewModel: ObservableObject {
                 accounts[index] = updated
             }
             recalculateBalance()
+            if let loadedUserId {
+                AppDataCache.shared.setAccounts(accounts, for: loadedUserId)
+            }
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
         } catch {
             // silently fail
         }
     }
 
     private func recalculateBalance() {
-        totalBalance = accounts.filter { $0.isActive }.reduce(0) { $0 + $1.balance }
+        totalBalance = BalanceCalculator.totalBalance(for: accounts)
+    }
+
+    private func groupTransactionsByAccount(_ transactions: [Transaction]) -> [String: [Transaction]] {
+        var grouped: [String: [Transaction]] = [:]
+
+        for transaction in transactions {
+            grouped[transaction.accountId, default: []].append(transaction)
+            if let counterpartyAccountId = transaction.counterpartyAccountId {
+                grouped[counterpartyAccountId, default: []].append(transaction)
+            }
+        }
+
+        for key in grouped.keys {
+            grouped[key] = grouped[key]?.sorted { $0.date > $1.date }
+        }
+
+        return grouped
     }
 }

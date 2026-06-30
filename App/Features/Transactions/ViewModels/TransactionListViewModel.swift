@@ -15,25 +15,60 @@ final class TransactionListViewModel: ObservableObject {
     @Published var thisMonthIncome: Double = 0
     @Published var thisMonthExpense: Double = 0
     @Published var isLoading = false
+    @Published var isRefreshing = false
+    @Published var hasLoadedOnce = false
+    private var loadedUserId: String?
 
     var thisMonthBalance: Double { thisMonthIncome - thisMonthExpense }
 
-    func loadTransactions(userId: String) async {
-        isLoading = true
+    func loadTransactions(userId: String, forceRefresh: Bool = false) async {
+        guard !isLoading, !isRefreshing else { return }
+
+        if !forceRefresh, let cached = AppDataCache.shared.transactionState(for: userId) {
+            allTransactions = cached.transactions
+            categories = cached.categories
+            accounts = cached.accounts
+            calculateThisMonthSummary()
+            loadedUserId = userId
+            hasLoadedOnce = true
+            return
+        }
+
+        if forceRefresh, hasLoadedOnce {
+            isRefreshing = true
+        } else {
+            isLoading = true
+        }
+        defer {
+            isLoading = false
+            isRefreshing = false
+        }
+
         do {
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
             async let categoriesTask = SupabaseRepository.shared.fetchCategories()
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
-            allTransactions = try await transactionsTask
-            categories = try await categoriesTask
-            accounts = try await accountsTask
+            let (fetchedTransactions, fetchedCategories, fetchedAccounts) = try await (
+                transactionsTask,
+                categoriesTask,
+                accountsTask
+            )
+            let balancedAccounts = BalanceCalculator.applyBalances(
+                to: fetchedAccounts,
+                from: fetchedTransactions
+            )
+
+            allTransactions = fetchedTransactions
+            categories = fetchedCategories
+            accounts = balancedAccounts
             calculateThisMonthSummary()
+            AppDataCache.shared.setTransactionState(.init(transactions: allTransactions, categories: categories, accounts: accounts), for: userId)
+            loadedUserId = userId
+            hasLoadedOnce = true
         } catch {
-            allTransactions = []
-            categories = []
-            accounts = []
+            // Keep the last rendered data when refresh fails.
+            hasLoadedOnce = true
         }
-        isLoading = false
     }
 
     private func calculateThisMonthSummary() {

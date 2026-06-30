@@ -95,20 +95,49 @@ final class SupabaseRepository: @unchecked Sendable {
     }
 
     func createTransaction(accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date, userId: String) async throws -> Transaction {
-        let values: [String: AnyJSON] = [
-            "user_id": AnyJSON.string(userId),
-            "primary_account_id": AnyJSON.string(accountId),
-            "category_id": categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
-            "amount": AnyJSON.double(amount),
-            "transaction_type": AnyJSON.string(type.rawValue),
-            "description": description.map { AnyJSON.string($0) } ?? AnyJSON.null,
-            "note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
-            "occurred_at": AnyJSON.string(date.iso8601Formatted),
+        let operationId = UUID().uuidString
+
+        let params: [String: AnyJSON] = [
+            "p_amount": AnyJSON.double(amount),
+            "p_category_id": categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "p_client_operation_id": AnyJSON.string(operationId),
+            "p_description": description.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "p_note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "p_occurred_at": AnyJSON.string(date.iso8601Formatted),
+            "p_primary_account_id": AnyJSON.string(accountId),
+            "p_transaction_type": AnyJSON.string(type.rawValue),
         ]
+
+        let transactionId: String = try await client.rpc("create_transaction", params: params).execute().value
+
         return try await client
             .from("transactions")
-            .insert(values)
             .select()
+            .eq("id", value: transactionId)
+            .single()
+            .execute()
+            .value
+    }
+
+    func createTransfer(primaryAccountId: String, counterpartyAccountId: String, amount: Double, description: String?, note: String?, date: Date) async throws -> Transaction {
+        let operationId = UUID().uuidString
+
+        let params: [String: AnyJSON] = [
+            "p_amount": AnyJSON.double(amount),
+            "p_client_operation_id": AnyJSON.string(operationId),
+            "p_counterparty_account_id": AnyJSON.string(counterpartyAccountId),
+            "p_description": description.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "p_note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "p_occurred_at": AnyJSON.string(date.iso8601Formatted),
+            "p_primary_account_id": AnyJSON.string(primaryAccountId),
+        ]
+
+        let transactionId: String = try await client.rpc("create_transfer", params: params).execute().value
+
+        return try await client
+            .from("transactions")
+            .select()
+            .eq("id", value: transactionId)
             .single()
             .execute()
             .value
@@ -168,6 +197,8 @@ final class SupabaseRepository: @unchecked Sendable {
     }
 
     func fetchBudgetSpent(categoryId: String, userId: String, startDate: String, endDate: String?) async throws -> Double {
+        struct Row: Decodable { let amount: Double }
+
         var query = client
             .from("transactions")
             .select("amount")
@@ -181,7 +212,7 @@ final class SupabaseRepository: @unchecked Sendable {
             query = query.lt("occurred_at", value: endDate)
         }
 
-        let rows: [AmountRow] = try await query.execute().value
+        let rows: [Row] = try await query.execute().value
         return rows.reduce(0) { $0 + $1.amount }
     }
 

@@ -14,80 +14,105 @@ struct TransactionListView: View {
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(spacing: 0) {
-                        Color.clear
-                            .frame(height: 0)
-                            .id("scrollTop")
+                ZStack {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            Color.clear
+                                .frame(height: 0)
+                                .id("scrollTop")
 
-                        summaryCard
-                            .padding(.horizontal)
+                            if !viewModel.hasLoadedOnce {
+                                transactionSkeleton
+                            } else {
+                                summaryCard
+                                    .padding(.horizontal)
 
-                        Color.clear
-                            .frame(height: 1)
-                            .onAppear { showBackToTop = false }
-                            .onDisappear { showBackToTop = true }
+                                Color.clear
+                                    .frame(height: 1)
+                                    .onAppear { showBackToTop = false }
+                                    .onDisappear { showBackToTop = true }
 
-                        filterChips
-                            .padding(.top, Spacing.xs)
+                                filterChips
+                                    .padding(.top, Spacing.xs)
 
-                        if filteredTransactions.isEmpty {
-                            emptyState
-                        } else {
-                            groupedTransactionList
-                        }
+                                if filteredTransactions.isEmpty {
+                                    emptyState
+                                } else {
+                                    groupedTransactionList
+                                }
 
-                        Color.clear
-                            .frame(height: Spacing.xl)
-                    }
-                }
-                .background(Color.appGroupedBackground)
-                .navigationBarTitleDisplayMode(.inline)
-                .searchable(
-                    text: $searchText,
-                    isPresented: $isSearching,
-                    placement: .navigationBarDrawer(displayMode: .always),
-                    prompt: "Cari transaksi..."
-                )
-                .scrollDismissesKeyboard(.immediately)
-                .navigationTitle("")
-                .onAppear {
-                    if expandedMonths.isEmpty {
-                        let sections = viewModel.sections(for: filteredTransactions)
-                        expandedMonths = Set(sections.prefix(2).map { $0.id })
-                    }
-                }
-                .task {
-                    guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }
-                    await viewModel.loadTransactions(userId: userId)
-                }
-                .overlay(alignment: .bottomTrailing) {
-                    if showBackToTop {
-                        Button {
-                            withAnimation(.spring(response: 0.4)) {
-                                proxy.scrollTo("scrollTop", anchor: .top)
+                                Color.clear
+                                    .frame(height: Spacing.xl)
                             }
-                        } label: {
-                            Image(systemName: "chevron.up")
-                                .font(.jakarta(16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                                .background(Color.appPrimary)
-                                .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
                         }
-                        .padding(.trailing, Spacing.xl)
-                        .padding(.bottom, Spacing.xl)
-                        .transition(.scale.combined(with: .opacity))
                     }
-                }
-                .animation(.easeInOut(duration: 0.2), value: showBackToTop)
-                .sheet(isPresented: $showAdvancedSearch) {
-                    AdvancedSearchView(filter: $filter, categories: viewModel.categories)
-                        .presentationDetents([.medium, .large])
+                    .background(Color.appGroupedBackground)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .searchable(
+                        text: $searchText,
+                        isPresented: $isSearching,
+                        placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: "Cari transaksi..."
+                    )
+                    .scrollDismissesKeyboard(.immediately)
+                    .navigationTitle("")
+                    .refreshable {
+                        guard let userId = authViewModel.currentUser?.id else { return }
+                        await viewModel.loadTransactions(userId: userId, forceRefresh: true)
+                    }
+                    .onAppear {
+                        if expandedMonths.isEmpty {
+                            let sections = viewModel.sections(for: filteredTransactions)
+                            expandedMonths = Set(sections.prefix(2).map { $0.id })
+                        }
+                    }
+                    .task {
+                        guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }
+                        await viewModel.loadTransactions(userId: userId)
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
+                        guard let userId = authViewModel.currentUser?.id else { return }
+                        Task {
+                            await viewModel.loadTransactions(userId: userId, forceRefresh: true)
+                        }
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        if showBackToTop {
+                            Button {
+                                withAnimation(.spring(response: 0.4)) {
+                                    proxy.scrollTo("scrollTop", anchor: .top)
+                                }
+                            } label: {
+                                Image(systemName: "chevron.up")
+                                    .font(.jakarta(16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(Color.appPrimary)
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+                            }
+                            .padding(.trailing, Spacing.xl)
+                            .padding(.bottom, Spacing.xl)
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.2), value: showBackToTop)
+                    .sheet(isPresented: $showAdvancedSearch) {
+                        AdvancedSearchView(filter: $filter, categories: viewModel.categories)
+                            .presentationDetents([.medium, .large])
+                    }
                 }
             }
         }
+    }
+
+    private var transactionSkeleton: some View {
+        VStack(spacing: Spacing.lg) {
+            RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground).frame(height: 170).redacted(reason: .placeholder)
+            RoundedRectangle(cornerRadius: 16).fill(Color.appCardBackground).frame(height: 56).redacted(reason: .placeholder)
+            RoundedRectangle(cornerRadius: 16).fill(Color.appCardBackground).frame(height: 260).redacted(reason: .placeholder)
+        }
+        .padding()
     }
 
     // MARK: Summary

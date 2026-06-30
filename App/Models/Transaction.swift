@@ -3,6 +3,7 @@ import Foundation
 struct Transaction: Identifiable, Codable {
     let id: String
     let accountId: String
+    let counterpartyAccountId: String?
     let categoryId: String?
     let amount: Double
     let type: TransactionType
@@ -19,6 +20,7 @@ struct Transaction: Identifiable, Codable {
     enum CodingKeys: String, CodingKey {
         case id
         case accountId = "primary_account_id"
+        case counterpartyAccountId = "counterparty_account_id"
         case categoryId = "category_id"
         case amount
         case type = "transaction_type"

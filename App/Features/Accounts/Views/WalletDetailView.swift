@@ -42,7 +42,7 @@ struct WalletDetailView: View {
     }
 
     private var walletIcon: WalletIcon? {
-        WalletIcon.allIcons.first { $0.id == editedIconId }
+        WalletIcon.resolve(editedIconId)
     }
 
     private var hasChanges: Bool {
@@ -351,6 +351,8 @@ struct WalletDetailView: View {
         }
     }
 
+    @State private var showEditCustomSheet = false
+
     private var iconPickerSheet: some View {
         NavigationStack {
             List {
@@ -378,6 +380,25 @@ struct WalletDetailView: View {
                             }
                             .buttonStyle(.plain)
                         }
+                        Button {
+                            showEditCustomSheet = true
+                        } label: {
+                            VStack(spacing: 4) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.appPrimary.opacity(0.2))
+                                        .frame(width: 52, height: 52)
+                                    Image(systemName: "plus")
+                                        .font(.jakarta(14, weight: .bold))
+                                        .foregroundColor(.appPrimary)
+                                }
+                                Text("Custom")
+                                    .font(.jakarta(9))
+                                    .foregroundColor(.appTextSecondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.vertical, 8)
                 } header: {
@@ -389,6 +410,12 @@ struct WalletDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Batal") { showIconPicker = false }
+                }
+            }
+            .sheet(isPresented: $showEditCustomSheet) {
+                CustomIconSheet { text, colorName in
+                    editedIconId = WalletIcon.customIconId(text: text, colorName: colorName)
+                    showIconPicker = false
                 }
             }
         }
@@ -486,4 +513,14 @@ struct WalletDetailView: View {
         }
         .padding(.vertical, Spacing.sm)
     }
+}
+
+#Preview {
+    WalletDetailView(
+        account: Account(id: "1", name: "BCA", type: .bank, icon: "bca", isArchived: false, openingBalance: 1000000),
+        transactions: [],
+        onSave: nil,
+        onDelete: nil,
+        onToggleArchive: nil
+    )
 }

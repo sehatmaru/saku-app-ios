@@ -6,8 +6,6 @@ struct BudgetListView: View {
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var showUnsetBudget = false
     @State private var showOverallHistory = false
-    @State private var allExpenseTransactions: [Transaction] = []
-
     private var setItems: [BudgetListItem] {
         viewModel.budgetItems.filter { $0.budget != nil }
     }
@@ -22,7 +20,7 @@ struct BudgetListView: View {
         let currentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
 
         let budgetCategoryIds = Set(viewModel.budgetItems.filter { $0.budget != nil }.map { $0.category.id })
-        let expenseTransactions = allExpenseTransactions.filter {
+        let expenseTransactions = viewModel.allExpenseTransactions.filter {
             guard let catId = $0.categoryId else { return false }
             return budgetCategoryIds.contains(catId) && $0.type == .expense
         }
@@ -43,45 +41,49 @@ struct BudgetListView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: Spacing.lg) {
-                    summaryCard
+                    if !viewModel.hasLoadedOnce {
+                        budgetSkeleton
+                    } else {
+                        summaryCard
 
-                    ForEach(setItems) { item in
-                        NavigationLink(destination: BudgetDetailView(
-                            budget: item.budget!,
-                            category: item.category,
-                            allTransactions: allExpenseTransactions.filter { $0.categoryId == item.category.id },
-                            onAdjustBudget: { updated in
-                                Task {
-                                    let categoryId = updated.categoryId
-                                    let name = updated.name
-                                    let amount = updated.amount
-                                    let periodUnit = updated.periodUnit
-                                    let periodInterval = updated.periodInterval
-                                    let startDate = updated.startDate
-                                    let endDate = updated.endDate
-                                    let isActive = updated.isActive
-                                    guard let userId = authViewModel.currentUser?.id else { return }
-                                    await viewModel.updateBudget(id: updated.id, name: name, amount: amount, periodUnit: periodUnit, periodInterval: periodInterval, startDate: startDate, endDate: endDate, isActive: isActive)
+                        ForEach(setItems) { item in
+                            NavigationLink(destination: BudgetDetailView(
+                                budget: item.budget!,
+                                category: item.category,
+                                allTransactions: viewModel.allExpenseTransactions.filter { $0.categoryId == item.category.id },
+                                onAdjustBudget: { updated in
+                                    Task {
+                                        let categoryId = updated.categoryId
+                                        let name = updated.name
+                                        let amount = updated.amount
+                                        let periodUnit = updated.periodUnit
+                                        let periodInterval = updated.periodInterval
+                                        let startDate = updated.startDate
+                                        let endDate = updated.endDate
+                                        let isActive = updated.isActive
+                                        guard let userId = authViewModel.currentUser?.id else { return }
+                                        await viewModel.updateBudget(id: updated.id, name: name, amount: amount, periodUnit: periodUnit, periodInterval: periodInterval, startDate: startDate, endDate: endDate, isActive: isActive)
+                                    }
+                                },
+                                onUnsetBudget: {
+                                    Task {
+                                        await viewModel.removeBudget(id: item.budget!.id)
+                                    }
                                 }
-                            },
-                            onUnsetBudget: {
-                                Task {
-                                    await viewModel.removeBudget(id: item.budget!.id)
-                                }
+                            )) {
+                                BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
+                                    Task {
+                                        guard let userId = authViewModel.currentUser?.id else { return }
+                                        await viewModel.addBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
+                                    }
+                                })
                             }
-                        )) {
-                            BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
-                                Task {
-                                    guard let userId = authViewModel.currentUser?.id else { return }
-                                    await viewModel.addBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
-                                }
-                            })
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
-                    }
 
-                    if !unsetItems.isEmpty {
-                        unsetSection
+                        if !unsetItems.isEmpty {
+                            unsetSection
+                        }
                     }
                 }
                 .padding()
@@ -91,12 +93,60 @@ struct BudgetListView: View {
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadBudgets(userId: userId)
-                allExpenseTransactions = (try? await SupabaseRepository.shared.fetchTransactions(userId: userId)) ?? []
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
+                guard let userId = authViewModel.currentUser?.id else { return }
+                Task {
+                    await viewModel.loadBudgets(userId: userId, forceRefresh: true)
+                }
+            }
+            .refreshable {
+                guard let userId = authViewModel.currentUser?.id else { return }
+                await viewModel.loadBudgets(userId: userId, forceRefresh: true)
             }
             .sheet(isPresented: $showOverallHistory) {
-                OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: allExpenseTransactions)
+                OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions)
             }
         }
+    }
+
+    private var budgetSkeleton: some View {
+        VStack(spacing: Spacing.lg) {
+            skeletonCard(height: 200)
+            skeletonCard(height: 128)
+            skeletonCard(height: 128)
+            skeletonSectionHeader
+            skeletonCard(height: 150)
+        }
+    }
+
+    private var skeletonSectionHeader: some View {
+        HStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.appTextSecondary.opacity(0.16))
+                .frame(width: 112, height: 18)
+            Spacer()
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.appTextSecondary.opacity(0.12))
+                .frame(width: 36, height: 18)
+        }
+        .padding(.horizontal, Spacing.xs)
+    }
+
+    private func skeletonCard(height: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.appTextSecondary.opacity(0.16))
+                .frame(width: 140, height: 16)
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.appTextSecondary.opacity(0.12))
+                .frame(height: height - 48)
+        }
+        .padding(Spacing.lg)
+        .frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
+        .background(Color.appCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .redacted(reason: .placeholder)
     }
 
     private var unsetSection: some View {
@@ -476,7 +526,7 @@ struct BudgetCardView: View {
             categoryId: category.id,
             name: category.name,
             amount: amount,
-            periodUnit: "monthly",
+            periodUnit: "month",
             periodInterval: 1,
             startDate: startDate,
             endDate: nil,
@@ -855,4 +905,9 @@ struct OverallMonthDetailView: View {
         case .normal: return .appPrimary
         }
     }
+}
+
+#Preview {
+    BudgetListView()
+        .environmentObject(AuthViewModel())
 }

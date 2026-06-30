@@ -43,7 +43,9 @@ struct AddTransactionView: View {
                 VStack(spacing: Spacing.md) {
                     typePicker
                     AmountInputSection(amountText: $amountText, amountDigits: $amountDigits, typeColor: typeColor)
-                    categorySection
+                    if !isTransfer {
+                        categorySection
+                    }
                     walletSection
                     if !isTransfer {
                         titleSection
@@ -56,9 +58,6 @@ struct AddTransactionView: View {
                         .padding(.vertical, Spacing.md)
                         .background(Color.appCardBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
-
-                    saveButton
-                        .padding(.bottom, Spacing.xl)
                 }
                 .padding()
             }
@@ -68,6 +67,13 @@ struct AddTransactionView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Batal") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Simpan") {
+                        save()
+                    }
+                    .font(.jakarta(15, weight: .bold))
+                    .disabled(!canSave)
                 }
             }
             .alert("Perhatian", isPresented: $showValidationAlert) {
@@ -250,7 +256,7 @@ struct AddTransactionView: View {
     }
 
     private func walletChip(account: Account, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        let wi = WalletIcon.allIcons.first { $0.id == account.icon }
+        let wi = WalletIcon.resolve(account.icon)
         return Button(action: action) {
             HStack(spacing: Spacing.sm) {
                 ZStack {
@@ -377,24 +383,6 @@ struct AddTransactionView: View {
         .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 
-    // MARK: Save Button
-    private var saveButton: some View {
-        Button {
-            save()
-        } label: {
-            Text("Simpan")
-                .font(.jakarta(17, weight: .semibold))
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(canSave ? Color.appPrimary : Color.appPrimary.opacity(0.4))
-                )
-                .foregroundColor(.white)
-        }
-        .disabled(!canSave)
-        .buttonStyle(.plain)
-    }
 
     private var canSave: Bool {
         guard !amountDigits.isEmpty, let amount = Double(amountDigits), amount > 0 else { return false }
@@ -411,40 +399,43 @@ struct AddTransactionView: View {
             return
         }
 
-        var finalNote = ""
-        if isTransfer {
-            if !titleText.isEmpty {
-                finalNote = titleText
-            }
-        } else {
-            finalNote = titleText
-        }
-        if !noteText.isEmpty {
-            if finalNote.isEmpty {
-                finalNote = noteText
-            } else {
-                finalNote += "\n\(noteText)"
-            }
-        }
-
-        let description = isTransfer ? titleText : (titleText.isEmpty ? nil : titleText)
+        let title = titleText.isEmpty ? nil : titleText
+        let detailNote = noteText.isEmpty ? nil : noteText
 
         Task {
             do {
-                try await SupabaseRepository.shared.createTransaction(
-                    accountId: selectedAccount?.id ?? "",
-                    categoryId: selectedCategory?.id,
-                    amount: amount,
-                    type: selectedType,
-                    description: description,
-                    note: noteText.isEmpty ? nil : noteText,
-                    date: selectedDate,
-                    userId: userId
-                )
+                if isTransfer {
+                    guard let sourceAccount = selectedAccount,
+                          let targetAccount = selectedTargetAccount else {
+                        validationMessage = "Pilih dompet sumber dan tujuan."
+                        showValidationAlert = true
+                        return
+                    }
+                    _ = try await SupabaseRepository.shared.createTransfer(
+                        primaryAccountId: sourceAccount.id,
+                        counterpartyAccountId: targetAccount.id,
+                        amount: amount,
+                        description: detailNote,
+                        note: title,
+                        date: selectedDate
+                    )
+                } else {
+                    _ = try await SupabaseRepository.shared.createTransaction(
+                        accountId: selectedAccount?.id ?? "",
+                        categoryId: selectedCategory?.id,
+                        amount: amount,
+                        type: selectedType,
+                        description: detailNote,
+                        note: title,
+                        date: selectedDate,
+                        userId: userId
+                    )
+                }
                 onSave()
+                NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 dismiss()
             } catch {
-                validationMessage = "Gagal menyimpan transaksi."
+                validationMessage = "Gagal menyimpan transaksi: \(error.localizedDescription)"
                 showValidationAlert = true
             }
         }
@@ -481,4 +472,8 @@ private struct AmountInputSection: View {
         .padding(.horizontal, Spacing.xl)
         .padding(.top, Spacing.md)
     }
+}
+
+#Preview {
+    AddTransactionView(categories: [], accounts: [], userId: "", onSave: {})
 }

@@ -108,6 +108,7 @@ struct BudgetDetailView: View {
                 )
                 onAdjustBudget?(updated)
                 showAdjustBudget = false
+                dismiss()
             }
         } message: {
             Text("Budget \(category.name) akan diubah menjadi \(String(Int(pendingAmount)).formattedWithThousandSeparator) untuk \"\(adjustScope.rawValue)\".")
@@ -900,4 +901,14 @@ fileprivate struct BudgetMonthDetailView: View {
         }
         .padding(.vertical, Spacing.sm)
     }
+}
+
+#Preview {
+    BudgetDetailView(
+        budget: Budget(id: "1", categoryId: "1", name: "Makanan", amount: 500000, periodUnit: "month", periodInterval: 1, startDate: "2026-06-01", endDate: nil, isActive: true),
+        category: Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF0000", type: .expense),
+        allTransactions: [],
+        onAdjustBudget: nil,
+        onUnsetBudget: nil
+    )
 }

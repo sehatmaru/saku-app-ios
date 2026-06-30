@@ -8,6 +8,7 @@ struct AddWalletView: View {
     @State private var amountText = ""
     @State private var amountDigits = ""
     @State private var selectedIcon: WalletIcon?
+    @State private var showCustomSheet = false
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
 
@@ -16,62 +17,20 @@ struct AddWalletView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    Picker("Kategori", selection: $category) {
-                        ForEach(Account.AccountType.allCases, id: \.self) { type in
-                            Text(type.rawValue).tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                if category == .cash {
-                    Section {
-                        TextField("Nama Dompet", text: $name)
-                        HStack {
-                            Text("Rp")
-                                .foregroundColor(.appTextSecondary)
-                            TextField("Jumlah Awal", text: $amountText)
-                                .keyboardType(.numberPad)
-                        }
-                    }
-                } else {
-                    Section {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
-                            ForEach(iconsForCategory) { icon in
-                                walletIconButton(icon)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                    } header: {
-                        Text("Pilih Icon")
-                    }
-
-                    Section {
-                        TextField("Nama Dompet", text: $name)
-                        HStack {
-                            Text("Rp")
-                                .foregroundColor(.appTextSecondary)
-                            TextField("Jumlah Awal", text: $amountText)
-                                .keyboardType(.numberPad)
-                        }
-                    }
-                }
-
-                Section {
-                    Button("Simpan") {
-                        save()
-                    }
-                    .frame(maxWidth: .infinity)
-                    .font(.jakarta(17, weight: .semibold))
-                    .foregroundColor(.appPrimary)
-                }
+                accountTypeSection
+                iconSelectionSection
+                nameSection
+                amountSection
             }
             .navigationTitle("Tambah Dompet")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Batal") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Simpan") { save() }
+                        .font(.jakarta(15, weight: .semibold))
                 }
             }
             .alert("Perhatian", isPresented: $showValidationAlert) {
@@ -91,23 +50,88 @@ struct AddWalletView: View {
                 }
             }
             .onChange(of: selectedIcon) { _, newValue in
-                if let icon = newValue {
+                guard let icon = newValue else { return }
+                if !icon.id.hasPrefix(WalletIcon.customPrefix) {
                     name = icon.name
                 }
             }
-            .onChange(of: amountText) { _, newValue in
-                let digits = String(newValue.filter { $0.isWholeNumber })
-                let formatted = digits.formattedWithThousandSeparator
-                if formatted != newValue {
-                    amountText = formatted
+            .sheet(isPresented: $showCustomSheet) {
+                CustomIconSheet { text, colorName in
+                    let iconId = WalletIcon.customIconId(text: text, colorName: colorName)
+                    let resolved = WalletIcon.resolve(iconId)!
+                    selectedIcon = resolved
+                    name = text
                 }
-                amountDigits = digits
             }
         }
     }
 
-    private var iconsForCategory: [WalletIcon] {
-        WalletIcon.icons(for: category)
+    // MARK: - Account Type
+
+    private var accountTypeSection: some View {
+        Section {
+            Picker("Kategori", selection: $category) {
+                ForEach(Account.AccountType.allCases, id: \.self) { type in
+                    Text(type.rawValue).tag(type)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+
+    // MARK: - Icon Selection
+
+    private var iconSelectionSection: some View {
+        Group {
+            if category == .cash {
+                EmptyView()
+            } else {
+                Section {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
+                        ForEach(WalletIcon.icons(for: category)) { icon in
+                            walletIconButton(icon)
+                        }
+                        customIconButton
+                    }
+                    .padding(.vertical, 8)
+                } header: {
+                    Text("Pilih Icon")
+                }
+            }
+        }
+    }
+
+    private var customIconButton: some View {
+        Button {
+            showCustomSheet = true
+        } label: {
+            VStack(spacing: 4) {
+                if let icon = selectedIcon, icon.id.hasPrefix(WalletIcon.customPrefix) {
+                    Circle()
+                        .fill(icon.color)
+                        .frame(width: 52, height: 52)
+                        .overlay {
+                            Text(icon.shortName)
+                                .font(.jakarta(10, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                } else {
+                    ZStack {
+                        Circle()
+                            .fill(Color.appPrimary.opacity(0.2))
+                            .frame(width: 52, height: 52)
+                        Image(systemName: "plus")
+                            .font(.jakarta(14, weight: .bold))
+                            .foregroundColor(.appPrimary)
+                    }
+                }
+                Text("Custom")
+                    .font(.jakarta(9))
+                    .foregroundColor(.appTextSecondary)
+                    .lineLimit(1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private func walletIconButton(_ icon: WalletIcon) -> some View {
@@ -132,6 +156,42 @@ struct AddWalletView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: - Name
+
+    private var nameSection: some View {
+        Section {
+            TextField("Nama Dompet", text: $name)
+        }
+    }
+
+    // MARK: - Amount
+
+    private var amountSection: some View {
+        Section {
+            HStack(spacing: 6) {
+                Text("Rp")
+                    .font(.jakarta(34, weight: .bold))
+                    .foregroundColor(.appText)
+                TextField("0", text: $amountText)
+                    .font(.jakarta(34, weight: .bold))
+                    .foregroundColor(.appText)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.leading)
+                    .onChange(of: amountText) { _, newValue in
+                        let digits = String(newValue.filter { $0.isWholeNumber })
+                        let formatted = digits.formattedWithThousandSeparator
+                        if formatted != newValue {
+                            amountText = formatted
+                        }
+                        amountDigits = digits
+                    }
+                Spacer()
+            }
+        } header: {
+            Text("Saldo Awal")
+        }
+    }
+
     private func save() {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
             validationMessage = "Nama dompet wajib diisi."
@@ -140,15 +200,18 @@ struct AddWalletView: View {
         }
         if category != .cash {
             guard selectedIcon != nil else {
-                validationMessage = "Pilih icon terlebih dahulu."
+                validationMessage = "Pilih bank, e-wallet, atau custom terlebih dahulu."
                 showValidationAlert = true
                 return
             }
         }
-        guard let balance = Double(amountDigits), balance >= 0 else {
-            validationMessage = "Jumlah awal tidak valid."
-            showValidationAlert = true
-            return
+        let balance = Double(amountDigits) ?? 0
+
+        let iconId: String?
+        if category == .cash {
+            iconId = "cash"
+        } else {
+            iconId = selectedIcon?.id
         }
 
         Task {
@@ -156,7 +219,7 @@ struct AddWalletView: View {
                 name.trimmingCharacters(in: .whitespaces),
                 category,
                 balance,
-                selectedIcon?.id ?? "cash"
+                iconId
             )
             dismiss()
         }

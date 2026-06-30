@@ -51,7 +51,7 @@ struct TransactionDetailView: View {
     }
 
     private var walletIcon: WalletIcon? {
-        WalletIcon.allIcons.first { $0.id == selectedAccount?.icon }
+        WalletIcon.resolve(selectedAccount?.icon)
     }
 
     private var activeAccounts: [Account] {
@@ -120,6 +120,7 @@ struct TransactionDetailView: View {
             Button("Hapus", role: .destructive) {
                 Task {
                     try? await SupabaseRepository.shared.softDeleteTransaction(id: transaction.id)
+                    NotificationCenter.default.post(name: .dataDidChange, object: nil)
                     dismiss()
                 }
             }
@@ -155,6 +156,7 @@ struct TransactionDetailView: View {
         let updated = Transaction(
             id: transaction.id,
             accountId: selectedAccountId,
+            counterpartyAccountId: transaction.counterpartyAccountId,
             categoryId: selectedCategoryId,
             amount: amount,
             type: transaction.type,
@@ -173,6 +175,7 @@ struct TransactionDetailView: View {
                 note: updated.note,
                 date: updated.date
             )
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
             onUpdate?(updated)
         }
         withAnimation {
@@ -582,4 +585,23 @@ struct TransactionDetailView: View {
         }
         .presentationDetents([.medium])
     }
+}
+
+#Preview {
+    TransactionDetailView(
+        transaction: Transaction(
+            id: UUID().uuidString,
+            accountId: "",
+            counterpartyAccountId: nil,
+            categoryId: nil,
+            amount: 50000,
+            type: .expense,
+            description: "Preview",
+            note: nil,
+            date: Date()
+        ),
+        categories: [],
+        accounts: [],
+        onUpdate: nil
+    )
 }

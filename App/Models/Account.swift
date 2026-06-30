@@ -7,9 +7,10 @@ struct Account: Identifiable, Codable, Hashable {
     let icon: String?
     let isArchived: Bool
     let openingBalance: Double
+    var currentBalance: Double? = nil
 
     var isActive: Bool { !isArchived }
-    var balance: Double { openingBalance }
+    var balance: Double { currentBalance ?? openingBalance }
 
     enum AccountType: String, Codable, CaseIterable {
         case cash = "Cash"
@@ -24,5 +25,6 @@ struct Account: Identifiable, Codable, Hashable {
         case icon
         case isArchived = "is_archived"
         case openingBalance = "opening_balance"
+        case currentBalance = "current_balance"
     }
 }

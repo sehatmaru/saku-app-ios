@@ -221,3 +221,7 @@ struct AnalyticsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 }
+
+#Preview {
+    AnalyticsView(viewModel: DashboardViewModel())
+}

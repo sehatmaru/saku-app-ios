@@ -38,3 +38,13 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
+  SakuQTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: SakuQ
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sakuq.tests

@@ -44,6 +44,13 @@ struct DashboardView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
+            if let userId = authViewModel.currentUser?.id {
+                Task {
+                    await viewModel.loadDashboard(userId: userId, forceRefresh: true)
+                }
+            }
+        }
         .sheet(isPresented: $showAddSheet) {
             if let userId = authViewModel.currentUser?.id {
                 AddTransactionView(
@@ -52,7 +59,7 @@ struct DashboardView: View {
                     userId: userId,
                     onSave: {
                         Task {
-                            await viewModel.loadDashboard(userId: userId)
+                            await viewModel.loadDashboard(userId: userId, forceRefresh: true)
                         }
                     }
                 )
@@ -64,16 +71,25 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: Spacing.lg) {
-                    summaryCard
-                    recapCard
-                    healthScoreCard
-                    statisticsCard
-                    budgetCard
-                    transactionCard
+                    if !viewModel.hasLoadedOnce {
+                        dashboardSkeleton
+                    } else {
+                        summaryCard
+                        recapCard
+                        healthScoreCard
+                        statisticsCard
+                        budgetCard
+                        transactionCard
+                    }
                 }
                 .padding()
             }
             .background(Color.appGroupedBackground)
+            .refreshable {
+                if let userId = authViewModel.currentUser?.id {
+                    await viewModel.loadDashboard(userId: userId, forceRefresh: true)
+                }
+            }
             .navigationTitle("SakuQ")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -90,6 +106,24 @@ struct DashboardView: View {
                 }
             }
         }
+    }
+
+    private var dashboardSkeleton: some View {
+        VStack(spacing: Spacing.lg) {
+            skeletonCard(height: 210)
+            skeletonCard(height: 170)
+            skeletonCard(height: 130)
+            skeletonCard(height: 220)
+            skeletonCard(height: 180)
+            skeletonCard(height: 160)
+        }
+    }
+
+    private func skeletonCard(height: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 20)
+            .fill(Color.appCardBackground)
+            .frame(maxWidth: .infinity, minHeight: height)
+            .redacted(reason: .placeholder)
     }
 
     // MARK: - Summary Card

@@ -17,6 +17,9 @@ final class DashboardViewModel: ObservableObject {
     @Published var accounts: [Account] = []
     @Published var categories: [Category] = []
     @Published var isLoading = false
+    @Published var isRefreshing = false
+    @Published var hasLoadedOnce = false
+    private var loadedUserId: String?
 
     var totalRemaining: Double { totalBudget - totalSpent }
 
@@ -147,8 +150,43 @@ final class DashboardViewModel: ObservableObject {
 
     private let calendar = Calendar.current
 
-    func loadDashboard(userId: String) async {
-        isLoading = true
+    func loadDashboard(userId: String, forceRefresh: Bool = false) async {
+        guard !isLoading, !isRefreshing else { return }
+
+        if !forceRefresh, let cached = AppDataCache.shared.dashboardState(for: userId) {
+            balance = cached.balance
+            openingBalance = cached.openingBalance
+            totalIncome = cached.totalIncome
+            totalExpense = cached.totalExpense
+            netCashflow = cached.netCashflow
+            recentTransactions = cached.recentTransactions
+            monthlyCashflow = cached.monthlyCashflow
+            categorySpending = cached.categorySpending
+            totalBudget = cached.totalBudget
+            totalSpent = cached.totalSpent
+            currentMonthTransactionCount = cached.currentMonthTransactionCount
+            accounts = cached.accounts
+            categories = cached.categories
+            healthScore = cached.healthScore
+            healthScoreLabel = cached.healthScoreLabel
+            cashflowScore = cached.cashflowScore
+            budgetScore = cached.budgetScore
+            diversityScore = cached.diversityScore
+            loadedUserId = userId
+            hasLoadedOnce = true
+            return
+        }
+
+        if forceRefresh, hasLoadedOnce {
+            isRefreshing = true
+        } else {
+            isLoading = true
+        }
+        defer {
+            isLoading = false
+            isRefreshing = false
+        }
+
         do {
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
@@ -156,10 +194,10 @@ final class DashboardViewModel: ObservableObject {
             async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)
 
             let (fetchedAccounts, transactions, fetchedCategories, budgets) = try await (accountsTask, transactionsTask, categoriesTask, budgetsTask)
-            accounts = fetchedAccounts
+            accounts = BalanceCalculator.applyBalances(to: fetchedAccounts, from: transactions)
             categories = fetchedCategories
 
-            balance = fetchedAccounts.reduce(0) { $0 + $1.balance }
+            balance = accounts.reduce(0) { $0 + $1.balance }
 
             let thisMonthTransactions = transactions.filter { isCurrentMonth($0.date) }
             currentMonthTransactionCount = thisMonthTransactions.count
@@ -189,10 +227,32 @@ final class DashboardViewModel: ObservableObject {
 
             monthlyCashflow = computeMonthlyCashflow(transactions: transactions, months: 5)
             computeHealthScore()
+            AppDataCache.shared.setDashboardState(.init(
+                balance: balance,
+                openingBalance: openingBalance,
+                totalIncome: totalIncome,
+                totalExpense: totalExpense,
+                netCashflow: netCashflow,
+                recentTransactions: recentTransactions,
+                monthlyCashflow: monthlyCashflow,
+                categorySpending: categorySpending,
+                totalBudget: totalBudget,
+                totalSpent: totalSpent,
+                currentMonthTransactionCount: currentMonthTransactionCount,
+                accounts: accounts,
+                categories: categories,
+                healthScore: healthScore,
+                healthScoreLabel: healthScoreLabel,
+                cashflowScore: cashflowScore,
+                budgetScore: budgetScore,
+                diversityScore: diversityScore
+            ), for: userId)
+            loadedUserId = userId
+            hasLoadedOnce = true
         } catch {
-            // silently fail — data stays at defaults
+            // Keep the last rendered data when refresh fails.
+            hasLoadedOnce = true
         }
-        isLoading = false
     }
 
     private func computeHealthScore() {
