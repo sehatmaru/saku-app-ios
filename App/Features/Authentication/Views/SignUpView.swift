@@ -100,6 +100,7 @@ struct SignUpView: View {
             }
         }
         .background(Color.appBackground)
+        .onAppear { authViewModel.errorMessage = nil }
         .navigationBarTitleDisplayMode(.inline)
     }
 }

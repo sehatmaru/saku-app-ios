@@ -7,32 +7,33 @@ struct SplashView: View {
     let onComplete: () -> Void
 
     var body: some View {
-        VStack(spacing: Spacing.lg) {
-            Spacer()
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
 
-            Image(systemName: "leaf.fill")
-                .font(.jakarta(60))
-                .foregroundColor(.appPrimary)
+            VStack(spacing: Spacing.lg) {
+                Spacer()
 
-            Text("SakuQ")
-                .font(.jakarta(34, weight: .bold))
-                .foregroundColor(.appPrimary)
+                Image(systemName: "leaf.fill")
+                    .font(.jakarta(60))
+                    .foregroundColor(.appPrimary)
 
-            Text("Personal Finance")
-                .font(.jakarta(15))
-                .foregroundColor(.appTextSecondary)
+                Text("SakuQ")
+                    .font(.jakarta(34, weight: .bold))
+                    .foregroundColor(.appPrimary)
 
-            Spacer()
+                Spacer()
+            }
+            .scaleEffect(scale)
+            .opacity(opacity)
 
-            Text("v1.0")
-                .font(.jakarta(12))
-                .foregroundColor(.appTextSecondary)
-                .padding(.bottom, Spacing.xxl)
+            VStack {
+                Spacer()
+                Text("v1.0")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appTextSecondary)
+                    .padding(.bottom, Spacing.xxl)
+            }
         }
-        .scaleEffect(scale)
-        .opacity(opacity)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.appBackground)
         .onAppear {
             withAnimation(.easeOut(duration: 0.8)) {
                 scale = 1.0
@@ -43,4 +44,8 @@ struct SplashView: View {
             }
         }
     }
+}
+
+#Preview {
+    SplashView(onComplete: {})
 }

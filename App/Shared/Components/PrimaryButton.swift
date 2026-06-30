@@ -21,6 +21,7 @@ struct PrimaryButton: View {
             .foregroundColor(.white)
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
+        .buttonStyle(.plain)
         .disabled(isLoading)
     }
 }

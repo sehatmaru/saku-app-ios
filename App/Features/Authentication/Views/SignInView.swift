@@ -2,77 +2,130 @@ import SwiftUI
 
 struct SignInView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var email = ""
-    @State private var password = ""
-    @State private var showSignUp = false
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: Spacing.xl) {
-                    Spacer().frame(height: Spacing.xxxl)
+        VStack(spacing: 0) {
+            VStack(spacing: Spacing.lg) {
+                Spacer()
 
-                    VStack(spacing: Spacing.sm) {
-                        Image(systemName: "leaf.fill")
-                            .font(.jakarta(40))
-                            .foregroundColor(.appPrimary)
-                        Text("SakuQ")
-                            .font(.jakarta(28, weight: .bold))
-                            .foregroundColor(.appPrimary)
-                    }
+                Image(systemName: "leaf.fill")
+                    .font(.jakarta(80))
+                    .foregroundColor(.white)
 
-                    Spacer().frame(height: Spacing.lg)
+                HStack(spacing: Spacing.xs) {
+                    Text("kelola")
+                        .font(.jakarta(15, weight: .light))
+                    Text("finansialmu")
+                        .font(.jakarta(22, weight: .bold))
+                    Text("dengan")
+                        .font(.jakarta(15, weight: .light))
+                    Text("SakuQ")
+                        .font(.jakarta(22, weight: .bold))
+                }
+                .foregroundColor(.white)
 
-                    VStack(spacing: Spacing.lg) {
-                        VStack(alignment: .leading, spacing: Spacing.xs) {
-                            Text("Email")
-                                .font(.jakarta(12))
-                                .foregroundColor(.appTextSecondary)
-                            TextField("demo@sakuq.app", text: $email)
-                                .appTextFieldStyle()
-                                .keyboardType(.emailAddress)
-                                .autocapitalization(.none)
-                                .disableAutocorrection(true)
-                        }
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+            .background(Color.appPrimary.ignoresSafeArea(edges: .top))
 
-                        VStack(alignment: .leading, spacing: Spacing.xs) {
-                            Text("Password")
-                                .font(.jakarta(12))
-                                .foregroundColor(.appTextSecondary)
-                            SecureField("••••••••", text: $password)
-                                .appTextFieldStyle()
-                        }
+            VStack(spacing: Spacing.md) {
+                Spacer().frame(height: Spacing.xxl)
+                socialButton(
+                    label: "Lanjutkan dengan Google",
+                    backgroundColor: .white,
+                    foregroundColor: .appText,
+                    hasBorder: true,
+                    isLoading: authViewModel.isGoogleLoading,
+                    action: authViewModel.signInWithGoogle
+                ) {
+                    Image("GoogleLogo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                }
 
-                        if let error = authViewModel.errorMessage {
-                            Text(error)
-                                .font(.jakarta(12))
-                                .foregroundColor(.appError)
-                        }
+                socialButton(
+                    label: "Lanjutkan dengan Apple",
+                    backgroundColor: .black,
+                    foregroundColor: .white,
+                    hasBorder: false,
+                    isLoading: authViewModel.isAppleLoading,
+                    action: authViewModel.signInWithApple
+                ) {
+                    Image(systemName: "applelogo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                }
 
-                        PrimaryButton(
-                            title: "Masuk",
-                            isLoading: authViewModel.isLoading
-                        ) {
-                            authViewModel.login(email: email, password: password)
-                        }
+                HStack(spacing: Spacing.sm) {
+                    Color(.systemGray5)
+                        .frame(height: 1)
+                    Text("atau")
+                        .font(.jakarta(12))
+                        .foregroundColor(.appTextSecondary)
+                    Color(.systemGray5)
+                        .frame(height: 1)
+                }
 
-                        Button {
-                            showSignUp = true
-                        } label: {
-                            Text("Belum punya akun? **Daftar**")
-                                .font(.jakarta(15))
-                                .foregroundColor(.appTextSecondary)
-                        }
-                    }
-                    .padding(.horizontal, Spacing.xl)
+                Button {
+                    authViewModel.signInAsGuest()
+                } label: {
+                    Text("Lanjutkan sebagai Tamu")
+                        .font(.jakarta(15, weight: .medium))
+                        .foregroundColor(.appPrimary)
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.appPrimary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.bottom, Spacing.xxl + 16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.appBackground)
+        .onAppear { authViewModel.errorMessage = nil }
+    }
 
-                    Spacer()
+    private func socialButton(
+        label: String,
+        backgroundColor: Color,
+        foregroundColor: Color,
+        hasBorder: Bool,
+        isLoading: Bool,
+        action: @escaping () -> Void,
+        @ViewBuilder icon: () -> some View
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: Spacing.sm) {
+                if isLoading {
+                    ProgressView()
+                        .tint(foregroundColor)
+                        .frame(width: 20, height: 20)
+                } else {
+                    icon()
+                        .frame(width: 20, height: 20)
+                    Text(label)
+                        .font(.jakarta(15, weight: .medium))
                 }
             }
-            .background(Color.appBackground)
-            .navigationDestination(isPresented: $showSignUp) {
-                SignUpView()
-            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(backgroundColor)
+            .foregroundColor(foregroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color(.systemGray4), lineWidth: hasBorder ? 1 : 0)
+            )
         }
+        .buttonStyle(.plain)
+        .disabled(isLoading)
     }
+}
+
+#Preview {
+    SignInView()
+        .environmentObject(AuthViewModel())
 }
