@@ -50,7 +50,9 @@ struct DashboardView: View {
             ScrollView {
                 VStack(spacing: Spacing.lg) {
                     summaryCard
-                    analyticsCard
+                    recapCard
+                    healthScoreCard
+                    statisticsCard
                     budgetCard
                     transactionCard
                 }
@@ -164,15 +166,111 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Analytics Card
+    // MARK: - Recap Card
 
-    private var analyticsCard: some View {
+    private var recapCard: some View {
         VStack(spacing: 0) {
             HStack {
-                Image(systemName: "chart.bar.fill")
+                Image(systemName: "doc.text.fill")
                     .font(.jakarta(12))
                     .foregroundColor(.appPrimary)
-                Text("Analitik")
+                Text("Recap Bulan Ini")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appTextSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.xl)
+
+            HStack(spacing: 0) {
+                Text(isBalanceVisible ? viewModel.balance.formattedAsCurrency() : "Rp********")
+                    .font(.jakarta(28, weight: .bold))
+                    .foregroundColor(.appText)
+                    .contentTransition(.numericText())
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.sm)
+
+            Text("Total Aset")
+                .font(.jakarta(11))
+                .foregroundColor(.appTextSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, 2)
+
+            Divider()
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.lg)
+
+            HStack(spacing: 0) {
+                recapItem(
+                    icon: "chart.line.uptrend.xyaxis",
+                    iconColor: viewModel.netCashflow >= 0 ? .appIncome : .appExpense,
+                    title: "Pertumbuhan Aset",
+                    value: (viewModel.netCashflow >= 0 ? "+" : "") + viewModel.netCashflow.formattedAsCurrency(),
+                    subtitle: "vs bulan lalu"
+                )
+                Divider().frame(height: 40)
+                recapItem(
+                    icon: "arrow.up.forward",
+                    iconColor: viewModel.expenseChange <= 0 ? .appIncome : .appExpense,
+                    title: "Beban Bulanan",
+                    value: (viewModel.expenseChange >= 0 ? "+" : "") + viewModel.expenseChange.formattedAsCurrency(),
+                    subtitle: "\(viewModel.expenseChangePct >= 0 ? "+" : "")\(String(format: "%.1f", viewModel.expenseChangePct))% MoM"
+                )
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.appCardBackground)
+        )
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: "doc.text.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.appPrimary.opacity(0.08))
+                .offset(x: -12, y: -4)
+        }
+    }
+
+    private func recapItem(icon: String, iconColor: Color, title: String, value: String, subtitle: String) -> some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: icon)
+                .font(.jakarta(10))
+                .foregroundColor(iconColor)
+                .frame(width: 28, height: 28)
+                .background(iconColor.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 7))
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.jakarta(10))
+                    .foregroundColor(.appTextSecondary)
+                Text(isBalanceVisible ? value : "***")
+                    .font(.jakarta(13, weight: .semibold))
+                    .foregroundColor(iconColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text(subtitle)
+                    .font(.jakarta(8))
+                    .foregroundColor(.appTextSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Health Score Card
+
+    private var healthScoreCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "heart.fill")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appPrimary)
+                Text("Skor Kesehatan Finansial")
                     .font(.jakarta(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
@@ -183,28 +281,90 @@ struct DashboardView: View {
             healthScoreSpotlight
                 .padding(.horizontal, Spacing.xl)
                 .padding(.top, Spacing.lg)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.appCardBackground)
+        )
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.appPrimary.opacity(0.08))
+                .offset(x: -12, y: -4)
+        }
+    }
+
+    // MARK: - Statistics Card
+
+    private var statisticsCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "chart.bar.fill")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appPrimary)
+                Text("Statistik Bulan Ini")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appTextSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.xl)
+
+            HStack(spacing: 0) {
+                statItem(title: "Pemasukan", amount: viewModel.totalIncome, color: .appIncome)
+                Divider().frame(height: 36)
+                statItem(title: "Pengeluaran", amount: viewModel.totalExpense, color: .appExpense)
+                Divider().frame(height: 36)
+                statItem(title: "Cashflow", amount: viewModel.netCashflow, color: viewModel.netCashflow >= 0 ? .appIncome : .appExpense)
+            }
+            .padding(.top, Spacing.lg)
+            .padding(.bottom, Spacing.md)
 
             Divider()
                 .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
 
-            cashflowChart
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.md), count: 2), spacing: Spacing.md) {
+                statInfoCard(
+                    icon: "calendar.day.timeline.left",
+                    label: "Rata-rata Harian",
+                    value: viewModel.averageDailySpending.formattedAsCurrency(),
+                    color: .appPrimary
+                )
+                statInfoCard(
+                    icon: "arrow.left.arrow.right",
+                    label: "Total Transaksi",
+                    value: "\(viewModel.currentMonthTransactionCount) kali",
+                    color: .blue
+                )
+                statInfoCard(
+                    icon: "tag.fill",
+                    label: "Kategori Tertinggi",
+                    value: viewModel.topCategoryName,
+                    subvalue: "\(Int(viewModel.topCategoryPct))% pengeluaran",
+                    color: .appWarning
+                )
+                statInfoCard(
+                    icon: "chart.pie.fill",
+                    label: "Sisa Budget",
+                    value: viewModel.totalBudget > 0 ? "\(Int(max(0, viewModel.totalRemaining / viewModel.totalBudget * 100)))%" : "-",
+                    color: viewModel.totalRemaining >= 0 ? .appIncome : .appError
+                )
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.vertical, Spacing.lg)
 
-            if !viewModel.categorySpending.isEmpty {
+            if !viewModel.financialTips.isEmpty {
                 Divider()
                     .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.lg)
 
-                spendingChart
+                financialTipsSection
                     .padding(.horizontal, Spacing.xl)
                     .padding(.top, Spacing.lg)
+                    .padding(.bottom, Spacing.sm)
             }
 
             Divider()
                 .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
 
             NavigationLink {
                 AnalyticsView(viewModel: viewModel)
@@ -251,6 +411,70 @@ struct DashboardView: View {
                 .foregroundColor(.appPrimary.opacity(0.08))
                 .offset(x: -12, y: -4)
         }
+    }
+
+    private func statInfoCard(icon: String, label: String, value: String, subvalue: String? = nil, color: Color) -> some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: icon)
+                .font(.jakarta(12))
+                .foregroundColor(color)
+                .frame(width: 32, height: 32)
+                .background(color.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label)
+                    .font(.jakarta(9))
+                    .foregroundColor(.appTextSecondary)
+                Text(value)
+                    .font(.jakarta(12, weight: .semibold))
+                    .foregroundColor(.appText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                if let subvalue = subvalue {
+                    Text(subvalue)
+                        .font(.jakarta(8))
+                        .foregroundColor(color)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.sm)
+        .background(Color.appGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    // MARK: - Financial Tips
+
+    private var financialTipsSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(spacing: 4) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.jakarta(11))
+                    .foregroundColor(.appWarning)
+                Text("Tips Finansial")
+                    .font(.jakarta(13, weight: .semibold))
+                    .foregroundColor(.appText)
+            }
+
+            ForEach(viewModel.financialTips.prefix(2)) { tip in
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: tip.icon)
+                        .font(.jakarta(10))
+                        .foregroundColor(tip.type.color)
+                        .frame(width: 24, height: 24)
+                        .background(tip.type.bgColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                    Text(tip.message)
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(.bottom, Spacing.sm)
     }
 
     // MARK: Charts
@@ -354,9 +578,6 @@ struct DashboardView: View {
             VStack(spacing: Spacing.sm) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Skor Kesehatan Finansial")
-                            .font(.jakarta(12))
-                            .foregroundColor(.appTextSecondary)
                         Text(viewModel.healthScoreLabel)
                             .font(.jakarta(18, weight: .bold))
                             .foregroundColor(color)
