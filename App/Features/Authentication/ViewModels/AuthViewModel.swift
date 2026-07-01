@@ -29,7 +29,6 @@ final class AuthViewModel: ObservableObject {
     init() {
         Task {
             await setupAuthListener()
-            await restoreSession()
         }
     }
 
@@ -44,14 +43,17 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Session Restore
+    // MARK: - Session Check (called after splash)
 
-    private func restoreSession() async {
+    func checkSession() async {
         do {
             let session = try await SupabaseSDK.client.auth.session
             try await fetchProfileAndSetUser(authUserId: session.user.id, email: session.user.email ?? "", displayName: session.user.userMetadata["full_name"]?.stringValue ?? session.user.userMetadata["name"]?.stringValue)
         } catch {
             isAuthenticated = false
+        }
+        withAnimation(.easeInOut(duration: 0.5)) {
+            showSplash = false
         }
     }
 
@@ -152,11 +154,4 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Splash
-
-    func dismissSplash() {
-        withAnimation(.easeInOut(duration: 0.5)) {
-            showSplash = false
-        }
-    }
 }

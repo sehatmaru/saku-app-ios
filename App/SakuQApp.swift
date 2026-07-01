@@ -24,7 +24,7 @@ struct SakuQApp: App {
             ZStack {
                 if authViewModel.showSplash {
                     SplashView {
-                        authViewModel.dismissSplash()
+                        Task { await authViewModel.checkSession() }
                     }
                     .transition(.opacity)
                 } else if authViewModel.isAuthenticated {
