@@ -41,12 +41,20 @@ struct BudgetListView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: Spacing.lg) {
-                    if !viewModel.hasLoadedOnce {
+                    if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
+                        errorStateView(message: error)
+                            .transition(.opacity)
+                    } else if !viewModel.hasLoadedOnce {
                         budgetSkeleton
+                            .transition(.opacity)
                     } else {
-                        summaryCard
+                        Group {
+                            if viewModel.errorMessage != nil {
+                                ErrorBanner(message: viewModel.errorMessage!)
+                            }
+                            summaryCard
 
-                        ForEach(setItems) { item in
+                            ForEach(setItems) { item in
                             NavigationLink(destination: BudgetDetailView(
                                 budget: item.budget!,
                                 category: item.category,
@@ -81,12 +89,15 @@ struct BudgetListView: View {
                             .buttonStyle(.plain)
                         }
 
-                        if !unsetItems.isEmpty {
-                            unsetSection
+                            if !unsetItems.isEmpty {
+                                unsetSection
+                            }
                         }
+                        .transition(.opacity)
                     }
                 }
                 .padding()
+                .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
             }
             .background(Color.appGroupedBackground)
             .navigationTitle("Budget")
@@ -106,6 +117,15 @@ struct BudgetListView: View {
             }
             .sheet(isPresented: $showOverallHistory) {
                 OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions)
+            }
+        }
+    }
+
+    private func errorStateView(message: String) -> some View {
+        ErrorStateView(message: message) {
+            guard let userId = authViewModel.currentUser?.id else { return }
+            Task {
+                await viewModel.loadBudgets(userId: userId, forceRefresh: true)
             }
         }
     }
@@ -147,6 +167,7 @@ struct BudgetListView: View {
         .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .redacted(reason: .placeholder)
+        .shimmer()
     }
 
     private var unsetSection: some View {

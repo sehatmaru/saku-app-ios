@@ -21,31 +21,42 @@ struct TransactionListView: View {
                                 .frame(height: 0)
                                 .id("scrollTop")
 
-                            if !viewModel.hasLoadedOnce {
+                            if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
+                                errorStateView(message: error)
+                                    .transition(.opacity)
+                            } else if !viewModel.hasLoadedOnce {
                                 transactionSkeleton
+                                    .transition(.opacity)
                             } else {
-                                summaryCard
-                                    .padding(.horizontal)
+                                Group {
+                                    if viewModel.errorMessage != nil {
+                                        ErrorBanner(message: viewModel.errorMessage!)
+                                    }
+                                    summaryCard
+                                        .padding(.horizontal)
 
-                                Color.clear
-                                    .frame(height: 1)
-                                    .onAppear { showBackToTop = false }
-                                    .onDisappear { showBackToTop = true }
+                                    Color.clear
+                                        .frame(height: 1)
+                                        .onAppear { showBackToTop = false }
+                                        .onDisappear { showBackToTop = true }
 
-                                filterChips
-                                    .padding(.top, Spacing.xs)
+                                    filterChips
+                                        .padding(.top, Spacing.xs)
 
-                                if filteredTransactions.isEmpty {
-                                    emptyState
-                                } else {
-                                    groupedTransactionList
+                                    if filteredTransactions.isEmpty {
+                                        emptyState
+                                    } else {
+                                        groupedTransactionList
+                                    }
+
+                                    Color.clear
+                                        .frame(height: Spacing.xl)
                                 }
-
-                                Color.clear
-                                    .frame(height: Spacing.xl)
+                                .transition(.opacity)
                             }
                         }
                     }
+                    .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
                     .background(Color.appGroupedBackground)
                     .navigationBarTitleDisplayMode(.inline)
                     .searchable(
@@ -106,6 +117,15 @@ struct TransactionListView: View {
         }
     }
 
+    private func errorStateView(message: String) -> some View {
+        ErrorStateView(message: message) {
+            guard let userId = authViewModel.currentUser?.id else { return }
+            Task {
+                await viewModel.loadTransactions(userId: userId, forceRefresh: true)
+            }
+        }
+    }
+
     private var transactionSkeleton: some View {
         VStack(spacing: Spacing.lg) {
             RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground).frame(height: 170).redacted(reason: .placeholder)
@@ -113,6 +133,7 @@ struct TransactionListView: View {
             RoundedRectangle(cornerRadius: 16).fill(Color.appCardBackground).frame(height: 260).redacted(reason: .placeholder)
         }
         .padding()
+        .shimmer()
     }
 
     // MARK: Summary

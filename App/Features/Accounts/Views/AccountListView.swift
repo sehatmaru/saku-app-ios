@@ -21,36 +21,47 @@ struct AccountListView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: Spacing.lg) {
-                    if !viewModel.hasLoadedOnce {
+                    if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
+                        errorStateView(message: error)
+                            .transition(.opacity)
+                    } else if !viewModel.hasLoadedOnce {
                         skeletonContent
+                            .transition(.opacity)
                     } else {
-                        totalBalanceCard
-
-                        ForEach(activeAccounts) { account in
-                            NavigationLink(destination: WalletDetailView(
-                                    account: account,
-                                    transactions: accountTransactions[account.id] ?? [],
-                                    onSave: { id, name, type, balance, icon, isArchived in
-                                        await viewModel.updateAccount(id: id, name: name, type: type, openingBalance: balance, icon: icon, isArchived: isArchived)
-                                    },
-                                    onDelete: { id in
-                                        await viewModel.removeAccount(id: id)
-                                    },
-                                    onToggleArchive: { id, archived in
-                                        await viewModel.toggleAccountArchive(id: id)
-                                    }
-                            )) {
-                                AccountCard(account: account)
+                        Group {
+                            if viewModel.errorMessage != nil {
+                                ErrorBanner(message: viewModel.errorMessage!)
                             }
-                            .buttonStyle(.plain)
-                        }
+                            totalBalanceCard
 
-                        if !archivedAccounts.isEmpty {
-                            archiveSection
+                            ForEach(activeAccounts) { account in
+                                NavigationLink(destination: WalletDetailView(
+                                        account: account,
+                                        transactions: accountTransactions[account.id] ?? [],
+                                        onSave: { id, name, type, balance, icon, isArchived in
+                                            await viewModel.updateAccount(id: id, name: name, type: type, openingBalance: balance, icon: icon, isArchived: isArchived)
+                                        },
+                                        onDelete: { id in
+                                            await viewModel.removeAccount(id: id)
+                                        },
+                                        onToggleArchive: { id, archived in
+                                            await viewModel.toggleAccountArchive(id: id)
+                                        }
+                                )) {
+                                    AccountCard(account: account)
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            if !archivedAccounts.isEmpty {
+                                archiveSection
+                            }
                         }
+                        .transition(.opacity)
                     }
                 }
                 .padding()
+                .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
             }
             .background(Color.appGroupedBackground)
             .refreshable {
@@ -82,12 +93,23 @@ struct AccountListView: View {
         }
     }
 
+    private func errorStateView(message: String) -> some View {
+        ErrorStateView(message: message) {
+            guard let userId = authViewModel.currentUser?.id else { return }
+            Task {
+                await viewModel.loadAccounts(userId: userId, forceRefresh: true)
+                await syncAccountTransactions(userId: userId)
+            }
+        }
+    }
+
     private var skeletonContent: some View {
         VStack(spacing: Spacing.lg) {
             RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground).frame(height: 220).redacted(reason: .placeholder)
             RoundedRectangle(cornerRadius: 16).fill(Color.appCardBackground).frame(height: 120).redacted(reason: .placeholder)
             RoundedRectangle(cornerRadius: 16).fill(Color.appCardBackground).frame(height: 120).redacted(reason: .placeholder)
         }
+        .shimmer()
     }
 
     private func syncAccountTransactions(userId: String, forceRefresh: Bool = false) async {

@@ -7,12 +7,14 @@ final class AccountListViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var hasLoadedOnce = false
+    @Published var errorMessage: String?
     private var loadedUserId: String?
 
     func loadAccounts(userId: String, forceRefresh: Bool = false) async {
         guard !isLoading, !isRefreshing else { return }
 
         if !forceRefresh, let cached = AppDataCache.shared.accounts(for: userId) {
+            errorMessage = nil
             loadedUserId = userId
             accounts = cached
             recalculateBalance()
@@ -31,6 +33,7 @@ final class AccountListViewModel: ObservableObject {
         }
 
         do {
+            errorMessage = nil
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
             let (fetchedAccounts, transactions) = try await (accountsTask, transactionsTask)
@@ -41,7 +44,7 @@ final class AccountListViewModel: ObservableObject {
             loadedUserId = userId
             hasLoadedOnce = true
         } catch {
-            // Keep the last rendered data when refresh fails.
+            errorMessage = error.localizedDescription
             hasLoadedOnce = true
         }
     }

@@ -17,6 +17,7 @@ final class TransactionListViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var hasLoadedOnce = false
+    @Published var errorMessage: String?
     private var loadedUserId: String?
 
     var thisMonthBalance: Double { thisMonthIncome - thisMonthExpense }
@@ -25,6 +26,7 @@ final class TransactionListViewModel: ObservableObject {
         guard !isLoading, !isRefreshing else { return }
 
         if !forceRefresh, let cached = AppDataCache.shared.transactionState(for: userId) {
+            errorMessage = nil
             allTransactions = cached.transactions
             categories = cached.categories
             accounts = cached.accounts
@@ -45,6 +47,7 @@ final class TransactionListViewModel: ObservableObject {
         }
 
         do {
+            errorMessage = nil
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
             async let categoriesTask = SupabaseRepository.shared.fetchCategories()
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
@@ -66,7 +69,7 @@ final class TransactionListViewModel: ObservableObject {
             loadedUserId = userId
             hasLoadedOnce = true
         } catch {
-            // Keep the last rendered data when refresh fails.
+            errorMessage = error.localizedDescription
             hasLoadedOnce = true
         }
     }

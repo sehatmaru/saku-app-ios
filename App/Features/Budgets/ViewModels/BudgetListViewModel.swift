@@ -15,6 +15,7 @@ final class BudgetListViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var hasLoadedOnce = false
+    @Published var errorMessage: String?
     @Published var allExpenseTransactions: [Transaction] = []
 
     private var loadedUserId: String?
@@ -48,6 +49,7 @@ final class BudgetListViewModel: ObservableObject {
         }
 
         if !forceRefresh, let cached = AppDataCache.shared.budgetState(for: userId) {
+            errorMessage = nil
             loadedUserId = userId
             hasLoadedOnce = true
             budgets = cached.budgets
@@ -68,6 +70,7 @@ final class BudgetListViewModel: ObservableObject {
         }
 
         do {
+            errorMessage = nil
             async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)
             async let categoriesTask = SupabaseRepository.shared.fetchCategories()
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
@@ -83,8 +86,8 @@ final class BudgetListViewModel: ObservableObject {
                 let spent = try? await SupabaseRepository.shared.fetchBudgetSpent(
                     categoryId: budget.categoryId,
                     userId: userId,
-                    startDate: budget.startDate,
-                    endDate: budget.endDate
+                    startDate: budget.currentPeriodStart(),
+                    endDate: budget.currentPeriodEnd()
                 )
                 budget.spent = spent ?? 0
                 budgetsWithSpent.append(budget)
@@ -102,7 +105,7 @@ final class BudgetListViewModel: ObservableObject {
                 allExpenseTransactions: allExpenseTransactions
             ), for: userId)
         } catch {
-            // Keep the last rendered data when refresh fails.
+            errorMessage = error.localizedDescription
             hasLoadedOnce = true
         }
     }

@@ -41,6 +41,42 @@ struct Budget: Identifiable, Codable {
         daysRemaining > 0 ? remaining / Double(daysRemaining) : remaining
     }
 
+    func currentPeriodStart() -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let formatter = ISO8601DateFormatter()
+
+        switch periodUnit {
+        case "month":
+            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+            return formatter.string(from: start)
+        case "week":
+            let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
+            return formatter.string(from: start)
+        default:
+            return startDate
+        }
+    }
+
+    func currentPeriodEnd() -> String? {
+        let calendar = Calendar.current
+        let now = Date()
+        let formatter = ISO8601DateFormatter()
+
+        switch periodUnit {
+        case "month":
+            guard let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
+                  let next = calendar.date(byAdding: .month, value: periodInterval, to: start) else { return nil }
+            return formatter.string(from: next)
+        case "week":
+            guard let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)),
+                  let next = calendar.date(byAdding: .weekOfYear, value: periodInterval, to: start) else { return nil }
+            return formatter.string(from: next)
+        default:
+            return endDate
+        }
+    }
+
     var spendingStatus: SpendingStatus {
         if spent >= amount { return .overbudget }
         guard daysRemaining > 0 else { return .normal }

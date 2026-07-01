@@ -142,6 +142,8 @@ final class DashboardViewModel: ObservableObject {
         return tips
     }
 
+    @Published var errorMessage: String?
+
     @Published var healthScore: Int = 0
     @Published var healthScoreLabel: String = ""
     @Published var cashflowScore: Int = 0
@@ -154,6 +156,7 @@ final class DashboardViewModel: ObservableObject {
         guard !isLoading, !isRefreshing else { return }
 
         if !forceRefresh, let cached = AppDataCache.shared.dashboardState(for: userId) {
+            errorMessage = nil
             balance = cached.balance
             openingBalance = cached.openingBalance
             totalIncome = cached.totalIncome
@@ -188,6 +191,7 @@ final class DashboardViewModel: ObservableObject {
         }
 
         do {
+            errorMessage = nil
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
             async let categoriesTask = SupabaseRepository.shared.fetchCategories()
@@ -210,7 +214,19 @@ final class DashboardViewModel: ObservableObject {
             recentTransactions = Array(transactions.prefix(10))
 
             totalBudget = budgets.reduce(0) { $0 + $1.amount }
-            totalSpent = budgets.reduce(0) { $0 + $1.spent }
+
+            var calculatedSpent = 0.0
+            for budget in budgets {
+                if let spent = try? await SupabaseRepository.shared.fetchBudgetSpent(
+                    categoryId: budget.categoryId,
+                    userId: userId,
+                    startDate: budget.currentPeriodStart(),
+                    endDate: budget.currentPeriodEnd()
+                ) {
+                    calculatedSpent += spent
+                }
+            }
+            totalSpent = calculatedSpent
 
             var categorySpendingMap: [String: Double] = [:]
             for tx in thisMonthTransactions where tx.type == .expense {
@@ -250,7 +266,7 @@ final class DashboardViewModel: ObservableObject {
             loadedUserId = userId
             hasLoadedOnce = true
         } catch {
-            // Keep the last rendered data when refresh fails.
+            errorMessage = error.localizedDescription
             hasLoadedOnce = true
         }
     }

@@ -68,12 +68,19 @@ struct DashboardView: View {
     }
 
     private var mainContent: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: Spacing.lg) {
-                    if !viewModel.hasLoadedOnce {
-                        dashboardSkeleton
-                    } else {
+        ScrollView {
+            VStack(spacing: Spacing.lg) {
+                if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
+                    errorStateView(message: error)
+                        .transition(.opacity)
+                } else if !viewModel.hasLoadedOnce {
+                    dashboardSkeleton
+                        .transition(.opacity)
+                } else {
+                    Group {
+                        if viewModel.errorMessage != nil {
+                            ErrorBanner(message: viewModel.errorMessage!)
+                        }
                         summaryCard
                         recapCard
                         healthScoreCard
@@ -81,28 +88,30 @@ struct DashboardView: View {
                         budgetCard
                         transactionCard
                     }
-                }
-                .padding()
-            }
-            .background(Color.appGroupedBackground)
-            .refreshable {
-                if let userId = authViewModel.currentUser?.id {
-                    await viewModel.loadDashboard(userId: userId, forceRefresh: true)
+                    .transition(.opacity)
                 }
             }
-            .navigationTitle("SakuQ")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        withAnimation(.smooth) {
-                            isBalanceVisible.toggle()
-                        }
-                        isBalanceVisibleStorage = isBalanceVisible
-                    } label: {
-                        Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
-                            .font(.jakarta(16))
-                            .foregroundColor(.appTextSecondary)
+            .padding()
+            .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
+        }
+        .background(Color.appGroupedBackground)
+        .refreshable {
+            if let userId = authViewModel.currentUser?.id {
+                await viewModel.loadDashboard(userId: userId, forceRefresh: true)
+            }
+        }
+        .navigationTitle("SakuQ")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    withAnimation(.smooth) {
+                        isBalanceVisible.toggle()
                     }
+                    isBalanceVisibleStorage = isBalanceVisible
+                } label: {
+                    Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
+                        .font(.jakarta(16))
+                        .foregroundColor(.appTextSecondary)
                 }
             }
         }
@@ -119,11 +128,22 @@ struct DashboardView: View {
         }
     }
 
+    private func errorStateView(message: String) -> some View {
+        ErrorStateView(message: message) {
+            if let userId = authViewModel.currentUser?.id {
+                Task {
+                    await viewModel.loadDashboard(userId: userId, forceRefresh: true)
+                }
+            }
+        }
+    }
+
     private func skeletonCard(height: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 20)
             .fill(Color.appCardBackground)
             .frame(maxWidth: .infinity, minHeight: height)
             .redacted(reason: .placeholder)
+            .shimmer()
     }
 
     // MARK: - Summary Card
