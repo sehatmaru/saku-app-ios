@@ -2,7 +2,11 @@ import SwiftUI
 
 struct AccountListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @StateObject private var viewModel = AccountListViewModel()
+    @StateObject private var viewModel: AccountListViewModel
+
+    init(viewModel: AccountListViewModel = AccountListViewModel()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var showAddWallet = false
     @State private var showArchived = false
@@ -339,6 +343,24 @@ struct AccountCard: View {
 }
 
 #Preview {
-    AccountListView()
-        .environmentObject(AuthViewModel())
+    AccountListPreview()
+}
+
+struct AccountListPreview: View {
+    @StateObject private var vm: AccountListViewModel = {
+        let v = AccountListViewModel()
+        v.hasLoadedOnce = true
+        v.accounts = [
+            Account(id: "1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, openingBalance: 5_000_000, currentBalance: 5_430_000),
+            Account(id: "2", name: "Mandiri", type: .bank, icon: "building.columns.fill", isArchived: false, openingBalance: 3_000_000, currentBalance: 2_850_000),
+            Account(id: "3", name: "GoPay", type: .ewallet, icon: "wallet.pass.fill", isArchived: false, openingBalance: 500_000, currentBalance: 320_000),
+        ]
+        v.totalBalance = 8_600_000
+        return v
+    }()
+
+    var body: some View {
+        AccountListView(viewModel: vm)
+            .environmentObject(AuthViewModel())
+    }
 }

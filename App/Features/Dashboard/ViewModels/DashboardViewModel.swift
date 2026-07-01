@@ -45,6 +45,18 @@ final class DashboardViewModel: ObservableObject {
         totalExpense - previousMonthExpense
     }
 
+    var previousMonthNetCashflow: Double {
+        previousMonthIncome - previousMonthExpense
+    }
+
+    var netCashflowChange: Double {
+        netCashflow - previousMonthNetCashflow
+    }
+
+    var incomeChange: Double {
+        totalIncome - previousMonthIncome
+    }
+
     var expenseChangePct: Double {
         previousMonthExpense > 0 ? (expenseChange / previousMonthExpense) * 100 : 0
     }

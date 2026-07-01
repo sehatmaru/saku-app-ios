@@ -2,7 +2,12 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @StateObject private var viewModel = ProfileViewModel()
+    @StateObject private var viewModel: ProfileViewModel
+
+    init(viewModel: ProfileViewModel = ProfileViewModel()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
     @State private var showLogoutAlert = false
 
     @AppStorage("appLanguage") private var appLanguage = "id"
@@ -532,6 +537,25 @@ struct NotificationView: View {
 }
 
 #Preview {
-    ProfileView()
-        .environmentObject(AuthViewModel())
+    ProfilePreview()
+}
+
+private struct ProfilePreview: View {
+    @StateObject private var vm: ProfileViewModel = {
+        let v = ProfileViewModel()
+        v.displayName = "Budi Santoso"
+        return v
+    }()
+
+    @StateObject private var authVM: AuthViewModel = {
+        let a = AuthViewModel()
+        a.currentUser = User(id: "u1", authUserId: "auth1", email: "user@email.com", displayName: "Budi Santoso", defaultCurrencyCode: "IDR")
+        a.isAuthenticated = true
+        return a
+    }()
+
+    var body: some View {
+        ProfileView(viewModel: vm)
+            .environmentObject(authVM)
+    }
 }

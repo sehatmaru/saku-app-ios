@@ -2,7 +2,11 @@ import SwiftUI
 
 struct TransactionListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @StateObject private var viewModel = TransactionListViewModel()
+    @StateObject private var viewModel: TransactionListViewModel
+
+    init(viewModel: TransactionListViewModel = TransactionListViewModel()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var filter = TransactionFilter()
     @State private var expandedMonths: Set<String> = []
@@ -10,6 +14,7 @@ struct TransactionListView: View {
     @State private var isSearching = false
     @State private var showAdvancedSearch = false
     @State private var showBackToTop = false
+    @State private var hasInitialExpanded = false
 
     var body: some View {
         NavigationStack {
@@ -71,12 +76,8 @@ struct TransactionListView: View {
                         guard let userId = authViewModel.currentUser?.id else { return }
                         await viewModel.loadTransactions(userId: userId, forceRefresh: true)
                     }
-                    .onAppear {
-                        if expandedMonths.isEmpty {
-                            let sections = viewModel.sections(for: filteredTransactions)
-                            expandedMonths = Set(sections.prefix(2).map { $0.id })
-                        }
-                    }
+                    .onAppear { expandInitialMonths() }
+                    .onChange(of: viewModel.allTransactions.count) { _, _ in expandInitialMonths() }
                     .task {
                         guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }
                         await viewModel.loadTransactions(userId: userId)
@@ -126,6 +127,14 @@ struct TransactionListView: View {
         }
     }
 
+    private func expandInitialMonths() {
+        guard !hasInitialExpanded else { return }
+        let sections = viewModel.sections(for: filteredTransactions)
+        guard !sections.isEmpty else { return }
+        expandedMonths = Set(sections.prefix(2).map { $0.id })
+        hasInitialExpanded = true
+    }
+
     private var transactionSkeleton: some View {
         VStack(spacing: Spacing.lg) {
             RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground).frame(height: 170).redacted(reason: .placeholder)
@@ -153,16 +162,14 @@ struct TransactionListView: View {
             .padding(.top, Spacing.xl)
 
             HStack(spacing: 0) {
-                Text("Rp")
-                    .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(.appText)
+                let balance = viewModel.thisMonthBalance
                 Text(isBalanceVisible
-                     ? (viewModel.thisMonthBalance >= 0
-                        ? viewModel.thisMonthBalance.formattedAsCurrency().replacingOccurrences(of: "Rp", with: "")
-                        : "0")
+                     ? (balance >= 0
+                        ? balance.formattedAsCurrency()
+                        : "-\(abs(balance).formattedAsCurrency())")
                      : "********")
                     .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(.appText)
+                    .foregroundColor(balance >= 0 ? .appText : .appError)
                 Spacer()
             }
             .padding(.horizontal, Spacing.xl)
@@ -601,5 +608,32 @@ struct ActiveFilterChip: View {
 }
 
 #Preview {
-    TransactionListView()
+    TransactionListPreview()
+}
+
+struct TransactionListPreview: View {
+    @StateObject private var vm: TransactionListViewModel = {
+        let v = TransactionListViewModel()
+        v.hasLoadedOnce = true
+        v.allTransactions = [
+            Transaction(id: "1", accountId: "a1", counterpartyAccountId: nil, categoryId: "1", amount: 50_000, type: .expense, description: nil, note: "Nasi Goreng", date: Date()),
+            Transaction(id: "2", accountId: "a1", counterpartyAccountId: nil, categoryId: "2", amount: 20_000, type: .expense, description: nil, note: "Bensin", date: Date()),
+            Transaction(id: "3", accountId: "a1", counterpartyAccountId: nil, categoryId: nil, amount: 500_000, type: .income, description: nil, note: "Gaji", date: Date()),
+        ]
+        v.categories = [
+            Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF6B6B", type: .expense),
+            Category(id: "2", name: "Transport", icon: "car.fill", color: "#4ECDC4", type: .expense),
+        ]
+        v.accounts = [
+            Account(id: "a1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, openingBalance: 5_000_000, currentBalance: 5_430_000),
+        ]
+        v.thisMonthIncome = 3_200_000
+        v.thisMonthExpense = 2_750_000
+        return v
+    }()
+
+    var body: some View {
+        TransactionListView(viewModel: vm)
+            .environmentObject(AuthViewModel())
+    }
 }

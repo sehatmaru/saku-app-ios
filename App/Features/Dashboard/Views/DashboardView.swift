@@ -2,8 +2,12 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @StateObject private var viewModel = DashboardViewModel()
+    @StateObject private var viewModel: DashboardViewModel
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
+
+    init(viewModel: DashboardViewModel = DashboardViewModel()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
 
@@ -82,7 +86,6 @@ struct DashboardView: View {
                             ErrorBanner(message: viewModel.errorMessage!)
                         }
                         summaryCard
-                        recapCard
                         healthScoreCard
                         statisticsCard
                         budgetCard
@@ -120,7 +123,6 @@ struct DashboardView: View {
     private var dashboardSkeleton: some View {
         VStack(spacing: Spacing.lg) {
             skeletonSummary
-            skeletonRecap
             skeletonHealthScore
             skeletonStatistics
             skeletonBudget
@@ -173,52 +175,6 @@ struct DashboardView: View {
                 .frame(height: 46)
                 .padding(.horizontal, Spacing.lg)
                 .padding(.bottom, Spacing.lg)
-        }
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
-        .shimmer()
-    }
-
-    private var skeletonRecap: some View {
-        VStack(spacing: 0) {
-            skeletonLine(width: 110)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.xl)
-
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color.appTextSecondary.opacity(0.1))
-                .frame(height: 30)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.sm)
-
-            skeletonLine(width: 60)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, 4)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: 0) {
-                ForEach(0..<2) { _ in
-                    HStack(spacing: Spacing.sm) {
-                        RoundedRectangle(cornerRadius: 7)
-                            .fill(Color.appTextSecondary.opacity(0.1))
-                            .frame(width: 28, height: 28)
-                        VStack(alignment: .leading, spacing: 4) {
-                            skeletonLine(width: 60)
-                            skeletonLine(width: 90)
-                            skeletonLine(width: 40)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, Spacing.sm)
-                }
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.lg)
         }
         .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
         .shimmer()
@@ -423,7 +379,7 @@ struct DashboardView: View {
                 Image(systemName: "leaf.fill")
                     .font(.jakarta(12))
                     .foregroundColor(.appPrimary)
-                Text("Saldo Bulan Ini")
+                Text("Total Saldo Saat Ini")
                     .font(.jakarta(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
@@ -432,7 +388,7 @@ struct DashboardView: View {
             .padding(.top, Spacing.xl)
 
             HStack {
-                Text(isBalanceVisible ? viewModel.openingBalance.formattedAsCurrency() : "Rp********")
+                Text(isBalanceVisible ? viewModel.balance.formattedAsCurrency() : "Rp********")
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
                     .contentTransition(.numericText())
@@ -441,23 +397,16 @@ struct DashboardView: View {
             .padding(.horizontal, Spacing.xl)
             .padding(.top, Spacing.sm)
 
-            Text("Saldo awal bulan ini")
-                .font(.jakarta(11))
-                .foregroundColor(.appTextSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, 2)
-
             Divider()
                 .padding(.horizontal, Spacing.xl)
                 .padding(.top, Spacing.lg)
 
             HStack(spacing: 0) {
-                statItem(title: "Pemasukan", amount: viewModel.totalIncome, color: .appIncome)
+                statItem(title: "Pemasukan Bulan Ini", amount: viewModel.totalIncome, color: .appIncome, diff: viewModel.incomeChange, lastMonth: viewModel.previousMonthIncome)
                 Divider().frame(height: 28)
-                statItem(title: "Pengeluaran", amount: viewModel.totalExpense, color: .appExpense)
+                statItem(title: "Pengeluaran Bulan Ini", amount: viewModel.totalExpense, color: .appExpense, diff: viewModel.expenseChange, lastMonth: viewModel.previousMonthExpense)
                 Divider().frame(height: 28)
-                statItem(title: "Cashflow", amount: viewModel.netCashflow, color: viewModel.netCashflow >= 0 ? .appIncome : .appExpense)
+                statItem(title: "Net Cashflow", amount: viewModel.netCashflow, color: viewModel.netCashflow >= 0 ? .appIncome : .appExpense, diff: viewModel.netCashflowChange, lastMonth: viewModel.previousMonthNetCashflow)
             }
             .padding(.top, Spacing.md)
             .padding(.bottom, Spacing.lg)
@@ -492,87 +441,30 @@ struct DashboardView: View {
         }
     }
 
-    private func statItem(title: String, amount: Double, color: Color) -> some View {
+    private func statItem(title: String, amount: Double, color: Color, diff: Double? = nil, lastMonth: Double? = nil) -> some View {
         VStack(spacing: 4) {
             Text(title)
                 .font(.jakarta(11))
                 .foregroundColor(.appTextSecondary)
-            Text(isBalanceVisible ? amount.formattedAsCurrency() : "Rp***")
+            Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp***")
                 .font(.jakarta(13, weight: .semibold))
                 .foregroundColor(color)
+
+            if let diff, let lastMonth, lastMonth > 0 {
+                let pct = diff / lastMonth * 100
+                HStack(spacing: 2) {
+                    Image(systemName: diff >= 0 ? "arrow.up" : "arrow.down")
+                        .font(.jakarta(7, weight: .bold))
+                    Text("\(abs(pct), specifier: "%.1f")%")
+                        .font(.jakarta(9, weight: .medium))
+                }
+                .foregroundColor(diff >= 0 ? color : .appExpense)
+            }
         }
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Recap Card
 
-    private var recapCard: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "doc.text.fill")
-                    .font(.jakarta(12))
-                    .foregroundColor(.appPrimary)
-                Text("Recap Bulan Ini")
-                    .font(.jakarta(12))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
-
-            HStack(spacing: 0) {
-                Text(isBalanceVisible ? viewModel.balance.formattedAsCurrency() : "Rp********")
-                    .font(.jakarta(28, weight: .bold))
-                    .foregroundColor(.appText)
-                    .contentTransition(.numericText())
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.sm)
-
-            Text("Total Aset")
-                .font(.jakarta(11))
-                .foregroundColor(.appTextSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, 2)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: 0) {
-                recapItem(
-                    icon: "chart.line.uptrend.xyaxis",
-                    iconColor: viewModel.netCashflow >= 0 ? .appIncome : .appExpense,
-                    title: "Pertumbuhan Aset",
-                    value: (viewModel.netCashflow >= 0 ? "+" : "") + viewModel.netCashflow.formattedAsCurrency(),
-                    subtitle: "vs bulan lalu"
-                )
-                Divider().frame(height: 40)
-                recapItem(
-                    icon: "arrow.up.forward",
-                    iconColor: viewModel.expenseChange <= 0 ? .appIncome : .appExpense,
-                    title: "Beban Bulanan",
-                    value: (viewModel.expenseChange >= 0 ? "+" : "") + viewModel.expenseChange.formattedAsCurrency(),
-                    subtitle: "\(viewModel.expenseChangePct >= 0 ? "+" : "")\(String(format: "%.1f", viewModel.expenseChangePct))% MoM"
-                )
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.lg)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: "doc.text.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.appPrimary.opacity(0.08))
-                .offset(x: -12, y: -4)
-        }
-    }
 
     private func recapItem(icon: String, iconColor: Color, title: String, value: String, subtitle: String) -> some View {
         HStack(spacing: Spacing.sm) {
@@ -1136,9 +1028,7 @@ struct DashboardView: View {
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
                 Text(isBalanceVisible
-                     ? (viewModel.netCashflow >= 0
-                        ? viewModel.netCashflow.formattedAsCurrency().replacingOccurrences(of: "Rp", with: "")
-                        : "0")
+                     ? viewModel.netCashflow.formattedAsCurrency().replacingOccurrences(of: "Rp", with: "")
                      : "********")
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
@@ -1214,7 +1104,7 @@ struct DashboardView: View {
                 Text(label)
                     .font(.jakarta(10))
                     .foregroundColor(.appTextSecondary)
-                Text(isBalanceVisible ? (amount > 0 ? abbreviatedAmount(amount) : "Rp0") : "Rp***")
+                Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp***")
                     .font(.jakarta(14, weight: .semibold))
                     .foregroundColor(color)
             }
@@ -1227,16 +1117,20 @@ struct DashboardView: View {
     }
 
     private func abbreviatedAmount(_ amount: Double) -> String {
-        switch amount {
+        let prefix = amount < 0 ? "-" : (amount > 0 ? "" : "")
+        let absVal = abs(amount)
+        let formatted: String
+        switch absVal {
         case 1_000_000_000...:
-            String(format: "%.1f Miliar", amount / 1_000_000_000)
+            formatted = String(format: "%.1f Miliar", absVal / 1_000_000_000)
         case 1_000_000...:
-            String(format: "%.0f Juta", amount / 1_000_000)
+            formatted = String(format: "%.0f Juta", absVal / 1_000_000)
         case 1_000...:
-            String(format: "%.0f Ribu", amount / 1_000)
+            formatted = String(format: "%.0f Ribu", absVal / 1_000)
         default:
-            String(Int(amount))
+            formatted = String(Int(absVal))
         }
+        return "\(prefix)\(formatted)"
     }
 }
 
@@ -1299,6 +1193,47 @@ struct TransactionRow: View {
 }
 
 #Preview {
-    DashboardView()
-        .environmentObject(AuthViewModel())
+    DashboardPreview()
+}
+
+struct DashboardPreview: View {
+    @StateObject private var vm: DashboardViewModel = {
+        let v = DashboardViewModel()
+        v.hasLoadedOnce = true
+        v.balance = 5_250_000
+        v.openingBalance = 4_800_000
+        v.totalIncome = 3_200_000
+        v.totalExpense = 2_750_000
+        v.netCashflow = 450_000
+        v.totalBudget = 2_000_000
+        v.totalSpent = 1_200_000
+        v.currentMonthTransactionCount = 23
+        let cat1 = Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF6B6B", type: .expense)
+        let cat2 = Category(id: "2", name: "Transport", icon: "car.fill", color: "#4ECDC4", type: .expense)
+        let cat3 = Category(id: "3", name: "Belanja", icon: "bag.fill", color: "#45B7D1", type: .expense)
+        v.categories = [cat1, cat2, cat3]
+        v.categorySpending = [
+            (cat1, 1_200_000),
+            (cat2, 850_000),
+            (cat3, 700_000),
+        ]
+        v.monthlyCashflow = [
+            ("Feb", 2_800_000, 2_100_000),
+            ("Mar", 3_100_000, 2_400_000),
+            ("Apr", 2_900_000, 2_600_000),
+            ("Mei", 3_400_000, 2_300_000),
+            ("Jun", 3_200_000, 2_750_000),
+        ]
+        v.healthScore = 72
+        v.healthScoreLabel = "Cukup"
+        v.cashflowScore = 30
+        v.budgetScore = 25
+        v.diversityScore = 17
+        return v
+    }()
+
+    var body: some View {
+        DashboardView(viewModel: vm)
+            .environmentObject(AuthViewModel())
+    }
 }
