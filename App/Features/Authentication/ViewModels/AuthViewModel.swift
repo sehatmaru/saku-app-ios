@@ -49,19 +49,27 @@ final class AuthViewModel: ObservableObject {
     private func restoreSession() async {
         do {
             let session = try await SupabaseSDK.client.auth.session
-            try await fetchProfileAndSetUser(authUserId: session.user.id)
+            try await fetchProfileAndSetUser(authUserId: session.user.id, email: session.user.email ?? "", displayName: session.user.userMetadata["full_name"]?.stringValue ?? session.user.userMetadata["name"]?.stringValue)
         } catch {
             isAuthenticated = false
         }
     }
 
-    private func fetchProfileAndSetUser(authUserId: UUID) async throws {
-        let profile = try await SupabaseSDK.fetchProfile(authUserId: authUserId)
+    private func fetchProfileAndSetUser(authUserId: UUID, email: String, displayName: String?) async throws {
+        var profile: UserProfile
+        if let existing = try? await SupabaseSDK.fetchProfile(authUserId: authUserId) {
+            if existing.displayName == nil, let displayName {
+                try await SupabaseSDK.updateProfile(id: existing.id, displayName: displayName)
+            }
+            profile = existing
+        } else {
+            profile = try await SupabaseSDK.upsertProfile(authUserId: authUserId, displayName: displayName ?? email)
+        }
         currentUser = User(
             id: profile.id.uuidString,
             authUserId: authUserId.uuidString,
-            email: profile.displayName ?? "",
-            displayName: profile.displayName,
+            email: email,
+            displayName: profile.displayName ?? displayName,
             defaultCurrencyCode: profile.defaultCurrencyCode
         )
         withAnimation(.easeInOut(duration: 0.4)) {
@@ -97,7 +105,8 @@ final class AuthViewModel: ObservableObject {
                     )
                 )
 
-                try await fetchProfileAndSetUser(authUserId: authResponse.user.id)
+                let name = authResponse.user.userMetadata["full_name"]?.stringValue ?? authResponse.user.userMetadata["name"]?.stringValue
+                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name)
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -118,7 +127,8 @@ final class AuthViewModel: ObservableObject {
                     session.prefersEphemeralWebBrowserSession = true
                 }
 
-                try await fetchProfileAndSetUser(authUserId: authResponse.user.id)
+                let name = authResponse.user.userMetadata["full_name"]?.stringValue ?? authResponse.user.userMetadata["name"]?.stringValue
+                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name)
             } catch {
                 errorMessage = error.localizedDescription
             }

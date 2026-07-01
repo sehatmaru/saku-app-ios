@@ -16,6 +16,35 @@ enum SupabaseSDK {
             .execute()
             .value
     }
+
+    static func updateProfile(id: UUID, displayName: String?) async throws {
+        var payload: [String: AnyJSON] = [:]
+        if let displayName {
+            payload["display_name"] = AnyJSON.string(displayName)
+        }
+        try await client
+            .from("user_profiles")
+            .update(payload)
+            .eq("id", value: id)
+            .execute()
+    }
+
+    static func upsertProfile(authUserId: UUID, displayName: String) async throws -> UserProfile {
+        let payload: [String: AnyJSON] = [
+            "auth_user_id": AnyJSON.string(authUserId.uuidString),
+            "display_name": AnyJSON.string(displayName),
+            "default_currency_code": AnyJSON.string("IDR"),
+            "locale": AnyJSON.string("id"),
+            "timezone": AnyJSON.string("Asia/Jakarta"),
+        ]
+        return try await client
+            .from("user_profiles")
+            .upsert(payload)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
 }
 
 struct UserProfile: Codable, Identifiable {

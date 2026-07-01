@@ -133,13 +133,7 @@ struct TransactionDetailView: View {
         .onChange(of: isTitleFocused) { _, newValue in
             if !newValue { saveChanges() }
         }
-        .overlay(alignment: .bottom) {
-            if showToast {
-                toast
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .padding(.bottom, 32)
-            }
-        }
+        .toast(isPresented: $showToast, message: "Perubahan disimpan")
         .sheet(isPresented: $showDatePicker) {
             datePickerSheet
         }
@@ -181,27 +175,6 @@ struct TransactionDetailView: View {
         withAnimation {
             showToast = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation {
-                showToast = false
-            }
-        }
-    }
-
-    private var toast: some View {
-        HStack(spacing: Spacing.sm) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.jakarta(14))
-                .foregroundColor(.appPrimary)
-            Text("Perubahan disimpan")
-                .font(.jakarta(14, weight: .medium))
-                .foregroundColor(.appText)
-        }
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, 12)
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
     }
 
     // MARK: Header Card

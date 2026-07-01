@@ -119,13 +119,290 @@ struct DashboardView: View {
 
     private var dashboardSkeleton: some View {
         VStack(spacing: Spacing.lg) {
-            skeletonCard(height: 210)
-            skeletonCard(height: 170)
-            skeletonCard(height: 130)
-            skeletonCard(height: 220)
-            skeletonCard(height: 180)
-            skeletonCard(height: 160)
+            skeletonSummary
+            skeletonRecap
+            skeletonHealthScore
+            skeletonStatistics
+            skeletonBudget
+            skeletonTransaction
         }
+    }
+
+    private func skeletonLine(width: CGFloat? = nil) -> some View {
+        RoundedRectangle(cornerRadius: 4)
+            .fill(Color.appTextSecondary.opacity(0.12))
+            .frame(width: width, height: 12)
+    }
+
+    private var skeletonSummary: some View {
+        VStack(spacing: 0) {
+            skeletonLine(width: 120)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.xl)
+
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.appTextSecondary.opacity(0.1))
+                .frame(height: 36)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.sm)
+
+            skeletonLine(width: 80)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, 4)
+
+            Divider()
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.lg)
+
+            HStack(spacing: 0) {
+                ForEach(0..<3) { _ in
+                    VStack(spacing: 6) {
+                        skeletonLine(width: 50)
+                        skeletonLine(width: 70)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
+
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.appPrimary.opacity(0.15))
+                .frame(height: 46)
+                .padding(.horizontal, Spacing.lg)
+                .padding(.bottom, Spacing.lg)
+        }
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
+        .shimmer()
+    }
+
+    private var skeletonRecap: some View {
+        VStack(spacing: 0) {
+            skeletonLine(width: 110)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.xl)
+
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.appTextSecondary.opacity(0.1))
+                .frame(height: 30)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.sm)
+
+            skeletonLine(width: 60)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, 4)
+
+            Divider()
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.lg)
+
+            HStack(spacing: 0) {
+                ForEach(0..<2) { _ in
+                    HStack(spacing: Spacing.sm) {
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(Color.appTextSecondary.opacity(0.1))
+                            .frame(width: 28, height: 28)
+                        VStack(alignment: .leading, spacing: 4) {
+                            skeletonLine(width: 60)
+                            skeletonLine(width: 90)
+                            skeletonLine(width: 40)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Spacing.sm)
+                }
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
+        }
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
+        .shimmer()
+    }
+
+    private var skeletonHealthScore: some View {
+        VStack(spacing: 0) {
+            skeletonLine(width: 160)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.xl)
+
+            VStack(spacing: Spacing.sm) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 6) {
+                        skeletonLine(width: 80)
+                        skeletonLine(width: 50)
+                    }
+                    Spacer()
+                    skeletonLine(width: 60)
+                }
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.appTextSecondary.opacity(0.08))
+                    .frame(height: 18)
+            }
+            .padding(Spacing.xl)
+            .background(RoundedRectangle(cornerRadius: 20).fill(Color.appTextSecondary.opacity(0.05)))
+
+            HStack(spacing: 0) {
+                ForEach(0..<3) { _ in
+                    VStack(spacing: 6) {
+                        skeletonLine(width: 30)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.appTextSecondary.opacity(0.1))
+                            .frame(width: 48, height: 6)
+                        skeletonLine(width: 40)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.vertical, Spacing.md)
+            .padding(.horizontal, Spacing.lg)
+            .background(Color.appCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .offset(y: -10)
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.sm)
+        }
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
+        .shimmer()
+    }
+
+    private var skeletonStatistics: some View {
+        VStack(spacing: 0) {
+            skeletonLine(width: 140)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.xl)
+
+            HStack(spacing: 0) {
+                ForEach(0..<3) { _ in
+                    VStack(spacing: 6) {
+                        skeletonLine(width: 50)
+                        skeletonLine(width: 70)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.top, Spacing.lg)
+            .padding(.bottom, Spacing.md)
+
+            Divider()
+                .padding(.horizontal, Spacing.xl)
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.md), count: 2), spacing: Spacing.md) {
+                ForEach(0..<4) { _ in
+                    HStack(spacing: Spacing.sm) {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.appTextSecondary.opacity(0.08))
+                            .frame(width: 32, height: 32)
+                        VStack(alignment: .leading, spacing: 4) {
+                            skeletonLine(width: 50)
+                            skeletonLine(width: 80)
+                        }
+                    }
+                    .padding(Spacing.sm)
+                    .background(Color.appGroupedBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.vertical, Spacing.lg)
+        }
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
+        .shimmer()
+    }
+
+    private var skeletonBudget: some View {
+        VStack(spacing: 0) {
+            skeletonLine(width: 150)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.xl)
+
+            HStack(alignment: .top, spacing: Spacing.sm) {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.appTextSecondary.opacity(0.1))
+                    .frame(width: 140, height: 36)
+                skeletonLine(width: 40)
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.sm)
+
+            Divider()
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.lg)
+
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    skeletonLine(width: 60)
+                    skeletonLine(width: 100)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 6) {
+                    skeletonLine(width: 50)
+                    skeletonLine(width: 100)
+                }
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.md)
+
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color.appTextSecondary.opacity(0.1))
+                .frame(height: 6)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.sm)
+                .padding(.bottom, Spacing.lg)
+        }
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
+        .shimmer()
+    }
+
+    private var skeletonTransaction: some View {
+        VStack(spacing: 0) {
+            skeletonLine(width: 160)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.xl)
+
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.appTextSecondary.opacity(0.1))
+                .frame(height: 36)
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.sm)
+
+            Divider()
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.lg)
+
+            HStack(spacing: Spacing.md) {
+                ForEach(0..<2) { _ in
+                    HStack(spacing: Spacing.sm) {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.appTextSecondary.opacity(0.08))
+                            .frame(width: 32, height: 32)
+                        VStack(alignment: .leading, spacing: 4) {
+                            skeletonLine(width: 50)
+                            skeletonLine(width: 70)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, 10)
+                    .background(Color.appTextSecondary.opacity(0.05))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.lg)
+        }
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
+        .shimmer()
     }
 
     private func errorStateView(message: String) -> some View {
@@ -136,14 +413,6 @@ struct DashboardView: View {
                 }
             }
         }
-    }
-
-    private func skeletonCard(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 20)
-            .fill(Color.appCardBackground)
-            .frame(maxWidth: .infinity, minHeight: height)
-            .redacted(reason: .placeholder)
-            .shimmer()
     }
 
     // MARK: - Summary Card
