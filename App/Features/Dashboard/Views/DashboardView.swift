@@ -67,6 +67,7 @@ struct DashboardView: View {
                         }
                     }
                 )
+                .presentationDetents([.medium, .large])
             }
         }
     }
