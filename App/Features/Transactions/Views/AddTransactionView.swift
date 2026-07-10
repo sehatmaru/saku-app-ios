@@ -24,6 +24,7 @@ struct AddTransactionView: View {
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
     @State private var datePickerTemp = Date()
+    @State private var isSaving = false
 
     private var activeAccounts: [Account] { accounts.filter { $0.isActive } }
     private var filteredCategories: [Category] {
@@ -62,10 +63,15 @@ struct AddTransactionView: View {
                     Button("Batal") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Simpan") { save() }
-                        .font(.jakarta(15, weight: .bold))
-                        .foregroundColor(canSave ? typeColor : .appTextSecondary.opacity(0.4))
-                        .disabled(!canSave)
+                    if isSaving {
+                        ProgressView()
+                            .tint(.appPrimary)
+                    } else {
+                        Button("Simpan") { save() }
+                            .font(.jakarta(15, weight: .bold))
+                            .foregroundColor(canSave ? .appPrimary : .appTextSecondary.opacity(0.4))
+                            .disabled(!canSave)
+                    }
                 }
             }
             .alert("Perhatian", isPresented: $showValidationAlert) {
@@ -431,11 +437,12 @@ struct AddTransactionView: View {
         }
         let title = titleText.isEmpty ? nil : titleText
         let note = noteText.isEmpty ? nil : noteText
+        isSaving = true
         Task {
             do {
                 if isTransfer {
                     guard let src = selectedAccount, let dst = selectedTargetAccount else {
-                        validationMessage = "Pilih dompet sumber dan tujuan."; showValidationAlert = true; return
+                        validationMessage = "Pilih dompet sumber dan tujuan."; showValidationAlert = true; isSaving = false; return
                     }
                     _ = try await SupabaseRepository.shared.createTransfer(
                         primaryAccountId: src.id, counterpartyAccountId: dst.id,
@@ -448,10 +455,12 @@ struct AddTransactionView: View {
                         date: selectedDate, userId: userId
                     )
                 }
+                isSaving = false
                 onSave()
                 NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 dismiss()
             } catch {
+                isSaving = false
                 validationMessage = "Gagal menyimpan: \(error.localizedDescription)"; showValidationAlert = true
             }
         }

@@ -24,30 +24,30 @@ struct AmountKeyboard: View {
         HStack(spacing: gap) {
             VStack(spacing: gap) {
                 HStack(spacing: gap) {
-                    numBtn("1") { tap("1") }.frame(width: btnW, height: btnH)
-                    numBtn("2") { tap("2") }.frame(width: btnW, height: btnH)
-                    numBtn("3") { tap("3") }.frame(width: btnW, height: btnH)
+                    numBtn("1") { tap("1") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
+                    numBtn("2") { tap("2") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
+                    numBtn("3") { tap("3") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
                 }
                 HStack(spacing: gap) {
-                    numBtn("4") { tap("4") }.frame(width: btnW, height: btnH)
-                    numBtn("5") { tap("5") }.frame(width: btnW, height: btnH)
-                    numBtn("6") { tap("6") }.frame(width: btnW, height: btnH)
+                    numBtn("4") { tap("4") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
+                    numBtn("5") { tap("5") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
+                    numBtn("6") { tap("6") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
                 }
                 HStack(spacing: gap) {
-                    numBtn("7") { tap("7") }.frame(width: btnW, height: btnH)
-                    numBtn("8") { tap("8") }.frame(width: btnW, height: btnH)
-                    numBtn("9") { tap("9") }.frame(width: btnW, height: btnH)
+                    numBtn("7") { tap("7") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
+                    numBtn("8") { tap("8") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
+                    numBtn("9") { tap("9") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
                 }
                 HStack(spacing: gap) {
                     Color.clear.frame(width: btnW, height: btnH)
-                    numBtn("0") { tap("0") }.frame(width: btnW, height: btnH)
-                    numBtn(".000") { tapThousand() }.frame(width: btnW, height: btnH)
+                    numBtn("0") { tap("0") }.frame(width: btnW, height: btnH).contentShape(Rectangle())
+                    numBtn(".000") { tapThousand() }.frame(width: btnW, height: btnH).contentShape(Rectangle())
                 }
             }
 
             VStack(spacing: gap) {
-                backBtn.frame(width: btnW, height: btnH)
-                doneBtn.frame(width: btnW).frame(maxHeight: .infinity)
+                backBtn.frame(width: btnW, height: btnH).contentShape(Rectangle())
+                doneBtn.frame(width: btnW).frame(maxHeight: .infinity).contentShape(Rectangle())
             }
             .frame(height: gridH)
         }
@@ -75,10 +75,9 @@ struct AmountKeyboard: View {
                         .foregroundColor(.appText)
                 }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(KeyboardBtnStyle())
         .background(btnBg.opacity(isTapped ? 0.55 : 1.0))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .contentShape(Rectangle())
         .animation(.easeInOut(duration: 0.1), value: tappedKey)
     }
 
@@ -101,10 +100,9 @@ struct AmountKeyboard: View {
                         .foregroundColor(.appText)
                 }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(KeyboardBtnStyle())
         .background(btnBg.opacity(isTapped ? 0.55 : 1.0))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .contentShape(Rectangle())
         .animation(.easeInOut(duration: 0.1), value: tappedKey)
     }
 
@@ -125,10 +123,9 @@ struct AmountKeyboard: View {
                         .foregroundColor(.white)
                 }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(KeyboardBtnStyle())
         .background(Color.appPrimary.opacity(isTapped ? 0.55 : 1.0))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .contentShape(Rectangle())
         .animation(.easeInOut(duration: 0.1), value: tappedKey)
     }
 
@@ -144,6 +141,13 @@ struct AmountKeyboard: View {
         let remaining = maxDigits - amountDigits.count
         guard remaining > 0 else { return }
         amountDigits += String(repeating: "0", count: min(3, remaining))
+    }
+}
+
+struct KeyboardBtnStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .contentShape(Rectangle())
     }
 }
 

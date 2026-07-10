@@ -195,7 +195,7 @@ struct TransactionListView: View {
                      ? balance.formattedAsCurrency()
                      : "Rp********")
                     .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(isBalanceVisible ? (balance >= 0 ? .appText : .appError) : .appText)
+                    .foregroundColor(isBalanceVisible ? (balance >= 0 ? .appIncome : .appError) : .appText)
                     .contentTransition(.numericText())
                 Spacer()
             }

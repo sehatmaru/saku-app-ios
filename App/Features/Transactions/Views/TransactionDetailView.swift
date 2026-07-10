@@ -58,7 +58,19 @@ struct TransactionDetailView: View {
     }
 
     private var typeColor: Color {
-        transaction.type == .income ? .appIncome : .appExpense
+        switch transaction.type {
+        case .income: .appIncome
+        case .expense: .appExpense
+        case .transfer: .appText
+        }
+    }
+
+    private var typeIcon: String {
+        switch transaction.type {
+        case .income: return "arrow.down"
+        case .expense: return "arrow.up"
+        case .transfer: return "arrow.left.arrow.right"
+        }
     }
 
     private var amountOpacity: Double { 1.0 }
@@ -185,10 +197,14 @@ struct TransactionDetailView: View {
                     .fill(typeColor.opacity(0.15))
                     .frame(width: 44, height: 44)
                     .overlay {
-                        Image(systemName: selectedCategory?.icon ?? (transaction.type == .income ? "arrow.down" : "arrow.up"))
+                        Image(systemName: selectedCategory?.icon ?? typeIcon)
                             .font(.jakarta(18))
                             .foregroundColor(typeColor)
                     }
+                    .overlay(
+                        Circle()
+                            .stroke(typeColor.opacity(0.3), lineWidth: 1.5)
+                    )
 
                 TextField("Judul transaksi", text: $editedTitle)
                     .font(.jakarta(17, weight: .semibold))
@@ -320,17 +336,21 @@ struct TransactionDetailView: View {
     }
 
     private var walletRow: some View {
-        HStack(spacing: Spacing.md) {
-            if let icon = walletIcon {
-                Circle()
-                    .fill(icon.color)
-                    .frame(width: 36, height: 36)
-                    .overlay {
-                        Text(icon.shortName)
-                            .font(.jakarta(8, weight: .bold))
-                            .foregroundColor(.white)
-                            .minimumScaleFactor(0.8)
-                    }
+        let isTransfer = transaction.type == .transfer
+        let cparty = isTransfer ? accounts.first { $0.id == transaction.counterpartyAccountId } : nil
+        let cpartyIcon = cparty.flatMap { WalletIcon.resolve($0.icon) }
+
+        return HStack(spacing: Spacing.md) {
+            if isTransfer, let srcIcon = walletIcon, let dstIcon = cpartyIcon {
+                HStack(spacing: 2) {
+                    iconCircle(wi: srcIcon, size: 28)
+                    Image(systemName: "arrow.right")
+                        .font(.jakarta(7))
+                        .foregroundColor(.appTextSecondary)
+                    iconCircle(wi: dstIcon, size: 28)
+                }
+            } else if let icon = walletIcon {
+                iconCircle(wi: icon, size: 36)
             } else {
                 Circle()
                     .fill(Color.appTextSecondary.opacity(0.1))
@@ -343,12 +363,19 @@ struct TransactionDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Dompet")
+                Text(isTransfer ? "Transfer" : "Dompet")
                     .font(.jakarta(11))
                     .foregroundColor(.appTextSecondary)
-                Text(selectedAccount?.name ?? "-")
-                    .font(.jakarta(15, weight: .medium))
-                    .foregroundColor(.appText)
+                if isTransfer {
+                    Text("\(selectedAccount?.name ?? "?") → \(cparty?.name ?? "?")")
+                        .font(.jakarta(15, weight: .medium))
+                        .foregroundColor(.appText)
+                        .lineLimit(1)
+                } else {
+                    Text(selectedAccount?.name ?? "-")
+                        .font(.jakarta(15, weight: .medium))
+                        .foregroundColor(.appText)
+                }
             }
 
             Spacer()
@@ -356,6 +383,18 @@ struct TransactionDetailView: View {
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
+    }
+
+    private func iconCircle(wi: WalletIcon, size: CGFloat) -> some View {
+        ZStack {
+            Circle()
+                .fill(wi.color)
+                .frame(width: size, height: size)
+            Text(wi.shortName)
+                .font(.jakarta(size <= 28 ? 7 : 8, weight: .bold))
+                .foregroundColor(.white)
+                .minimumScaleFactor(0.8)
+        }
     }
 
     private var hintCard: some View {
