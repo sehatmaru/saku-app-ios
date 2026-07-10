@@ -74,6 +74,17 @@ struct AccountListView: View {
                 await syncAccountTransactions(userId: userId)
             }
             .navigationTitle("Dompet")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        withAnimation(.smooth) { isBalanceVisible.toggle() }
+                    } label: {
+                        Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
+                            .font(.jakarta(16))
+                            .foregroundColor(.appTextSecondary)
+                    }
+                }
+            }
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadAccounts(userId: userId)

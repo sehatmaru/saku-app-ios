@@ -7,7 +7,8 @@ struct TransactionListView: View {
     init(viewModel: TransactionListViewModel = TransactionListViewModel()) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
+    @State private var isBalanceVisible = true
     @State private var filter = TransactionFilter()
     @State private var expandedMonths: Set<String> = []
     @State private var searchText = ""
@@ -15,6 +16,7 @@ struct TransactionListView: View {
     @State private var showAdvancedSearch = false
     @State private var showBackToTop = false
     @State private var hasInitialExpanded = false
+    @State private var showAddSheet = false
 
     var body: some View {
         NavigationStack {
@@ -39,7 +41,8 @@ struct TransactionListView: View {
                                     }
                                     summaryCard
                                         .padding(.horizontal)
-
+                                        .padding(.top)
+                                        
                                     Color.clear
                                         .frame(height: 1)
                                         .onAppear { showBackToTop = false }
@@ -76,7 +79,7 @@ struct TransactionListView: View {
                         guard let userId = authViewModel.currentUser?.id else { return }
                         await viewModel.loadTransactions(userId: userId, forceRefresh: true)
                     }
-                    .onAppear { expandInitialMonths() }
+                    .onAppear { expandInitialMonths(); isBalanceVisible = isBalanceVisibleStorage }
                     .onChange(of: viewModel.allTransactions.count) { _, _ in expandInitialMonths() }
                     .task {
                         guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }
@@ -86,6 +89,18 @@ struct TransactionListView: View {
                         guard let userId = authViewModel.currentUser?.id else { return }
                         Task {
                             await viewModel.loadTransactions(userId: userId, forceRefresh: true)
+                        }
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button {
+                                withAnimation(.smooth) { isBalanceVisible.toggle() }
+                                isBalanceVisibleStorage = isBalanceVisible
+                            } label: {
+                                Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
+                                    .font(.jakarta(16))
+                                    .foregroundColor(.appTextSecondary)
+                            }
                         }
                     }
                     .overlay(alignment: .bottomTrailing) {
@@ -112,6 +127,19 @@ struct TransactionListView: View {
                     .sheet(isPresented: $showAdvancedSearch) {
                         AdvancedSearchView(filter: $filter, categories: viewModel.categories)
                             .presentationDetents([.medium, .large])
+                    }
+                    .sheet(isPresented: $showAddSheet) {
+                        if let userId = authViewModel.currentUser?.id {
+                            AddTransactionView(
+                                categories: viewModel.categories,
+                                accounts: viewModel.accounts,
+                                userId: userId,
+                                onSave: {
+                                    Task { await viewModel.loadTransactions(userId: userId, forceRefresh: true) }
+                                }
+                            )
+                            .presentationDetents([.medium, .large])
+                        }
                     }
                 }
             }
@@ -164,12 +192,11 @@ struct TransactionListView: View {
             HStack(spacing: 0) {
                 let balance = viewModel.thisMonthBalance
                 Text(isBalanceVisible
-                     ? (balance >= 0
-                        ? balance.formattedAsCurrency()
-                        : "-\(abs(balance).formattedAsCurrency())")
-                     : "********")
+                     ? balance.formattedAsCurrency()
+                     : "Rp********")
                     .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(balance >= 0 ? .appText : .appError)
+                    .foregroundColor(isBalanceVisible ? (balance >= 0 ? .appText : .appError) : .appText)
+                    .contentTransition(.numericText())
                 Spacer()
             }
             .padding(.horizontal, Spacing.xl)
@@ -179,61 +206,72 @@ struct TransactionListView: View {
                 .padding(.horizontal, Spacing.xl)
                 .padding(.top, Spacing.lg)
 
-            HStack(spacing: Spacing.md) {
-                miniStatCard(
-                    label: "Pemasukan",
-                    amount: viewModel.thisMonthIncome,
-                    color: .appIncome,
-                    icon: "arrow.down"
-                )
-
-                miniStatCard(
-                    label: "Pengeluaran",
-                    amount: viewModel.thisMonthExpense,
-                    color: .appExpense,
-                    icon: "arrow.up"
-                )
+            HStack(spacing: 0) {
+                statItem(title: "Pemasukan Bulan Ini", amount: viewModel.thisMonthIncome, color: .appIncome)
+                Divider().frame(height: 28)
+                statItem(title: "Pengeluaran Bulan Ini", amount: viewModel.thisMonthExpense, color: .appExpense)
             }
-            .padding(.horizontal, Spacing.xl)
             .padding(.top, Spacing.md)
             .padding(.bottom, Spacing.lg)
+            .padding(.horizontal, Spacing.xl)
+
+            Button {
+                showAddSheet = true
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    Image(systemName: "plus")
+                        .font(.jakarta(15, weight: .semibold))
+                    Text("Tambah Transaksi")
+                        .font(.jakarta(15, weight: .semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.appPrimary)
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.lg)
         }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.appCardBackground)
+        )
         .overlay(alignment: .topTrailing) {
             Image(systemName: "arrow.left.arrow.right")
                 .font(.system(size: 48))
                 .foregroundColor(.appPrimary.opacity(0.08))
                 .offset(x: -12, y: -4)
         }
-        .padding(.top)
     }
 
-    private func miniStatCard(label: String, amount: Double, color: Color, icon: String) -> some View {
-        HStack(spacing: Spacing.sm) {
-            Circle()
-                .fill(color.opacity(0.15))
-                .frame(width: 32, height: 32)
-                .overlay {
-                    Image(systemName: icon)
-                        .font(.jakarta(11))
-                        .foregroundColor(color)
-                }
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label)
-                    .font(.jakarta(10))
-                    .foregroundColor(.appTextSecondary)
-                Text(isBalanceVisible ? (amount > 0 ? abbreviatedAmount(amount) : "Rp0") : "Rp***")
-                    .font(.jakarta(14, weight: .semibold))
-                    .foregroundColor(color)
-            }
+    private func statItem(title: String, amount: Double, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(title)
+                .font(.jakarta(11))
+                .foregroundColor(.appTextSecondary)
+            Text(isBalanceVisible ? (amount > 0 ? abbreviatedAmount(amount) : "Rp0") : "Rp***")
+                .font(.jakarta(13, weight: .semibold))
+                .foregroundColor(color)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 10)
-        .background(color.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(maxWidth: .infinity)
+    }
+
+    private func abbreviatedAmount(_ amount: Double) -> String {
+        let prefix = amount < 0 ? "-" : ""
+        let absVal = abs(amount)
+        let formatted: String
+        switch absVal {
+        case 1_000_000_000...:
+            formatted = String(format: "%.1f Miliar", absVal / 1_000_000_000)
+        case 1_000_000...:
+            formatted = String(format: "%.0f Juta", absVal / 1_000_000)
+        case 1_000...:
+            formatted = String(format: "%.0f Ribu", absVal / 1_000)
+        default:
+            formatted = String(Int(absVal))
+        }
+        return "\(prefix)\(formatted)"
     }
 
     // MARK: Filter Chips
@@ -429,8 +467,9 @@ struct TransactionListView: View {
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts)) {
                                     transactionRow(transaction)
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(RowPressStyle())
                                 .padding(.horizontal, Spacing.lg)
+                                .contentShape(Rectangle())
                                 if index < section.transactions.count - 1 {
                                     Divider()
                                         .padding(.leading, 52)
@@ -482,38 +521,97 @@ struct TransactionListView: View {
     }
 
     private func transactionRow(_ transaction: Transaction) -> some View {
-        HStack(spacing: Spacing.md) {
+        let isTransfer = transaction.type == .transfer
+        let cellColor: Color = isTransfer ? .appText : transactionColor(transaction.type)
+
+        return HStack(spacing: Spacing.md) {
             ZStack {
                 Circle()
-                    .fill(transactionColor(transaction.type).opacity(0.15))
+                    .fill(cellColor.opacity(isTransfer ? 0.08 : 0.15))
                     .frame(width: 44, height: 44)
                 Image(systemName: categoryIcon(for: transaction))
                     .font(.jakarta(16))
-                    .foregroundColor(transactionColor(transaction.type))
+                    .foregroundColor(cellColor)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if !isTransfer, let acc = accountFor(id: transaction.accountId), let wi = WalletIcon.resolve(acc.icon) {
+                    walletBadge(wi: wi)
+                }
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(transaction.note ?? label(for: transaction.type))
-                    .font(.jakarta(14, weight: .medium))
-                Text(transaction.date.formatted(date: .numeric, time: .omitted))
+                if let dst = accountFor(id: transaction.counterpartyAccountId),
+                   let dwi = WalletIcon.resolve(dst.icon) {
+                    HStack(spacing: 3) {
+                        if let src = accountFor(id: transaction.accountId),
+                           let swi = WalletIcon.resolve(src.icon) {
+                            ZStack {
+                                Circle()
+                                    .fill(swi.color)
+                                    .frame(width: 20, height: 20)
+                                Text(swi.shortName)
+                                    .font(.jakarta(6, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .minimumScaleFactor(0.5)
+                            }
+                        }
+                        Image(systemName: "arrow.right")
+                            .font(.jakarta(8))
+                            .foregroundColor(.appTextSecondary)
+                        ZStack {
+                            Circle()
+                                .fill(dwi.color)
+                                .frame(width: 20, height: 20)
+                            Text(dwi.shortName)
+                                .font(.jakarta(6, weight: .bold))
+                                .foregroundColor(.white)
+                                .minimumScaleFactor(0.5)
+                        }
+                    }
+                    .lineLimit(1)
+                } else if !isTransfer {
+                    Text(transaction.note ?? label(for: transaction.type))
+                        .font(.jakarta(14, weight: .medium))
+                        .lineLimit(1)
+                }
+
+                Text(formattedDate(transaction.date))
                     .font(.jakarta(11))
                     .foregroundColor(.appTextSecondary)
             }
 
             Spacer()
 
-            Text(transaction.amount.formattedAsCurrency())
+            Text(isBalanceVisible ? transaction.amount.formattedAsCurrency() : "Rp***")
                 .font(.jakarta(14, weight: .semibold))
-                .foregroundColor(transactionColor(transaction.type))
+                .foregroundColor(cellColor)
         }
         .padding(.vertical, Spacing.sm)
+        .contentShape(Rectangle())
+    }
+
+    private func walletBadge(wi: WalletIcon) -> some View {
+        ZStack {
+            Circle()
+                .fill(wi.color)
+                .frame(width: 20, height: 20)
+            Text(wi.shortName)
+                .font(.jakarta(6, weight: .bold))
+                .foregroundColor(.white)
+                .minimumScaleFactor(0.5)
+        }
+        .overlay(
+            Circle()
+                .stroke(Color.appCardBackground, lineWidth: 2)
+        )
+        .offset(x: 4, y: 4)
     }
 
     private func transactionColor(_ type: Transaction.TransactionType) -> Color {
         switch type {
         case .income: .appIncome
         case .expense: .appExpense
-        case .transfer: .appPrimary
+        case .transfer: .appText
         }
     }
 
@@ -535,6 +633,18 @@ struct TransactionListView: View {
         }
         let category = viewModel.categories.first { $0.id == categoryId }
         return category?.icon ?? (transaction.type == .income ? "arrow.down" : "arrow.up")
+    }
+
+    private func accountFor(id: String?) -> Account? {
+        guard let id else { return nil }
+        return viewModel.accounts.first { $0.id == id }
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "dd MMM yyyy"
+        f.locale = Locale(identifier: "id_ID")
+        return f.string(from: date)
     }
 
     // MARK: Empty State
@@ -563,18 +673,6 @@ struct TransactionListView: View {
         .padding()
     }
 
-    private func abbreviatedAmount(_ amount: Double) -> String {
-        switch amount {
-        case 1_000_000_000...:
-            String(format: "%.1f Miliar", amount / 1_000_000_000)
-        case 1_000_000...:
-            String(format: "%.0f Juta", amount / 1_000_000)
-        case 1_000...:
-            String(format: "%.0f Ribu", amount / 1_000)
-        default:
-            String(Int(amount))
-        }
-    }
 }
 
 struct ActiveFilterChip: View {
@@ -604,6 +702,14 @@ struct ActiveFilterChip: View {
                 .buttonStyle(.plain)
                 .offset(x: 5, y: -5)
             }
+    }
+}
+
+struct RowPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.5 : 1.0)
+            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

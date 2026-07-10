@@ -103,6 +103,17 @@ struct BudgetListView: View {
             }
             .background(Color.appGroupedBackground)
             .navigationTitle("Budget")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        withAnimation(.smooth) { isBalanceVisible.toggle() }
+                    } label: {
+                        Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
+                            .font(.jakarta(16))
+                            .foregroundColor(.appTextSecondary)
+                    }
+                }
+            }
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadBudgets(userId: userId)

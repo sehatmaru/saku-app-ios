@@ -69,6 +69,7 @@ final class TransactionListViewModel: ObservableObject {
             loadedUserId = userId
             hasLoadedOnce = true
         } catch {
+            if error is CancellationError { return }
             errorMessage = error.localizedDescription
             hasLoadedOnce = true
         }
