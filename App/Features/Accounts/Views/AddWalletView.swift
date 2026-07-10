@@ -5,8 +5,8 @@ struct AddWalletView: View {
 
     @State private var name = ""
     @State private var category: Account.AccountType = .bank
-    @State private var amountText = ""
     @State private var amountDigits = ""
+    @State private var showKeyboard = false
     @State private var selectedIcon: WalletIcon?
     @State private var showCustomSheet = false
     @State private var showValidationAlert = false
@@ -22,6 +22,17 @@ struct AddWalletView: View {
                 nameSection
                 amountSection
             }
+            .overlay(alignment: .bottom) {
+                if showKeyboard {
+                    AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
+                        showKeyboard = false
+                    }
+                    .padding(.top, 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .onTapGesture { if showKeyboard { showKeyboard = false } }
+            .animation(.easeInOut(duration: 0.25), value: showKeyboard)
             .navigationTitle("Tambah Dompet")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -172,21 +183,13 @@ struct AddWalletView: View {
                 Text("Rp")
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
-                TextField("0", text: $amountText)
+                Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.leading)
-                    .onChange(of: amountText) { _, newValue in
-                        let digits = String(newValue.filter { $0.isWholeNumber })
-                        let formatted = digits.formattedWithThousandSeparator
-                        if formatted != newValue {
-                            amountText = formatted
-                        }
-                        amountDigits = digits
-                    }
                 Spacer()
             }
+            .contentShape(Rectangle())
+            .onTapGesture { showKeyboard = true }
         } header: {
             Text("Saldo Awal")
         }

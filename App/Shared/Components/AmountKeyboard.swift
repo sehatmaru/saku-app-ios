@@ -5,90 +5,131 @@ struct AmountKeyboard: View {
     var maxDigits: Int = 12
     var onDone: (() -> Void)?
 
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var tappedKey: String?
+
+    private var btnBg: AnyShapeStyle {
+        colorScheme == .dark
+            ? AnyShapeStyle(.thickMaterial)
+            : AnyShapeStyle(Color.appCardBackground)
+    }
+
     var body: some View {
-        GeometryReader { geo in
-            let gap: CGFloat = 6
-            let btnW = (geo.size.width - gap * 5) / 4
-            let btnH: CGFloat = 54
-            let gridH = 4 * btnH + 3 * gap
+        let gap: CGFloat = 6
+        let screenW = UIScreen.main.bounds.width
+        let btnW = (screenW - gap * 5) / 4
+        let btnH: CGFloat = 60
+        let gridH = 4 * btnH + 3 * gap
 
-            HStack(spacing: gap) {
-                VStack(spacing: gap) {
-                    HStack(spacing: gap) {
-                        numBtn("1") { tap("1") }.frame(width: btnW, height: btnH)
-                        numBtn("2") { tap("2") }.frame(width: btnW, height: btnH)
-                        numBtn("3") { tap("3") }.frame(width: btnW, height: btnH)
-                    }
-                    HStack(spacing: gap) {
-                        numBtn("4") { tap("4") }.frame(width: btnW, height: btnH)
-                        numBtn("5") { tap("5") }.frame(width: btnW, height: btnH)
-                        numBtn("6") { tap("6") }.frame(width: btnW, height: btnH)
-                    }
-                    HStack(spacing: gap) {
-                        numBtn("7") { tap("7") }.frame(width: btnW, height: btnH)
-                        numBtn("8") { tap("8") }.frame(width: btnW, height: btnH)
-                        numBtn("9") { tap("9") }.frame(width: btnW, height: btnH)
-                    }
-                    HStack(spacing: gap) {
-                        Color.clear.frame(width: btnW, height: btnH)
-                        numBtn("0") { tap("0") }.frame(width: btnW, height: btnH)
-                        numBtn(".000") { tapThousand() }.frame(width: btnW, height: btnH)
-                    }
+        HStack(spacing: gap) {
+            VStack(spacing: gap) {
+                HStack(spacing: gap) {
+                    numBtn("1") { tap("1") }.frame(width: btnW, height: btnH)
+                    numBtn("2") { tap("2") }.frame(width: btnW, height: btnH)
+                    numBtn("3") { tap("3") }.frame(width: btnW, height: btnH)
                 }
-
-                VStack(spacing: gap) {
-                    backBtn.frame(width: btnW, height: btnH)
-                    doneBtn.frame(width: btnW)
+                HStack(spacing: gap) {
+                    numBtn("4") { tap("4") }.frame(width: btnW, height: btnH)
+                    numBtn("5") { tap("5") }.frame(width: btnW, height: btnH)
+                    numBtn("6") { tap("6") }.frame(width: btnW, height: btnH)
                 }
-                .frame(height: gridH)
+                HStack(spacing: gap) {
+                    numBtn("7") { tap("7") }.frame(width: btnW, height: btnH)
+                    numBtn("8") { tap("8") }.frame(width: btnW, height: btnH)
+                    numBtn("9") { tap("9") }.frame(width: btnW, height: btnH)
+                }
+                HStack(spacing: gap) {
+                    Color.clear.frame(width: btnW, height: btnH)
+                    numBtn("0") { tap("0") }.frame(width: btnW, height: btnH)
+                    numBtn(".000") { tapThousand() }.frame(width: btnW, height: btnH)
+                }
             }
-            .padding(.horizontal, gap)
+
+            VStack(spacing: gap) {
+                backBtn.frame(width: btnW, height: btnH)
+                doneBtn.frame(width: btnW).frame(maxHeight: .infinity)
+            }
+            .frame(height: gridH)
         }
-        .frame(height: 4 * 54 + 3 * 6 + 20)
+        .padding(.horizontal, gap)
+        .frame(height: gridH + 2 * gap)
+        .frame(maxWidth: .infinity)
         .background(Color(.systemGray6))
     }
 
     private func numBtn(_ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: {
+        let isTapped = tappedKey == label
+        return Button(action: {
+            tappedKey = label
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if self.tappedKey == label { self.tappedKey = nil }
+            }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             action()
         }) {
-            Text(label)
-                .font(.jakarta(label == ".000" ? 15 : 22, weight: .medium))
+            Color.clear
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .foregroundColor(.appText)
-                .background(Color.appCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay {
+                    Text(label)
+                        .font(.jakarta(label == ".000" ? 15 : 22, weight: .medium))
+                        .foregroundColor(.appText)
+                }
         }
         .buttonStyle(.plain)
+        .background(btnBg.opacity(isTapped ? 0.55 : 1.0))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(Rectangle())
+        .animation(.easeInOut(duration: 0.1), value: tappedKey)
     }
 
     private var backBtn: some View {
-        Button(action: {
+        let isTapped = tappedKey == "⌫"
+        return Button(action: {
+            tappedKey = "⌫"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if self.tappedKey == "⌫" { self.tappedKey = nil }
+            }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             guard !amountDigits.isEmpty else { return }
             amountDigits = String(amountDigits.dropLast())
         }) {
-            Image(systemName: "delete.left")
-                .font(.jakarta(20, weight: .medium))
+            Color.clear
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .foregroundColor(.appText)
-                .background(Color.appCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay {
+                    Image(systemName: "delete.left")
+                        .font(.jakarta(20, weight: .medium))
+                        .foregroundColor(.appText)
+                }
         }
         .buttonStyle(.plain)
+        .background(btnBg.opacity(isTapped ? 0.55 : 1.0))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(Rectangle())
+        .animation(.easeInOut(duration: 0.1), value: tappedKey)
     }
 
     private var doneBtn: some View {
-        Button(action: { onDone?() }) {
-            Text("Selesai")
-                .font(.jakarta(16, weight: .semibold))
+        let isTapped = tappedKey == "done"
+        return Button(action: {
+            tappedKey = "done"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if self.tappedKey == "done" { self.tappedKey = nil }
+            }
+            onDone?()
+        }) {
+            Color.clear
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .foregroundColor(.white)
-                .background(Color.appPrimary)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay {
+                    Text("Selesai")
+                        .font(.jakarta(16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
         }
         .buttonStyle(.plain)
+        .background(Color.appPrimary.opacity(isTapped ? 0.55 : 1.0))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(Rectangle())
+        .animation(.easeInOut(duration: 0.1), value: tappedKey)
     }
 
     private func tap(_ digit: String) {
@@ -103,5 +144,31 @@ struct AmountKeyboard: View {
         let remaining = maxDigits - amountDigits.count
         guard remaining > 0 else { return }
         amountDigits += String(repeating: "0", count: min(3, remaining))
+    }
+}
+
+#Preview {
+    AmountKeyboardPreview()
+}
+
+private struct AmountKeyboardPreview: View {
+    @State private var digits = "150000"
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Rp \(digits.formattedWithThousandSeparator)")
+                    .font(.jakarta(24, weight: .bold))
+                    .foregroundColor(.appText)
+                Spacer()
+            }
+            .padding()
+
+            Divider()
+
+            AmountKeyboard(amountDigits: $digits) {
+                print("Done: \(digits)")
+            }
+        }
     }
 }

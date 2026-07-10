@@ -43,6 +43,7 @@ struct AddTransactionView: View {
                     .padding(Spacing.lg)
                 }
                 .scrollDismissesKeyboard(.interactively)
+            .onTapGesture { if showKeyboard { showKeyboard = false } }
 
                 if showKeyboard {
                     AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
@@ -72,6 +73,7 @@ struct AddTransactionView: View {
             } message: { Text(validationMessage) }
             .onAppear {
                 if selectedAccount == nil { selectedAccount = activeAccounts.first }
+                showKeyboard = true
             }
             .onChange(of: selectedType) { _, _ in
                 if selectedCategory != nil && !filteredCategories.contains(where: { $0.id == selectedCategory?.id }) {

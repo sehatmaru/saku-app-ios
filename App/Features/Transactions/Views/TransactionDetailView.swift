@@ -7,24 +7,20 @@ struct TransactionDetailView: View {
     let onUpdate: ((Transaction) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
-    @State private var amountText = ""
     @State private var amountDigits = ""
+    @State private var showAmountKeyboard = false
     @State private var editedTitle: String
     @State private var noteText = ""
     @State private var selectedDate: Date
     @State private var selectedCategoryId: String?
     @State private var selectedAccountId: String
-    @State private var isFirstEdit = true
     @State private var showDatePicker = false
     @State private var showWalletPicker = false
     @State private var showCategoryPicker = false
     @State private var isEditingNote = false
     @State private var showToast = false
     @State private var showDeleteConfirmation = false
-    @FocusState private var isAmountFocused: Bool
     @FocusState private var isTitleFocused: Bool
-
-    private let initialDigits: String
 
     init(transaction: Transaction, categories: [Category], accounts: [Account], onUpdate: ((Transaction) -> Void)? = nil) {
         self.transaction = transaction
@@ -32,8 +28,6 @@ struct TransactionDetailView: View {
         self.accounts = accounts
         self.onUpdate = onUpdate
         let digits = String(Int(transaction.amount))
-        initialDigits = digits
-        _amountText = State(initialValue: digits.formattedWithThousandSeparator)
         _amountDigits = State(initialValue: digits)
         _editedTitle = State(initialValue: transaction.note ?? "")
         _selectedDate = State(initialValue: transaction.date)
@@ -67,9 +61,7 @@ struct TransactionDetailView: View {
         transaction.type == .income ? .appIncome : .appExpense
     }
 
-    private var amountOpacity: Double {
-        isFirstEdit && isAmountFocused ? 0.5 : 1.0
-    }
+    private var amountOpacity: Double { 1.0 }
 
     var body: some View {
         ScrollView {
@@ -94,6 +86,7 @@ struct TransactionDetailView: View {
         .navigationTitle("Detail Transaksi")
         .navigationBarTitleDisplayMode(.inline)
         .scrollDismissesKeyboard(.immediately)
+        .onTapGesture { if showAmountKeyboard { showAmountKeyboard = false } }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(role: .destructive) {
@@ -107,7 +100,6 @@ struct TransactionDetailView: View {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Selesai") {
-                    isAmountFocused = false
                     isTitleFocused = false
                     isEditingNote = false
                     saveChanges()
@@ -127,12 +119,20 @@ struct TransactionDetailView: View {
         } message: {
             Text("Transaksi akan dihapus permanen.")
         }
-        .onChange(of: isAmountFocused) { _, newValue in
-            if !newValue { saveChanges() }
-        }
         .onChange(of: isTitleFocused) { _, newValue in
             if !newValue { saveChanges() }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if showAmountKeyboard {
+                AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
+                    showAmountKeyboard = false
+                    saveChanges()
+                }
+                .padding(.top, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: showAmountKeyboard)
         .toast(isPresented: $showToast, message: "Perubahan disimpan")
         .sheet(isPresented: $showDatePicker) {
             datePickerSheet
@@ -206,29 +206,11 @@ struct TransactionDetailView: View {
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
 
-                TextField("0", text: $amountText)
+                Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
                     .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(.appText.opacity(amountOpacity))
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.leading)
-                    .focused($isAmountFocused)
-                    .onChange(of: amountText) { oldValue, newValue in
-                        guard oldValue != newValue else { return }
-                        let oldDigits = String(oldValue.filter { $0.isWholeNumber })
-                        let newDigits = String(newValue.filter { $0.isWholeNumber })
-                        if isFirstEdit && oldDigits == initialDigits {
-                            let typed = String(newDigits.suffix(newDigits.count - oldDigits.count))
-                            amountText = typed.formattedWithThousandSeparator
-                            amountDigits = typed
-                            isFirstEdit = false
-                        } else {
-                            let formatted = newDigits.formattedWithThousandSeparator
-                            if formatted != newValue {
-                                amountText = formatted
-                            }
-                            amountDigits = newDigits
-                        }
-                    }
+                    .foregroundColor(.appText)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showAmountKeyboard = true }
 
                 Spacer()
             }

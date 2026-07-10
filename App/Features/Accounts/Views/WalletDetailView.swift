@@ -7,8 +7,8 @@ struct WalletDetailView: View {
     let onDelete: ((String) async -> Void)?
     let onToggleArchive: ((String, Bool) async -> Void)?
 
-    @State private var balanceText = ""
     @State private var balanceDigits = ""
+    @State private var showBalanceKeyboard = false
     @State private var editedName = ""
     @State private var editedIconId: String
     @State private var showIconPicker = false
@@ -18,11 +18,7 @@ struct WalletDetailView: View {
     @State private var showDeleteWarningAlert = false
     @State private var deleteWarningMessage = ""
     @State private var hasConfirmed = false
-    @State private var isFirstEdit = true
-    @FocusState private var isBalanceFocused: Bool
     @Environment(\.dismiss) private var dismiss
-
-    private let initialDigits: String
 
     init(account: Account, transactions: [Transaction] = [],
          onSave: ((String, String, Account.AccountType, Double, String?, Bool) async -> Void)? = nil,
@@ -34,8 +30,6 @@ struct WalletDetailView: View {
         self.onDelete = onDelete
         self.onToggleArchive = onToggleArchive
         let digits = String(Int(account.balance))
-        initialDigits = digits
-        _balanceText = State(initialValue: digits.formattedWithThousandSeparator)
         _balanceDigits = State(initialValue: digits)
         _editedName = State(initialValue: account.name)
         _editedIconId = State(initialValue: account.icon ?? "")
@@ -129,6 +123,7 @@ struct WalletDetailView: View {
         .background(Color.appGroupedBackground)
         .navigationTitle(account.name)
         .navigationBarTitleDisplayMode(.inline)
+        .onTapGesture { if showBalanceKeyboard { showBalanceKeyboard = false } }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Menu {
@@ -214,11 +209,20 @@ struct WalletDetailView: View {
                 .presentationDetents([.medium])
                 .presentationBackground(Color.appCardBackground)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if showBalanceKeyboard {
+                AmountKeyboard(amountDigits: $balanceDigits, maxDigits: 12) {
+                    showBalanceKeyboard = false
+                    confirmChanges()
+                }
+                .padding(.top, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: showBalanceKeyboard)
     }
-
-    private var balanceOpacity: Double {
-        isFirstEdit && isBalanceFocused ? 0.5 : 1.0
-    }
+    
+    private var balanceOpacity: Double { 1.0 }
 
     private func miniStatCard(label: String, amount: Double, color: Color) -> some View {
         HStack(spacing: Spacing.sm) {
@@ -286,30 +290,12 @@ struct WalletDetailView: View {
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
 
-                TextField("0", text: $balanceText)
+                Text(balanceDigits.isEmpty ? "0" : balanceDigits.formattedWithThousandSeparator)
                     .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(.appText.opacity(balanceOpacity))
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.leading)
-                    .focused($isBalanceFocused)
+                    .foregroundColor(.appText)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showBalanceKeyboard = true }
                     .disabled(!account.isActive)
-                    .onChange(of: balanceText) { oldValue, newValue in
-                        guard oldValue != newValue else { return }
-                        let oldDigits = String(oldValue.filter { $0.isWholeNumber })
-                        let newDigits = String(newValue.filter { $0.isWholeNumber })
-                        if isFirstEdit && oldDigits == initialDigits {
-                            let typed = String(newDigits.suffix(newDigits.count - oldDigits.count))
-                            balanceText = typed.formattedWithThousandSeparator
-                            balanceDigits = typed
-                            isFirstEdit = false
-                        } else {
-                            let formatted = newDigits.formattedWithThousandSeparator
-                            if formatted != newValue {
-                                balanceText = formatted
-                            }
-                            balanceDigits = newDigits
-                        }
-                    }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Spacing.xl)
@@ -347,7 +333,7 @@ struct WalletDetailView: View {
                 .offset(x: -12, y: -4)
         }
         .onTapGesture {
-            isBalanceFocused = true
+            showBalanceKeyboard = true
         }
     }
 

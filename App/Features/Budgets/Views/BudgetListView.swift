@@ -65,7 +65,6 @@ struct BudgetListView: View {
                                 allTransactions: viewModel.allExpenseTransactions.filter { $0.categoryId == item.category.id },
                                 onAdjustBudget: { updated in
                                     Task {
-                                        let categoryId = updated.categoryId
                                         let name = updated.name
                                         let amount = updated.amount
                                         let periodUnit = updated.periodUnit
@@ -73,7 +72,6 @@ struct BudgetListView: View {
                                         let startDate = updated.startDate
                                         let endDate = updated.endDate
                                         let isActive = updated.isActive
-                                        guard let userId = authViewModel.currentUser?.id else { return }
                                         await viewModel.updateBudget(id: updated.id, name: name, amount: amount, periodUnit: periodUnit, periodInterval: periodInterval, startDate: startDate, endDate: endDate, isActive: isActive)
                                     }
                                 },
@@ -368,7 +366,7 @@ struct BudgetCardView: View {
 
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var showSetBudget = false
-    @State private var amountText = ""
+    @State private var showAmountKeyboard = false
     @State private var amountDigits = ""
 
     var body: some View {
@@ -442,14 +440,16 @@ struct BudgetCardView: View {
                     Text("Rp")
                         .font(.jakarta(17, weight: .medium))
                         .foregroundColor(.appTextSecondary)
-                    TextField("Budget per Bulan", text: $amountText)
+                    Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
                         .font(.jakarta(17, weight: .medium))
-                        .keyboardType(.numberPad)
+                        .foregroundColor(.appText)
                 }
                 .padding()
                 .background(Color.appGroupedBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .padding(.horizontal, Spacing.xl)
+                .contentShape(Rectangle())
+                .onTapGesture { showAmountKeyboard = true }
 
                 Spacer()
 
@@ -463,20 +463,23 @@ struct BudgetCardView: View {
                 .padding(.horizontal, Spacing.xl)
                 .padding(.bottom, Spacing.xl)
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if showAmountKeyboard {
+                    AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
+                        showAmountKeyboard = false
+                    }
+                    .padding(.top, 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .onTapGesture { if showAmountKeyboard { showAmountKeyboard = false } }
+            .animation(.easeInOut(duration: 0.25), value: showAmountKeyboard)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Batal") {
                         showSetBudget = false
                     }
                 }
-            }
-            .onChange(of: amountText) { _, newValue in
-                let digits = String(newValue.filter { $0.isWholeNumber })
-                let formatted = digits.formattedWithThousandSeparator
-                if formatted != newValue {
-                    amountText = formatted
-                }
-                amountDigits = digits
             }
         }
     }
@@ -560,7 +563,6 @@ struct BudgetCardView: View {
         )
         onSetBudget?(budget)
         showSetBudget = false
-        amountText = ""
         amountDigits = ""
     }
 }
