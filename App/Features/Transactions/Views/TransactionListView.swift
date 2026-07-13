@@ -138,7 +138,7 @@ struct TransactionListView: View {
                                     Task { await viewModel.loadTransactions(userId: userId, forceRefresh: true) }
                                 }
                             )
-                            .presentationDetents([.medium, .large])
+                            .presentationDetents([.fraction(0.68), .large])
                         }
                     }
                 }

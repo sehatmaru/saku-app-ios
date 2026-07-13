@@ -23,7 +23,6 @@ struct AddTransactionView: View {
     @State private var showDatePicker = false
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
-    @State private var datePickerTemp = Date()
     @State private var isSaving = false
 
     private var activeAccounts: [Account] { accounts.filter { $0.isActive } }
@@ -44,7 +43,7 @@ struct AddTransactionView: View {
                     .padding(Spacing.lg)
                 }
                 .scrollDismissesKeyboard(.interactively)
-            .onTapGesture { if showKeyboard { showKeyboard = false } }
+                .gesture(showKeyboard ? TapGesture().onEnded { showKeyboard = false } : nil)
 
                 if showKeyboard {
                     AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
@@ -215,7 +214,7 @@ struct AddTransactionView: View {
             rowDivider
 
             tappableRow(icon: "calendar", iconColor: .appPrimary, label: "Tanggal", value: formattedDate(selectedDate), isSelected: true)
-                .onTapGesture { datePickerTemp = selectedDate; showDatePicker = true }
+                .onTapGesture { showDatePicker = true }
 
             if !isTransfer {
                 rowDivider
@@ -402,10 +401,11 @@ struct AddTransactionView: View {
     private var datePickerContent: some View {
         NavigationStack {
             VStack(spacing: Spacing.lg) {
-                DatePicker("", selection: $datePickerTemp, displayedComponents: .date)
+                DatePicker("", selection: $selectedDate, displayedComponents: .date)
                     .datePickerStyle(.graphical)
                     .tint(.appPrimary)
                     .labelsHidden()
+                    .onChange(of: selectedDate) { _, _ in showDatePicker = false }
                 Spacer()
             }
             .padding(Spacing.lg)
@@ -414,10 +414,6 @@ struct AddTransactionView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Batal") { showDatePicker = false } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Pilih") { selectedDate = datePickerTemp; showDatePicker = false }
-                        .font(.jakarta(15, weight: .bold))
-                }
             }
         }
         .presentationDetents([.medium])

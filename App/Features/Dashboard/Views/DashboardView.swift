@@ -67,7 +67,7 @@ struct DashboardView: View {
                         }
                     }
                 )
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.fraction(0.68), .large])
             }
         }
     }

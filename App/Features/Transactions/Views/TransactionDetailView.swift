@@ -457,7 +457,7 @@ struct TransactionDetailView: View {
                 VStack(spacing: 0) {
                     let accounts = activeAccounts
                     ForEach(accounts) { account in
-                        let wi = WalletIcon.allIcons.first { $0.id == account.icon }
+                        let wi = WalletIcon.resolve(account.icon)
                         let isLast = account.id == accounts.last?.id
                         Button {
                             selectedAccountId = account.id
