@@ -210,7 +210,7 @@ final class DashboardViewModel: ObservableObject {
             async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)
 
             let (fetchedAccounts, transactions, fetchedCategories, budgets) = try await (accountsTask, transactionsTask, categoriesTask, budgetsTask)
-            accounts = BalanceCalculator.applyBalances(to: fetchedAccounts, from: transactions)
+            accounts = fetchedAccounts
             categories = fetchedCategories
 
             balance = accounts.reduce(0) { $0 + $1.balance }
@@ -277,6 +277,8 @@ final class DashboardViewModel: ObservableObject {
             ), for: userId)
             loadedUserId = userId
             hasLoadedOnce = true
+        } catch is CancellationError {
+            return
         } catch {
             errorMessage = error.localizedDescription
             hasLoadedOnce = true

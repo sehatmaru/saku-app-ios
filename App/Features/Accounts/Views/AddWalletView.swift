@@ -15,7 +15,7 @@ struct AddWalletView: View {
     @State private var showToast = false
     @State private var toastMessage = ""
 
-    let onSave: (String, Account.AccountType, Double, String?) async -> Void
+    let onSave: (String, Account.AccountType, Double, String?) async -> Bool
 
     var body: some View {
         NavigationStack {
@@ -228,16 +228,21 @@ struct AddWalletView: View {
 
             isSaving = true
             Task {
-                await onSave(
+                let success = await onSave(
                     name.trimmingCharacters(in: .whitespaces),
                     category,
                     balance,
                     iconId
                 )
                 isSaving = false
-                toastMessage = "Dompet berhasil ditambahkan"
-                withAnimation { showToast = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { dismiss() }
-        }
+                if success {
+                    toastMessage = "Dompet berhasil ditambahkan"
+                    withAnimation { showToast = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { dismiss() }
+                } else {
+                    toastMessage = "Gagal menambahkan dompet"
+                    withAnimation { showToast = true }
+                }
+            }
     }
 }

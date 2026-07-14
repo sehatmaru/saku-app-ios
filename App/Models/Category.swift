@@ -3,6 +3,7 @@ import Foundation
 enum CategoryType: String, Codable {
     case income
     case expense
+    case adjustment
 }
 
 struct Category: Identifiable, Codable, Hashable {
@@ -11,6 +12,7 @@ struct Category: Identifiable, Codable, Hashable {
     let icon: String?
     let color: String?
     let type: CategoryType
+    let systemKey: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -18,5 +20,6 @@ struct Category: Identifiable, Codable, Hashable {
         case icon
         case color
         case type = "category_kind"
+        case systemKey = "system_key"
     }
 }

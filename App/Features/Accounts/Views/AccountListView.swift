@@ -44,14 +44,14 @@ struct AccountListView: View {
                                         account: account,
                                         transactions: accountTransactions[account.id] ?? [],
                                         categories: [],
-                                        onSave: { id, name, type, balance, icon, isArchived in
-                                            await viewModel.updateAccount(id: id, name: name, type: type, openingBalance: balance, icon: icon, isArchived: isArchived)
+                                        onSave: { id, name, type, icon, isArchived, newBalance, oldBalance in
+                                            return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "")
                                         },
                                         onDelete: { id in
-                                            await viewModel.removeAccount(id: id)
+                                            return await viewModel.removeAccount(id: id)
                                         },
                                         onToggleArchive: { id, archived in
-                                            await viewModel.toggleAccountArchive(id: id)
+                                            return await viewModel.toggleAccountArchive(id: id)
                                         }
                                 )) {
                                     AccountCard(account: account)
@@ -105,8 +105,11 @@ struct AccountListView: View {
             .sheet(isPresented: $showAddWallet) {
                 if let userId = authViewModel.currentUser?.id {
                     AddWalletView { name, type, balance, icon in
-                        await viewModel.addAccount(name: name, type: type, openingBalance: balance, icon: icon, userId: userId)
-                        await syncAccountTransactions(userId: userId)
+                        let success = await viewModel.addAccount(name: name, type: type, openingBalance: balance, icon: icon, userId: userId)
+                        if success {
+                            await syncAccountTransactions(userId: userId)
+                        }
+                        return success
                     }
                 }
             }
@@ -147,8 +150,10 @@ struct AccountListView: View {
             accountTransactions = grouped
             cachedUserId = userId
             AppDataCache.shared.setAccountTransactions(grouped, for: userId)
+        } catch is CancellationError {
+            // Keep existing detail transactions if task was cancelled.
         } catch {
-            // Keep existing detail transactions if refresh fails.
+            print("❌ syncAccountTransactions failed: \(error)")
         }
     }
 
@@ -207,14 +212,14 @@ struct AccountListView: View {
                             account: account,
                             transactions: accountTransactions[account.id] ?? [],
                             categories: [],
-                            onSave: { id, name, type, balance, icon, isArchived in
-                                await viewModel.updateAccount(id: id, name: name, type: type, openingBalance: balance, icon: icon, isArchived: isArchived)
+                            onSave: { id, name, type, icon, isArchived, newBalance, oldBalance in
+                                return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "")
                             },
                             onDelete: { id in
-                                await viewModel.removeAccount(id: id)
+                                return await viewModel.removeAccount(id: id)
                             },
                             onToggleArchive: { id, archived in
-                                await viewModel.toggleAccountArchive(id: id)
+                                return await viewModel.toggleAccountArchive(id: id)
                             }
                         )) {
                             AccountCard(account: account)

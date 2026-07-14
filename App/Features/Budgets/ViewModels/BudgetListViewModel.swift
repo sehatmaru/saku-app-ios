@@ -104,13 +104,15 @@ final class BudgetListViewModel: ObservableObject {
                 categories: categories,
                 allExpenseTransactions: allExpenseTransactions
             ), for: userId)
+        } catch is CancellationError {
+            return
         } catch {
             errorMessage = error.localizedDescription
             hasLoadedOnce = true
         }
     }
 
-    func addBudget(categoryId: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, userId: String) async {
+    func addBudget(categoryId: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, userId: String) async -> Bool {
         do {
             let budget = try await SupabaseRepository.shared.createBudget(
                 categoryId: categoryId, name: name, amount: amount,
@@ -121,12 +123,16 @@ final class BudgetListViewModel: ObservableObject {
             recalculate()
             cacheCurrentState()
             NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return true
+        } catch is CancellationError {
+            return false
         } catch {
             print("❌ addBudget failed: \(error)")
+            return false
         }
     }
 
-    func updateBudget(id: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, isActive: Bool) async {
+    func updateBudget(id: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, isActive: Bool) async -> Bool {
         do {
             let updated = try await SupabaseRepository.shared.updateBudget(
                 id: id, name: name, amount: amount,
@@ -139,20 +145,28 @@ final class BudgetListViewModel: ObservableObject {
             recalculate()
             cacheCurrentState()
             NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return true
+        } catch is CancellationError {
+            return false
         } catch {
             print("❌ updateBudget failed: \(error)")
+            return false
         }
     }
 
-    func removeBudget(id: String) async {
+    func removeBudget(id: String) async -> Bool {
         do {
             try await SupabaseRepository.shared.softDeleteBudget(id: id)
             budgets.removeAll { $0.id == id }
             recalculate()
             cacheCurrentState()
             NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return true
+        } catch is CancellationError {
+            return false
         } catch {
             print("❌ removeBudget failed: \(error)")
+            return false
         }
     }
 

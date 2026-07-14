@@ -1148,6 +1148,7 @@ struct TransactionRow: View {
         case .income: .appIncome
         case .expense: .appExpense
         case .transfer: .appPrimary
+        case .adjustment: .appText
         }
     }
 
@@ -1156,6 +1157,7 @@ struct TransactionRow: View {
         case .income: "arrow.down"
         case .expense: "arrow.up"
         case .transfer: "arrow.left.arrow.right"
+        case .adjustment: "arrow.2.circlepath"
         }
     }
 
@@ -1164,6 +1166,7 @@ struct TransactionRow: View {
         case .income: "Pemasukan"
         case .expense: "Pengeluaran"
         case .transfer: "Transfer"
+        case .adjustment: "Penyesuaian saldo"
         }
     }
 
@@ -1188,9 +1191,14 @@ struct TransactionRow: View {
 
             Spacer()
 
-            Text(transaction.amount.formattedAsCurrency())
-                .font(.jakarta(15, weight: .semibold))
-                .foregroundColor(typeColor)
+                let isAdjustment = transaction.type == .adjustment
+                let signedAmount = transaction.delta ?? transaction.amount
+                let amountColor: Color = isAdjustment ? (signedAmount >= 0 ? .appIncome : .appExpense) : typeColor
+                let amountText: String = isAdjustment ? (signedAmount >= 0 ? "+" + signedAmount.formattedAsCurrency() : signedAmount.formattedAsCurrency()) : transaction.amount.formattedAsCurrency()
+
+                Text(amountText)
+                    .font(.jakarta(15, weight: .semibold))
+                    .foregroundColor(amountColor)
         }
         .padding(.vertical, 4)
     }
@@ -1212,9 +1220,9 @@ struct DashboardPreview: View {
         v.totalBudget = 2_000_000
         v.totalSpent = 1_200_000
         v.currentMonthTransactionCount = 23
-        let cat1 = Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF6B6B", type: .expense)
-        let cat2 = Category(id: "2", name: "Transport", icon: "car.fill", color: "#4ECDC4", type: .expense)
-        let cat3 = Category(id: "3", name: "Belanja", icon: "bag.fill", color: "#45B7D1", type: .expense)
+        let cat1 = Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF6B6B", type: .expense, systemKey: nil)
+        let cat2 = Category(id: "2", name: "Transport", icon: "car.fill", color: "#4ECDC4", type: .expense, systemKey: nil)
+        let cat3 = Category(id: "3", name: "Belanja", icon: "bag.fill", color: "#45B7D1", type: .expense, systemKey: nil)
         v.categories = [cat1, cat2, cat3]
         v.categorySpending = [
             (cat1, 1_200_000),

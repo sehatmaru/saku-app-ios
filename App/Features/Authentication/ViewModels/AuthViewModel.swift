@@ -49,6 +49,8 @@ final class AuthViewModel: ObservableObject {
         do {
             let session = try await SupabaseSDK.client.auth.session
             try await fetchProfileAndSetUser(authUserId: session.user.id, email: session.user.email ?? "", displayName: session.user.userMetadata["full_name"]?.stringValue ?? session.user.userMetadata["name"]?.stringValue)
+        } catch is CancellationError {
+            isAuthenticated = false
         } catch {
             isAuthenticated = false
         }
@@ -109,6 +111,8 @@ final class AuthViewModel: ObservableObject {
 
                 let name = authResponse.user.userMetadata["full_name"]?.stringValue ?? authResponse.user.userMetadata["name"]?.stringValue
                 try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name)
+            } catch is CancellationError {
+                return
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -131,6 +135,8 @@ final class AuthViewModel: ObservableObject {
 
                 let name = authResponse.user.userMetadata["full_name"]?.stringValue ?? authResponse.user.userMetadata["name"]?.stringValue
                 try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name)
+            } catch is CancellationError {
+                return
             } catch {
                 errorMessage = error.localizedDescription
             }

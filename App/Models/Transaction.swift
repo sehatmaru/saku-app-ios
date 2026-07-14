@@ -10,11 +10,13 @@ struct Transaction: Identifiable, Codable {
     let description: String?
     let note: String?
     let date: Date
+    let delta: Double?
 
     enum TransactionType: String, Codable {
         case income = "income"
         case expense = "expense"
         case transfer = "transfer"
+        case adjustment = "adjustment"
     }
 
     enum CodingKeys: String, CodingKey {
@@ -27,5 +29,6 @@ struct Transaction: Identifiable, Codable {
         case description
         case note
         case date = "occurred_at"
+        case delta
     }
 }

@@ -56,14 +56,9 @@ final class TransactionListViewModel: ObservableObject {
                 categoriesTask,
                 accountsTask
             )
-            let balancedAccounts = BalanceCalculator.applyBalances(
-                to: fetchedAccounts,
-                from: fetchedTransactions
-            )
-
             allTransactions = fetchedTransactions
             categories = fetchedCategories
-            accounts = balancedAccounts
+            accounts = fetchedAccounts
             calculateThisMonthSummary()
             AppDataCache.shared.setTransactionState(.init(transactions: allTransactions, categories: categories, accounts: accounts), for: userId)
             loadedUserId = userId

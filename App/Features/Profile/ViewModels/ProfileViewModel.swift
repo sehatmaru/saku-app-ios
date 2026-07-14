@@ -24,6 +24,8 @@ final class ProfileViewModel: ObservableObject {
                 displayName: displayName.isEmpty ? currentUser.displayName : displayName,
                 defaultCurrencyCode: currentUser.defaultCurrencyCode
             )
+        } catch is CancellationError {
+            return nil
         } catch {
             errorMessage = error.localizedDescription
             return nil

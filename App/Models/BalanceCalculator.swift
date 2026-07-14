@@ -16,7 +16,7 @@ enum BalanceCalculator {
     }
 
     private static func balancesByAccountId(for accounts: [Account], from transactions: [Transaction]) -> [String: Double] {
-        var balances = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0.currentBalance ?? $0.openingBalance) })
+        var balances = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0.openingBalance) })
 
         for transaction in transactions {
             switch transaction.type {
@@ -24,6 +24,8 @@ enum BalanceCalculator {
                 balances[transaction.accountId, default: 0] += transaction.amount
             case .expense:
                 balances[transaction.accountId, default: 0] -= transaction.amount
+            case .adjustment:
+                balances[transaction.accountId, default: 0] += transaction.amount
             case .transfer:
                 balances[transaction.accountId, default: 0] -= transaction.amount
                 if let counterpartyAccountId = transaction.counterpartyAccountId {

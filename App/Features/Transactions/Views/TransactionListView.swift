@@ -389,6 +389,7 @@ struct TransactionListView: View {
         case .income: "Pemasukan"
         case .expense: "Pengeluaran"
         case .transfer: "Transfer"
+        case .adjustment: "Penyesuaian saldo"
         }
     }
 
@@ -523,19 +524,20 @@ struct TransactionListView: View {
 
     private func transactionRow(_ transaction: Transaction) -> some View {
         let isTransfer = transaction.type == .transfer
+        let isAdjustment = transaction.type == .adjustment
         let cellColor: Color = isTransfer ? .appText : transactionColor(transaction.type)
 
         return HStack(spacing: Spacing.md) {
             ZStack {
                 Circle()
-                    .fill(cellColor.opacity(isTransfer ? 0.08 : 0.15))
+                    .fill(cellColor.opacity((isTransfer || isAdjustment) ? 0.08 : 0.15))
                     .frame(width: 44, height: 44)
                 Image(systemName: categoryIcon(for: transaction))
                     .font(.jakarta(16))
                     .foregroundColor(cellColor)
             }
             .overlay(alignment: .bottomTrailing) {
-                if !isTransfer, let acc = accountFor(id: transaction.accountId), let wi = WalletIcon.resolve(acc.icon) {
+                if !isTransfer, !isAdjustment, let acc = accountFor(id: transaction.accountId), let wi = WalletIcon.resolve(acc.icon) {
                     walletBadge(wi: wi)
                 }
             }
@@ -583,9 +585,14 @@ struct TransactionListView: View {
 
             Spacer()
 
-            Text(isBalanceVisible ? transaction.amount.formattedAsCurrency() : "Rp***")
-                .font(.jakarta(14, weight: .semibold))
-                .foregroundColor(cellColor)
+                let isAdjustment = transaction.type == .adjustment
+                let signedAmount = transaction.delta ?? transaction.amount
+                let amountColor: Color = isAdjustment ? (signedAmount >= 0 ? .appIncome : .appExpense) : cellColor
+                let amountText: String = isAdjustment ? (signedAmount >= 0 ? "+" + signedAmount.formattedAsCurrency() : signedAmount.formattedAsCurrency()) : transaction.amount.formattedAsCurrency()
+
+                Text(isBalanceVisible ? amountText : "Rp***")
+                    .font(.jakarta(14, weight: .semibold))
+                    .foregroundColor(amountColor)
         }
         .padding(.vertical, Spacing.sm)
         .contentShape(Rectangle())
@@ -613,6 +620,7 @@ struct TransactionListView: View {
         case .income: .appIncome
         case .expense: .appExpense
         case .transfer: .appText
+        case .adjustment: .appText
         }
     }
 
@@ -621,6 +629,7 @@ struct TransactionListView: View {
         case .income: "Pemasukan"
         case .expense: "Pengeluaran"
         case .transfer: "Transfer"
+        case .adjustment: "Penyesuaian saldo"
         }
     }
 
@@ -630,6 +639,7 @@ struct TransactionListView: View {
             case .income: return "arrow.down"
             case .expense: return "arrow.up"
             case .transfer: return "arrow.left.arrow.right"
+            case .adjustment: return "arrow.2.circlepath"
             }
         }
         let category = viewModel.categories.first { $0.id == categoryId }
@@ -723,13 +733,13 @@ struct TransactionListPreview: View {
         let v = TransactionListViewModel()
         v.hasLoadedOnce = true
         v.allTransactions = [
-            Transaction(id: "1", accountId: "a1", counterpartyAccountId: nil, categoryId: "1", amount: 50_000, type: .expense, description: nil, note: "Nasi Goreng", date: Date()),
-            Transaction(id: "2", accountId: "a1", counterpartyAccountId: nil, categoryId: "2", amount: 20_000, type: .expense, description: nil, note: "Bensin", date: Date()),
-            Transaction(id: "3", accountId: "a1", counterpartyAccountId: nil, categoryId: nil, amount: 500_000, type: .income, description: nil, note: "Gaji", date: Date()),
+            Transaction(id: "1", accountId: "a1", counterpartyAccountId: nil, categoryId: "1", amount: 50_000, type: .expense, description: nil, note: "Nasi Goreng", date: Date(), delta: nil),
+            Transaction(id: "2", accountId: "a1", counterpartyAccountId: nil, categoryId: "2", amount: 20_000, type: .expense, description: nil, note: "Bensin", date: Date(), delta: nil),
+            Transaction(id: "3", accountId: "a1", counterpartyAccountId: nil, categoryId: nil, amount: 500_000, type: .income, description: nil, note: "Gaji", date: Date(), delta: nil),
         ]
         v.categories = [
-            Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF6B6B", type: .expense),
-            Category(id: "2", name: "Transport", icon: "car.fill", color: "#4ECDC4", type: .expense),
+            Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF6B6B", type: .expense, systemKey: nil),
+            Category(id: "2", name: "Transport", icon: "car.fill", color: "#4ECDC4", type: .expense, systemKey: nil),
         ]
         v.accounts = [
             Account(id: "a1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, openingBalance: 5_000_000, currentBalance: 5_430_000),

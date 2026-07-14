@@ -28,6 +28,7 @@ final class SupabaseRepository: @unchecked Sendable {
                 "name": AnyJSON.string(name),
                 "account_type": AnyJSON.string(type.rawValue),
                 "opening_balance": AnyJSON.double(openingBalance),
+                "current_balance": AnyJSON.double(openingBalance),
                 "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
             ] as [String: AnyJSON])
             .select()
@@ -36,17 +37,20 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, icon: String?, isArchived: Bool) async throws -> Account {
-        try await client
+    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool) async throws -> Account {
+        var payload: [String: AnyJSON] = [
+            "name": AnyJSON.string(name),
+            "account_type": AnyJSON.string(type.rawValue),
+            "opening_balance": AnyJSON.double(openingBalance),
+            "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "is_archived": AnyJSON.bool(isArchived),
+        ]
+        if let currentBalance {
+            payload["current_balance"] = AnyJSON.double(currentBalance)
+        }
+        return try await client
             .from("accounts")
-            .update([
-                "name": AnyJSON.string(name),
-                "account_type": AnyJSON.string(type.rawValue),
-                "opening_balance": AnyJSON.double(openingBalance),
-                "current_balance": AnyJSON.double(openingBalance),
-                "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
-                "is_archived": AnyJSON.bool(isArchived),
-            ] as [String: AnyJSON])
+            .update(payload)
             .eq("id", value: id)
             .select()
             .single()
@@ -98,26 +102,76 @@ final class SupabaseRepository: @unchecked Sendable {
     func createTransaction(accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date, userId: String) async throws -> Transaction {
         let operationId = UUID().uuidString
 
+        let rpcType: String
+        let rpcAmount: Double
+        if type == .adjustment {
+            rpcType = amount >= 0 ? Transaction.TransactionType.income.rawValue : Transaction.TransactionType.expense.rawValue
+            rpcAmount = abs(amount)
+        } else {
+            rpcType = type.rawValue
+            rpcAmount = amount
+        }
+
         let params: [String: AnyJSON] = [
-            "p_amount": AnyJSON.double(amount),
+            "p_amount": AnyJSON.double(rpcAmount),
             "p_category_id": categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
             "p_client_operation_id": AnyJSON.string(operationId),
             "p_description": description.map { AnyJSON.string($0) } ?? AnyJSON.null,
             "p_note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
             "p_occurred_at": AnyJSON.string(date.iso8601Formatted),
             "p_primary_account_id": AnyJSON.string(accountId),
-            "p_transaction_type": AnyJSON.string(type.rawValue),
+            "p_transaction_type": AnyJSON.string(rpcType),
         ]
 
         let transactionId: String = try await client.rpc("create_transaction", params: params).execute().value
 
-        return try await client
+        var transaction: Transaction = try await client
             .from("transactions")
             .select()
             .eq("id", value: transactionId)
             .single()
             .execute()
             .value
+
+        if type == .adjustment {
+            transaction = Transaction(
+                id: transaction.id,
+                accountId: transaction.accountId,
+                counterpartyAccountId: transaction.counterpartyAccountId,
+                categoryId: transaction.categoryId,
+                amount: amount,
+                type: .adjustment,
+                description: transaction.description,
+                note: transaction.note,
+                date: transaction.date,
+                delta: amount
+            )
+        }
+
+        let delta: Double
+        switch type {
+        case .income: delta = amount
+        case .expense: delta = -amount
+        case .transfer: delta = 0
+        case .adjustment: delta = 0
+        }
+        if delta != 0 {
+            try await client.rpc("increment_account_balance", params: [
+                "p_account_id": AnyJSON.string(accountId),
+                "p_delta": AnyJSON.double(delta),
+            ]).execute()
+        }
+
+        return transaction
+    }
+
+    func createAdjustmentLog(accountId: String, amount: Double, note: String, date: Date) async throws {
+        try await client.rpc("create_adjustment_log", params: [
+            "p_primary_account_id": AnyJSON.string(accountId),
+            "p_amount": AnyJSON.double(amount),
+            "p_note": AnyJSON.string(note),
+            "p_occurred_at": AnyJSON.string(date.iso8601Formatted),
+        ]).execute()
     }
 
     func createTransfer(primaryAccountId: String, counterpartyAccountId: String, amount: Double, description: String?, note: String?, date: Date) async throws -> Transaction {
@@ -135,13 +189,25 @@ final class SupabaseRepository: @unchecked Sendable {
 
         let transactionId: String = try await client.rpc("create_transfer", params: params).execute().value
 
-        return try await client
+        let transaction: Transaction = try await client
             .from("transactions")
             .select()
             .eq("id", value: transactionId)
             .single()
             .execute()
             .value
+
+        try await client.rpc("increment_account_balance", params: [
+            "p_account_id": AnyJSON.string(primaryAccountId),
+            "p_delta": AnyJSON.double(-amount),
+        ]).execute()
+
+        try await client.rpc("increment_account_balance", params: [
+            "p_account_id": AnyJSON.string(counterpartyAccountId),
+            "p_delta": AnyJSON.double(amount),
+        ]).execute()
+
+        return transaction
     }
 
     func updateTransaction(id: String, accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date) async throws -> Transaction {

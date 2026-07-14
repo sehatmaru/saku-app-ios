@@ -4,9 +4,9 @@ struct WalletDetailView: View {
     let account: Account
     let transactions: [Transaction]
     let categories: [Category]
-    let onSave: ((String, String, Account.AccountType, Double, String?, Bool) async -> Void)?
-    let onDelete: ((String) async -> Void)?
-    let onToggleArchive: ((String, Bool) async -> Void)?
+    let onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double) async -> Bool)?
+    let onDelete: ((String) async -> Bool)?
+    let onToggleArchive: ((String, Bool) async -> Bool)?
 
     @State private var balanceDigits = ""
     @State private var showBalanceKeyboard = false
@@ -23,14 +23,15 @@ struct WalletDetailView: View {
     @State private var isSaving = false
     @State private var showToast = false
     @State private var toastMessage = ""
+    @State private var detailTransaction: Transaction?
     @FocusState private var isNameFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
     init(account: Account, transactions: [Transaction] = [],
          categories: [Category] = [],
-         onSave: ((String, String, Account.AccountType, Double, String?, Bool) async -> Void)? = nil,
-         onDelete: ((String) async -> Void)? = nil,
-         onToggleArchive: ((String, Bool) async -> Void)? = nil) {
+         onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double) async -> Bool)? = nil,
+         onDelete: ((String) async -> Bool)? = nil,
+         onToggleArchive: ((String, Bool) async -> Bool)? = nil) {
         self.account = account
         self.transactions = transactions
         self.categories = categories
@@ -156,8 +157,9 @@ struct WalletDetailView: View {
             Button("Batal", role: .cancel) {}
             Button("Arsipkan") {
                 Task {
-                    await onToggleArchive?(account.id, true)
-                    dismiss()
+                    if await onToggleArchive?(account.id, true) ?? true {
+                        dismiss()
+                    }
                 }
             }
         } message: {
@@ -167,8 +169,9 @@ struct WalletDetailView: View {
             Button("Batal", role: .cancel) {}
             Button("Aktifkan") {
                 Task {
-                    await onToggleArchive?(account.id, false)
-                    dismiss()
+                    if await onToggleArchive?(account.id, false) ?? true {
+                        dismiss()
+                    }
                 }
             }
         } message: {
@@ -178,8 +181,9 @@ struct WalletDetailView: View {
             Button("Batal", role: .cancel) {}
             Button("Hapus", role: .destructive) {
                 Task {
-                    await onDelete?(account.id)
-                    dismiss()
+                    if await onDelete?(account.id) ?? true {
+                        dismiss()
+                    }
                 }
             }
         } message: {
@@ -209,6 +213,14 @@ struct WalletDetailView: View {
         .toast(isPresented: $showToast, message: toastMessage)
         .onChange(of: isNameFocused) { _, newValue in
             if !newValue { confirmChanges() }
+        }
+        .sheet(item: $detailTransaction) { txn in
+            TransactionDetailView(
+                transaction: txn,
+                categories: categories,
+                accounts: [account],
+                onUpdate: nil
+            )
         }
     }
     
@@ -449,13 +461,13 @@ struct WalletDetailView: View {
     }
 
     private func confirmChanges() {
-        guard let balance = Double(balanceDigits) else { return }
+        guard let newBalance = Double(balanceDigits) else { return }
         isSaving = true
         Task {
-            await onSave?(account.id, editedName.trimmingCharacters(in: .whitespaces), account.type, balance, editedIconId, account.isArchived)
-            hasConfirmed = true
+            let success = await onSave?(account.id, editedName.trimmingCharacters(in: .whitespaces), account.type, editedIconId, account.isArchived, newBalance, account.balance) ?? true
+            hasConfirmed = success
             isSaving = false
-            toastMessage = "Perubahan berhasil disimpan"
+            toastMessage = success ? "Perubahan berhasil disimpan" : "Gagal menyimpan perubahan"
             withAnimation { showToast = true }
         }
     }
@@ -494,7 +506,8 @@ struct WalletDetailView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(displayTxs) { transaction in
-                        transactionRow(transaction)
+                        Button { detailTransaction = transaction } label: { transactionRow(transaction) }
+                            .buttonStyle(.plain)
                         if transaction.id != displayTxs.last?.id {
                             Divider()
                                 .padding(.leading, 52)
@@ -529,14 +542,15 @@ struct WalletDetailView: View {
 
     private func transactionRow(_ transaction: Transaction) -> some View {
         let isTransfer = transaction.type == .transfer
-        let cellColor: Color = isTransfer ? .appText : (transaction.type == .income ? .appIncome : .appExpense)
+        let isAdjustment = transaction.type == .adjustment
+        let cellColor: Color = (isTransfer || isAdjustment) ? .appText : (transaction.type == .income ? .appIncome : .appExpense)
         let catIcon = transaction.categoryId.flatMap { cid in categories.first { $0.id == cid }?.icon }
-        let iconName = isTransfer ? "arrow.left.arrow.right" : (catIcon ?? (transaction.type == .income ? "arrow.down" : "arrow.up"))
+        let iconName = isTransfer ? "arrow.left.arrow.right" : (isAdjustment ? "arrow.2.circlepath" : (catIcon ?? (transaction.type == .income ? "arrow.down" : "arrow.up")))
 
         return HStack(spacing: Spacing.md) {
             ZStack {
                 Circle()
-                    .fill(cellColor.opacity(isTransfer ? 0.08 : 0.15))
+                    .fill(cellColor.opacity((isTransfer || isAdjustment) ? 0.08 : 0.15))
                     .frame(width: 44, height: 44)
                 Image(systemName: iconName)
                     .font(.jakarta(16))
@@ -565,9 +579,13 @@ struct WalletDetailView: View {
 
             Spacer()
 
-            Text(transaction.amount.formattedAsCurrency())
-                .font(.jakarta(14, weight: .semibold))
-                .foregroundColor(cellColor)
+                let signedAmount = transaction.delta ?? transaction.amount
+                let amountColor: Color = isAdjustment ? (signedAmount >= 0 ? .appIncome : .appExpense) : cellColor
+                let amountText: String = isAdjustment ? (signedAmount >= 0 ? "+" + signedAmount.formattedAsCurrency() : signedAmount.formattedAsCurrency()) : transaction.amount.formattedAsCurrency()
+
+                Text(amountText)
+                    .font(.jakarta(14, weight: .semibold))
+                    .foregroundColor(amountColor)
         }
         .padding(.vertical, Spacing.sm)
     }
@@ -577,6 +595,7 @@ struct WalletDetailView: View {
         case .income: return "Pemasukan"
         case .expense: return "Pengeluaran"
         case .transfer: return "Transfer"
+        case .adjustment: return "Penyesuaian saldo"
         }
     }
 

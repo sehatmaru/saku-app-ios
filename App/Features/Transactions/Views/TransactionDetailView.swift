@@ -62,6 +62,7 @@ struct TransactionDetailView: View {
         case .income: .appIncome
         case .expense: .appExpense
         case .transfer: .appText
+        case .adjustment: .appText
         }
     }
 
@@ -70,10 +71,23 @@ struct TransactionDetailView: View {
         case .income: return "arrow.down"
         case .expense: return "arrow.up"
         case .transfer: return "arrow.left.arrow.right"
+        case .adjustment: return "arrow.2.circlepath"
         }
     }
 
     private var amountOpacity: Double { 1.0 }
+
+    private var isAdjustment: Bool { transaction.type == .adjustment }
+
+    private var signedAmount: Double { transaction.delta ?? transaction.amount }
+
+    private var amountColor: Color {
+        isAdjustment ? (signedAmount >= 0 ? .appIncome : .appExpense) : typeColor
+    }
+
+    private var accountForAdjustment: Account? {
+        isAdjustment ? accounts.first { $0.id == transaction.accountId } : nil
+    }
 
     var body: some View {
         ScrollView {
@@ -123,9 +137,14 @@ struct TransactionDetailView: View {
             Button("Batal", role: .cancel) {}
             Button("Hapus", role: .destructive) {
                 Task {
-                    try? await SupabaseRepository.shared.softDeleteTransaction(id: transaction.id)
-                    NotificationCenter.default.post(name: .dataDidChange, object: nil)
-                    dismiss()
+                    do {
+                        try await SupabaseRepository.shared.softDeleteTransaction(id: transaction.id)
+                        NotificationCenter.default.post(name: .dataDidChange, object: nil)
+                        dismiss()
+                    } catch {
+                        print("❌ deleteTransaction failed: \(error)")
+                        withAnimation { showToast = true }
+                    }
                 }
             }
         } message: {
@@ -163,29 +182,33 @@ struct TransactionDetailView: View {
             id: transaction.id,
             accountId: selectedAccountId,
             counterpartyAccountId: transaction.counterpartyAccountId,
-            categoryId: selectedCategoryId,
+            categoryId: isAdjustment ? transaction.categoryId : selectedCategoryId,
             amount: amount,
             type: transaction.type,
             description: transaction.description,
-            note: editedTitle.isEmpty ? nil : editedTitle,
-            date: selectedDate
+            note: isAdjustment ? (noteText.isEmpty ? nil : noteText) : (editedTitle.isEmpty ? nil : editedTitle),
+            date: selectedDate,
+            delta: transaction.delta
         )
         Task {
-            try? await SupabaseRepository.shared.updateTransaction(
-                id: updated.id,
-                accountId: updated.accountId,
-                categoryId: updated.categoryId,
-                amount: updated.amount,
-                type: updated.type,
-                description: updated.description,
-                note: updated.note,
-                date: updated.date
-            )
-            NotificationCenter.default.post(name: .dataDidChange, object: nil)
-            onUpdate?(updated)
-        }
-        withAnimation {
-            showToast = true
+            do {
+                try await SupabaseRepository.shared.updateTransaction(
+                    id: updated.id,
+                    accountId: updated.accountId,
+                    categoryId: updated.categoryId,
+                    amount: updated.amount,
+                    type: updated.type,
+                    description: updated.description,
+                    note: updated.note,
+                    date: updated.date
+                )
+                NotificationCenter.default.post(name: .dataDidChange, object: nil)
+                onUpdate?(updated)
+                withAnimation { showToast = true }
+            } catch {
+                print("❌ updateTransaction failed: \(error)")
+                withAnimation { showToast = true }
+            }
         }
     }
 
@@ -197,7 +220,7 @@ struct TransactionDetailView: View {
                     .fill(typeColor.opacity(0.15))
                     .frame(width: 44, height: 44)
                     .overlay {
-                        Image(systemName: selectedCategory?.icon ?? typeIcon)
+                        Image(systemName: isAdjustment ? typeIcon : (selectedCategory?.icon ?? typeIcon))
                             .font(.jakarta(18))
                             .foregroundColor(typeColor)
                     }
@@ -206,11 +229,17 @@ struct TransactionDetailView: View {
                             .stroke(typeColor.opacity(0.3), lineWidth: 1.5)
                     )
 
-                TextField("Judul transaksi", text: $editedTitle)
-                    .font(.jakarta(17, weight: .semibold))
-                    .foregroundColor(.appText)
-                    .focused($isTitleFocused)
-                    .onSubmit { saveChanges() }
+                if isAdjustment {
+                    Text("Penyesuaian saldo")
+                        .font(.jakarta(17, weight: .semibold))
+                        .foregroundColor(.appText)
+                } else {
+                    TextField("Judul transaksi", text: $editedTitle)
+                        .font(.jakarta(17, weight: .semibold))
+                        .foregroundColor(.appText)
+                        .focused($isTitleFocused)
+                        .onSubmit { saveChanges() }
+                }
 
                 Spacer()
             }
@@ -218,22 +247,58 @@ struct TransactionDetailView: View {
             .padding(.top, Spacing.xl)
 
             HStack(spacing: 6) {
-                Text("Rp")
+                Text(isAdjustment && signedAmount < 0 ? "-Rp" : "Rp")
                     .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(.appText)
+                    .foregroundColor(amountColor)
 
-                Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
+                Text(isAdjustment ? String(Int(abs(signedAmount))).formattedWithThousandSeparator : (amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator))
                     .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(.appText)
+                    .foregroundColor(amountColor)
                     .contentShape(Rectangle())
-                    .onTapGesture { showAmountKeyboard = true }
-
-                Spacer()
+                    .onTapGesture { if !isAdjustment { showAmountKeyboard = true } }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Spacing.xl)
             .padding(.top, Spacing.sm)
-            .padding(.bottom, Spacing.lg)
+            .padding(.bottom, isAdjustment ? 0 : Spacing.lg)
+
+            if isAdjustment {
+                let account = accounts.first { $0.id == transaction.accountId }
+                if let currentBalance = account?.currentBalance {
+                    let newBalance = currentBalance
+                    let delta = signedAmount
+                    let oldBalance = newBalance - delta
+
+                    Divider()
+                        .padding(.horizontal, Spacing.xl)
+
+                    HStack(spacing: 0) {
+                        VStack(spacing: 4) {
+                            Text("Saldo Awal")
+                                .font(.jakarta(11))
+                                .foregroundColor(.appTextSecondary)
+                            Text(oldBalance.formattedAsCurrency())
+                                .font(.jakarta(13, weight: .semibold))
+                                .foregroundColor(.appText)
+                        }
+                        .frame(maxWidth: .infinity)
+
+                        Divider().frame(height: 28)
+
+                        VStack(spacing: 4) {
+                            Text("Saldo Akhir")
+                                .font(.jakarta(11))
+                                .foregroundColor(.appTextSecondary)
+                            Text(newBalance.formattedAsCurrency())
+                                .font(.jakarta(13, weight: .semibold))
+                                .foregroundColor(delta >= 0 ? .appIncome : .appExpense)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal, Spacing.xl)
+                    .padding(.vertical, Spacing.lg)
+                }
+            }
         }
         .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 20))
@@ -248,27 +313,73 @@ struct TransactionDetailView: View {
     // MARK: Info Card
     private var infoCard: some View {
         VStack(spacing: 0) {
-            Button {
-                showDatePicker = true
-            } label: {
-                listRow(icon: "calendar", label: "Tanggal", value: selectedDate.formatted(date: .long, time: .omitted), iconColor: .appTextSecondary)
+            if isAdjustment {
+                HStack(spacing: Spacing.md) {
+                    Circle()
+                        .fill(Color.appTextSecondary.opacity(0.1))
+                        .frame(width: 36, height: 36)
+                        .overlay {
+                            Image(systemName: "calendar")
+                                .font(.jakarta(13))
+                                .foregroundColor(.appTextSecondary)
+                        }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Tanggal")
+                            .font(.jakarta(11))
+                            .foregroundColor(.appTextSecondary)
+                        Text(transaction.date.formatted(date: .long, time: .omitted))
+                            .font(.jakarta(15, weight: .medium))
+                            .foregroundColor(.appText)
+                    }
+
+                    Spacer()
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.vertical, 10)
+            } else {
+                Button { showDatePicker = true } label: {
+                    listRow(icon: "calendar", label: "Tanggal", value: selectedDate.formatted(date: .long, time: .omitted), iconColor: .appTextSecondary)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             Divider().padding(.leading, 52)
 
-            Button {
-                showCategoryPicker = true
-            } label: {
-                listRow(icon: selectedCategory?.icon ?? "folder", label: "Kategori", value: selectedCategory?.name ?? "-", iconColor: typeColor)
+            if isAdjustment {
+                HStack(spacing: Spacing.md) {
+                    Circle()
+                        .fill(Color.appTextSecondary.opacity(0.1))
+                        .frame(width: 36, height: 36)
+                        .overlay {
+                            Image(systemName: "folder")
+                                .font(.jakarta(13))
+                                .foregroundColor(.appTextSecondary)
+                        }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Kategori")
+                            .font(.jakarta(11))
+                            .foregroundColor(.appTextSecondary)
+                        Text("-")
+                            .font(.jakarta(15, weight: .medium))
+                            .foregroundColor(.appText)
+                    }
+
+                    Spacer()
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.vertical, 10)
+            } else {
+                Button { showCategoryPicker = true } label: {
+                    listRow(icon: selectedCategory?.icon ?? "folder", label: "Kategori", value: selectedCategory?.name ?? "-", iconColor: typeColor)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             Divider().padding(.leading, 52)
 
-            Button {
-                showWalletPicker = true
-            } label: {
+            Button { if !isAdjustment { showWalletPicker = true } } label: {
                 walletRow
             }
             .buttonStyle(.plain)
@@ -592,7 +703,8 @@ struct TransactionDetailView: View {
             type: .expense,
             description: "Preview",
             note: nil,
-            date: Date()
+            date: Date(),
+            delta: nil
         ),
         categories: [],
         accounts: [],

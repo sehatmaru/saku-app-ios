@@ -37,19 +37,21 @@ final class AccountListViewModel: ObservableObject {
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
             let (fetchedAccounts, transactions) = try await (accountsTask, transactionsTask)
-            accounts = BalanceCalculator.applyBalances(to: fetchedAccounts, from: transactions)
+            accounts = fetchedAccounts
             recalculateBalance()
             AppDataCache.shared.setAccounts(accounts, for: userId)
             AppDataCache.shared.setAccountTransactions(groupTransactionsByAccount(transactions), for: userId)
             loadedUserId = userId
             hasLoadedOnce = true
+        } catch is CancellationError {
+            return
         } catch {
             errorMessage = error.localizedDescription
             hasLoadedOnce = true
         }
     }
 
-    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String) async {
+    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String) async -> Bool {
         do {
             let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId)
             accounts.append(account)
@@ -57,28 +59,53 @@ final class AccountListViewModel: ObservableObject {
             AppDataCache.shared.setAccounts(accounts, for: userId)
             loadedUserId = userId
             NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return true
+        } catch is CancellationError {
+            return false
         } catch {
-            // silently fail
+            print("❌ addAccount failed: \(error)")
+            return false
         }
     }
 
-    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, icon: String?, isArchived: Bool) async {
+    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String) async -> Bool {
         do {
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: openingBalance, icon: icon, isArchived: isArchived)
+            if abs(newBalance - oldBalance) > 0.001 {
+                let delta = newBalance - oldBalance
+                let note = "Penyesuaian Saldo: Rp \(String(Int(oldBalance)).formattedWithThousandSeparator) → Rp \(String(Int(newBalance)).formattedWithThousandSeparator) (perubahan \(delta > 0 ? "+" : "")\(String(Int(delta)).formattedWithThousandSeparator))"
+
+                do {
+                    try await SupabaseRepository.shared.createAdjustmentLog(
+                        accountId: id, amount: delta, note: note, date: Date()
+                    )
+                } catch {
+                    print("⚠️ adjustment log failed (balance already updated): \(error)")
+                }
+            }
+
+            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
-                accounts[index] = updated
+                var updatedAccount = updated
+                if abs(newBalance - oldBalance) > 0.001 {
+                    updatedAccount.currentBalance = newBalance
+                }
+                accounts[index] = updatedAccount
             }
             recalculateBalance()
             if let loadedUserId {
                 AppDataCache.shared.setAccounts(accounts, for: loadedUserId)
             }
             NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return true
+        } catch is CancellationError {
+            return false
         } catch {
-            // silently fail
+            print("❌ rebalanceAccount failed: \(error)")
+            return false
         }
     }
 
-    func removeAccount(id: String) async {
+    func removeAccount(id: String) async -> Bool {
         do {
             try await SupabaseRepository.shared.softDeleteAccount(id: id)
             accounts.removeAll { $0.id == id }
@@ -87,13 +114,17 @@ final class AccountListViewModel: ObservableObject {
                 AppDataCache.shared.setAccounts(accounts, for: loadedUserId)
             }
             NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return true
+        } catch is CancellationError {
+            return false
         } catch {
-            // silently fail
+            print("❌ removeAccount failed: \(error)")
+            return false
         }
     }
 
-    func toggleAccountArchive(id: String) async {
-        guard let account = accounts.first(where: { $0.id == id }) else { return }
+    func toggleAccountArchive(id: String) async -> Bool {
+        guard let account = accounts.first(where: { $0.id == id }) else { return false }
         do {
             try await SupabaseRepository.shared.toggleArchiveAccount(id: id, archived: !account.isArchived)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
@@ -103,7 +134,8 @@ final class AccountListViewModel: ObservableObject {
                     type: account.type,
                     icon: account.icon,
                     isArchived: !account.isArchived,
-                    openingBalance: account.openingBalance
+                    openingBalance: account.openingBalance,
+                    currentBalance: account.currentBalance
                 )
                 accounts[index] = updated
             }
@@ -112,8 +144,12 @@ final class AccountListViewModel: ObservableObject {
                 AppDataCache.shared.setAccounts(accounts, for: loadedUserId)
             }
             NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return true
+        } catch is CancellationError {
+            return false
         } catch {
-            // silently fail
+            print("❌ toggleAccountArchive failed: \(error)")
+            return false
         }
     }
 

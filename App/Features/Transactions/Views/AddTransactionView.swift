@@ -104,6 +104,7 @@ struct AddTransactionView: View {
         case .income: .appIncome
         case .expense: .appExpense
         case .transfer: .blue
+        case .adjustment: .appText
         }
     }
 
@@ -460,6 +461,8 @@ struct AddTransactionView: View {
                 toastMessage = "Transaksi berhasil disimpan"
                 withAnimation { showToast = true }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { dismiss() }
+            } catch is CancellationError {
+                return
             } catch {
                 isSaving = false
                 validationMessage = "Gagal menyimpan: \(error.localizedDescription)"; showValidationAlert = true
