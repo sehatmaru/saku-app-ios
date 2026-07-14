@@ -12,6 +12,7 @@ struct AccountListView: View {
     @State private var showAddWallet = false
     @State private var showArchived = false
     @State private var accountTransactions: [String: [Transaction]] = [:]
+    @State private var categories: [Category] = []
     @State private var cachedUserId: String?
 
     private var activeAccounts: [Account] {
@@ -43,7 +44,7 @@ struct AccountListView: View {
                                 NavigationLink(destination: WalletDetailView(
                                         account: account,
                                         transactions: accountTransactions[account.id] ?? [],
-                                        categories: [],
+                                        categories: categories,
                                         onSave: { id, name, type, icon, isArchived, newBalance, oldBalance in
                                             return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "")
                                         },
@@ -74,6 +75,7 @@ struct AccountListView: View {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadAccounts(userId: userId, forceRefresh: true)
                 await syncAccountTransactions(userId: userId)
+                await syncCategories(userId: userId)
             }
             .navigationTitle("Dompet")
             .toolbar {
@@ -94,12 +96,14 @@ struct AccountListView: View {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadAccounts(userId: userId)
                 await syncAccountTransactions(userId: userId)
+                await syncCategories(userId: userId)
             }
             .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
                 guard let userId = authViewModel.currentUser?.id else { return }
                 Task {
                     await viewModel.loadAccounts(userId: userId, forceRefresh: true)
                     await syncAccountTransactions(userId: userId)
+                    await syncCategories(userId: userId)
                 }
             }
             .sheet(isPresented: $showAddWallet) {
@@ -157,6 +161,10 @@ struct AccountListView: View {
         }
     }
 
+    private func syncCategories(userId: String) async {
+        categories = (try? await SupabaseRepository.shared.fetchCategories()) ?? []
+    }
+
     private func groupTransactionsByAccount(_ transactions: [Transaction]) -> [String: [Transaction]] {
         var grouped: [String: [Transaction]] = [:]
         for transaction in transactions {
@@ -211,7 +219,7 @@ struct AccountListView: View {
                         NavigationLink(destination: WalletDetailView(
                             account: account,
                             transactions: accountTransactions[account.id] ?? [],
-                            categories: [],
+                            categories: categories,
                             onSave: { id, name, type, icon, isArchived, newBalance, oldBalance in
                                 return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "")
                             },

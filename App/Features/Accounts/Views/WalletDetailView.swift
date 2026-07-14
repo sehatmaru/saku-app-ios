@@ -221,6 +221,7 @@ struct WalletDetailView: View {
                 accounts: [account],
                 onUpdate: nil
             )
+            .presentationDetents([.medium, .large])
         }
     }
     

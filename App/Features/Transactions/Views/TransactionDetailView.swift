@@ -78,6 +78,7 @@ struct TransactionDetailView: View {
     private var amountOpacity: Double { 1.0 }
 
     private var isAdjustment: Bool { transaction.type == .adjustment }
+    private var isTransfer: Bool { transaction.type == .transfer }
 
     private var signedAmount: Double { transaction.delta ?? transaction.amount }
 
@@ -229,8 +230,12 @@ struct TransactionDetailView: View {
                             .stroke(typeColor.opacity(0.3), lineWidth: 1.5)
                     )
 
-                if isAdjustment {
+            if isAdjustment || isTransfer {
                     Text("Penyesuaian saldo")
+                        .font(.jakarta(17, weight: .semibold))
+                        .foregroundColor(.appText)
+                } else if isTransfer {
+                    Text("Transfer")
                         .font(.jakarta(17, weight: .semibold))
                         .foregroundColor(.appText)
                 } else {
@@ -379,7 +384,7 @@ struct TransactionDetailView: View {
 
             Divider().padding(.leading, 52)
 
-            Button { if !isAdjustment { showWalletPicker = true } } label: {
+            Button { if !isAdjustment, !isTransfer { showWalletPicker = true } } label: {
                 walletRow
             }
             .buttonStyle(.plain)
