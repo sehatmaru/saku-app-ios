@@ -4,6 +4,7 @@ struct BudgetDetailView: View {
     let budget: Budget
     let category: Category
     let allTransactions: [Transaction]
+    let accounts: [Account]
     var showHistoryButton: Bool = true
     var onAdjustBudget: ((Budget) -> Void)?
     var onUnsetBudget: (() -> Void)?
@@ -35,7 +36,7 @@ struct BudgetDetailView: View {
     }
 
     private var displayedTransactions: [Transaction] {
-        showAllTransactions ? transactions : Array(transactions.prefix(3))
+        showAllTransactions ? transactions : Array(transactions.prefix(5))
     }
 
     private var monthlyHistory: [MonthlySpending] {
@@ -84,7 +85,7 @@ struct BudgetDetailView: View {
         .navigationTitle(category.name)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showHistory) {
-            BudgetHistoryView(budget: budget, category: category, monthlyHistory: monthlyHistory, allTransactions: allTransactions)
+            BudgetHistoryView(budget: budget, category: category, monthlyHistory: monthlyHistory, allTransactions: allTransactions, accounts: accounts)
         }
         .sheet(isPresented: $showAdjustBudget) {
             adjustBudgetSheet
@@ -445,7 +446,7 @@ struct BudgetDetailView: View {
                     }
                 }
 
-                if transactions.count > 3 {
+                if transactions.count > 5 {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             showAllTransactions.toggle()
@@ -472,19 +473,25 @@ struct BudgetDetailView: View {
 
     private func transactionRow(_ transaction: Transaction) -> some View {
         HStack(spacing: Spacing.md) {
-            Circle()
-                .fill(Color.appExpense)
-                .frame(width: 36, height: 36)
-                .overlay {
-                    Image(systemName: "arrow.up")
-                        .font(.jakarta(11))
-                        .foregroundColor(.white)
+            ZStack {
+                Circle()
+                    .fill(Color.appExpense.opacity(0.15))
+                    .frame(width: 44, height: 44)
+                Image(systemName: category.icon ?? "arrow.up")
+                    .font(.jakarta(16))
+                    .foregroundColor(.appExpense)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if let acc = accountFor(id: transaction.accountId), let wi = WalletIcon.resolve(acc.icon) {
+                    walletBadge(wi: wi)
                 }
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.note ?? "Pengeluaran")
                     .font(.jakarta(14, weight: .medium))
-                Text(transaction.date.formatted(date: .numeric, time: .omitted))
+                    .lineLimit(1)
+                Text(formattedDate(transaction.date))
                     .font(.jakarta(11))
                     .foregroundColor(.appTextSecondary)
             }
@@ -498,7 +505,37 @@ struct BudgetDetailView: View {
         .padding(.vertical, Spacing.sm)
     }
 
+    private func walletBadge(wi: WalletIcon) -> some View {
+        ZStack {
+            Circle()
+                .fill(wi.color)
+                .frame(width: 20, height: 20)
+            Text(wi.shortName)
+                .font(.jakarta(6, weight: .bold))
+                .foregroundColor(.white)
+                .minimumScaleFactor(0.5)
+        }
+        .overlay(
+            Circle()
+                .stroke(Color.appCardBackground, lineWidth: 2)
+        )
+        .offset(x: 4, y: 4)
+    }
+
+    private func accountFor(id: String?) -> Account? {
+        guard let id else { return nil }
+        return accounts.first { $0.id == id }
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "dd MMM yyyy"
+        f.locale = Locale(identifier: "id_ID")
+        return f.string(from: date)
+    }
 }
+
+// MARK: - Transaction
 
 fileprivate struct MonthlySpending: Identifiable {
     let id = UUID()
@@ -536,6 +573,7 @@ fileprivate struct BudgetHistoryView: View {
     let category: Category
     let monthlyHistory: [MonthlySpending]
     let allTransactions: [Transaction]
+    let accounts: [Account]
 
     @Environment(\.dismiss) private var dismiss
     @State private var expandedYears: Set<Int> = []
@@ -594,7 +632,7 @@ fileprivate struct BudgetHistoryView: View {
                             if expandedYears.contains(group.year) {
                                 VStack(spacing: 0) {
                                     ForEach(Array(group.items.enumerated()), id: \.element.id) { index, history in
-                                        NavigationLink(destination: BudgetMonthDetailView(budget: budget, category: category, month: history.month, allTransactions: allTransactions)) {
+                                        NavigationLink(destination: BudgetMonthDetailView(budget: budget, category: category, month: history.month, allTransactions: allTransactions, accounts: accounts)) {
                                             historyRow(history)
                                         }
                                         .buttonStyle(.plain)
@@ -688,6 +726,7 @@ fileprivate struct BudgetMonthDetailView: View {
     let category: Category
     let month: Date
     let allTransactions: [Transaction]
+    let accounts: [Account]
 
     private var monthLabel: String {
         let formatter = DateFormatter()
@@ -876,19 +915,25 @@ fileprivate struct BudgetMonthDetailView: View {
 
     private func transactionRow(_ transaction: Transaction) -> some View {
         HStack(spacing: Spacing.md) {
-            Circle()
-                .fill(Color.appExpense)
-                .frame(width: 36, height: 36)
-                .overlay {
-                    Image(systemName: "arrow.up")
-                        .font(.jakarta(11))
-                        .foregroundColor(.white)
+            ZStack {
+                Circle()
+                    .fill(Color.appExpense.opacity(0.15))
+                    .frame(width: 44, height: 44)
+                Image(systemName: category.icon ?? "arrow.up")
+                    .font(.jakarta(16))
+                    .foregroundColor(.appExpense)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if let acc = accountFor(id: transaction.accountId), let wi = WalletIcon.resolve(acc.icon) {
+                    walletBadge(wi: wi)
                 }
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.note ?? "Pengeluaran")
                     .font(.jakarta(14, weight: .medium))
-                Text(transaction.date.formatted(date: .numeric, time: .omitted))
+                    .lineLimit(1)
+                Text(formattedDate(transaction.date))
                     .font(.jakarta(11))
                     .foregroundColor(.appTextSecondary)
             }
@@ -901,6 +946,35 @@ fileprivate struct BudgetMonthDetailView: View {
         }
         .padding(.vertical, Spacing.sm)
     }
+
+    private func walletBadge(wi: WalletIcon) -> some View {
+        ZStack {
+            Circle()
+                .fill(wi.color)
+                .frame(width: 20, height: 20)
+            Text(wi.shortName)
+                .font(.jakarta(6, weight: .bold))
+                .foregroundColor(.white)
+                .minimumScaleFactor(0.5)
+        }
+        .overlay(
+            Circle()
+                .stroke(Color.appCardBackground, lineWidth: 2)
+        )
+        .offset(x: 4, y: 4)
+    }
+
+    private func accountFor(id: String?) -> Account? {
+        guard let id else { return nil }
+        return accounts.first { $0.id == id }
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "dd MMM yyyy"
+        f.locale = Locale(identifier: "id_ID")
+        return f.string(from: date)
+    }
 }
 
 #Preview {
@@ -908,6 +982,7 @@ fileprivate struct BudgetMonthDetailView: View {
         budget: Budget(id: "1", categoryId: "1", name: "Makanan", amount: 500000, periodUnit: "month", periodInterval: 1, startDate: "2026-06-01", endDate: nil, isActive: true),
         category: Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF0000", type: .expense),
         allTransactions: [],
+        accounts: [],
         onAdjustBudget: nil,
         onUnsetBudget: nil
     )

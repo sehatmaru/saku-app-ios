@@ -3,6 +3,7 @@ import SwiftUI
 struct WalletDetailView: View {
     let account: Account
     let transactions: [Transaction]
+    let categories: [Category]
     let onSave: ((String, String, Account.AccountType, Double, String?, Bool) async -> Void)?
     let onDelete: ((String) async -> Void)?
     let onToggleArchive: ((String, Bool) async -> Void)?
@@ -18,14 +19,21 @@ struct WalletDetailView: View {
     @State private var showDeleteWarningAlert = false
     @State private var deleteWarningMessage = ""
     @State private var hasConfirmed = false
+    @State private var showAllTransactions = false
+    @State private var isSaving = false
+    @State private var showToast = false
+    @State private var toastMessage = ""
+    @FocusState private var isNameFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
     init(account: Account, transactions: [Transaction] = [],
+         categories: [Category] = [],
          onSave: ((String, String, Account.AccountType, Double, String?, Bool) async -> Void)? = nil,
          onDelete: ((String) async -> Void)? = nil,
          onToggleArchive: ((String, Bool) async -> Void)? = nil) {
         self.account = account
         self.transactions = transactions
+        self.categories = categories
         self.onSave = onSave
         self.onDelete = onDelete
         self.onToggleArchive = onToggleArchive
@@ -70,6 +78,10 @@ struct WalletDetailView: View {
                     .padding(.horizontal)
                     .padding(.top)
 
+                hintCard
+                    .padding(.horizontal)
+                    .padding(.top, Spacing.md)
+
                 if !account.isActive {
                     HStack(spacing: Spacing.md) {
                         ZStack {
@@ -104,11 +116,12 @@ struct WalletDetailView: View {
                     .padding(.top, Spacing.md)
                 }
 
+                let monthTxs = thisMonthTransactions
                 HStack {
-                    Text("Transaksi Terbaru")
+                    Text("Transaksi Bulan Ini")
                         .font(.jakarta(15, weight: .semibold))
                     Spacer()
-                    Text("\(transactions.count) transaksi")
+                    Text("\(monthTxs.count) transaksi")
                         .font(.jakarta(12))
                         .foregroundColor(.appTextSecondary)
                 }
@@ -125,44 +138,17 @@ struct WalletDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onTapGesture { if showBalanceKeyboard { showBalanceKeyboard = false } }
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Menu {
-                    Button {
-                        if account.isActive {
-                            showArchiveAlert = true
-                        } else {
-                            showUnarchiveAlert = true
-                        }
-                    } label: {
-                        Label(account.isActive ? "Arsipkan" : "Aktifkan", systemImage: account.isActive ? "archivebox" : "archivebox.fill")
-                    }
-                    .tint(.primary)
-
-                    Divider()
-
-                    Button(role: .destructive) {
-                        if !transactions.isEmpty {
-                            deleteWarningMessage = "Tidak bisa menghapus dompet yang masih memiliki transaksi (\(transactions.count) transaksi). Jika tidak lagi digunakan, kamu bisa mengarsipkannya."
-                            showDeleteWarningAlert = true
-                        } else {
-                            showDeleteAlert = true
-                        }
-                    } label: {
-                        Label("Hapus Dompet", systemImage: "trash")
-                    }
-                    .tint(.red)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.jakarta(17))
-                }
-            }
-
             ToolbarItem(placement: .confirmationAction) {
                 if hasChanges {
-                    Button("Simpan") {
-                        confirmChanges()
+                    if isSaving {
+                        ProgressView()
+                            .tint(.appPrimary)
+                    } else {
+                        Button("Simpan") {
+                            confirmChanges()
+                        }
+                        .font(.jakarta(15, weight: .semibold))
                     }
-                    .font(.jakarta(15, weight: .semibold))
                 }
             }
         }
@@ -220,36 +206,13 @@ struct WalletDetailView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: showBalanceKeyboard)
+        .toast(isPresented: $showToast, message: toastMessage)
+        .onChange(of: isNameFocused) { _, newValue in
+            if !newValue { confirmChanges() }
+        }
     }
     
     private var balanceOpacity: Double { 1.0 }
-
-    private func miniStatCard(label: String, amount: Double, color: Color) -> some View {
-        HStack(spacing: Spacing.sm) {
-            Circle()
-                .fill(color.opacity(0.15))
-                .frame(width: 32, height: 32)
-                .overlay {
-                    Image(systemName: label == "Pemasukan" ? "arrow.down" : "arrow.up")
-                        .font(.jakarta(11))
-                        .foregroundColor(color)
-                }
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label)
-                    .font(.jakarta(10))
-                    .foregroundColor(.appTextSecondary)
-                Text(amount > 0 ? abbreviatedAmount(amount) : "Rp0")
-                    .font(.jakarta(14, weight: .semibold))
-                    .foregroundColor(color)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 10)
-        .background(color.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
 
     private var headerSection: some View {
         VStack(spacing: 0) {
@@ -275,6 +238,7 @@ struct WalletDetailView: View {
                 TextField("Nama", text: $editedName)
                     .font(.jakarta(17, weight: .semibold))
                     .disabled(!account.isActive)
+                    .focused($isNameFocused)
 
                 Spacer()
 
@@ -304,22 +268,99 @@ struct WalletDetailView: View {
             Divider()
                 .padding(.horizontal, Spacing.xl)
 
-            HStack(spacing: Spacing.md) {
-                miniStatCard(
-                    label: "Pemasukan",
-                    amount: monthlyIncome,
-                    color: .appIncome
-                )
-
-                miniStatCard(
-                    label: "Pengeluaran",
-                    amount: monthlyExpense,
-                    color: .appExpense
-                )
+            HStack(spacing: 0) {
+                VStack(spacing: 4) {
+                    Text("Pemasukan Bulan Ini")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                    Text(monthlyIncome > 0 ? abbreviatedAmount(monthlyIncome) : "Rp0")
+                        .font(.jakarta(13, weight: .semibold))
+                        .foregroundColor(.appIncome)
+                }
+                .frame(maxWidth: .infinity)
+                Divider().frame(height: 28)
+                VStack(spacing: 4) {
+                    Text("Pengeluaran Bulan Ini")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                    Text(monthlyExpense > 0 ? abbreviatedAmount(monthlyExpense) : "Rp0")
+                        .font(.jakarta(13, weight: .semibold))
+                        .foregroundColor(.appExpense)
+                }
+                .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, Spacing.xl)
             .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.lg)
+            .padding(.bottom, Spacing.sm)
+
+            if account.isActive {
+                Divider()
+                    .padding(.horizontal, Spacing.xl)
+
+                HStack(spacing: Spacing.md) {
+                    Button {
+                        showArchiveAlert = true
+                    } label: {
+                        HStack(spacing: Spacing.sm) {
+                            Image(systemName: "archivebox")
+                                .font(.jakarta(11))
+                            Text("Arsipkan")
+                                .font(.jakarta(11, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.appPrimary.opacity(0.1))
+                        .foregroundColor(.appPrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    Button(role: .destructive) {
+                        if !transactions.isEmpty {
+                            deleteWarningMessage = "Tidak bisa menghapus dompet yang masih memiliki transaksi (\(transactions.count) transaksi). Jika tidak lagi digunakan, kamu bisa mengarsipkannya."
+                            showDeleteWarningAlert = true
+                        } else {
+                            showDeleteAlert = true
+                        }
+                    } label: {
+                        HStack(spacing: Spacing.sm) {
+                            Image(systemName: "trash")
+                                .font(.jakarta(11))
+                            Text("Hapus")
+                                .font(.jakarta(11, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.appError.opacity(0.1))
+                        .foregroundColor(.appError)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.sm)
+                .padding(.bottom, Spacing.lg)
+            } else {
+                Divider()
+                    .padding(.horizontal, Spacing.xl)
+
+                Button {
+                    showUnarchiveAlert = true
+                } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "archivebox.fill")
+                            .font(.jakarta(11))
+                        Text("Aktifkan Dompet")
+                            .font(.jakarta(11, weight: .semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.appPrimary.opacity(0.1))
+                    .foregroundColor(.appPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.sm)
+                .padding(.bottom, Spacing.lg)
+            }
         }
         .frame(maxWidth: .infinity)
         .background(
@@ -409,9 +450,13 @@ struct WalletDetailView: View {
 
     private func confirmChanges() {
         guard let balance = Double(balanceDigits) else { return }
+        isSaving = true
         Task {
             await onSave?(account.id, editedName.trimmingCharacters(in: .whitespaces), account.type, balance, editedIconId, account.isArchived)
             hasConfirmed = true
+            isSaving = false
+            toastMessage = "Perubahan berhasil disimpan"
+            withAnimation { showToast = true }
         }
     }
 
@@ -429,8 +474,11 @@ struct WalletDetailView: View {
     }
 
     private var transactionListContent: some View {
-        Group {
-            if transactions.isEmpty {
+        let monthTxs = thisMonthTransactions
+        let displayTxs = showAllTransactions ? monthTxs : Array(monthTxs.prefix(5))
+
+        return Group {
+            if monthTxs.isEmpty {
                 VStack(spacing: Spacing.sm) {
                     Image(systemName: "tray")
                         .font(.jakarta(32))
@@ -445,11 +493,29 @@ struct WalletDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             } else {
                 VStack(spacing: 0) {
-                    ForEach(transactions) { transaction in
+                    ForEach(displayTxs) { transaction in
                         transactionRow(transaction)
-                        if transaction.id != transactions.last?.id {
+                        if transaction.id != displayTxs.last?.id {
                             Divider()
                                 .padding(.leading, 52)
+                        }
+                    }
+
+                    if monthTxs.count > 5 {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showAllTransactions.toggle()
+                            }
+                        } label: {
+                            HStack(spacing: Spacing.xs) {
+                                Image(systemName: showAllTransactions ? "chevron.up" : "chevron.down")
+                                    .font(.jakarta(10))
+                                Text(showAllTransactions ? "Sembunyikan" : "Lihat Semua (\(monthTxs.count))")
+                                    .font(.jakarta(12, weight: .medium))
+                            }
+                            .foregroundColor(.appPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
                         }
                     }
                 }
@@ -462,20 +528,26 @@ struct WalletDetailView: View {
     }
 
     private func transactionRow(_ transaction: Transaction) -> some View {
-        HStack(spacing: Spacing.md) {
-            Circle()
-                .fill(transaction.type == .income ? Color.appIncome : Color.appExpense)
-                .frame(width: 36, height: 36)
-                .overlay {
-                    Image(systemName: transaction.type == .income ? "arrow.down" : "arrow.up")
-                        .font(.jakarta(11))
-                        .foregroundColor(.white)
-                }
+        let isTransfer = transaction.type == .transfer
+        let cellColor: Color = isTransfer ? .appText : (transaction.type == .income ? .appIncome : .appExpense)
+        let catIcon = transaction.categoryId.flatMap { cid in categories.first { $0.id == cid }?.icon }
+        let iconName = isTransfer ? "arrow.left.arrow.right" : (catIcon ?? (transaction.type == .income ? "arrow.down" : "arrow.up"))
+
+        return HStack(spacing: Spacing.md) {
+            ZStack {
+                Circle()
+                    .fill(cellColor.opacity(isTransfer ? 0.08 : 0.15))
+                    .frame(width: 44, height: 44)
+                Image(systemName: iconName)
+                    .font(.jakarta(16))
+                    .foregroundColor(cellColor)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(transaction.note ?? (transaction.type == .income ? "Pemasukan" : "Pengeluaran"))
+                    Text(transaction.note ?? label(for: transaction.type))
                         .font(.jakarta(14, weight: .medium))
+                        .lineLimit(1)
                     if !account.isActive {
                         Text("Diarsipkan")
                             .font(.jakarta(9, weight: .medium))
@@ -486,7 +558,7 @@ struct WalletDetailView: View {
                             .clipShape(Capsule())
                     }
                 }
-                Text(transaction.date.formatted(date: .numeric, time: .omitted))
+                Text(formattedDate(transaction.date))
                     .font(.jakarta(11))
                     .foregroundColor(.appTextSecondary)
             }
@@ -495,9 +567,47 @@ struct WalletDetailView: View {
 
             Text(transaction.amount.formattedAsCurrency())
                 .font(.jakarta(14, weight: .semibold))
-                .foregroundColor(transaction.type == .income ? .appIncome : .appExpense)
+                .foregroundColor(cellColor)
         }
         .padding(.vertical, Spacing.sm)
+    }
+
+    private func label(for type: Transaction.TransactionType) -> String {
+        switch type {
+        case .income: return "Pemasukan"
+        case .expense: return "Pengeluaran"
+        case .transfer: return "Transfer"
+        }
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "dd MMM yyyy"
+        f.locale = Locale(identifier: "id_ID")
+        return f.string(from: date)
+    }
+
+    private var hintCard: some View {
+        HStack(spacing: Spacing.md) {
+            Image(systemName: "hand.tap.fill")
+                .font(.jakarta(18))
+                .foregroundColor(.appPrimary)
+
+            Text("Tap langsung pada bagian yang ingin diubah, perubahan akan tersimpan secara otomatis.")
+                .font(.jakarta(13))
+                .foregroundColor(.appTextSecondary)
+                .lineSpacing(2)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Spacing.lg)
+        .padding(.vertical, 14)
+        .background(Color.appPrimary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.appPrimary.opacity(0.15), lineWidth: 1)
+        )
     }
 }
 

@@ -24,6 +24,8 @@ struct AddTransactionView: View {
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
     @State private var isSaving = false
+    @State private var showToast = false
+    @State private var toastMessage = ""
 
     private var activeAccounts: [Account] { accounts.filter { $0.isActive } }
     private var filteredCategories: [Category] {
@@ -76,6 +78,7 @@ struct AddTransactionView: View {
             .alert("Perhatian", isPresented: $showValidationAlert) {
                 Button("OK", role: .cancel) {}
             } message: { Text(validationMessage) }
+            .toast(isPresented: $showToast, message: toastMessage)
             .onAppear {
                 if selectedAccount == nil { selectedAccount = activeAccounts.first }
                 showKeyboard = true
@@ -454,7 +457,9 @@ struct AddTransactionView: View {
                 isSaving = false
                 onSave()
                 NotificationCenter.default.post(name: .dataDidChange, object: nil)
-                dismiss()
+                toastMessage = "Transaksi berhasil disimpan"
+                withAnimation { showToast = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { dismiss() }
             } catch {
                 isSaving = false
                 validationMessage = "Gagal menyimpan: \(error.localizedDescription)"; showValidationAlert = true

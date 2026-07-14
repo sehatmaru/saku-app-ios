@@ -11,6 +11,9 @@ struct AddWalletView: View {
     @State private var showCustomSheet = false
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
+    @State private var isSaving = false
+    @State private var showToast = false
+    @State private var toastMessage = ""
 
     let onSave: (String, Account.AccountType, Double, String?) async -> Void
 
@@ -40,10 +43,16 @@ struct AddWalletView: View {
                     Button("Batal") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Simpan") { save() }
-                        .font(.jakarta(15, weight: .semibold))
+                    if isSaving {
+                        ProgressView()
+                            .tint(.appPrimary)
+                    } else {
+                        Button("Simpan") { save() }
+                            .font(.jakarta(15, weight: .semibold))
+                    }
                 }
             }
+            .toast(isPresented: $showToast, message: toastMessage)
             .alert("Perhatian", isPresented: $showValidationAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -210,21 +219,25 @@ struct AddWalletView: View {
         }
         let balance = Double(amountDigits) ?? 0
 
-        let iconId: String?
-        if category == .cash {
-            iconId = "cash"
-        } else {
-            iconId = selectedIcon?.id
-        }
+            let iconId: String?
+            if category == .cash {
+                iconId = "cash"
+            } else {
+                iconId = selectedIcon?.id
+            }
 
-        Task {
-            await onSave(
-                name.trimmingCharacters(in: .whitespaces),
-                category,
-                balance,
-                iconId
-            )
-            dismiss()
+            isSaving = true
+            Task {
+                await onSave(
+                    name.trimmingCharacters(in: .whitespaces),
+                    category,
+                    balance,
+                    iconId
+                )
+                isSaving = false
+                toastMessage = "Dompet berhasil ditambahkan"
+                withAnimation { showToast = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { dismiss() }
         }
     }
 }

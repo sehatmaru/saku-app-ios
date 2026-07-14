@@ -16,7 +16,7 @@ enum BalanceCalculator {
     }
 
     private static func balancesByAccountId(for accounts: [Account], from transactions: [Transaction]) -> [String: Double] {
-        var balances = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0.openingBalance) })
+        var balances = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0.currentBalance ?? $0.openingBalance) })
 
         for transaction in transactions {
             switch transaction.type {

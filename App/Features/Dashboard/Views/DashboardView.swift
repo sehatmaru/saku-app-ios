@@ -48,6 +48,9 @@ struct DashboardView: View {
                 }
             }
         }
+        .onChange(of: isBalanceVisibleStorage) { _, newValue in
+            isBalanceVisible = newValue
+        }
         .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
             if let userId = authViewModel.currentUser?.id {
                 Task {

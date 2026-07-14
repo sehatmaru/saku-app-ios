@@ -80,6 +80,7 @@ struct TransactionListView: View {
                         await viewModel.loadTransactions(userId: userId, forceRefresh: true)
                     }
                     .onAppear { expandInitialMonths(); isBalanceVisible = isBalanceVisibleStorage }
+                    .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
                     .onChange(of: viewModel.allTransactions.count) { _, _ in expandInitialMonths() }
                     .task {
                         guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }

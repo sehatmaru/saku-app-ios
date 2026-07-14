@@ -7,7 +7,8 @@ struct AccountListView: View {
     init(viewModel: AccountListViewModel = AccountListViewModel()) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
+    @State private var isBalanceVisible = true
     @State private var showAddWallet = false
     @State private var showArchived = false
     @State private var accountTransactions: [String: [Transaction]] = [:]
@@ -42,6 +43,7 @@ struct AccountListView: View {
                                 NavigationLink(destination: WalletDetailView(
                                         account: account,
                                         transactions: accountTransactions[account.id] ?? [],
+                                        categories: [],
                                         onSave: { id, name, type, balance, icon, isArchived in
                                             await viewModel.updateAccount(id: id, name: name, type: type, openingBalance: balance, icon: icon, isArchived: isArchived)
                                         },
@@ -75,9 +77,10 @@ struct AccountListView: View {
             }
             .navigationTitle("Dompet")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         withAnimation(.smooth) { isBalanceVisible.toggle() }
+                        isBalanceVisibleStorage = isBalanceVisible
                     } label: {
                         Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
                             .font(.jakarta(16))
@@ -85,6 +88,8 @@ struct AccountListView: View {
                     }
                 }
             }
+            .onAppear { isBalanceVisible = isBalanceVisibleStorage }
+            .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadAccounts(userId: userId)
@@ -201,6 +206,7 @@ struct AccountListView: View {
                         NavigationLink(destination: WalletDetailView(
                             account: account,
                             transactions: accountTransactions[account.id] ?? [],
+                            categories: [],
                             onSave: { id, name, type, balance, icon, isArchived in
                                 await viewModel.updateAccount(id: id, name: name, type: type, openingBalance: balance, icon: icon, isArchived: isArchived)
                             },
@@ -240,6 +246,7 @@ struct AccountListView: View {
 
             Text(isBalanceVisible ? viewModel.totalBalance.formattedAsCurrency() : "Rp********")
                 .font(.jakarta(34, weight: .bold))
+                .contentTransition(.numericText())
                 .foregroundColor(.appText)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.xl)

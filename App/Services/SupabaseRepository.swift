@@ -43,6 +43,7 @@ final class SupabaseRepository: @unchecked Sendable {
                 "name": AnyJSON.string(name),
                 "account_type": AnyJSON.string(type.rawValue),
                 "opening_balance": AnyJSON.double(openingBalance),
+                "current_balance": AnyJSON.double(openingBalance),
                 "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
                 "is_archived": AnyJSON.bool(isArchived),
             ] as [String: AnyJSON])

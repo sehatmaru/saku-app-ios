@@ -7,9 +7,9 @@ struct BudgetListView: View {
     init(viewModel: BudgetListViewModel = BudgetListViewModel()) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
+    @State private var isBalanceVisible = true
     @State private var showUnsetBudget = false
-    @State private var showOverallHistory = false
     private var setItems: [BudgetListItem] {
         viewModel.budgetItems.filter { $0.budget != nil }
     }
@@ -59,28 +59,8 @@ struct BudgetListView: View {
                             summaryCard
 
                             ForEach(setItems) { item in
-                            NavigationLink(destination: BudgetDetailView(
-                                budget: item.budget!,
-                                category: item.category,
-                                allTransactions: viewModel.allExpenseTransactions.filter { $0.categoryId == item.category.id },
-                                onAdjustBudget: { updated in
-                                    Task {
-                                        let name = updated.name
-                                        let amount = updated.amount
-                                        let periodUnit = updated.periodUnit
-                                        let periodInterval = updated.periodInterval
-                                        let startDate = updated.startDate
-                                        let endDate = updated.endDate
-                                        let isActive = updated.isActive
-                                        await viewModel.updateBudget(id: updated.id, name: name, amount: amount, periodUnit: periodUnit, periodInterval: periodInterval, startDate: startDate, endDate: endDate, isActive: isActive)
-                                    }
-                                },
-                                onUnsetBudget: {
-                                    Task {
-                                        await viewModel.removeBudget(id: item.budget!.id)
-                                    }
-                                }
-                            )) {
+                            let dest = budgetDetailDestination(for: item)
+                            NavigationLink(destination: dest) {
                                 BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
                                     Task {
                                         guard let userId = authViewModel.currentUser?.id else { return }
@@ -104,9 +84,10 @@ struct BudgetListView: View {
             .background(Color.appGroupedBackground)
             .navigationTitle("Budget")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         withAnimation(.smooth) { isBalanceVisible.toggle() }
+                        isBalanceVisibleStorage = isBalanceVisible
                     } label: {
                         Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
                             .font(.jakarta(16))
@@ -114,6 +95,8 @@ struct BudgetListView: View {
                     }
                 }
             }
+            .onAppear { isBalanceVisible = isBalanceVisibleStorage }
+            .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadBudgets(userId: userId)
@@ -127,9 +110,6 @@ struct BudgetListView: View {
             .refreshable {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadBudgets(userId: userId, forceRefresh: true)
-            }
-            .sheet(isPresented: $showOverallHistory) {
-                OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions)
             }
         }
     }
@@ -276,6 +256,7 @@ struct BudgetListView: View {
                      ? (viewModel.totalRemaining >= 0 ? viewModel.totalRemaining.formattedAsCurrency() : "Rp0")
                      : "Rp********")
                     .font(.jakarta(34, weight: .bold))
+                    .contentTransition(.numericText())
                     .foregroundColor(.appText)
                 Text(viewModel.totalRemaining >= 0 ? "\(Int(viewModel.totalBudget > 0 ? viewModel.totalRemaining / viewModel.totalBudget * 100 : 0))%" : "0%")
                     .font(.jakarta(13, weight: .semibold))
@@ -321,9 +302,7 @@ struct BudgetListView: View {
             Divider()
                 .padding(.horizontal, Spacing.xl)
 
-            Button {
-                showOverallHistory = true
-            } label: {
+            NavigationLink(destination: OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions)) {
                 HStack(spacing: Spacing.md) {
                     ZStack {
                         Circle()
@@ -368,6 +347,31 @@ struct BudgetListView: View {
         }
     }
 
+    private func budgetDetailDestination(for item: BudgetListItem) -> BudgetDetailView {
+        BudgetDetailView(
+            budget: item.budget!,
+            category: item.category,
+            allTransactions: viewModel.allExpenseTransactions.filter { $0.categoryId == item.category.id },
+            accounts: [],
+            onAdjustBudget: { updated in
+                Task {
+                    let name = updated.name
+                    let amount = updated.amount
+                    let periodUnit = updated.periodUnit
+                    let periodInterval = updated.periodInterval
+                    let startDate = updated.startDate
+                    let endDate = updated.endDate
+                    let isActive = updated.isActive
+                    await viewModel.updateBudget(id: updated.id, name: name, amount: amount, periodUnit: periodUnit, periodInterval: periodInterval, startDate: startDate, endDate: endDate, isActive: isActive)
+                }
+            },
+            onUnsetBudget: {
+                Task {
+                    await viewModel.removeBudget(id: item.budget!.id)
+                }
+            }
+        )
+    }
 }
 
 struct BudgetCardView: View {
@@ -379,6 +383,9 @@ struct BudgetCardView: View {
     @State private var showSetBudget = false
     @State private var showAmountKeyboard = false
     @State private var amountDigits = ""
+    @State private var isSaving = false
+    @State private var showBudgetToast = false
+    @State private var budgetToastMessage = ""
 
     var body: some View {
         Group {
@@ -464,15 +471,23 @@ struct BudgetCardView: View {
 
                 Spacer()
 
-                Button("Simpan") {
-                    save()
+                if isSaving {
+                    ProgressView()
+                        .tint(.appPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, Spacing.xl)
+                        .padding(.bottom, Spacing.xl)
+                } else {
+                    Button("Simpan") {
+                        save()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .font(.jakarta(17, weight: .semibold))
+                    .foregroundColor(.appPrimary)
+                    .disabled(amountDigits.isEmpty)
+                    .padding(.horizontal, Spacing.xl)
+                    .padding(.bottom, Spacing.xl)
                 }
-                .frame(maxWidth: .infinity)
-                .font(.jakarta(17, weight: .semibold))
-                .foregroundColor(.appPrimary)
-                .disabled(amountDigits.isEmpty)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.bottom, Spacing.xl)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if showAmountKeyboard {
@@ -485,6 +500,7 @@ struct BudgetCardView: View {
             }
             .onTapGesture { if showAmountKeyboard { showAmountKeyboard = false } }
             .animation(.easeInOut(duration: 0.25), value: showAmountKeyboard)
+            .toast(isPresented: $showBudgetToast, message: budgetToastMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Batal") {
@@ -559,6 +575,7 @@ struct BudgetCardView: View {
 
     private func save() {
         guard let amount = Double(amountDigits), amount > 0 else { return }
+        isSaving = true
         let startDate = ISO8601DateFormatter().string(from: Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!)
         let budget = Budget(
             id: UUID().uuidString,
@@ -573,8 +590,11 @@ struct BudgetCardView: View {
             spent: 0
         )
         onSetBudget?(budget)
+        isSaving = false
         showSetBudget = false
         amountDigits = ""
+        budgetToastMessage = "Perubahan berhasil disimpan"
+        withAnimation { showBudgetToast = true }
     }
 }
 
@@ -606,7 +626,6 @@ struct OverallBudgetHistoryView: View {
     let budgetItems: [BudgetListItem]
     let allExpenseTransactions: [Transaction]
 
-    @Environment(\.dismiss) private var dismiss
     @State private var expandedYears: Set<Int> = []
 
     private var groupedByYear: [(year: Int, items: [OverallHistoryItem])] {
@@ -695,14 +714,6 @@ struct OverallBudgetHistoryView: View {
             .background(Color.appGroupedBackground)
             .navigationTitle("Riwayat Budget")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Tutup") {
-                        dismiss()
-                    }
-                    .font(.jakarta(15, weight: .medium))
-                }
-            }
         }
     }
 
@@ -806,7 +817,8 @@ struct OverallMonthDetailView: View {
                                 .foregroundColor(.appTextSecondary)
                         }
                         Spacer()
-                        Text(progress >= 1 ? "0%" : "\(Int((1 - progress) * 100))%")
+                        let pctText = progress >= 1 ? "0%" : "\(Int((1 - progress) * 100))%"
+                        Text(pctText)
                             .font(.jakarta(15, weight: .semibold))
                             .foregroundColor(progressColor)
                     }
@@ -863,7 +875,7 @@ struct OverallMonthDetailView: View {
 
                 VStack(spacing: Spacing.sm) {
                     ForEach(budgetItems.filter { $0.budget != nil }) { item in
-                        NavigationLink(destination: BudgetDetailView(budget: item.budget!, category: item.category, allTransactions: [], showHistoryButton: false)) {
+                        NavigationLink(destination: BudgetDetailView(budget: item.budget!, category: item.category, allTransactions: [], accounts: [], showHistoryButton: false)) {
                             budgetCardContent(item.budget!, item.category)
                         }
                         .buttonStyle(.plain)
