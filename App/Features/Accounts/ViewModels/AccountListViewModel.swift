@@ -53,7 +53,8 @@ final class AccountListViewModel: ObservableObject {
 
     func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String) async -> Bool {
         do {
-            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId)
+            let isDefault = accounts.isEmpty
+            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault)
             accounts.append(account)
             recalculateBalance()
             AppDataCache.shared.setAccounts(accounts, for: userId)
@@ -83,7 +84,7 @@ final class AccountListViewModel: ObservableObject {
                 }
             }
 
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived)
+            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
                 var updatedAccount = updated
                 if abs(newBalance - oldBalance) > 0.001 {
@@ -102,6 +103,18 @@ final class AccountListViewModel: ObservableObject {
         } catch {
             print("❌ rebalanceAccount failed: \(error)")
             return false
+        }
+    }
+
+    func setDefaultAccount(id: String, userId: String) async {
+        for account in accounts where account.isDefault {
+            _ = try? await SupabaseRepository.shared.updateAccount(id: account.id, name: account.name, type: account.type, openingBalance: account.openingBalance, currentBalance: account.currentBalance, icon: account.icon, isArchived: account.isArchived, isDefault: false)
+        }
+        if let account = accounts.first(where: { $0.id == id }) {
+            _ = try? await SupabaseRepository.shared.updateAccount(id: id, name: account.name, type: account.type, openingBalance: account.openingBalance, currentBalance: account.currentBalance, icon: account.icon, isArchived: account.isArchived, isDefault: true)
+        }
+        if let loadedUserId {
+            await loadAccounts(userId: loadedUserId, forceRefresh: true)
         }
     }
 
@@ -134,6 +147,7 @@ final class AccountListViewModel: ObservableObject {
                     type: account.type,
                     icon: account.icon,
                     isArchived: !account.isArchived,
+                    isDefault: account.isDefault,
                     openingBalance: account.openingBalance,
                     currentBalance: account.currentBalance
                 )

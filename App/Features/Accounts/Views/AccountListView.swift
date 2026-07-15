@@ -53,6 +53,9 @@ struct AccountListView: View {
                                         },
                                         onToggleArchive: { id, archived in
                                             return await viewModel.toggleAccountArchive(id: id)
+                                        },
+                                        onSetDefault: { id in
+                                            await viewModel.setDefaultAccount(id: id, userId: authViewModel.currentUser?.id ?? "")
                                         }
                                 )) {
                                     AccountCard(account: account)
@@ -339,8 +342,19 @@ struct AccountCard: View {
                 }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(account.name)
-                    .font(.jakarta(17, weight: .semibold))
+                HStack(spacing: 6) {
+                    Text(account.name)
+                        .font(.jakarta(17, weight: .semibold))
+                    if account.isDefault {
+                        Text("Utama")
+                            .font(.jakarta(9, weight: .medium))
+                            .foregroundColor(.appWarning)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.appWarning.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                }
                 Text(account.type.rawValue)
                     .font(.jakarta(12))
                     .foregroundColor(.appTextSecondary)
@@ -382,9 +396,9 @@ struct AccountListPreview: View {
         let v = AccountListViewModel()
         v.hasLoadedOnce = true
         v.accounts = [
-            Account(id: "1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, openingBalance: 5_000_000, currentBalance: 5_430_000),
-            Account(id: "2", name: "Mandiri", type: .bank, icon: "building.columns.fill", isArchived: false, openingBalance: 3_000_000, currentBalance: 2_850_000),
-            Account(id: "3", name: "GoPay", type: .ewallet, icon: "wallet.pass.fill", isArchived: false, openingBalance: 500_000, currentBalance: 320_000),
+            Account(id: "1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: true, openingBalance: 5_000_000, currentBalance: 5_430_000),
+            Account(id: "2", name: "Mandiri", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: false, openingBalance: 3_000_000, currentBalance: 2_850_000),
+            Account(id: "3", name: "GoPay", type: .ewallet, icon: "wallet.pass.fill", isArchived: false, isDefault: false, openingBalance: 500_000, currentBalance: 320_000),
         ]
         v.totalBalance = 8_600_000
         return v

@@ -6,6 +6,7 @@ struct Account: Identifiable, Codable, Hashable {
     let type: AccountType
     let icon: String?
     let isArchived: Bool
+    let isDefault: Bool
     let openingBalance: Double
     var currentBalance: Double? = nil
 
@@ -24,6 +25,7 @@ struct Account: Identifiable, Codable, Hashable {
         case type = "account_type"
         case icon
         case isArchived = "is_archived"
+        case isDefault = "is_default"
         case openingBalance = "opening_balance"
         case currentBalance = "current_balance"
     }

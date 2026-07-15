@@ -20,7 +20,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String) async throws -> Account {
+    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, isDefault: Bool = false) async throws -> Account {
         try await client
             .from("accounts")
             .insert([
@@ -29,6 +29,7 @@ final class SupabaseRepository: @unchecked Sendable {
                 "account_type": AnyJSON.string(type.rawValue),
                 "opening_balance": AnyJSON.double(openingBalance),
                 "current_balance": AnyJSON.double(openingBalance),
+                "is_default": AnyJSON.bool(isDefault),
                 "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
             ] as [String: AnyJSON])
             .select()
@@ -37,7 +38,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool) async throws -> Account {
+    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool, isDefault: Bool? = nil) async throws -> Account {
         var payload: [String: AnyJSON] = [
             "name": AnyJSON.string(name),
             "account_type": AnyJSON.string(type.rawValue),
@@ -47,6 +48,9 @@ final class SupabaseRepository: @unchecked Sendable {
         ]
         if let currentBalance {
             payload["current_balance"] = AnyJSON.double(currentBalance)
+        }
+        if let isDefault {
+            payload["is_default"] = AnyJSON.bool(isDefault)
         }
         return try await client
             .from("accounts")

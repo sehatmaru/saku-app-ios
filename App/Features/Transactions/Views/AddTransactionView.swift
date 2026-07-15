@@ -16,7 +16,6 @@ struct AddTransactionView: View {
     @State private var selectedTargetAccount: Account?
     @State private var selectedDate = Date()
     @State private var titleText = ""
-    @State private var noteText = ""
     @State private var showCategoryPicker = false
     @State private var showWalletPicker = false
     @State private var showTargetWalletPicker = false
@@ -25,9 +24,12 @@ struct AddTransactionView: View {
     @State private var validationMessage = ""
     @State private var isSaving = false
     @State private var showToast = false
+    @State private var noteText = ""
     @State private var toastMessage = ""
 
-    private var activeAccounts: [Account] { accounts.filter { $0.isActive } }
+    private var activeAccounts: [Account] {
+        accounts.filter { $0.isActive }.sorted { $0.isDefault && !$1.isDefault }
+    }
     private var filteredCategories: [Category] {
         categories.filter { $0.type == (selectedType == .income ? .income : .expense) }
     }
@@ -36,8 +38,11 @@ struct AddTransactionView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: Spacing.lg) {
+                if activeAccounts.isEmpty {
+                    EmptyWalletView()
+                } else {
+                    ScrollView {
+                        VStack(spacing: Spacing.lg) {
                         amountSection
                         typePickerSection
                         formCard
@@ -46,6 +51,7 @@ struct AddTransactionView: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .gesture(showKeyboard ? TapGesture().onEnded { showKeyboard = false } : nil)
+                }
 
                 if showKeyboard {
                     AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
@@ -80,8 +86,10 @@ struct AddTransactionView: View {
             } message: { Text(validationMessage) }
             .toast(isPresented: $showToast, message: toastMessage)
             .onAppear {
-                if selectedAccount == nil { selectedAccount = activeAccounts.first }
-                showKeyboard = true
+                if selectedAccount == nil {
+                    selectedAccount = activeAccounts.first { $0.isDefault } ?? activeAccounts.first
+                }
+                if !activeAccounts.isEmpty { showKeyboard = true }
             }
             .onChange(of: selectedType) { _, _ in
                 if selectedCategory != nil && !filteredCategories.contains(where: { $0.id == selectedCategory?.id }) {
@@ -468,6 +476,26 @@ struct AddTransactionView: View {
                 validationMessage = "Gagal menyimpan: \(error.localizedDescription)"; showValidationAlert = true
             }
         }
+    }
+}
+
+struct EmptyWalletView: View {
+    var body: some View {
+        VStack(spacing: Spacing.lg) {
+            Spacer()
+            Image(systemName: "wallet.pass.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.appTextSecondary.opacity(0.5))
+            Text("Belum ada dompet")
+                .font(.jakarta(17, weight: .semibold))
+                .foregroundColor(.appText)
+            Text("Buat dompet terlebih dahulu\nsebelum menambahkan transaksi.")
+                .font(.jakarta(13))
+                .foregroundColor(.appTextSecondary)
+                .multilineTextAlignment(.center)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

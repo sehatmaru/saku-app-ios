@@ -7,6 +7,7 @@ struct WalletDetailView: View {
     let onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double) async -> Bool)?
     let onDelete: ((String) async -> Bool)?
     let onToggleArchive: ((String, Bool) async -> Bool)?
+    let onSetDefault: ((String) async -> Void)?
 
     @State private var balanceDigits = ""
     @State private var showBalanceKeyboard = false
@@ -31,13 +32,15 @@ struct WalletDetailView: View {
          categories: [Category] = [],
          onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double) async -> Bool)? = nil,
          onDelete: ((String) async -> Bool)? = nil,
-         onToggleArchive: ((String, Bool) async -> Bool)? = nil) {
+         onToggleArchive: ((String, Bool) async -> Bool)? = nil,
+         onSetDefault: ((String) async -> Void)? = nil) {
         self.account = account
         self.transactions = transactions
         self.categories = categories
         self.onSave = onSave
         self.onDelete = onDelete
         self.onToggleArchive = onToggleArchive
+        self.onSetDefault = onSetDefault
         let digits = String(Int(account.balance))
         _balanceDigits = State(initialValue: digits)
         _editedName = State(initialValue: account.name)
@@ -312,6 +315,24 @@ struct WalletDetailView: View {
                     .padding(.horizontal, Spacing.xl)
 
                 HStack(spacing: Spacing.md) {
+                    if !account.isDefault {
+                        Button {
+                            Task { await onSetDefault?(account.id) }
+                        } label: {
+                            HStack(spacing: Spacing.sm) {
+                                Image(systemName: "star.fill")
+                                    .font(.jakarta(11))
+                                Text("Jadikan Utama")
+                                    .font(.jakarta(11, weight: .semibold))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color.appWarning.opacity(0.1))
+                            .foregroundColor(.appWarning)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+
                     Button {
                         showArchiveAlert = true
                     } label: {
@@ -572,7 +593,7 @@ struct WalletDetailView: View {
 
 #Preview {
     WalletDetailView(
-        account: Account(id: "1", name: "BCA", type: .bank, icon: "bca", isArchived: false, openingBalance: 1000000),
+        account: Account(id: "1", name: "BCA", type: .bank, icon: "bca", isArchived: false, isDefault: false, openingBalance: 1000000),
         transactions: [],
         onSave: nil,
         onDelete: nil,
