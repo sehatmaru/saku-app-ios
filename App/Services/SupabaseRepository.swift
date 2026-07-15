@@ -235,6 +235,34 @@ final class SupabaseRepository: @unchecked Sendable {
     }
 
     func softDeleteTransaction(id: String) async throws {
+        let txn: Transaction = try await client
+            .from("transactions")
+            .select()
+            .eq("id", value: id)
+            .single()
+            .execute()
+            .value
+
+        let delta: Double
+        switch txn.type {
+        case .income: delta = -txn.amount
+        case .expense: delta = txn.amount
+        case .adjustment: delta = -(txn.delta ?? txn.amount)
+        case .transfer: delta = txn.amount
+        }
+
+        try await client.rpc("increment_account_balance", params: [
+            "p_account_id": AnyJSON.string(txn.accountId),
+            "p_delta": AnyJSON.double(delta),
+        ]).execute()
+
+        if let counterpartyId = txn.counterpartyAccountId, txn.type == .transfer {
+            try await client.rpc("increment_account_balance", params: [
+                "p_account_id": AnyJSON.string(counterpartyId),
+                "p_delta": AnyJSON.double(-txn.amount),
+            ]).execute()
+        }
+
         try await client
             .from("transactions")
             .update(["deleted_at": AnyJSON.string("now()")] as [String: AnyJSON])

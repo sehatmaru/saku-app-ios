@@ -159,7 +159,6 @@ struct TransactionDetailView: View {
                         dismiss()
                     } catch {
                         print("❌ deleteTransaction failed: \(error)")
-                        withAnimation { showToast = true }
                     }
                 }
             }
