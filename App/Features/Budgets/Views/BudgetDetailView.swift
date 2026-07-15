@@ -26,6 +26,7 @@ struct BudgetDetailView: View {
     }
 
     @State private var adjustScope: AdjustScope = .thisMonth
+    @State private var detailTransaction: Transaction?
 
     private var transactions: [Transaction] {
         let calendar = Calendar.current
@@ -122,6 +123,15 @@ struct BudgetDetailView: View {
             }
         } message: {
             Text("Budget untuk \(category.name) akan dihapus.")
+        }
+        .sheet(item: $detailTransaction) { txn in
+            TransactionDetailView(
+                transaction: txn,
+                categories: [category],
+                accounts: accounts,
+                isEditable: false
+            )
+            .presentationDetents([.medium, .large])
         }
     }
 
@@ -440,6 +450,8 @@ struct BudgetDetailView: View {
             VStack(spacing: 0) {
                 ForEach(displayedTransactions) { transaction in
                     transactionRow(transaction)
+                        .contentShape(Rectangle())
+                        .onTapGesture { detailTransaction = transaction }
                     if transaction.id != displayedTransactions.last?.id {
                         Divider()
                             .padding(.leading, 52)
@@ -472,66 +484,7 @@ struct BudgetDetailView: View {
     }
 
     private func transactionRow(_ transaction: Transaction) -> some View {
-        HStack(spacing: Spacing.md) {
-            ZStack {
-                Circle()
-                    .fill(Color.appExpense.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                Image(systemName: category.icon ?? "arrow.up")
-                    .font(.jakarta(16))
-                    .foregroundColor(.appExpense)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                if let acc = accountFor(id: transaction.accountId), let wi = WalletIcon.resolve(acc.icon) {
-                    walletBadge(wi: wi)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(transaction.note ?? "Pengeluaran")
-                    .font(.jakarta(14, weight: .medium))
-                    .lineLimit(1)
-                Text(formattedDate(transaction.date))
-                    .font(.jakarta(11))
-                    .foregroundColor(.appTextSecondary)
-            }
-
-            Spacer()
-
-            Text(transaction.amount.formattedAsCurrency())
-                .font(.jakarta(14, weight: .semibold))
-                .foregroundColor(.appExpense)
-        }
-        .padding(.vertical, Spacing.sm)
-    }
-
-    private func walletBadge(wi: WalletIcon) -> some View {
-        ZStack {
-            Circle()
-                .fill(wi.color)
-                .frame(width: 20, height: 20)
-            Text(wi.shortName)
-                .font(.jakarta(6, weight: .bold))
-                .foregroundColor(.white)
-                .minimumScaleFactor(0.5)
-        }
-        .overlay(
-            Circle()
-                .stroke(Color.appCardBackground, lineWidth: 2)
-        )
-        .offset(x: 4, y: 4)
-    }
-
-    private func accountFor(id: String?) -> Account? {
-        guard let id else { return nil }
-        return accounts.first { $0.id == id }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "dd MMM yyyy"
-        f.locale = Locale(identifier: "id_ID")
-        return f.string(from: date)
+        TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showWalletBadge: true)
     }
 }
 
@@ -728,6 +681,8 @@ fileprivate struct BudgetMonthDetailView: View {
     let allTransactions: [Transaction]
     let accounts: [Account]
 
+    @State private var detailTransaction: Transaction?
+
     private var monthLabel: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
@@ -870,6 +825,8 @@ fileprivate struct BudgetMonthDetailView: View {
                     VStack(spacing: 0) {
                         ForEach(transactions) { transaction in
                             transactionRow(transaction)
+                                .contentShape(Rectangle())
+                                .onTapGesture { detailTransaction = transaction }
                             if transaction.id != transactions.last?.id {
                                 Divider()
                                     .padding(.leading, 52)
@@ -891,6 +848,15 @@ fileprivate struct BudgetMonthDetailView: View {
         .background(Color.appGroupedBackground)
         .navigationTitle(monthLabel)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $detailTransaction) { txn in
+            TransactionDetailView(
+                transaction: txn,
+                categories: [category],
+                accounts: accounts,
+                isEditable: false
+            )
+            .presentationDetents([.medium, .large])
+        }
     }
 
     private func miniStatCard(icon: String, label: String, amount: String, color: Color) -> some View {
@@ -914,66 +880,7 @@ fileprivate struct BudgetMonthDetailView: View {
     }
 
     private func transactionRow(_ transaction: Transaction) -> some View {
-        HStack(spacing: Spacing.md) {
-            ZStack {
-                Circle()
-                    .fill(Color.appExpense.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                Image(systemName: category.icon ?? "arrow.up")
-                    .font(.jakarta(16))
-                    .foregroundColor(.appExpense)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                if let acc = accountFor(id: transaction.accountId), let wi = WalletIcon.resolve(acc.icon) {
-                    walletBadge(wi: wi)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(transaction.note ?? "Pengeluaran")
-                    .font(.jakarta(14, weight: .medium))
-                    .lineLimit(1)
-                Text(formattedDate(transaction.date))
-                    .font(.jakarta(11))
-                    .foregroundColor(.appTextSecondary)
-            }
-
-            Spacer()
-
-            Text(transaction.amount.formattedAsCurrency())
-                .font(.jakarta(14, weight: .semibold))
-                .foregroundColor(.appExpense)
-        }
-        .padding(.vertical, Spacing.sm)
-    }
-
-    private func walletBadge(wi: WalletIcon) -> some View {
-        ZStack {
-            Circle()
-                .fill(wi.color)
-                .frame(width: 20, height: 20)
-            Text(wi.shortName)
-                .font(.jakarta(6, weight: .bold))
-                .foregroundColor(.white)
-                .minimumScaleFactor(0.5)
-        }
-        .overlay(
-            Circle()
-                .stroke(Color.appCardBackground, lineWidth: 2)
-        )
-        .offset(x: 4, y: 4)
-    }
-
-    private func accountFor(id: String?) -> Account? {
-        guard let id else { return nil }
-        return accounts.first { $0.id == id }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "dd MMM yyyy"
-        f.locale = Locale(identifier: "id_ID")
-        return f.string(from: date)
+        TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showWalletBadge: true)
     }
 }
 

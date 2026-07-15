@@ -29,6 +29,7 @@ final class AppDataCache {
         var budgets: [Budget]
         var categories: [Category]
         var allExpenseTransactions: [Transaction]
+        var accounts: [Account]
     }
 
     struct TransactionState {

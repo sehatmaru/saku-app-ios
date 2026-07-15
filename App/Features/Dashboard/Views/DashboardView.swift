@@ -10,6 +10,7 @@ struct DashboardView: View {
     }
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
+    @State private var detailTransaction: Transaction?
 
     var body: some View {
         TabView {
@@ -72,6 +73,15 @@ struct DashboardView: View {
                 )
                 .presentationDetents([.fraction(0.68), .large])
             }
+        }
+        .sheet(item: $detailTransaction) { txn in
+            TransactionDetailView(
+                transaction: txn,
+                categories: viewModel.categories,
+                accounts: viewModel.accounts,
+                isEditable: false
+            )
+            .presentationDetents([.medium, .large])
         }
     }
 
@@ -1069,7 +1079,9 @@ struct DashboardView: View {
 
                 VStack(spacing: 0) {
                     ForEach(Array(viewModel.recentTransactions.prefix(5))) { transaction in
-                        TransactionRow(transaction: transaction)
+                        TransactionRow(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts, showWalletBadge: true)
+                            .contentShape(Rectangle())
+                            .onTapGesture { detailTransaction = transaction }
                             .padding(.horizontal, Spacing.xl)
                             .padding(.vertical, Spacing.sm)
                         if transaction.id != viewModel.recentTransactions.prefix(5).last?.id {
@@ -1142,65 +1154,17 @@ struct DashboardView: View {
 
 struct TransactionRow: View {
     let transaction: Transaction
-
-    private var typeColor: Color {
-        switch transaction.type {
-        case .income: .appIncome
-        case .expense: .appExpense
-        case .transfer: .appPrimary
-        case .adjustment: .appText
-        }
-    }
-
-    private var typeIcon: String {
-        switch transaction.type {
-        case .income: "arrow.down"
-        case .expense: "arrow.up"
-        case .transfer: "arrow.left.arrow.right"
-        case .adjustment: "arrow.2.circlepath"
-        }
-    }
-
-    private var typeLabel: String {
-        switch transaction.type {
-        case .income: "Pemasukan"
-        case .expense: "Pengeluaran"
-        case .transfer: "Transfer"
-        case .adjustment: "Penyesuaian saldo"
-        }
-    }
+    let categories: [Category]
+    let accounts: [Account]
+    var showWalletBadge: Bool = false
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            Circle()
-                .fill(typeColor)
-                .frame(width: 40, height: 40)
-                .overlay {
-                    Image(systemName: typeIcon)
-                        .font(.jakarta(12))
-                        .foregroundColor(.white)
-                }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(transaction.note ?? typeLabel)
-                    .font(.jakarta(15, weight: .medium))
-                Text(transaction.date.formatted(date: .numeric, time: .omitted))
-                    .font(.jakarta(12))
-                    .foregroundColor(.appTextSecondary)
-            }
-
-            Spacer()
-
-                let isAdjustment = transaction.type == .adjustment
-                let signedAmount = transaction.delta ?? transaction.amount
-                let amountColor: Color = isAdjustment ? (signedAmount >= 0 ? .appIncome : .appExpense) : typeColor
-                let amountText: String = isAdjustment ? (signedAmount >= 0 ? "+" + signedAmount.formattedAsCurrency() : signedAmount.formattedAsCurrency()) : transaction.amount.formattedAsCurrency()
-
-                Text(amountText)
-                    .font(.jakarta(15, weight: .semibold))
-                    .foregroundColor(amountColor)
-        }
-        .padding(.vertical, 4)
+        TransactionRowView(
+            transaction: transaction,
+            categories: categories,
+            accounts: accounts,
+            showWalletBadge: showWalletBadge
+        )
     }
 }
 

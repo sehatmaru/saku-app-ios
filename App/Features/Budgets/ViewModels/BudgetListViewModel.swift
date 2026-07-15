@@ -17,6 +17,7 @@ final class BudgetListViewModel: ObservableObject {
     @Published var hasLoadedOnce = false
     @Published var errorMessage: String?
     @Published var allExpenseTransactions: [Transaction] = []
+    @Published var accounts: [Account] = []
 
     private var loadedUserId: String?
 
@@ -55,6 +56,7 @@ final class BudgetListViewModel: ObservableObject {
             budgets = cached.budgets
             categories = cached.categories
             allExpenseTransactions = cached.allExpenseTransactions
+            accounts = cached.accounts
             recalculate()
             return
         }
@@ -74,11 +76,13 @@ final class BudgetListViewModel: ObservableObject {
             async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)
             async let categoriesTask = SupabaseRepository.shared.fetchCategories()
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
+            async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
 
-            let (fetchedBudgets, fetchedCategories, fetchedTransactions) = try await (
+            let (fetchedBudgets, fetchedCategories, fetchedTransactions, fetchedAccounts) = try await (
                 budgetsTask,
                 categoriesTask,
-                transactionsTask
+                transactionsTask,
+                accountsTask
             )
 
             var budgetsWithSpent: [Budget] = []
@@ -96,13 +100,15 @@ final class BudgetListViewModel: ObservableObject {
             budgets = budgetsWithSpent
             categories = fetchedCategories
             allExpenseTransactions = fetchedTransactions
+            accounts = fetchedAccounts
             recalculate()
             loadedUserId = userId
             hasLoadedOnce = true
             AppDataCache.shared.setBudgetState(.init(
                 budgets: budgets,
                 categories: categories,
-                allExpenseTransactions: allExpenseTransactions
+                allExpenseTransactions: allExpenseTransactions,
+                accounts: accounts
             ), for: userId)
         } catch is CancellationError {
             return
@@ -180,7 +186,8 @@ final class BudgetListViewModel: ObservableObject {
         AppDataCache.shared.setBudgetState(.init(
             budgets: budgets,
             categories: categories,
-            allExpenseTransactions: allExpenseTransactions
+            allExpenseTransactions: allExpenseTransactions,
+            accounts: accounts
         ), for: userId)
     }
 }

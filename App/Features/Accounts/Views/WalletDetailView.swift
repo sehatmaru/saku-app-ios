@@ -219,6 +219,7 @@ struct WalletDetailView: View {
                 transaction: txn,
                 categories: categories,
                 accounts: [account],
+                isEditable: false,
                 onUpdate: nil
             )
             .presentationDetents([.medium, .large])
@@ -542,69 +543,7 @@ struct WalletDetailView: View {
     }
 
     private func transactionRow(_ transaction: Transaction) -> some View {
-        let isTransfer = transaction.type == .transfer
-        let isAdjustment = transaction.type == .adjustment
-        let cellColor: Color = (isTransfer || isAdjustment) ? .appText : (transaction.type == .income ? .appIncome : .appExpense)
-        let catIcon = transaction.categoryId.flatMap { cid in categories.first { $0.id == cid }?.icon }
-        let iconName = isTransfer ? "arrow.left.arrow.right" : (isAdjustment ? "arrow.2.circlepath" : (catIcon ?? (transaction.type == .income ? "arrow.down" : "arrow.up")))
-
-        return HStack(spacing: Spacing.md) {
-            ZStack {
-                Circle()
-                    .fill(cellColor.opacity((isTransfer || isAdjustment) ? 0.08 : 0.15))
-                    .frame(width: 44, height: 44)
-                Image(systemName: iconName)
-                    .font(.jakarta(16))
-                    .foregroundColor(cellColor)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(transaction.note ?? label(for: transaction.type))
-                        .font(.jakarta(14, weight: .medium))
-                        .lineLimit(1)
-                    if !account.isActive {
-                        Text("Diarsipkan")
-                            .font(.jakarta(9, weight: .medium))
-                            .foregroundColor(.appWarning)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.appWarning.opacity(0.15))
-                            .clipShape(Capsule())
-                    }
-                }
-                Text(formattedDate(transaction.date))
-                    .font(.jakarta(11))
-                    .foregroundColor(.appTextSecondary)
-            }
-
-            Spacer()
-
-                let signedAmount = transaction.delta ?? transaction.amount
-                let amountColor: Color = isAdjustment ? (signedAmount >= 0 ? .appIncome : .appExpense) : cellColor
-                let amountText: String = isAdjustment ? (signedAmount >= 0 ? "+" + signedAmount.formattedAsCurrency() : signedAmount.formattedAsCurrency()) : transaction.amount.formattedAsCurrency()
-
-                Text(amountText)
-                    .font(.jakarta(14, weight: .semibold))
-                    .foregroundColor(amountColor)
-        }
-        .padding(.vertical, Spacing.sm)
-    }
-
-    private func label(for type: Transaction.TransactionType) -> String {
-        switch type {
-        case .income: return "Pemasukan"
-        case .expense: return "Pengeluaran"
-        case .transfer: return "Transfer"
-        case .adjustment: return "Penyesuaian saldo"
-        }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "dd MMM yyyy"
-        f.locale = Locale(identifier: "id_ID")
-        return f.string(from: date)
+        TransactionRowView(transaction: transaction, categories: categories, accounts: [account], showWalletBadge: false, showArchivedBadge: !account.isActive)
     }
 
     private var hintCard: some View {

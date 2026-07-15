@@ -4,6 +4,7 @@ struct TransactionDetailView: View {
     let transaction: Transaction
     let categories: [Category]
     let accounts: [Account]
+    var isEditable: Bool = true
     let onUpdate: ((Transaction) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
@@ -22,10 +23,11 @@ struct TransactionDetailView: View {
     @State private var showDeleteConfirmation = false
     @FocusState private var isTitleFocused: Bool
 
-    init(transaction: Transaction, categories: [Category], accounts: [Account], onUpdate: ((Transaction) -> Void)? = nil) {
+    init(transaction: Transaction, categories: [Category], accounts: [Account], isEditable: Bool = true, onUpdate: ((Transaction) -> Void)? = nil) {
         self.transaction = transaction
         self.categories = categories
         self.accounts = accounts
+        self.isEditable = isEditable
         self.onUpdate = onUpdate
         let digits = String(Int(transaction.amount))
         _amountDigits = State(initialValue: digits)
@@ -75,6 +77,15 @@ struct TransactionDetailView: View {
         }
     }
 
+    private var typeLabel: String {
+        switch transaction.type {
+        case .income: "Pemasukan"
+        case .expense: "Pengeluaran"
+        case .transfer: "Transfer"
+        case .adjustment: "Penyesuaian saldo"
+        }
+    }
+
     private var amountOpacity: Double { 1.0 }
 
     private var isAdjustment: Bool { transaction.type == .adjustment }
@@ -115,16 +126,19 @@ struct TransactionDetailView: View {
         .scrollDismissesKeyboard(.immediately)
         .onTapGesture { if showAmountKeyboard { showAmountKeyboard = false } }
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(role: .destructive) {
-                    showDeleteConfirmation = true
-                } label: {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
+            if isEditable {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(role: .destructive) {
+                        showDeleteConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                    }
                 }
             }
 
-            ToolbarItemGroup(placement: .keyboard) {
+            if isEditable {
+                ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Selesai") {
                     isTitleFocused = false
@@ -132,6 +146,7 @@ struct TransactionDetailView: View {
                     saveChanges()
                 }
                 .font(.jakarta(15, weight: .semibold))
+            }
             }
         }
         .alert("Hapus Transaksi?", isPresented: $showDeleteConfirmation) {
@@ -152,7 +167,11 @@ struct TransactionDetailView: View {
             Text("Transaksi akan dihapus permanen.")
         }
         .onChange(of: isTitleFocused) { _, newValue in
-            if !newValue { saveChanges() }
+            if !newValue, isEditable { saveChanges() }
+            if newValue { showAmountKeyboard = false }
+        }
+        .onChange(of: showAmountKeyboard) { _, newValue in
+            if newValue { isTitleFocused = false }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if showAmountKeyboard {
@@ -230,7 +249,7 @@ struct TransactionDetailView: View {
                             .stroke(typeColor.opacity(0.3), lineWidth: 1.5)
                     )
 
-            if isAdjustment || isTransfer {
+                if isAdjustment {
                     Text("Penyesuaian saldo")
                         .font(.jakarta(17, weight: .semibold))
                         .foregroundColor(.appText)
@@ -238,12 +257,16 @@ struct TransactionDetailView: View {
                     Text("Transfer")
                         .font(.jakarta(17, weight: .semibold))
                         .foregroundColor(.appText)
-                } else {
+                } else if isEditable {
                     TextField("Judul transaksi", text: $editedTitle)
                         .font(.jakarta(17, weight: .semibold))
                         .foregroundColor(.appText)
                         .focused($isTitleFocused)
                         .onSubmit { saveChanges() }
+                } else {
+                    Text(editedTitle.isEmpty ? (transaction.note ?? typeLabel) : editedTitle)
+                        .font(.jakarta(17, weight: .semibold))
+                        .foregroundColor(.appText)
                 }
 
                 Spacer()
@@ -260,7 +283,7 @@ struct TransactionDetailView: View {
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(amountColor)
                     .contentShape(Rectangle())
-                    .onTapGesture { if !isAdjustment { showAmountKeyboard = true } }
+                    .onTapGesture { if !isAdjustment, isEditable { showAmountKeyboard = true } }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Spacing.xl)
@@ -422,6 +445,7 @@ struct TransactionDetailView: View {
         }
         .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 20))
+        .disabled(!isEditable)
     }
 
     private func listRow(icon: String, label: String, value: String, iconColor: Color) -> some View {

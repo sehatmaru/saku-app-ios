@@ -352,7 +352,7 @@ struct BudgetListView: View {
             budget: item.budget!,
             category: item.category,
             allTransactions: viewModel.allExpenseTransactions.filter { $0.categoryId == item.category.id },
-            accounts: [],
+            accounts: viewModel.accounts,
             onAdjustBudget: { updated in
                 Task {
                     let name = updated.name
