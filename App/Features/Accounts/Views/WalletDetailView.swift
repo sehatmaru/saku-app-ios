@@ -4,7 +4,7 @@ struct WalletDetailView: View {
     let account: Account
     let transactions: [Transaction]
     let categories: [Category]
-    let onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double) async -> Bool)?
+    let onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double, Double?, String?) async -> Bool)?
     let onDelete: ((String) async -> Bool)?
     let onToggleArchive: ((String, Bool) async -> Bool)?
     let onSetDefault: ((String) async -> Void)?
@@ -25,12 +25,16 @@ struct WalletDetailView: View {
     @State private var showToast = false
     @State private var toastMessage = ""
     @State private var detailTransaction: Transaction?
+    @State private var creditLimitDigits = ""
+    @State private var showCreditLimitKeyboard = false
+    @State private var editedDueDay: Int
+    @State private var showDueDayPicker = false
     @FocusState private var isNameFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
     init(account: Account, transactions: [Transaction] = [],
          categories: [Category] = [],
-         onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double) async -> Bool)? = nil,
+         onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double, Double?, String?) async -> Bool)? = nil,
          onDelete: ((String) async -> Bool)? = nil,
          onToggleArchive: ((String, Bool) async -> Bool)? = nil,
          onSetDefault: ((String) async -> Void)? = nil) {
@@ -45,6 +49,9 @@ struct WalletDetailView: View {
         _balanceDigits = State(initialValue: digits)
         _editedName = State(initialValue: account.name)
         _editedIconId = State(initialValue: account.icon ?? "")
+        let limitDigits = account.creditLimit.map { String(Int($0)) } ?? ""
+        _creditLimitDigits = State(initialValue: limitDigits)
+        _editedDueDay = State(initialValue: account.dueDay ?? 1)
     }
 
     private var walletIcon: WalletIcon? {
@@ -55,7 +62,9 @@ struct WalletDetailView: View {
         !hasConfirmed && (
             editedName != account.name ||
             editedIconId != account.icon ||
-            balanceDigits != String(Int(account.balance))
+            (isCreditCard ? false : balanceDigits != String(Int(account.balance))) ||
+            (isCreditCard ? creditLimitDigits != String(Int(account.creditLimit ?? 0)) : false) ||
+            (isCreditCard ? editedDueDay != (account.dueDay ?? 1) : false)
         )
     }
 
@@ -211,8 +220,16 @@ struct WalletDetailView: View {
                 .padding(.top, 8)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+            if showCreditLimitKeyboard {
+                AmountKeyboard(amountDigits: $creditLimitDigits, maxDigits: 12) {
+                    showCreditLimitKeyboard = false
+                }
+                .padding(.top, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         .animation(.easeInOut(duration: 0.25), value: showBalanceKeyboard)
+        .animation(.easeInOut(duration: 0.25), value: showCreditLimitKeyboard)
         .toast(isPresented: $showToast, message: toastMessage)
         .onChange(of: isNameFocused) { _, newValue in
             if !newValue { confirmChanges() }
@@ -227,44 +244,261 @@ struct WalletDetailView: View {
             )
             .presentationDetents([.medium, .large])
         }
+        .sheet(isPresented: $showDueDayPicker) {
+            NavigationStack {
+                VStack(spacing: 0) {
+                    Picker("Tanggal Jatuh Tempo", selection: $editedDueDay) {
+                        ForEach(1...31, id: \.self) { day in
+                            Text("\(day)").tag(day)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .padding()
+                }
+                .navigationTitle("Pilih Tanggal")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Simpan") { showDueDayPicker = false; confirmChanges() }
+                    }
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Batal") { showDueDayPicker = false }
+                    }
+                }
+            }
+            .presentationDetents([.height(300)])
+        }
     }
     
     private var balanceOpacity: Double { 1.0 }
+    private var isCreditCard: Bool { account.isCreditCard }
+
+    private var dueDateFormatted: String {
+        "Setiap tanggal \(editedDueDay)"
+    }
 
     private var headerSection: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: Spacing.sm) {
-                Button {
-                    if account.type != .cash {
-                        showIconPicker = true
-                    }
-                } label: {
-                    Circle()
-                        .fill(walletIcon?.color ?? .appPrimary)
-                        .frame(width: 36, height: 36)
-                        .overlay {
-                            if let icon = walletIcon {
-                                Text(icon.shortName)
-                                    .font(.jakarta(10, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
-                        }
-                }
-                .disabled(account.type == .cash || !account.isActive)
-
-                TextField("Nama", text: $editedName)
-                    .font(.jakarta(17, weight: .semibold))
-                    .disabled(!account.isActive)
-                    .focused($isNameFocused)
-
-                Spacer()
-
-                Text(account.type.rawValue)
-                    .font(.jakarta(12))
-                    .foregroundColor(.appTextSecondary)
+        Group {
+            if isCreditCard {
+                creditCardSection
+            } else {
+                walletHeaderSection
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
+        }
+    }
+
+    private var creditCardSection: some View {
+        VStack(spacing: Spacing.md) {
+            // Card 1: Header + Limit + Actions
+            VStack(spacing: 0) {
+                headerRow
+                    .padding(.horizontal, Spacing.xl)
+                    .padding(.top, Spacing.xl)
+
+                let limit = Double(creditLimitDigits) ?? 0
+                let outstanding = account.currentBalance ?? 0
+                let utilization = limit > 0 ? outstanding / limit : 0
+
+                VStack(spacing: 4) {
+                    HStack {
+                        Text("Total Limit")
+                            .font(.jakarta(11))
+                            .foregroundColor(.appTextSecondary)
+                        Spacer()
+                        Text(limit.formattedAsCurrency())
+                            .font(.jakarta(13, weight: .semibold))
+                            .foregroundColor(.appText)
+                            .contentShape(Rectangle())
+                            .onTapGesture { showCreditLimitKeyboard = true }
+                    }
+
+                    HStack {
+                        Text("Sisa Limit")
+                            .font(.jakarta(11))
+                            .foregroundColor(.appTextSecondary)
+                        Spacer()
+                        Text((limit - outstanding).formattedAsCurrency())
+                            .font(.jakarta(13, weight: .semibold))
+                            .foregroundColor(.appText)
+                    }
+
+                    Spacer().frame(height: 4)
+
+                    ProgressView(value: min(utilization, 1.0))
+                        .tint(utilization > 0.8 ? .appError : utilization > 0.5 ? .appWarning : .appPrimary)
+
+                    Text("\(Int(utilization * 100))% terpakai")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.lg)
+
+                actionButtons
+                    .padding(.horizontal, Spacing.xl)
+                    .padding(.bottom, Spacing.lg)
+            }
+            .background(Color.appCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+
+            // Card 2: Due Date + Stats
+            VStack(spacing: 0) {
+                Button {
+                    showDueDayPicker = true
+                } label: {
+                    HStack(spacing: Spacing.md) {
+                        Circle()
+                            .fill(Color.appPrimary.opacity(0.1))
+                            .frame(width: 36, height: 36)
+                            .overlay {
+                                Image(systemName: "calendar")
+                                    .font(.jakarta(13))
+                                    .foregroundColor(.appPrimary)
+                            }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Jatuh Tempo")
+                                .font(.jakarta(11))
+                                .foregroundColor(.appTextSecondary)
+                            Text(dueDateFormatted)
+                                .font(.jakarta(15, weight: .medium))
+                                .foregroundColor(.appText)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.jakarta(10))
+                            .foregroundColor(.appTextSecondary.opacity(0.4))
+                    }
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.plain)
+
+                Divider()
+                    .padding(.leading, 52)
+                    .padding(.trailing, Spacing.lg)
+
+                HStack(spacing: 0) {
+                    VStack(spacing: 4) {
+                        Text("Total Tagihan")
+                            .font(.jakarta(11))
+                            .foregroundColor(.appTextSecondary)
+                        Text((account.currentBalance ?? 0).formattedAsCurrency())
+                            .font(.jakarta(13, weight: .semibold))
+                            .foregroundColor(.appExpense)
+                    }
+                    .frame(maxWidth: .infinity)
+                    Divider().frame(height: 28)
+                    VStack(spacing: 4) {
+                        Text("Bulan Ini")
+                            .font(.jakarta(11))
+                            .foregroundColor(.appTextSecondary)
+                        Text(monthlyExpense > 0 ? abbreviatedAmount(monthlyExpense) : "Rp0")
+                            .font(.jakarta(13, weight: .semibold))
+                            .foregroundColor(.appExpense)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, Spacing.xl)
+                .padding(.vertical, Spacing.md)
+            }
+            .background(Color.appCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+        }
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: isCreditCard ? "creditcard.fill" : "wallet.pass.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.appExpense.opacity(0.08))
+                .offset(x: -12, y: -4)
+        }
+        .onTapGesture {
+            if !isCreditCard { showBalanceKeyboard = true }
+            if isCreditCard { showCreditLimitKeyboard = true }
+        }
+    }
+
+    private var headerRow: some View {
+        HStack(spacing: Spacing.sm) {
+            Button { if account.type != .cash, !isCreditCard { showIconPicker = true } } label: {
+                WalletIconView(icon: walletIcon, size: 36)
+            }
+            .disabled(account.type == .cash || isCreditCard || !account.isActive)
+
+            TextField("Nama", text: $editedName)
+                .font(.jakarta(17, weight: .semibold))
+                .disabled(!account.isActive)
+                .focused($isNameFocused)
+
+            Spacer()
+
+            Text(isCreditCard ? "Kartu Kredit" : account.type.rawValue)
+                .font(.jakarta(12))
+                .foregroundColor(.appTextSecondary)
+        }
+    }
+
+    private var actionButtons: some View {
+        Group {
+            if account.isActive {
+                HStack(spacing: Spacing.md) {
+                    if !account.isDefault {
+                        Button { Task { await onSetDefault?(account.id) } } label: {
+                            HStack(spacing: Spacing.sm) {
+                                Image(systemName: "star.fill").font(.jakarta(11))
+                                Text("Jadikan Utama").font(.jakarta(11, weight: .semibold))
+                            }
+                            .frame(maxWidth: .infinity).padding(.vertical, 12)
+                            .background(Color.appWarning.opacity(0.1)).foregroundColor(.appWarning)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                    Button { showArchiveAlert = true } label: {
+                        HStack(spacing: Spacing.sm) {
+                            Image(systemName: "archivebox").font(.jakarta(11))
+                            Text("Arsipkan").font(.jakarta(11, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .background(Color.appPrimary.opacity(0.1)).foregroundColor(.appPrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    Button(role: .destructive) {
+                        if !transactions.isEmpty {
+                            deleteWarningMessage = "Tidak bisa menghapus akun yang masih memiliki transaksi (\(transactions.count) transaksi). Jika tidak lagi digunakan, kamu bisa mengarsipkannya."
+                            showDeleteWarningAlert = true
+                        } else { showDeleteAlert = true }
+                    } label: {
+                        HStack(spacing: Spacing.sm) {
+                            Image(systemName: "trash").font(.jakarta(11))
+                            Text("Hapus").font(.jakarta(11, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .background(Color.appError.opacity(0.1)).foregroundColor(.appError)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+            } else {
+                Button { showUnarchiveAlert = true } label: {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: "archivebox.fill").font(.jakarta(11))
+                        Text("Aktifkan").font(.jakarta(11, weight: .semibold))
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .background(Color.appPrimary.opacity(0.1)).foregroundColor(.appPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        }
+    }
+
+    private var walletHeaderSection: some View {
+        VStack(spacing: 0) {
+            headerRow
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.xl)
 
             HStack(spacing: 6) {
                 Text("Rp")
@@ -310,92 +544,9 @@ struct WalletDetailView: View {
             .padding(.top, Spacing.md)
             .padding(.bottom, Spacing.sm)
 
-            if account.isActive {
-                Divider()
-                    .padding(.horizontal, Spacing.xl)
-
-                HStack(spacing: Spacing.md) {
-                    if !account.isDefault {
-                        Button {
-                            Task { await onSetDefault?(account.id) }
-                        } label: {
-                            HStack(spacing: Spacing.sm) {
-                                Image(systemName: "star.fill")
-                                    .font(.jakarta(11))
-                                Text("Jadikan Utama")
-                                    .font(.jakarta(11, weight: .semibold))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.appWarning.opacity(0.1))
-                            .foregroundColor(.appWarning)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                    }
-
-                    Button {
-                        showArchiveAlert = true
-                    } label: {
-                        HStack(spacing: Spacing.sm) {
-                            Image(systemName: "archivebox")
-                                .font(.jakarta(11))
-                            Text("Arsipkan")
-                                .font(.jakarta(11, weight: .semibold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.appPrimary.opacity(0.1))
-                        .foregroundColor(.appPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-
-                    Button(role: .destructive) {
-                        if !transactions.isEmpty {
-                            deleteWarningMessage = "Tidak bisa menghapus dompet yang masih memiliki transaksi (\(transactions.count) transaksi). Jika tidak lagi digunakan, kamu bisa mengarsipkannya."
-                            showDeleteWarningAlert = true
-                        } else {
-                            showDeleteAlert = true
-                        }
-                    } label: {
-                        HStack(spacing: Spacing.sm) {
-                            Image(systemName: "trash")
-                                .font(.jakarta(11))
-                            Text("Hapus")
-                                .font(.jakarta(11, weight: .semibold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.appError.opacity(0.1))
-                        .foregroundColor(.appError)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
+            actionButtons
                 .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.sm)
                 .padding(.bottom, Spacing.lg)
-            } else {
-                Divider()
-                    .padding(.horizontal, Spacing.xl)
-
-                Button {
-                    showUnarchiveAlert = true
-                } label: {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "archivebox.fill")
-                            .font(.jakarta(11))
-                        Text("Aktifkan Dompet")
-                            .font(.jakarta(11, weight: .semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.appPrimary.opacity(0.1))
-                    .foregroundColor(.appPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.sm)
-                .padding(.bottom, Spacing.lg)
-            }
         }
         .frame(maxWidth: .infinity)
         .background(
@@ -484,10 +635,12 @@ struct WalletDetailView: View {
     }
 
     private func confirmChanges() {
-        guard let newBalance = Double(balanceDigits) else { return }
         isSaving = true
         Task {
-            let success = await onSave?(account.id, editedName.trimmingCharacters(in: .whitespaces), account.type, editedIconId, account.isArchived, newBalance, account.balance) ?? true
+            let dueDateStr = isCreditCard ? String(editedDueDay) : nil
+            let creditLimit = isCreditCard ? (Double(creditLimitDigits) ?? 0) : nil
+            let newBalance = Double(balanceDigits) ?? 0
+            let success = await onSave?(account.id, editedName.trimmingCharacters(in: .whitespaces), account.type, editedIconId, account.isArchived, newBalance, account.balance, creditLimit, dueDateStr) ?? true
             hasConfirmed = success
             isSaving = false
             toastMessage = success ? "Perubahan berhasil disimpan" : "Gagal menyimpan perubahan"
@@ -593,7 +746,7 @@ struct WalletDetailView: View {
 
 #Preview {
     WalletDetailView(
-        account: Account(id: "1", name: "BCA", type: .bank, icon: "bca", isArchived: false, isDefault: false, openingBalance: 1000000),
+        account: Account(id: "1", name: "BCA", type: .bank, icon: "bca", isArchived: false, isDefault: false, openingBalance: 1000000, creditLimit: nil, dueDate: nil),
         transactions: [],
         onSave: nil,
         onDelete: nil,

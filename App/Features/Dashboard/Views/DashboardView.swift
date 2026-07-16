@@ -31,7 +31,7 @@ struct DashboardView: View {
 
             AccountListView()
                 .tabItem {
-                    Label("Dompet", systemImage: "wallet.pass.fill")
+                    Label("Akun", systemImage: "wallet.pass.fill")
                 }
 
             ProfileView()

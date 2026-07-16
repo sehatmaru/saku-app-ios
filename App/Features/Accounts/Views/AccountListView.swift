@@ -15,8 +15,12 @@ struct AccountListView: View {
     @State private var categories: [Category] = []
     @State private var cachedUserId: String?
 
-    private var activeAccounts: [Account] {
-        viewModel.accounts.filter { $0.isActive }
+    private var walletAccounts: [Account] {
+        viewModel.accounts.filter { $0.isActive && !$0.isCreditCard }
+    }
+
+    private var creditAccounts: [Account] {
+        viewModel.accounts.filter { $0.isActive && $0.isCreditCard }
     }
 
     private var archivedAccounts: [Account] {
@@ -40,13 +44,60 @@ struct AccountListView: View {
                             }
                             totalBalanceCard
 
-                            ForEach(activeAccounts) { account in
+                            if !walletAccounts.isEmpty {
+                                HStack {
+                                    Text("Dompet")
+                                        .font(.jakarta(15, weight: .semibold))
+                                    Spacer()
+                                    Text("\(walletAccounts.count)")
+                                        .font(.jakarta(12))
+                                        .foregroundColor(.appTextSecondary)
+                                }
+                                .padding(.horizontal)
+                            }
+
+                            ForEach(walletAccounts) { account in
                                 NavigationLink(destination: WalletDetailView(
                                         account: account,
                                         transactions: accountTransactions[account.id] ?? [],
                                         categories: categories,
-                                        onSave: { id, name, type, icon, isArchived, newBalance, oldBalance in
-                                            return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "")
+                                        onSave: { id, name, type, icon, isArchived, newBalance, oldBalance, creditLimit, dueDate in
+                                            return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "", creditLimit: creditLimit, dueDate: dueDate)
+                                        },
+                                        onDelete: { id in
+                                            return await viewModel.removeAccount(id: id)
+                                        },
+                                        onToggleArchive: { id, archived in
+                                            return await viewModel.toggleAccountArchive(id: id)
+                                        },
+                                        onSetDefault: { id in
+                                            await viewModel.setDefaultAccount(id: id, userId: authViewModel.currentUser?.id ?? "")
+                                        }
+                                )) {
+                                    AccountCard(account: account)
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            if !creditAccounts.isEmpty {
+                                HStack {
+                                    Text("Kartu Kredit")
+                                        .font(.jakarta(15, weight: .semibold))
+                                    Spacer()
+                                    Text("\(creditAccounts.count)")
+                                        .font(.jakarta(12))
+                                        .foregroundColor(.appTextSecondary)
+                                }
+                                .padding(.horizontal)
+                            }
+
+                            ForEach(creditAccounts) { account in
+                                NavigationLink(destination: WalletDetailView(
+                                        account: account,
+                                        transactions: accountTransactions[account.id] ?? [],
+                                        categories: categories,
+                                        onSave: { id, name, type, icon, isArchived, newBalance, oldBalance, creditLimit, dueDate in
+                                            return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "", creditLimit: creditLimit, dueDate: dueDate)
                                         },
                                         onDelete: { id in
                                             return await viewModel.removeAccount(id: id)
@@ -80,7 +131,7 @@ struct AccountListView: View {
                 await syncAccountTransactions(userId: userId)
                 await syncCategories(userId: userId)
             }
-            .navigationTitle("Dompet")
+            .navigationTitle("Akun")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -111,8 +162,8 @@ struct AccountListView: View {
             }
             .sheet(isPresented: $showAddWallet) {
                 if let userId = authViewModel.currentUser?.id {
-                    AddWalletView { name, type, balance, icon in
-                        let success = await viewModel.addAccount(name: name, type: type, openingBalance: balance, icon: icon, userId: userId)
+                    AddWalletView { name, type, balance, icon, creditLimit, dueDate in
+                        let success = await viewModel.addAccount(name: name, type: type, openingBalance: balance, icon: icon, userId: userId, creditLimit: creditLimit, dueDate: dueDate)
                         if success {
                             await syncAccountTransactions(userId: userId)
                         }
@@ -223,8 +274,8 @@ struct AccountListView: View {
                             account: account,
                             transactions: accountTransactions[account.id] ?? [],
                             categories: categories,
-                            onSave: { id, name, type, icon, isArchived, newBalance, oldBalance in
-                                return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "")
+                            onSave: { id, name, type, icon, isArchived, newBalance, oldBalance, creditLimit, dueDate in
+                                return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "", creditLimit: creditLimit, dueDate: dueDate)
                             },
                             onDelete: { id in
                                 return await viewModel.removeAccount(id: id)
@@ -268,15 +319,33 @@ struct AccountListView: View {
                 .padding(.horizontal, Spacing.xl)
                 .padding(.top, Spacing.sm)
 
+            if viewModel.totalCreditDebt > 0 {
+                HStack {
+                    Image(systemName: "creditcard.fill")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appExpense)
+                    Text("Total Utang Kartu Kredit")
+                        .font(.jakarta(12))
+                        .foregroundColor(.appTextSecondary)
+                    Spacer()
+                    Text(isBalanceVisible ? viewModel.totalCreditDebt.formattedAsCurrency() : "Rp***")
+                        .font(.jakarta(13, weight: .semibold))
+                        .foregroundColor(.appExpense)
+                }
+                .padding(.horizontal, Spacing.xl)
+                .padding(.top, Spacing.sm)
+            }
+
             Divider()
                 .padding(.horizontal, Spacing.xl)
                 .padding(.top, Spacing.lg)
 
             HStack {
+                let totalActive = walletAccounts.count + creditAccounts.count
                 Image(systemName: "checkmark.circle.fill")
                     .font(.jakarta(11))
                     .foregroundColor(.appPrimary)
-                Text("\(activeAccounts.count) Dompet Aktif")
+                Text("\(totalActive) Akun Aktif")
                     .font(.jakarta(13))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
@@ -291,7 +360,7 @@ struct AccountListView: View {
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: "plus")
                         .font(.jakarta(15, weight: .semibold))
-                    Text("Tambah Dompet")
+                    Text("Tambah")
                         .font(.jakarta(15, weight: .semibold))
                 }
                 .frame(maxWidth: .infinity)
@@ -326,20 +395,7 @@ struct AccountCard: View {
 
     var body: some View {
         HStack(spacing: Spacing.md) {
-            Circle()
-                .fill(walletIcon?.color ?? accountTypeColor)
-                .frame(width: 44, height: 44)
-                .overlay {
-                    if let icon = walletIcon {
-                        Text(icon.shortName)
-                            .font(.jakarta(9, weight: .bold))
-                            .foregroundColor(.white)
-                    } else {
-                        Image(systemName: accountTypeIcon)
-                            .font(.body)
-                            .foregroundColor(.white)
-                    }
-                }
+            WalletIconView(icon: walletIcon, size: 44)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -355,15 +411,25 @@ struct AccountCard: View {
                             .clipShape(Capsule())
                     }
                 }
-                Text(account.type.rawValue)
+                Text(account.isCreditCard ? "Sisa Limit" : account.type.rawValue)
                     .font(.jakarta(12))
                     .foregroundColor(.appTextSecondary)
             }
 
             Spacer()
 
-            Text(isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp***")
-                .font(.jakarta(15, weight: .semibold))
+            if account.isCreditCard {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Sisa Limit")
+                        .font(.jakarta(9))
+                        .foregroundColor(.appTextSecondary)
+                    Text(isBalanceVisible ? (account.availableCredit?.formattedAsCurrency() ?? "-") : "Rp***")
+                        .font(.jakarta(15, weight: .semibold))
+                }
+            } else {
+                Text(isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp***")
+                    .font(.jakarta(15, weight: .semibold))
+            }
         }
         .padding()
         .background(Color.appCardBackground)
@@ -375,6 +441,7 @@ struct AccountCard: View {
         case .cash: return .appIncome
         case .bank: return .appPrimary
         case .ewallet: return .appWarning
+        case .credit: return .appExpense
         }
     }
 
@@ -383,6 +450,7 @@ struct AccountCard: View {
         case .cash: return "banknote"
         case .bank: return "building.columns"
         case .ewallet: return "wallet.pass"
+        case .credit: return "creditcard.fill"
         }
     }
 }
@@ -396,9 +464,9 @@ struct AccountListPreview: View {
         let v = AccountListViewModel()
         v.hasLoadedOnce = true
         v.accounts = [
-            Account(id: "1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: true, openingBalance: 5_000_000, currentBalance: 5_430_000),
-            Account(id: "2", name: "Mandiri", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: false, openingBalance: 3_000_000, currentBalance: 2_850_000),
-            Account(id: "3", name: "GoPay", type: .ewallet, icon: "wallet.pass.fill", isArchived: false, isDefault: false, openingBalance: 500_000, currentBalance: 320_000),
+            Account(id: "1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: true, openingBalance: 5_000_000, currentBalance: 5_430_000, creditLimit: nil, dueDate: nil),
+            Account(id: "2", name: "Mandiri", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: false, openingBalance: 3_000_000, currentBalance: 2_850_000, creditLimit: nil, dueDate: nil),
+            Account(id: "3", name: "GoPay", type: .ewallet, icon: "wallet.pass.fill", isArchived: false, isDefault: false, openingBalance: 500_000, currentBalance: 320_000, creditLimit: nil, dueDate: nil),
         ]
         v.totalBalance = 8_600_000
         return v

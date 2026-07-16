@@ -20,25 +20,28 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, isDefault: Bool = false) async throws -> Account {
-        try await client
+    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, isDefault: Bool = false, creditLimit: Double? = nil, dueDate: String? = nil) async throws -> Account {
+        var payload: [String: AnyJSON] = [
+            "user_id": AnyJSON.string(userId),
+            "name": AnyJSON.string(name),
+            "account_type": AnyJSON.string(type.rawValue),
+            "opening_balance": AnyJSON.double(openingBalance),
+            "current_balance": AnyJSON.double(openingBalance),
+            "is_default": AnyJSON.bool(isDefault),
+            "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
+        ]
+        if let creditLimit { payload["credit_limit"] = AnyJSON.double(creditLimit) }
+        if let dueDate { payload["due_date"] = AnyJSON.string(dueDate) }
+        return try await client
             .from("accounts")
-            .insert([
-                "user_id": AnyJSON.string(userId),
-                "name": AnyJSON.string(name),
-                "account_type": AnyJSON.string(type.rawValue),
-                "opening_balance": AnyJSON.double(openingBalance),
-                "current_balance": AnyJSON.double(openingBalance),
-                "is_default": AnyJSON.bool(isDefault),
-                "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
-            ] as [String: AnyJSON])
+            .insert(payload)
             .select()
             .single()
             .execute()
             .value
     }
 
-    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool, isDefault: Bool? = nil) async throws -> Account {
+    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool, isDefault: Bool? = nil, creditLimit: Double? = nil, dueDate: String? = nil) async throws -> Account {
         var payload: [String: AnyJSON] = [
             "name": AnyJSON.string(name),
             "account_type": AnyJSON.string(type.rawValue),
@@ -46,12 +49,10 @@ final class SupabaseRepository: @unchecked Sendable {
             "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
             "is_archived": AnyJSON.bool(isArchived),
         ]
-        if let currentBalance {
-            payload["current_balance"] = AnyJSON.double(currentBalance)
-        }
-        if let isDefault {
-            payload["is_default"] = AnyJSON.bool(isDefault)
-        }
+        if let currentBalance { payload["current_balance"] = AnyJSON.double(currentBalance) }
+        if let isDefault { payload["is_default"] = AnyJSON.bool(isDefault) }
+        if let creditLimit { payload["credit_limit"] = AnyJSON.double(creditLimit) }
+        if let dueDate { payload["due_date"] = AnyJSON.string(dueDate) }
         return try await client
             .from("accounts")
             .update(payload)
@@ -103,7 +104,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func createTransaction(accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date, userId: String) async throws -> Transaction {
+    func createTransaction(accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date, userId: String, isCreditAccount: Bool = false) async throws -> Transaction {
         let operationId = UUID().uuidString
 
         let rpcType: String
@@ -154,8 +155,8 @@ final class SupabaseRepository: @unchecked Sendable {
 
         let delta: Double
         switch type {
-        case .income: delta = amount
-        case .expense: delta = -amount
+        case .income: delta = isCreditAccount ? -amount : amount
+        case .expense: delta = isCreditAccount ? amount : -amount
         case .transfer: delta = 0
         case .adjustment: delta = 0
         }
@@ -215,6 +216,14 @@ final class SupabaseRepository: @unchecked Sendable {
     }
 
     func updateTransaction(id: String, accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date) async throws -> Transaction {
+        let old: Transaction = try await client
+            .from("transactions")
+            .select()
+            .eq("id", value: id)
+            .single()
+            .execute()
+            .value
+
         let values: [String: AnyJSON] = [
             "primary_account_id": AnyJSON.string(accountId),
             "category_id": categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
@@ -224,7 +233,7 @@ final class SupabaseRepository: @unchecked Sendable {
             "note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
             "occurred_at": AnyJSON.string(date.iso8601Formatted),
         ]
-        return try await client
+        let updated: Transaction = try await client
             .from("transactions")
             .update(values)
             .eq("id", value: id)
@@ -232,6 +241,38 @@ final class SupabaseRepository: @unchecked Sendable {
             .single()
             .execute()
             .value
+
+        let acc: Account = try await client
+            .from("accounts")
+            .select()
+            .eq("id", value: accountId)
+            .single()
+            .execute()
+            .value
+        let isCredit = acc.isCreditCard
+
+        func delta(t: Transaction.TransactionType, a: Double, credit: Bool) -> Double {
+            switch (t, credit) {
+            case (.income, false): return a
+            case (.income, true):  return -a
+            case (.expense, false): return -a
+            case (.expense, true):  return a
+            default: return 0
+            }
+        }
+
+        let oldDelta = delta(t: old.type, a: old.amount, credit: isCredit)
+        let newDelta = delta(t: type, a: amount, credit: isCredit)
+        let net = -oldDelta + newDelta
+
+        if abs(net) > 0.001 {
+            try await client.rpc("increment_account_balance", params: [
+                "p_account_id": AnyJSON.string(accountId),
+                "p_delta": AnyJSON.double(net),
+            ]).execute()
+        }
+
+        return updated
     }
 
     func softDeleteTransaction(id: String) async throws {
@@ -243,12 +284,24 @@ final class SupabaseRepository: @unchecked Sendable {
             .execute()
             .value
 
+        let account: Account = try await client
+            .from("accounts")
+            .select()
+            .eq("id", value: txn.accountId)
+            .single()
+            .execute()
+            .value
+
+        let isCredit = account.isCreditCard
+
         let delta: Double
-        switch txn.type {
-        case .income: delta = -txn.amount
-        case .expense: delta = txn.amount
-        case .adjustment: delta = -(txn.delta ?? txn.amount)
-        case .transfer: delta = txn.amount
+        switch (txn.type, isCredit) {
+        case (.income, false): delta = -txn.amount
+        case (.income, true):  delta = txn.amount
+        case (.expense, false): delta = txn.amount
+        case (.expense, true):  delta = -txn.amount
+        case (.adjustment, _):  delta = -(txn.delta ?? txn.amount)
+        case (.transfer, _):    delta = txn.amount
         }
 
         try await client.rpc("increment_account_balance", params: [

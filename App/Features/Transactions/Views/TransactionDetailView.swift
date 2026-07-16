@@ -235,18 +235,24 @@ struct TransactionDetailView: View {
     private var headerCard: some View {
         VStack(spacing: 0) {
             HStack(spacing: Spacing.md) {
-                Circle()
-                    .fill(typeColor.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                    .overlay {
-                        Image(systemName: isAdjustment ? typeIcon : (selectedCategory?.icon ?? typeIcon))
-                            .font(.jakarta(18))
-                            .foregroundColor(typeColor)
-                    }
-                    .overlay(
-                        Circle()
-                            .stroke(typeColor.opacity(0.3), lineWidth: 1.5)
-                    )
+                let account = accounts.first { $0.id == transaction.accountId }
+                let walletIcon = account.flatMap { WalletIcon.resolve($0.icon) }
+                if let walletIcon {
+                    WalletIconView(icon: walletIcon, size: 44)
+                } else {
+                    Circle()
+                        .fill(typeColor.opacity(0.15))
+                        .frame(width: 44, height: 44)
+                        .overlay {
+                            Image(systemName: isAdjustment ? typeIcon : (selectedCategory?.icon ?? typeIcon))
+                                .font(.jakarta(18))
+                                .foregroundColor(typeColor)
+                        }
+                        .overlay(
+                            Circle()
+                                .stroke(typeColor.opacity(0.3), lineWidth: 1.5)
+                        )
+                }
 
                 if isAdjustment {
                     Text("Penyesuaian saldo")

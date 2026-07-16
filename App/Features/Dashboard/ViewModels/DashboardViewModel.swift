@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class DashboardViewModel: ObservableObject {
     @Published var balance: Double = 0
+    @Published var creditDebt: Double = 0
     @Published var openingBalance: Double = 0
     @Published var totalIncome: Double = 0
     @Published var totalExpense: Double = 0
@@ -170,6 +171,7 @@ final class DashboardViewModel: ObservableObject {
         if !forceRefresh, let cached = AppDataCache.shared.dashboardState(for: userId) {
             errorMessage = nil
             balance = cached.balance
+            creditDebt = cached.creditDebt
             openingBalance = cached.openingBalance
             totalIncome = cached.totalIncome
             totalExpense = cached.totalExpense
@@ -213,7 +215,8 @@ final class DashboardViewModel: ObservableObject {
             accounts = fetchedAccounts
             categories = fetchedCategories
 
-            balance = accounts.reduce(0) { $0 + $1.balance }
+            balance = accounts.filter { !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
+            creditDebt = accounts.filter { $0.isCreditCard }.reduce(0) { $0 + $1.balance }
 
             let thisMonthTransactions = transactions.filter { isCurrentMonth($0.date) }
             currentMonthTransactionCount = thisMonthTransactions.count
@@ -257,6 +260,7 @@ final class DashboardViewModel: ObservableObject {
             computeHealthScore()
             AppDataCache.shared.setDashboardState(.init(
                 balance: balance,
+                creditDebt: creditDebt,
                 openingBalance: openingBalance,
                 totalIncome: totalIncome,
                 totalExpense: totalExpense,

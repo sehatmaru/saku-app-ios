@@ -9,14 +9,27 @@ struct Account: Identifiable, Codable, Hashable {
     let isDefault: Bool
     let openingBalance: Double
     var currentBalance: Double? = nil
+    let creditLimit: Double?
+    let dueDate: String?
 
     var isActive: Bool { !isArchived }
+    var isCreditCard: Bool { type == .credit }
     var balance: Double { currentBalance ?? openingBalance }
+    var dueDay: Int? { dueDate.flatMap { Int($0) } }
+
+    var availableCredit: Double? {
+        isCreditCard ? creditLimit.map { $0 - (currentBalance ?? 0) } : nil
+    }
+
+    var creditUtilization: Double? {
+        isCreditCard ? creditLimit.map { $0 > 0 ? (currentBalance ?? 0) / $0 : 0 } : nil
+    }
 
     enum AccountType: String, Codable, CaseIterable {
         case cash = "Cash"
         case bank = "Bank"
         case ewallet = "E-Wallet"
+        case credit = "Credit Card"
     }
 
     enum CodingKeys: String, CodingKey {
@@ -28,5 +41,7 @@ struct Account: Identifiable, Codable, Hashable {
         case isDefault = "is_default"
         case openingBalance = "opening_balance"
         case currentBalance = "current_balance"
+        case creditLimit = "credit_limit"
+        case dueDate = "due_date"
     }
 }

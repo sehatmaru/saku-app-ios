@@ -606,7 +606,7 @@ struct TransactionListPreview: View {
             Category(id: "2", name: "Transport", icon: "car.fill", color: "#4ECDC4", type: .expense, systemKey: nil),
         ]
         v.accounts = [
-            Account(id: "a1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: false, openingBalance: 5_000_000, currentBalance: 5_430_000),
+            Account(id: "a1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: false, openingBalance: 5_000_000, currentBalance: 5_430_000, creditLimit: nil, dueDate: nil),
         ]
         v.thisMonthIncome = 3_200_000
         v.thisMonthExpense = 2_750_000

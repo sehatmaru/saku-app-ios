@@ -4,6 +4,7 @@ import Foundation
 final class AccountListViewModel: ObservableObject {
     @Published var accounts: [Account] = []
     @Published var totalBalance: Double = 0
+    @Published var totalCreditDebt: Double = 0
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var hasLoadedOnce = false
@@ -51,10 +52,14 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String) async -> Bool {
+    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, creditLimit: Double? = nil, dueDate: String? = nil) async -> Bool {
+        if accounts.contains(where: { $0.name == name && $0.type == type && $0.isActive }) {
+            print("⚠️ Nama '\(name)' sudah digunakan untuk kategori \(type.rawValue)")
+            return false
+        }
         do {
             let isDefault = accounts.isEmpty
-            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault)
+            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault, creditLimit: creditLimit, dueDate: dueDate)
             accounts.append(account)
             recalculateBalance()
             AppDataCache.shared.setAccounts(accounts, for: userId)
@@ -64,12 +69,16 @@ final class AccountListViewModel: ObservableObject {
         } catch is CancellationError {
             return false
         } catch {
-            print("❌ addAccount failed: \(error)")
+            if "\(error)".contains("23505") {
+                print("⚠️ Nama akun sudah digunakan")
+            } else {
+                print("❌ addAccount failed: \(error)")
+            }
             return false
         }
     }
 
-    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String) async -> Bool {
+    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil) async -> Bool {
         do {
             if abs(newBalance - oldBalance) > 0.001 {
                 let delta = newBalance - oldBalance
@@ -84,7 +93,7 @@ final class AccountListViewModel: ObservableObject {
                 }
             }
 
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil)
+            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
                 var updatedAccount = updated
                 if abs(newBalance - oldBalance) > 0.001 {
@@ -108,10 +117,10 @@ final class AccountListViewModel: ObservableObject {
 
     func setDefaultAccount(id: String, userId: String) async {
         for account in accounts where account.isDefault {
-            _ = try? await SupabaseRepository.shared.updateAccount(id: account.id, name: account.name, type: account.type, openingBalance: account.openingBalance, currentBalance: account.currentBalance, icon: account.icon, isArchived: account.isArchived, isDefault: false)
+            _ = try? await SupabaseRepository.shared.updateAccount(id: account.id, name: account.name, type: account.type, openingBalance: account.openingBalance, currentBalance: account.currentBalance, icon: account.icon, isArchived: account.isArchived, isDefault: false, creditLimit: account.creditLimit, dueDate: account.dueDate)
         }
         if let account = accounts.first(where: { $0.id == id }) {
-            _ = try? await SupabaseRepository.shared.updateAccount(id: id, name: account.name, type: account.type, openingBalance: account.openingBalance, currentBalance: account.currentBalance, icon: account.icon, isArchived: account.isArchived, isDefault: true)
+            _ = try? await SupabaseRepository.shared.updateAccount(id: id, name: account.name, type: account.type, openingBalance: account.openingBalance, currentBalance: account.currentBalance, icon: account.icon, isArchived: account.isArchived, isDefault: true, creditLimit: account.creditLimit, dueDate: account.dueDate)
         }
         if let loadedUserId {
             await loadAccounts(userId: loadedUserId, forceRefresh: true)
@@ -149,7 +158,9 @@ final class AccountListViewModel: ObservableObject {
                     isArchived: !account.isArchived,
                     isDefault: account.isDefault,
                     openingBalance: account.openingBalance,
-                    currentBalance: account.currentBalance
+                    currentBalance: account.currentBalance,
+                    creditLimit: account.creditLimit,
+                    dueDate: account.dueDate
                 )
                 accounts[index] = updated
             }
@@ -168,7 +179,8 @@ final class AccountListViewModel: ObservableObject {
     }
 
     private func recalculateBalance() {
-        totalBalance = BalanceCalculator.totalBalance(for: accounts)
+        totalBalance = accounts.filter { $0.isActive && !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
+        totalCreditDebt = accounts.filter { $0.isActive && $0.isCreditCard }.reduce(0) { $0 + $1.balance }
     }
 
     private func groupTransactionsByAccount(_ transactions: [Transaction]) -> [String: [Transaction]] {

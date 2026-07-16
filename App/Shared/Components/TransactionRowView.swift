@@ -139,16 +139,8 @@ struct TransactionRowView: View {
     }
 
     private func walletBadge(wi: WalletIcon) -> some View {
-        ZStack {
-            Circle()
-                .fill(wi.color)
-                .frame(width: 18, height: 18)
-            Text(wi.shortName)
-                .font(.jakarta(6, weight: .bold))
-                .foregroundColor(.white)
-                .minimumScaleFactor(0.5)
-        }
-        .offset(x: 4, y: 4)
+        WalletIconView(icon: wi, size: 18)
+            .offset(x: 4, y: 4)
     }
 
     private func formattedDate(_ date: Date) -> String {

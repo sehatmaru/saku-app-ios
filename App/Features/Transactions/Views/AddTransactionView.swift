@@ -26,10 +26,14 @@ struct AddTransactionView: View {
     @State private var showToast = false
     @State private var noteText = ""
     @State private var toastMessage = ""
+    @State private var expandedWallets = false
+    @State private var expandedCredits = false
 
     private var activeAccounts: [Account] {
         accounts.filter { $0.isActive }.sorted { $0.isDefault && !$1.isDefault }
     }
+    private var walletAccounts: [Account] { activeAccounts.filter { !$0.isCreditCard } }
+    private var creditAccounts: [Account] { activeAccounts.filter { $0.isCreditCard } }
     private var filteredCategories: [Category] {
         categories.filter { $0.type == (selectedType == .income ? .income : .expense) }
     }
@@ -98,10 +102,22 @@ struct AddTransactionView: View {
             }
             .sheet(isPresented: $showCategoryPicker) { categoryPickerContent }
             .sheet(isPresented: $showWalletPicker) {
-                walletPickerContent(title: "Pilih Dompet", list: activeAccounts.filter { $0.id != selectedTargetAccount?.id }, selectedId: selectedAccount?.id, onSelect: { selectedAccount = $0; showWalletPicker = false })
+                accountPickerContent(
+                    title: "Pilih Akun",
+                    wallets: walletAccounts,
+                    credits: creditAccounts,
+                    selectedId: selectedAccount?.id,
+                    onSelect: { selectedAccount = $0; showWalletPicker = false }
+                )
             }
             .sheet(isPresented: $showTargetWalletPicker) {
-                walletPickerContent(title: "Pilih Dompet Tujuan", list: activeAccounts.filter { $0.id != selectedAccount?.id }, selectedId: selectedTargetAccount?.id, onSelect: { selectedTargetAccount = $0; showTargetWalletPicker = false })
+                accountPickerContent(
+                    title: "Pilih Dompet Tujuan",
+                    wallets: walletAccounts,
+                    credits: [],
+                    selectedId: selectedTargetAccount?.id,
+                    onSelect: { selectedTargetAccount = $0; showTargetWalletPicker = false }
+                )
             }
             .sheet(isPresented: $showDatePicker) { datePickerContent }
         }
@@ -124,6 +140,7 @@ struct AddTransactionView: View {
         case .bank: return "building.columns.fill"
         case .ewallet: return "wallet.pass.fill"
         case .cash: return "banknote.fill"
+        case .credit: return "creditcard.fill"
         }
     }
     private func accountColor(_ acc: Account?) -> Color {
@@ -220,7 +237,7 @@ struct AddTransactionView: View {
                 rowDivider
             }
 
-            tappableWalletRow(icon: isTransfer ? selectedTargetAccount : selectedAccount, label: isTransfer ? "Ke Dompet" : "Dompet", value: (isTransfer ? selectedTargetAccount?.name : selectedAccount?.name) ?? "Pilih", isSelected: (isTransfer ? selectedTargetAccount : selectedAccount) != nil)
+            tappableWalletRow(icon: isTransfer ? selectedTargetAccount : selectedAccount, label: isTransfer ? "Ke Dompet" : "Akun", value: (isTransfer ? selectedTargetAccount?.name : selectedAccount?.name) ?? "Pilih", isSelected: (isTransfer ? selectedTargetAccount : selectedAccount) != nil)
                 .onTapGesture { if isTransfer { showTargetWalletPicker = true } else { showWalletPicker = true } }
 
             rowDivider
@@ -281,10 +298,7 @@ struct AddTransactionView: View {
         let wi = account.flatMap { WalletIcon.resolve($0.icon) }
         return HStack(spacing: Spacing.md) {
             if let wi {
-                ZStack {
-                    Circle().fill(wi.color).frame(width: 34, height: 34)
-                    Text(wi.shortName).font(.jakarta(8, weight: .bold)).foregroundColor(.white).minimumScaleFactor(0.7)
-                }
+                WalletIconView(icon: wi, size: 34)
             } else {
                 iconCircle("wallet.pass.fill", isSelected ? .appPrimary : .appTextSecondary)
             }
@@ -364,34 +378,26 @@ struct AddTransactionView: View {
 
     // MARK: Wallet Picker
 
-    private func walletPickerContent(title: String, list: [Account], selectedId: String?, onSelect: @escaping (Account) -> Void) -> some View {
+    private func accountPickerContent(title: String, wallets: [Account], credits: [Account], selectedId: String?, onSelect: @escaping (Account) -> Void) -> some View {
         NavigationStack {
             ScrollView {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: Spacing.sm), GridItem(.flexible(), spacing: Spacing.sm)], spacing: Spacing.sm) {
-                    ForEach(list) { acc in
-                        let wi = WalletIcon.resolve(acc.icon)
-                        Button { onSelect(acc) } label: {
-                            HStack(spacing: Spacing.sm) {
-                                ZStack {
-                                    Circle().fill(wi?.color ?? .appPrimary).frame(width: 32, height: 32)
-                                    Text(wi?.shortName ?? "").font(.jakarta(8, weight: .bold)).foregroundColor(.white).minimumScaleFactor(0.7)
-                                }
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(acc.name).font(.jakarta(14)).fontWeight(selectedId == acc.id ? .semibold : .regular)
-                                        .foregroundColor(selectedId == acc.id ? .appPrimary : .appText).lineLimit(1)
-                                    Text(acc.balance.formattedAsCurrency()).font(.jakarta(10)).foregroundColor(.appTextSecondary).lineLimit(1).minimumScaleFactor(0.8)
-                                }
-                                Spacer(minLength: 0)
-                                if selectedId == acc.id { Image(systemName: "checkmark").font(.jakarta(11, weight: .bold)).foregroundColor(.appPrimary) }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, Spacing.md)
-                            .padding(.vertical, 12)
-                            .background(selectedId == acc.id ? Color.appPrimary.opacity(0.1) : Color.appCardBackground)
-                            .foregroundColor(selectedId == acc.id ? .appPrimary : .appText)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                VStack(spacing: 0) {
+                    if !wallets.isEmpty {
+                        sectionHeader("Dompet", count: wallets.count)
+                        let displayWallets = expandedWallets ? wallets : Array(wallets.prefix(2))
+                        ForEach(displayWallets) { acc in accountRow(acc, selectedId: selectedId, onSelect: onSelect) }
+                        if wallets.count > 2 {
+                            expandToggle($expandedWallets, count: wallets.count)
                         }
-                        .buttonStyle(.plain)
+                    }
+
+                    if !credits.isEmpty {
+                        sectionHeader("Kartu Kredit", count: credits.count)
+                        let displayCredits = expandedCredits ? credits : Array(credits.prefix(2))
+                        ForEach(displayCredits) { acc in accountRow(acc, selectedId: selectedId, onSelect: onSelect) }
+                        if credits.count > 2 {
+                            expandToggle($expandedCredits, count: credits.count)
+                        }
                     }
                 }
                 .padding(Spacing.lg)
@@ -401,11 +407,66 @@ struct AddTransactionView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Tutup") { if title.contains("Tujuan") { showTargetWalletPicker = false } else { showWalletPicker = false } }
+                    Button("Tutup") { showWalletPicker = false; showTargetWalletPicker = false }
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
+    }
+
+    private func sectionHeader(_ name: String, count: Int) -> some View {
+        HStack {
+            Text(name)
+                .font(.jakarta(13, weight: .semibold))
+                .foregroundColor(.appText)
+            Spacer()
+            Text("\(count)")
+                .font(.jakarta(11))
+                .foregroundColor(.appTextSecondary)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
+    }
+
+    private func expandToggle(_ expanded: Binding<Bool>, count: Int) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { expanded.wrappedValue.toggle() }
+        } label: {
+            HStack(spacing: Spacing.xs) {
+                Image(systemName: expanded.wrappedValue ? "chevron.up" : "chevron.down")
+                    .font(.jakarta(10))
+                Text(expanded.wrappedValue ? "Sembunyikan" : "Lihat Semua (\(count))")
+                    .font(.jakarta(12, weight: .medium))
+            }
+            .foregroundColor(.appPrimary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func accountRow(_ acc: Account, selectedId: String?, onSelect: @escaping (Account) -> Void) -> some View {
+        let wi = WalletIcon.resolve(acc.icon)
+        return Button { onSelect(acc) } label: {
+            HStack(spacing: Spacing.sm) {
+                WalletIconView(icon: wi, size: 36)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(acc.name).font(.jakarta(14, weight: selectedId == acc.id ? .semibold : .regular))
+                        .foregroundColor(selectedId == acc.id ? .appPrimary : .appText).lineLimit(1)
+                    Text(acc.isCreditCard ? "Sisa Limit \(acc.availableCredit?.formattedAsCurrency() ?? "-")" : acc.balance.formattedAsCurrency())
+                        .font(.jakarta(10)).foregroundColor(.appTextSecondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                if selectedId == acc.id { Image(systemName: "checkmark").font(.jakarta(11, weight: .bold)).foregroundColor(.appPrimary) }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 12)
+            .background(selectedId == acc.id ? Color.appPrimary.opacity(0.1) : Color.clear)
+            .foregroundColor(selectedId == acc.id ? .appPrimary : .appText)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Date Picker
@@ -460,7 +521,7 @@ struct AddTransactionView: View {
                     _ = try await SupabaseRepository.shared.createTransaction(
                         accountId: selectedAccount?.id ?? "", categoryId: selectedCategory?.id,
                         amount: amount, type: selectedType, description: note, note: title,
-                        date: selectedDate, userId: userId
+                        date: selectedDate, userId: userId, isCreditAccount: selectedAccount?.isCreditCard ?? false
                     )
                 }
                 isSaving = false
