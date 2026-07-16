@@ -587,34 +587,3 @@ struct RowPressStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
     }
 }
-
-#Preview {
-    TransactionListPreview()
-}
-
-struct TransactionListPreview: View {
-    @StateObject private var vm: TransactionListViewModel = {
-        let v = TransactionListViewModel()
-        v.hasLoadedOnce = true
-        v.allTransactions = [
-            Transaction(id: "1", accountId: "a1", counterpartyAccountId: nil, categoryId: "1", amount: 50_000, type: .expense, description: nil, note: "Nasi Goreng", date: Date(), delta: nil),
-            Transaction(id: "2", accountId: "a1", counterpartyAccountId: nil, categoryId: "2", amount: 20_000, type: .expense, description: nil, note: "Bensin", date: Date(), delta: nil),
-            Transaction(id: "3", accountId: "a1", counterpartyAccountId: nil, categoryId: nil, amount: 500_000, type: .income, description: nil, note: "Gaji", date: Date(), delta: nil),
-        ]
-        v.categories = [
-            Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF6B6B", type: .expense, systemKey: nil),
-            Category(id: "2", name: "Transport", icon: "car.fill", color: "#4ECDC4", type: .expense, systemKey: nil),
-        ]
-        v.accounts = [
-            Account(id: "a1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: false, openingBalance: 5_000_000, currentBalance: 5_430_000, creditLimit: nil, dueDate: nil),
-        ]
-        v.thisMonthIncome = 3_200_000
-        v.thisMonthExpense = 2_750_000
-        return v
-    }()
-
-    var body: some View {
-        TransactionListView(viewModel: vm)
-            .environmentObject(AuthViewModel())
-    }
-}

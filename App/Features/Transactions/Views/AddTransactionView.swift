@@ -559,7 +559,3 @@ struct EmptyWalletView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
-
-#Preview {
-    AddTransactionView(categories: [], accounts: [], userId: "", onSave: {})
-}

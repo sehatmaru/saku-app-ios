@@ -118,9 +118,3 @@ struct CustomIconSheet: View {
         .presentationDetents([.medium])
     }
 }
-
-#Preview {
-    CustomIconSheet { text, colorName in
-        print("Custom icon: \(text) / \(colorName)")
-    }
-}

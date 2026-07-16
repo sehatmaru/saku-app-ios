@@ -192,8 +192,3 @@ struct SignInView: View {
         .disabled(isLoading)
     }
 }
-
-#Preview {
-    SignInView()
-        .environmentObject(AuthViewModel())
-}

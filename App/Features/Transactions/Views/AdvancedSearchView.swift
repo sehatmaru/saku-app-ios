@@ -422,10 +422,3 @@ struct AdvancedSearchView: View {
         .background(Color.appCardBackground)
     }
 }
-
-#Preview {
-    AdvancedSearchView(
-        filter: .constant(TransactionFilter()),
-        categories: []
-    )
-}

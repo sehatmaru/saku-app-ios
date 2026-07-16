@@ -151,31 +151,6 @@ struct KeyboardBtnStyle: ButtonStyle {
     }
 }
 
-#Preview {
-    AmountKeyboardPreview()
-}
-
-private struct AmountKeyboardPreview: View {
-    @State private var digits = "150000"
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Rp \(digits.formattedWithThousandSeparator)")
-                    .font(.jakarta(24, weight: .bold))
-                    .foregroundColor(.appText)
-                Spacer()
-            }
-            .padding()
-
-            Divider()
-
-            AmountKeyboard(amountDigits: $digits) {
-                print("Done: \(digits)")
-            }
-        }
-    }
-}
 import SwiftUI
 
 struct WalletIconView: View {

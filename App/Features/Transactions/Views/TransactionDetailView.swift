@@ -725,23 +725,3 @@ struct TransactionDetailView: View {
         .presentationDetents([.medium])
     }
 }
-
-#Preview {
-    TransactionDetailView(
-        transaction: Transaction(
-            id: UUID().uuidString,
-            accountId: "",
-            counterpartyAccountId: nil,
-            categoryId: nil,
-            amount: 50000,
-            type: .expense,
-            description: "Preview",
-            note: nil,
-            date: Date(),
-            delta: nil
-        ),
-        categories: [],
-        accounts: [],
-        onUpdate: nil
-    )
-}

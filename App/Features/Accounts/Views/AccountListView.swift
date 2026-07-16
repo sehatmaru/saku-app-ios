@@ -455,25 +455,3 @@ struct AccountCard: View {
     }
 }
 
-#Preview {
-    AccountListPreview()
-}
-
-struct AccountListPreview: View {
-    @StateObject private var vm: AccountListViewModel = {
-        let v = AccountListViewModel()
-        v.hasLoadedOnce = true
-        v.accounts = [
-            Account(id: "1", name: "BCA", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: true, openingBalance: 5_000_000, currentBalance: 5_430_000, creditLimit: nil, dueDate: nil),
-            Account(id: "2", name: "Mandiri", type: .bank, icon: "building.columns.fill", isArchived: false, isDefault: false, openingBalance: 3_000_000, currentBalance: 2_850_000, creditLimit: nil, dueDate: nil),
-            Account(id: "3", name: "GoPay", type: .ewallet, icon: "wallet.pass.fill", isArchived: false, isDefault: false, openingBalance: 500_000, currentBalance: 320_000, creditLimit: nil, dueDate: nil),
-        ]
-        v.totalBalance = 8_600_000
-        return v
-    }()
-
-    var body: some View {
-        AccountListView(viewModel: vm)
-            .environmentObject(AuthViewModel())
-    }
-}

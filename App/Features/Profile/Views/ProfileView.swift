@@ -535,27 +535,3 @@ struct NotificationView: View {
         .padding(.vertical, 2)
     }
 }
-
-#Preview {
-    ProfilePreview()
-}
-
-private struct ProfilePreview: View {
-    @StateObject private var vm: ProfileViewModel = {
-        let v = ProfileViewModel()
-        v.displayName = "Budi Santoso"
-        return v
-    }()
-
-    @StateObject private var authVM: AuthViewModel = {
-        let a = AuthViewModel()
-        a.currentUser = User(id: "u1", authUserId: "auth1", email: "user@email.com", displayName: "Budi Santoso", defaultCurrencyCode: "IDR")
-        a.isAuthenticated = true
-        return a
-    }()
-
-    var body: some View {
-        ProfileView(viewModel: vm)
-            .environmentObject(authVM)
-    }
-}

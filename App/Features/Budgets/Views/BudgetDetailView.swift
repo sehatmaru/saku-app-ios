@@ -883,14 +883,3 @@ fileprivate struct BudgetMonthDetailView: View {
         TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showWalletBadge: true)
     }
 }
-
-#Preview {
-    BudgetDetailView(
-        budget: Budget(id: "1", categoryId: "1", name: "Makanan", amount: 500000, periodUnit: "month", periodInterval: 1, startDate: "2026-06-01", endDate: nil, isActive: true),
-        category: Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF0000", type: .expense, systemKey: nil),
-        allTransactions: [],
-        accounts: [],
-        onAdjustBudget: nil,
-        onUnsetBudget: nil
-    )
-}

@@ -956,31 +956,3 @@ struct OverallMonthDetailView: View {
         }
     }
 }
-
-#Preview {
-    BudgetListPreview()
-}
-
-struct BudgetListPreview: View {
-    @StateObject private var vm: BudgetListViewModel = {
-        let v = BudgetListViewModel()
-        v.hasLoadedOnce = true
-        v.totalBudget = 2_000_000
-        v.totalSpent = 1_200_000
-        v.categories = [
-            Category(id: "1", name: "Makanan", icon: "fork.knife", color: "#FF6B6B", type: .expense, systemKey: nil),
-            Category(id: "2", name: "Transport", icon: "car.fill", color: "#4ECDC4", type: .expense, systemKey: nil),
-            Category(id: "3", name: "Belanja", icon: "bag.fill", color: "#45B7D1", type: .expense, systemKey: nil),
-        ]
-        v.budgets = [
-            Budget(id: "b1", categoryId: "1", name: "Makanan", amount: 800_000, periodUnit: "month", periodInterval: 1, startDate: "2026-07-01", endDate: nil, isActive: true, spent: 550_000),
-            Budget(id: "b2", categoryId: "2", name: "Transport", amount: 500_000, periodUnit: "month", periodInterval: 1, startDate: "2026-07-01", endDate: nil, isActive: true, spent: 420_000),
-        ]
-        return v
-    }()
-
-    var body: some View {
-        BudgetListView(viewModel: vm)
-            .environmentObject(AuthViewModel())
-    }
-}

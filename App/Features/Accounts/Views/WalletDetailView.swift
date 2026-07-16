@@ -743,13 +743,3 @@ struct WalletDetailView: View {
         )
     }
 }
-
-#Preview {
-    WalletDetailView(
-        account: Account(id: "1", name: "BCA", type: .bank, icon: "bca", isArchived: false, isDefault: false, openingBalance: 1000000, creditLimit: nil, dueDate: nil),
-        transactions: [],
-        onSave: nil,
-        onDelete: nil,
-        onToggleArchive: nil
-    )
-}
