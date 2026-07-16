@@ -11,10 +11,7 @@ struct AccountListView: View {
     @State private var isBalanceVisible = true
     @State private var showAddWallet = false
     @State private var showArchived = false
-    @State private var expandedCash = false
-    @State private var expandedBank = false
-    @State private var expandedEwallet = false
-    @State private var expandedCredit = false
+    @State private var expandedSections: Set<String> = ["cash", "bank", "ewallet", "credit"]
     @State private var accountTransactions: [String: [Transaction]] = [:]
     @State private var categories: [Category] = []
     @State private var cachedUserId: String?
@@ -52,11 +49,13 @@ struct AccountListView: View {
                             }
                             totalBalanceCard
 
-                            accountSection(title: "Cash", icon: "banknote.fill", color: .appIncome, accounts: cashAccounts, expanded: $expandedCash)
-                            accountSection(title: "Bank", icon: "building.columns.fill", color: .appPrimary, accounts: bankAccounts, expanded: $expandedBank)
-                            accountSection(title: "E-Wallet", icon: "wallet.pass.fill", color: .appWarning, accounts: ewalletAccounts, expanded: $expandedEwallet)
-                            if !creditAccounts.isEmpty {
-                                accountSection(title: "Kartu Kredit", icon: "creditcard.fill", color: .appExpense, accounts: creditAccounts, expanded: $expandedCredit)
+                            LazyVStack(spacing: Spacing.lg) {
+                                accountSection(id: "cash", title: "Cash", icon: "banknote.fill", color: .appIncome, accounts: cashAccounts)
+                                accountSection(id: "bank", title: "Bank", icon: "building.columns.fill", color: .appPrimary, accounts: bankAccounts)
+                                accountSection(id: "ewallet", title: "E-Wallet", icon: "wallet.pass.fill", color: .appWarning, accounts: ewalletAccounts)
+                                if !creditAccounts.isEmpty {
+                                    accountSection(id: "credit", title: "Kartu Kredit", icon: "creditcard.fill", color: .appExpense, accounts: creditAccounts)
+                                }
                             }
 
                             if !archivedAccounts.isEmpty {
@@ -180,91 +179,79 @@ struct AccountListView: View {
         return grouped
     }
 
-    private func accountSection(title: String, icon: String, color: Color, accounts: [Account], expanded: Binding<Bool>) -> some View {
-        VStack(spacing: Spacing.sm) {
-            sectionHeader(title: title, icon: icon, color: color, count: accounts.count, expanded: expanded)
-
-            if !accounts.isEmpty {
-                ForEach(expanded.wrappedValue ? accounts : Array(accounts.prefix(3))) { account in
-                NavigationLink(destination: WalletDetailView(
-                    account: account,
-                    transactions: accountTransactions[account.id] ?? [],
-                    categories: categories,
-                    onSave: { id, name, type, icon, isArchived, newBalance, oldBalance, creditLimit, dueDate in
-                        return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "", creditLimit: creditLimit, dueDate: dueDate)
-                    },
-                    onDelete: { id in return await viewModel.removeAccount(id: id) },
-                    onToggleArchive: { id, archived in return await viewModel.toggleAccountArchive(id: id) },
-                    onSetDefault: { id in await viewModel.setDefaultAccount(id: id, userId: authViewModel.currentUser?.id ?? "") }
-                )) {
-                    AccountCard(account: account)
+    private func accountSection(id: String, title: String, icon: String, color: Color, accounts: [Account]) -> some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation {
+                    if expandedSections.contains(id) {
+                        expandedSections.remove(id)
+                    } else {
+                        expandedSections.insert(id)
+                    }
                 }
-                .buttonStyle(RowPressStyle())
-                }
+            } label: {
+                sectionHeader(title: title, icon: icon, color: color, count: accounts.count, sectionId: id)
             }
+            .buttonStyle(.plain)
 
-            if accounts.count > 3 {
-                expandToggle(expanded: expanded, count: accounts.count)
-                    .padding(.vertical, 6)
+            if expandedSections.contains(id) {
+                VStack(spacing: 0) {
+                    ForEach(accounts) { account in
+                        NavigationLink(destination: WalletDetailView(
+                            account: account,
+                            transactions: accountTransactions[account.id] ?? [],
+                            categories: categories,
+                            onSave: { id, name, type, icon, isArchived, newBalance, oldBalance, creditLimit, dueDate in
+                                return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "", creditLimit: creditLimit, dueDate: dueDate)
+                            },
+                            onDelete: { id in return await viewModel.removeAccount(id: id) },
+                            onToggleArchive: { id, archived in return await viewModel.toggleAccountArchive(id: id) },
+                            onSetDefault: { id in await viewModel.setDefaultAccount(id: id, userId: authViewModel.currentUser?.id ?? "") }
+                        )) {
+                            AccountCard(account: account)
+                        }
+                        .buttonStyle(RowPressStyle())
+                        if account.id != accounts.last?.id {
+                            Divider()
+                        }
+                    }
+                }
+                .padding(.vertical, Spacing.sm)
             }
         }
-        .clipped()
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, Spacing.sm)
         .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    private func sectionHeader(title: String, icon: String, color: Color, count: Int, expanded: Binding<Bool>) -> some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) { expanded.wrappedValue.toggle() }
-        } label: {
-            HStack(spacing: Spacing.sm) {
-                Circle()
-                    .fill(color.opacity(0.12))
-                    .frame(width: 28, height: 28)
-                    .overlay {
-                        Image(systemName: icon)
-                            .font(.jakarta(11))
-                            .foregroundColor(color)
-                    }
-                Text(title)
-                    .font(.jakarta(14, weight: .semibold))
-                    .foregroundColor(.appText)
-                Spacer()
-                HStack(spacing: 4) {
-                    Text("\(count)")
-                        .font(.jakarta(12, weight: .medium))
-                        .foregroundColor(.appTextSecondary)
-                    Image(systemName: "chevron.down")
-                        .font(.jakarta(10, weight: .medium))
-                        .foregroundColor(.appTextSecondary)
-                        .rotationEffect(.degrees(expanded.wrappedValue ? 180 : 0))
-                        .animation(.easeInOut(duration: 0.2), value: expanded.wrappedValue)
-                }
-                .padding(.leading, 4)
-            }
-            .contentShape(Rectangle())
-            .padding(.horizontal, Spacing.sm)
-        }
-        .buttonStyle(.plain)
-    }
+    private func sectionHeader(title: String, icon: String, color: Color, count: Int, sectionId: String) -> some View {
+        HStack(spacing: 0) {
+            Rectangle()
+                .fill(color)
+                .frame(width: 4)
+                .clipShape(Capsule())
 
-    private func expandToggle(expanded: Binding<Bool>, count: Int) -> some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) { expanded.wrappedValue.toggle() }
-        } label: {
-            HStack(spacing: Spacing.xs) {
-                Image(systemName: expanded.wrappedValue ? "chevron.up" : "chevron.down")
-                    .font(.jakarta(10))
-                Text(expanded.wrappedValue ? "Sembunyikan" : "Lihat Semua (\(count))")
-                    .font(.jakarta(12, weight: .medium))
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(.jakarta(15, weight: .semibold))
+                    .foregroundColor(.appText)
+
+                Spacer()
+
+                Text("\(count)")
+                    .font(.jakarta(13, weight: .semibold))
+                    .foregroundColor(.appTextSecondary)
+
+                Image(systemName: "chevron.down")
+                    .font(.jakarta(9))
+                    .foregroundColor(.appTextSecondary)
+                    .rotationEffect(.degrees(expandedSections.contains(sectionId) ? 0 : -90))
+                    .padding(.leading, 4)
             }
-            .foregroundColor(.appPrimary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+            .padding(.horizontal, Spacing.lg)
+            .padding(.vertical, 12)
         }
-        .buttonStyle(.plain)
     }
 
     private var archiveSection: some View {
@@ -438,13 +425,9 @@ struct AccountCard: View {
 
     var body: some View {
         HStack(spacing: Spacing.md) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(accentColor)
-                .frame(width: 4)
-
             WalletIconView(icon: walletIcon, size: 40)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(account.name)
                         .font(.jakarta(16, weight: .semibold))
@@ -479,8 +462,8 @@ struct AccountCard: View {
                     .foregroundColor(.appText)
             }
         }
+        .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 12)
-        .padding(.leading, 4)
     }
 
     private var accountTypeIcon: String {
