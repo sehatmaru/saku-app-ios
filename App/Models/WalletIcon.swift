@@ -78,10 +78,9 @@ struct WalletIcon: Identifiable, Equatable {
         WalletIcon(id: "bri", name: "BRI", shortName: "BRI", color: Color(red: 0/255, green: 75/255, blue: 147/255), category: .bank),
         WalletIcon(id: "jago", name: "Jago", shortName: "JAGO", color: Color(red: 0/255, green: 168/255, blue: 107/255), category: .bank),
         WalletIcon(id: "cimb", name: "CIMB Niaga", shortName: "CIMB", color: Color(red: 126/255, green: 45/255, blue: 142/255), category: .bank),
-        WalletIcon(id: "permata", name: "Permata", shortName: "PRM", color: Color(red: 0/255, green: 61/255, blue: 121/255), category: .bank),
+        WalletIcon(id: "btn", name: "BTN", shortName: "BTN", color: Color(red: 0/255, green: 94/255, blue: 162/255), category: .bank),
+        WalletIcon(id: "bnc", name: "BNC", shortName: "BNC", color: Color(red: 0/255, green: 60/255, blue: 100/255), category: .bank),
         WalletIcon(id: "danamon", name: "Danamon", shortName: "DNM", color: Color(red: 0/255, green: 122/255, blue: 61/255), category: .bank),
-        WalletIcon(id: "maybank", name: "Maybank", shortName: "MYK", color: Color(red: 253/255, green: 184/255, blue: 19/255), category: .bank),
-        WalletIcon(id: "bsi", name: "BSI", shortName: "BSI", color: Color(red: 106/255, green: 27/255, blue: 154/255), category: .bank),
 
         WalletIcon(id: "gopay", name: "GoPay", shortName: "GOPAY", color: Color(red: 0/255, green: 170/255, blue: 68/255), category: .ewallet),
         WalletIcon(id: "ovo", name: "OVO", shortName: "OVO", color: Color(red: 71/255, green: 43/255, blue: 145/255), category: .ewallet),

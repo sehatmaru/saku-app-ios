@@ -159,12 +159,12 @@ struct WalletIconView: View {
 
     private var imageName: String? {
         guard let icon else { return nil }
-        // Map WalletIcon id to asset name
         let map: [String: String] = [
-            "mastercard": "mastercard",
-            "jcb": "jcb",
-            "amex": "amex",
-            "visa": "visa",
+            "mastercard": "mastercard", "jcb": "jcb", "amex": "amex", "visa": "visa",
+            "bca": "bca", "bni": "bni", "mandiri": "mandiri", "bri": "bri",
+            "jago": "jago", "cimb": "cimb", "btn": "btn", "bnc": "bnc",
+            "danamon": "danamon",
+            "gopay": "gopay", "ovo": "ovo", "dana": "dana", "shopeepay": "shopeepay", "linkaja": "linkaja",
         ]
         return map[icon.id]
     }

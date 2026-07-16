@@ -86,8 +86,6 @@ struct AddWalletView: View {
                 if newValue == .cash {
                     selectedIcon = WalletIcon.icons(for: .cash).first
                     name = selectedIcon?.name ?? "Cash"
-                } else if newValue == .credit {
-                    selectedIcon = WalletIcon.icons(for: .credit).first
                 } else {
                     selectedIcon = nil
                     if name == "Cash" { name = "" }
@@ -95,7 +93,7 @@ struct AddWalletView: View {
             }
             .onChange(of: selectedIcon) { _, newValue in
                 guard let icon = newValue else { return }
-                if !icon.id.hasPrefix(WalletIcon.customPrefix), category != .credit {
+                if !icon.id.hasPrefix(WalletIcon.customPrefix), category == .cash {
                     name = icon.name
                 }
             }
@@ -135,11 +133,11 @@ struct AddWalletView: View {
                         ForEach(WalletIcon.icons(for: category)) { icon in
                             walletIconButton(icon)
                         }
-                        if category != .credit { customIconButton }
+                        if category == .cash { customIconButton }
                     }
                     .padding(.vertical, 8)
                 } header: {
-                    Text(category == .credit ? "Pilih Kartu" : "Pilih Icon")
+                    Text(category == .credit ? "Pilih Kartu" : category == .bank ? "Pilih Bank" : category == .ewallet ? "Pilih E-Wallet" : "Pilih Icon")
                 }
             }
         }
