@@ -12,6 +12,10 @@ final class AccountListViewModel: ObservableObject {
     private var loadedUserId: String?
 
     func loadAccounts(userId: String, forceRefresh: Bool = false) async {
+        if forceRefresh {
+            isRefreshing = false
+            isLoading = false
+        }
         guard !isLoading, !isRefreshing else { return }
 
         if !forceRefresh, let cached = AppDataCache.shared.accounts(for: userId) {
