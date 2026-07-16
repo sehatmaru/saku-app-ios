@@ -8,7 +8,6 @@ struct AddWalletView: View {
     @State private var amountDigits = ""
     @State private var showKeyboard = false
     @State private var selectedIcon: WalletIcon?
-    @State private var showCustomSheet = false
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
     @State private var isSaving = false
@@ -17,6 +16,7 @@ struct AddWalletView: View {
     @State private var creditLimitDigits = ""
     @State private var showCreditKeyboard = false
     @State private var selectedDueDay = 1
+    @State private var expandedIcons = false
 
     let onSave: (String, Account.AccountType, Double, String?, Double?, String?) async -> Bool
 
@@ -25,42 +25,47 @@ struct AddWalletView: View {
         self.onSave = onSave
     }
 
+    private var typeColor: Color {
+        switch category {
+        case .cash: .appIncome
+        case .bank: .appPrimary
+        case .ewallet: .appWarning
+        case .credit: .appExpense
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                accountTypeSection
-                iconSelectionSection
-                nameSection
-                if category == .credit {
-                    creditLimitSection
-                    dueDateSection
-                } else {
-                    balanceSection
-                }
-            }
-            .overlay(alignment: .bottom) {
-                if showKeyboard {
-                    AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
-                        showKeyboard = false
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: Spacing.lg) {
+                        iconSelectionSection
+                        accountTypeSection
+                        nameSection
+                        if category == .credit {
+                            creditLimitSection
+                            dueDateSection
+                        } else {
+                            balanceSection
+                        }
                     }
-                    .padding(.top, 8)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .padding(Spacing.lg)
                 }
-                if showCreditKeyboard {
-                    AmountKeyboard(amountDigits: $creditLimitDigits, maxDigits: 12) {
+                .scrollDismissesKeyboard(.interactively)
+
+                if showKeyboard || showCreditKeyboard {
+                    AmountKeyboard(amountDigits: showCreditKeyboard ? $creditLimitDigits : $amountDigits, maxDigits: 12) {
+                        showKeyboard = false
                         showCreditKeyboard = false
                     }
                     .padding(.top, 8)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .onTapGesture {
-                showKeyboard = false
-                showCreditKeyboard = false
-            }
             .animation(.easeInOut(duration: 0.25), value: showKeyboard)
             .animation(.easeInOut(duration: 0.25), value: showCreditKeyboard)
-            .navigationTitle(category == .credit ? "Tambah Kartu Kredit" : "Tambah Dompet")
+            .background(Color.appGroupedBackground)
+            .navigationTitle(category == .credit ? "Tambah Kartu Kredit" : "Tambah Akun")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -68,8 +73,7 @@ struct AddWalletView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSaving {
-                        ProgressView()
-                            .tint(.appPrimary)
+                        ProgressView().tint(.appPrimary)
                     } else {
                         Button("Simpan") { save() }
                             .font(.jakarta(15, weight: .semibold))
@@ -83,6 +87,7 @@ struct AddWalletView: View {
                 Text(validationMessage)
             }
             .onChange(of: category) { _, newValue in
+                expandedIcons = false
                 if newValue == .cash {
                     selectedIcon = WalletIcon.icons(for: .cash).first
                     name = selectedIcon?.name ?? "Cash"
@@ -91,82 +96,38 @@ struct AddWalletView: View {
                     if name == "Cash" { name = "" }
                 }
             }
-            .onChange(of: selectedIcon) { _, newValue in
-                guard let icon = newValue else { return }
-                if !icon.id.hasPrefix(WalletIcon.customPrefix), category == .cash {
-                    name = icon.name
-                }
-            }
-            .sheet(isPresented: $showCustomSheet) {
-                CustomIconSheet { text, colorName in
-                    let iconId = WalletIcon.customIconId(text: text, colorName: colorName)
-                    let resolved = WalletIcon.resolve(iconId)!
-                    selectedIcon = resolved
-                    name = text
-                }
-            }
         }
     }
 
-    // MARK: - Account Type
-
-    private var accountTypeSection: some View {
-        Section {
-            Picker("Kategori", selection: $category) {
-                ForEach(Account.AccountType.allCases, id: \.self) { type in
-                    Text(type.rawValue).tag(type)
-                }
-            }
-            .pickerStyle(.segmented)
-        }
-    }
-
-    // MARK: - Icon Selection
+    // MARK: - Icon Grid
 
     private var iconSelectionSection: some View {
-        Group {
-            if category == .cash {
-                EmptyView()
-            } else {
-                Section {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
-                        ForEach(WalletIcon.icons(for: category)) { icon in
-                            walletIconButton(icon)
-                        }
-                        if category == .cash { customIconButton }
+        VStack(spacing: Spacing.xs) {
+            if category != .cash {
+                let icons = WalletIcon.icons(for: category)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
+                    ForEach(expandedIcons ? icons : Array(icons.prefix(4))) { icon in
+                        walletIconButton(icon)
                     }
-                    .padding(.vertical, 8)
-                } header: {
-                    Text(category == .credit ? "Pilih Kartu" : category == .bank ? "Pilih Bank" : category == .ewallet ? "Pilih E-Wallet" : "Pilih Icon")
                 }
-            }
-        }
-    }
 
-    private var customIconButton: some View {
-        Button {
-            showCustomSheet = true
-        } label: {
-            VStack(spacing: 4) {
-                if let icon = selectedIcon, icon.id.hasPrefix(WalletIcon.customPrefix) {
-                    WalletIconView(icon: icon, size: 52)
-                } else {
-                    ZStack {
-                        Circle()
-                            .fill(Color.appPrimary.opacity(0.2))
-                            .frame(width: 52, height: 52)
-                        Image(systemName: "plus")
-                            .font(.jakarta(14, weight: .bold))
-                            .foregroundColor(.appPrimary)
+                if icons.count > 4 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { expandedIcons.toggle() }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: expandedIcons ? "chevron.up" : "chevron.down")
+                                .font(.jakarta(10))
+                            Text(expandedIcons ? "Sembunyikan" : "Lihat Semua (\(icons.count))")
+                                .font(.jakarta(12, weight: .medium))
+                        }
+                        .foregroundColor(.appPrimary)
+                        .padding(.vertical, 4)
                     }
+                    .buttonStyle(.plain)
                 }
-                Text("Custom")
-                    .font(.jakarta(9))
-                    .foregroundColor(.appTextSecondary)
-                    .lineLimit(1)
             }
         }
-        .buttonStyle(.plain)
     }
 
     private func walletIconButton(_ icon: WalletIcon) -> some View {
@@ -174,38 +135,62 @@ struct AddWalletView: View {
         return Button {
             withAnimation(.easeInOut(duration: 0.2)) { selectedIcon = icon }
         } label: {
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
-                    WalletIconView(icon: icon, size: 48)
-                        .padding(12)
-                        .frame(maxWidth: .infinity, minHeight: 72)
+                    WalletIconView(icon: icon, size: 40)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, minHeight: 56)
                         .background(
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(isSelected ? Color.appPrimary.opacity(0.08) : Color(.systemGray6))
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(isSelected ? typeColor.opacity(0.08) : Color(.systemGray5))
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(isSelected ? Color.appPrimary : Color.clear, lineWidth: 2)
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isSelected ? typeColor : Color.clear, lineWidth: 2)
                         )
-                        .shadow(color: isSelected ? Color.appPrimary.opacity(0.15) : .clear, radius: 4, y: 2)
 
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.jakarta(14))
-                            .foregroundColor(.appPrimary)
-                            .background(Circle().fill(.white).frame(width: 16, height: 16))
-                            .offset(x: -4, y: 4)
+                            .font(.jakarta(12))
+                            .foregroundColor(typeColor)
+                            .background(Circle().fill(.white).frame(width: 14, height: 14))
+                            .offset(x: -3, y: 3)
                             .transition(.scale.combined(with: .opacity))
                     }
                 }
-
-                if category != .credit {
-                    Text(icon.name)
-                        .font(.jakarta(9))
-                        .foregroundColor(.appTextSecondary)
-                        .lineLimit(1)
-                }
             }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Account Type
+
+    private var accountTypeSection: some View {
+        HStack(spacing: 4) {
+            typeBtn(title: "Cash", icon: "banknote.fill", type: .cash)
+            typeBtn(title: "Bank", icon: "building.columns.fill", type: .bank)
+            typeBtn(title: "E-Wallet", icon: "wallet.pass.fill", type: .ewallet)
+            typeBtn(title: "Kartu Kredit", icon: "creditcard.fill", type: .credit)
+        }
+        .padding(4)
+        .background(Color.appCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func typeBtn(title: String, icon: String, type: Account.AccountType) -> some View {
+        let isActive = category == type
+        return Button {
+            withAnimation(.interactiveSpring(response: 0.25)) { category = type }
+        } label: {
+            VStack(spacing: Spacing.xs) {
+                Image(systemName: icon).font(.jakarta(16, weight: .semibold))
+                Text(title).font(.jakarta(10, weight: .medium))
+            }
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .foregroundColor(isActive ? .white : .appTextSecondary)
+            .background(isActive ? typeColor : .clear)
+            .clipShape(RoundedRectangle(cornerRadius: 11))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -213,16 +198,20 @@ struct AddWalletView: View {
     // MARK: - Name
 
     private var nameSection: some View {
-        Section {
-            TextField(category == .credit ? "Nama Kartu" : "Nama Dompet", text: $name)
+        HStack {
+            TextField(category == .credit ? "Nama Kartu" : "Nama Akun", text: $name)
+                .font(.jakarta(16))
+                .padding(Spacing.md)
         }
+        .background(Color.appCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     // MARK: - Balance
 
     private var balanceSection: some View {
-        Section {
-            HStack(spacing: 6) {
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
                 Text("Rp")
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
@@ -230,17 +219,37 @@ struct AddWalletView: View {
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
                 Spacer()
+                if !amountDigits.isEmpty {
+                    Button { amountDigits = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.jakarta(20))
+                            .foregroundColor(.appTextSecondary.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture { showKeyboard = true }
-        } header: {
-            Text("Saldo Awal")
+
+            HStack {
+                Text("Saldo Awal")
+                    .font(.jakarta(11))
+                    .foregroundColor(.appTextSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.sm)
         }
+        .background(Color.appCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     private var creditLimitSection: some View {
-        Section {
-            HStack(spacing: 6) {
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
                 Text("Rp")
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
@@ -248,30 +257,65 @@ struct AddWalletView: View {
                     .font(.jakarta(34, weight: .bold))
                     .foregroundColor(.appText)
                 Spacer()
+                if !creditLimitDigits.isEmpty {
+                    Button { creditLimitDigits = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.jakarta(20))
+                            .foregroundColor(.appTextSecondary.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture { showCreditKeyboard = true }
-        } header: {
-            Text("Limit Kartu Kredit")
+
+            HStack {
+                Text("Limit Kartu Kredit")
+                    .font(.jakarta(11))
+                    .foregroundColor(.appTextSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.sm)
         }
+        .background(Color.appCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     private var dueDateSection: some View {
-        Section {
+        VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "calendar")
+                    .font(.jakarta(14))
+                    .foregroundColor(.appPrimary)
+                Text("Jatuh Tempo")
+                    .font(.jakarta(11))
+                    .foregroundColor(.appTextSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.top, Spacing.sm)
+
             Picker("Tanggal", selection: $selectedDueDay) {
                 ForEach(1...31, id: \.self) { day in
                     Text("\(day)").tag(day)
                 }
             }
             .pickerStyle(.wheel)
-        } header: {
-            Text("Tanggal Jatuh Tempo (setiap bulan)")
+            .frame(height: 120)
         }
+        .background(Color.appCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
+
+    // MARK: - Save
 
     private func save() {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
-            validationMessage = category == .credit ? "Nama kartu wajib diisi." : "Nama dompet wajib diisi."
+            validationMessage = "Nama wajib diisi."
             showValidationAlert = true
             return
         }
@@ -305,11 +349,11 @@ struct AddWalletView: View {
             )
             isSaving = false
             if success {
-                toastMessage = category == .credit ? "Kartu kredit berhasil ditambahkan" : "Dompet berhasil ditambahkan"
+                toastMessage = "Berhasil ditambahkan"
                 withAnimation { showToast = true }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { dismiss() }
             } else {
-                toastMessage = category == .credit ? "Gagal menambahkan kartu kredit" : "Gagal menambahkan dompet"
+                toastMessage = "Gagal menambahkan"
                 withAnimation { showToast = true }
             }
         }

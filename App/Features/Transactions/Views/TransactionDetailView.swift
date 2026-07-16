@@ -307,7 +307,7 @@ struct TransactionDetailView: View {
 
                     HStack(spacing: 0) {
                         VStack(spacing: 4) {
-                            Text("Saldo Awal")
+                            Text("Sebelum")
                                 .font(.jakarta(11))
                                 .foregroundColor(.appTextSecondary)
                             Text(oldBalance.formattedAsCurrency())
@@ -319,7 +319,7 @@ struct TransactionDetailView: View {
                         Divider().frame(height: 28)
 
                         VStack(spacing: 4) {
-                            Text("Saldo Akhir")
+                            Text("Sesudah")
                                 .font(.jakarta(11))
                                 .foregroundColor(.appTextSecondary)
                             Text(newBalance.formattedAsCurrency())
