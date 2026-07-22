@@ -113,6 +113,7 @@ struct AccountListView: View {
                         }
                         return success
                     }
+                    .presentationDetents([.medium, .large])
                 }
             }
         }

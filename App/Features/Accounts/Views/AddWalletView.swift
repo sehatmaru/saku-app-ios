@@ -3,8 +3,10 @@ import SwiftUI
 struct AddWalletView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @State private var name = ""
+    @State private var step = 1
+    @State private var currentDetent: PresentationDetent = .medium
     @State private var category: Account.AccountType
+    @State private var name = ""
     @State private var amountDigits = ""
     @State private var showKeyboard = false
     @State private var selectedIcon: WalletIcon?
@@ -16,13 +18,21 @@ struct AddWalletView: View {
     @State private var creditLimitDigits = ""
     @State private var showCreditKeyboard = false
     @State private var selectedDueDay = 1
-    @State private var expandedIcons = false
+    @FocusState private var nameFieldFocused: Bool
 
     let onSave: (String, Account.AccountType, Double, String?, Double?, String?) async -> Bool
 
     init(initialType: Account.AccountType = .bank, onSave: @escaping (String, Account.AccountType, Double, String?, Double?, String?) async -> Bool) {
         _category = State(initialValue: initialType)
         self.onSave = onSave
+    }
+
+    private var totalSteps: Int {
+        switch category {
+        case .cash: 3
+        case .credit: 5
+        default: 4
+        }
     }
 
     private var typeColor: Color {
@@ -34,281 +44,425 @@ struct AddWalletView: View {
         }
     }
 
+    private var canProceed: Bool {
+        switch step {
+        case 1: true
+        case 2: category == .cash ? !name.trimmingCharacters(in: .whitespaces).isEmpty : selectedIcon != nil
+        case 3: category == .cash ? true : !name.trimmingCharacters(in: .whitespaces).isEmpty
+        case 4, 5: true
+        default: false
+        }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Progress bar
+                HStack(spacing: 4) {
+                    ForEach(1...totalSteps, id: \.self) { i in
+                        Capsule()
+                            .fill(i <= step ? Color.appPrimary : Color(.systemGray5))
+                            .frame(height: i < step ? 10 : 3)
+                            .overlay(
+                                i < step
+                                    ? Color.clear.contentShape(Rectangle()).onTapGesture { jumpToStep(i) }
+                                    : nil
+                            )
+                    }
+                }
+                .padding()
+
+                // Step content
                 ScrollView {
                     VStack(spacing: Spacing.lg) {
-                        iconSelectionSection
-                        accountTypeSection
-                        nameSection
-                        if category == .credit {
-                            creditLimitSection
-                            dueDateSection
-                        } else {
-                            balanceSection
+                        switch step {
+                        case 1: typeStep
+                        case 2: Group { if category == .cash { nameStep } else { iconStep } }
+                        case 3: Group { if category == .cash { amountStep } else { nameStep } }
+                        case 4: amountStep
+                        case 5: creditStep
+                        default: EmptyView()
                         }
                     }
                     .padding(Spacing.lg)
                 }
-                .scrollDismissesKeyboard(.interactively)
 
-                if showKeyboard || showCreditKeyboard {
-                    AmountKeyboard(amountDigits: showCreditKeyboard ? $creditLimitDigits : $amountDigits, maxDigits: 12) {
-                        showKeyboard = false
-                        showCreditKeyboard = false
+                Spacer()
+
+                // Navigation buttons
+                HStack(spacing: Spacing.md) {
+                    if step > 1 {
+                        Button {
+                            withAnimation {
+                                if step == 2 { selectedIcon = nil }
+                                else if step == 3 { name = "" }
+                                else if step == 4 { amountDigits = ""; creditLimitDigits = "" }
+                                else if step == 5 { selectedDueDay = 1 }
+                                step -= 1
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                    .font(.jakarta(12, weight: .semibold))
+                                Text("Kembali")
+                                    .font(.jakarta(15, weight: .semibold))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color(.systemGray6))
+                            .foregroundColor(.appText)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
                     }
+
+                    Button {
+                        if step == totalSteps {
+                            save()
+                        } else {
+                            withAnimation { step += 1 }
+                        }
+                    } label: {
+                        Text(step == totalSteps ? "Simpan" : "Lanjut")
+                            .font(.jakarta(15, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(canProceed ? Color.appPrimary : Color.appPrimary.opacity(0.4))
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .disabled(!canProceed)
+                }
+                .padding(Spacing.lg)
+            }
+            .background(Color.appGroupedBackground)
+            .navigationTitle("Tambah Akun")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Batal") { dismiss() }
+                }
+            }
+            .toast(isPresented: $showToast, message: toastMessage)
+            .alert("Perhatian", isPresented: $showValidationAlert) {
+                Button("OK", role: .cancel) {}
+            } message: { Text(validationMessage) }
+            .onChange(of: step) { _, newValue in
+                let nameStep = category == .cash ? 2 : 3
+                let amountStep = category == .cash ? 3 : 4
+                if newValue == nameStep {
+                    nameFieldFocused = true
+                } else if newValue == amountStep {
+                    showKeyboard = true; currentDetent = .large
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if showKeyboard || showCreditKeyboard {
+                    AmountKeyboard(
+                        amountDigits: showCreditKeyboard ? $creditLimitDigits : $amountDigits,
+                        maxDigits: 12,
+                        onDone: {
+                            showKeyboard = false
+                            showCreditKeyboard = false
+                            currentDetent = .medium
+                        }
+                    )
                     .padding(.top, 8)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: showKeyboard)
             .animation(.easeInOut(duration: 0.25), value: showCreditKeyboard)
-            .background(Color.appGroupedBackground)
-            .navigationTitle(category == .credit ? "Tambah Kartu Kredit" : "Tambah Akun")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { dismiss() }
+            .presentationDetents([.medium, .large], selection: $currentDetent)
+        }
+    }
+
+    // MARK: - Step 1: Type
+
+    private var typeStep: some View {
+        VStack(spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Pilih Jenis Akun")
+                    .font(.jakarta(22, weight: .bold))
+                    .foregroundColor(.appText)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            typeRow(icon: "creditcard.fill", title: "Kartu Kredit", desc: "VISA, MasterCard, JBC", type: .credit)
+            typeRow(icon: "building.columns.fill", title: "Bank", desc: "Rekening bank", type: .bank)
+            typeRow(icon: "wallet.pass.fill", title: "E-Wallet", desc: "Dompet digital", type: .ewallet)
+            typeRow(icon: "banknote.fill", title: "Cash", desc: "Tunai fisik", type: .cash)
+        }
+    }
+
+    private func typeRow(icon: String, title: String, desc: String, type: Account.AccountType) -> some View {
+        let isActive = category == type
+        var cardColor: Color {
+            switch type {
+            case .cash: .appIncome
+            case .bank: .appPrimary
+            case .ewallet: .appWarning
+            case .credit: .appExpense
+            }
+        }
+        return Button {
+            withAnimation(.interactiveSpring(response: 0.25)) {
+                category = type
+                selectedIcon = nil
+            }
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isActive ? cardColor : Color(.systemGray6))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: icon)
+                        .font(.jakarta(18, weight: .semibold))
+                        .foregroundColor(isActive ? .white : cardColor)
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    if isSaving {
-                        ProgressView().tint(.appPrimary)
-                    } else {
-                        Button("Simpan") { save() }
-                            .font(.jakarta(15, weight: .semibold))
-                    }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.jakarta(15, weight: .semibold))
+                        .foregroundColor(.appText)
+                    Text(desc)
+                        .font(.jakarta(12))
+                        .foregroundColor(.appTextSecondary)
+                }
+
+                Spacer()
+
+                if isActive {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.jakarta(20))
+                        .foregroundColor(cardColor)
+                        .transition(.scale.combined(with: .opacity))
                 }
             }
-            .toast(isPresented: $showToast, message: toastMessage)
-            .alert("Perhatian", isPresented: $showValidationAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(validationMessage)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.appCardBackground)
+                    .shadow(color: .black.opacity(0.04), radius: 4, y: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isActive ? cardColor.opacity(0.3) : Color.clear, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Step 2: Icon
+
+    private var iconStep: some View {
+        VStack(spacing: Spacing.xl) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Pilih \(category == .credit ? "Kartu" : category == .bank ? "Bank" : "E-Wallet")")
+                    .font(.jakarta(22, weight: .bold))
+                    .foregroundColor(.appText)
             }
-            .onChange(of: category) { _, newValue in
-                expandedIcons = false
-                if newValue == .cash {
-                    selectedIcon = WalletIcon.icons(for: .cash).first
-                    name = selectedIcon?.name ?? "Cash"
-                } else {
-                    selectedIcon = nil
-                    if name == "Cash" { name = "" }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            let icons = WalletIcon.icons(for: category)
+            LazyVStack(spacing: 10) {
+                ForEach(icons) { icon in
+                    walletIconRow(icon)
                 }
             }
         }
     }
 
-    // MARK: - Icon Grid
-
-    private var iconSelectionSection: some View {
-        VStack(spacing: Spacing.xs) {
-            if category != .cash {
-                let icons = WalletIcon.icons(for: category)
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
-                    ForEach(expandedIcons ? icons : Array(icons.prefix(4))) { icon in
-                        walletIconButton(icon)
-                    }
-                }
-
-                if icons.count > 4 {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) { expandedIcons.toggle() }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: expandedIcons ? "chevron.up" : "chevron.down")
-                                .font(.jakarta(10))
-                            Text(expandedIcons ? "Sembunyikan" : "Lihat Semua (\(icons.count))")
-                                .font(.jakarta(12, weight: .medium))
-                        }
-                        .foregroundColor(.appPrimary)
-                        .padding(.vertical, 4)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    private func walletIconButton(_ icon: WalletIcon) -> some View {
+    private func walletIconRow(_ icon: WalletIcon) -> some View {
         let isSelected = selectedIcon?.id == icon.id
         return Button {
             withAnimation(.easeInOut(duration: 0.2)) { selectedIcon = icon }
         } label: {
-            VStack(spacing: 4) {
-                ZStack(alignment: .topTrailing) {
-                    WalletIconView(icon: icon, size: 40)
-                        .padding(8)
-                        .frame(maxWidth: .infinity, minHeight: 56)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(isSelected ? typeColor.opacity(0.08) : Color(.systemGray5))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(isSelected ? typeColor : Color.clear, lineWidth: 2)
-                        )
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white)
+                        .frame(width: 44, height: 44)
+                    WalletIconView(icon: icon, size: 24)
+                }
 
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.jakarta(12))
-                            .foregroundColor(typeColor)
-                            .background(Circle().fill(.white).frame(width: 14, height: 14))
-                            .offset(x: -3, y: 3)
-                            .transition(.scale.combined(with: .opacity))
-                    }
+                Text(icon.name)
+                    .font(.jakarta(15, weight: .medium))
+                    .foregroundColor(.appText)
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.jakarta(20))
+                        .foregroundColor(typeColor)
+                        .transition(.scale.combined(with: .opacity))
                 }
             }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.appCardBackground)
+                    .shadow(color: .black.opacity(0.04), radius: 4, y: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? typeColor.opacity(0.3) : Color.clear, lineWidth: 1.5)
+            )
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: - Account Type
+    // MARK: - Step 3: Name
 
-    private var accountTypeSection: some View {
-        HStack(spacing: 4) {
-            typeBtn(title: "Cash", icon: "banknote.fill", type: .cash)
-            typeBtn(title: "Bank", icon: "building.columns.fill", type: .bank)
-            typeBtn(title: "E-Wallet", icon: "wallet.pass.fill", type: .ewallet)
-            typeBtn(title: "Kartu Kredit", icon: "creditcard.fill", type: .credit)
-        }
-        .padding(4)
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-
-    private func typeBtn(title: String, icon: String, type: Account.AccountType) -> some View {
-        let isActive = category == type
-        return Button {
-            withAnimation(.interactiveSpring(response: 0.25)) { category = type }
-        } label: {
-            VStack(spacing: Spacing.xs) {
-                Image(systemName: icon).font(.jakarta(16, weight: .semibold))
-                Text(title).font(.jakarta(10, weight: .medium))
+    private var nameStep: some View {
+        VStack(spacing: Spacing.xl) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Nama \(category == .credit ? "Kartu" : "Akun")")
+                    .font(.jakarta(22, weight: .bold))
+                    .foregroundColor(.appText)
+                Text("Beri nama yang mudah dikenali")
+                    .font(.jakarta(13))
+                    .foregroundColor(.appTextSecondary)
             }
-            .frame(maxWidth: .infinity, minHeight: 48)
-            .foregroundColor(isActive ? .white : .appTextSecondary)
-            .background(isActive ? typeColor : .clear)
-            .clipShape(RoundedRectangle(cornerRadius: 11))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-    // MARK: - Name
-
-    private var nameSection: some View {
-        HStack {
-            TextField(category == .credit ? "Nama Kartu" : "Nama Akun", text: $name)
+            TextField(category == .credit ? "cth: BCA Visa Platinum" : "cth: BCA Payroll", text: $name)
                 .font(.jakarta(16))
                 .padding(Spacing.md)
+                .background(Color.appCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .focused($nameFieldFocused)
         }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    // MARK: - Balance
+    // MARK: - Step 4: Amount
 
-    private var balanceSection: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                Text("Rp")
-                    .font(.jakarta(34, weight: .bold))
+    private var amountStep: some View {
+        VStack(spacing: Spacing.xl) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(category == .credit ? "Limit Kartu Kredit" : "Saldo Awal")
+                    .font(.jakarta(22, weight: .bold))
                     .foregroundColor(.appText)
-                Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
-                    .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(.appText)
-                Spacer()
-                if !amountDigits.isEmpty {
-                    Button { amountDigits = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.jakarta(20))
-                            .foregroundColor(.appTextSecondary.opacity(0.4))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture { showKeyboard = true }
-
-            HStack {
-                Text("Saldo Awal")
-                    .font(.jakarta(11))
+                Text(category == .credit ? "Masukkan limit kartu kredit" : "Masukkan saldo saat ini")
+                    .font(.jakarta(13))
                     .foregroundColor(.appTextSecondary)
-                Spacer()
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.bottom, Spacing.sm)
-        }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-
-    private var creditLimitSection: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                Text("Rp")
-                    .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(.appText)
-                Text(creditLimitDigits.isEmpty ? "0" : creditLimitDigits.formattedWithThousandSeparator)
-                    .font(.jakarta(34, weight: .bold))
-                    .foregroundColor(.appText)
-                Spacer()
-                if !creditLimitDigits.isEmpty {
-                    Button { creditLimitDigits = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.jakarta(20))
-                            .foregroundColor(.appTextSecondary.opacity(0.4))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture { showCreditKeyboard = true }
 
-            HStack {
-                Text("Limit Kartu Kredit")
-                    .font(.jakarta(11))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
+            VStack(spacing: 4) {
+                HStack(spacing: 4) {
+                    Text("Rp")
+                        .font(.jakarta(34, weight: .bold))
+                        .foregroundColor(.appText)
+                    Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
+                        .font(.jakarta(34, weight: .bold))
+                        .foregroundColor(.appText)
+                    Spacer()
+                    if !amountDigits.isEmpty {
+                        Button { amountDigits = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.jakarta(20))
+                                .foregroundColor(.appTextSecondary.opacity(0.4))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { showKeyboard = true }
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.bottom, Spacing.sm)
+            .background(Color.appCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    private var dueDateSection: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "calendar")
-                    .font(.jakarta(14))
-                    .foregroundColor(.appPrimary)
+    // MARK: - Step 5: Credit only (Due Date)
+
+    private var creditStep: some View {
+        VStack(spacing: Spacing.xl) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Jatuh Tempo")
-                    .font(.jakarta(11))
+                    .font(.jakarta(22, weight: .bold))
+                    .foregroundColor(.appText)
+                Text("Tagihan akan jatuh tempo setiap tanggal")
+                    .font(.jakarta(13))
                     .foregroundColor(.appTextSecondary)
-                Spacer()
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.top, Spacing.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Picker("Tanggal", selection: $selectedDueDay) {
-                ForEach(1...31, id: \.self) { day in
-                    Text("\(day)").tag(day)
+            VStack(spacing: 0) {
+                HStack {
+                    Image(systemName: "calendar")
+                        .font(.jakarta(14))
+                        .foregroundColor(.appPrimary)
+                    Text("Tanggal Tagihan")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                    Spacer()
+                    Text("\(selectedDueDay)")
+                        .font(.jakarta(20, weight: .bold))
+                        .foregroundColor(.appPrimary)
                 }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.sm)
+
+                let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+                LazyVGrid(columns: columns, spacing: 4) {
+                    let today = Date()
+                    let firstOfMonth = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: today)) ?? today
+                    let offsetDays = Calendar.current.component(.weekday, from: firstOfMonth) - 1
+                    let daysInMonth = Calendar.current.range(of: .day, in: .month, for: today)?.count ?? 31
+                    ForEach(0..<offsetDays, id: \.self) { _ in
+                        Color.clear
+                            .padding(.vertical, 8)
+                    }
+                    ForEach(1...daysInMonth, id: \.self) { day in
+                        let isSelected = day == selectedDueDay
+                        Button {
+                            withAnimation(.spring(response: 0.3)) { selectedDueDay = day }
+                        } label: {
+                            Text("\(day)")
+                                .font(.jakarta(14, weight: isSelected ? .bold : .medium))
+                                .foregroundColor(isSelected ? .white : .appText)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(isSelected ? Color.appPrimary : Color(.systemGray6))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.bottom, Spacing.md)
             }
-            .pickerStyle(.wheel)
-            .frame(height: 120)
+            .background(Color.appCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Navigation
+
+    private func jumpToStep(_ target: Int) {
+        let amountStep = category == .cash ? 3 : 4
+        withAnimation {
+            if target < 2 { selectedIcon = nil }
+            if target < 3 { name = "" }
+            if target < 4 { amountDigits = ""; creditLimitDigits = "" }
+            if target < 5 { selectedDueDay = 1 }
+            step = target
+            if step < amountStep {
+                showKeyboard = false
+                showCreditKeyboard = false
+                currentDetent = .medium
+            }
+        }
     }
 
     // MARK: - Save
@@ -316,37 +470,17 @@ struct AddWalletView: View {
     private func save() {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
             validationMessage = "Nama wajib diisi."
-            showValidationAlert = true
-            return
-        }
-        if category != .cash, category != .credit {
-            guard selectedIcon != nil else {
-                validationMessage = "Pilih bank, e-wallet, atau custom terlebih dahulu."
-                showValidationAlert = true
-                return
-            }
+            showValidationAlert = true; return
         }
         let balance = Double(amountDigits) ?? 0
         let creditLimit = category == .credit ? (Double(creditLimitDigits) ?? 0) : nil
         let dueDate = category == .credit ? String(selectedDueDay) : nil
-
         let iconId: String?
-        if category == .cash {
-            iconId = "cash"
-        } else {
-            iconId = selectedIcon?.id
-        }
+        if category == .cash { iconId = "cash" } else { iconId = selectedIcon?.id }
 
         isSaving = true
         Task {
-            let success = await onSave(
-                name.trimmingCharacters(in: .whitespaces),
-                category,
-                balance,
-                iconId,
-                creditLimit,
-                dueDate
-            )
+            let success = await onSave(name.trimmingCharacters(in: .whitespaces), category, balance, iconId, creditLimit, dueDate)
             isSaving = false
             if success {
                 toastMessage = "Berhasil ditambahkan"
