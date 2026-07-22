@@ -85,7 +85,6 @@ struct WalletIcon: Identifiable, Equatable {
         WalletIcon(id: "gopay", name: "GoPay", shortName: "GOPAY", color: Color(red: 0/255, green: 170/255, blue: 68/255), category: .ewallet),
         WalletIcon(id: "ovo", name: "OVO", shortName: "OVO", color: Color(red: 71/255, green: 43/255, blue: 145/255), category: .ewallet),
         WalletIcon(id: "dana", name: "DANA", shortName: "DANA", color: Color(red: 0/255, green: 99/255, blue: 173/255), category: .ewallet),
-        WalletIcon(id: "shopeepay", name: "ShopeePay", shortName: "SHP", color: Color(red: 238/255, green: 77/255, blue: 45/255), category: .ewallet),
         WalletIcon(id: "linkaja", name: "LinkAja", shortName: "LINK", color: Color(red: 212/255, green: 32/255, blue: 39/255), category: .ewallet),
 
         WalletIcon(id: "visa", name: "Visa", shortName: "V", color: Color(red: 26/255, green: 31/255, blue: 113/255), category: .credit),

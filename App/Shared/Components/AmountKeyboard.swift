@@ -164,17 +164,22 @@ struct WalletIconView: View {
             "bca": "bca", "bni": "bni", "mandiri": "mandiri", "bri": "bri",
             "jago": "jago", "cimb": "cimb", "btn": "btn", "bnc": "bnc",
             "danamon": "danamon",
-            "gopay": "gopay", "ovo": "ovo", "dana": "dana", "shopeepay": "shopeepay", "linkaja": "linkaja",
+            "gopay": "gopay", "ovo": "ovo", "dana": "dana", "linkaja": "linkaja",
         ]
         return map[icon.id]
     }
 
     var body: some View {
         if let imageName, UIImage(named: imageName) != nil {
-            Image(imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(width: size, height: size)
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: size, height: size)
+                Image(imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: size, height: size)
+            }
         } else if let icon {
             ZStack {
                 Circle()

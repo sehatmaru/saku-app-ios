@@ -19,10 +19,15 @@ struct WalletIconView: View {
 
     var body: some View {
         if let imageName, UIImage(named: imageName) != nil {
-            Image(imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(width: size, height: size)
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: size, height: size)
+                Image(imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: size, height: size)
+            }
         } else if let icon {
             ZStack {
                 Circle()
