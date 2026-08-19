@@ -3,7 +3,12 @@ import Foundation
 enum CategoryType: String, Codable {
     case income
     case expense
-    case adjustment
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = CategoryType(rawValue: rawValue) ?? .expense
+    }
 }
 
 struct Category: Identifiable, Codable, Hashable {

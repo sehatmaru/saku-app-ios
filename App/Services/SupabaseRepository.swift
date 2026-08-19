@@ -323,6 +323,63 @@ final class SupabaseRepository: @unchecked Sendable {
             .execute()
     }
 
+    // MARK: - Card Subscriptions
+
+    func fetchSubscriptions(accountIds: [String]) async throws -> [CardSubscription] {
+        try await client
+            .from("card_subscriptions")
+            .select()
+            .in("account_id", values: accountIds)
+            .order("created_at", ascending: true)
+            .execute()
+            .value
+    }
+
+    func createSubscription(accountId: String, name: String, amount: Double, frequency: CardSubscription.Frequency, nextBillingDate: String?, categoryId: String?, note: String?) async throws -> CardSubscription {
+        try await client
+            .from("card_subscriptions")
+            .insert([
+                "account_id": AnyJSON.string(accountId),
+                "name": AnyJSON.string(name),
+                "amount": AnyJSON.double(amount),
+                "frequency": AnyJSON.string(frequency.rawValue),
+                "next_billing_date": nextBillingDate.map { AnyJSON.string($0) } ?? AnyJSON.null,
+                "category_id": categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
+                "note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            ] as [String: AnyJSON])
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    func updateSubscription(id: String, name: String, amount: Double, frequency: CardSubscription.Frequency, nextBillingDate: String?, isActive: Bool, categoryId: String?, note: String?) async throws -> CardSubscription {
+        try await client
+            .from("card_subscriptions")
+            .update([
+                "name": AnyJSON.string(name),
+                "amount": AnyJSON.double(amount),
+                "frequency": AnyJSON.string(frequency.rawValue),
+                "next_billing_date": nextBillingDate.map { AnyJSON.string($0) } ?? AnyJSON.null,
+                "is_active": AnyJSON.bool(isActive),
+                "category_id": categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
+                "note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            ] as [String: AnyJSON])
+            .eq("id", value: id)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    func deleteSubscription(id: String) async throws {
+        try await client
+            .from("card_subscriptions")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+
     // MARK: - Categories
 
     func fetchCategories() async throws -> [Category] {

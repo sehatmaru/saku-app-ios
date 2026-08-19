@@ -29,6 +29,13 @@ struct WalletDetailView: View {
     @State private var showCreditLimitKeyboard = false
     @State private var editedDueDay: Int
     @State private var showDueDayPicker = false
+    @State private var subscriptions: [CardSubscription] = []
+    @State private var showAddSubscription = false
+    @State private var selectedSubscription: CardSubscription?
+    @State private var subName = ""
+    @State private var subAmountDigits = ""
+    @State private var subFrequency: CardSubscription.Frequency = .monthly
+    @State private var subNote = ""
     @FocusState private var isNameFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
@@ -127,6 +134,12 @@ struct WalletDetailView: View {
                     )
                     .padding(.horizontal)
                     .padding(.top, Spacing.md)
+                }
+
+                if isCreditCard, account.isActive {
+                    subscriptionsSection
+                        .padding(.horizontal)
+                        .padding(.top, Spacing.md)
                 }
 
                 let monthTxs = thisMonthTransactions
@@ -244,31 +257,35 @@ struct WalletDetailView: View {
             )
             .presentationDetents([.medium, .large])
         }
-        .sheet(isPresented: $showDueDayPicker) {
-            NavigationStack {
-                VStack(spacing: 0) {
-                    Picker("Tanggal Jatuh Tempo", selection: $editedDueDay) {
-                        ForEach(1...31, id: \.self) { day in
-                            Text("\(day)").tag(day)
+            .sheet(isPresented: $showDueDayPicker) {
+                NavigationStack {
+                    VStack(spacing: 0) {
+                        Picker("Tanggal Jatuh Tempo", selection: $editedDueDay) {
+                            ForEach(1...31, id: \.self) { day in
+                                Text("\(day)").tag(day)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .padding()
+                    }
+                    .navigationTitle("Pilih Tanggal")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Simpan") { showDueDayPicker = false; confirmChanges() }
+                        }
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Batal") { showDueDayPicker = false }
                         }
                     }
-                    .pickerStyle(.wheel)
-                    .padding()
                 }
-                .navigationTitle("Pilih Tanggal")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Simpan") { showDueDayPicker = false; confirmChanges() }
-                    }
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Batal") { showDueDayPicker = false }
-                    }
-                }
+                .presentationDetents([.height(300)])
             }
-            .presentationDetents([.height(300)])
+            .sheet(isPresented: $showAddSubscription) {
+                subscriptionFormSheet
+            }
+            .task { await loadSubscriptions() }
         }
-    }
     
     private var balanceOpacity: Double { 1.0 }
     private var isCreditCard: Bool { account.isCreditCard }
@@ -741,5 +758,247 @@ struct WalletDetailView: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Color.appPrimary.opacity(0.15), lineWidth: 1)
         )
+    }
+
+    // MARK: - Subscriptions
+
+    private func loadSubscriptions() async {
+        guard account.isCreditCard else { return }
+        do {
+            let subs = try await SupabaseRepository.shared.fetchSubscriptions(accountIds: [account.id])
+            subscriptions = subs
+        } catch {
+            print("❌ loadSubscriptions failed: \(error)")
+        }
+    }
+
+    private var subscriptionsSection: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "repeat")
+                    .font(.jakarta(13))
+                    .foregroundColor(.appPrimary)
+                Text("Tagihan Berulang")
+                    .font(.jakarta(15, weight: .semibold))
+                Spacer()
+                Button {
+                    subName = ""
+                    subAmountDigits = ""
+                    subFrequency = .monthly
+                    subNote = ""
+                    selectedSubscription = nil
+                    showAddSubscription = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.jakarta(18))
+                        .foregroundColor(.appPrimary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.md)
+            .padding(.bottom, Spacing.sm)
+
+            if subscriptions.isEmpty {
+                Text("Belum ada tagihan berulang")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appTextSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.bottom, Spacing.md)
+            } else {
+                let monthlyTotal = subscriptions.filter { $0.isActive }.reduce(0) { $0 + $1.monthlyAmount }
+                let yearlyTotal = subscriptions.filter { $0.isActive }.reduce(0) { $0 + $1.yearlyAmount }
+                let projectedBalance = (account.currentBalance ?? account.openingBalance) + monthlyTotal
+
+                ForEach(subscriptions) { sub in
+                    subscriptionRow(sub)
+                    if sub.id != subscriptions.last?.id {
+                        Divider().padding(.leading, 52)
+                    }
+                }
+
+                Divider()
+
+                HStack {
+                    Text("Total per bulan")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                    Spacer()
+                    Text(monthlyTotal.formattedAsCurrency())
+                        .font(.jakarta(13, weight: .semibold))
+                        .foregroundColor(.appExpense)
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.vertical, Spacing.sm)
+
+                HStack {
+                    Text("Total per tahun")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                    Spacer()
+                    Text(yearlyTotal.formattedAsCurrency())
+                        .font(.jakarta(13, weight: .semibold))
+                        .foregroundColor(.appExpense)
+                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.bottom, Spacing.sm)
+
+                if let limit = account.creditLimit {
+                    let adjusted = limit - projectedBalance
+                    HStack {
+                        Text("Limit tersisa")
+                            .font(.jakarta(11))
+                            .foregroundColor(.appTextSecondary)
+                        Spacer()
+                        Text(adjusted.formattedAsCurrency())
+                            .font(.jakarta(13, weight: .semibold))
+                            .foregroundColor(.appText)
+                    }
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.bottom, Spacing.md)
+                }
+            }
+        }
+        .background(Color.appCardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func subscriptionRow(_ sub: CardSubscription) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(sub.isActive ? Color.appExpense.opacity(0.1) : Color(.systemGray5))
+                    .frame(width: 36, height: 36)
+                Image(systemName: "creditcard.fill")
+                    .font(.jakarta(12))
+                    .foregroundColor(sub.isActive ? .appExpense : .appTextSecondary)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(sub.name)
+                    .font(.jakarta(13, weight: .medium))
+                    .foregroundColor(.appText)
+                HStack(spacing: 4) {
+                    Text(sub.amount.formattedAsCurrency())
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                    Text("•")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                    Text(sub.frequency == .monthly ? "Bulanan" : "Tahunan")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                }
+            }
+
+            Spacer()
+
+            if !sub.isActive {
+                Text("Nonaktif")
+                    .font(.jakarta(10, weight: .medium))
+                    .foregroundColor(.appTextSecondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(.systemGray5))
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, Spacing.lg)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            selectedSubscription = sub
+            subName = sub.name
+            subAmountDigits = String(Int(sub.amount))
+            subFrequency = sub.frequency
+            subNote = sub.note ?? ""
+            showAddSubscription = true
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                Task {
+                    try? await SupabaseRepository.shared.deleteSubscription(id: sub.id)
+                    await loadSubscriptions()
+                }
+            } label: {
+                Label("Hapus", systemImage: "trash")
+            }
+            Button {
+                Task {
+                    _ = try? await SupabaseRepository.shared.updateSubscription(
+                        id: sub.id, name: sub.name, amount: sub.amount,
+                        frequency: sub.frequency, nextBillingDate: sub.nextBillingDate,
+                        isActive: !sub.isActive, categoryId: sub.categoryId, note: sub.note
+                    )
+                    await loadSubscriptions()
+                }
+            } label: {
+                Label(sub.isActive ? "Nonaktifkan" : "Aktifkan", systemImage: sub.isActive ? "pause" : "play")
+            }
+            .tint(.appWarning)
+        }
+    }
+
+    private var subscriptionFormSheet: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Nama tagihan", text: $subName)
+                    HStack {
+                        Text("Rp")
+                            .foregroundColor(.appTextSecondary)
+                        TextField("Jumlah", text: $subAmountDigits)
+                            .keyboardType(.numberPad)
+                    }
+                    Picker("Frekuensi", selection: $subFrequency) {
+                        Text("Bulanan").tag(CardSubscription.Frequency.monthly)
+                        Text("Tahunan").tag(CardSubscription.Frequency.yearly)
+                    }
+                    TextField("Catatan (opsional)", text: $subNote)
+                }
+            }
+            .navigationTitle(selectedSubscription != nil ? "Edit Tagihan" : "Tambah Tagihan")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Batal") { showAddSubscription = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Simpan") { saveSubscription() }
+                        .disabled(subName.trimmingCharacters(in: .whitespaces).isEmpty || subAmountDigits.isEmpty)
+                }
+            }
+        }
+        .presentationDetents([.height(320)])
+    }
+
+    private func saveSubscription() {
+        let amount = Double(subAmountDigits) ?? 0
+        guard amount > 0, !subName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        Task {
+            do {
+                if let existing = selectedSubscription {
+                    try await SupabaseRepository.shared.updateSubscription(
+                        id: existing.id, name: subName.trimmingCharacters(in: .whitespaces),
+                        amount: amount, frequency: subFrequency,
+                        nextBillingDate: existing.nextBillingDate, isActive: existing.isActive,
+                        categoryId: existing.categoryId, note: subNote.isEmpty ? nil : subNote
+                    )
+                } else {
+                    try await SupabaseRepository.shared.createSubscription(
+                        accountId: account.id, name: subName.trimmingCharacters(in: .whitespaces),
+                        amount: amount, frequency: subFrequency,
+                        nextBillingDate: nil, categoryId: nil, note: subNote.isEmpty ? nil : subNote
+                    )
+                }
+                showAddSubscription = false
+                await loadSubscriptions()
+            } catch {
+                print("❌ saveSubscription failed: \(error)")
+                toastMessage = "Gagal menyimpan: \(error.localizedDescription)"
+                withAnimation { showToast = true }
+            }
+        }
     }
 }

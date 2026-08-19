@@ -5,6 +5,7 @@ final class AccountListViewModel: ObservableObject {
     @Published var accounts: [Account] = []
     @Published var totalBalance: Double = 0
     @Published var totalCreditDebt: Double = 0
+    @Published var totalSubscriptions: Double = 0
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var hasLoadedOnce = false
@@ -43,6 +44,20 @@ final class AccountListViewModel: ObservableObject {
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
             let (fetchedAccounts, transactions) = try await (accountsTask, transactionsTask)
             accounts = fetchedAccounts
+
+            let creditIds = accounts.filter { $0.isCreditCard && $0.isActive }.map { $0.id }
+            if !creditIds.isEmpty {
+                let subs = try? await SupabaseRepository.shared.fetchSubscriptions(accountIds: creditIds)
+                let activeSubs = subs?.filter { $0.isActive } ?? []
+                for sub in activeSubs {
+                    if let idx = accounts.firstIndex(where: { $0.id == sub.accountId }) {
+                        var acc = accounts[idx]
+                        acc.subscriptionsTotal = (acc.subscriptionsTotal ?? 0) + sub.monthlyAmount
+                        accounts[idx] = acc
+                    }
+                }
+            }
+
             recalculateBalance()
             AppDataCache.shared.setAccounts(accounts, for: userId)
             AppDataCache.shared.setAccountTransactions(groupTransactionsByAccount(transactions), for: userId)
@@ -185,6 +200,7 @@ final class AccountListViewModel: ObservableObject {
     private func recalculateBalance() {
         totalBalance = accounts.filter { $0.isActive && !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
         totalCreditDebt = accounts.filter { $0.isActive && $0.isCreditCard }.reduce(0) { $0 + $1.balance }
+        totalSubscriptions = accounts.filter { $0.isActive && $0.isCreditCard }.reduce(0) { $0 + ($1.subscriptionsTotal ?? 0) }
     }
 
     private func groupTransactionsByAccount(_ transactions: [Transaction]) -> [String: [Transaction]] {
