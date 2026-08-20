@@ -45,6 +45,8 @@ struct DashboardView: View {
             isBalanceVisible = isBalanceVisibleStorage
             if let userId = authViewModel.currentUser?.id {
                 Task {
+                    await SubscriptionBillingService.processDueBills(userId: userId)
+                    await SubscriptionBillingService.resyncNotifications(userId: userId)
                     await viewModel.loadDashboard(userId: userId)
                 }
             }
@@ -103,6 +105,7 @@ struct DashboardView: View {
                         healthScoreCard
                         statisticsCard
                         budgetCard
+                        upcomingBillsCard
                         transactionCard
                     }
                     .transition(.opacity)
@@ -1019,6 +1022,92 @@ struct DashboardView: View {
                 .foregroundColor(.appPrimary.opacity(0.08))
                 .offset(x: -12, y: -4)
         }
+    }
+
+    // MARK: - Upcoming Bills Card
+
+    private var upcomingBillsCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "repeat")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appPrimary)
+                Text("Tagihan Terdekat")
+                    .font(.jakarta(12))
+                    .foregroundColor(.appTextSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.xl)
+
+            if viewModel.upcomingSubscriptions.isEmpty {
+                Text("Belum ada tagihan berulang")
+                    .font(.jakarta(13))
+                    .foregroundColor(.appTextSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Spacing.xl)
+                    .padding(.vertical, Spacing.lg)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(viewModel.upcomingSubscriptions) { sub in
+                        HStack(spacing: Spacing.sm) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.appExpense.opacity(0.1))
+                                    .frame(width: 34, height: 34)
+                                Image(systemName: "creditcard.fill")
+                                    .font(.jakarta(12))
+                                    .foregroundColor(.appExpense)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(sub.name)
+                                    .font(.jakarta(14, weight: .semibold))
+                                    .foregroundColor(.appText)
+                                    .lineLimit(1)
+                                Text("\(accountName(for: sub.accountId)) • \(sub.billingDateString)")
+                                    .font(.jakarta(10))
+                                    .foregroundColor(.appTextSecondary)
+                                    .lineLimit(1)
+                            }
+                            Spacer(minLength: 8)
+                            Text(isBalanceVisible ? sub.amount.formattedAsCurrency() : "Rp***")
+                                .font(.jakarta(13, weight: .semibold))
+                                .foregroundColor(.appText)
+                        }
+                        .padding(.horizontal, Spacing.xl)
+                        .padding(.vertical, 10)
+                        if sub.id != viewModel.upcomingSubscriptions.last?.id {
+                            Divider().padding(.leading, Spacing.xl + 46)
+                        }
+                    }
+                }
+                .padding(.top, Spacing.sm)
+
+                Divider()
+                    .padding(.horizontal, Spacing.xl)
+                    .padding(.top, Spacing.sm)
+
+                HStack {
+                    Text("Total per bulan")
+                        .font(.jakarta(11))
+                        .foregroundColor(.appTextSecondary)
+                    Spacer()
+                    Text(isBalanceVisible ? viewModel.totalMonthlySubscriptions.formattedAsCurrency() : "Rp***")
+                        .font(.jakarta(13, weight: .semibold))
+                        .foregroundColor(.appExpense)
+                }
+                .padding(.horizontal, Spacing.xl)
+                .padding(.vertical, Spacing.md)
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.appCardBackground)
+        )
+    }
+
+    private func accountName(for id: String) -> String {
+        viewModel.accounts.first(where: { $0.id == id })?.name ?? "Kartu Kredit"
     }
 
     // MARK: - Transaction Card

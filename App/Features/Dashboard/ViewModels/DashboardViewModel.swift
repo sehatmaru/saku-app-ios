@@ -17,6 +17,8 @@ final class DashboardViewModel: ObservableObject {
     @Published var currentMonthTransactionCount = 0
     @Published var accounts: [Account] = []
     @Published var categories: [Category] = []
+    @Published var upcomingSubscriptions: [CardSubscription] = []
+    @Published var totalMonthlySubscriptions: Double = 0
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var hasLoadedOnce = false
@@ -214,6 +216,22 @@ final class DashboardViewModel: ObservableObject {
             let (fetchedAccounts, transactions, fetchedCategories, budgets) = try await (accountsTask, transactionsTask, categoriesTask, budgetsTask)
             accounts = fetchedAccounts
             categories = fetchedCategories
+
+            let creditIds = fetchedAccounts
+                .filter { $0.isCreditCard && $0.isActive }
+                .map { $0.id }
+            if !creditIds.isEmpty {
+                let subs = (try? await SupabaseRepository.shared.fetchSubscriptions(accountIds: creditIds)) ?? []
+                let activeSubs = subs.filter { $0.isActive && $0.nextBillingDate != nil }
+                upcomingSubscriptions = activeSubs
+                    .sorted { ($0.nextBillingDate ?? "") < ($1.nextBillingDate ?? "") }
+                    .prefix(5)
+                    .map { $0 }
+                totalMonthlySubscriptions = activeSubs.reduce(0) { $0 + $1.monthlyAmount }
+            } else {
+                upcomingSubscriptions = []
+                totalMonthlySubscriptions = 0
+            }
 
             balance = accounts.filter { !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
             creditDebt = accounts.filter { $0.isCreditCard }.reduce(0) { $0 + $1.balance }

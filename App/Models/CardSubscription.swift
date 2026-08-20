@@ -44,4 +44,30 @@ struct CardSubscription: Identifiable, Codable {
         case .yearly: amount
         }
     }
+
+    var nextBillingDateAsDate: Date? {
+        guard let nextBillingDate else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.date(from: nextBillingDate)
+    }
+
+    func rolledNextBillingDate(from date: Date) -> Date? {
+        let calendar = Calendar.current
+        switch frequency {
+        case .monthly:
+            return calendar.date(byAdding: .month, value: 1, to: date)
+        case .yearly:
+            return calendar.date(byAdding: .year, value: 1, to: date)
+        }
+    }
+
+    var billingDateString: String {
+        guard let date = nextBillingDateAsDate else { return "-" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d MMM yyyy"
+        formatter.locale = Locale(identifier: "id_ID")
+        return formatter.string(from: date)
+    }
 }

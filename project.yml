@@ -48,3 +48,21 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sakuq.tests
+
+schemes:
+  SakuQ:
+    build:
+      targets:
+        SakuQ: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - SakuQTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

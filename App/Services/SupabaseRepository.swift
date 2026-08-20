@@ -104,8 +104,8 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func createTransaction(accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date, userId: String, isCreditAccount: Bool = false) async throws -> Transaction {
-        let operationId = UUID().uuidString
+    func createTransaction(accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date, userId: String, isCreditAccount: Bool = false, clientOperationId: String? = nil) async throws -> Transaction {
+        let operationId = clientOperationId ?? UUID().uuidString
 
         let rpcType: String
         let rpcAmount: Double

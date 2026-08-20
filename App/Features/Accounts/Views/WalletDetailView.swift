@@ -32,10 +32,6 @@ struct WalletDetailView: View {
     @State private var subscriptions: [CardSubscription] = []
     @State private var showAddSubscription = false
     @State private var selectedSubscription: CardSubscription?
-    @State private var subName = ""
-    @State private var subAmountDigits = ""
-    @State private var subFrequency: CardSubscription.Frequency = .monthly
-    @State private var subNote = ""
     @FocusState private var isNameFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
@@ -282,7 +278,16 @@ struct WalletDetailView: View {
                 .presentationDetents([.height(300)])
             }
             .sheet(isPresented: $showAddSubscription) {
-                subscriptionFormSheet
+                AddSubscriptionView(
+                    categories: categories,
+                    account: account,
+                    existing: selectedSubscription,
+                    onSave: {
+                        showAddSubscription = false
+                        Task { await loadSubscriptions() }
+                    }
+                )
+                .presentationDetents([.fraction(0.68), .large])
             }
             .task { await loadSubscriptions() }
         }
@@ -767,6 +772,7 @@ struct WalletDetailView: View {
         do {
             let subs = try await SupabaseRepository.shared.fetchSubscriptions(accountIds: [account.id])
             subscriptions = subs
+            await NotificationManager.shared.resyncAll(subscriptions: subs)
         } catch {
             print("❌ loadSubscriptions failed: \(error)")
         }
@@ -782,10 +788,6 @@ struct WalletDetailView: View {
                     .font(.jakarta(15, weight: .semibold))
                 Spacer()
                 Button {
-                    subName = ""
-                    subAmountDigits = ""
-                    subFrequency = .monthly
-                    subNote = ""
                     selectedSubscription = nil
                     showAddSubscription = true
                 } label: {
@@ -865,14 +867,18 @@ struct WalletDetailView: View {
     }
 
     private func subscriptionRow(_ sub: CardSubscription) -> some View {
-        HStack(spacing: 12) {
+        let category = sub.categoryId.flatMap { cid in categories.first { $0.id == cid } }
+        let iconName = category?.icon ?? "creditcard.fill"
+        let iconColor = category.flatMap { $0.color }.map { Color(hex: $0) } ?? .appExpense
+
+        return HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(sub.isActive ? Color.appExpense.opacity(0.1) : Color(.systemGray5))
+                    .fill(sub.isActive ? iconColor.opacity(0.1) : Color(.systemGray5))
                     .frame(width: 36, height: 36)
-                Image(systemName: "creditcard.fill")
+                Image(systemName: iconName)
                     .font(.jakarta(12))
-                    .foregroundColor(sub.isActive ? .appExpense : .appTextSecondary)
+                    .foregroundColor(sub.isActive ? iconColor : .appTextSecondary)
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -903,22 +909,33 @@ struct WalletDetailView: View {
                     .background(Color(.systemGray5))
                     .clipShape(Capsule())
             }
+
+            Button {
+                Task {
+                    try? await SupabaseRepository.shared.deleteSubscription(id: sub.id)
+                    await NotificationManager.shared.cancel(for: sub)
+                    await loadSubscriptions()
+                }
+            } label: {
+                Image(systemName: "trash")
+                    .font(.jakarta(13))
+                    .foregroundColor(.appExpense.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 8)
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
         .onTapGesture {
             selectedSubscription = sub
-            subName = sub.name
-            subAmountDigits = String(Int(sub.amount))
-            subFrequency = sub.frequency
-            subNote = sub.note ?? ""
             showAddSubscription = true
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 Task {
                     try? await SupabaseRepository.shared.deleteSubscription(id: sub.id)
+                    await NotificationManager.shared.cancel(for: sub)
                     await loadSubscriptions()
                 }
             } label: {
@@ -937,68 +954,6 @@ struct WalletDetailView: View {
                 Label(sub.isActive ? "Nonaktifkan" : "Aktifkan", systemImage: sub.isActive ? "pause" : "play")
             }
             .tint(.appWarning)
-        }
-    }
-
-    private var subscriptionFormSheet: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("Nama tagihan", text: $subName)
-                    HStack {
-                        Text("Rp")
-                            .foregroundColor(.appTextSecondary)
-                        TextField("Jumlah", text: $subAmountDigits)
-                            .keyboardType(.numberPad)
-                    }
-                    Picker("Frekuensi", selection: $subFrequency) {
-                        Text("Bulanan").tag(CardSubscription.Frequency.monthly)
-                        Text("Tahunan").tag(CardSubscription.Frequency.yearly)
-                    }
-                    TextField("Catatan (opsional)", text: $subNote)
-                }
-            }
-            .navigationTitle(selectedSubscription != nil ? "Edit Tagihan" : "Tambah Tagihan")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { showAddSubscription = false }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Simpan") { saveSubscription() }
-                        .disabled(subName.trimmingCharacters(in: .whitespaces).isEmpty || subAmountDigits.isEmpty)
-                }
-            }
-        }
-        .presentationDetents([.height(320)])
-    }
-
-    private func saveSubscription() {
-        let amount = Double(subAmountDigits) ?? 0
-        guard amount > 0, !subName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        Task {
-            do {
-                if let existing = selectedSubscription {
-                    try await SupabaseRepository.shared.updateSubscription(
-                        id: existing.id, name: subName.trimmingCharacters(in: .whitespaces),
-                        amount: amount, frequency: subFrequency,
-                        nextBillingDate: existing.nextBillingDate, isActive: existing.isActive,
-                        categoryId: existing.categoryId, note: subNote.isEmpty ? nil : subNote
-                    )
-                } else {
-                    try await SupabaseRepository.shared.createSubscription(
-                        accountId: account.id, name: subName.trimmingCharacters(in: .whitespaces),
-                        amount: amount, frequency: subFrequency,
-                        nextBillingDate: nil, categoryId: nil, note: subNote.isEmpty ? nil : subNote
-                    )
-                }
-                showAddSubscription = false
-                await loadSubscriptions()
-            } catch {
-                print("❌ saveSubscription failed: \(error)")
-                toastMessage = "Gagal menyimpan: \(error.localizedDescription)"
-                withAnimation { showToast = true }
-            }
         }
     }
 }

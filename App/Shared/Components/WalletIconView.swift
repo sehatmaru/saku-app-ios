@@ -13,6 +13,19 @@ struct WalletIconView: View {
             "amex": "amex",
             "unionpay": "unionpay",
             "visa": "visa",
+            "bca": "bca",
+            "bni": "bni",
+            "mandiri": "mandiri",
+            "bri": "bri",
+            "jago": "jago",
+            "cimb": "cimb",
+            "btn": "btn",
+            "bnc": "bnc",
+            "danamon": "danamon",
+            "gopay": "gopay",
+            "ovo": "ovo",
+            "dana": "dana",
+            "linkaja": "linkaja",
         ]
         return map[icon.id]
     }
