@@ -63,8 +63,8 @@ struct FloatingTabBar: View {
                         .init(color: Color.appBackground, location: 0.6)],
                 startPoint: .top, endPoint: .bottom
             )
-            .frame(height: 120)
-            .ignoresSafeArea()
+            .frame(height: 150)
+            .offset(y: 40) // reach past the home-indicator inset
             .allowsHitTesting(false)
         }
     }

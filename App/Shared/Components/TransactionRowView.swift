@@ -5,30 +5,27 @@ struct TransactionRowView: View {
     let categories: [Category]
     let accounts: [Account]
     var showBalance: Bool = true
-    var showWalletBadge: Bool = false
+    /// Appends the account (or "A → B" for transfers) to the subtitle.
+    var showAccount: Bool = false
+    /// Off inside lists that already group rows under day headers.
+    var showDate: Bool = true
     var showArchivedBadge: Bool = false
 
-    private var isTransfer: Bool { transaction.type == .transfer }
-    private var isAdjustment: Bool { transaction.type == .adjustment }
+    private var category: Category? {
+        transaction.categoryId.flatMap { cid in categories.first { $0.id == cid } }
+    }
 
-    private var cellColor: Color {
-        switch transaction.type {
-        case .income: .appIncome
-        case .expense: .appExpense
-        case .transfer: .appText
-        case .adjustment: .appText
-        }
+    private func accountName(_ id: String?) -> String? {
+        accounts.first { $0.id == id }?.name
     }
 
     private var iconName: String {
-        if isAdjustment { return "arrow.2.circlepath" }
-        if isTransfer { return "arrow.left.arrow.right" }
-        let catIcon = transaction.categoryId.flatMap { cid in categories.first { $0.id == cid }?.icon }
-        return catIcon ?? (transaction.type == .income ? "arrow.down" : "arrow.up")
-    }
-
-    private var title: String {
-        transaction.note ?? typeLabel
+        switch transaction.type {
+        case .adjustment: "arrow.2.circlepath"
+        case .transfer: "arrow.left.arrow.right"
+        case .income: category?.icon ?? "arrow.down"
+        case .expense: category?.icon ?? "arrow.up"
+        }
     }
 
     private var typeLabel: String {
@@ -40,113 +37,88 @@ struct TransactionRowView: View {
         }
     }
 
-    private var signedAmount: Double { transaction.delta ?? transaction.amount }
+    private var title: String {
+        transaction.note ?? category?.name ?? typeLabel
+    }
 
-    private var amountColor: Color {
-        isAdjustment ? (signedAmount >= 0 ? .appIncome : .appExpense) : cellColor
+    private var subtitle: String {
+        var parts: [String] = []
+        let kind = (transaction.type == .income || transaction.type == .expense) ? category?.name : typeLabel
+        if let kind, kind != title { parts.append(kind) }
+        if showAccount {
+            if transaction.type == .transfer,
+               let src = accountName(transaction.accountId),
+               let dst = accountName(transaction.counterpartyAccountId) {
+                parts.append("\(src) → \(dst)")
+            } else if let name = accountName(transaction.accountId) {
+                parts.append(name)
+            }
+        }
+        if showDate { parts.append(Self.dateFormatter.string(from: transaction.date)) }
+        return parts.joined(separator: " · ")
+    }
+
+    private var signedAmount: Double {
+        switch transaction.type {
+        case .income: transaction.amount
+        case .expense: -transaction.amount
+        case .transfer: 0
+        case .adjustment: transaction.delta ?? transaction.amount
+        }
     }
 
     private var amountText: String {
-        isAdjustment ? (signedAmount >= 0 ? "+" + signedAmount.formattedAsCurrency() : signedAmount.formattedAsCurrency()) : transaction.amount.formattedAsCurrency()
+        let body = transaction.amount.formattedAsCurrency().replacingOccurrences(of: "-", with: "")
+        guard transaction.type != .transfer else { return body }
+        let magnitude = abs(signedAmount).formattedAsCurrency()
+        return (signedAmount >= 0 ? "+" : "−") + magnitude
     }
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
-            iconSection
-            detailSection
-            Spacer()
-            if showBalance {
-                Text(amountText)
-                    .font(.app(14, weight: .semibold))
-                    .foregroundColor(amountColor)
-            } else {
-                Text("Rp******")
-                    .font(.app(14, weight: .semibold))
-                    .foregroundColor(amountColor)
-            }
-        }
-        .padding(.vertical, Spacing.sm)
-        .contentShape(Rectangle())
-    }
-
-    private var iconSection: some View {
-        ZStack {
-            Circle()
-                .fill(cellColor.opacity((isTransfer || isAdjustment) ? 0.08 : 0.15))
-                .frame(width: 44, height: 44)
+        HStack(spacing: 14) {
             Image(systemName: iconName)
-                .font(.app(16))
-                .foregroundColor(cellColor)
-        }
-        .overlay(alignment: .bottomTrailing) {
-            if showWalletBadge, !isTransfer, !isAdjustment,
-               let acc = accounts.first(where: { $0.id == transaction.accountId }),
-               let wi = WalletIcon.resolve(acc.icon) {
-                walletBadge(wi: wi)
-            }
-        }
-    }
+                .font(.system(size: 19))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 24)
 
-    private var detailSection: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            if isTransfer,
-               let dst = accounts.first(where: { $0.id == transaction.counterpartyAccountId }),
-               let dwi = WalletIcon.resolve(dst.icon) {
-                HStack(spacing: 3) {
-                    if let src = accounts.first(where: { $0.id == transaction.accountId }),
-                       let swi = WalletIcon.resolve(src.icon) {
-                        ZStack {
-                            Circle().fill(swi.color).frame(width: 20, height: 20)
-                            Text(swi.shortName)
-                                .font(.app(6, weight: .bold))
-                                .foregroundColor(.white)
-                                .minimumScaleFactor(0.5)
-                        }
-                    }
-                    Image(systemName: "arrow.right")
-                        .font(.app(8))
-                        .foregroundColor(.appTextSecondary)
-                    ZStack {
-                        Circle().fill(dwi.color).frame(width: 20, height: 20)
-                        Text(dwi.shortName)
-                            .font(.app(6, weight: .bold))
-                            .foregroundColor(.white)
-                            .minimumScaleFactor(0.5)
-                    }
-                }
-                .lineLimit(1)
-            } else {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(title)
-                        .font(.app(14, weight: .medium))
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(Color.appText)
                         .lineLimit(1)
                     if showArchivedBadge {
                         Text("Diarsipkan")
-                            .font(.app(9, weight: .medium))
-                            .foregroundColor(.appWarning)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.appWarning.opacity(0.15))
-                            .clipShape(Capsule())
+                            .font(.app(11, weight: .medium))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 1)
+                            .overlay(Capsule().strokeBorder(Color.appBorder))
                     }
+                }
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .lineLimit(1)
                 }
             }
 
-            Text(formattedDate(transaction.date))
-                .font(.app(11))
-                .foregroundColor(.appTextSecondary)
+            Spacer(minLength: 8)
+
+            Text(showBalance ? amountText : "Rp" + hiddenAmount)
+                .font(.app(16))
+                .monospacedDigit()
+                .foregroundStyle(signedAmount > 0 ? Color.appIncome : Color.appText)
         }
+        .padding(.vertical, 14)
+        .contentShape(Rectangle())
     }
 
-    private func walletBadge(wi: WalletIcon) -> some View {
-        WalletIconView(icon: wi, size: 18)
-            .offset(x: 4, y: 4)
-    }
-
-    private func formattedDate(_ date: Date) -> String {
+    private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "dd MMM yyyy"
+        f.dateFormat = "d MMM yyyy"
         f.locale = Locale(identifier: "id_ID")
-        return f.string(from: date)
-    }
+        return f
+    }()
 }

@@ -484,7 +484,7 @@ struct BudgetDetailView: View {
     }
 
     private func transactionRow(_ transaction: Transaction) -> some View {
-        TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showWalletBadge: true)
+        TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showAccount: true)
     }
 }
 
@@ -880,6 +880,6 @@ fileprivate struct BudgetMonthDetailView: View {
     }
 
     private func transactionRow(_ transaction: Transaction) -> some View {
-        TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showWalletBadge: true)
+        TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showAccount: true)
     }
 }

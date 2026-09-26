@@ -739,7 +739,7 @@ struct WalletDetailView: View {
     }
 
     private func transactionRow(_ transaction: Transaction) -> some View {
-        TransactionRowView(transaction: transaction, categories: categories, accounts: [account], showWalletBadge: false, showArchivedBadge: !account.isActive)
+        TransactionRowView(transaction: transaction, categories: categories, accounts: [account], showArchivedBadge: !account.isActive)
     }
 
     private var hintCard: some View {

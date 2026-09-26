@@ -86,294 +86,77 @@ struct DashboardView: View {
         }
     }
 
+    // MARK: - Beranda
+
     private var mainContent: some View {
         ScrollView {
-            VStack(spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: 0) {
+                homeHeader
+
                 if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
                     errorStateView(message: error)
-                        .transition(.opacity)
+                        .padding(24)
                 } else if !viewModel.hasLoadedOnce {
-                    dashboardSkeleton
-                        .transition(.opacity)
+                    homeSkeleton
                 } else {
-                    Group {
-                        if viewModel.errorMessage != nil {
-                            ErrorBanner(message: viewModel.errorMessage!)
-                        }
-                        summaryCard
-                        healthScoreCard
-                        statisticsCard
-                        budgetCard
-                        upcomingBillsCard
-                        transactionCard
+                    if let error = viewModel.errorMessage {
+                        ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                     }
-                    .transition(.opacity)
+                    summarySection
+                    SectionDivider()
+                    healthSection
+                    SectionDivider()
+                    statisticsSection
+                    SectionDivider()
+                    budgetSection
+                    SectionDivider()
+                    billsSection
+                    SectionDivider()
+                    cashflowSection
                 }
             }
-            .padding()
             .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
         }
-        .background(Color.appGroupedBackground)
+        .background(Color.appBackground)
         .refreshable {
             if let userId = authViewModel.currentUser?.id {
                 await viewModel.loadDashboard(userId: userId, forceRefresh: true)
             }
         }
-        .navigationTitle("SakuQ")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    withAnimation(.smooth) {
-                        isBalanceVisible.toggle()
-                    }
-                    isBalanceVisibleStorage = isBalanceVisible
-                } label: {
-                    Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
-                        .font(.app(16))
-                        .foregroundColor(.appTextSecondary)
-                }
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
     }
 
-    private var dashboardSkeleton: some View {
-        VStack(spacing: Spacing.lg) {
-            skeletonSummary
-            skeletonHealthScore
-            skeletonStatistics
-            skeletonBudget
-            skeletonTransaction
+    private var homeHeader: some View {
+        HStack {
+            Text(Self.headerDateFormatter.string(from: Date()))
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+            Spacer()
+            Button {
+                withAnimation(.smooth) { isBalanceVisible.toggle() }
+                isBalanceVisibleStorage = isBalanceVisible
+            } label: {
+                Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.appText)
+            }
+            .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 10)
     }
 
-    private func skeletonLine(width: CGFloat? = nil) -> some View {
-        RoundedRectangle(cornerRadius: 4)
-            .fill(Color.appTextSecondary.opacity(0.12))
-            .frame(width: width, height: 12)
-    }
-
-    private var skeletonSummary: some View {
-        VStack(spacing: 0) {
-            skeletonLine(width: 120)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.xl)
-
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color.appTextSecondary.opacity(0.1))
-                .frame(height: 36)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.sm)
-
-            skeletonLine(width: 80)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, 4)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: 0) {
-                ForEach(0..<3) { _ in
-                    VStack(spacing: 6) {
-                        skeletonLine(width: 50)
-                        skeletonLine(width: 70)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
+    private var homeSkeleton: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach([120, 260, 200, 0, 160, 300, 240], id: \.self) { width in
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.appFill)
+                    .frame(maxWidth: width == 0 ? .infinity : CGFloat(width))
+                    .frame(height: width == 260 ? 48 : 14)
             }
-            .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.lg)
-
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.appPrimary.opacity(0.15))
-                .frame(height: 46)
-                .padding(.horizontal, Spacing.lg)
-                .padding(.bottom, Spacing.lg)
         }
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
-        .shimmer()
-    }
-
-    private var skeletonHealthScore: some View {
-        VStack(spacing: 0) {
-            skeletonLine(width: 160)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.xl)
-
-            VStack(spacing: Spacing.sm) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        skeletonLine(width: 80)
-                        skeletonLine(width: 50)
-                    }
-                    Spacer()
-                    skeletonLine(width: 60)
-                }
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.appTextSecondary.opacity(0.08))
-                    .frame(height: 18)
-            }
-            .padding(Spacing.xl)
-            .background(RoundedRectangle(cornerRadius: 20).fill(Color.appTextSecondary.opacity(0.05)))
-
-            HStack(spacing: 0) {
-                ForEach(0..<3) { _ in
-                    VStack(spacing: 6) {
-                        skeletonLine(width: 30)
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.appTextSecondary.opacity(0.1))
-                            .frame(width: 48, height: 6)
-                        skeletonLine(width: 40)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.vertical, Spacing.md)
-            .padding(.horizontal, Spacing.lg)
-            .background(Color.appCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .offset(y: -10)
-            .padding(.horizontal, Spacing.md)
-            .padding(.bottom, Spacing.sm)
-        }
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
-        .shimmer()
-    }
-
-    private var skeletonStatistics: some View {
-        VStack(spacing: 0) {
-            skeletonLine(width: 140)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.xl)
-
-            HStack(spacing: 0) {
-                ForEach(0..<3) { _ in
-                    VStack(spacing: 6) {
-                        skeletonLine(width: 50)
-                        skeletonLine(width: 70)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.top, Spacing.lg)
-            .padding(.bottom, Spacing.md)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.md), count: 2), spacing: Spacing.md) {
-                ForEach(0..<4) { _ in
-                    HStack(spacing: Spacing.sm) {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.appTextSecondary.opacity(0.08))
-                            .frame(width: 32, height: 32)
-                        VStack(alignment: .leading, spacing: 4) {
-                            skeletonLine(width: 50)
-                            skeletonLine(width: 80)
-                        }
-                    }
-                    .padding(Spacing.sm)
-                    .background(Color.appGroupedBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.vertical, Spacing.lg)
-        }
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
-        .shimmer()
-    }
-
-    private var skeletonBudget: some View {
-        VStack(spacing: 0) {
-            skeletonLine(width: 150)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.xl)
-
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.appTextSecondary.opacity(0.1))
-                    .frame(width: 140, height: 36)
-                skeletonLine(width: 40)
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.sm)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 6) {
-                    skeletonLine(width: 60)
-                    skeletonLine(width: 100)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 6) {
-                    skeletonLine(width: 50)
-                    skeletonLine(width: 100)
-                }
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.md)
-
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color.appTextSecondary.opacity(0.1))
-                .frame(height: 6)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.sm)
-                .padding(.bottom, Spacing.lg)
-        }
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
-        .shimmer()
-    }
-
-    private var skeletonTransaction: some View {
-        VStack(spacing: 0) {
-            skeletonLine(width: 160)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.xl)
-
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color.appTextSecondary.opacity(0.1))
-                .frame(height: 36)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.sm)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: Spacing.md) {
-                ForEach(0..<2) { _ in
-                    HStack(spacing: Spacing.sm) {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.appTextSecondary.opacity(0.08))
-                            .frame(width: 32, height: 32)
-                        VStack(alignment: .leading, spacing: 4) {
-                            skeletonLine(width: 50)
-                            skeletonLine(width: 70)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, Spacing.md)
-                    .padding(.vertical, 10)
-                    .background(Color.appTextSecondary.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.lg)
-        }
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
+        .padding(.horizontal, 24)
+        .padding(.top, 36)
         .shimmer()
     }
 
@@ -387,871 +170,372 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: - Summary Card
+    // MARK: Summary
 
-    private var summaryCard: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "leaf.fill")
-                    .font(.app(12))
-                    .foregroundColor(.appPrimary)
-                Text("Total Saldo Saat Ini")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Total saldo")
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+            HeroAmount(value: viewModel.balance, isVisible: isBalanceVisible)
+                .padding(.top, 6)
+
+            HStack(alignment: .top, spacing: 28) {
+                flowStat("Masuk", amount: viewModel.totalIncome, change: viewModel.incomeChange, base: viewModel.previousMonthIncome)
+                flowStat("Keluar", amount: viewModel.totalExpense, change: viewModel.expenseChange, base: viewModel.previousMonthExpense, highlightsGrowth: false)
+                flowStat("Net", amount: viewModel.netCashflow, change: viewModel.netCashflowChange, base: abs(viewModel.previousMonthNetCashflow), signed: true)
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
+            .padding(.top, 22)
 
-            HStack {
-                Text(isBalanceVisible ? viewModel.balance.formattedAsCurrency() : "Rp********")
-                    .font(.app(34, weight: .bold))
-                    .foregroundColor(.appText)
-                    .contentTransition(.numericText())
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.sm)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: 0) {
-                statItem(title: "Pemasukan Bulan Ini", amount: viewModel.totalIncome, color: .appIncome, diff: viewModel.incomeChange, lastMonth: viewModel.previousMonthIncome)
-                Divider().frame(height: 28)
-                statItem(title: "Pengeluaran Bulan Ini", amount: viewModel.totalExpense, color: .appExpense, diff: viewModel.expenseChange, lastMonth: viewModel.previousMonthExpense)
-                Divider().frame(height: 28)
-                statItem(title: "Net Cashflow", amount: viewModel.netCashflow, color: viewModel.netCashflow >= 0 ? .appIncome : .appExpense, diff: viewModel.netCashflowChange, lastMonth: viewModel.previousMonthNetCashflow)
-            }
-            .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.lg)
-
-            Button {
-                showAddSheet = true
-            } label: {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "plus")
-                        .font(.app(15, weight: .semibold))
-                    Text("Tambah Transaksi")
-                        .font(.app(15, weight: .semibold))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.appPrimary)
-                .foregroundColor(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.bottom, Spacing.lg)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.appPrimary.opacity(0.08))
-                .offset(x: -12, y: -4)
-        }
-    }
-
-    private func statItem(title: String, amount: Double, color: Color, diff: Double? = nil, lastMonth: Double? = nil) -> some View {
-        VStack(spacing: 4) {
-            Text(title)
-                .font(.app(11))
-                .foregroundColor(.appTextSecondary)
-            Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp******")
-                .font(.app(13, weight: .semibold))
-                .foregroundColor(color)
-
-            if let diff, let lastMonth, lastMonth > 0 {
-                let pct = diff / lastMonth * 100
-                HStack(spacing: 2) {
-                    Image(systemName: diff >= 0 ? "arrow.up" : "arrow.down")
-                        .font(.app(7, weight: .bold))
-                    Text("\(abs(pct), specifier: "%.1f")%")
-                        .font(.app(9, weight: .medium))
-                }
-                .foregroundColor(diff >= 0 ? color : .appExpense)
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-
-
-    private func recapItem(icon: String, iconColor: Color, title: String, value: String, subtitle: String) -> some View {
-        HStack(spacing: Spacing.sm) {
-            Image(systemName: icon)
-                .font(.app(10))
-                .foregroundColor(iconColor)
-                .frame(width: 28, height: 28)
-                .background(iconColor.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 7))
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(.app(10))
-                    .foregroundColor(.appTextSecondary)
-                Text(isBalanceVisible ? value : "***")
-                    .font(.app(13, weight: .semibold))
-                    .foregroundColor(iconColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Text(subtitle)
-                    .font(.app(8))
-                    .foregroundColor(.appTextSecondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Health Score Card
-
-    private var healthScoreCard: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "heart.fill")
-                    .font(.app(12))
-                    .foregroundColor(.appPrimary)
-                Text("Skor Kesehatan Finansial")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
-
-            healthScoreSpotlight
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: "heart.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.appPrimary.opacity(0.08))
-                .offset(x: -12, y: -4)
-        }
-    }
-
-    // MARK: - Statistics Card
-
-    private var statisticsCard: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "chart.bar.fill")
-                    .font(.app(12))
-                    .foregroundColor(.appPrimary)
-                Text("Statistik Bulan Ini")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
-
-            HStack(spacing: 0) {
-                statItem(title: "Pemasukan", amount: viewModel.totalIncome, color: .appIncome)
-                Divider().frame(height: 36)
-                statItem(title: "Pengeluaran", amount: viewModel.totalExpense, color: .appExpense)
-                Divider().frame(height: 36)
-                statItem(title: "Cashflow", amount: viewModel.netCashflow, color: viewModel.netCashflow >= 0 ? .appIncome : .appExpense)
-            }
-            .padding(.top, Spacing.lg)
-            .padding(.bottom, Spacing.md)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.md), count: 2), spacing: Spacing.md) {
-                statInfoCard(
-                    icon: "calendar.day.timeline.left",
-                    label: "Rata-rata Harian",
-                    value: viewModel.averageDailySpending.formattedAsCurrency(),
-                    color: .appPrimary
-                )
-                statInfoCard(
-                    icon: "arrow.left.arrow.right",
-                    label: "Total Transaksi",
-                    value: "\(viewModel.currentMonthTransactionCount) kali",
-                    color: .blue
-                )
-                statInfoCard(
-                    icon: "tag.fill",
-                    label: "Kategori Tertinggi",
-                    value: viewModel.topCategoryName,
-                    subvalue: "\(Int(viewModel.topCategoryPct))% pengeluaran",
-                    color: .appWarning
-                )
-                statInfoCard(
-                    icon: "chart.pie.fill",
-                    label: "Sisa Budget",
-                    value: viewModel.totalBudget > 0 ? "\(Int(max(0, viewModel.totalRemaining / viewModel.totalBudget * 100)))%" : "-",
-                    color: viewModel.totalRemaining >= 0 ? .appIncome : .appError
-                )
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.vertical, Spacing.lg)
-
-            if !viewModel.financialTips.isEmpty {
-                Divider()
-                    .padding(.horizontal, Spacing.xl)
-
-                financialTipsSection
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.lg)
-                    .padding(.bottom, Spacing.sm)
-            }
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-
-            NavigationLink {
-                AnalyticsView(viewModel: viewModel)
-            } label: {
-                HStack(spacing: Spacing.md) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.appPrimary.opacity(0.1))
-                            .frame(width: 32, height: 32)
-                        Image(systemName: "chart.bar.doc.horizontal")
-                            .font(.app(13))
-                            .foregroundColor(.appPrimary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Lihat Selengkapnya")
-                            .font(.app(13, weight: .medium))
-                            .foregroundColor(.appText)
-                        Text("Analisis keuangan lebih detail")
-                            .font(.app(10))
-                            .foregroundColor(.appTextSecondary)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.app(10))
-                        .foregroundColor(.appTextSecondary)
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .padding(.horizontal, Spacing.xl)
-                .padding(.vertical, 10)
+            Button { showAddSheet = true } label: {
+                Label("Tambah transaksi", systemImage: "plus")
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .overlay(Capsule().strokeBorder(Color.appBorder))
+                    .contentShape(Capsule())
             }
             .buttonStyle(.plain)
+            .padding(.top, 24)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: "chart.bar.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.appPrimary.opacity(0.08))
-                .offset(x: -12, y: -4)
+        .padding(.horizontal, 24)
+        .padding(.top, 36)
+        .padding(.bottom, 28)
+    }
+
+    /// Label, abbreviated amount and month-over-month change; growth is green unless it's spending.
+    private func flowStat(_ label: String, amount: Double, change: Double, base: Double, highlightsGrowth: Bool = true, signed: Bool = false) -> some View {
+        let valueColor: Color = signed && amount > 0 ? .appIncome : .appText
+        let sign = signed ? (amount > 0 ? "+" : amount < 0 ? "−" : "") : ""
+        return VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(isBalanceVisible ? sign + amount.abbreviatedRupiah() : hiddenAmount)
+                    .font(.app(17, weight: .medium))
+                    .foregroundStyle(valueColor)
+                if base > 0 {
+                    let pct = Int((change / base * 100).rounded())
+                    Text((pct >= 0 ? "+" : "−") + "\(abs(pct))%")
+                        .font(.app(13))
+                        .foregroundStyle(signed ? (amount > 0 ? Color.appIncome : Color.appTextSecondary) : (highlightsGrowth && pct > 0 ? Color.appIncome : Color.appTextSecondary))
+                }
+            }
+            .monospacedDigit()
         }
     }
 
-    private func statInfoCard(icon: String, label: String, value: String, subvalue: String? = nil, color: Color) -> some View {
-        HStack(spacing: Spacing.sm) {
-            Image(systemName: icon)
-                .font(.app(12))
-                .foregroundColor(color)
-                .frame(width: 32, height: 32)
-                .background(color.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+    // MARK: Health score
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label)
-                    .font(.app(9))
-                    .foregroundColor(.appTextSecondary)
-                Text(value)
-                    .font(.app(12, weight: .semibold))
-                    .foregroundColor(.appText)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                if let subvalue = subvalue {
-                    Text(subvalue)
-                        .font(.app(8))
-                        .foregroundColor(color)
+    private var healthSection: some View {
+        let score = viewModel.healthScore
+        let filled = score * 40 / 100
+        return VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Kesehatan finansial", trailing: viewModel.healthScoreLabel, trailingColor: healthColor(score))
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(score)")
+                    .font(.app(56, weight: .light))
+                    .tracking(-2)
+                Text("/ 100")
+                    .font(.app(17))
+                    .foregroundStyle(Color.appTextSecondary)
+            }
+            .padding(.top, 14)
+
+            HStack(spacing: 3) {
+                ForEach(0..<40, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(i < filled ? healthColor(score) : Color.appDivider)
                 }
             }
+            .frame(height: 22)
+            .padding(.top, 16)
+            .accessibilityHidden(true)
+
+            HStack(spacing: 0) {
+                scorePart("Arus kas", viewModel.cashflowScore, of: 40)
+                scorePart("Budget", viewModel.budgetScore, of: 35)
+                scorePart("Diversifikasi", viewModel.diversityScore, of: 25)
+            }
+            .padding(.top, 18)
+        }
+        .padding(24)
+        .padding(.vertical, 4)
+    }
+
+    private func scorePart(_ label: String, _ score: Int, of max: Int) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
+            (Text("\(score)").foregroundStyle(Color.appText) + Text("/\(max)").foregroundStyle(Color.appTextTertiary))
+                .font(.app(17))
+                .monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.sm)
-        .background(Color.appGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
-    // MARK: - Financial Tips
-
-    private var financialTipsSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack(spacing: 4) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.app(11))
-                    .foregroundColor(.appWarning)
-                Text("Tips Finansial")
-                    .font(.app(13, weight: .semibold))
-                    .foregroundColor(.appText)
-            }
-
-            ForEach(viewModel.financialTips.prefix(2)) { tip in
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: tip.icon)
-                        .font(.app(10))
-                        .foregroundColor(tip.type.color)
-                        .frame(width: 24, height: 24)
-                        .background(tip.type.bgColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-
-                    Text(tip.message)
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .padding(.bottom, Spacing.sm)
-    }
-
-    // MARK: Charts
-
-    private var cashflowChart: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Cashflow 5 Bulan Terakhir")
-                .font(.app(13, weight: .semibold))
-                .foregroundColor(.appText)
-
-            let maxAmount = max(
-                viewModel.monthlyCashflow.map(\.income).max() ?? 1,
-                viewModel.monthlyCashflow.map(\.expense).max() ?? 1
-            )
-            let barWidth: CGFloat = 10
-
-            HStack(alignment: .bottom, spacing: Spacing.lg) {
-                ForEach(viewModel.monthlyCashflow.indices, id: \.self) { idx in
-                    let item = viewModel.monthlyCashflow[idx]
-                    VStack(spacing: 4) {
-                        ZStack(alignment: .bottom) {
-                            Color.appGroupedBackground
-                                .frame(width: barWidth * 2 + 2, height: 60)
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                            HStack(alignment: .bottom, spacing: 2) {
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color.appIncome)
-                                    .frame(width: barWidth, height: max(2, item.income / maxAmount * 60))
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color.appExpense)
-                                    .frame(width: barWidth, height: max(2, item.expense / maxAmount * 60))
-                            }
-                        }
-
-                        Text(item.0)
-                            .font(.app(9))
-                            .foregroundColor(.appTextSecondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .frame(height: 80)
-
-            HStack(spacing: Spacing.md) {
-                HStack(spacing: 4) {
-                    Circle().fill(Color.appIncome).frame(width: 8, height: 8)
-                    Text("Pemasukan")
-                        .font(.app(9))
-                        .foregroundColor(.appTextSecondary)
-                }
-                HStack(spacing: 4) {
-                    Circle().fill(Color.appExpense).frame(width: 8, height: 8)
-                    Text("Pengeluaran")
-                        .font(.app(9))
-                        .foregroundColor(.appTextSecondary)
-                }
-            }
-        }
-        .padding(.bottom, Spacing.sm)
-    }
-
-    private var spendingChart: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Pengeluaran Bulan Ini")
-                .font(.app(13, weight: .semibold))
-                .foregroundColor(.appText)
-
-            let total = viewModel.categorySpending.map(\.amount).reduce(0, +)
-
-            ForEach(viewModel.categorySpending.prefix(4), id: \.0.id) { cat, amount in
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: cat.icon ?? "tag")
-                        .font(.app(11))
-                        .foregroundColor(.appPrimary)
-                        .frame(width: 20)
-
-                    VStack(spacing: 2) {
-                        HStack {
-                            Text(cat.name)
-                                .font(.app(11))
-                                .foregroundColor(.appText)
-                            Spacer()
-                            Text(amount.formattedAsCurrency())
-                                .font(.app(10))
-                                .foregroundColor(.appTextSecondary)
-                        }
-                        ProgressView(value: total > 0 ? amount / total : 0)
-                            .tint(.appExpense)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: Health Score
-
-    private var healthScoreSpotlight: some View {
-        let color = healthScoreColor(viewModel.healthScore)
-        return VStack(spacing: 0) {
-            VStack(spacing: Spacing.sm) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(viewModel.healthScoreLabel)
-                            .font(.app(18, weight: .bold))
-                            .foregroundColor(color)
-                    }
-
-                    Spacer()
-
-                    HStack(alignment: .firstTextBaseline, spacing: 0) {
-                        Text("\(viewModel.healthScore)")
-                            .font(.app(40, weight: .bold))
-                            .foregroundColor(color)
-                        Text("/100")
-                            .font(.app(12))
-                            .foregroundColor(.appTextSecondary)
-                            .padding(.leading, 2)
-                    }
-                }
-
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(color.opacity(0.12))
-                        .frame(height: 18)
-
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(LinearGradient(
-                            colors: [color.opacity(0.7), color],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ))
-                        .frame(width: max(0, CGFloat(viewModel.healthScore) / 100) * 280, height: 18)
-
-                    HStack {
-                        Spacer()
-                        if viewModel.healthScore > 0 {
-                            Image(systemName: "figure.walk")
-                                .font(.app(10, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.trailing, 8)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.vertical, Spacing.lg)
-            .padding(.horizontal, Spacing.xl)
-            .background(
-                ZStack {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(color.opacity(0.05))
-
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(color.opacity(0.1), lineWidth: 1)
-
-                    Image(systemName: "heart.text.square.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(color.opacity(0.04))
-                        .offset(x: 80, y: -20)
-                }
-            )
-
-            HStack(spacing: 0) {
-                breakdownItem(
-                    label: "Arus Kas",
-                    score: viewModel.cashflowScore,
-                    maxScore: 40
-                )
-                Divider().frame(height: 32)
-                breakdownItem(
-                    label: "Budget",
-                    score: viewModel.budgetScore,
-                    maxScore: 35
-                )
-                Divider().frame(height: 32)
-                breakdownItem(
-                    label: "Diversifikasi",
-                    score: viewModel.diversityScore,
-                    maxScore: 25
-                )
-            }
-            .padding(.vertical, Spacing.md)
-            .padding(.horizontal, Spacing.lg)
-            .background(Color.appCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .offset(y: -10)
-            .padding(.horizontal, Spacing.md)
-        }
-        .padding(.bottom, Spacing.sm)
-    }
-
-    private func breakdownItem(label: String, score: Int, maxScore: Int) -> some View {
-        let pct = Double(score) / Double(maxScore)
-        let color = healthScoreColor(score * 100 / max(maxScore, 1))
-        return VStack(spacing: 4) {
-            Text("\(score)/\(maxScore)")
-                .font(.app(14, weight: .bold))
-                .foregroundColor(.appText)
-
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(color.opacity(0.12))
-                    .frame(height: 6)
-
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(color)
-                    .frame(width: max(0, CGFloat(pct)) * 48, height: 6)
-            }
-            .frame(width: 48)
-
-            Text(label)
-                .font(.app(9))
-                .foregroundColor(.appTextSecondary)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func healthScoreColor(_ score: Int) -> Color {
+    private func healthColor(_ score: Int) -> Color {
         switch score {
-        case 80...100: return Color(red: 0.18, green: 0.75, blue: 0.44)
-        case 60..<80: return Color(red: 0.20, green: 0.60, blue: 0.95)
-        case 40..<60: return Color(red: 0.95, green: 0.60, blue: 0.12)
-        default: return Color(red: 0.90, green: 0.30, blue: 0.26)
+        case 60...: .appPrimary
+        case 40..<60: .appWarning
+        default: .appError
         }
     }
 
-    // MARK: - Budget Card
+    // MARK: Statistics
 
-    private var budgetCard: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "chart.pie.fill")
-                    .font(.app(12))
-                    .foregroundColor(.appPrimary)
-                Text("Sisa Budget Bulan Ini")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
+    private var statisticsSection: some View {
+        let remainingPct = viewModel.totalBudget > 0
+            ? "\(Int(max(0, viewModel.totalRemaining / viewModel.totalBudget * 100)))%" : "-"
+        let topCategory = viewModel.categorySpending.isEmpty
+            ? "-" : "\(viewModel.topCategoryName) · \(Int(viewModel.topCategoryPct))%"
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                SectionHeader(title: "Statistik bulan ini")
+                NavigationLink("Analisis") { AnalyticsView(viewModel: viewModel) }
+                    .font(.app(15))
+                    .foregroundStyle(Color.appPrimary)
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
 
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                Text(isBalanceVisible
-                     ? (viewModel.totalRemaining >= 0 ? viewModel.totalRemaining.formattedAsCurrency() : "Rp0")
-                     : "Rp********")
-                    .font(.app(34, weight: .bold))
-                    .foregroundColor(.appText)
-                Text(viewModel.totalRemaining >= 0 ? "\(Int(viewModel.totalBudget > 0 ? viewModel.totalRemaining / viewModel.totalBudget * 100 : 0))%" : "0%")
-                    .font(.app(13, weight: .semibold))
-                    .foregroundColor(viewModel.totalRemaining >= 0 ? .appPrimary : .appError)
-                    .padding(.top, 4)
-                Spacer()
+            VStack(spacing: 0) {
+                statRow("Rata-rata harian", isBalanceVisible ? viewModel.averageDailySpending.formattedAsCurrency() : "Rp" + hiddenAmount)
+                statRow("Total transaksi", "\(viewModel.currentMonthTransactionCount)")
+                statRow("Kategori tertinggi", topCategory)
+                statRow("Sisa budget", remainingPct)
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.sm)
+            .padding(.top, 8)
 
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Total Budget")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text(isBalanceVisible ? viewModel.totalBudget.formattedAsCurrency() : "Rp********")
-                        .font(.app(14, weight: .semibold))
-                        .foregroundColor(.appText)
+            let tips = viewModel.financialTips.prefix(2)
+            if !tips.isEmpty {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(tips) { tip in
+                        HStack(spacing: 12) {
+                            RoundedRectangle(cornerRadius: 1)
+                                .fill(tipColor(tip.type))
+                                .frame(width: 2)
+                            Text(tip.message)
+                                .font(.app(15))
+                                .lineSpacing(3)
+                                .foregroundStyle(Color.appBody)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text("Terpakai")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text(isBalanceVisible ? viewModel.totalSpent.formattedAsCurrency() : "Rp********")
-                        .font(.app(14, weight: .semibold))
-                        .foregroundColor(.appExpense)
-                }
+                .padding(.top, 20)
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.md)
-
-            ProgressView(value: viewModel.totalBudget > 0 ? min(viewModel.totalSpent / viewModel.totalBudget, 1.0) : 0)
-                .tint(viewModel.totalRemaining >= 0 ? .appPrimary : .appError)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.sm)
-                .padding(.bottom, Spacing.lg)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: "chart.pie.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.appPrimary.opacity(0.08))
-                .offset(x: -12, y: -4)
+        .padding(24)
+        .padding(.vertical, 4)
+    }
+
+    private func statRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(label)
+                .font(.app(16))
+                .foregroundStyle(Color.appTextSecondary)
+            Spacer()
+            Text(value)
+                .font(.app(16, weight: .medium))
+                .foregroundStyle(Color.appText)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+        }
+        .padding(.vertical, 14)
+        .rowSeparator()
+    }
+
+    private func tipColor(_ type: TipItem.TipType) -> Color {
+        switch type {
+        case .success: .appPrimary
+        case .info: .appTextTertiary
+        case .warning: .appWarning
         }
     }
 
-    // MARK: - Upcoming Bills Card
+    // MARK: Budget
 
-    private var upcomingBillsCard: some View {
-        VStack(spacing: 0) {
+    private var budgetSection: some View {
+        let over = viewModel.totalRemaining < 0
+        let pct = viewModel.totalBudget > 0 ? Int(max(0, viewModel.totalRemaining / viewModel.totalBudget * 100)) : 0
+        return VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Sisa budget", trailing: "\(pct)%", trailingColor: over ? .appError : .appTextSecondary)
+
+            HeroAmount(value: max(0, viewModel.totalRemaining), size: .medium, isVisible: isBalanceVisible)
+                .padding(.top, 14)
+
+            ThinProgress(
+                value: viewModel.totalBudget > 0 ? viewModel.totalSpent / viewModel.totalBudget : 0,
+                color: over ? .appError : .appText
+            )
+            .padding(.top, 18)
+
             HStack {
-                Image(systemName: "repeat")
-                    .font(.app(12))
-                    .foregroundColor(.appPrimary)
-                Text("Tagihan Terdekat")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
+                Text("Terpakai " + (isBalanceVisible ? viewModel.totalSpent.formattedAsCurrency() : "Rp" + hiddenAmount))
                 Spacer()
+                Text("Budget " + (isBalanceVisible ? viewModel.totalBudget.formattedAsCurrency() : "Rp" + hiddenAmount))
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
+            .font(.app(13))
+            .foregroundStyle(Color.appTextSecondary)
+            .monospacedDigit()
+            .padding(.top, 10)
+        }
+        .padding(24)
+        .padding(.vertical, 4)
+    }
+
+    // MARK: Bills
+
+    private var billsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(
+                title: "Tagihan terdekat",
+                trailing: viewModel.upcomingSubscriptions.isEmpty ? nil
+                    : (isBalanceVisible ? viewModel.totalMonthlySubscriptions.formattedAsCurrency() : "Rp" + hiddenAmount) + "/bln"
+            )
 
             if viewModel.upcomingSubscriptions.isEmpty {
                 Text("Belum ada tagihan berulang")
-                    .font(.app(13))
-                    .foregroundColor(.appTextSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.vertical, Spacing.lg)
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.top, 14)
             } else {
                 VStack(spacing: 0) {
                     ForEach(viewModel.upcomingSubscriptions) { sub in
-                        HStack(spacing: Spacing.sm) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.appExpense.opacity(0.1))
-                                    .frame(width: 34, height: 34)
-                                Image(systemName: "creditcard.fill")
-                                    .font(.app(12))
-                                    .foregroundColor(.appExpense)
-                            }
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(sub.name)
-                                    .font(.app(14, weight: .semibold))
-                                    .foregroundColor(.appText)
-                                    .lineLimit(1)
-                                Text("\(accountName(for: sub.accountId)) • \(sub.billingDateString)")
-                                    .font(.app(10))
-                                    .foregroundColor(.appTextSecondary)
-                                    .lineLimit(1)
-                            }
-                            Spacer(minLength: 8)
-                            Text(isBalanceVisible ? sub.amount.formattedAsCurrency() : "Rp******")
-                                .font(.app(13, weight: .semibold))
-                                .foregroundColor(.appText)
-                        }
-                        .padding(.horizontal, Spacing.xl)
-                        .padding(.vertical, 10)
-                        if sub.id != viewModel.upcomingSubscriptions.last?.id {
-                            Divider().padding(.leading, Spacing.xl + 46)
-                        }
+                        billRow(sub)
                     }
                 }
-                .padding(.top, Spacing.sm)
-
-                Divider()
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.sm)
-
-                HStack {
-                    Text("Total per bulan")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Spacer()
-                    Text(isBalanceVisible ? viewModel.totalMonthlySubscriptions.formattedAsCurrency() : "Rp******")
-                        .font(.app(13, weight: .semibold))
-                        .foregroundColor(.appExpense)
-                }
-                .padding(.horizontal, Spacing.xl)
-                .padding(.vertical, Spacing.md)
+                .padding(.top, 8)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
+        .padding(24)
+        .padding(.vertical, 4)
+    }
+
+    private func billRow(_ sub: CardSubscription) -> some View {
+        let date = sub.nextBillingDateAsDate
+        let daysLeft = date.map { Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: Date()), to: $0).day ?? 0 } ?? 99
+        return HStack(spacing: 16) {
+            VStack(spacing: 3) {
+                Text(date.map { Self.dayFormatter.string(from: $0) } ?? "-")
+                    .font(.app(22, weight: .light))
+                    .monospacedDigit()
+                Text(date.map { Self.monthFormatter.string(from: $0).uppercased() } ?? "")
+                    .font(.app(11, weight: .semibold))
+                    .tracking(0.5)
+                    .foregroundStyle(daysLeft <= 2 ? Color.appWarning : Color.appTextSecondary)
+            }
+            .frame(width: 40)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(sub.name)
+                    .font(.app(16, weight: .medium))
+                    .lineLimit(1)
+                Text(accountName(for: sub.accountId))
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            Text(isBalanceVisible ? sub.amount.formattedAsCurrency() : "Rp" + hiddenAmount)
+                .font(.app(16))
+                .monospacedDigit()
+        }
+        .foregroundStyle(Color.appText)
+        .padding(.vertical, 14)
+        .rowSeparator()
     }
 
     private func accountName(for id: String) -> String {
         viewModel.accounts.first(where: { $0.id == id })?.name ?? "Kartu Kredit"
     }
 
-    // MARK: - Transaction Card
+    // MARK: Cashflow + recent transactions
 
-    private var transactionCard: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "arrow.left.arrow.right")
-                    .font(.app(12))
-                    .foregroundColor(.appPrimary)
-                Text("Net Cashflow Bulan Ini")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
+    private var cashflowSection: some View {
+        let net = viewModel.netCashflow
+        let recent = Array(viewModel.recentTransactions.prefix(5))
+        return VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Net cashflow", trailing: "Semua transaksi", trailingColor: .appPrimary) {
+                selectedTab = .transactions
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
 
-            HStack(spacing: 0) {
-                Text("Rp")
-                    .font(.app(34, weight: .bold))
-                    .foregroundColor(.appText)
-                Text(isBalanceVisible
-                     ? viewModel.netCashflow.formattedAsCurrency().replacingOccurrences(of: "Rp", with: "")
-                     : "********")
-                    .font(.app(34, weight: .bold))
-                    .foregroundColor(.appText)
-                Spacer()
+            HeroAmount(
+                value: net,
+                size: .medium,
+                prefix: net > 0 ? "+Rp" : net < 0 ? "−Rp" : "Rp",
+                color: net > 0 ? .appIncome : .appText,
+                prefixColor: net > 0 ? .appIncome : .appTextSecondary,
+                isVisible: isBalanceVisible
+            )
+            .padding(.top, 14)
+
+            HStack(spacing: 28) {
+                flowTotal("Masuk", viewModel.totalIncome)
+                flowTotal("Keluar", viewModel.totalExpense)
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.sm)
+            .padding(.top, 12)
 
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: Spacing.md) {
-                miniStatCard(
-                    label: "Pemasukan",
-                    amount: viewModel.totalIncome,
-                    color: .appIncome,
-                    icon: "arrow.down"
-                )
-                miniStatCard(
-                    label: "Pengeluaran",
-                    amount: viewModel.totalExpense,
-                    color: .appExpense,
-                    icon: "arrow.up"
-                )
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.lg)
-
-            if !viewModel.recentTransactions.isEmpty {
-                Divider()
-                    .padding(.horizontal, Spacing.xl)
-
-                VStack(spacing: 0) {
-                    ForEach(Array(viewModel.recentTransactions.prefix(5))) { transaction in
-                        TransactionRow(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts, showWalletBadge: true)
-                            .contentShape(Rectangle())
-                            .onTapGesture { detailTransaction = transaction }
-                            .padding(.horizontal, Spacing.xl)
-                            .padding(.vertical, Spacing.sm)
-                        if transaction.id != viewModel.recentTransactions.prefix(5).last?.id {
-                            Divider()
-                                .padding(.leading, 72)
-                        }
-                    }
+            ForEach(Array(recent.enumerated()), id: \.element.id) { index, transaction in
+                if index == 0 || !Calendar.current.isDate(transaction.date, inSameDayAs: recent[index - 1].date) {
+                    Text(Self.dayHeader(for: transaction.date))
+                        .font(.app(13))
+                        .tracking(0.2)
+                        .foregroundStyle(Color.appTextSecondary)
+                        .padding(.top, index == 0 ? 28 : 22)
                 }
-                .padding(.vertical, Spacing.sm)
-            }
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: "arrow.left.arrow.right")
-                .font(.system(size: 48))
-                .foregroundColor(.appPrimary.opacity(0.08))
-                .offset(x: -12, y: -4)
-        }
-    }
-
-    private func miniStatCard(label: String, amount: Double, color: Color, icon: String) -> some View {
-        HStack(spacing: Spacing.sm) {
-            Circle()
-                .fill(color.opacity(0.15))
-                .frame(width: 32, height: 32)
-                .overlay {
-                    Image(systemName: icon)
-                        .font(.app(11))
-                        .foregroundColor(color)
+                Button { detailTransaction = transaction } label: {
+                    TransactionRowView(
+                        transaction: transaction,
+                        categories: viewModel.categories,
+                        accounts: viewModel.accounts,
+                        showBalance: isBalanceVisible,
+                        showAccount: true,
+                        showDate: false
+                    )
+                    .rowSeparator()
                 }
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label)
-                    .font(.app(10))
-                    .foregroundColor(.appTextSecondary)
-                Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp******")
-                    .font(.app(14, weight: .semibold))
-                    .foregroundColor(color)
+                .buttonStyle(.plain)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, 10)
-        .background(color.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
+        .padding(.bottom, 24)
     }
 
-    private func abbreviatedAmount(_ amount: Double) -> String {
-        let prefix = amount < 0 ? "-" : (amount > 0 ? "" : "")
-        let absVal = abs(amount)
-        let formatted: String
-        switch absVal {
-        case 1_000_000_000...:
-            formatted = String(format: "%.1f Miliar", absVal / 1_000_000_000)
-        case 1_000_000...:
-            formatted = String(format: "%.0f Juta", absVal / 1_000_000)
-        case 1_000...:
-            formatted = String(format: "%.0f Ribu", absVal / 1_000)
-        default:
-            formatted = String(Int(absVal))
-        }
-        return "\(prefix)\(formatted)"
+    private func flowTotal(_ label: String, _ amount: Double) -> some View {
+        (Text(label + " ").foregroundStyle(Color.appTextSecondary)
+            + Text(isBalanceVisible ? amount.abbreviatedRupiah() : hiddenAmount)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.appText))
+            .font(.app(15))
+            .monospacedDigit()
     }
-}
 
-// MARK: - Transaction Row
+    // MARK: Formatting
 
-struct TransactionRow: View {
-    let transaction: Transaction
-    let categories: [Category]
-    let accounts: [Account]
-    var showWalletBadge: Bool = false
-
-    var body: some View {
-        TransactionRowView(
-            transaction: transaction,
-            categories: categories,
-            accounts: accounts,
-            showWalletBadge: showWalletBadge
-        )
+    /// "Hari ini", "Kemarin", or "Kamis, 24 Sep".
+    static func dayHeader(for date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) { return "Hari ini" }
+        if calendar.isDateInYesterday(date) { return "Kemarin" }
+        return shortDayFormatter.string(from: date)
     }
+
+    private static func formatter(_ format: String) -> DateFormatter {
+        let f = DateFormatter()
+        f.dateFormat = format
+        f.locale = Locale(identifier: "id_ID")
+        return f
+    }
+
+    private static let headerDateFormatter = formatter("EEEE, d MMMM")
+    private static let shortDayFormatter = formatter("EEEE, d MMM")
+    private static let dayFormatter = formatter("d")
+    private static let monthFormatter = formatter("MMM")
 }

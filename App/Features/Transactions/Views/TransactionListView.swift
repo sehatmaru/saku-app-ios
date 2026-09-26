@@ -467,7 +467,7 @@ struct TransactionListView: View {
                         LazyVStack(spacing: 0) {
                             ForEach(Array(section.transactions.enumerated()), id: \.element.id) { index, transaction in
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts)) {
-                                    TransactionRowView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts, showBalance: isBalanceVisible, showWalletBadge: true)
+                                    TransactionRowView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts, showBalance: isBalanceVisible, showAccount: true)
                                 }
                                 .buttonStyle(RowPressStyle())
                                 .padding(.horizontal, Spacing.lg)
