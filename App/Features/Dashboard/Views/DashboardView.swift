@@ -11,34 +11,33 @@ struct DashboardView: View {
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
     @State private var detailTransaction: Transaction?
+    @State private var selectedTab: AppTab = .home
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack { mainContent }
-                .tabItem {
-                    Label("Beranda", systemImage: "house.fill")
-                }
+                .tag(AppTab.home)
+                .toolbar(.hidden, for: .tabBar)
 
             TransactionListView()
-                .tabItem {
-                    Label("Transaksi", systemImage: "arrow.left.arrow.right")
-                }
+                .tag(AppTab.transactions)
+                .toolbar(.hidden, for: .tabBar)
 
             BudgetListView()
-                .tabItem {
-                    Label("Budget", systemImage: "chart.pie.fill")
-                }
+                .tag(AppTab.budget)
+                .toolbar(.hidden, for: .tabBar)
 
             AccountListView()
-                .tabItem {
-                    Label("Akun", systemImage: "wallet.pass.fill")
-                }
+                .tag(AppTab.wallet)
+                .toolbar(.hidden, for: .tabBar)
 
             ProfileView()
                 .environmentObject(authViewModel)
-                .tabItem {
-                    Label("Akun", systemImage: "person.fill")
-                }
+                .tag(AppTab.profile)
+                .toolbar(.hidden, for: .tabBar)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            FloatingTabBar(selection: $selectedTab) { showAddSheet = true }
         }
         .tint(.appPrimary)
         .onAppear {
