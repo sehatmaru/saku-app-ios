@@ -99,7 +99,7 @@ struct TransactionListView: View {
                                 isBalanceVisibleStorage = isBalanceVisible
                             } label: {
                                 Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
-                                    .font(.jakarta(16))
+                                    .font(.app(16))
                                     .foregroundColor(.appTextSecondary)
                             }
                         }
@@ -112,7 +112,7 @@ struct TransactionListView: View {
                                 }
                             } label: {
                                 Image(systemName: "chevron.up")
-                                    .font(.jakarta(16, weight: .semibold))
+                                    .font(.app(16, weight: .semibold))
                                     .foregroundColor(.white)
                                     .frame(width: 44, height: 44)
                                     .background(Color.appPrimary)
@@ -180,10 +180,10 @@ struct TransactionListView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "arrow.left.arrow.right")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Net Cashflow Bulan Ini")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -195,7 +195,7 @@ struct TransactionListView: View {
                 Text(isBalanceVisible
                      ? balance.formattedAsCurrency()
                      : "Rp********")
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(isBalanceVisible ? (balance >= 0 ? .appIncome : .appError) : .appText)
                     .contentTransition(.numericText())
                 Spacer()
@@ -221,9 +221,9 @@ struct TransactionListView: View {
             } label: {
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: "plus")
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                     Text("Tambah Transaksi")
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -249,10 +249,10 @@ struct TransactionListView: View {
     private func statItem(title: String, amount: Double, color: Color) -> some View {
         VStack(spacing: 4) {
             Text(title)
-                .font(.jakarta(11))
+                .font(.app(11))
                 .foregroundColor(.appTextSecondary)
             Text(isBalanceVisible ? (amount > 0 ? abbreviatedAmount(amount) : "Rp0") : "Rp******")
-                .font(.jakarta(13, weight: .semibold))
+                .font(.app(13, weight: .semibold))
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
@@ -364,7 +364,7 @@ struct TransactionListView: View {
             showAdvancedSearch = true
         } label: {
             Text(Image(systemName: "line.3.horizontal.decrease"))
-                .font(.jakarta(14, weight: filter.hasActiveFilters ? .semibold : .regular))
+                .font(.app(14, weight: filter.hasActiveFilters ? .semibold : .regular))
                 .padding(.horizontal, Spacing.lg)
                 .padding(.vertical, Spacing.sm)
                 .background(filter.hasActiveFilters ? Color.appPrimary.opacity(0.12) : Color(.systemGray6))
@@ -373,7 +373,7 @@ struct TransactionListView: View {
                 .overlay(alignment: .topTrailing) {
                     if filter.hasActiveFilters {
                         Text("\(filter.activeFilterCount)")
-                            .font(.jakarta(9, weight: .bold))
+                            .font(.app(9, weight: .bold))
                             .foregroundColor(.white)
                             .frame(width: 14, height: 14)
                             .background(Color.appPrimary)
@@ -499,17 +499,17 @@ struct TransactionListView: View {
 
                 HStack(spacing: 4) {
                     Text(section.label)
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                         .foregroundColor(.appText)
 
                     Spacer()
 
                     Text("\(section.transactions.count) transaksi")
-                        .font(.jakarta(13, weight: .semibold))
+                        .font(.app(13, weight: .semibold))
                         .foregroundColor(.appTextSecondary)
 
                     Image(systemName: "chevron.down")
-                        .font(.jakarta(9))
+                        .font(.app(9))
                         .foregroundColor(.appTextSecondary)
                         .rotationEffect(.degrees(expandedMonths.contains(section.id) ? 0 : -90))
                         .padding(.leading, 4)
@@ -530,14 +530,14 @@ struct TransactionListView: View {
 
         return VStack(spacing: Spacing.md) {
             Image(systemName: isSearchEmpty ? "magnifyingglass" : "tray")
-                .font(.jakarta(40))
+                .font(.app(40))
                 .foregroundColor(.appTextSecondary)
             Text(isSearchEmpty ? "Tidak ada hasil" : "Belum ada transaksi")
-                .font(.jakarta(15))
+                .font(.app(15))
                 .foregroundColor(.appTextSecondary)
             if isSearchEmpty {
                 Text("Cari \"\(trimmedSearchText)\"")
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .foregroundColor(.appTextSecondary.opacity(0.7))
             }
         }
@@ -556,7 +556,7 @@ struct ActiveFilterChip: View {
 
     var body: some View {
         Text(title)
-            .font(.jakarta(14))
+            .font(.app(14))
             .fontWeight(.semibold)
             .lineLimit(1)
             .padding(.leading, Spacing.lg)
@@ -568,7 +568,7 @@ struct ActiveFilterChip: View {
             .overlay(alignment: .topTrailing) {
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
-                        .font(.jakarta(7, weight: .bold))
+                        .font(.app(7, weight: .bold))
                         .foregroundColor(.white)
                         .padding(3)
                         .background(Color.appPrimary)

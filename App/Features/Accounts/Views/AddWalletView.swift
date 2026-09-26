@@ -103,9 +103,9 @@ struct AddWalletView: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "chevron.left")
-                                    .font(.jakarta(12, weight: .semibold))
+                                    .font(.app(12, weight: .semibold))
                                 Text("Kembali")
-                                    .font(.jakarta(15, weight: .semibold))
+                                    .font(.app(15, weight: .semibold))
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -123,7 +123,7 @@ struct AddWalletView: View {
                         }
                     } label: {
                         Text(step == totalSteps ? "Simpan" : "Lanjut")
-                            .font(.jakarta(15, weight: .semibold))
+                            .font(.app(15, weight: .semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(canProceed ? Color.appPrimary : Color.appPrimary.opacity(0.4))
@@ -182,7 +182,7 @@ struct AddWalletView: View {
         VStack(spacing: Spacing.md) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Pilih Jenis Akun")
-                    .font(.jakarta(22, weight: .bold))
+                    .font(.app(22, weight: .bold))
                     .foregroundColor(.appText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -216,16 +216,16 @@ struct AddWalletView: View {
                         .fill(isActive ? cardColor : Color(.systemGray6))
                         .frame(width: 44, height: 44)
                     Image(systemName: icon)
-                        .font(.jakarta(18, weight: .semibold))
+                        .font(.app(18, weight: .semibold))
                         .foregroundColor(isActive ? .white : cardColor)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                         .foregroundColor(.appText)
                     Text(desc)
-                        .font(.jakarta(12))
+                        .font(.app(12))
                         .foregroundColor(.appTextSecondary)
                 }
 
@@ -233,7 +233,7 @@ struct AddWalletView: View {
 
                 if isActive {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.jakarta(20))
+                        .font(.app(20))
                         .foregroundColor(cardColor)
                         .transition(.scale.combined(with: .opacity))
                 }
@@ -259,7 +259,7 @@ struct AddWalletView: View {
         VStack(spacing: Spacing.xl) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Pilih \(category == .credit ? "Kartu" : category == .bank ? "Bank" : "E-Wallet")")
-                    .font(.jakarta(22, weight: .bold))
+                    .font(.app(22, weight: .bold))
                     .foregroundColor(.appText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -287,14 +287,14 @@ struct AddWalletView: View {
                 }
 
                 Text(icon.name)
-                    .font(.jakarta(15, weight: .medium))
+                    .font(.app(15, weight: .medium))
                     .foregroundColor(.appText)
 
                 Spacer()
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.jakarta(20))
+                        .font(.app(20))
                         .foregroundColor(typeColor)
                         .transition(.scale.combined(with: .opacity))
                 }
@@ -320,16 +320,16 @@ struct AddWalletView: View {
         VStack(spacing: Spacing.xl) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Nama \(category == .credit ? "Kartu" : "Akun")")
-                    .font(.jakarta(22, weight: .bold))
+                    .font(.app(22, weight: .bold))
                     .foregroundColor(.appText)
                 Text("Beri nama yang mudah dikenali")
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .foregroundColor(.appTextSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             TextField(category == .credit ? "cth: BCA Visa Platinum" : "cth: BCA Payroll", text: $name)
-                .font(.jakarta(16))
+                .font(.app(16))
                 .padding(Spacing.md)
                 .background(Color.appCardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -343,10 +343,10 @@ struct AddWalletView: View {
         VStack(spacing: Spacing.xl) {
             VStack(alignment: .leading, spacing: 8) {
                 Text(category == .credit ? "Limit Kartu Kredit" : "Saldo Awal")
-                    .font(.jakarta(22, weight: .bold))
+                    .font(.app(22, weight: .bold))
                     .foregroundColor(.appText)
                 Text(category == .credit ? "Masukkan limit kartu kredit" : "Masukkan saldo saat ini")
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .foregroundColor(.appTextSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -354,16 +354,16 @@ struct AddWalletView: View {
             VStack(spacing: 4) {
                 HStack(spacing: 4) {
                     Text("Rp")
-                        .font(.jakarta(34, weight: .bold))
+                        .font(.app(34, weight: .bold))
                         .foregroundColor(.appText)
                     Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
-                        .font(.jakarta(34, weight: .bold))
+                        .font(.app(34, weight: .bold))
                         .foregroundColor(.appText)
                     Spacer()
                     if !amountDigits.isEmpty {
                         Button { amountDigits = "" } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.jakarta(20))
+                                .font(.app(20))
                                 .foregroundColor(.appTextSecondary.opacity(0.4))
                         }
                         .buttonStyle(.plain)
@@ -386,10 +386,10 @@ struct AddWalletView: View {
         VStack(spacing: Spacing.xl) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Jatuh Tempo")
-                    .font(.jakarta(22, weight: .bold))
+                    .font(.app(22, weight: .bold))
                     .foregroundColor(.appText)
                 Text("Tagihan akan jatuh tempo setiap tanggal")
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .foregroundColor(.appTextSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -397,14 +397,14 @@ struct AddWalletView: View {
             VStack(spacing: 0) {
                 HStack {
                     Image(systemName: "calendar")
-                        .font(.jakarta(14))
+                        .font(.app(14))
                         .foregroundColor(.appPrimary)
                     Text("Tanggal Tagihan")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Spacer()
                     Text("\(selectedDueDay)")
-                        .font(.jakarta(20, weight: .bold))
+                        .font(.app(20, weight: .bold))
                         .foregroundColor(.appPrimary)
                 }
                 .padding(.horizontal, Spacing.lg)
@@ -427,7 +427,7 @@ struct AddWalletView: View {
                             withAnimation(.spring(response: 0.3)) { selectedDueDay = day }
                         } label: {
                             Text("\(day)")
-                                .font(.jakarta(14, weight: isSelected ? .bold : .medium))
+                                .font(.app(14, weight: isSelected ? .bold : .medium))
                                 .foregroundColor(isSelected ? .white : .appText)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 8)

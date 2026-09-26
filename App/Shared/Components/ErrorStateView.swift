@@ -13,11 +13,11 @@ struct ErrorStateView: View {
                 .foregroundColor(.appTextSecondary)
 
             Text("Gagal memuat data")
-                .font(.jakarta(17, weight: .semibold))
+                .font(.app(17, weight: .semibold))
                 .foregroundColor(.appText)
 
             Text(message)
-                .font(.jakarta(13))
+                .font(.app(13))
                 .foregroundColor(.appTextSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Spacing.xxl)
@@ -27,9 +27,9 @@ struct ErrorStateView: View {
             } label: {
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.jakarta(14, weight: .semibold))
+                        .font(.app(14, weight: .semibold))
                     Text("Coba Lagi")
-                        .font(.jakarta(14, weight: .semibold))
+                        .font(.app(14, weight: .semibold))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -50,11 +50,11 @@ struct ErrorBanner: View {
     var body: some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: "exclamationmark.icloud.fill")
-                .font(.jakarta(12))
+                .font(.app(12))
                 .foregroundColor(.appWarning)
 
             Text(message)
-                .font(.jakarta(12))
+                .font(.app(12))
                 .foregroundColor(.appTextSecondary)
                 .lineLimit(2)
 

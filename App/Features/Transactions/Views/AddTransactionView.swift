@@ -79,7 +79,7 @@ struct AddTransactionView: View {
                             .tint(.appPrimary)
                     } else {
                         Button("Simpan") { save() }
-                            .font(.jakarta(15, weight: .bold))
+                            .font(.app(15, weight: .bold))
                             .foregroundColor(canSave ? .appPrimary : .appTextSecondary.opacity(0.4))
                             .disabled(!canSave)
                     }
@@ -157,10 +157,10 @@ struct AddTransactionView: View {
     private var amountSection: some View {
         HStack(spacing: 4) {
             Text("Rp")
-                .font(.jakarta(34, weight: .bold))
+                .font(.app(34, weight: .bold))
                 .foregroundColor(.appText)
             Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
-                .font(.jakarta(34, weight: .bold))
+                .font(.app(34, weight: .bold))
                 .foregroundColor(.appText)
             Spacer()
             if !amountDigits.isEmpty {
@@ -168,7 +168,7 @@ struct AddTransactionView: View {
                     amountDigits = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.jakarta(20))
+                        .font(.app(20))
                         .foregroundColor(.appTextSecondary.opacity(0.4))
                 }
                 .buttonStyle(.plain)
@@ -200,8 +200,8 @@ struct AddTransactionView: View {
             withAnimation(.interactiveSpring(response: 0.25)) { selectedType = type }
         } label: {
             VStack(spacing: Spacing.xs) {
-                Image(systemName: icon).font(.jakarta(18, weight: .semibold))
-                Text(title).font(.jakarta(11, weight: .medium))
+                Image(systemName: icon).font(.app(18, weight: .semibold))
+                Text(title).font(.app(11, weight: .medium))
             }
             .frame(maxWidth: .infinity, minHeight: 52)
             .foregroundColor(isActive ? .white : .appTextSecondary)
@@ -218,7 +218,7 @@ struct AddTransactionView: View {
         VStack(spacing: 0) {
             inputRow(icon: "pencil", iconColor: .appTextSecondary, label: "Judul") {
                 TextField("Deskripsi transaksi", text: $titleText)
-                    .font(.jakarta(15)).foregroundColor(.appText)
+                    .font(.app(15)).foregroundColor(.appText)
             } accessory: {
                 if !titleText.isEmpty { clearBtn { titleText = "" } }
             }
@@ -249,7 +249,7 @@ struct AddTransactionView: View {
                 rowDivider
                 inputRow(icon: "doc.text", iconColor: .appTextSecondary, label: "Catatan") {
                     TextField("Opsional", text: $noteText)
-                        .font(.jakarta(15)).foregroundColor(.appText)
+                        .font(.app(15)).foregroundColor(.appText)
                 } accessory: {
                     if !noteText.isEmpty { clearBtn { noteText = "" } }
                 }
@@ -269,7 +269,7 @@ struct AddTransactionView: View {
         HStack(spacing: Spacing.md) {
             iconCircle(icon, iconColor)
             VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.jakarta(10)).foregroundColor(.appTextSecondary)
+                Text(label).font(.app(10)).foregroundColor(.appTextSecondary)
                 content()
             }
             Spacer(minLength: 8)
@@ -283,11 +283,11 @@ struct AddTransactionView: View {
         HStack(spacing: Spacing.md) {
             iconCircle(icon, isSelected ? iconColor : .appTextSecondary)
             VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.jakarta(10)).foregroundColor(.appTextSecondary)
-                Text(value).font(.jakarta(15)).foregroundColor(isSelected ? .appText : .appTextSecondary.opacity(0.6))
+                Text(label).font(.app(10)).foregroundColor(.appTextSecondary)
+                Text(value).font(.app(15)).foregroundColor(isSelected ? .appText : .appTextSecondary.opacity(0.6))
             }
             Spacer(minLength: 8)
-            Image(systemName: "chevron.right").font(.jakarta(10)).foregroundColor(.appTextSecondary.opacity(0.4))
+            Image(systemName: "chevron.right").font(.app(10)).foregroundColor(.appTextSecondary.opacity(0.4))
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 14)
@@ -303,11 +303,11 @@ struct AddTransactionView: View {
                 iconCircle("wallet.pass.fill", isSelected ? .appPrimary : .appTextSecondary)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.jakarta(10)).foregroundColor(.appTextSecondary)
-                Text(value).font(.jakarta(15)).foregroundColor(isSelected ? .appText : .appTextSecondary.opacity(0.6))
+                Text(label).font(.app(10)).foregroundColor(.appTextSecondary)
+                Text(value).font(.app(15)).foregroundColor(isSelected ? .appText : .appTextSecondary.opacity(0.6))
             }
             Spacer(minLength: 8)
-            Image(systemName: "chevron.right").font(.jakarta(10)).foregroundColor(.appTextSecondary.opacity(0.4))
+            Image(systemName: "chevron.right").font(.app(10)).foregroundColor(.appTextSecondary.opacity(0.4))
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 14)
@@ -317,7 +317,7 @@ struct AddTransactionView: View {
     private func iconCircle(_ icon: String, _ color: Color) -> some View {
         ZStack {
             Circle().fill(color.opacity(0.12)).frame(width: 34, height: 34)
-            Image(systemName: icon).font(.jakarta(14, weight: .semibold)).foregroundColor(color)
+            Image(systemName: icon).font(.app(14, weight: .semibold)).foregroundColor(color)
         }
     }
 
@@ -328,7 +328,7 @@ struct AddTransactionView: View {
     private func clearBtn(action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: "xmark.circle.fill")
-                .font(.jakarta(16))
+                .font(.app(16))
                 .foregroundColor(.appTextSecondary.opacity(0.4))
         }
         .buttonStyle(.plain)
@@ -361,10 +361,10 @@ struct AddTransactionView: View {
     private func chipBtn(icon: String, label: String, color: Color, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: Spacing.sm) {
-                Image(systemName: icon).font(.jakarta(15)).foregroundColor(isSelected ? color : color.opacity(0.7))
-                Text(label).font(.jakarta(14)).fontWeight(isSelected ? .semibold : .regular).lineLimit(1)
+                Image(systemName: icon).font(.app(15)).foregroundColor(isSelected ? color : color.opacity(0.7))
+                Text(label).font(.app(14)).fontWeight(isSelected ? .semibold : .regular).lineLimit(1)
                 Spacer(minLength: 0)
-                if isSelected { Image(systemName: "checkmark").font(.jakarta(11, weight: .bold)).foregroundColor(color) }
+                if isSelected { Image(systemName: "checkmark").font(.app(11, weight: .bold)).foregroundColor(color) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Spacing.md)
@@ -417,11 +417,11 @@ struct AddTransactionView: View {
     private func sectionHeader(_ name: String, count: Int) -> some View {
         HStack {
             Text(name)
-                .font(.jakarta(13, weight: .semibold))
+                .font(.app(13, weight: .semibold))
                 .foregroundColor(.appText)
             Spacer()
             Text("\(count)")
-                .font(.jakarta(11))
+                .font(.app(11))
                 .foregroundColor(.appTextSecondary)
         }
         .padding(.horizontal, Spacing.md)
@@ -434,9 +434,9 @@ struct AddTransactionView: View {
         } label: {
             HStack(spacing: Spacing.xs) {
                 Image(systemName: expanded.wrappedValue ? "chevron.up" : "chevron.down")
-                    .font(.jakarta(10))
+                    .font(.app(10))
                 Text(expanded.wrappedValue ? "Sembunyikan" : "Lihat Semua (\(count))")
-                    .font(.jakarta(12, weight: .medium))
+                    .font(.app(12, weight: .medium))
             }
             .foregroundColor(.appPrimary)
             .frame(maxWidth: .infinity)
@@ -451,13 +451,13 @@ struct AddTransactionView: View {
             HStack(spacing: Spacing.sm) {
                 WalletIconView(icon: wi, size: 36)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(acc.name).font(.jakarta(14, weight: selectedId == acc.id ? .semibold : .regular))
+                    Text(acc.name).font(.app(14, weight: selectedId == acc.id ? .semibold : .regular))
                         .foregroundColor(selectedId == acc.id ? .appPrimary : .appText).lineLimit(1)
                     Text(acc.isCreditCard ? "Sisa Limit \(acc.availableCredit?.formattedAsCurrency() ?? "-")" : acc.balance.formattedAsCurrency())
-                        .font(.jakarta(10)).foregroundColor(.appTextSecondary).lineLimit(1)
+                        .font(.app(10)).foregroundColor(.appTextSecondary).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                if selectedId == acc.id { Image(systemName: "checkmark").font(.jakarta(11, weight: .bold)).foregroundColor(.appPrimary) }
+                if selectedId == acc.id { Image(systemName: "checkmark").font(.app(11, weight: .bold)).foregroundColor(.appPrimary) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Spacing.md)
@@ -548,10 +548,10 @@ struct EmptyWalletView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.appTextSecondary.opacity(0.5))
             Text("Belum ada dompet")
-                .font(.jakarta(17, weight: .semibold))
+                .font(.app(17, weight: .semibold))
                 .foregroundColor(.appText)
             Text("Buat dompet terlebih dahulu\nsebelum menambahkan transaksi.")
-                .font(.jakarta(13))
+                .font(.app(13))
                 .foregroundColor(.appTextSecondary)
                 .multilineTextAlignment(.center)
             Spacer()

@@ -67,7 +67,7 @@ struct AddSubscriptionView: View {
                             .tint(.appPrimary)
                     } else {
                         Button("Simpan") { save() }
-                            .font(.jakarta(15, weight: .bold))
+                            .font(.app(15, weight: .bold))
                             .foregroundColor(canSave ? .appPrimary : .appTextSecondary.opacity(0.4))
                             .disabled(!canSave)
                     }
@@ -99,10 +99,10 @@ struct AddSubscriptionView: View {
     private var amountSection: some View {
         HStack(spacing: 4) {
             Text("Rp")
-                .font(.jakarta(34, weight: .bold))
+                .font(.app(34, weight: .bold))
                 .foregroundColor(.appText)
             Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
-                .font(.jakarta(34, weight: .bold))
+                .font(.app(34, weight: .bold))
                 .foregroundColor(.appText)
             Spacer()
             if !amountDigits.isEmpty {
@@ -110,7 +110,7 @@ struct AddSubscriptionView: View {
                     amountDigits = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.jakarta(20))
+                        .font(.app(20))
                         .foregroundColor(.appTextSecondary.opacity(0.4))
                 }
                 .buttonStyle(.plain)
@@ -129,7 +129,7 @@ struct AddSubscriptionView: View {
         VStack(spacing: 0) {
             inputRow(icon: "pencil", iconColor: .appTextSecondary, label: "Nama Tagihan") {
                 TextField("Contoh: Netflix", text: $nameText)
-                    .font(.jakarta(15)).foregroundColor(.appText)
+                    .font(.app(15)).foregroundColor(.appText)
             } accessory: {
                 if !nameText.isEmpty { clearBtn { nameText = "" } }
             }
@@ -152,7 +152,7 @@ struct AddSubscriptionView: View {
 
             inputRow(icon: "doc.text", iconColor: .appTextSecondary, label: "Catatan") {
                 TextField("Opsional", text: $noteText)
-                    .font(.jakarta(15)).foregroundColor(.appText)
+                    .font(.app(15)).foregroundColor(.appText)
             } accessory: {
                 if !noteText.isEmpty { clearBtn { noteText = "" } }
             }
@@ -165,7 +165,7 @@ struct AddSubscriptionView: View {
         HStack(spacing: Spacing.md) {
             iconCircle("repeat", .appPrimary)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Frekuensi").font(.jakarta(10)).foregroundColor(.appTextSecondary)
+                Text("Frekuensi").font(.app(10)).foregroundColor(.appTextSecondary)
                 Picker("Frekuensi", selection: $selectedFrequency) {
                     Text("Bulanan").tag(CardSubscription.Frequency.monthly)
                     Text("Tahunan").tag(CardSubscription.Frequency.yearly)
@@ -190,7 +190,7 @@ struct AddSubscriptionView: View {
         HStack(spacing: Spacing.md) {
             iconCircle(icon, iconColor)
             VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.jakarta(10)).foregroundColor(.appTextSecondary)
+                Text(label).font(.app(10)).foregroundColor(.appTextSecondary)
                 content()
             }
             Spacer(minLength: 8)
@@ -204,11 +204,11 @@ struct AddSubscriptionView: View {
         HStack(spacing: Spacing.md) {
             iconCircle(icon, isSelected ? iconColor : .appTextSecondary)
             VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.jakarta(10)).foregroundColor(.appTextSecondary)
-                Text(value).font(.jakarta(15)).foregroundColor(isSelected ? .appText : .appTextSecondary.opacity(0.6))
+                Text(label).font(.app(10)).foregroundColor(.appTextSecondary)
+                Text(value).font(.app(15)).foregroundColor(isSelected ? .appText : .appTextSecondary.opacity(0.6))
             }
             Spacer(minLength: 8)
-            Image(systemName: "chevron.right").font(.jakarta(10)).foregroundColor(.appTextSecondary.opacity(0.4))
+            Image(systemName: "chevron.right").font(.app(10)).foregroundColor(.appTextSecondary.opacity(0.4))
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 14)
@@ -218,7 +218,7 @@ struct AddSubscriptionView: View {
     private func iconCircle(_ icon: String, _ color: Color) -> some View {
         ZStack {
             Circle().fill(color.opacity(0.12)).frame(width: 34, height: 34)
-            Image(systemName: icon).font(.jakarta(14, weight: .semibold)).foregroundColor(color)
+            Image(systemName: icon).font(.app(14, weight: .semibold)).foregroundColor(color)
         }
     }
 
@@ -229,7 +229,7 @@ struct AddSubscriptionView: View {
     private func clearBtn(action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: "xmark.circle.fill")
-                .font(.jakarta(16))
+                .font(.app(16))
                 .foregroundColor(.appTextSecondary.opacity(0.4))
         }
         .buttonStyle(.plain)
@@ -262,10 +262,10 @@ struct AddSubscriptionView: View {
     private func chipBtn(icon: String, label: String, color: Color, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: Spacing.sm) {
-                Image(systemName: icon).font(.jakarta(15)).foregroundColor(isSelected ? color : color.opacity(0.7))
-                Text(label).font(.jakarta(14)).fontWeight(isSelected ? .semibold : .regular).lineLimit(1)
+                Image(systemName: icon).font(.app(15)).foregroundColor(isSelected ? color : color.opacity(0.7))
+                Text(label).font(.app(14)).fontWeight(isSelected ? .semibold : .regular).lineLimit(1)
                 Spacer(minLength: 0)
-                if isSelected { Image(systemName: "checkmark").font(.jakarta(11, weight: .bold)).foregroundColor(color) }
+                if isSelected { Image(systemName: "checkmark").font(.app(11, weight: .bold)).foregroundColor(color) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Spacing.md)

@@ -12,18 +12,18 @@ struct SignInView: View {
                 Spacer()
 
                 Image(systemName: "leaf.fill")
-                    .font(.jakarta(80))
+                    .font(.app(80))
                     .foregroundColor(.white)
 
                 HStack(spacing: Spacing.xs) {
                     Text("kelola")
-                        .font(.jakarta(15, weight: .light))
+                        .font(.app(15, weight: .light))
                     Text("finansialmu")
-                        .font(.jakarta(22, weight: .bold))
+                        .font(.app(22, weight: .bold))
                     Text("dengan")
-                        .font(.jakarta(15, weight: .light))
+                        .font(.app(15, weight: .light))
                     Text("SakuQ")
-                        .font(.jakarta(22, weight: .bold))
+                        .font(.app(22, weight: .bold))
                 }
                 .foregroundColor(.white)
 
@@ -66,7 +66,7 @@ struct SignInView: View {
                     Color(.systemGray5)
                         .frame(height: 1)
                     Text("atau")
-                        .font(.jakarta(12))
+                        .font(.app(12))
                         .foregroundColor(.appTextSecondary)
                     Color(.systemGray5)
                         .frame(height: 1)
@@ -76,7 +76,7 @@ struct SignInView: View {
                     showGuestSheet = true
                 } label: {
                     Text("Lanjutkan sebagai Tamu")
-                        .font(.jakarta(15, weight: .medium))
+                        .font(.app(15, weight: .medium))
                         .foregroundColor(.appPrimary)
                 }
                 .buttonStyle(.plain)
@@ -125,18 +125,18 @@ struct SignInView: View {
                     .foregroundColor(.appPrimary)
 
                 Text("Perkenalkan dirimu")
-                    .font(.jakarta(22, weight: .bold))
+                    .font(.app(22, weight: .bold))
                     .foregroundColor(.appText)
 
                 Text("Masukkan namamu untuk memulai")
-                    .font(.jakarta(14))
+                    .font(.app(14))
                     .foregroundColor(.appTextSecondary)
             }
             .padding(.top, Spacing.xxl)
 
             TextField("Nama kamu", text: $guestName)
                 .textFieldStyle(.plain)
-                .font(.jakarta(17))
+                .font(.app(17))
                 .padding()
                 .background(Color(.systemGray6))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -175,7 +175,7 @@ struct SignInView: View {
                     icon()
                         .frame(width: 20, height: 20)
                     Text(label)
-                        .font(.jakarta(15, weight: .medium))
+                        .font(.app(15, weight: .medium))
                 }
             }
             .frame(maxWidth: .infinity)

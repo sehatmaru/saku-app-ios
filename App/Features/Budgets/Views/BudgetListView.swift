@@ -84,7 +84,7 @@ struct BudgetListView: View {
                             showAddBudget = true
                         } label: {
                             Image(systemName: "plus")
-                                .font(.jakarta(16, weight: .semibold))
+                                .font(.app(16, weight: .semibold))
                                 .foregroundColor(.appPrimary)
                         }
                         Button {
@@ -92,7 +92,7 @@ struct BudgetListView: View {
                             isBalanceVisibleStorage = isBalanceVisible
                         } label: {
                             Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
-                                .font(.jakarta(16))
+                                .font(.app(16))
                                 .foregroundColor(.appTextSecondary)
                         }
                     }
@@ -190,21 +190,21 @@ struct BudgetListView: View {
             } label: {
                 HStack {
                     Image(systemName: "chart.pie")
-                        .font(.jakarta(12))
+                        .font(.app(12))
                         .foregroundColor(.appTextSecondary)
                     Text("Belum diatur")
-                        .font(.jakarta(13, weight: .medium))
+                        .font(.app(13, weight: .medium))
                         .foregroundColor(.appText)
                     Spacer()
                     Text("\(unsetItems.count)")
-                        .font(.jakarta(12, weight: .semibold))
+                        .font(.app(12, weight: .semibold))
                         .foregroundColor(.appTextSecondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)
                         .background(Color.appTextSecondary.opacity(0.15))
                         .clipShape(Capsule())
                     Image(systemName: "chevron.down")
-                        .font(.jakarta(10))
+                        .font(.app(10))
                         .foregroundColor(.appTextSecondary)
                         .rotationEffect(.degrees(showUnsetBudget ? 180 : 0))
                 }
@@ -242,14 +242,14 @@ struct BudgetListView: View {
                 .frame(width: 32, height: 32)
                 .overlay {
                     Image(systemName: icon)
-                        .font(.jakarta(11, weight: .semibold))
+                        .font(.app(11, weight: .semibold))
                         .foregroundColor(color)
                 }
             Text(label)
-                .font(.jakarta(10))
+                .font(.app(10))
                 .foregroundColor(.appTextSecondary)
             Text(amount)
-                .font(.jakarta(12, weight: .semibold))
+                .font(.app(12, weight: .semibold))
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
@@ -259,10 +259,10 @@ struct BudgetListView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "chart.pie.fill")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Sisa Budget Bulan Ini")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -273,11 +273,11 @@ struct BudgetListView: View {
                 Text(isBalanceVisible
                      ? (viewModel.totalRemaining >= 0 ? viewModel.totalRemaining.formattedAsCurrency() : "Rp0")
                      : "Rp********")
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .contentTransition(.numericText())
                     .foregroundColor(.appText)
                 Text(viewModel.totalRemaining >= 0 ? "\(Int(viewModel.totalBudget > 0 ? viewModel.totalRemaining / viewModel.totalBudget * 100 : 0))%" : "0%")
-                    .font(.jakarta(13, weight: .semibold))
+                    .font(.app(13, weight: .semibold))
                     .foregroundColor(viewModel.totalRemaining >= 0 ? .appPrimary : .appError)
                     .padding(.top, 4)
                 Spacer()
@@ -292,19 +292,19 @@ struct BudgetListView: View {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Total Budget")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Text(isBalanceVisible ? viewModel.totalBudget.formattedAsCurrency() : "Rp********")
-                        .font(.jakarta(14, weight: .semibold))
+                        .font(.app(14, weight: .semibold))
                         .foregroundColor(.appText)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 3) {
                     Text("Terpakai")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Text(isBalanceVisible ? viewModel.totalSpent.formattedAsCurrency() : "Rp********")
-                        .font(.jakarta(14, weight: .semibold))
+                        .font(.app(14, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
             }
@@ -327,23 +327,23 @@ struct BudgetListView: View {
                             .fill(Color.appPrimary.opacity(0.1))
                             .frame(width: 32, height: 32)
                         Image(systemName: "clock.arrow.circlepath")
-                            .font(.jakarta(13))
+                            .font(.app(13))
                             .foregroundColor(.appPrimary)
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Riwayat Bulan Sebelumnya")
-                            .font(.jakarta(13, weight: .medium))
+                            .font(.app(13, weight: .medium))
                             .foregroundColor(.appText)
                         Text("Lihat performa budget bulan lalu")
-                            .font(.jakarta(10))
+                            .font(.app(10))
                             .foregroundColor(.appTextSecondary)
                     }
 
                     Spacer()
 
                     Image(systemName: "chevron.right")
-                        .font(.jakarta(10))
+                        .font(.app(10))
                         .foregroundColor(.appTextSecondary)
                 }
                 .frame(maxWidth: .infinity)
@@ -438,11 +438,11 @@ struct BudgetCardView: View {
     private var unsetCard: some View {
         HStack(spacing: Spacing.md) {
                     Image(systemName: category.icon ?? "tag")
-                        .font(.jakarta(17))
+                        .font(.app(17))
                         .foregroundColor(.appPrimary)
 
             Text(category.name)
-                .font(.jakarta(15, weight: .medium))
+                .font(.app(15, weight: .medium))
                 .foregroundColor(.appText)
 
             Spacer()
@@ -452,9 +452,9 @@ struct BudgetCardView: View {
             } label: {
                 HStack(spacing: Spacing.xs) {
                     Image(systemName: "plus.circle.fill")
-                        .font(.jakarta(12))
+                        .font(.app(12))
                     Text("Atur Budget")
-                        .font(.jakarta(12, weight: .semibold))
+                        .font(.app(12, weight: .semibold))
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 7)
@@ -474,22 +474,22 @@ struct BudgetCardView: View {
                             .fill(Color.appPrimary.opacity(0.12))
                             .frame(width: 64, height: 64)
                         Image(systemName: category.icon ?? "tag")
-                            .font(.jakarta(26, weight: .medium))
+                            .font(.app(26, weight: .medium))
                             .foregroundColor(.appPrimary)
                     }
 
                     Text(category.name)
-                        .font(.jakarta(17, weight: .semibold))
+                        .font(.app(17, weight: .semibold))
                         .foregroundColor(.appText)
                 }
                 .padding(.top, Spacing.xl)
 
                 HStack {
                     Text("Rp")
-                        .font(.jakarta(17, weight: .medium))
+                        .font(.app(17, weight: .medium))
                         .foregroundColor(.appTextSecondary)
                     Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
-                        .font(.jakarta(17, weight: .medium))
+                        .font(.app(17, weight: .medium))
                         .foregroundColor(.appText)
                 }
                 .padding()
@@ -512,7 +512,7 @@ struct BudgetCardView: View {
                         save()
                     }
                     .frame(maxWidth: .infinity)
-                    .font(.jakarta(17, weight: .semibold))
+                    .font(.app(17, weight: .semibold))
                     .foregroundColor(.appPrimary)
                     .disabled(amountDigits.isEmpty)
                     .padding(.horizontal, Spacing.xl)
@@ -545,13 +545,13 @@ struct BudgetCardView: View {
         VStack(spacing: Spacing.sm) {
             HStack {
                 Image(systemName: category.icon ?? "tag")
-                    .font(.jakarta(17))
+                    .font(.app(17))
                     .foregroundColor(budget.spendingStatus == .overbudget ? .appError : budget.spendingStatus == .warning ? .appWarning : .appPrimary)
                 Text(category.name)
-                    .font(.jakarta(15, weight: .medium))
+                    .font(.app(15, weight: .medium))
                 Spacer()
                 Text(budget.progress >= 1 ? "0%" : "\(Int((1 - budget.progress) * 100))%")
-                    .font(.jakarta(12, weight: .semibold))
+                    .font(.app(12, weight: .semibold))
                     .foregroundColor(progressColor(budget))
             }
 
@@ -562,32 +562,32 @@ struct BudgetCardView: View {
                 Text(isBalanceVisible
                      ? "\(budget.spent.formattedAsCurrency()) / \(budget.amount.formattedAsCurrency())"
                      : "Rp****** / Rp******")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
                 switch budget.spendingStatus {
                 case .normal:
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.down.left")
-                            .font(.jakarta(9))
+                            .font(.app(9))
                         Text(isBalanceVisible ? budget.remaining.formattedAsCurrency() : "Rp******")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                     }
                     .foregroundColor(.appTextSecondary)
                 case .warning:
                     HStack(spacing: 2) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.jakarta(9))
+                            .font(.app(9))
                         Text(isBalanceVisible ? "\(budget.dailyRemaining.formattedAsCurrency())/hari" : "Rp***/hari")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                     }
                     .foregroundColor(.appWarning)
                 case .overbudget:
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.up.right")
-                            .font(.jakarta(9))
+                            .font(.app(9))
                         Text(isBalanceVisible ? abs(budget.remaining).formattedAsCurrency() : "Rp******")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                     }
                     .foregroundColor(.appError)
                 }
@@ -684,21 +684,21 @@ struct OverallBudgetHistoryView: View {
                             } label: {
                                 HStack {
                                     Image(systemName: "calendar")
-                                        .font(.jakarta(12))
+                                        .font(.app(12))
                                         .foregroundColor(.appTextSecondary)
                                     Text(String(group.year))
-                                        .font(.jakarta(13, weight: .medium))
+                                        .font(.app(13, weight: .medium))
                                         .foregroundColor(.appText)
                                     Spacer()
                                     Text("\(group.items.count)")
-                                        .font(.jakarta(12, weight: .semibold))
+                                        .font(.app(12, weight: .semibold))
                                         .foregroundColor(.appTextSecondary)
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 2)
                                         .background(Color.appTextSecondary.opacity(0.15))
                                         .clipShape(Capsule())
                                     Image(systemName: "chevron.down")
-                                        .font(.jakarta(10))
+                                        .font(.app(10))
                                         .foregroundColor(.appTextSecondary)
                                         .rotationEffect(.degrees(expandedYears.contains(group.year) ? 180 : 0))
                                 }
@@ -755,16 +755,16 @@ struct OverallBudgetHistoryView: View {
                         .fill(history.statusColor(totalBudget).opacity(0.12))
                         .frame(width: 32, height: 32)
                     Image(systemName: history.statusColor(totalBudget) == .appPrimary ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                        .font(.jakarta(11, weight: .semibold))
+                        .font(.app(11, weight: .semibold))
                         .foregroundColor(history.statusColor(totalBudget))
                 }
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(history.monthLabel)
-                        .font(.jakarta(14, weight: .medium))
+                        .font(.app(14, weight: .medium))
                         .foregroundColor(.appText)
                     Text("Budget \(totalBudget.formattedAsCurrency())")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                 }
 
@@ -772,10 +772,10 @@ struct OverallBudgetHistoryView: View {
 
                 VStack(alignment: .trailing, spacing: 1) {
                     Text(history.spent.formattedAsCurrency())
-                        .font(.jakarta(14, weight: .semibold))
+                        .font(.app(14, weight: .semibold))
                         .foregroundColor(history.statusColor(totalBudget))
                     Text("\(Int(history.remainingPct(totalBudget)))%")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                 }
             }
@@ -835,21 +835,21 @@ struct OverallMonthDetailView: View {
                                 .fill(Color.appPrimary.opacity(0.12))
                                 .frame(width: 40, height: 40)
                             Image(systemName: "chart.pie.fill")
-                                .font(.jakarta(17, weight: .medium))
+                                .font(.app(17, weight: .medium))
                                 .foregroundColor(.appPrimary)
                         }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(monthLabel)
-                                .font(.jakarta(17, weight: .semibold))
+                                .font(.app(17, weight: .semibold))
                                 .foregroundColor(.appText)
                             Text("Budget \(totalBudget.formattedAsCurrency())")
-                                .font(.jakarta(12))
+                                .font(.app(12))
                                 .foregroundColor(.appTextSecondary)
                         }
                         Spacer()
                         let pctText = progress >= 1 ? "0%" : "\(Int((1 - progress) * 100))%"
                         Text(pctText)
-                            .font(.jakarta(15, weight: .semibold))
+                            .font(.app(15, weight: .semibold))
                             .foregroundColor(progressColor)
                     }
                     .padding(.horizontal, Spacing.xl)
@@ -857,10 +857,10 @@ struct OverallMonthDetailView: View {
 
                     HStack(spacing: 0) {
                         Text("Rp")
-                            .font(.jakarta(28, weight: .bold))
+                            .font(.app(28, weight: .bold))
                             .foregroundColor(.appText)
                         Text(remainingPct <= 0 ? "0" : remaining.formattedAsCurrency().replacingOccurrences(of: "Rp", with: ""))
-                            .font(.jakarta(28, weight: .bold))
+                            .font(.app(28, weight: .bold))
                             .foregroundColor(.appText)
                         Spacer()
                     }
@@ -874,19 +874,19 @@ struct OverallMonthDetailView: View {
                     HStack(spacing: 0) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Total Budget")
-                                .font(.jakarta(11))
+                                .font(.app(11))
                                 .foregroundColor(.appTextSecondary)
                             Text(totalBudget.formattedAsCurrency())
-                                .font(.jakarta(14, weight: .semibold))
+                                .font(.app(14, weight: .semibold))
                                 .foregroundColor(.appText)
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 3) {
                             Text("Terpakai")
-                                .font(.jakarta(11))
+                                .font(.app(11))
                                 .foregroundColor(.appTextSecondary)
                             Text(spent.formattedAsCurrency())
-                                .font(.jakarta(14, weight: .semibold))
+                                .font(.app(14, weight: .semibold))
                                 .foregroundColor(.appExpense)
                         }
                     }
@@ -927,13 +927,13 @@ struct OverallMonthDetailView: View {
         VStack(spacing: Spacing.sm) {
             HStack {
                 Image(systemName: category.icon ?? "tag")
-                    .font(.jakarta(17))
+                    .font(.app(17))
                     .foregroundColor(budget.spendingStatus == .overbudget ? .appError : budget.spendingStatus == .warning ? .appWarning : .appPrimary)
                 Text(category.name)
-                    .font(.jakarta(15, weight: .medium))
+                    .font(.app(15, weight: .medium))
                 Spacer()
                 Text(budget.progress >= 1 ? "0%" : "\(Int((1 - budget.progress) * 100))%")
-                    .font(.jakarta(12, weight: .semibold))
+                    .font(.app(12, weight: .semibold))
                     .foregroundColor(cardProgressColor(budget))
             }
 
@@ -942,32 +942,32 @@ struct OverallMonthDetailView: View {
 
             HStack {
                 Text("\(budget.spent.formattedAsCurrency()) / \(budget.amount.formattedAsCurrency())")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
                 switch budget.spendingStatus {
                 case .normal:
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.down.left")
-                            .font(.jakarta(9))
+                            .font(.app(9))
                         Text(budget.remaining.formattedAsCurrency())
-                            .font(.jakarta(11))
+                            .font(.app(11))
                     }
                     .foregroundColor(.appTextSecondary)
                 case .warning:
                     HStack(spacing: 2) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.jakarta(9))
+                            .font(.app(9))
                         Text("\(budget.dailyRemaining.formattedAsCurrency())/hari")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                     }
                     .foregroundColor(.appWarning)
                 case .overbudget:
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.up.right")
-                            .font(.jakarta(9))
+                            .font(.app(9))
                         Text(abs(budget.remaining).formattedAsCurrency())
-                            .font(.jakarta(11))
+                            .font(.app(11))
                     }
                     .foregroundColor(.appError)
                 }

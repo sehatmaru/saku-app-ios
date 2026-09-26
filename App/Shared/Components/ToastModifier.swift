@@ -12,10 +12,10 @@ struct ToastModifier: ViewModifier {
                 if isPresented {
                     HStack(spacing: Spacing.sm) {
                         Image(systemName: icon)
-                            .font(.jakarta(14))
+                            .font(.app(14))
                             .foregroundColor(.appPrimary)
                         Text(message)
-                            .font(.jakarta(14, weight: .medium))
+                            .font(.app(14, weight: .medium))
                             .foregroundColor(.appText)
                     }
                     .padding(.horizontal, Spacing.lg)

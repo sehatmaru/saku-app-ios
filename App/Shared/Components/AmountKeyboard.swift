@@ -71,7 +71,7 @@ struct AmountKeyboard: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay {
                     Text(label)
-                        .font(.jakarta(label == ".000" ? 15 : 22, weight: .medium))
+                        .font(.app(label == ".000" ? 15 : 22, weight: .medium))
                         .foregroundColor(.appText)
                 }
         }
@@ -96,7 +96,7 @@ struct AmountKeyboard: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay {
                     Image(systemName: "delete.left")
-                        .font(.jakarta(20, weight: .medium))
+                        .font(.app(20, weight: .medium))
                         .foregroundColor(.appText)
                 }
         }
@@ -119,7 +119,7 @@ struct AmountKeyboard: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay {
                     Text("Selesai")
-                        .font(.jakarta(16, weight: .semibold))
+                        .font(.app(16, weight: .semibold))
                         .foregroundColor(.white)
                 }
         }

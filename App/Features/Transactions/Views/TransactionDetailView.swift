@@ -145,7 +145,7 @@ struct TransactionDetailView: View {
                     isEditingNote = false
                     saveChanges()
                 }
-                .font(.jakarta(15, weight: .semibold))
+                .font(.app(15, weight: .semibold))
             }
             }
         }
@@ -245,7 +245,7 @@ struct TransactionDetailView: View {
                         .frame(width: 44, height: 44)
                         .overlay {
                             Image(systemName: isAdjustment ? typeIcon : (selectedCategory?.icon ?? typeIcon))
-                                .font(.jakarta(18))
+                                .font(.app(18))
                                 .foregroundColor(typeColor)
                         }
                         .overlay(
@@ -256,21 +256,21 @@ struct TransactionDetailView: View {
 
                 if isAdjustment {
                     Text("Penyesuaian saldo")
-                        .font(.jakarta(17, weight: .semibold))
+                        .font(.app(17, weight: .semibold))
                         .foregroundColor(.appText)
                 } else if isTransfer {
                     Text("Transfer")
-                        .font(.jakarta(17, weight: .semibold))
+                        .font(.app(17, weight: .semibold))
                         .foregroundColor(.appText)
                 } else if isEditable {
                     TextField("Judul transaksi", text: $editedTitle)
-                        .font(.jakarta(17, weight: .semibold))
+                        .font(.app(17, weight: .semibold))
                         .foregroundColor(.appText)
                         .focused($isTitleFocused)
                         .onSubmit { saveChanges() }
                 } else {
                     Text(editedTitle.isEmpty ? (transaction.note ?? typeLabel) : editedTitle)
-                        .font(.jakarta(17, weight: .semibold))
+                        .font(.app(17, weight: .semibold))
                         .foregroundColor(.appText)
                 }
 
@@ -281,11 +281,11 @@ struct TransactionDetailView: View {
 
             HStack(spacing: 6) {
                 Text(isAdjustment && signedAmount < 0 ? "-Rp" : "Rp")
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(amountColor)
 
                 Text(isAdjustment ? String(Int(abs(signedAmount))).formattedWithThousandSeparator : (amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator))
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(amountColor)
                     .contentShape(Rectangle())
                     .onTapGesture { if !isAdjustment, isEditable { showAmountKeyboard = true } }
@@ -308,10 +308,10 @@ struct TransactionDetailView: View {
                     HStack(spacing: 0) {
                         VStack(spacing: 4) {
                             Text("Sebelum")
-                                .font(.jakarta(11))
+                                .font(.app(11))
                                 .foregroundColor(.appTextSecondary)
                             Text(oldBalance.formattedAsCurrency())
-                                .font(.jakarta(13, weight: .semibold))
+                                .font(.app(13, weight: .semibold))
                                 .foregroundColor(.appText)
                         }
                         .frame(maxWidth: .infinity)
@@ -320,10 +320,10 @@ struct TransactionDetailView: View {
 
                         VStack(spacing: 4) {
                             Text("Sesudah")
-                                .font(.jakarta(11))
+                                .font(.app(11))
                                 .foregroundColor(.appTextSecondary)
                             Text(newBalance.formattedAsCurrency())
-                                .font(.jakarta(13, weight: .semibold))
+                                .font(.app(13, weight: .semibold))
                                 .foregroundColor(delta >= 0 ? .appIncome : .appExpense)
                         }
                         .frame(maxWidth: .infinity)
@@ -353,16 +353,16 @@ struct TransactionDetailView: View {
                         .frame(width: 36, height: 36)
                         .overlay {
                             Image(systemName: "calendar")
-                                .font(.jakarta(13))
+                                .font(.app(13))
                                 .foregroundColor(.appTextSecondary)
                         }
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Tanggal")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                             .foregroundColor(.appTextSecondary)
                         Text(transaction.date.formatted(date: .long, time: .omitted))
-                            .font(.jakarta(15, weight: .medium))
+                            .font(.app(15, weight: .medium))
                             .foregroundColor(.appText)
                     }
 
@@ -386,16 +386,16 @@ struct TransactionDetailView: View {
                         .frame(width: 36, height: 36)
                         .overlay {
                             Image(systemName: "folder")
-                                .font(.jakarta(13))
+                                .font(.app(13))
                                 .foregroundColor(.appTextSecondary)
                         }
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Kategori")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                             .foregroundColor(.appTextSecondary)
                         Text("-")
-                            .font(.jakarta(15, weight: .medium))
+                            .font(.app(15, weight: .medium))
                             .foregroundColor(.appText)
                     }
 
@@ -426,12 +426,12 @@ struct TransactionDetailView: View {
                         .frame(width: 36, height: 36)
                         .overlay {
                             Image(systemName: "doc.text")
-                                .font(.jakarta(13))
+                                .font(.app(13))
                                 .foregroundColor(.appTextSecondary)
                         }
 
                     TextField("Tambahkan catatan", text: $noteText)
-                        .font(.jakarta(15, weight: .medium))
+                        .font(.app(15, weight: .medium))
                         .foregroundColor(.appText)
                         .onSubmit { isEditingNote = false; saveChanges() }
 
@@ -460,16 +460,16 @@ struct TransactionDetailView: View {
                 .frame(width: 36, height: 36)
                 .overlay {
                     Image(systemName: icon)
-                        .font(.jakarta(13))
+                        .font(.app(13))
                         .foregroundColor(iconColor)
                 }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(.jakarta(11))
+                    .font(.app(11))
                     .foregroundColor(.appTextSecondary)
                 Text(value)
-                    .font(.jakarta(15, weight: .medium))
+                    .font(.app(15, weight: .medium))
                     .foregroundColor(.appText)
             }
 
@@ -490,7 +490,7 @@ struct TransactionDetailView: View {
                 HStack(spacing: 2) {
                     iconCircle(wi: srcIcon, size: 28)
                     Image(systemName: "arrow.right")
-                        .font(.jakarta(7))
+                        .font(.app(7))
                         .foregroundColor(.appTextSecondary)
                     iconCircle(wi: dstIcon, size: 28)
                 }
@@ -502,23 +502,23 @@ struct TransactionDetailView: View {
                     .frame(width: 36, height: 36)
                     .overlay {
                         Image(systemName: "wallet.pass")
-                            .font(.jakarta(13))
+                            .font(.app(13))
                             .foregroundColor(.appTextSecondary)
                     }
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(isTransfer ? "Transfer" : "Dompet")
-                    .font(.jakarta(11))
+                    .font(.app(11))
                     .foregroundColor(.appTextSecondary)
                 if isTransfer {
                     Text("\(selectedAccount?.name ?? "?") → \(cparty?.name ?? "?")")
-                        .font(.jakarta(15, weight: .medium))
+                        .font(.app(15, weight: .medium))
                         .foregroundColor(.appText)
                         .lineLimit(1)
                 } else {
                     Text(selectedAccount?.name ?? "-")
-                        .font(.jakarta(15, weight: .medium))
+                        .font(.app(15, weight: .medium))
                         .foregroundColor(.appText)
                 }
             }
@@ -536,7 +536,7 @@ struct TransactionDetailView: View {
                 .fill(wi.color)
                 .frame(width: size, height: size)
             Text(wi.shortName)
-                .font(.jakarta(size <= 28 ? 7 : 8, weight: .bold))
+                .font(.app(size <= 28 ? 7 : 8, weight: .bold))
                 .foregroundColor(.white)
                 .minimumScaleFactor(0.8)
         }
@@ -545,11 +545,11 @@ struct TransactionDetailView: View {
     private var hintCard: some View {
         HStack(spacing: Spacing.md) {
             Image(systemName: "hand.tap.fill")
-                .font(.jakarta(18))
+                .font(.app(18))
                 .foregroundColor(.appPrimary)
 
             Text("Tap langsung pada bagian yang ingin diubah, perubahan akan tersimpan secara otomatis.")
-                .font(.jakarta(13))
+                .font(.app(13))
                 .foregroundColor(.appTextSecondary)
                 .lineSpacing(2)
 
@@ -582,13 +582,13 @@ struct TransactionDetailView: View {
                         showDatePicker = false
                         saveChanges()
                     }
-                    .font(.jakarta(15, weight: .semibold))
+                    .font(.app(15, weight: .semibold))
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Batal") {
                         showDatePicker = false
                     }
-                    .font(.jakarta(15))
+                    .font(.app(15))
                 }
             }
         }
@@ -615,16 +615,16 @@ struct TransactionDetailView: View {
                                     .frame(width: 44, height: 44)
                                     .overlay {
                                         Text(wi?.shortName ?? "")
-                                            .font(.jakarta(10, weight: .bold))
+                                            .font(.app(10, weight: .bold))
                                             .foregroundColor(.white)
                                     }
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(account.name)
-                                        .font(.jakarta(15, weight: .medium))
+                                        .font(.app(15, weight: .medium))
                                         .foregroundColor(.appText)
                                     Text("Saldo \(account.balance.formattedAsCurrency())")
-                                        .font(.jakarta(12))
+                                        .font(.app(12))
                                         .foregroundColor(.appTextSecondary)
                                 }
 
@@ -632,7 +632,7 @@ struct TransactionDetailView: View {
 
                                 if account.id == selectedAccountId {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .font(.jakarta(16))
+                                        .font(.app(16))
                                         .foregroundColor(.appPrimary)
                                 }
                             }
@@ -656,7 +656,7 @@ struct TransactionDetailView: View {
                     Button("Batal") {
                         showWalletPicker = false
                     }
-                    .font(.jakarta(15))
+                    .font(.app(15))
                 }
             }
         }
@@ -682,19 +682,19 @@ struct TransactionDetailView: View {
                                     .frame(width: 44, height: 44)
                                     .overlay {
                                         Image(systemName: cat.icon ?? "tag")
-                                            .font(.jakarta(16))
+                                            .font(.app(16))
                                             .foregroundColor(typeColor)
                                     }
 
                                 Text(cat.name)
-                                    .font(.jakarta(15, weight: .medium))
+                                    .font(.app(15, weight: .medium))
                                     .foregroundColor(.appText)
 
                                 Spacer()
 
                                 if cat.id == selectedCategoryId {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .font(.jakarta(16))
+                                        .font(.app(16))
                                         .foregroundColor(.appPrimary)
                                 }
                             }
@@ -718,7 +718,7 @@ struct TransactionDetailView: View {
                     Button("Batal") {
                         showCategoryPicker = false
                     }
-                    .font(.jakarta(15))
+                    .font(.app(15))
                 }
             }
         }

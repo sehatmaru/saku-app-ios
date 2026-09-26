@@ -83,7 +83,7 @@ struct AccountListView: View {
                         isBalanceVisibleStorage = isBalanceVisible
                     } label: {
                         Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
-                            .font(.jakarta(16))
+                            .font(.app(16))
                             .foregroundColor(.appTextSecondary)
                     }
                 }
@@ -233,17 +233,17 @@ struct AccountListView: View {
 
             HStack(spacing: 4) {
                 Text(title)
-                    .font(.jakarta(15, weight: .semibold))
+                    .font(.app(15, weight: .semibold))
                     .foregroundColor(.appText)
 
                 Spacer()
 
                 Text("\(count)")
-                    .font(.jakarta(13, weight: .semibold))
+                    .font(.app(13, weight: .semibold))
                     .foregroundColor(.appTextSecondary)
 
                 Image(systemName: "chevron.down")
-                    .font(.jakarta(9))
+                    .font(.app(9))
                     .foregroundColor(.appTextSecondary)
                     .rotationEffect(.degrees(expandedSections.contains(sectionId) ? 0 : -90))
                     .padding(.leading, 4)
@@ -264,21 +264,21 @@ struct AccountListView: View {
             } label: {
                 HStack {
                     Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
-                        .font(.jakarta(12))
+                        .font(.app(12))
                         .foregroundColor(.appWarning)
                     Text("Diarsipkan")
-                        .font(.jakarta(13, weight: .medium))
+                        .font(.app(13, weight: .medium))
                         .foregroundColor(.appText)
                     Spacer()
                     Text("\(archivedAccounts.count)")
-                        .font(.jakarta(12, weight: .semibold))
+                        .font(.app(12, weight: .semibold))
                         .foregroundColor(.appTextSecondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)
                         .background(Color.appTextSecondary.opacity(0.15))
                         .clipShape(Capsule())
                     Image(systemName: "chevron.down")
-                        .font(.jakarta(10))
+                        .font(.app(10))
                         .foregroundColor(.appTextSecondary)
                         .rotationEffect(.degrees(showArchived ? 180 : 0))
                 }
@@ -323,10 +323,10 @@ struct AccountListView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "wallet.pass.fill")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Total Saldo")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -334,7 +334,7 @@ struct AccountListView: View {
             .padding(.top, Spacing.xl)
 
             Text(isBalanceVisible ? viewModel.totalBalance.formattedAsCurrency() : "Rp********")
-                .font(.jakarta(34, weight: .bold))
+                .font(.app(34, weight: .bold))
                 .contentTransition(.numericText())
                 .foregroundColor(.appText)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -344,14 +344,14 @@ struct AccountListView: View {
             if viewModel.totalCreditDebt > 0 {
                 HStack {
                     Image(systemName: "creditcard.fill")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appExpense)
                     Text("Total Utang Kartu Kredit")
-                        .font(.jakarta(12))
+                        .font(.app(12))
                         .foregroundColor(.appTextSecondary)
                     Spacer()
                     Text(isBalanceVisible ? viewModel.totalCreditDebt.formattedAsCurrency() : "Rp******")
-                        .font(.jakarta(13, weight: .semibold))
+                        .font(.app(13, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
                 .padding(.horizontal, Spacing.xl)
@@ -365,10 +365,10 @@ struct AccountListView: View {
             HStack {
                 let totalActive = walletAccounts.count + creditAccounts.count
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.jakarta(11))
+                    .font(.app(11))
                     .foregroundColor(.appPrimary)
                 Text("\(totalActive) Akun Aktif")
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -381,9 +381,9 @@ struct AccountListView: View {
             } label: {
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: "plus")
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                     Text("Tambah")
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -431,12 +431,12 @@ struct AccountCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(account.name)
-                        .font(.jakarta(16, weight: .semibold))
+                        .font(.app(16, weight: .semibold))
                         .foregroundColor(.appText)
                         .lineLimit(1)
                     if account.isDefault {
                         Text("Utama")
-                            .font(.jakarta(8, weight: .medium))
+                            .font(.app(8, weight: .medium))
                             .foregroundColor(.appWarning)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -451,15 +451,15 @@ struct AccountCard: View {
             if account.isCreditCard {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Sisa Limit")
-                        .font(.jakarta(9))
+                        .font(.app(9))
                         .foregroundColor(.appTextSecondary)
                     Text(isBalanceVisible ? (account.availableCredit?.formattedAsCurrency() ?? "-") : "Rp******")
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                         .foregroundColor(.appText)
                 }
             } else {
                 Text(isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp******")
-                    .font(.jakarta(15, weight: .semibold))
+                    .font(.app(15, weight: .semibold))
                     .foregroundColor(.appText)
             }
         }

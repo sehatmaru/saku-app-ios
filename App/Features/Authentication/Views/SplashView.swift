@@ -14,11 +14,11 @@ struct SplashView: View {
                 Spacer()
 
                 Image(systemName: "leaf.fill")
-                    .font(.jakarta(60))
+                    .font(.app(60))
                     .foregroundColor(.appPrimary)
 
                 Text("SakuQ")
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(.appPrimary)
 
                 Spacer()
@@ -29,7 +29,7 @@ struct SplashView: View {
             VStack {
                 Spacer()
                 Text("v1.0")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                     .padding(.bottom, Spacing.xxl)
             }

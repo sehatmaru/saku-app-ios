@@ -21,10 +21,10 @@ struct AnalyticsView: View {
         VStack(spacing: Spacing.lg) {
             HStack {
                 Image(systemName: "heart.fill")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Skor Kesehatan Finansial")
-                    .font(.jakarta(15, weight: .semibold))
+                    .font(.app(15, weight: .semibold))
                     .foregroundColor(.appText)
                 Spacer()
             }
@@ -43,17 +43,17 @@ struct AnalyticsView: View {
 
                     VStack(spacing: -2) {
                         Text("\(viewModel.healthScore)")
-                            .font(.jakarta(38, weight: .bold))
+                            .font(.app(38, weight: .bold))
                             .foregroundColor(healthScoreColor(viewModel.healthScore))
                         Text("/100")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                             .foregroundColor(.appTextSecondary)
                     }
                 }
 
                 VStack(alignment: .leading, spacing: Spacing.md) {
                     Text(viewModel.healthScoreLabel)
-                        .font(.jakarta(22, weight: .bold))
+                        .font(.app(22, weight: .bold))
                         .foregroundColor(healthScoreColor(viewModel.healthScore))
 
                     VStack(alignment: .leading, spacing: Spacing.xs) {
@@ -74,13 +74,13 @@ struct AnalyticsView: View {
     private func detailRow(label: String, score: Int, maxScore: Int) -> some View {
         HStack(spacing: Spacing.sm) {
             Text(label)
-                .font(.jakarta(13))
+                .font(.app(13))
                 .foregroundColor(.appTextSecondary)
             ProgressView(value: Double(score) / Double(maxScore))
                 .tint(healthScoreColor(score * 100 / max(maxScore, 1)))
                 .frame(width: 60)
             Text("\(score)/\(maxScore)")
-                .font(.jakarta(12, weight: .semibold))
+                .font(.app(12, weight: .semibold))
                 .foregroundColor(.appText)
         }
     }
@@ -98,10 +98,10 @@ struct AnalyticsView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack {
                 Image(systemName: "chart.bar.fill")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Cashflow 5 Bulan Terakhir")
-                    .font(.jakarta(15, weight: .semibold))
+                    .font(.app(15, weight: .semibold))
                     .foregroundColor(.appText)
             }
 
@@ -115,7 +115,7 @@ struct AnalyticsView: View {
                     let item = viewModel.monthlyCashflow[idx]
                     VStack(spacing: 4) {
                         Text(item.income.formattedAsCurrency())
-                            .font(.jakarta(8))
+                            .font(.app(8))
                             .foregroundColor(.appIncome)
                             .lineLimit(1)
                             .minimumScaleFactor(0.5)
@@ -131,13 +131,13 @@ struct AnalyticsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 4))
 
                         Text(item.expense.formattedAsCurrency())
-                            .font(.jakarta(8))
+                            .font(.app(8))
                             .foregroundColor(.appExpense)
                             .lineLimit(1)
                             .minimumScaleFactor(0.5)
 
                         Text(item.0)
-                            .font(.jakarta(10))
+                            .font(.app(10))
                             .foregroundColor(.appTextSecondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -150,13 +150,13 @@ struct AnalyticsView: View {
                 HStack(spacing: 4) {
                     Circle().fill(Color.appIncome).frame(width: 10, height: 10)
                     Text("Pemasukan")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                 }
                 HStack(spacing: 4) {
                     Circle().fill(Color.appExpense).frame(width: 10, height: 10)
                     Text("Pengeluaran")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                 }
             }
@@ -170,14 +170,14 @@ struct AnalyticsView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack {
                 Image(systemName: "chart.pie.fill")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Pengeluaran Bulan Ini")
-                    .font(.jakarta(15, weight: .semibold))
+                    .font(.app(15, weight: .semibold))
                     .foregroundColor(.appText)
                 Spacer()
                 Text("Total: \(viewModel.totalExpense.formattedAsCurrency())")
-                    .font(.jakarta(11))
+                    .font(.app(11))
                     .foregroundColor(.appTextSecondary)
             }
 
@@ -187,19 +187,19 @@ struct AnalyticsView: View {
                 VStack(spacing: 4) {
                     HStack {
                         Image(systemName: cat.icon ?? "tag")
-                            .font(.jakarta(12))
+                            .font(.app(12))
                             .foregroundColor(.appPrimary)
                             .frame(width: 24)
 
                         Text(cat.name)
-                            .font(.jakarta(14))
+                            .font(.app(14))
                             .foregroundColor(.appText)
                         Spacer()
                         Text(amount.formattedAsCurrency())
-                            .font(.jakarta(14, weight: .semibold))
+                            .font(.app(14, weight: .semibold))
                             .foregroundColor(.appText)
                         Text("(\(Int(total > 0 ? amount / total * 100 : 0))%)")
-                            .font(.jakarta(12))
+                            .font(.app(12))
                             .foregroundColor(.appTextSecondary)
                     }
 
@@ -210,7 +210,7 @@ struct AnalyticsView: View {
 
             if viewModel.categorySpending.isEmpty {
                 Text("Belum ada pengeluaran bulan ini")
-                    .font(.jakarta(14))
+                    .font(.app(14))
                     .foregroundColor(.appTextSecondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Spacing.xl)

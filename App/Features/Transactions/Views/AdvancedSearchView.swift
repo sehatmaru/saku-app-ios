@@ -40,9 +40,9 @@ struct AdvancedSearchView: View {
                     } label: {
                         HStack(spacing: Spacing.xs) {
                             Image(systemName: "arrow.counterclockwise")
-                                .font(.jakarta(11))
+                                .font(.app(11))
                             Text("Reset")
-                                .font(.jakarta(13))
+                                .font(.app(13))
                         }
                     }
                     .foregroundColor(.appExpense)
@@ -82,7 +82,7 @@ struct AdvancedSearchView: View {
     private func typeSegment(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.jakarta(13, weight: isSelected ? .semibold : .regular))
+                .font(.app(13, weight: isSelected ? .semibold : .regular))
                 .lineLimit(1)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
@@ -144,9 +144,9 @@ struct AdvancedSearchView: View {
                 } label: {
                     HStack(spacing: Spacing.xs) {
                         Text(showAllExpense ? "Ringkas" : "Lihat Semua (\(expenseCategories.count))")
-                            .font(.jakarta(13, weight: .medium))
+                            .font(.app(13, weight: .medium))
                         Image(systemName: "chevron.down")
-                            .font(.jakarta(10))
+                            .font(.app(10))
                             .rotationEffect(.degrees(showAllExpense ? 180 : 0))
                     }
                     .foregroundColor(.appPrimary)
@@ -164,7 +164,7 @@ struct AdvancedSearchView: View {
             let incomeCategories = categories.filter { $0.type == .income }
             if incomeCategories.isEmpty {
                 Text("Tidak ada kategori pemasukan")
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .foregroundColor(.appTextSecondary)
             } else {
                 LazyVGrid(
@@ -239,7 +239,7 @@ struct AdvancedSearchView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "calendar")
-                            .font(.jakarta(12))
+                            .font(.app(12))
                             .foregroundColor(.appPrimary)
                         Group {
                             if let date = draft.dateFrom {
@@ -248,7 +248,7 @@ struct AdvancedSearchView: View {
                                 Text("Pilih tanggal")
                             }
                         }
-                        .font(.jakarta(14, weight: .medium))
+                        .font(.app(14, weight: .medium))
                         if draft.dateFrom != nil {
                             Button {
                                 selectedDatePreset = nil
@@ -256,7 +256,7 @@ struct AdvancedSearchView: View {
                                 draft.dateTo = nil
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.jakarta(12))
+                                    .font(.app(12))
                                     .foregroundColor(.appTextSecondary)
                             }
                             .buttonStyle(.plain)
@@ -279,7 +279,7 @@ struct AdvancedSearchView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "calendar")
-                            .font(.jakarta(12))
+                            .font(.app(12))
                             .foregroundColor(.appPrimary)
                         Group {
                             if let date = draft.dateTo {
@@ -288,14 +288,14 @@ struct AdvancedSearchView: View {
                                 Text("Pilih tanggal")
                             }
                         }
-                        .font(.jakarta(14, weight: .medium))
+                        .font(.app(14, weight: .medium))
                         if draft.dateTo != nil {
                             Button {
                                 selectedDatePreset = nil
                                 draft.dateTo = nil
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.jakarta(12))
+                                    .font(.app(12))
                                     .foregroundColor(.appTextSecondary)
                             }
                             .buttonStyle(.plain)
@@ -371,10 +371,10 @@ struct AdvancedSearchView: View {
     private func sectionHeader(_ title: String, icon: String) -> some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: icon)
-                .font(.jakarta(13))
+                .font(.app(13))
                 .foregroundColor(.appPrimary)
             Text(title)
-                .font(.jakarta(15, weight: .semibold))
+                .font(.app(15, weight: .semibold))
         }
     }
 
@@ -382,10 +382,10 @@ struct AdvancedSearchView: View {
         Button(action: action) {
             HStack(spacing: Spacing.sm) {
                 Image(systemName: category.icon ?? "tag")
-                    .font(.jakarta(14))
+                    .font(.app(14))
 
                 Text(category.name)
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .fontWeight(isSelected ? .semibold : .regular)
                     .lineLimit(1)
 
@@ -393,7 +393,7 @@ struct AdvancedSearchView: View {
 
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.jakarta(10, weight: .bold))
+                        .font(.app(10, weight: .bold))
                         .foregroundColor(Color.appPrimary)
                 }
             }
@@ -411,7 +411,7 @@ struct AdvancedSearchView: View {
             filter = draft
             dismiss()
         }
-        .font(.jakarta(15, weight: .semibold))
+        .font(.app(15, weight: .semibold))
         .foregroundColor(.white)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)

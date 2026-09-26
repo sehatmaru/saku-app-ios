@@ -105,16 +105,16 @@ struct WalletDetailView: View {
                                 .fill(Color.appWarning.opacity(0.15))
                                 .frame(width: 36, height: 36)
                             Image(systemName: "archivebox.fill")
-                                .font(.jakarta(14))
+                                .font(.app(14))
                                 .foregroundColor(.appWarning)
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Dompet Diarsipkan")
-                                .font(.jakarta(13, weight: .semibold))
+                                .font(.app(13, weight: .semibold))
                                 .foregroundColor(.appText)
                             Text("Tidak dapat digunakan untuk transaksi baru")
-                                .font(.jakarta(11))
+                                .font(.app(11))
                                 .foregroundColor(.appTextSecondary)
                         }
 
@@ -141,10 +141,10 @@ struct WalletDetailView: View {
                 let monthTxs = thisMonthTransactions
                 HStack {
                     Text("Transaksi Bulan Ini")
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                     Spacer()
                     Text("\(monthTxs.count) transaksi")
-                        .font(.jakarta(12))
+                        .font(.app(12))
                         .foregroundColor(.appTextSecondary)
                 }
                 .padding(.horizontal)
@@ -169,7 +169,7 @@ struct WalletDetailView: View {
                         Button("Simpan") {
                             confirmChanges()
                         }
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                     }
                 }
             }
@@ -324,11 +324,11 @@ struct WalletDetailView: View {
                 VStack(spacing: 4) {
                     HStack {
                         Text("Total Limit")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                             .foregroundColor(.appTextSecondary)
                         Spacer()
                         Text(limit.formattedAsCurrency())
-                            .font(.jakarta(13, weight: .semibold))
+                            .font(.app(13, weight: .semibold))
                             .foregroundColor(.appText)
                             .contentShape(Rectangle())
                             .onTapGesture { showCreditLimitKeyboard = true }
@@ -336,11 +336,11 @@ struct WalletDetailView: View {
 
                     HStack {
                         Text("Sisa Limit")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                             .foregroundColor(.appTextSecondary)
                         Spacer()
                         Text((limit - outstanding).formattedAsCurrency())
-                            .font(.jakarta(13, weight: .semibold))
+                            .font(.app(13, weight: .semibold))
                             .foregroundColor(.appText)
                     }
 
@@ -350,7 +350,7 @@ struct WalletDetailView: View {
                         .tint(utilization > 0.8 ? .appError : utilization > 0.5 ? .appWarning : .appPrimary)
 
                     Text("\(Int(utilization * 100))% terpakai")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -376,23 +376,23 @@ struct WalletDetailView: View {
                             .frame(width: 36, height: 36)
                             .overlay {
                                 Image(systemName: "calendar")
-                                    .font(.jakarta(13))
+                                    .font(.app(13))
                                     .foregroundColor(.appPrimary)
                             }
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Jatuh Tempo")
-                                .font(.jakarta(11))
+                                .font(.app(11))
                                 .foregroundColor(.appTextSecondary)
                             Text(dueDateFormatted)
-                                .font(.jakarta(15, weight: .medium))
+                                .font(.app(15, weight: .medium))
                                 .foregroundColor(.appText)
                         }
 
                         Spacer()
 
                         Image(systemName: "chevron.right")
-                            .font(.jakarta(10))
+                            .font(.app(10))
                             .foregroundColor(.appTextSecondary.opacity(0.4))
                     }
                     .padding(.horizontal, Spacing.lg)
@@ -407,20 +407,20 @@ struct WalletDetailView: View {
                 HStack(spacing: 0) {
                     VStack(spacing: 4) {
                         Text("Total Tagihan")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                             .foregroundColor(.appTextSecondary)
                         Text((account.currentBalance ?? 0).formattedAsCurrency())
-                            .font(.jakarta(13, weight: .semibold))
+                            .font(.app(13, weight: .semibold))
                             .foregroundColor(.appExpense)
                     }
                     .frame(maxWidth: .infinity)
                     Divider().frame(height: 28)
                     VStack(spacing: 4) {
                         Text("Bulan Ini")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                             .foregroundColor(.appTextSecondary)
                         Text(monthlyExpense > 0 ? abbreviatedAmount(monthlyExpense) : "Rp0")
-                            .font(.jakarta(13, weight: .semibold))
+                            .font(.app(13, weight: .semibold))
                             .foregroundColor(.appExpense)
                     }
                     .frame(maxWidth: .infinity)
@@ -451,14 +451,14 @@ struct WalletDetailView: View {
             .disabled(account.type == .cash || isCreditCard || !account.isActive)
 
             TextField("Nama", text: $editedName)
-                .font(.jakarta(17, weight: .semibold))
+                .font(.app(17, weight: .semibold))
                 .disabled(!account.isActive)
                 .focused($isNameFocused)
 
             Spacer()
 
             Text(isCreditCard ? "Kartu Kredit" : account.type.rawValue)
-                .font(.jakarta(12))
+                .font(.app(12))
                 .foregroundColor(.appTextSecondary)
         }
     }
@@ -470,8 +470,8 @@ struct WalletDetailView: View {
                     if !account.isDefault {
                         Button { Task { await onSetDefault?(account.id) } } label: {
                             HStack(spacing: Spacing.sm) {
-                                Image(systemName: "star.fill").font(.jakarta(11))
-                                Text("Jadikan Utama").font(.jakarta(11, weight: .semibold))
+                                Image(systemName: "star.fill").font(.app(11))
+                                Text("Jadikan Utama").font(.app(11, weight: .semibold))
                             }
                             .frame(maxWidth: .infinity).padding(.vertical, 12)
                             .background(Color.appWarning.opacity(0.1)).foregroundColor(.appWarning)
@@ -480,8 +480,8 @@ struct WalletDetailView: View {
                     }
                     Button { showArchiveAlert = true } label: {
                         HStack(spacing: Spacing.sm) {
-                            Image(systemName: "archivebox").font(.jakarta(11))
-                            Text("Arsipkan").font(.jakarta(11, weight: .semibold))
+                            Image(systemName: "archivebox").font(.app(11))
+                            Text("Arsipkan").font(.app(11, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity).padding(.vertical, 12)
                         .background(Color.appPrimary.opacity(0.1)).foregroundColor(.appPrimary)
@@ -494,8 +494,8 @@ struct WalletDetailView: View {
                         } else { showDeleteAlert = true }
                     } label: {
                         HStack(spacing: Spacing.sm) {
-                            Image(systemName: "trash").font(.jakarta(11))
-                            Text("Hapus").font(.jakarta(11, weight: .semibold))
+                            Image(systemName: "trash").font(.app(11))
+                            Text("Hapus").font(.app(11, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity).padding(.vertical, 12)
                         .background(Color.appError.opacity(0.1)).foregroundColor(.appError)
@@ -505,8 +505,8 @@ struct WalletDetailView: View {
             } else {
                 Button { showUnarchiveAlert = true } label: {
                     HStack(spacing: Spacing.sm) {
-                        Image(systemName: "archivebox.fill").font(.jakarta(11))
-                        Text("Aktifkan").font(.jakarta(11, weight: .semibold))
+                        Image(systemName: "archivebox.fill").font(.app(11))
+                        Text("Aktifkan").font(.app(11, weight: .semibold))
                     }
                     .frame(maxWidth: .infinity).padding(.vertical, 12)
                     .background(Color.appPrimary.opacity(0.1)).foregroundColor(.appPrimary)
@@ -524,11 +524,11 @@ struct WalletDetailView: View {
 
             HStack(spacing: 6) {
                 Text("Rp")
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(.appText)
 
                 Text(balanceDigits.isEmpty ? "0" : balanceDigits.formattedWithThousandSeparator)
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(.appText)
                     .contentShape(Rectangle())
                     .onTapGesture { showBalanceKeyboard = true }
@@ -544,20 +544,20 @@ struct WalletDetailView: View {
             HStack(spacing: 0) {
                 VStack(spacing: 4) {
                     Text("Pemasukan Bulan Ini")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Text(monthlyIncome > 0 ? abbreviatedAmount(monthlyIncome) : "Rp0")
-                        .font(.jakarta(13, weight: .semibold))
+                        .font(.app(13, weight: .semibold))
                         .foregroundColor(.appIncome)
                 }
                 .frame(maxWidth: .infinity)
                 Divider().frame(height: 28)
                 VStack(spacing: 4) {
                     Text("Pengeluaran Bulan Ini")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Text(monthlyExpense > 0 ? abbreviatedAmount(monthlyExpense) : "Rp0")
-                        .font(.jakarta(13, weight: .semibold))
+                        .font(.app(13, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
                 .frame(maxWidth: .infinity)
@@ -604,11 +604,11 @@ struct WalletDetailView: View {
                                         .frame(width: 52, height: 52)
                                         .overlay {
                                             Text(icon.shortName)
-                                                .font(.jakarta(10, weight: .bold))
+                                                .font(.app(10, weight: .bold))
                                                 .foregroundColor(editedIconId == icon.id ? .white : icon.color)
                                         }
                                     Text(icon.name)
-                                        .font(.jakarta(9))
+                                        .font(.app(9))
                                         .foregroundColor(.appTextSecondary)
                                         .lineLimit(1)
                                 }
@@ -624,11 +624,11 @@ struct WalletDetailView: View {
                                         .fill(Color.appPrimary.opacity(0.2))
                                         .frame(width: 52, height: 52)
                                     Image(systemName: "plus")
-                                        .font(.jakarta(14, weight: .bold))
+                                        .font(.app(14, weight: .bold))
                                         .foregroundColor(.appPrimary)
                                 }
                                 Text("Custom")
-                                    .font(.jakarta(9))
+                                    .font(.app(9))
                                     .foregroundColor(.appTextSecondary)
                                     .lineLimit(1)
                             }
@@ -691,10 +691,10 @@ struct WalletDetailView: View {
             if monthTxs.isEmpty {
                 VStack(spacing: Spacing.sm) {
                     Image(systemName: "tray")
-                        .font(.jakarta(32))
+                        .font(.app(32))
                         .foregroundColor(.appTextSecondary.opacity(0.5))
                     Text("Belum ada transaksi")
-                        .font(.jakarta(13))
+                        .font(.app(13))
                         .foregroundColor(.appTextSecondary)
                 }
                 .frame(maxWidth: .infinity)
@@ -720,9 +720,9 @@ struct WalletDetailView: View {
                         } label: {
                             HStack(spacing: Spacing.xs) {
                                 Image(systemName: showAllTransactions ? "chevron.up" : "chevron.down")
-                                    .font(.jakarta(10))
+                                    .font(.app(10))
                                 Text(showAllTransactions ? "Sembunyikan" : "Lihat Semua (\(monthTxs.count))")
-                                    .font(.jakarta(12, weight: .medium))
+                                    .font(.app(12, weight: .medium))
                             }
                             .foregroundColor(.appPrimary)
                             .frame(maxWidth: .infinity)
@@ -745,11 +745,11 @@ struct WalletDetailView: View {
     private var hintCard: some View {
         HStack(spacing: Spacing.md) {
             Image(systemName: "hand.tap.fill")
-                .font(.jakarta(18))
+                .font(.app(18))
                 .foregroundColor(.appPrimary)
 
             Text("Tap langsung pada bagian yang ingin diubah, perubahan akan tersimpan secara otomatis.")
-                .font(.jakarta(13))
+                .font(.app(13))
                 .foregroundColor(.appTextSecondary)
                 .lineSpacing(2)
 
@@ -782,17 +782,17 @@ struct WalletDetailView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "repeat")
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .foregroundColor(.appPrimary)
                 Text("Tagihan Berulang")
-                    .font(.jakarta(15, weight: .semibold))
+                    .font(.app(15, weight: .semibold))
                 Spacer()
                 Button {
                     selectedSubscription = nil
                     showAddSubscription = true
                 } label: {
                     Image(systemName: "plus.circle.fill")
-                        .font(.jakarta(18))
+                        .font(.app(18))
                         .foregroundColor(.appPrimary)
                 }
                 .buttonStyle(.plain)
@@ -803,7 +803,7 @@ struct WalletDetailView: View {
 
             if subscriptions.isEmpty {
                 Text("Belum ada tagihan berulang")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Spacing.lg)
@@ -824,11 +824,11 @@ struct WalletDetailView: View {
 
                 HStack {
                     Text("Total per bulan")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Spacer()
                     Text(monthlyTotal.formattedAsCurrency())
-                        .font(.jakarta(13, weight: .semibold))
+                        .font(.app(13, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
                 .padding(.horizontal, Spacing.lg)
@@ -836,11 +836,11 @@ struct WalletDetailView: View {
 
                 HStack {
                     Text("Total per tahun")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Spacer()
                     Text(yearlyTotal.formattedAsCurrency())
-                        .font(.jakarta(13, weight: .semibold))
+                        .font(.app(13, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
                 .padding(.horizontal, Spacing.lg)
@@ -850,11 +850,11 @@ struct WalletDetailView: View {
                     let adjusted = limit - projectedBalance
                     HStack {
                         Text("Limit tersisa")
-                            .font(.jakarta(11))
+                            .font(.app(11))
                             .foregroundColor(.appTextSecondary)
                         Spacer()
                         Text(adjusted.formattedAsCurrency())
-                            .font(.jakarta(13, weight: .semibold))
+                            .font(.app(13, weight: .semibold))
                             .foregroundColor(.appText)
                     }
                     .padding(.horizontal, Spacing.lg)
@@ -877,23 +877,23 @@ struct WalletDetailView: View {
                     .fill(sub.isActive ? iconColor.opacity(0.1) : Color(.systemGray5))
                     .frame(width: 36, height: 36)
                 Image(systemName: iconName)
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(sub.isActive ? iconColor : .appTextSecondary)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(sub.name)
-                    .font(.jakarta(13, weight: .medium))
+                    .font(.app(13, weight: .medium))
                     .foregroundColor(.appText)
                 HStack(spacing: 4) {
                     Text(sub.amount.formattedAsCurrency())
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Text("•")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Text(sub.frequency == .monthly ? "Bulanan" : "Tahunan")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                 }
             }
@@ -902,7 +902,7 @@ struct WalletDetailView: View {
 
             if !sub.isActive {
                 Text("Nonaktif")
-                    .font(.jakarta(10, weight: .medium))
+                    .font(.app(10, weight: .medium))
                     .foregroundColor(.appTextSecondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -918,7 +918,7 @@ struct WalletDetailView: View {
                 }
             } label: {
                 Image(systemName: "trash")
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .foregroundColor(.appExpense.opacity(0.7))
             }
             .buttonStyle(.plain)

@@ -13,7 +13,7 @@ struct PrimaryButton: View {
                         .tint(.white)
                 }
                 Text(title)
-                    .font(.jakarta(17, weight: .semibold))
+                    .font(.app(17, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
             .padding()

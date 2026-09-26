@@ -130,7 +130,7 @@ struct DashboardView: View {
                     isBalanceVisibleStorage = isBalanceVisible
                 } label: {
                     Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
-                        .font(.jakarta(16))
+                        .font(.app(16))
                         .foregroundColor(.appTextSecondary)
                 }
             }
@@ -394,10 +394,10 @@ struct DashboardView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "leaf.fill")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Total Saldo Saat Ini")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -406,7 +406,7 @@ struct DashboardView: View {
 
             HStack {
                 Text(isBalanceVisible ? viewModel.balance.formattedAsCurrency() : "Rp********")
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(.appText)
                     .contentTransition(.numericText())
                 Spacer()
@@ -433,9 +433,9 @@ struct DashboardView: View {
             } label: {
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: "plus")
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                     Text("Tambah Transaksi")
-                        .font(.jakarta(15, weight: .semibold))
+                        .font(.app(15, weight: .semibold))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -461,19 +461,19 @@ struct DashboardView: View {
     private func statItem(title: String, amount: Double, color: Color, diff: Double? = nil, lastMonth: Double? = nil) -> some View {
         VStack(spacing: 4) {
             Text(title)
-                .font(.jakarta(11))
+                .font(.app(11))
                 .foregroundColor(.appTextSecondary)
             Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp******")
-                .font(.jakarta(13, weight: .semibold))
+                .font(.app(13, weight: .semibold))
                 .foregroundColor(color)
 
             if let diff, let lastMonth, lastMonth > 0 {
                 let pct = diff / lastMonth * 100
                 HStack(spacing: 2) {
                     Image(systemName: diff >= 0 ? "arrow.up" : "arrow.down")
-                        .font(.jakarta(7, weight: .bold))
+                        .font(.app(7, weight: .bold))
                     Text("\(abs(pct), specifier: "%.1f")%")
-                        .font(.jakarta(9, weight: .medium))
+                        .font(.app(9, weight: .medium))
                 }
                 .foregroundColor(diff >= 0 ? color : .appExpense)
             }
@@ -486,7 +486,7 @@ struct DashboardView: View {
     private func recapItem(icon: String, iconColor: Color, title: String, value: String, subtitle: String) -> some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: icon)
-                .font(.jakarta(10))
+                .font(.app(10))
                 .foregroundColor(iconColor)
                 .frame(width: 28, height: 28)
                 .background(iconColor.opacity(0.1))
@@ -494,15 +494,15 @@ struct DashboardView: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(.jakarta(10))
+                    .font(.app(10))
                     .foregroundColor(.appTextSecondary)
                 Text(isBalanceVisible ? value : "***")
-                    .font(.jakarta(13, weight: .semibold))
+                    .font(.app(13, weight: .semibold))
                     .foregroundColor(iconColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                 Text(subtitle)
-                    .font(.jakarta(8))
+                    .font(.app(8))
                     .foregroundColor(.appTextSecondary)
             }
         }
@@ -515,10 +515,10 @@ struct DashboardView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "heart.fill")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Skor Kesehatan Finansial")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -547,10 +547,10 @@ struct DashboardView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "chart.bar.fill")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Statistik Bulan Ini")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -622,23 +622,23 @@ struct DashboardView: View {
                             .fill(Color.appPrimary.opacity(0.1))
                             .frame(width: 32, height: 32)
                         Image(systemName: "chart.bar.doc.horizontal")
-                            .font(.jakarta(13))
+                            .font(.app(13))
                             .foregroundColor(.appPrimary)
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Lihat Selengkapnya")
-                            .font(.jakarta(13, weight: .medium))
+                            .font(.app(13, weight: .medium))
                             .foregroundColor(.appText)
                         Text("Analisis keuangan lebih detail")
-                            .font(.jakarta(10))
+                            .font(.app(10))
                             .foregroundColor(.appTextSecondary)
                     }
 
                     Spacer()
 
                     Image(systemName: "chevron.right")
-                        .font(.jakarta(10))
+                        .font(.app(10))
                         .foregroundColor(.appTextSecondary)
                 }
                 .frame(maxWidth: .infinity)
@@ -663,7 +663,7 @@ struct DashboardView: View {
     private func statInfoCard(icon: String, label: String, value: String, subvalue: String? = nil, color: Color) -> some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: icon)
-                .font(.jakarta(12))
+                .font(.app(12))
                 .foregroundColor(color)
                 .frame(width: 32, height: 32)
                 .background(color.opacity(0.1))
@@ -671,16 +671,16 @@ struct DashboardView: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(label)
-                    .font(.jakarta(9))
+                    .font(.app(9))
                     .foregroundColor(.appTextSecondary)
                 Text(value)
-                    .font(.jakarta(12, weight: .semibold))
+                    .font(.app(12, weight: .semibold))
                     .foregroundColor(.appText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 if let subvalue = subvalue {
                     Text(subvalue)
-                        .font(.jakarta(8))
+                        .font(.app(8))
                         .foregroundColor(color)
                 }
             }
@@ -697,24 +697,24 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(spacing: 4) {
                 Image(systemName: "lightbulb.fill")
-                    .font(.jakarta(11))
+                    .font(.app(11))
                     .foregroundColor(.appWarning)
                 Text("Tips Finansial")
-                    .font(.jakarta(13, weight: .semibold))
+                    .font(.app(13, weight: .semibold))
                     .foregroundColor(.appText)
             }
 
             ForEach(viewModel.financialTips.prefix(2)) { tip in
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: tip.icon)
-                        .font(.jakarta(10))
+                        .font(.app(10))
                         .foregroundColor(tip.type.color)
                         .frame(width: 24, height: 24)
                         .background(tip.type.bgColor)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
 
                     Text(tip.message)
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
@@ -729,7 +729,7 @@ struct DashboardView: View {
     private var cashflowChart: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             Text("Cashflow 5 Bulan Terakhir")
-                .font(.jakarta(13, weight: .semibold))
+                .font(.app(13, weight: .semibold))
                 .foregroundColor(.appText)
 
             let maxAmount = max(
@@ -758,7 +758,7 @@ struct DashboardView: View {
                         }
 
                         Text(item.0)
-                            .font(.jakarta(9))
+                            .font(.app(9))
                             .foregroundColor(.appTextSecondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -770,13 +770,13 @@ struct DashboardView: View {
                 HStack(spacing: 4) {
                     Circle().fill(Color.appIncome).frame(width: 8, height: 8)
                     Text("Pemasukan")
-                        .font(.jakarta(9))
+                        .font(.app(9))
                         .foregroundColor(.appTextSecondary)
                 }
                 HStack(spacing: 4) {
                     Circle().fill(Color.appExpense).frame(width: 8, height: 8)
                     Text("Pengeluaran")
-                        .font(.jakarta(9))
+                        .font(.app(9))
                         .foregroundColor(.appTextSecondary)
                 }
             }
@@ -787,7 +787,7 @@ struct DashboardView: View {
     private var spendingChart: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             Text("Pengeluaran Bulan Ini")
-                .font(.jakarta(13, weight: .semibold))
+                .font(.app(13, weight: .semibold))
                 .foregroundColor(.appText)
 
             let total = viewModel.categorySpending.map(\.amount).reduce(0, +)
@@ -795,18 +795,18 @@ struct DashboardView: View {
             ForEach(viewModel.categorySpending.prefix(4), id: \.0.id) { cat, amount in
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: cat.icon ?? "tag")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appPrimary)
                         .frame(width: 20)
 
                     VStack(spacing: 2) {
                         HStack {
                             Text(cat.name)
-                                .font(.jakarta(11))
+                                .font(.app(11))
                                 .foregroundColor(.appText)
                             Spacer()
                             Text(amount.formattedAsCurrency())
-                                .font(.jakarta(10))
+                                .font(.app(10))
                                 .foregroundColor(.appTextSecondary)
                         }
                         ProgressView(value: total > 0 ? amount / total : 0)
@@ -826,7 +826,7 @@ struct DashboardView: View {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(viewModel.healthScoreLabel)
-                            .font(.jakarta(18, weight: .bold))
+                            .font(.app(18, weight: .bold))
                             .foregroundColor(color)
                     }
 
@@ -834,10 +834,10 @@ struct DashboardView: View {
 
                     HStack(alignment: .firstTextBaseline, spacing: 0) {
                         Text("\(viewModel.healthScore)")
-                            .font(.jakarta(40, weight: .bold))
+                            .font(.app(40, weight: .bold))
                             .foregroundColor(color)
                         Text("/100")
-                            .font(.jakarta(12))
+                            .font(.app(12))
                             .foregroundColor(.appTextSecondary)
                             .padding(.leading, 2)
                     }
@@ -860,7 +860,7 @@ struct DashboardView: View {
                         Spacer()
                         if viewModel.healthScore > 0 {
                             Image(systemName: "figure.walk")
-                                .font(.jakarta(10, weight: .bold))
+                                .font(.app(10, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.trailing, 8)
                         }
@@ -919,7 +919,7 @@ struct DashboardView: View {
         let color = healthScoreColor(score * 100 / max(maxScore, 1))
         return VStack(spacing: 4) {
             Text("\(score)/\(maxScore)")
-                .font(.jakarta(14, weight: .bold))
+                .font(.app(14, weight: .bold))
                 .foregroundColor(.appText)
 
             ZStack(alignment: .leading) {
@@ -934,7 +934,7 @@ struct DashboardView: View {
             .frame(width: 48)
 
             Text(label)
-                .font(.jakarta(9))
+                .font(.app(9))
                 .foregroundColor(.appTextSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -955,10 +955,10 @@ struct DashboardView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "chart.pie.fill")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Sisa Budget Bulan Ini")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -969,10 +969,10 @@ struct DashboardView: View {
                 Text(isBalanceVisible
                      ? (viewModel.totalRemaining >= 0 ? viewModel.totalRemaining.formattedAsCurrency() : "Rp0")
                      : "Rp********")
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(.appText)
                 Text(viewModel.totalRemaining >= 0 ? "\(Int(viewModel.totalBudget > 0 ? viewModel.totalRemaining / viewModel.totalBudget * 100 : 0))%" : "0%")
-                    .font(.jakarta(13, weight: .semibold))
+                    .font(.app(13, weight: .semibold))
                     .foregroundColor(viewModel.totalRemaining >= 0 ? .appPrimary : .appError)
                     .padding(.top, 4)
                 Spacer()
@@ -987,19 +987,19 @@ struct DashboardView: View {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Total Budget")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Text(isBalanceVisible ? viewModel.totalBudget.formattedAsCurrency() : "Rp********")
-                        .font(.jakarta(14, weight: .semibold))
+                        .font(.app(14, weight: .semibold))
                         .foregroundColor(.appText)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 3) {
                     Text("Terpakai")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Text(isBalanceVisible ? viewModel.totalSpent.formattedAsCurrency() : "Rp********")
-                        .font(.jakarta(14, weight: .semibold))
+                        .font(.app(14, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
             }
@@ -1030,10 +1030,10 @@ struct DashboardView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "repeat")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Tagihan Terdekat")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -1042,7 +1042,7 @@ struct DashboardView: View {
 
             if viewModel.upcomingSubscriptions.isEmpty {
                 Text("Belum ada tagihan berulang")
-                    .font(.jakarta(13))
+                    .font(.app(13))
                     .foregroundColor(.appTextSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Spacing.xl)
@@ -1056,22 +1056,22 @@ struct DashboardView: View {
                                     .fill(Color.appExpense.opacity(0.1))
                                     .frame(width: 34, height: 34)
                                 Image(systemName: "creditcard.fill")
-                                    .font(.jakarta(12))
+                                    .font(.app(12))
                                     .foregroundColor(.appExpense)
                             }
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(sub.name)
-                                    .font(.jakarta(14, weight: .semibold))
+                                    .font(.app(14, weight: .semibold))
                                     .foregroundColor(.appText)
                                     .lineLimit(1)
                                 Text("\(accountName(for: sub.accountId)) • \(sub.billingDateString)")
-                                    .font(.jakarta(10))
+                                    .font(.app(10))
                                     .foregroundColor(.appTextSecondary)
                                     .lineLimit(1)
                             }
                             Spacer(minLength: 8)
                             Text(isBalanceVisible ? sub.amount.formattedAsCurrency() : "Rp******")
-                                .font(.jakarta(13, weight: .semibold))
+                                .font(.app(13, weight: .semibold))
                                 .foregroundColor(.appText)
                         }
                         .padding(.horizontal, Spacing.xl)
@@ -1089,11 +1089,11 @@ struct DashboardView: View {
 
                 HStack {
                     Text("Total per bulan")
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(.appTextSecondary)
                     Spacer()
                     Text(isBalanceVisible ? viewModel.totalMonthlySubscriptions.formattedAsCurrency() : "Rp******")
-                        .font(.jakarta(13, weight: .semibold))
+                        .font(.app(13, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
                 .padding(.horizontal, Spacing.xl)
@@ -1116,10 +1116,10 @@ struct DashboardView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "arrow.left.arrow.right")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appPrimary)
                 Text("Net Cashflow Bulan Ini")
-                    .font(.jakarta(12))
+                    .font(.app(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
             }
@@ -1128,12 +1128,12 @@ struct DashboardView: View {
 
             HStack(spacing: 0) {
                 Text("Rp")
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(.appText)
                 Text(isBalanceVisible
                      ? viewModel.netCashflow.formattedAsCurrency().replacingOccurrences(of: "Rp", with: "")
                      : "********")
-                    .font(.jakarta(34, weight: .bold))
+                    .font(.app(34, weight: .bold))
                     .foregroundColor(.appText)
                 Spacer()
             }
@@ -1201,16 +1201,16 @@ struct DashboardView: View {
                 .frame(width: 32, height: 32)
                 .overlay {
                     Image(systemName: icon)
-                        .font(.jakarta(11))
+                        .font(.app(11))
                         .foregroundColor(color)
                 }
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(label)
-                    .font(.jakarta(10))
+                    .font(.app(10))
                     .foregroundColor(.appTextSecondary)
                 Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp******")
-                    .font(.jakarta(14, weight: .semibold))
+                    .font(.app(14, weight: .semibold))
                     .foregroundColor(color)
             }
         }

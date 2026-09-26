@@ -29,11 +29,11 @@ struct CustomIconSheet: View {
                         .overlay {
                             if isValid {
                                 Text(text.trimmingCharacters(in: .whitespaces).uppercased())
-                                    .font(.jakarta(16, weight: .bold))
+                                    .font(.app(16, weight: .bold))
                                     .foregroundColor(.white)
                             } else {
                                 Image(systemName: "questionmark")
-                                    .font(.jakarta(20, weight: .bold))
+                                    .font(.app(20, weight: .bold))
                                     .foregroundColor(.white)
                             }
                         }
@@ -43,11 +43,11 @@ struct CustomIconSheet: View {
                 // Text Input
                 VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Teks Icon")
-                        .font(.jakarta(13, weight: .medium))
+                        .font(.app(13, weight: .medium))
                         .foregroundColor(.appTextSecondary)
 
                     TextField("Max 4 huruf", text: $text)
-                        .font(.jakarta(17, weight: .medium))
+                        .font(.app(17, weight: .medium))
                         .multilineTextAlignment(.center)
                         .padding()
                         .background(Color.appGroupedBackground)
@@ -63,7 +63,7 @@ struct CustomIconSheet: View {
                 // Color Picker
                 VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Warna")
-                        .font(.jakarta(13, weight: .medium))
+                        .font(.app(13, weight: .medium))
                         .foregroundColor(.appTextSecondary)
 
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 5), spacing: 12) {
@@ -77,7 +77,7 @@ struct CustomIconSheet: View {
                                     .overlay {
                                         if selectedColor == preset {
                                             Image(systemName: "checkmark")
-                                                .font(.jakarta(14, weight: .bold))
+                                                .font(.app(14, weight: .bold))
                                                 .foregroundColor(.white)
                                         }
                                     }
@@ -106,7 +106,7 @@ struct CustomIconSheet: View {
                         )
                         dismiss()
                     }
-                    .font(.jakarta(15, weight: .semibold))
+                    .font(.app(15, weight: .semibold))
                 }
             }
             .alert("Perhatian", isPresented: $showValidationAlert) {

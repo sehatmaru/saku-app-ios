@@ -57,11 +57,11 @@ struct TransactionRowView: View {
             Spacer()
             if showBalance {
                 Text(amountText)
-                    .font(.jakarta(14, weight: .semibold))
+                    .font(.app(14, weight: .semibold))
                     .foregroundColor(amountColor)
             } else {
                 Text("Rp******")
-                    .font(.jakarta(14, weight: .semibold))
+                    .font(.app(14, weight: .semibold))
                     .foregroundColor(amountColor)
             }
         }
@@ -75,7 +75,7 @@ struct TransactionRowView: View {
                 .fill(cellColor.opacity((isTransfer || isAdjustment) ? 0.08 : 0.15))
                 .frame(width: 44, height: 44)
             Image(systemName: iconName)
-                .font(.jakarta(16))
+                .font(.app(16))
                 .foregroundColor(cellColor)
         }
         .overlay(alignment: .bottomTrailing) {
@@ -98,18 +98,18 @@ struct TransactionRowView: View {
                         ZStack {
                             Circle().fill(swi.color).frame(width: 20, height: 20)
                             Text(swi.shortName)
-                                .font(.jakarta(6, weight: .bold))
+                                .font(.app(6, weight: .bold))
                                 .foregroundColor(.white)
                                 .minimumScaleFactor(0.5)
                         }
                     }
                     Image(systemName: "arrow.right")
-                        .font(.jakarta(8))
+                        .font(.app(8))
                         .foregroundColor(.appTextSecondary)
                     ZStack {
                         Circle().fill(dwi.color).frame(width: 20, height: 20)
                         Text(dwi.shortName)
-                            .font(.jakarta(6, weight: .bold))
+                            .font(.app(6, weight: .bold))
                             .foregroundColor(.white)
                             .minimumScaleFactor(0.5)
                     }
@@ -118,11 +118,11 @@ struct TransactionRowView: View {
             } else {
                 HStack(spacing: 6) {
                     Text(title)
-                        .font(.jakarta(14, weight: .medium))
+                        .font(.app(14, weight: .medium))
                         .lineLimit(1)
                     if showArchivedBadge {
                         Text("Diarsipkan")
-                            .font(.jakarta(9, weight: .medium))
+                            .font(.app(9, weight: .medium))
                             .foregroundColor(.appWarning)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -133,7 +133,7 @@ struct TransactionRowView: View {
             }
 
             Text(formattedDate(transaction.date))
-                .font(.jakarta(11))
+                .font(.app(11))
                 .foregroundColor(.appTextSecondary)
         }
     }

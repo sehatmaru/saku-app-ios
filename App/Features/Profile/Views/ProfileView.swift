@@ -88,21 +88,21 @@ struct ProfileView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 20))
 
                 Text(userInitials)
-                    .font(.jakarta(26, weight: .bold))
+                    .font(.app(26, weight: .bold))
                     .foregroundColor(.white)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(authViewModel.currentUser?.displayName ?? "User")
-                    .font(.jakarta(18, weight: .bold))
+                    .font(.app(18, weight: .bold))
                     .foregroundColor(.appText)
 
                 HStack(spacing: 4) {
                     Image(systemName: "envelope.fill")
-                        .font(.jakarta(9))
+                        .font(.app(9))
                         .foregroundColor(.appTextSecondary)
                     Text(authViewModel.currentUser?.email ?? "")
-                        .font(.jakarta(12))
+                        .font(.app(12))
                         .foregroundColor(.appTextSecondary)
                         .lineLimit(1)
                 }
@@ -116,11 +116,11 @@ struct ProfileView: View {
         .overlay(alignment: .topTrailing) {
             VStack(spacing: 2) {
                 Text("Bergabung Sejak")
-                    .font(.jakarta(8, weight: .medium))
+                    .font(.app(8, weight: .medium))
                     .foregroundColor(.appTextSecondary.opacity(0.5))
 
                 Text(memberSinceDate)
-                    .font(.jakarta(10, weight: .semibold))
+                    .font(.app(10, weight: .semibold))
                     .foregroundColor(.appTextSecondary)
             }
             .padding(.horizontal, 10)
@@ -181,23 +181,23 @@ struct ProfileView: View {
                     .fill(iconColor.opacity(0.12))
                     .frame(width: 36, height: 36)
                 Image(systemName: icon)
-                    .font(.jakarta(14, weight: .semibold))
+                    .font(.app(14, weight: .semibold))
                     .foregroundColor(iconColor)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.jakarta(15, weight: .medium))
+                    .font(.app(15, weight: .medium))
                     .foregroundColor(.appText)
                 Text(subtitle)
-                    .font(.jakarta(11))
+                    .font(.app(11))
                     .foregroundColor(.appTextSecondary)
             }
 
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(.jakarta(10))
+                .font(.app(10))
                 .foregroundColor(.appTextSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -218,12 +218,12 @@ struct ProfileView: View {
                             .fill(Color.appError.opacity(0.12))
                             .frame(width: 36, height: 36)
                         Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .font(.jakarta(14, weight: .semibold))
+                            .font(.app(14, weight: .semibold))
                             .foregroundColor(.appError)
                     }
 
                     Text("Keluar")
-                        .font(.jakarta(15, weight: .medium))
+                        .font(.app(15, weight: .medium))
                         .foregroundColor(.appError)
 
                     Spacer()
@@ -278,7 +278,7 @@ struct ProfileEditView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 22))
 
                             Text(initials)
-                                .font(.jakarta(28, weight: .bold))
+                                .font(.app(28, weight: .bold))
                                 .foregroundColor(.white)
 
                             VStack {
@@ -299,18 +299,18 @@ struct ProfileEditView: View {
                     .buttonStyle(.plain)
 
                     Text("Ubah Profil")
-                        .font(.jakarta(17, weight: .semibold))
+                        .font(.app(17, weight: .semibold))
                         .foregroundColor(.appText)
                 }
                 .padding(.top, Spacing.xl)
 
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("Nama Tampilan")
-                        .font(.jakarta(12))
+                        .font(.app(12))
                         .foregroundColor(.appTextSecondary)
 
                     TextField("Masukkan nama", text: $viewModel.displayName)
-                        .font(.jakarta(17))
+                        .font(.app(17))
                         .padding()
                         .background(Color.appGroupedBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -319,11 +319,11 @@ struct ProfileEditView: View {
 
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("Email")
-                        .font(.jakarta(12))
+                        .font(.app(12))
                         .foregroundColor(.appTextSecondary)
 
                     Text(authViewModel.currentUser?.email ?? "")
-                        .font(.jakarta(15))
+                        .font(.app(15))
                         .foregroundColor(.appTextSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
@@ -349,7 +349,7 @@ struct ProfileEditView: View {
                                 .tint(.white)
                         }
                         Text("Simpan")
-                            .font(.jakarta(17, weight: .semibold))
+                            .font(.app(17, weight: .semibold))
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -398,10 +398,10 @@ struct LanguageView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(option.name)
-                                .font(.jakarta(15, weight: .medium))
+                                .font(.app(15, weight: .medium))
                                 .foregroundColor(.appText)
                             Text(option.native)
-                                .font(.jakarta(12))
+                                .font(.app(12))
                                 .foregroundColor(.appTextSecondary)
                         }
 
@@ -409,7 +409,7 @@ struct LanguageView: View {
 
                         if appLanguage == option.code {
                             Image(systemName: "checkmark")
-                                .font(.jakarta(14, weight: .semibold))
+                                .font(.app(14, weight: .semibold))
                                 .foregroundColor(.appPrimary)
                         }
                     }
@@ -445,19 +445,19 @@ struct ThemeView: View {
                                 .fill(Color.appPrimary.opacity(0.12))
                                 .frame(width: 40, height: 40)
                             Image(systemName: theme.icon)
-                                .font(.jakarta(16))
+                                .font(.app(16))
                                 .foregroundColor(.appPrimary)
                         }
 
                         Text(theme.rawValue)
-                            .font(.jakarta(15, weight: .medium))
+                            .font(.app(15, weight: .medium))
                             .foregroundColor(.appText)
 
                         Spacer()
 
                         if appTheme == theme {
                             Image(systemName: "checkmark")
-                                .font(.jakarta(14, weight: .semibold))
+                                .font(.app(14, weight: .semibold))
                                 .foregroundColor(.appPrimary)
                         }
                     }
@@ -514,16 +514,16 @@ struct NotificationView: View {
                     .fill(Color.appPrimary.opacity(0.12))
                     .frame(width: 36, height: 36)
                 Image(systemName: icon)
-                    .font(.jakarta(14, weight: .semibold))
+                    .font(.app(14, weight: .semibold))
                     .foregroundColor(.appPrimary)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.jakarta(15, weight: .medium))
+                    .font(.app(15, weight: .medium))
                     .foregroundColor(.appText)
                 Text(subtitle)
-                    .font(.jakarta(11))
+                    .font(.app(11))
                     .foregroundColor(.appTextSecondary)
             }
 

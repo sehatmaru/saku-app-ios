@@ -47,7 +47,7 @@ struct WalletIconView: View {
                     .fill(icon.color)
                     .frame(width: size, height: size)
                 Text(icon.shortName)
-                    .font(.jakarta(size <= 28 ? 6 : 8, weight: .bold))
+                    .font(.app(size <= 28 ? 6 : 8, weight: .bold))
                     .foregroundColor(.white)
                     .minimumScaleFactor(0.5)
             }

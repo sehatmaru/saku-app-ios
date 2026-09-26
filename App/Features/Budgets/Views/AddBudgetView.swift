@@ -59,7 +59,7 @@ struct AddBudgetView: View {
                             .tint(.appPrimary)
                     } else {
                         Button("Simpan") { save() }
-                            .font(.jakarta(15, weight: .bold))
+                            .font(.app(15, weight: .bold))
                             .foregroundColor(canSave ? .appPrimary : .appTextSecondary.opacity(0.4))
                             .disabled(!canSave)
                     }
@@ -78,10 +78,10 @@ struct AddBudgetView: View {
     private var amountSection: some View {
         HStack(spacing: 4) {
             Text("Rp")
-                .font(.jakarta(34, weight: .bold))
+                .font(.app(34, weight: .bold))
                 .foregroundColor(.appText)
             Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
-                .font(.jakarta(34, weight: .bold))
+                .font(.app(34, weight: .bold))
                 .foregroundColor(.appText)
             Spacer()
             if !amountDigits.isEmpty {
@@ -89,7 +89,7 @@ struct AddBudgetView: View {
                     amountDigits = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.jakarta(20))
+                        .font(.app(20))
                         .foregroundColor(.appTextSecondary.opacity(0.4))
                 }
                 .buttonStyle(.plain)
@@ -115,9 +115,9 @@ struct AddBudgetView: View {
                 .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Nama Budget").font(.jakarta(10)).foregroundColor(.appTextSecondary)
+                    Text("Nama Budget").font(.app(10)).foregroundColor(.appTextSecondary)
                     TextField("cth: Transport Online", text: $nameText)
-                        .font(.jakarta(15)).foregroundColor(.appText)
+                        .font(.app(15)).foregroundColor(.appText)
                 }
                 Spacer(minLength: 8)
                 if !nameText.isEmpty { clearBtn { nameText = "" } }
@@ -134,14 +134,14 @@ struct AddBudgetView: View {
     private func iconCircle(_ icon: String, _ color: Color) -> some View {
         ZStack {
             Circle().fill(color.opacity(0.12)).frame(width: 34, height: 34)
-            Image(systemName: icon).font(.jakarta(14, weight: .semibold)).foregroundColor(color)
+            Image(systemName: icon).font(.app(14, weight: .semibold)).foregroundColor(color)
         }
     }
 
     private func clearBtn(action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: "xmark.circle.fill")
-                .font(.jakarta(16))
+                .font(.app(16))
                 .foregroundColor(.appTextSecondary.opacity(0.4))
         }
         .buttonStyle(.plain)
@@ -163,7 +163,7 @@ struct AddBudgetView: View {
                                     .fill(Color.appExpense.opacity(selectedIcon == icon ? 0.2 : 0.08))
                                     .frame(width: 44, height: 44)
                                 Image(systemName: icon)
-                                    .font(.jakarta(17, weight: .medium))
+                                    .font(.app(17, weight: .medium))
                                     .foregroundColor(selectedIcon == icon ? .appExpense : .appTextSecondary)
                             }
                         }
