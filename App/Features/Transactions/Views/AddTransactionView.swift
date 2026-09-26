@@ -7,6 +7,8 @@ struct AddTransactionView: View {
     let accounts: [Account]
     let userId: String
     let onSave: () -> Void
+    var initialType: Transaction.TransactionType = .expense
+    var initialAccount: Account?
 
     @State private var selectedType: Transaction.TransactionType = .expense
     @State private var amountDigits = ""
@@ -91,7 +93,8 @@ struct AddTransactionView: View {
             .toast(isPresented: $showToast, message: toastMessage)
             .onAppear {
                 if selectedAccount == nil {
-                    selectedAccount = activeAccounts.first { $0.isDefault } ?? activeAccounts.first
+                    selectedType = initialType
+                    selectedAccount = initialAccount ?? activeAccounts.first { $0.isDefault } ?? activeAccounts.first
                 }
                 if !activeAccounts.isEmpty { showKeyboard = true }
             }
