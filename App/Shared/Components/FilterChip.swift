@@ -8,13 +8,14 @@ struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.app(14))
-                .fontWeight(isSelected ? .semibold : .regular)
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.sm)
-                .background(isSelected ? Color.appPrimary.opacity(0.12) : Color(.systemGray6))
-                .foregroundColor(isSelected ? Color.appPrimary : .appText)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .font(.app(14, weight: isSelected ? .medium : .regular))
+                .lineLimit(1)
+                .padding(.horizontal, 14)
+                .frame(height: 34)
+                .foregroundStyle(isSelected ? Color.appBackground : Color.appText)
+                .background(isSelected ? Color.appText : Color.clear, in: Capsule())
+                .overlay(Capsule().strokeBorder(isSelected ? Color.clear : Color.appBorder))
         }
+        .buttonStyle(.plain)
     }
 }

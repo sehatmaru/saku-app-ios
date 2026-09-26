@@ -11,137 +11,111 @@ struct TransactionListView: View {
     @State private var isBalanceVisible = true
     @State private var filter = TransactionFilter()
     @State private var expandedMonths: Set<String> = []
+    /// Months where the user tapped "Tampilkan N lainnya".
+    @State private var fullyShownMonths: Set<String> = []
     @State private var searchText = ""
-    @State private var isSearching = false
     @State private var showAdvancedSearch = false
     @State private var showBackToTop = false
     @State private var hasInitialExpanded = false
-    @State private var showAddSheet = false
+
+    /// Rows shown per month before "Tampilkan N lainnya".
+    private let previewCount = 7
 
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
-                ZStack {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            Color.clear
-                                .frame(height: 0)
-                                .id("scrollTop")
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Color.clear
+                            .frame(height: 0)
+                            .id("scrollTop")
 
-                            if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
-                                errorStateView(message: error)
-                                    .transition(.opacity)
-                            } else if !viewModel.hasLoadedOnce {
-                                transactionSkeleton
-                                    .transition(.opacity)
-                            } else {
-                                Group {
-                                    if viewModel.errorMessage != nil {
-                                        ErrorBanner(message: viewModel.errorMessage!)
-                                    }
-                                    summaryCard
-                                        .padding(.horizontal)
-                                        .padding(.top)
-                                        
-                                    Color.clear
-                                        .frame(height: 1)
-                                        .onAppear { showBackToTop = false }
-                                        .onDisappear { showBackToTop = true }
-
-                                    filterChips
-                                        .padding(.top, Spacing.xs)
-
-                                    if filteredTransactions.isEmpty {
-                                        emptyState
-                                    } else {
-                                        groupedTransactionList
-                                    }
-
-                                    Color.clear
-                                        .frame(height: Spacing.xl)
-                                }
-                                .transition(.opacity)
-                            }
-                        }
-                    }
-                    .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
-                    .background(Color.appGroupedBackground)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .searchable(
-                        text: $searchText,
-                        isPresented: $isSearching,
-                        placement: .navigationBarDrawer(displayMode: .always),
-                        prompt: "Cari transaksi..."
-                    )
-                    .scrollDismissesKeyboard(.immediately)
-                    .navigationTitle("")
-                    .refreshable {
-                        guard let userId = authViewModel.currentUser?.id else { return }
-                        await viewModel.loadTransactions(userId: userId, forceRefresh: true)
-                    }
-                    .onAppear { expandInitialMonths(); isBalanceVisible = isBalanceVisibleStorage }
-                    .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
-                    .onChange(of: viewModel.allTransactions.count) { _, _ in expandInitialMonths() }
-                    .task {
-                        guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }
-                        await viewModel.loadTransactions(userId: userId)
-                    }
-                    .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
-                        guard let userId = authViewModel.currentUser?.id else { return }
-                        Task {
-                            await viewModel.loadTransactions(userId: userId, forceRefresh: true)
-                        }
-                    }
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
+                        ScreenHeader(title: "Transaksi") {
                             Button {
                                 withAnimation(.smooth) { isBalanceVisible.toggle() }
                                 isBalanceVisibleStorage = isBalanceVisible
                             } label: {
-                                Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
-                                    .font(.app(16))
-                                    .foregroundColor(.appTextSecondary)
+                                Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+                            }
+                            .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+                        }
+
+                        searchField
+                            .padding(.horizontal, 24)
+                            .padding(.top, 14)
+
+                        if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
+                            errorStateView(message: error)
+                                .padding(24)
+                        } else if !viewModel.hasLoadedOnce {
+                            transactionSkeleton
+                        } else {
+                            if let error = viewModel.errorMessage {
+                                ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
+                            }
+                            summary
+
+                            Color.clear
+                                .frame(height: 1)
+                                .onAppear { showBackToTop = false }
+                                .onDisappear { showBackToTop = true }
+
+                            filterChips
+
+                            if filteredTransactions.isEmpty {
+                                emptyState
+                            } else {
+                                groupedTransactionList
                             }
                         }
                     }
-                    .overlay(alignment: .bottomTrailing) {
-                        if showBackToTop {
-                            Button {
-                                withAnimation(.spring(response: 0.4)) {
-                                    proxy.scrollTo("scrollTop", anchor: .top)
-                                }
-                            } label: {
-                                Image(systemName: "chevron.up")
-                                    .font(.app(16, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 44, height: 44)
-                                    .background(Color.appPrimary)
-                                    .clipShape(Circle())
-                                    .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+                    .padding(.bottom, 24)
+                }
+                .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
+                .background(Color.appBackground)
+                .toolbar(.hidden, for: .navigationBar)
+                .scrollDismissesKeyboard(.immediately)
+                .refreshable {
+                    guard let userId = authViewModel.currentUser?.id else { return }
+                    await viewModel.loadTransactions(userId: userId, forceRefresh: true)
+                }
+                .onAppear { expandInitialMonths(); isBalanceVisible = isBalanceVisibleStorage }
+                .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
+                .onChange(of: viewModel.allTransactions.count) { _, _ in expandInitialMonths() }
+                .task {
+                    guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }
+                    await viewModel.loadTransactions(userId: userId)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
+                    guard let userId = authViewModel.currentUser?.id else { return }
+                    Task {
+                        await viewModel.loadTransactions(userId: userId, forceRefresh: true)
+                    }
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    if showBackToTop {
+                        Button {
+                            withAnimation(.spring(response: 0.4)) {
+                                proxy.scrollTo("scrollTop", anchor: .top)
                             }
-                            .padding(.trailing, Spacing.xl)
-                            .padding(.bottom, Spacing.xl)
-                            .transition(.scale.combined(with: .opacity))
+                        } label: {
+                            Image(systemName: "chevron.up")
+                                .font(.app(16, weight: .semibold))
+                                .foregroundStyle(Color.appText)
+                                .frame(width: 44, height: 44)
+                                .background(.regularMaterial, in: Circle())
+                                .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
                         }
+                        .accessibilityLabel("Kembali ke atas")
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 16)
+                        .transition(.scale.combined(with: .opacity))
                     }
-                    .animation(.easeInOut(duration: 0.2), value: showBackToTop)
-                    .sheet(isPresented: $showAdvancedSearch) {
-                        AdvancedSearchView(filter: $filter, categories: viewModel.categories)
-                            .presentationDetents([.medium, .large])
-                    }
-                    .sheet(isPresented: $showAddSheet) {
-                        if let userId = authViewModel.currentUser?.id {
-                            AddTransactionView(
-                                categories: viewModel.categories,
-                                accounts: viewModel.accounts,
-                                userId: userId,
-                                onSave: {
-                                    Task { await viewModel.loadTransactions(userId: userId, forceRefresh: true) }
-                                }
-                            )
-                            .presentationDetents([.fraction(0.68), .large])
-                        }
-                    }
+                }
+                .animation(.easeInOut(duration: 0.2), value: showBackToTop)
+                .sheet(isPresented: $showAdvancedSearch) {
+                    AdvancedSearchView(filter: $filter, categories: viewModel.categories)
+                        .presentationDetents([.medium, .large])
                 }
             }
         }
@@ -159,140 +133,110 @@ struct TransactionListView: View {
     private func expandInitialMonths() {
         guard !hasInitialExpanded else { return }
         let sections = viewModel.sections(for: filteredTransactions)
-        guard !sections.isEmpty else { return }
-        expandedMonths = Set(sections.prefix(2).map { $0.id })
+        guard let first = sections.first else { return }
+        expandedMonths = [first.id]
         hasInitialExpanded = true
     }
 
     private var transactionSkeleton: some View {
-        VStack(spacing: Spacing.lg) {
-            RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground).frame(height: 170).redacted(reason: .placeholder)
-            RoundedRectangle(cornerRadius: 16).fill(Color.appCardBackground).frame(height: 56).redacted(reason: .placeholder)
-            RoundedRectangle(cornerRadius: 16).fill(Color.appCardBackground).frame(height: 260).redacted(reason: .placeholder)
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach([180, 240, 0, 0, 0, 0], id: \.self) { width in
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.appFill)
+                    .frame(maxWidth: width == 0 ? .infinity : CGFloat(width))
+                    .frame(height: width == 240 ? 40 : 14)
+            }
         }
-        .padding()
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
         .shimmer()
+    }
+
+    // MARK: Search
+
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 16))
+                .foregroundStyle(Color.appTextSecondary)
+            TextField("Cari transaksi...", text: $searchText)
+                .font(.app(16))
+                .submitLabel(.search)
+                .autocorrectionDisabled()
+            if !searchText.isEmpty {
+                Button { searchText = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Color.appTextTertiary)
+                }
+                .accessibilityLabel("Hapus pencarian")
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 38)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: Summary
 
-    private var summaryCard: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "arrow.left.arrow.right")
-                    .font(.app(12))
-                    .foregroundColor(.appPrimary)
-                Text("Net Cashflow Bulan Ini")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
+    private var summary: some View {
+        let net = viewModel.thisMonthBalance
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("Net cashflow \(Self.monthFormatter.string(from: Date()))")
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
 
-            HStack(spacing: 0) {
-                let balance = viewModel.thisMonthBalance
-                Text(isBalanceVisible
-                     ? balance.formattedAsCurrency()
-                     : "Rp********")
-                    .font(.app(34, weight: .bold))
-                    .foregroundColor(isBalanceVisible ? (balance >= 0 ? .appIncome : .appError) : .appText)
-                    .contentTransition(.numericText())
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.sm)
+            HeroAmount(
+                value: net,
+                size: .medium,
+                prefix: net > 0 ? "+Rp" : net < 0 ? "−Rp" : "Rp",
+                color: net > 0 ? .appIncome : .appText,
+                prefixColor: net > 0 ? .appIncome : .appTextSecondary,
+                isVisible: isBalanceVisible
+            )
+            .padding(.top, 8)
 
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: 0) {
-                statItem(title: "Pemasukan Bulan Ini", amount: viewModel.thisMonthIncome, color: .appIncome)
-                Divider().frame(height: 28)
-                statItem(title: "Pengeluaran Bulan Ini", amount: viewModel.thisMonthExpense, color: .appExpense)
+            HStack(spacing: 28) {
+                flowTotal("Masuk", viewModel.thisMonthIncome)
+                flowTotal("Keluar", viewModel.thisMonthExpense)
             }
-            .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.lg)
-            .padding(.horizontal, Spacing.xl)
-
-            Button {
-                showAddSheet = true
-            } label: {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "plus")
-                        .font(.app(15, weight: .semibold))
-                    Text("Tambah Transaksi")
-                        .font(.app(15, weight: .semibold))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.appPrimary)
-                .foregroundColor(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.bottom, Spacing.lg)
+            .padding(.top, 12)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: "arrow.left.arrow.right")
-                .font(.system(size: 48))
-                .foregroundColor(.appPrimary.opacity(0.08))
-                .offset(x: -12, y: -4)
-        }
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
+        .padding(.bottom, 24)
     }
 
-    private func statItem(title: String, amount: Double, color: Color) -> some View {
-        VStack(spacing: 4) {
-            Text(title)
-                .font(.app(11))
-                .foregroundColor(.appTextSecondary)
-            Text(isBalanceVisible ? (amount > 0 ? abbreviatedAmount(amount) : "Rp0") : "Rp******")
-                .font(.app(13, weight: .semibold))
-                .foregroundColor(color)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func abbreviatedAmount(_ amount: Double) -> String {
-        let prefix = amount < 0 ? "-" : ""
-        let absVal = abs(amount)
-        let formatted: String
-        switch absVal {
-        case 1_000_000_000...:
-            formatted = String(format: "%.1f Miliar", absVal / 1_000_000_000)
-        case 1_000_000...:
-            formatted = String(format: "%.0f Juta", absVal / 1_000_000)
-        case 1_000...:
-            formatted = String(format: "%.0f Ribu", absVal / 1_000)
-        default:
-            formatted = String(Int(absVal))
-        }
-        return "\(prefix)\(formatted)"
+    private func flowTotal(_ label: String, _ amount: Double) -> some View {
+        (Text(label + " ").foregroundStyle(Color.appTextSecondary)
+            + Text(isBalanceVisible ? amount.abbreviatedRupiah() : hiddenAmount)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.appText))
+            .font(.app(15))
+            .monospacedDigit()
     }
 
     // MARK: Filter Chips
 
     private var filterChips: some View {
-        HStack(spacing: Spacing.sm) {
-            filterButton
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.sm) {
-                    if hasAdvancedFilters {
-                        activeFilterChips
-                    } else {
-                        defaultFilterChips
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                filterButton
+                if hasAdvancedFilters {
+                    activeFilterChips
+                }
+                FilterChip(title: "Semua", isSelected: filter.transactionTypes.isEmpty) {
+                    filter.transactionTypes = []
+                }
+                ForEach([Transaction.TransactionType.income, .expense, .transfer], id: \.self) { type in
+                    FilterChip(title: typeLabel(type), isSelected: filter.transactionTypes == [type]) {
+                        filter.transactionTypes = filter.transactionTypes == [type] ? [] : [type]
                     }
                 }
-                .padding(.vertical, Spacing.sm)
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 2)
         }
-        .padding(.horizontal)
+        .padding(.bottom, 8)
     }
 
     private var hasAdvancedFilters: Bool {
@@ -302,30 +246,8 @@ struct TransactionListView: View {
         || filter.dateTo != nil
     }
 
-    private var defaultFilterChips: some View {
-        Group {
-            FilterChip(title: "Pemasukan", isSelected: filter.transactionTypes.contains(.income)) {
-                toggleType(.income)
-            }
-            FilterChip(title: "Pengeluaran", isSelected: filter.transactionTypes.contains(.expense)) {
-                toggleType(.expense)
-            }
-            FilterChip(title: "Transfer", isSelected: filter.transactionTypes.contains(.transfer)) {
-                toggleType(.transfer)
-            }
-        }
-    }
-
     private var activeFilterChips: some View {
         Group {
-            if !filter.transactionTypes.isEmpty {
-                ForEach(Array(filter.transactionTypes).sorted(by: { $0.rawValue < $1.rawValue }), id: \.self) { type in
-                    FilterChip(title: typeLabel(type), isSelected: true) {
-                        filter.transactionTypes.remove(type)
-                    }
-                }
-            }
-
             if !filter.expenseCategoryIds.isEmpty || !filter.incomeCategoryIds.isEmpty {
                 let count = filter.expenseCategoryIds.count + filter.incomeCategoryIds.count
                 ActiveFilterChip(
@@ -360,28 +282,28 @@ struct TransactionListView: View {
     }
 
     private var filterButton: some View {
-        Button {
+        let count = filter.activeFilterCount - (filter.transactionTypes.isEmpty ? 0 : 1)
+        return Button {
             showAdvancedSearch = true
         } label: {
-            Text(Image(systemName: "line.3.horizontal.decrease"))
-                .font(.app(14, weight: filter.hasActiveFilters ? .semibold : .regular))
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.sm)
-                .background(filter.hasActiveFilters ? Color.appPrimary.opacity(0.12) : Color(.systemGray6))
-                .foregroundColor(filter.hasActiveFilters ? Color.appPrimary : .appText)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 15))
+                .foregroundStyle(count > 0 ? Color.appPrimary : Color.appText)
+                .frame(width: 40, height: 34)
+                .overlay(Capsule().strokeBorder(count > 0 ? Color.appPrimary : Color.appBorder))
                 .overlay(alignment: .topTrailing) {
-                    if filter.hasActiveFilters {
-                        Text("\(filter.activeFilterCount)")
+                    if count > 0 {
+                        Text("\(count)")
                             .font(.app(9, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .frame(width: 14, height: 14)
-                            .background(Color.appPrimary)
-                            .clipShape(Circle())
-                            .offset(x: 5, y: -5)
+                            .background(Color.appPrimary, in: Circle())
+                            .offset(x: 4, y: -4)
                     }
                 }
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Filter lanjutan")
     }
 
     private func typeLabel(_ type: Transaction.TransactionType) -> String {
@@ -390,14 +312,6 @@ struct TransactionListView: View {
         case .expense: "Pengeluaran"
         case .transfer: "Transfer"
         case .adjustment: "Penyesuaian saldo"
-        }
-    }
-
-    private func toggleType(_ type: Transaction.TransactionType) {
-        if filter.transactionTypes.contains(type) {
-            filter.transactionTypes.remove(type)
-        } else {
-            filter.transactionTypes.insert(type)
         }
     }
 
@@ -447,78 +361,123 @@ struct TransactionListView: View {
 
     private var groupedTransactionList: some View {
         let sections = viewModel.sections(for: filteredTransactions)
-        return LazyVStack(spacing: Spacing.lg) {
-            ForEach(sections) { section in
-                VStack(spacing: 0) {
-                    Button {
-                        withAnimation {
-                            if expandedMonths.contains(section.id) {
-                                expandedMonths.remove(section.id)
-                            } else {
-                                expandedMonths.insert(section.id)
-                            }
+        return LazyVStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
+                let expanded = expandedMonths.contains(section.id)
+                Button {
+                    withAnimation {
+                        if expanded {
+                            expandedMonths.remove(section.id)
+                        } else {
+                            expandedMonths.insert(section.id)
                         }
-                    } label: {
-                        sectionHeader(section)
                     }
-                    .buttonStyle(.plain)
-
-                    if expandedMonths.contains(section.id) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(Array(section.transactions.enumerated()), id: \.element.id) { index, transaction in
-                                NavigationLink(destination: TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts)) {
-                                    TransactionRowView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts, showBalance: isBalanceVisible, showAccount: true)
-                                }
-                                .buttonStyle(RowPressStyle())
-                                .padding(.horizontal, Spacing.lg)
-                                .contentShape(Rectangle())
-                                if index < section.transactions.count - 1 {
-                                    Divider()
-                                        .padding(.leading, 52)
-                                }
-                            }
-                        }
-                        .padding(.vertical, Spacing.sm)
+                } label: {
+                    monthHeader(section, expanded: expanded)
+                }
+                .buttonStyle(.plain)
+                .overlay(alignment: .top) {
+                    if index > 0 {
+                        Rectangle().fill(Color.appDivider).frame(height: 1)
                     }
                 }
-                .background(Color.appCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal)
+                .padding(.top, index > 0 && expandedMonths.contains(sections[index - 1].id) ? 14 : 0)
+
+                if expanded {
+                    monthRows(section)
+                }
             }
         }
-        .padding(.top, Spacing.sm)
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
     }
 
-    private func sectionHeader(_ section: TransactionSection) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(Color.appPrimary)
-                    .frame(width: 4)
-                    .clipShape(Capsule())
-
-                HStack(spacing: 4) {
-                    Text(section.label)
-                        .font(.app(15, weight: .semibold))
-                        .foregroundColor(.appText)
-
-                    Spacer()
-
-                    Text("\(section.transactions.count) transaksi")
-                        .font(.app(13, weight: .semibold))
-                        .foregroundColor(.appTextSecondary)
-
-                    Image(systemName: "chevron.down")
-                        .font(.app(9))
-                        .foregroundColor(.appTextSecondary)
-                        .rotationEffect(.degrees(expandedMonths.contains(section.id) ? 0 : -90))
-                        .padding(.leading, 4)
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, 12)
+    private func monthHeader(_ section: TransactionSection, expanded: Bool) -> some View {
+        let net = section.transactions.reduce(0) { $0 + signedAmount($1) }
+        return HStack {
+            HStack(spacing: 8) {
+                Text(section.label)
+                    .font(.app(20, weight: .semibold))
+                    .tracking(-0.2)
+                    .foregroundStyle(Color.appText)
+                Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.appTextSecondary)
             }
+            Spacer()
+            HStack(spacing: 0) {
+                Text("\(section.transactions.count) transaksi")
+                if !expanded, isBalanceVisible, net != 0 {
+                    Text(" · ")
+                    Text((net > 0 ? "+Rp" : "−Rp") + net.abbreviatedRupiah())
+                        .foregroundStyle(net > 0 ? Color.appIncome : Color.appTextSecondary)
+                }
+            }
+            .font(.app(13))
+            .foregroundStyle(Color.appTextSecondary)
+            .monospacedDigit()
+        }
+        .padding(.vertical, expanded ? 14 : 18)
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private func monthRows(_ section: TransactionSection) -> some View {
+        let showAll = fullyShownMonths.contains(section.id)
+        let rows = showAll ? section.transactions : Array(section.transactions.prefix(previewCount))
+        ForEach(Array(rows.enumerated()), id: \.element.id) { index, transaction in
+            if index == 0 || !Calendar.current.isDate(transaction.date, inSameDayAs: rows[index - 1].date) {
+                dayHeader(for: transaction.date, in: section.transactions)
+            }
+            NavigationLink(destination: TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts)) {
+                TransactionRowView(
+                    transaction: transaction,
+                    categories: viewModel.categories,
+                    accounts: viewModel.accounts,
+                    showBalance: isBalanceVisible,
+                    showAccount: true,
+                    showDate: false
+                )
+                .rowSeparator()
+            }
+            .buttonStyle(RowPressStyle())
+        }
+        if !showAll, section.transactions.count > previewCount {
+            Button("Tampilkan \(section.transactions.count - previewCount) lainnya") {
+                withAnimation { _ = fullyShownMonths.insert(section.id) }
+            }
+            .font(.app(15))
+            .foregroundStyle(Color.appPrimary)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 18)
+            .padding(.bottom, 6)
+        }
+    }
+
+    private func dayHeader(for date: Date, in transactions: [Transaction]) -> some View {
+        let total = transactions
+            .filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
+            .reduce(0) { $0 + signedAmount($1) }
+        return HStack {
+            Text(DashboardView.dayHeader(for: date))
+            Spacer()
+            if isBalanceVisible, total != 0 {
+                Text((total > 0 ? "+" : "−") + abs(total).formattedAsCurrency())
+            }
+        }
+        .font(.app(13))
+        .tracking(0.2)
+        .foregroundStyle(Color.appTextSecondary)
+        .monospacedDigit()
+        .padding(.top, 20)
+    }
+
+    /// Income positive, expense negative; transfers don't change the total.
+    private func signedAmount(_ transaction: Transaction) -> Double {
+        switch transaction.type {
+        case .income: transaction.amount
+        case .expense: -transaction.amount
+        case .transfer, .adjustment: 0
         }
     }
 
@@ -530,24 +489,27 @@ struct TransactionListView: View {
 
         return VStack(spacing: Spacing.md) {
             Image(systemName: isSearchEmpty ? "magnifyingglass" : "tray")
-                .font(.app(40))
-                .foregroundColor(.appTextSecondary)
+                .font(.system(size: 36, weight: .light))
+                .foregroundStyle(Color.appTextTertiary)
             Text(isSearchEmpty ? "Tidak ada hasil" : "Belum ada transaksi")
-                .font(.app(15))
-                .foregroundColor(.appTextSecondary)
+                .font(.app(16))
+                .foregroundStyle(Color.appTextSecondary)
             if isSearchEmpty {
                 Text("Cari \"\(trimmedSearchText)\"")
                     .font(.app(13))
-                    .foregroundColor(.appTextSecondary.opacity(0.7))
+                    .foregroundStyle(Color.appTextTertiary)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Spacing.xxxl)
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .padding()
+        .padding(.vertical, 56)
     }
 
+    private static let monthFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM"
+        f.locale = Locale(identifier: "id_ID")
+        return f
+    }()
 }
 
 struct ActiveFilterChip: View {
@@ -555,28 +517,21 @@ struct ActiveFilterChip: View {
     let onRemove: () -> Void
 
     var body: some View {
-        Text(title)
-            .font(.app(14))
-            .fontWeight(.semibold)
-            .lineLimit(1)
-            .padding(.leading, Spacing.lg)
-            .padding(.trailing, Spacing.lg)
-            .padding(.vertical, Spacing.sm)
-            .background(Color.appPrimary.opacity(0.12))
-            .foregroundColor(Color.appPrimary)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(alignment: .topTrailing) {
-                Button(action: onRemove) {
-                    Image(systemName: "xmark")
-                        .font(.app(7, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(3)
-                        .background(Color.appPrimary)
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .offset(x: 5, y: -5)
+        Button(action: onRemove) {
+            HStack(spacing: 6) {
+                Text(title)
+                    .lineLimit(1)
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
             }
+            .font(.app(14, weight: .medium))
+            .padding(.horizontal, 14)
+            .frame(height: 34)
+            .foregroundStyle(Color.appPrimary)
+            .background(Color.appPrimary.opacity(0.12), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Hapus filter")
     }
 }
 

@@ -89,23 +89,10 @@ final class TransactionListViewModel: ObservableObject {
 
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "id_ID")
-
-        let now = Date()
-        let currentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
-        let previousMonth = calendar.date(byAdding: .month, value: -1, to: currentMonth)!
+        formatter.dateFormat = "MMMM yyyy"
 
         return grouped.map { month, items in
-            let label: String
-            if month == currentMonth {
-                formatter.dateFormat = "MMMM yyyy"
-                label = "Bulan Ini · \(formatter.string(from: month))"
-            } else if month == previousMonth {
-                formatter.dateFormat = "MMMM yyyy"
-                label = "Bulan Lalu · \(formatter.string(from: month))"
-            } else {
-                formatter.dateFormat = "MMMM yyyy"
-                label = formatter.string(from: month)
-            }
+            let label = formatter.string(from: month)
 
             return TransactionSection(
                 id: "\(calendar.component(.year, from: month))-\(calendar.component(.month, from: month))",
