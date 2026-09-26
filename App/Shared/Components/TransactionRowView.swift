@@ -60,7 +60,7 @@ struct TransactionRowView: View {
                     .font(.jakarta(14, weight: .semibold))
                     .foregroundColor(amountColor)
             } else {
-                Text("Rp***")
+                Text("Rp******")
                     .font(.jakarta(14, weight: .semibold))
                     .foregroundColor(amountColor)
             }

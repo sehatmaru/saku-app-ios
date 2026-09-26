@@ -6,6 +6,12 @@ struct BudgetListItem: Identifiable {
     let budget: Budget?
 }
 
+enum BudgetAddResult {
+    case success
+    case duplicate
+    case failure
+}
+
 @MainActor
 final class BudgetListViewModel: ObservableObject {
     @Published var budgets: [Budget] = []
@@ -134,6 +140,64 @@ final class BudgetListViewModel: ObservableObject {
             return false
         } catch {
             print("❌ addBudget failed: \(error)")
+            return false
+        }
+    }
+
+    func addBudget(name: String, icon: String?, userId: String, amount: Double) async -> BudgetAddResult {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return .failure }
+        if categories.contains(where: { $0.name.lowercased() == trimmed.lowercased() }) {
+            print("⚠️ Budget '\(trimmed)' sudah ada")
+            return .duplicate
+        }
+        do {
+            let category = try await SupabaseRepository.shared.createCategory(name: trimmed, type: .expense, icon: icon, color: "#FF6B6B", userId: userId)
+            categories.append(category)
+            categories.sort { $0.name < $1.name }
+
+            do {
+                let startDate = ISO8601DateFormatter().string(from: Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!)
+                let budget = try await SupabaseRepository.shared.createBudget(
+                    categoryId: category.id, name: category.name, amount: amount,
+                    periodUnit: "month", periodInterval: 1,
+                    startDate: startDate, endDate: nil, userId: userId
+                )
+                budgets.append(budget)
+            } catch {
+                categories.removeAll { $0.id == category.id }
+                try? await SupabaseRepository.shared.softDeleteCategory(id: category.id)
+                throw error
+            }
+
+            recalculate()
+            cacheCurrentState()
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return .success
+        } catch is CancellationError {
+            return .failure
+        } catch {
+            print("❌ addBudget failed: \(error)")
+            return .failure
+        }
+    }
+
+    func setBudget(categoryId: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, userId: String) async -> Bool {
+        do {
+            let budget = try await SupabaseRepository.shared.createBudget(
+                categoryId: categoryId, name: name, amount: amount,
+                periodUnit: periodUnit, periodInterval: periodInterval,
+                startDate: startDate, endDate: endDate, userId: userId
+            )
+            budgets.append(budget)
+            recalculate()
+            cacheCurrentState()
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return true
+        } catch is CancellationError {
+            return false
+        } catch {
+            print("❌ setBudget failed: \(error)")
             return false
         }
     }

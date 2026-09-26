@@ -350,7 +350,7 @@ struct AccountListView: View {
                         .font(.jakarta(12))
                         .foregroundColor(.appTextSecondary)
                     Spacer()
-                    Text(isBalanceVisible ? viewModel.totalCreditDebt.formattedAsCurrency() : "Rp***")
+                    Text(isBalanceVisible ? viewModel.totalCreditDebt.formattedAsCurrency() : "Rp******")
                         .font(.jakarta(13, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
@@ -453,12 +453,12 @@ struct AccountCard: View {
                     Text("Sisa Limit")
                         .font(.jakarta(9))
                         .foregroundColor(.appTextSecondary)
-                    Text(isBalanceVisible ? (account.availableCredit?.formattedAsCurrency() ?? "-") : "Rp***")
+                    Text(isBalanceVisible ? (account.availableCredit?.formattedAsCurrency() ?? "-") : "Rp******")
                         .font(.jakarta(15, weight: .semibold))
                         .foregroundColor(.appText)
                 }
             } else {
-                Text(isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp***")
+                Text(isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp******")
                     .font(.jakarta(15, weight: .semibold))
                     .foregroundColor(.appText)
             }

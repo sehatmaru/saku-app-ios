@@ -10,6 +10,9 @@ struct BudgetListView: View {
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
     @State private var isBalanceVisible = true
     @State private var showUnsetBudget = false
+    @State private var showAddBudget = false
+    @State private var showBudgetSavedToast = false
+    @State private var budgetSavedToastMessage = ""
     private var setItems: [BudgetListItem] {
         viewModel.budgetItems.filter { $0.budget != nil }
     }
@@ -59,17 +62,8 @@ struct BudgetListView: View {
                             summaryCard
 
                             ForEach(setItems) { item in
-                            let dest = budgetDetailDestination(for: item)
-                            NavigationLink(destination: dest) {
-                                BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
-                                    Task {
-                                        guard let userId = authViewModel.currentUser?.id else { return }
-                                        await viewModel.addBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
-                                    }
-                                })
+                                budgetCardLink(item)
                             }
-                            .buttonStyle(.plain)
-                        }
 
                             if !unsetItems.isEmpty {
                                 unsetSection
@@ -85,16 +79,40 @@ struct BudgetListView: View {
             .navigationTitle("Budget")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        withAnimation(.smooth) { isBalanceVisible.toggle() }
-                        isBalanceVisibleStorage = isBalanceVisible
-                    } label: {
-                        Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
-                            .font(.jakarta(16))
-                            .foregroundColor(.appTextSecondary)
+                    HStack(spacing: Spacing.md) {
+                        Button {
+                            showAddBudget = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.jakarta(16, weight: .semibold))
+                                .foregroundColor(.appPrimary)
+                        }
+                        Button {
+                            withAnimation(.smooth) { isBalanceVisible.toggle() }
+                            isBalanceVisibleStorage = isBalanceVisible
+                        } label: {
+                            Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
+                                .font(.jakarta(16))
+                                .foregroundColor(.appTextSecondary)
+                        }
                     }
                 }
             }
+            .sheet(isPresented: $showAddBudget) {
+                AddBudgetView { name, icon, amount in
+                    guard let userId = authViewModel.currentUser?.id else { return .failure }
+                    let result = await viewModel.addBudget(name: name, icon: icon, userId: userId, amount: amount)
+                    if result == .success {
+                        budgetSavedToastMessage = "Budget \(name) berhasil ditambahkan"
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            withAnimation { showBudgetSavedToast = true }
+                        }
+                    }
+                    return result
+                }
+                .presentationDetents([.fraction(0.68), .large])
+            }
+            .toast(isPresented: $showBudgetSavedToast, message: budgetSavedToastMessage)
             .onAppear { isBalanceVisible = isBalanceVisibleStorage }
             .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
             .task {
@@ -203,7 +221,7 @@ struct BudgetListView: View {
                         BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
                             Task {
                                 guard let userId = authViewModel.currentUser?.id else { return }
-                                await viewModel.addBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
+                                    await viewModel.setBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
                             }
                         })
                     }
@@ -345,6 +363,18 @@ struct BudgetListView: View {
                 .foregroundColor(.appPrimary.opacity(0.08))
                 .offset(x: -12, y: -4)
         }
+    }
+
+    private func budgetCardLink(_ item: BudgetListItem) -> some View {
+        NavigationLink(destination: budgetDetailDestination(for: item)) {
+            BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
+                Task {
+                    guard let userId = authViewModel.currentUser?.id else { return }
+                    await viewModel.setBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
+                }
+            })
+        }
+        .buttonStyle(.plain)
     }
 
     private func budgetDetailDestination(for item: BudgetListItem) -> BudgetDetailView {
@@ -531,7 +561,7 @@ struct BudgetCardView: View {
             HStack {
                 Text(isBalanceVisible
                      ? "\(budget.spent.formattedAsCurrency()) / \(budget.amount.formattedAsCurrency())"
-                     : "Rp*** / Rp***")
+                     : "Rp****** / Rp******")
                     .font(.jakarta(12))
                     .foregroundColor(.appTextSecondary)
                 Spacer()
@@ -540,7 +570,7 @@ struct BudgetCardView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.down.left")
                             .font(.jakarta(9))
-                        Text(isBalanceVisible ? budget.remaining.formattedAsCurrency() : "Rp***")
+                        Text(isBalanceVisible ? budget.remaining.formattedAsCurrency() : "Rp******")
                             .font(.jakarta(11))
                     }
                     .foregroundColor(.appTextSecondary)
@@ -556,7 +586,7 @@ struct BudgetCardView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.up.right")
                             .font(.jakarta(9))
-                        Text(isBalanceVisible ? abs(budget.remaining).formattedAsCurrency() : "Rp***")
+                        Text(isBalanceVisible ? abs(budget.remaining).formattedAsCurrency() : "Rp******")
                             .font(.jakarta(11))
                     }
                     .foregroundColor(.appError)

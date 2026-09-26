@@ -463,7 +463,7 @@ struct DashboardView: View {
             Text(title)
                 .font(.jakarta(11))
                 .foregroundColor(.appTextSecondary)
-            Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp***")
+            Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp******")
                 .font(.jakarta(13, weight: .semibold))
                 .foregroundColor(color)
 
@@ -1070,7 +1070,7 @@ struct DashboardView: View {
                                     .lineLimit(1)
                             }
                             Spacer(minLength: 8)
-                            Text(isBalanceVisible ? sub.amount.formattedAsCurrency() : "Rp***")
+                            Text(isBalanceVisible ? sub.amount.formattedAsCurrency() : "Rp******")
                                 .font(.jakarta(13, weight: .semibold))
                                 .foregroundColor(.appText)
                         }
@@ -1092,7 +1092,7 @@ struct DashboardView: View {
                         .font(.jakarta(11))
                         .foregroundColor(.appTextSecondary)
                     Spacer()
-                    Text(isBalanceVisible ? viewModel.totalMonthlySubscriptions.formattedAsCurrency() : "Rp***")
+                    Text(isBalanceVisible ? viewModel.totalMonthlySubscriptions.formattedAsCurrency() : "Rp******")
                         .font(.jakarta(13, weight: .semibold))
                         .foregroundColor(.appExpense)
                 }
@@ -1209,7 +1209,7 @@ struct DashboardView: View {
                 Text(label)
                     .font(.jakarta(10))
                     .foregroundColor(.appTextSecondary)
-                Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp***")
+                Text(isBalanceVisible ? abbreviatedAmount(amount) : "Rp******")
                     .font(.jakarta(14, weight: .semibold))
                     .foregroundColor(color)
             }

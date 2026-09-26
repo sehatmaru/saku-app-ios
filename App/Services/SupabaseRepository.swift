@@ -392,6 +392,32 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
+    func createCategory(name: String, type: CategoryType, icon: String?, color: String?, userId: String) async throws -> Category {
+        try await client
+            .from("categories")
+            .insert([
+                "owner_type": AnyJSON.string("user"),
+                "user_id": AnyJSON.string(userId),
+                "name": AnyJSON.string(name),
+                "normalized_name": AnyJSON.string(name.lowercased()),
+                "category_kind": AnyJSON.string(type.rawValue),
+                "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
+                "color": color.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            ] as [String: AnyJSON])
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    func softDeleteCategory(id: String) async throws {
+        try await client
+            .from("categories")
+            .update(["deleted_at": AnyJSON.string("now()")] as [String: AnyJSON])
+            .eq("id", value: id)
+            .execute()
+    }
+
     // MARK: - Budgets
 
     func fetchBudgets(userId: String) async throws -> [Budget] {

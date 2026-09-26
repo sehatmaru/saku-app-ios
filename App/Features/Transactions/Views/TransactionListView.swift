@@ -251,7 +251,7 @@ struct TransactionListView: View {
             Text(title)
                 .font(.jakarta(11))
                 .foregroundColor(.appTextSecondary)
-            Text(isBalanceVisible ? (amount > 0 ? abbreviatedAmount(amount) : "Rp0") : "Rp***")
+            Text(isBalanceVisible ? (amount > 0 ? abbreviatedAmount(amount) : "Rp0") : "Rp******")
                 .font(.jakarta(13, weight: .semibold))
                 .foregroundColor(color)
         }
