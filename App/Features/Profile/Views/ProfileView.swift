@@ -15,6 +15,7 @@ struct ProfileView: View {
     @AppStorage("notifTransactions") private var notifTransactions = true
     @AppStorage("notifBudget") private var notifBudget = true
     @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
 
     enum ThemeOption: String, CaseIterable {
         case light = "Terang"
@@ -51,15 +52,20 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Spacing.lg) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ScreenHeader(title: "Profil") { EmptyView() }
                     profileHeader
-                    menuSection
-                    dangerSection
+                    preferences
+                    logoutRow
+                    Text("SakuQ versi \(appVersion)")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextTertiary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 28)
                 }
-                .padding()
             }
-            .background(Color.appGroupedBackground)
-            .navigationTitle("Akun")
+            .background(Color.appBackground)
+            .toolbar(.hidden, for: .navigationBar)
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
@@ -77,164 +83,141 @@ struct ProfileView: View {
     // MARK: - Profile Header
 
     private var profileHeader: some View {
-        HStack(spacing: Spacing.lg) {
-            ZStack {
-                LinearGradient(
-                    colors: [.appPrimary, .appPrimary.opacity(0.6)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .frame(width: 72, height: 72)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-
+        NavigationLink(destination: ProfileEditView(viewModel: viewModel, authViewModel: authViewModel)) {
+            HStack(spacing: 16) {
                 Text(userInitials)
-                    .font(.app(26, weight: .bold))
-                    .foregroundColor(.white)
-            }
+                    .font(.app(24, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 64, height: 64)
+                    .background(Color.appPrimary, in: Circle())
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(authViewModel.currentUser?.displayName ?? "User")
-                    .font(.app(18, weight: .bold))
-                    .foregroundColor(.appText)
-
-                HStack(spacing: 4) {
-                    Image(systemName: "envelope.fill")
-                        .font(.app(9))
-                        .foregroundColor(.appTextSecondary)
-                    Text(authViewModel.currentUser?.email ?? "")
-                        .font(.app(12))
-                        .foregroundColor(.appTextSecondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(authViewModel.currentUser?.displayName ?? "User")
+                        .font(.app(22, weight: .semibold))
+                        .tracking(-0.2)
+                        .foregroundStyle(Color.appText)
                         .lineLimit(1)
+                    Text(authViewModel.currentUser?.email ?? "")
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .lineLimit(1)
+                    Text("Bergabung sejak \(memberSinceDate)")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextTertiary)
                 }
-            }
 
-            Spacer()
-        }
-        .padding(Spacing.lg)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
-        .overlay(alignment: .topTrailing) {
-            VStack(spacing: 2) {
-                Text("Bergabung Sejak")
-                    .font(.app(8, weight: .medium))
-                    .foregroundColor(.appTextSecondary.opacity(0.5))
-
-                Text(memberSinceDate)
-                    .font(.app(10, weight: .semibold))
-                    .foregroundColor(.appTextSecondary)
+                Spacer(minLength: 8)
+                chevron
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.appTextSecondary.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.appTextSecondary.opacity(0.1), lineWidth: 0.5)
-            )
-            .padding(Spacing.sm)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 28)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(RowPressStyle())
     }
 
-    // MARK: - Menu Section
+    // MARK: - Preferences
 
-    private var menuSection: some View {
-        VStack(spacing: 0) {
-            NavigationLink(destination: ProfileEditView(viewModel: viewModel, authViewModel: authViewModel)) {
-                menuRow(icon: "person.fill", title: "Profil", subtitle: "Nama dan informasi akun", iconColor: .appPrimary)
-            }
-
-            menuDivider
+    private var preferences: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Preferensi")
+                .font(.app(13))
+                .tracking(0.2)
+                .foregroundStyle(Color.appTextSecondary)
+                .padding(.top, 24)
+                .padding(.bottom, 4)
 
             NavigationLink(destination: LanguageView(appLanguage: $appLanguage)) {
-                menuRow(icon: "globe", title: "Bahasa", subtitle: languageLabel, iconColor: .blue)
+                settingRow(icon: "globe", title: "Bahasa", value: languageLabel)
             }
-
-            menuDivider
+            .buttonStyle(RowPressStyle())
 
             NavigationLink(destination: ThemeView(appTheme: $appTheme)) {
-                menuRow(icon: "moon.fill", title: "Tema", subtitle: appTheme.rawValue, iconColor: .purple)
+                settingRow(icon: "moon", title: "Tema", value: appTheme.rawValue)
             }
-
-            menuDivider
+            .buttonStyle(RowPressStyle())
 
             NavigationLink(destination: NotificationView(
                 notifTransactions: $notifTransactions,
                 notifBudget: $notifBudget
             )) {
-                menuRow(icon: "bell.fill", title: "Notifikasi", subtitle: notifLabel, iconColor: .appWarning)
+                settingRow(icon: "bell", title: "Notifikasi", value: notifLabel)
             }
+            .buttonStyle(RowPressStyle())
+
+            HStack(spacing: 14) {
+                rowIcon("eye.slash")
+                Toggle("Sembunyikan saldo", isOn: Binding(
+                    get: { !isBalanceVisible },
+                    set: { hidden in withAnimation(.smooth) { isBalanceVisible = !hidden } }
+                ))
+                .font(.app(16))
+                .foregroundStyle(Color.appText)
+                .tint(.appPrimary)
+            }
+            .padding(.vertical, 10)
+            .rowSeparator()
         }
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
+        .padding(.horizontal, 24)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Color.appDivider).frame(height: 1).padding(.horizontal, 24)
+        }
     }
 
-    private var menuDivider: some View {
-        Divider()
-            .padding(.leading, 56)
-    }
-
-    private func menuRow(icon: String, title: String, subtitle: String, iconColor: Color) -> some View {
-        HStack(spacing: Spacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(iconColor.opacity(0.12))
-                    .frame(width: 36, height: 36)
-                Image(systemName: icon)
-                    .font(.app(14, weight: .semibold))
-                    .foregroundColor(iconColor)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.app(15, weight: .medium))
-                    .foregroundColor(.appText)
-                Text(subtitle)
-                    .font(.app(11))
-                    .foregroundColor(.appTextSecondary)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.app(10))
-                .foregroundColor(.appTextSecondary)
+    private func settingRow(icon: String, title: String, value: String) -> some View {
+        HStack(spacing: 14) {
+            rowIcon(icon)
+            Text(title)
+                .font(.app(16))
+                .foregroundStyle(Color.appText)
+            Spacer(minLength: 8)
+            Text(value)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .lineLimit(1)
+            chevron
         }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 14)
+        .rowSeparator()
+        .contentShape(Rectangle())
     }
 
-    // MARK: - Danger Section
+    private func rowIcon(_ name: String) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 19))
+            .foregroundStyle(Color.appTextSecondary)
+            .frame(width: 24)
+    }
 
-    private var dangerSection: some View {
-        VStack(spacing: 0) {
-            Button(role: .destructive) {
-                showLogoutAlert = true
-            } label: {
-                HStack(spacing: Spacing.md) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.appError.opacity(0.12))
-                            .frame(width: 36, height: 36)
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .font(.app(14, weight: .semibold))
-                            .foregroundColor(.appError)
-                    }
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Color.appTextTertiary)
+    }
 
-                    Text("Keluar")
-                        .font(.app(15, weight: .medium))
-                        .foregroundColor(.appError)
+    // MARK: - Logout
 
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, 14)
+    private var logoutRow: some View {
+        Button {
+            showLogoutAlert = true
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.system(size: 19))
+                    .frame(width: 24)
+                Text("Keluar")
+                    .font(.app(16))
+                Spacer()
             }
-            .buttonStyle(.plain)
+            .foregroundStyle(Color.appError)
+            .padding(.vertical, 14)
+            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+            .rowSeparator()
+            .contentShape(Rectangle())
         }
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.appCardBackground))
+        .buttonStyle(RowPressStyle())
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
     }
 
     // MARK: - Labels
