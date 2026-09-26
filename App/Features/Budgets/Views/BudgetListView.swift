@@ -47,57 +47,57 @@ struct BudgetListView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Spacing.lg) {
-                    if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
-                        errorStateView(message: error)
-                            .transition(.opacity)
-                    } else if !viewModel.hasLoadedOnce {
-                        budgetSkeleton
-                            .transition(.opacity)
-                    } else {
-                        Group {
-                            if viewModel.errorMessage != nil {
-                                ErrorBanner(message: viewModel.errorMessage!)
-                            }
-                            summaryCard
-
-                            ForEach(setItems) { item in
-                                budgetCardLink(item)
-                            }
-
-                            if !unsetItems.isEmpty {
-                                unsetSection
-                            }
-                        }
-                        .transition(.opacity)
-                    }
-                }
-                .padding()
-                .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
-            }
-            .background(Color.appGroupedBackground)
-            .navigationTitle("Budget")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: Spacing.md) {
-                        Button {
-                            showAddBudget = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.app(16, weight: .semibold))
-                                .foregroundColor(.appPrimary)
-                        }
+                VStack(alignment: .leading, spacing: 0) {
+                    ScreenHeader(title: "Budget") {
                         Button {
                             withAnimation(.smooth) { isBalanceVisible.toggle() }
                             isBalanceVisibleStorage = isBalanceVisible
                         } label: {
-                            Image(systemName: isBalanceVisible ? "eye.fill" : "eye.slash.fill")
-                                .font(.app(16))
-                                .foregroundColor(.appTextSecondary)
+                            Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+                        }
+                        .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+                        Button {
+                            showAddBudget = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .foregroundStyle(Color.appPrimary)
+                        }
+                        .accessibilityLabel("Tambah budget")
+                    }
+
+                    if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
+                        errorStateView(message: error)
+                            .padding(24)
+                    } else if !viewModel.hasLoadedOnce {
+                        budgetSkeleton
+                    } else {
+                        if let error = viewModel.errorMessage {
+                            ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
+                        }
+                        summary
+                        historyLink
+
+                        if !setItems.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                SectionHeader(title: "Per kategori", trailing: "\(setItems.count) aktif")
+                                ForEach(setItems) { item in
+                                    budgetCardLink(item)
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 28)
+                        }
+
+                        if !unsetItems.isEmpty {
+                            unsetSection
                         }
                     }
                 }
+                .padding(.bottom, 24)
+                .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
             }
+            .background(Color.appBackground)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showAddBudget) {
                 AddBudgetView { name, icon, amount in
                     guard let userId = authViewModel.currentUser?.id else { return .failure }
@@ -142,227 +142,146 @@ struct BudgetListView: View {
     }
 
     private var budgetSkeleton: some View {
-        VStack(spacing: Spacing.lg) {
-            skeletonCard(height: 200)
-            skeletonCard(height: 128)
-            skeletonCard(height: 128)
-            skeletonSectionHeader
-            skeletonCard(height: 150)
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach([180, 260, 0, 0, 0, 0], id: \.self) { width in
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.appFill)
+                    .frame(maxWidth: width == 0 ? .infinity : CGFloat(width))
+                    .frame(height: width == 260 ? 48 : 14)
+            }
         }
-    }
-
-    private var skeletonSectionHeader: some View {
-        HStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.appTextSecondary.opacity(0.16))
-                .frame(width: 112, height: 18)
-            Spacer()
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.appTextSecondary.opacity(0.12))
-                .frame(width: 36, height: 18)
-        }
-        .padding(.horizontal, Spacing.xs)
-    }
-
-    private func skeletonCard(height: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.appTextSecondary.opacity(0.16))
-                .frame(width: 140, height: 16)
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.appTextSecondary.opacity(0.12))
-                .frame(height: height - 48)
-        }
-        .padding(Spacing.lg)
-        .frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .redacted(reason: .placeholder)
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
         .shimmer()
     }
 
-    private var unsetSection: some View {
-        VStack(spacing: 0) {
-            Button {
-                withAnimation {
-                    showUnsetBudget.toggle()
+    // MARK: Summary
+
+    private var summary: some View {
+        let remaining = viewModel.totalRemaining
+        let pct = viewModel.totalBudget > 0 ? Int(max(0, remaining / viewModel.totalBudget * 100)) : 0
+        let calendar = Calendar.current
+        let daysLeft = (calendar.range(of: .day, in: .month, for: Date())?.count ?? 30) - calendar.component(.day, from: Date())
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sisa budget \(Self.monthFormatter.string(from: Date()))")
+                Spacer()
+                Text("\(pct)%").monospacedDigit()
+            }
+            .font(.app(15))
+            .foregroundStyle(remaining < 0 ? Color.appError : Color.appTextSecondary)
+
+            HeroAmount(value: max(0, remaining), isVisible: isBalanceVisible)
+                .padding(.top, 8)
+
+            ThinProgress(
+                value: viewModel.totalBudget > 0 ? viewModel.totalSpent / viewModel.totalBudget : 0,
+                color: remaining < 0 ? .appError : .appText
+            )
+            .padding(.top, 20)
+
+            HStack {
+                Text("Terpakai " + masked(viewModel.totalSpent))
+                Spacer()
+                Text("Budget " + masked(viewModel.totalBudget))
+            }
+            .font(.app(13))
+            .foregroundStyle(Color.appTextSecondary)
+            .monospacedDigit()
+            .padding(.top, 10)
+
+            if viewModel.totalBudget > 0 {
+                Group {
+                    if remaining <= 0 {
+                        Text("Budget bulan ini sudah habis.")
+                    } else if daysLeft > 0 {
+                        Text("Aman dipakai ")
+                            + Text(masked(remaining / Double(daysLeft)) + "/hari")
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.appText)
+                            + Text(" untuk \(daysLeft) hari tersisa.")
+                    } else {
+                        Text("Hari terakhir: sisa ")
+                            + Text(masked(remaining)).fontWeight(.semibold).foregroundStyle(Color.appText)
+                            + Text(" bisa dipakai hari ini.")
+                    }
                 }
+                .font(.app(15))
+                .lineSpacing(3)
+                .foregroundStyle(Color.appBody)
+                .padding(.top, 18)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
+        .padding(.bottom, 24)
+    }
+
+    private func masked(_ amount: Double) -> String {
+        isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
+    }
+
+    private var historyLink: some View {
+        NavigationLink(destination: OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions)) {
+            HStack(spacing: 14) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 19))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .frame(width: 24)
+                Text("Riwayat bulan sebelumnya")
+                    .font(.app(16))
+                    .foregroundStyle(Color.appText)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
+            }
+            .padding(.vertical, 14)
+            .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+        .padding(.horizontal, 24)
+    }
+
+    private var unsetSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation { showUnsetBudget.toggle() }
             } label: {
-                HStack {
-                    Image(systemName: "chart.pie")
-                        .font(.app(12))
-                        .foregroundColor(.appTextSecondary)
-                    Text("Belum diatur")
-                        .font(.app(13, weight: .medium))
-                        .foregroundColor(.appText)
+                HStack(alignment: .firstTextBaseline) {
+                    HStack(spacing: 8) {
+                        Text("Belum diatur")
+                            .font(.app(20, weight: .semibold))
+                            .tracking(-0.2)
+                            .foregroundStyle(Color.appText)
+                        Image(systemName: showUnsetBudget ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.appTextSecondary)
+                    }
                     Spacer()
                     Text("\(unsetItems.count)")
-                        .font(.app(12, weight: .semibold))
-                        .foregroundColor(.appTextSecondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.appTextSecondary.opacity(0.15))
-                        .clipShape(Capsule())
-                    Image(systemName: "chevron.down")
-                        .font(.app(10))
-                        .foregroundColor(.appTextSecondary)
-                        .rotationEffect(.degrees(showUnsetBudget ? 180 : 0))
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
                 }
-                .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
-                .padding(.vertical, 12)
-                .padding(.horizontal, Spacing.lg)
             }
             .buttonStyle(.plain)
 
             if showUnsetBudget {
-                VStack(spacing: Spacing.lg) {
-                    ForEach(unsetItems) { item in
-                        BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
-                            Task {
-                                guard let userId = authViewModel.currentUser?.id else { return }
-                                    await viewModel.setBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
-                            }
-                        })
-                    }
+                ForEach(unsetItems) { item in
+                    BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
+                        Task {
+                            guard let userId = authViewModel.currentUser?.id else { return }
+                            await viewModel.setBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
+                        }
+                    })
                 }
-                .padding(.top, Spacing.sm)
-                .padding(.bottom, Spacing.md)
-                .padding(.horizontal, Spacing.lg)
             }
         }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func miniStatCard(icon: String, label: String, amount: String, color: Color) -> some View {
-        VStack(spacing: Spacing.xs) {
-            Circle()
-                .fill(color.opacity(0.12))
-                .frame(width: 32, height: 32)
-                .overlay {
-                    Image(systemName: icon)
-                        .font(.app(11, weight: .semibold))
-                        .foregroundColor(color)
-                }
-            Text(label)
-                .font(.app(10))
-                .foregroundColor(.appTextSecondary)
-            Text(amount)
-                .font(.app(12, weight: .semibold))
-                .foregroundColor(color)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private var summaryCard: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "chart.pie.fill")
-                    .font(.app(12))
-                    .foregroundColor(.appPrimary)
-                Text("Sisa Budget Bulan Ini")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
-
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                Text(isBalanceVisible
-                     ? (viewModel.totalRemaining >= 0 ? viewModel.totalRemaining.formattedAsCurrency() : "Rp0")
-                     : "Rp********")
-                    .font(.app(34, weight: .bold))
-                    .contentTransition(.numericText())
-                    .foregroundColor(.appText)
-                Text(viewModel.totalRemaining >= 0 ? "\(Int(viewModel.totalBudget > 0 ? viewModel.totalRemaining / viewModel.totalBudget * 100 : 0))%" : "0%")
-                    .font(.app(13, weight: .semibold))
-                    .foregroundColor(viewModel.totalRemaining >= 0 ? .appPrimary : .appError)
-                    .padding(.top, 4)
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.sm)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.lg)
-
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Total Budget")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text(isBalanceVisible ? viewModel.totalBudget.formattedAsCurrency() : "Rp********")
-                        .font(.app(14, weight: .semibold))
-                        .foregroundColor(.appText)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text("Terpakai")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text(isBalanceVisible ? viewModel.totalSpent.formattedAsCurrency() : "Rp********")
-                        .font(.app(14, weight: .semibold))
-                        .foregroundColor(.appExpense)
-                }
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.md)
-
-            ProgressView(value: viewModel.totalBudget > 0 ? min(viewModel.totalSpent / viewModel.totalBudget, 1.0) : 0)
-                .tint(viewModel.totalRemaining >= 0 ? .appPrimary : .appError)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.sm)
-                .padding(.bottom, Spacing.lg)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-
-            NavigationLink(destination: OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions)) {
-                HStack(spacing: Spacing.md) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.appPrimary.opacity(0.1))
-                            .frame(width: 32, height: 32)
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.app(13))
-                            .foregroundColor(.appPrimary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Riwayat Bulan Sebelumnya")
-                            .font(.app(13, weight: .medium))
-                            .foregroundColor(.appText)
-                        Text("Lihat performa budget bulan lalu")
-                            .font(.app(10))
-                            .foregroundColor(.appTextSecondary)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.app(10))
-                        .foregroundColor(.appTextSecondary)
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .padding(.horizontal, Spacing.xl)
-                .padding(.vertical, 10)
-            }
-            .buttonStyle(.plain)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: "chart.pie.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.appPrimary.opacity(0.08))
-                .offset(x: -12, y: -4)
-        }
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
     }
 
     private func budgetCardLink(_ item: BudgetListItem) -> some View {
@@ -374,8 +293,15 @@ struct BudgetListView: View {
                 }
             })
         }
-        .buttonStyle(.plain)
+        .buttonStyle(RowPressStyle())
     }
+
+    private static let monthFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM"
+        f.locale = Locale(identifier: "id_ID")
+        return f
+    }()
 
     private func budgetDetailDestination(for item: BudgetListItem) -> BudgetDetailView {
         BudgetDetailView(
@@ -425,9 +351,7 @@ struct BudgetCardView: View {
                 unsetCard
             }
         }
-        .padding()
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .rowSeparator()
         .sheet(isPresented: $showSetBudget) {
             setBudgetSheet
                 .presentationDetents([.medium])
@@ -436,33 +360,21 @@ struct BudgetCardView: View {
     }
 
     private var unsetCard: some View {
-        HStack(spacing: Spacing.md) {
-                    Image(systemName: category.icon ?? "tag")
-                        .font(.app(17))
-                        .foregroundColor(.appPrimary)
-
+        HStack(spacing: 14) {
+            Image(systemName: category.icon ?? "tag")
+                .font(.system(size: 19))
+                .foregroundStyle(Color.appTextTertiary)
+                .frame(width: 24)
             Text(category.name)
-                .font(.app(15, weight: .medium))
-                .foregroundColor(.appText)
-
+                .font(.app(16))
+                .foregroundStyle(Color.appTextSecondary)
             Spacer()
-
-            Button {
-                showSetBudget = true
-            } label: {
-                HStack(spacing: Spacing.xs) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.app(12))
-                    Text("Atur Budget")
-                        .font(.app(12, weight: .semibold))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(Color.appPrimary)
-                .foregroundColor(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
+            Button("Atur") { showSetBudget = true }
+                .font(.app(15, weight: .medium))
+                .foregroundStyle(Color.appPrimary)
+                .accessibilityLabel("Atur budget \(category.name)")
         }
+        .padding(.vertical, 14)
     }
 
     private var setBudgetSheet: some View {
@@ -542,64 +454,56 @@ struct BudgetCardView: View {
     }
 
     private func setCard(_ budget: Budget) -> some View {
-        VStack(spacing: Spacing.sm) {
-            HStack {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
                 Image(systemName: category.icon ?? "tag")
-                    .font(.app(17))
-                    .foregroundColor(budget.spendingStatus == .overbudget ? .appError : budget.spendingStatus == .warning ? .appWarning : .appPrimary)
+                    .font(.system(size: 19))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .frame(width: 24)
                 Text(category.name)
-                    .font(.app(15, weight: .medium))
-                Spacer()
-                Text(budget.progress >= 1 ? "0%" : "\(Int((1 - budget.progress) * 100))%")
-                    .font(.app(12, weight: .semibold))
-                    .foregroundColor(progressColor(budget))
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Text(statusText(budget))
+                    .font(.app(14))
+                    .foregroundStyle(statusColor(budget))
+                    .monospacedDigit()
             }
 
-            ProgressView(value: min(budget.progress, 1.0))
-                .tint(progressColor(budget))
-
-            HStack {
+            Group {
+                ThinProgress(value: budget.progress, color: progressColor(budget))
                 Text(isBalanceVisible
-                     ? "\(budget.spent.formattedAsCurrency()) / \(budget.amount.formattedAsCurrency())"
-                     : "Rp****** / Rp******")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
-                Spacer()
-                switch budget.spendingStatus {
-                case .normal:
-                    HStack(spacing: 2) {
-                        Image(systemName: "arrow.down.left")
-                            .font(.app(9))
-                        Text(isBalanceVisible ? budget.remaining.formattedAsCurrency() : "Rp******")
-                            .font(.app(11))
-                    }
-                    .foregroundColor(.appTextSecondary)
-                case .warning:
-                    HStack(spacing: 2) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.app(9))
-                        Text(isBalanceVisible ? "\(budget.dailyRemaining.formattedAsCurrency())/hari" : "Rp***/hari")
-                            .font(.app(11))
-                    }
-                    .foregroundColor(.appWarning)
-                case .overbudget:
-                    HStack(spacing: 2) {
-                        Image(systemName: "arrow.up.right")
-                            .font(.app(9))
-                        Text(isBalanceVisible ? abs(budget.remaining).formattedAsCurrency() : "Rp******")
-                            .font(.app(11))
-                    }
-                    .foregroundColor(.appError)
-                }
+                     ? "\(budget.spent.formattedAsCurrency()) dari \(budget.amount.formattedAsCurrency())"
+                     : "Rp\(hiddenAmount) dari Rp\(hiddenAmount)")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .monospacedDigit()
             }
+            .padding(.leading, 38)
         }
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
+    }
+
+    private func statusText(_ budget: Budget) -> String {
+        let amount: (Double) -> String = { isBalanceVisible ? $0.formattedAsCurrency() : "Rp" + hiddenAmount }
+        switch budget.spendingStatus {
+        case .normal: return "Sisa " + amount(budget.remaining)
+        case .warning: return amount(budget.dailyRemaining) + "/hari"
+        case .overbudget: return budget.remaining == 0 ? "Habis" : "Lewat " + amount(abs(budget.remaining))
+        }
+    }
+
+    private func statusColor(_ budget: Budget) -> Color {
+        budget.spendingStatus == .normal ? .appTextSecondary : progressColor(budget)
     }
 
     private func progressColor(_ budget: Budget) -> Color {
         switch budget.spendingStatus {
         case .overbudget: return .appError
         case .warning: return .appWarning
-        case .normal: return .appPrimary
+        case .normal: return .appText
         }
     }
 
