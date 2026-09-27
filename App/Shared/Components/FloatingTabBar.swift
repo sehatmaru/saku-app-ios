@@ -29,6 +29,9 @@ enum AppTab: CaseIterable {
 
 /// Glass pill with five tabs plus a detached green add button.
 struct FloatingTabBar: View {
+    /// Pill height plus bottom padding, measured from the home-indicator inset.
+    static let height: CGFloat = 66
+
     @Binding var selection: AppTab
     let onAdd: () -> Void
 

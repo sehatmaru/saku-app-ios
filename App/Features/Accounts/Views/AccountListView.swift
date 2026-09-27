@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Dompet: one card stack per wallet type (design 6c). Tap a closed stack to fan it out,
-/// tap a card in an open stack to open that wallet, tap the group title to close it again.
+/// tap a card in an open stack to open its detail like design 5a (the card lifts to the top,
+/// every other card drops into a pile at the bottom), tap the group title to close the stack.
 struct AccountListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: AccountListViewModel
@@ -17,6 +18,27 @@ struct AccountListView: View {
     @State private var cachedUserId: String?
     @State private var openGroups: Set<Account.AccountType> = []
     @State private var path = NavigationPath()
+    /// The detail overlay is on screen (also while cards fly back into their stacks).
+    @State private var isOverlayOn = false
+    /// Card lifted to the top; nil while the overlay opens or closes.
+    @State private var selectedID: String?
+    /// Last opened card, keeps the detail content filled while it fades out.
+    @State private var lastSelectedID: String?
+    @State private var cardTops = CardTops()
+    @State private var transferFrom: Account?
+
+    /// Card positions kept outside view state so scrolling doesn't re-render the screen.
+    private final class CardTops {
+        var values: [String: CGFloat] = [:]
+    }
+
+    private static let space = "dompet"
+    // Detail layout from design 5a, in points.
+    private let detailCardTop: CGFloat = 58
+    /// How much of the bottom pile peeks above the tab bar.
+    private let pileVisible: CGFloat = 40
+    private let pileStep: CGFloat = 8
+    private let cardAnimation = Animation.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.54)
 
     private let cardHeight: CGFloat = 216
     /// Visible strip of a card covered by the next one in a closed stack.
@@ -44,6 +66,7 @@ struct AccountListView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
+            ZStack(alignment: .top) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     header
@@ -70,6 +93,13 @@ struct AccountListView: View {
                 .padding(.bottom, 24)
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
             }
+            .scrollDisabled(isOverlayOn)
+
+            if isOverlayOn {
+                detailOverlay
+            }
+            }
+            .coordinateSpace(.named(Self.space))
             .background(Color.appBackground)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Account.self) { account in
@@ -98,6 +128,19 @@ struct AccountListView: View {
                     await viewModel.loadAccounts(userId: userId, forceRefresh: true)
                     await syncAccountTransactions(userId: userId, forceRefresh: true)
                     await syncCategories(userId: userId)
+                }
+            }
+            .sheet(item: $transferFrom) { account in
+                if let userId = authViewModel.currentUser?.id {
+                    AddTransactionView(
+                        categories: categories,
+                        accounts: viewModel.accounts,
+                        userId: userId,
+                        onSave: {},
+                        initialType: .transfer,
+                        initialAccount: account
+                    )
+                    .presentationDetents([.fraction(0.68), .large])
                 }
             }
             .sheet(isPresented: $showAddWallet) {
@@ -241,11 +284,15 @@ struct AccountListView: View {
                         isBalanceVisible: isBalanceVisible
                     )
                     .frame(height: cardHeight)
+                    .opacity(isOverlayOn ? 0 : 1)
+                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.space)).minY } action: { [cardTops] top in
+                        cardTops.values[account.id] = top
+                    }
                     .padding(.top, index == 0 ? 0 : isOpen ? 12 : stripHeight - cardHeight)
                     .zIndex(Double(index))
                     .onTapGesture {
                         if isOpen || group.accounts.count == 1 {
-                            path.append(account)
+                            openDetail(account)
                         } else {
                             setGroup(group.type, open: true)
                         }
@@ -263,6 +310,194 @@ struct AccountListView: View {
         withAnimation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.46)) {
             if open { openGroups.insert(type) } else { openGroups.remove(type) }
         }
+    }
+
+    // MARK: Wallet detail
+
+    /// All active cards in page order; the overlay animates every one of them.
+    private var allCards: [Account] { groups.flatMap(\.accounts) }
+
+    private func openDetail(_ account: Account) {
+        guard !isOverlayOn else { return }
+        lastSelectedID = account.id
+        selectedID = nil
+        isOverlayOn = true // the overlay's onAppear lifts the card
+    }
+
+    private func select(_ id: String) {
+        lastSelectedID = id
+        selectedID = selectedID == id ? nil : id
+        if selectedID == nil { closeDetail() }
+    }
+
+    private func closeDetail() {
+        selectedID = nil
+        let settle = 0.54 + Double(allCards.count) * 0.03
+        DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
+            if selectedID == nil { isOverlayOn = false }
+        }
+    }
+
+    private static var windowBottomInset: CGFloat {
+        (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.keyWindow?.safeAreaInsets.bottom ?? 0
+    }
+
+    /// Whether a card shows its amount on the top strip in its stack.
+    private func showsStrip(_ account: Account) -> Bool {
+        guard let group = groups.first(where: { $0.type == account.type }) else { return false }
+        return !openGroups.contains(group.type) && group.accounts.last?.id != account.id
+    }
+
+    private func cardLayout(_ account: Account, index: Int, cards: [Account], pileTop: CGFloat) -> (y: CGFloat, scale: CGFloat, z: Double, delay: Double) {
+        guard let selected = selectedID else {
+            // Back to the card's spot in its stack.
+            let y = cardTops.values[account.id] ?? pileTop + 200
+            return (y, 1, Double(index), Double(cards.count - 1 - index) * 0.03)
+        }
+        if account.id == selected { return (detailCardTop, 1, 100, 0) }
+        let k = Double(cards.filter { $0.id != selected }.firstIndex { $0.id == account.id } ?? 0)
+        return (pileTop + CGFloat(k) * pileStep, 0.9 + CGFloat(k) * 0.02, 10 + k, 0.04 + k * 0.03)
+    }
+
+    /// Design 5a: the page fades to white, the tapped card lifts under the header, the others
+    /// drop into a pile at the bottom (tap one to switch), and the detail fades in under the card.
+    private var detailOverlay: some View {
+        let shown = selectedID != nil
+        let cards = allCards
+        return GeometryReader { geo in
+            let pileTop = geo.size.height - Self.windowBottomInset - FloatingTabBar.height - pileVisible
+            ZStack(alignment: .top) {
+                Color.appBackground
+                    .ignoresSafeArea()
+                    .opacity(shown ? 1 : 0)
+                    .animation(.easeOut(duration: 0.26), value: shown)
+
+                ScreenHeader(title: "Dompet") {
+                    Button("Selesai", action: closeDetail)
+                        .font(.app(17, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
+                }
+                .opacity(shown ? 1 : 0)
+                .animation(.easeOut(duration: 0.26), value: shown)
+
+                if let account = cards.first(where: { $0.id == (selectedID ?? lastSelectedID) }) {
+                    detailContent(account)
+                        .padding(.horizontal, 24)
+                        .padding(.top, detailCardTop + cardHeight + 20)
+                        .opacity(shown ? 1 : 0)
+                        .offset(y: shown ? 0 : 18)
+                        .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.46).delay(shown ? 0.2 : 0), value: selectedID)
+                        .allowsHitTesting(shown)
+                }
+
+                ForEach(Array(cards.enumerated()), id: \.element.id) { index, account in
+                    let layout = cardLayout(account, index: index, cards: cards, pileTop: pileTop)
+                    WalletCard(
+                        account: account,
+                        showsStripAmount: !shown && showsStrip(account),
+                        isBalanceVisible: isBalanceVisible
+                    )
+                    .frame(height: cardHeight)
+                    .scaleEffect(layout.scale, anchor: .top)
+                    .padding(.horizontal, 24)
+                    .offset(y: layout.y)
+                    .zIndex(layout.z)
+                    .animation(cardAnimation.delay(layout.delay), value: selectedID)
+                    .onTapGesture { if shown { select(account.id) } }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityHint(selectedID == account.id ? "Tutup detail" : "Buka dompet")
+                }
+            }
+        }
+        // Span to the screen bottom; the floating tab bar isn't reported as a safe-area inset here.
+        .ignoresSafeArea(.container, edges: .bottom)
+        .onAppear { selectedID = lastSelectedID }
+    }
+
+    private func detailContent(_ account: Account) -> some View {
+        let recent = Array((accountTransactions[account.id] ?? []).prefix(3))
+        return VStack(alignment: .leading, spacing: 0) {
+            if account.isCreditCard, let limit = account.creditLimit {
+                VStack(alignment: .leading, spacing: 6) {
+                    SegmentBar(value: account.creditUtilization ?? 0)
+                    HStack {
+                        Text("Terpakai \(masked(account.balance)) / \(isBalanceVisible ? "Rp" + limit.abbreviatedRupiah() : "Rp" + hiddenAmount)")
+                        Spacer()
+                        if let day = account.dueDay {
+                            Text("Jatuh tempo \(day) \(Self.nextDueMonth(day: day))")
+                        }
+                    }
+                    .font(.app(12))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .monospacedDigit()
+                }
+                .padding(.bottom, 16)
+            }
+
+            HStack(spacing: 0) {
+                detailAction("Transfer", icon: "arrow.left.arrow.right") { transferFrom = account }
+                detailAction("Sesuaikan", icon: "slider.horizontal.3") { path.append(account) }
+                detailAction("Riwayat", icon: "clock.arrow.circlepath") { path.append(account) }
+                detailAction("Ubah", icon: "pencil") { path.append(account) }
+            }
+
+            HStack(alignment: .firstTextBaseline) {
+                Text("Transaksi terakhir")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+                Spacer()
+                Button("Semua") { path.append(account) }
+                    .font(.app(15))
+                    .foregroundStyle(Color.appPrimary)
+            }
+            .padding(.top, 22)
+
+            if recent.isEmpty {
+                Text("Belum ada transaksi")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.top, 12)
+            } else {
+                ForEach(recent) { transaction in
+                    TransactionRowView(
+                        transaction: transaction,
+                        categories: categories,
+                        accounts: viewModel.accounts,
+                        showBalance: isBalanceVisible,
+                        showDate: false
+                    )
+                    .rowSeparator()
+                }
+            }
+        }
+    }
+
+    private func detailAction(_ title: String, icon: String, perform: @escaping () -> Void) -> some View {
+        Button(action: perform) {
+            VStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color.appText)
+                    .frame(width: 44, height: 44)
+                    .background(Color.appFill, in: Circle())
+                Text(title)
+                    .font(.app(12))
+                    .foregroundStyle(Color.appBody)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(RowPressStyle())
+    }
+
+    /// Short month of the next occurrence of `day`, e.g. "Okt".
+    private static func nextDueMonth(day: Int) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let date = calendar.component(.day, from: now) <= day ? now : (calendar.date(byAdding: .month, value: 1, to: now) ?? now)
+        let f = DateFormatter()
+        f.dateFormat = "MMM"
+        f.locale = Locale(identifier: "id_ID")
+        return f.string(from: date)
     }
 
     // MARK: Footer
