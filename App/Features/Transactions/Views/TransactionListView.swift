@@ -435,7 +435,6 @@ struct TransactionListView: View {
                     categories: viewModel.categories,
                     accounts: viewModel.accounts,
                     showBalance: isBalanceVisible,
-                    showAccount: true,
                     showDate: false
                 )
                 .rowSeparator()
