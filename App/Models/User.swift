@@ -19,3 +19,11 @@ struct User: Identifiable, Codable {
 extension User {
     var fullName: String { displayName ?? "User" }
 }
+
+extension User {
+    /// Up to two initials from the display name, e.g. "Rina Pratama" -> "RP".
+    var initials: String {
+        let letters = fullName.split(separator: " ").prefix(2).compactMap(\.first)
+        return letters.isEmpty ? "U" : String(letters).uppercased()
+    }
+}

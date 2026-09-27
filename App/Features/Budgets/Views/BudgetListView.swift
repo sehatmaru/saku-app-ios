@@ -63,6 +63,7 @@ struct BudgetListView: View {
                                 .foregroundStyle(Color.appPrimary)
                         }
                         .accessibilityLabel("Tambah budget")
+                        ProfileAvatarButton()
                     }
 
                     if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {

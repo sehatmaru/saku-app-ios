@@ -178,6 +178,8 @@ struct DashboardView: View {
                     .foregroundStyle(Color.appText)
             }
             .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+            ProfileAvatarButton()
+                .padding(.leading, 18)
         }
         .padding(.horizontal, 24)
         .padding(.top, 10)

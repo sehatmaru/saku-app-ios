@@ -176,6 +176,9 @@ struct AccountListView: View {
                     .foregroundStyle(Color.appPrimary)
             }
             .accessibilityLabel("Tambah dompet")
+            if !isOverlayOn {
+                ProfileAvatarButton()
+            }
         }
     }
 

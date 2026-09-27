@@ -38,6 +38,7 @@ struct TransactionListView: View {
                                 Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
                             }
                             .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+                            ProfileAvatarButton()
                         }
 
                         searchField
