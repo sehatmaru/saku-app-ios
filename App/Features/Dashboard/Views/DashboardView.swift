@@ -15,31 +15,18 @@ struct DashboardView: View {
     @State private var showAllBudgets = false
     @State private var selectedTab: AppTab = .home
 
+    enum AppTab: Hashable {
+        case home, transactions, budget, wallet
+        /// iOS 26 "Tambah" circle; selecting it opens the add sheet instead of switching tabs.
+        case add
+    }
+
     var body: some View {
-        TabView(selection: $selectedTab) {
-            NavigationStack { mainContent }
-                .tag(AppTab.home)
-                .toolbar(.hidden, for: .tabBar)
-
-            TransactionListView()
-                .tag(AppTab.transactions)
-                .toolbar(.hidden, for: .tabBar)
-
-            BudgetListView()
-                .tag(AppTab.budget)
-                .toolbar(.hidden, for: .tabBar)
-
-            AccountListView()
-                .tag(AppTab.wallet)
-                .toolbar(.hidden, for: .tabBar)
-
-            ProfileView()
-                .environmentObject(authViewModel)
-                .tag(AppTab.profile)
-                .toolbar(.hidden, for: .tabBar)
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            FloatingTabBar(selection: $selectedTab) { showAddSheet = true }
+        tabs
+        .onChange(of: selectedTab) { previous, tab in
+            guard tab == .add else { return }
+            selectedTab = previous
+            showAddSheet = true
         }
         .tint(.appPrimary)
         .onAppear {
@@ -78,6 +65,65 @@ struct DashboardView: View {
             }
         }
     }
+
+    // MARK: - Tabs
+
+    @ViewBuilder
+    private var tabs: some View {
+        if #available(iOS 26, *) {
+            TabView(selection: $selectedTab) {
+                mainTabs
+                // A search-role tab renders as the detached glass circle next to the tab bar.
+                Tab(value: AppTab.add, role: .search) {
+                    Color.clear
+                } label: {
+                    Label { Text("Tambah") } icon: { Image(uiImage: Self.plusIcon) }
+                }
+            }
+            .tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            TabView(selection: $selectedTab) {
+                mainTabs
+            }
+            .overlay(alignment: .bottomTrailing) {
+                Button { showAddSheet = true } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(width: 52, height: 52)
+                        .background(.ultraThinMaterial, in: Circle())
+                        .overlay(Circle().strokeBorder(Color.appDivider))
+                        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+                }
+                .accessibilityLabel("Tambah transaksi")
+                .padding(.trailing, 16)
+                .padding(.bottom, 57) // above the 49pt tab bar
+            }
+        }
+    }
+
+    @TabContentBuilder<AppTab>
+    private var mainTabs: some TabContent<AppTab> {
+        Tab("Beranda", systemImage: "house.fill", value: AppTab.home) {
+            NavigationStack { mainContent }
+        }
+        Tab("Transaksi", systemImage: "list.bullet", value: AppTab.transactions) {
+            TransactionListView()
+        }
+        Tab("Budget", systemImage: "chart.pie.fill", value: AppTab.budget) {
+            BudgetListView()
+        }
+        Tab("Dompet", systemImage: "wallet.bifold.fill", value: AppTab.wallet) {
+            AccountListView()
+        }
+    }
+
+    /// Tab bar items are template-tinted; an always-original image keeps the plus green.
+    private static let plusIcon: UIImage = {
+        let config = UIImage.SymbolConfiguration(weight: .semibold)
+        let image = UIImage(systemName: "plus", withConfiguration: config) ?? UIImage()
+        return image.withTintColor(UIColor(Color.appPrimary), renderingMode: .alwaysOriginal)
+    }()
 
     // MARK: - Beranda
 

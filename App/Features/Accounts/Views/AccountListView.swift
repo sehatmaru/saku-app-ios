@@ -332,10 +332,6 @@ struct AccountListView: View {
         }
     }
 
-    private static var windowBottomInset: CGFloat {
-        (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.keyWindow?.safeAreaInsets.bottom ?? 0
-    }
-
     /// Whether a card shows its amount on the top strip in its stack.
     private func showsStrip(_ account: Account) -> Bool {
         guard let group = groups.first(where: { $0.type == account.type }) else { return false }
@@ -359,7 +355,7 @@ struct AccountListView: View {
         let shown = selectedID != nil
         let cards = allCards
         return GeometryReader { geo in
-            let pileTop = geo.size.height - Self.windowBottomInset - FloatingTabBar.height - pileVisible
+            let pileTop = geo.size.height - geo.safeAreaInsets.bottom - pileVisible
             ZStack(alignment: .top) {
                 Color.appBackground
                     .ignoresSafeArea()
@@ -403,7 +399,7 @@ struct AccountListView: View {
                 }
             }
         }
-        // Span to the screen bottom; the floating tab bar isn't reported as a safe-area inset here.
+        // Span to the screen bottom so `safeAreaInsets.bottom` reports the tab bar height.
         .ignoresSafeArea(.container, edges: .bottom)
         .onAppear { selectedID = lastSelectedID }
     }
