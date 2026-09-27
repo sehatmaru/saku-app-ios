@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Dompet: one card stack per wallet type (design 6c). Tap a closed stack to fan it out,
-/// tap a card in an open stack to open its detail like design 5a (the card lifts to the top,
-/// every other card drops into a pile at the bottom), tap the group title to close the stack.
+/// Dompet: one card stack per wallet type (design 6c). Tap any card to open its detail like
+/// design 5a (the card lifts to the top, every other card drops into a pile at the bottom);
+/// tap a group title to fan its stack out or close it.
 struct AccountListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: AccountListViewModel
@@ -290,15 +290,9 @@ struct AccountListView: View {
                     }
                     .padding(.top, index == 0 ? 0 : isOpen ? 12 : stripHeight - cardHeight)
                     .zIndex(Double(index))
-                    .onTapGesture {
-                        if isOpen || group.accounts.count == 1 {
-                            openDetail(account)
-                        } else {
-                            setGroup(group.type, open: true)
-                        }
-                    }
+                    .onTapGesture { openDetail(account) }
                     .accessibilityAddTraits(.isButton)
-                    .accessibilityHint(isOpen || group.accounts.count == 1 ? "Buka dompet" : "Buka tumpukan")
+                    .accessibilityHint("Buka dompet")
                 }
             }
         }
