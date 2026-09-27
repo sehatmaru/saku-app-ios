@@ -141,3 +141,28 @@ struct SectionDivider: View {
         Rectangle().fill(Color.appDivider).frame(height: 1).padding(.horizontal, 24)
     }
 }
+
+/// Text that counts up (or down) when `value` changes inside an animation.
+struct CountingText: View, @MainActor Animatable {
+    var value: Double
+    let format: (Double) -> String
+
+    var animatableData: Double {
+        get { value }
+        set { value = newValue }
+    }
+
+    var body: some View {
+        Text(format(value))
+    }
+}
+
+/// Horizontal line through the middle of its frame; stroke it with a dash for guides.
+struct DashedLine: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path { path in
+            path.move(to: CGPoint(x: rect.minX, y: rect.midY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        }
+    }
+}

@@ -10,7 +10,9 @@ struct DashboardView: View {
     }
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
-    @State private var detailTransaction: Transaction?
+    /// Drives the "Bulan ini" grow-in; reset and set again to replay.
+    @State private var isChartShown = false
+    @State private var showAllBudgets = false
     @State private var selectedTab: AppTab = .home
 
     var body: some View {
@@ -75,15 +77,6 @@ struct DashboardView: View {
                 .presentationDetents([.fraction(0.68), .large])
             }
         }
-        .sheet(item: $detailTransaction) { txn in
-            TransactionDetailView(
-                transaction: txn,
-                categories: viewModel.categories,
-                accounts: viewModel.accounts,
-                isEditable: false
-            )
-            .presentationDetents([.medium, .large])
-        }
     }
 
     // MARK: - Beranda
@@ -106,13 +99,11 @@ struct DashboardView: View {
                     SectionDivider()
                     healthSection
                     SectionDivider()
-                    statisticsSection
+                    monthSection
                     SectionDivider()
                     budgetSection
                     SectionDivider()
                     billsSection
-                    SectionDivider()
-                    cashflowSection
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
@@ -278,105 +269,253 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: Statistics
+    // MARK: This month
 
-    private var statisticsSection: some View {
-        let remainingPct = viewModel.totalBudget > 0
-            ? "\(Int(max(0, viewModel.totalRemaining / viewModel.totalBudget * 100)))%" : "-"
-        let topCategory = viewModel.categorySpending.isEmpty
-            ? "-" : "\(viewModel.topCategoryName) · \(Int(viewModel.topCategoryPct))%"
+    private var monthSection: some View {
+        let days = viewModel.dailyExpenses
+        let average = days.isEmpty ? 0 : days.reduce(0, +) / Double(days.count)
+        let peak = max(days.max() ?? 0, average, 1) * 1.05
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                SectionHeader(title: "Statistik bulan ini")
+                SectionHeader(title: "Bulan ini")
                 NavigationLink("Analisis") { AnalyticsView(viewModel: viewModel) }
                     .font(.app(15))
                     .foregroundStyle(Color.appPrimary)
             }
 
-            VStack(spacing: 0) {
-                statRow("Rata-rata harian", isBalanceVisible ? viewModel.averageDailySpending.formattedAsCurrency() : "Rp" + hiddenAmount)
-                statRow("Total transaksi", "\(viewModel.currentMonthTransactionCount)")
-                statRow("Kategori tertinggi", topCategory)
-                statRow("Sisa budget", remainingPct)
+            HStack(alignment: .top, spacing: 32) {
+                countStat(average, label: "rata-rata / hari") { value in
+                    isBalanceVisible ? value.rounded(.toNearestOrEven).formattedAsCurrency() : "Rp" + hiddenAmount
+                }
+                countStat(Double(viewModel.currentMonthTransactionCount), label: "transaksi") { "\(Int($0.rounded()))" }
             }
+            .padding(.top, 14)
+
+            dailyChart(days, average: average, peak: peak)
+                .padding(.top, 22)
+
+            HStack {
+                Text("1 \(Self.monthFormatter.string(from: Date()))")
+                Spacer()
+                Text("Hari ini")
+            }
+            .font(.app(12))
+            .foregroundStyle(Color.appTextSecondary)
             .padding(.top, 8)
 
-            let tips = viewModel.financialTips.prefix(2)
-            if !tips.isEmpty {
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(tips) { tip in
-                        HStack(spacing: 12) {
-                            RoundedRectangle(cornerRadius: 1)
-                                .fill(tipColor(tip.type))
-                                .frame(width: 2)
-                            Text(tip.message)
-                                .font(.app(15))
-                                .lineSpacing(3)
-                                .foregroundStyle(Color.appBody)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
+            let slices = categorySlices
+            if !slices.isEmpty {
+                categoryBar(slices)
+                    .padding(.top, 24)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 16) { legend(slices) }
+                    VStack(alignment: .leading, spacing: 6) { legend(slices) }
                 }
-                .padding(.top, 20)
+                .padding(.top, 10)
             }
         }
         .padding(24)
         .padding(.vertical, 4)
+        .onAppear(perform: replayChart)
     }
 
-    private func statRow(_ label: String, _ value: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(label)
-                .font(.app(16))
-                .foregroundStyle(Color.appTextSecondary)
-            Spacer()
-            Text(value)
-                .font(.app(16, weight: .medium))
-                .foregroundStyle(Color.appText)
-                .multilineTextAlignment(.trailing)
+    private func countStat(_ value: Double, label: String, format: @escaping (Double) -> String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            CountingText(value: isChartShown ? value : 0, format: format)
+                .font(.app(28, weight: .light))
+                .tracking(-0.8)
                 .monospacedDigit()
+                .foregroundStyle(Color.appText)
+                .animation(.timingCurve(0.33, 1, 0.68, 1, duration: 1.1), value: isChartShown)
+            Text(label)
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
         }
-        .padding(.vertical, 14)
-        .rowSeparator()
     }
 
-    private func tipColor(_ type: TipItem.TipType) -> Color {
-        switch type {
-        case .success: .appPrimary
-        case .info: .appTextTertiary
-        case .warning: .appWarning
+    /// One bar per day so far; today in green, dashed line at the daily average. Tap to replay.
+    private func dailyChart(_ days: [Double], average: Double, peak: Double) -> some View {
+        let height: CGFloat = 96
+        return HStack(alignment: .bottom, spacing: 3) {
+            ForEach(days.indices, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(i == days.count - 1 ? Color.appPrimary : Self.barGray)
+                    .frame(height: isChartShown ? max(2, height * days[i] / peak) : 2)
+                    .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.7).delay(Double(i) * 0.022), value: isChartShown)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .bottom)
+        .overlay(alignment: .bottom) {
+            if average > 0 {
+                DashedLine()
+                    .stroke(Color.appTextSecondary, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    .frame(height: 1)
+                    .offset(y: -height * average / peak)
+                    .opacity(isChartShown ? 1 : 0)
+                    .animation(.easeOut(duration: 0.4).delay(isChartShown ? 0.9 : 0), value: isChartShown)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: replayChart)
+        .accessibilityElement()
+        .accessibilityLabel("Pengeluaran harian bulan ini")
+        .accessibilityHint("Ketuk untuk memutar ulang")
+    }
+
+    private func replayChart() {
+        var reset = SwiftUI.Transaction()
+        reset.disablesAnimations = true
+        withTransaction(reset) { isChartShown = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { isChartShown = true }
+    }
+
+    private struct CategorySlice: Identifiable {
+        let name: String
+        let share: Double
+        let color: Color
+        var id: String { name }
+    }
+
+    /// Top four spending categories plus "Lainnya".
+    private var categorySlices: [CategorySlice] {
+        let total = viewModel.categorySpending.map(\.amount).reduce(0, +)
+        guard total > 0 else { return [] }
+        var slices = viewModel.categorySpending.prefix(4).enumerated().map { i, item in
+            CategorySlice(name: item.0.name, share: item.amount / total, color: Self.slicePalette[i])
+        }
+        let rest = 1 - slices.map(\.share).reduce(0, +)
+        if rest > 0.005 {
+            slices.append(CategorySlice(name: "Lainnya", share: rest, color: Self.slicePalette[4]))
+        }
+        return slices
+    }
+
+    private func categoryBar(_ slices: [CategorySlice]) -> some View {
+        GeometryReader { geo in
+            HStack(spacing: 0) {
+                ForEach(Array(slices.enumerated()), id: \.element.id) { i, slice in
+                    Rectangle()
+                        .fill(slice.color)
+                        .overlay(alignment: .trailing) {
+                            Rectangle().fill(Color.appBackground).frame(width: 2)
+                        }
+                        .frame(width: isChartShown ? geo.size.width * slice.share : 0)
+                        .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.8).delay(0.5 + Double(i) * 0.09), value: isChartShown)
+                }
+            }
+        }
+        .frame(height: 8)
+        .background(Color.appFill)
+        .clipShape(Capsule())
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func legend(_ slices: [CategorySlice]) -> some View {
+        ForEach(slices.prefix(3)) { slice in
+            HStack(spacing: 6) {
+                Circle().fill(slice.color).frame(width: 8, height: 8)
+                Text(slice.name)
+                    .foregroundStyle(Color.appTextSecondary)
+                    .lineLimit(1)
+                Text("\(Int((slice.share * 100).rounded()))%")
+                    .foregroundStyle(Color.appText)
+                    .monospacedDigit()
+            }
+            .font(.app(13))
         }
     }
+
+    private static let barGray = Color(light: 0xD9D9DE, dark: 0x3A3A3C)
+    private static let slicePalette: [Color] = [
+        .appPrimary,
+        Color(light: 0x3A3A3C, dark: 0xD1D1D6),
+        Color(light: 0x8E8E93, dark: 0x8E8E93),
+        Color(light: 0xC7C7CC, dark: 0x636366),
+        Color(light: 0xE5E5EA, dark: 0x3A3A3C),
+    ]
 
     // MARK: Budget
 
+    /// Three budgets with the largest spend; "Lihat semua" expands inline.
     private var budgetSection: some View {
-        let over = viewModel.totalRemaining < 0
-        let pct = viewModel.totalBudget > 0 ? Int(max(0, viewModel.totalRemaining / viewModel.totalBudget * 100)) : 0
+        let sorted = viewModel.budgets.sorted { $0.spent > $1.spent }
+        let shown = showAllBudgets ? sorted : Array(sorted.prefix(3))
         return VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Sisa budget", trailing: "\(pct)%", trailingColor: over ? .appError : .appTextSecondary)
-
-            HeroAmount(value: max(0, viewModel.totalRemaining), size: .medium, isVisible: isBalanceVisible)
-                .padding(.top, 14)
-
-            ThinProgress(
-                value: viewModel.totalBudget > 0 ? viewModel.totalSpent / viewModel.totalBudget : 0,
-                color: over ? .appError : .appText
+            SectionHeader(
+                title: "Budget",
+                trailing: sorted.isEmpty ? nil : "Sisa " + (isBalanceVisible ? max(0, viewModel.totalRemaining).formattedAsCurrency() : "Rp" + hiddenAmount)
             )
-            .padding(.top, 18)
 
-            HStack {
-                Text("Terpakai " + (isBalanceVisible ? viewModel.totalSpent.formattedAsCurrency() : "Rp" + hiddenAmount))
-                Spacer()
-                Text("Budget " + (isBalanceVisible ? viewModel.totalBudget.formattedAsCurrency() : "Rp" + hiddenAmount))
+            if sorted.isEmpty {
+                Text("Belum ada budget")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.top, 14)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(shown) { budgetRow($0) }
+                }
+                .padding(.top, 6)
             }
-            .font(.app(13))
-            .foregroundStyle(Color.appTextSecondary)
-            .monospacedDigit()
-            .padding(.top, 10)
+
+            if sorted.count > 3 {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) { showAllBudgets.toggle() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(showAllBudgets ? "Tampilkan lebih sedikit" : "Lihat semua (\(sorted.count))")
+                        Image(systemName: showAllBudgets ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .font(.app(15, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color.appFill, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 16)
+            }
         }
         .padding(24)
         .padding(.vertical, 4)
+    }
+
+    private func budgetRow(_ budget: Budget) -> some View {
+        let category = viewModel.categories.first { $0.id == budget.categoryId }
+        let ratio = budget.progress
+        return HStack(spacing: 14) {
+            Image(systemName: category?.icon ?? "tag")
+                .font(.system(size: 19))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(category?.name ?? budget.name)
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(Color.appText)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    Group {
+                        if isBalanceVisible {
+                            Text("Rp" + budget.spent.abbreviatedRupiah())
+                                .foregroundStyle(Color.appText)
+                                + Text(" / " + budget.amount.abbreviatedRupiah())
+                                .foregroundStyle(Color.appTextTertiary)
+                        } else {
+                            Text("Rp" + hiddenAmount).foregroundStyle(Color.appText)
+                        }
+                    }
+                    .font(.app(15))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                }
+                SegmentBar(value: ratio, color: ratio >= 1 ? .appError : ratio >= 0.8 ? .appWarning : .appPrimary)
+            }
+        }
+        .padding(.vertical, 14)
+        .rowSeparator()
     }
 
     // MARK: Bills
@@ -426,10 +565,17 @@ struct DashboardView: View {
                 Text(sub.name)
                     .font(.app(16, weight: .medium))
                     .lineLimit(1)
-                Text(accountName(for: sub.accountId))
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    if let account = viewModel.accounts.first(where: { $0.id == sub.accountId }) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(account.walletColor)
+                            .frame(width: 18, height: 12)
+                    }
+                    Text(accountName(for: sub.accountId))
+                        .lineLimit(1)
+                }
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
             }
 
             Spacer(minLength: 8)
@@ -445,68 +591,6 @@ struct DashboardView: View {
 
     private func accountName(for id: String) -> String {
         viewModel.accounts.first(where: { $0.id == id })?.name ?? "Kartu Kredit"
-    }
-
-    // MARK: Cashflow + recent transactions
-
-    private var cashflowSection: some View {
-        let net = viewModel.netCashflow
-        let recent = Array(viewModel.recentTransactions.prefix(5))
-        return VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Net cashflow", trailing: "Semua transaksi", trailingColor: .appPrimary) {
-                selectedTab = .transactions
-            }
-
-            HeroAmount(
-                value: net,
-                size: .medium,
-                prefix: net > 0 ? "+Rp" : net < 0 ? "−Rp" : "Rp",
-                color: net > 0 ? .appIncome : .appText,
-                prefixColor: net > 0 ? .appIncome : .appTextSecondary,
-                isVisible: isBalanceVisible
-            )
-            .padding(.top, 14)
-
-            HStack(spacing: 28) {
-                flowTotal("Masuk", viewModel.totalIncome)
-                flowTotal("Keluar", viewModel.totalExpense)
-            }
-            .padding(.top, 12)
-
-            ForEach(Array(recent.enumerated()), id: \.element.id) { index, transaction in
-                if index == 0 || !Calendar.current.isDate(transaction.date, inSameDayAs: recent[index - 1].date) {
-                    Text(Self.dayHeader(for: transaction.date))
-                        .font(.app(13))
-                        .tracking(0.2)
-                        .foregroundStyle(Color.appTextSecondary)
-                        .padding(.top, index == 0 ? 28 : 22)
-                }
-                Button { detailTransaction = transaction } label: {
-                    TransactionRowView(
-                        transaction: transaction,
-                        categories: viewModel.categories,
-                        accounts: viewModel.accounts,
-                        showBalance: isBalanceVisible,
-                        showAccount: true,
-                        showDate: false
-                    )
-                    .rowSeparator()
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .padding(.bottom, 24)
-    }
-
-    private func flowTotal(_ label: String, _ amount: Double) -> some View {
-        (Text(label + " ").foregroundStyle(Color.appTextSecondary)
-            + Text(isBalanceVisible ? amount.abbreviatedRupiah() : hiddenAmount)
-                .fontWeight(.medium)
-                .foregroundStyle(Color.appText))
-            .font(.app(15))
-            .monospacedDigit()
     }
 
     // MARK: Formatting

@@ -78,89 +78,6 @@ final class DashboardViewModel: ObservableObject {
         return top.amount / total * 100
     }
 
-    var financialTips: [TipItem] {
-        var tips: [TipItem] = []
-
-        let savingsRate = totalIncome > 0 ? netCashflow / totalIncome : 0
-
-        if savingsRate < -0.1 {
-            tips.append(TipItem(
-                icon: "exclamationmark.triangle.fill",
-                message: "Pengeluaran jauh melebihi pemasukan. Segera evaluasi kebiasaan belanja Anda.",
-                type: .warning
-            ))
-        } else if savingsRate < 0 {
-            tips.append(TipItem(
-                icon: "arrow.up.forward",
-                message: "Pengeluaran sedikit melebihi pemasukan. Coba catat pengeluaran harian untuk menemukan pos yang bisa dikurangi.",
-                type: .warning
-            ))
-        } else if savingsRate < 0.1 {
-            tips.append(TipItem(
-                icon: "chart.line.uptrend.xyaxis",
-                message: "Coba tingkatkan tabungan hingga minimal 10% dari pemasukan untuk kondisi finansial yang lebih sehat.",
-                type: .info
-            ))
-        } else if savingsRate >= 0.3 {
-            tips.append(TipItem(
-                icon: "star.fill",
-                message: "Anda berhasil menabung lebih dari 30% pemasukan. Pertahankan kebiasaan baik ini!",
-                type: .success
-            ))
-        }
-
-        let remainingRatio = totalBudget > 0 ? totalRemaining / totalBudget : 0
-        if remainingRatio < -0.2 {
-            tips.append(TipItem(
-                icon: "exclamationmark.triangle.fill",
-                message: "Anggaran telah terlampaui jauh. Tinjau kembali alokasi budget bulan depan.",
-                type: .warning
-            ))
-        } else if remainingRatio < 0 {
-            tips.append(TipItem(
-                icon: "clock.fill",
-                message: "Anggaran bulan ini sudah habis. Hindari pengeluaran tambahan yang tidak perlu.",
-                type: .warning
-            ))
-        } else if remainingRatio < 0.25 && totalBudget > 0 {
-            tips.append(TipItem(
-                icon: "clock.fill",
-                message: "Sisa budget bulan ini tinggal sedikit. Coba hemat pengeluaran yang tidak terlalu penting.",
-                type: .info
-            ))
-        } else if remainingRatio >= 0.5 && totalBudget > 0 {
-            tips.append(TipItem(
-                icon: "hand.thumbsup.fill",
-                message: "Pengelolaan budget sangat baik! Anda masih memiliki sisa lebih dari 50%.",
-                type: .success
-            ))
-        }
-
-        if let topCategory = categorySpending.first {
-            let totalSpending = categorySpending.map(\.amount).reduce(0, +)
-            if totalSpending > 0 {
-                let topRatio = topCategory.amount / totalSpending
-                if topRatio > 0.5 {
-                    tips.append(TipItem(
-                        icon: "chart.pie.fill",
-                        message: "Pengeluaran didominasi oleh \(topCategory.0.name) (\(Int(topRatio * 100))%). Coba diversifikasi pola pengeluaran Anda.",
-                        type: .info
-                    ))
-                }
-            }
-        }
-
-        if tips.isEmpty {
-            tips.append(TipItem(
-                icon: "sparkles",
-                message: "Kondisi finansial Anda cukup stabil. Pantau terus pengeluaran untuk hasil terbaik.",
-                type: .success
-            ))
-        }
-
-        return tips
-    }
-
     @Published var errorMessage: String?
 
     @Published var healthScore: Int = 0
@@ -391,30 +308,5 @@ final class DashboardViewModel: ObservableObject {
         formatter.locale = Locale(identifier: "id_ID")
         guard let date = calendar.date(from: DateComponents(year: year, month: month)) else { return "" }
         return formatter.string(from: date)
-    }
-}
-
-struct TipItem: Identifiable {
-    let id = UUID()
-    let icon: String
-    let message: String
-    let type: TipType
-
-    enum TipType {
-        case success
-        case info
-        case warning
-
-        var color: Color {
-            switch self {
-            case .success: Color(red: 0.18, green: 0.75, blue: 0.44)
-            case .info: Color(red: 0.20, green: 0.60, blue: 0.95)
-            case .warning: Color(red: 0.95, green: 0.60, blue: 0.12)
-            }
-        }
-
-        var bgColor: Color {
-            color.opacity(0.1)
-        }
     }
 }
