@@ -88,23 +88,6 @@ struct SegmentBar: View {
     }
 }
 
-/// 3pt progress bar.
-struct ThinProgress: View {
-    let value: Double
-    var color: Color = .appText
-
-    var body: some View {
-        GeometryReader { geo in
-            Capsule().fill(Color.appDivider)
-                .overlay(alignment: .leading) {
-                    Capsule().fill(color)
-                        .frame(width: geo.size.width * min(max(value, 0), 1))
-                }
-        }
-        .frame(height: 3)
-    }
-}
-
 /// Large 34pt screen title with trailing controls, replacing the nav bar title.
 struct ScreenHeader<Trailing: View>: View {
     let title: String

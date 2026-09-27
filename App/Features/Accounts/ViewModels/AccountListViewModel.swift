@@ -6,6 +6,8 @@ final class AccountListViewModel: ObservableObject {
     @Published var totalBalance: Double = 0
     @Published var totalCreditDebt: Double = 0
     @Published var totalSubscriptions: Double = 0
+    /// Names of active credit-card subscriptions, for the "Tagihan berulang" summary.
+    @Published var subscriptionNames: [String] = []
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var hasLoadedOnce = false
@@ -46,9 +48,11 @@ final class AccountListViewModel: ObservableObject {
             accounts = fetchedAccounts
 
             let creditIds = accounts.filter { $0.isCreditCard && $0.isActive }.map { $0.id }
+            subscriptionNames = []
             if !creditIds.isEmpty {
                 let subs = try? await SupabaseRepository.shared.fetchSubscriptions(accountIds: creditIds)
                 let activeSubs = subs?.filter { $0.isActive } ?? []
+                subscriptionNames = activeSubs.map(\.name)
                 for sub in activeSubs {
                     if let idx = accounts.firstIndex(where: { $0.id == sub.accountId }) {
                         var acc = accounts[idx]
