@@ -174,9 +174,10 @@ struct BudgetListView: View {
             HeroAmount(value: max(0, remaining), isVisible: isBalanceVisible)
                 .padding(.top, 8)
 
-            ThinProgress(
+            SegmentBar(
                 value: viewModel.totalBudget > 0 ? viewModel.totalSpent / viewModel.totalBudget : 0,
-                color: remaining < 0 ? .appError : .appText
+                color: remaining < 0 ? .appError : .appPrimary,
+                height: 12
             )
             .padding(.top, 20)
 
@@ -472,7 +473,7 @@ struct BudgetCardView: View {
             }
 
             Group {
-                ThinProgress(value: budget.progress, color: progressColor(budget))
+                SegmentBar(value: budget.progress, color: progressColor(budget))
                 Text(isBalanceVisible
                      ? "\(budget.spent.formattedAsCurrency()) dari \(budget.amount.formattedAsCurrency())"
                      : "Rp\(hiddenAmount) dari Rp\(hiddenAmount)")
@@ -503,7 +504,7 @@ struct BudgetCardView: View {
         switch budget.spendingStatus {
         case .overbudget: return .appError
         case .warning: return .appWarning
-        case .normal: return .appText
+        case .normal: return .appPrimary
         }
     }
 

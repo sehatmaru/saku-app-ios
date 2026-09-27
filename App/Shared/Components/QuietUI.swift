@@ -63,6 +63,31 @@ struct SectionHeader: View {
     }
 }
 
+/// Segmented progress bar in the "Kesehatan finansial" style; segments fill in one by one on appear.
+struct SegmentBar: View {
+    let value: Double
+    var color: Color = .appPrimary
+    var count = 30
+    var height: CGFloat = 8
+    var spacing: CGFloat = 2
+    @State private var isShown = false
+
+    var body: some View {
+        let filled = isShown ? Int((min(max(value, 0), 1) * Double(count)).rounded()) : 0
+        HStack(spacing: spacing) {
+            ForEach(0..<count, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(i < filled ? color : Color.appDivider)
+                    .animation(.easeOut(duration: 0.24).delay(Double(i) * 0.014), value: filled)
+            }
+        }
+        .frame(height: height)
+        .onAppear { isShown = true }
+        .accessibilityElement()
+        .accessibilityValue("\(Int((min(max(value, 0), 1) * 100).rounded())) persen")
+    }
+}
+
 /// 3pt progress bar.
 struct ThinProgress: View {
     let value: Double

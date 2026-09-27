@@ -231,7 +231,6 @@ struct DashboardView: View {
 
     private var healthSection: some View {
         let score = viewModel.healthScore
-        let filled = score * 40 / 100
         return VStack(alignment: .leading, spacing: 0) {
             SectionHeader(title: "Kesehatan finansial", trailing: viewModel.healthScoreLabel, trailingColor: healthColor(score))
 
@@ -245,15 +244,8 @@ struct DashboardView: View {
             }
             .padding(.top, 14)
 
-            HStack(spacing: 3) {
-                ForEach(0..<40, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(i < filled ? healthColor(score) : Color.appDivider)
-                }
-            }
-            .frame(height: 22)
-            .padding(.top, 16)
-            .accessibilityHidden(true)
+            SegmentBar(value: Double(score) / 100, color: healthColor(score), count: 40, height: 22, spacing: 3)
+                .padding(.top, 16)
 
             HStack(spacing: 0) {
                 scorePart("Arus kas", viewModel.cashflowScore, of: 40)
