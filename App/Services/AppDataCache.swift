@@ -19,6 +19,8 @@ final class AppDataCache {
         var currentMonthTransactionCount: Int
         var accounts: [Account]
         var categories: [Category]
+        var dailyExpenses: [Double]
+        var budgets: [Budget]
         var healthScore: Int
         var healthScoreLabel: String
         var cashflowScore: Int

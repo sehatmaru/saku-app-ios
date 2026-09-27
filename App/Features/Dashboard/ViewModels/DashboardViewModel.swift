@@ -17,6 +17,10 @@ final class DashboardViewModel: ObservableObject {
     @Published var currentMonthTransactionCount = 0
     @Published var accounts: [Account] = []
     @Published var categories: [Category] = []
+    /// Expense total per day of the current month, day 1 through today.
+    @Published var dailyExpenses: [Double] = []
+    /// Budgets with `spent` filled for the current period.
+    @Published var budgets: [Budget] = []
     @Published var upcomingSubscriptions: [CardSubscription] = []
     @Published var totalMonthlySubscriptions: Double = 0
     @Published var isLoading = false
@@ -186,6 +190,8 @@ final class DashboardViewModel: ObservableObject {
             currentMonthTransactionCount = cached.currentMonthTransactionCount
             accounts = cached.accounts
             categories = cached.categories
+            dailyExpenses = cached.dailyExpenses
+            budgets = cached.budgets
             healthScore = cached.healthScore
             healthScoreLabel = cached.healthScoreLabel
             cashflowScore = cached.cashflowScore
@@ -248,18 +254,26 @@ final class DashboardViewModel: ObservableObject {
 
             totalBudget = budgets.reduce(0) { $0 + $1.amount }
 
-            var calculatedSpent = 0.0
-            for budget in budgets {
-                if let spent = try? await SupabaseRepository.shared.fetchBudgetSpent(
+            var budgetsWithSpent: [Budget] = []
+            for var budget in budgets {
+                budget.spent = (try? await SupabaseRepository.shared.fetchBudgetSpent(
                     categoryId: budget.categoryId,
                     userId: userId,
                     startDate: budget.currentPeriodStart(),
                     endDate: budget.currentPeriodEnd()
-                ) {
-                    calculatedSpent += spent
-                }
+                )) ?? 0
+                budgetsWithSpent.append(budget)
             }
-            totalSpent = calculatedSpent
+            self.budgets = budgetsWithSpent
+            totalSpent = budgetsWithSpent.reduce(0) { $0 + $1.spent }
+
+            let today = calendar.component(.day, from: Date())
+            var perDay = Array(repeating: 0.0, count: today)
+            for tx in thisMonthTransactions where tx.type == .expense {
+                let day = calendar.component(.day, from: tx.date)
+                if day <= today { perDay[day - 1] += tx.amount }
+            }
+            dailyExpenses = perDay
 
             var categorySpendingMap: [String: Double] = [:]
             for tx in thisMonthTransactions where tx.type == .expense {
@@ -291,6 +305,8 @@ final class DashboardViewModel: ObservableObject {
                 currentMonthTransactionCount: currentMonthTransactionCount,
                 accounts: accounts,
                 categories: categories,
+                dailyExpenses: dailyExpenses,
+                budgets: self.budgets,
                 healthScore: healthScore,
                 healthScoreLabel: healthScoreLabel,
                 cashflowScore: cashflowScore,
