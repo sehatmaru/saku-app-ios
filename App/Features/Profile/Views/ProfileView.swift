@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: ProfileViewModel
 
     init(viewModel: ProfileViewModel = ProfileViewModel()) {
@@ -21,14 +22,6 @@ struct ProfileView: View {
         case light = "Terang"
         case dark = "Gelap"
         case system = "Sistem"
-
-        var icon: String {
-            switch self {
-            case .light: return "sun.max.fill"
-            case .dark: return "moon.fill"
-            case .system: return "iphone"
-            }
-        }
     }
 
     private var appVersion: String {
@@ -43,29 +36,37 @@ struct ProfileView: View {
         return formatter.string(from: date)
     }
 
-    private var userInitials: String {
-        let name = authViewModel.currentUser?.displayName ?? "U"
-        let parts = name.split(separator: " ").prefix(2)
-        return parts.map { String($0.prefix(1)).uppercased() }.joined()
+    private var languageLabel: String {
+        appLanguage == "id" ? "Indonesia" : "English"
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ScreenHeader(title: "Profil") { EmptyView() }
                     profileHeader
-                    preferences
-                    logoutRow
-                    Text("SakuQ versi \(appVersion)")
+                    appearanceSection
+                    notificationSection
+                    logoutButton
+                    Text("Bergabung sejak \(memberSinceDate) · SakuQ versi \(appVersion)")
                         .font(.app(13))
                         .foregroundStyle(Color.appTextTertiary)
+                        .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 28)
+                        .padding(.vertical, 24)
                 }
+                .padding(.horizontal, 24)
             }
             .background(Color.appBackground)
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationTitle("Profil")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Selesai") { dismiss() }
+                        .font(.app(17, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
+                }
+            }
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
@@ -80,158 +81,143 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Profile Header
+    // MARK: - Header
 
     private var profileHeader: some View {
-        NavigationLink(destination: ProfileEditView(viewModel: viewModel, authViewModel: authViewModel)) {
-            HStack(spacing: 16) {
-                Text(userInitials)
-                    .font(.app(24, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 64, height: 64)
-                    .background(Color.appPrimary, in: Circle())
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(authViewModel.currentUser?.displayName ?? "User")
-                        .font(.app(22, weight: .semibold))
-                        .tracking(-0.2)
-                        .foregroundStyle(Color.appText)
-                        .lineLimit(1)
-                    Text(authViewModel.currentUser?.email ?? "")
-                        .font(.app(15))
-                        .foregroundStyle(Color.appTextSecondary)
-                        .lineLimit(1)
-                    Text("Bergabung sejak \(memberSinceDate)")
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextTertiary)
-                }
-
-                Spacer(minLength: 8)
-                chevron
+        VStack(spacing: 0) {
+            InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U", size: 88, fontSize: 32)
+            Text(authViewModel.currentUser?.fullName ?? "User")
+                .font(.app(24, weight: .semibold))
+                .tracking(-0.3)
+                .foregroundStyle(Color.appText)
+                .lineLimit(1)
+                .padding(.top, 14)
+            Text(authViewModel.currentUser?.email ?? "")
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .lineLimit(1)
+                .padding(.top, 4)
+            NavigationLink(destination: ProfileEditView(viewModel: viewModel, authViewModel: authViewModel)) {
+                Label("Ubah profil", systemImage: "pencil")
+                    .font(.app(15, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                    .padding(.horizontal, 16)
+                    .frame(height: 36)
+                    .background(Color.appFill, in: Capsule())
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 28)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .padding(.top, 16)
         }
-        .buttonStyle(RowPressStyle())
+        .frame(maxWidth: .infinity)
+        .padding(.top, 16)
     }
 
-    // MARK: - Preferences
+    // MARK: - Sections
 
-    private var preferences: some View {
+    private var appearanceSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Preferensi")
-                .font(.app(13))
-                .tracking(0.2)
-                .foregroundStyle(Color.appTextSecondary)
-                .padding(.top, 24)
-                .padding(.bottom, 4)
+            sectionCaption("Tampilan")
+
+            row(icon: "circle.lefthalf.filled", title: "Tema") {
+                Picker("Tema", selection: $appTheme) {
+                    ForEach(ThemeOption.allCases, id: \.self) { option in
+                        Text(option.rawValue).tag(option)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+            }
 
             NavigationLink(destination: LanguageView(appLanguage: $appLanguage)) {
-                settingRow(icon: "globe", title: "Bahasa", value: languageLabel)
+                row(icon: "globe", title: "Bahasa") {
+                    Text(languageLabel)
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.appTextTertiary)
+                }
+                .contentShape(Rectangle())
             }
             .buttonStyle(RowPressStyle())
 
-            NavigationLink(destination: ThemeView(appTheme: $appTheme)) {
-                settingRow(icon: "moon", title: "Tema", value: appTheme.rawValue)
-            }
-            .buttonStyle(RowPressStyle())
-
-            NavigationLink(destination: NotificationView(
-                notifTransactions: $notifTransactions,
-                notifBudget: $notifBudget
-            )) {
-                settingRow(icon: "bell", title: "Notifikasi", value: notifLabel)
-            }
-            .buttonStyle(RowPressStyle())
-
-            HStack(spacing: 14) {
-                rowIcon("eye.slash")
+            row(icon: "eye.slash", title: "Sembunyikan saldo") {
                 Toggle("Sembunyikan saldo", isOn: Binding(
                     get: { !isBalanceVisible },
                     set: { hidden in withAnimation(.smooth) { isBalanceVisible = !hidden } }
                 ))
-                .font(.app(16))
-                .foregroundStyle(Color.appText)
+                .labelsHidden()
                 .tint(.appPrimary)
             }
-            .padding(.vertical, 10)
-            .rowSeparator()
-        }
-        .padding(.horizontal, 24)
-        .overlay(alignment: .top) {
-            Rectangle().fill(Color.appDivider).frame(height: 1).padding(.horizontal, 24)
         }
     }
 
-    private func settingRow(icon: String, title: String, value: String) -> some View {
-        HStack(spacing: 14) {
-            rowIcon(icon)
-            Text(title)
-                .font(.app(16))
-                .foregroundStyle(Color.appText)
-            Spacer(minLength: 8)
-            Text(value)
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-                .lineLimit(1)
-            chevron
+    private var notificationSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionCaption("Notifikasi")
+            row(icon: "arrow.left.arrow.right", title: "Transaksi", subtitle: "Setiap ada transaksi baru") {
+                Toggle("Transaksi", isOn: $notifTransactions)
+                    .labelsHidden()
+                    .tint(.appPrimary)
+            }
+            row(icon: "chart.pie", title: "Budget", subtitle: "Saat pemakaian mencapai 80%") {
+                Toggle("Budget", isOn: $notifBudget)
+                    .labelsHidden()
+                    .tint(.appPrimary)
+            }
         }
-        .padding(.vertical, 14)
-        .rowSeparator()
-        .contentShape(Rectangle())
     }
 
-    private func rowIcon(_ name: String) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 19))
+    private func sectionCaption(_ title: String) -> some View {
+        Text(title)
+            .font(.app(13))
             .foregroundStyle(Color.appTextSecondary)
-            .frame(width: 24)
+            .padding(.top, 28)
+            .padding(.bottom, 4)
     }
 
-    private var chevron: some View {
-        Image(systemName: "chevron.right")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Color.appTextTertiary)
+    private func row<Trailing: View>(icon: String, title: String, subtitle: String? = nil, @ViewBuilder trailing: () -> Trailing) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 19))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.app(16))
+                    .foregroundStyle(Color.appText)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+            }
+            Spacer(minLength: 8)
+            trailing()
+        }
+        .frame(minHeight: 52)
+        .padding(.vertical, 4)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Color.appDivider).frame(height: 1)
+        }
     }
 
     // MARK: - Logout
 
-    private var logoutRow: some View {
+    private var logoutButton: some View {
         Button {
             showLogoutAlert = true
         } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 19))
-                    .frame(width: 24)
-                Text("Keluar")
-                    .font(.app(16))
-                Spacer()
-            }
-            .foregroundStyle(Color.appError)
-            .padding(.vertical, 14)
-            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-            .rowSeparator()
-            .contentShape(Rectangle())
+            Label("Keluar", systemImage: "rectangle.portrait.and.arrow.right")
+                .font(.app(16, weight: .semibold))
+                .foregroundStyle(Color.appError)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.appError.opacity(0.1), in: Capsule())
         }
-        .buttonStyle(RowPressStyle())
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-    }
-
-    // MARK: - Labels
-
-    private var languageLabel: String {
-        appLanguage == "id" ? "Indonesia" : "English"
-    }
-
-    private var notifLabel: String {
-        let labels = [
-            notifTransactions ? "Transaksi" : nil,
-            notifBudget ? "Budget" : nil
-        ].compactMap { $0 }
-        return labels.isEmpty ? "Nonaktif" : labels.joined(separator: ", ")
+        .buttonStyle(.plain)
+        .padding(.top, 32)
     }
 }
 
@@ -407,114 +393,5 @@ struct LanguageView: View {
         .scrollContentBackground(.hidden)
         .navigationTitle("Bahasa")
         .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-// MARK: - Theme
-
-struct ThemeView: View {
-    @Binding var appTheme: ProfileView.ThemeOption
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        List {
-            ForEach(ProfileView.ThemeOption.allCases, id: \.rawValue) { theme in
-                Button {
-                    appTheme = theme
-                } label: {
-                    HStack(spacing: Spacing.md) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.appPrimary.opacity(0.12))
-                                .frame(width: 40, height: 40)
-                            Image(systemName: theme.icon)
-                                .font(.app(16))
-                                .foregroundColor(.appPrimary)
-                        }
-
-                        Text(theme.rawValue)
-                            .font(.app(15, weight: .medium))
-                            .foregroundColor(.appText)
-
-                        Spacer()
-
-                        if appTheme == theme {
-                            Image(systemName: "checkmark")
-                                .font(.app(14, weight: .semibold))
-                                .foregroundColor(.appPrimary)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .listStyle(.insetGrouped)
-        .background(Color.appGroupedBackground)
-        .scrollContentBackground(.hidden)
-        .navigationTitle("Tema")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-// MARK: - Notifications
-
-struct NotificationView: View {
-    @Binding var notifTransactions: Bool
-    @Binding var notifBudget: Bool
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        List {
-            Section {
-                notifRow(
-                    icon: "arrow.left.arrow.right",
-                    title: "Transaksi",
-                    subtitle: "Pengingat mencatat transaksi harian",
-                    isOn: $notifTransactions
-                )
-
-                notifRow(
-                    icon: "chart.pie.fill",
-                    title: "Budget",
-                    subtitle: "Peringatan saat budget mendekati batas",
-                    isOn: $notifBudget
-                )
-            }
-        }
-        .listStyle(.insetGrouped)
-        .background(Color.appGroupedBackground)
-        .scrollContentBackground(.hidden)
-        .navigationTitle("Notifikasi")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private func notifRow(icon: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: Spacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.appPrimary.opacity(0.12))
-                    .frame(width: 36, height: 36)
-                Image(systemName: icon)
-                    .font(.app(14, weight: .semibold))
-                    .foregroundColor(.appPrimary)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.app(15, weight: .medium))
-                    .foregroundColor(.appText)
-                Text(subtitle)
-                    .font(.app(11))
-                    .foregroundColor(.appTextSecondary)
-            }
-
-            Spacer()
-
-            Toggle("", isOn: isOn)
-                .tint(.appPrimary)
-        }
-        .padding(.vertical, 2)
     }
 }
