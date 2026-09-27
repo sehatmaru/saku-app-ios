@@ -13,9 +13,8 @@ struct SplashView: View {
             VStack(spacing: Spacing.lg) {
                 Spacer()
 
-                Image(systemName: "leaf.fill")
-                    .font(.app(60))
-                    .foregroundColor(.appPrimary)
+                SakuQLogoIcon()
+                    .frame(width: 80, height: 80)
 
                 Text("SakuQ")
                     .font(.app(34, weight: .bold))

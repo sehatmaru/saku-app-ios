@@ -11,9 +11,8 @@ struct SignInView: View {
             VStack(spacing: Spacing.lg) {
                 Spacer()
 
-                Image(systemName: "leaf.fill")
-                    .font(.app(80))
-                    .foregroundColor(.white)
+                SakuQLogoIcon(walletColor: .white, dashColor: Color(hex: "16875A"))
+                    .frame(width: 100, height: 100)
 
                 HStack(spacing: Spacing.xs) {
                     Text("kelola")
