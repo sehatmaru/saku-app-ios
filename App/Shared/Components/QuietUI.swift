@@ -201,3 +201,72 @@ struct DashedLine: Shape {
         }
     }
 }
+
+/// Grey placeholder for a number or row while data loads; labels stay real text.
+struct SkeletonBlock: View {
+    var width: CGFloat?
+    var height: CGFloat
+    var radius: CGFloat = 5
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: radius)
+            .fill(Color.appFill)
+            .frame(width: width, height: height)
+            .frame(maxWidth: width == nil ? .infinity : nil)
+            .shimmer()
+            .clipShape(RoundedRectangle(cornerRadius: radius))
+            .accessibilityHidden(true)
+    }
+}
+
+/// The one action an empty state offers: a green pill, or grey when `isSecondary`.
+struct EmptyStateButton: View {
+    let title: String
+    var icon: String? = "plus"
+    var isFullWidth = false
+    var isSecondary = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                if let icon {
+                    Image(systemName: icon).font(.system(size: 15, weight: .bold))
+                }
+                Text(title).font(.app(isSecondary ? 15 : 16, weight: isSecondary ? .medium : .semibold))
+            }
+            .foregroundStyle(isSecondary ? Color.appText : .white)
+            .padding(.horizontal, isSecondary ? 20 : 24)
+            .frame(maxWidth: isFullWidth ? .infinity : nil)
+            .frame(height: isSecondary ? 44 : 48)
+            .background(isSecondary ? Color.appFill : Color.appPrimary, in: Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+    }
+}
+
+/// Centered icon, title and message for a screen with nothing to list.
+struct EmptyMessage: View {
+    let icon: String
+    let title: String
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Image(systemName: icon)
+                .font(.system(size: 36, weight: .light))
+                .foregroundStyle(Color.appTextTertiary)
+            Text(title)
+                .font(.app(17, weight: .semibold))
+                .foregroundStyle(Color.appText)
+                .padding(.top, 14)
+            Text(message)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .lineSpacing(3)
+                .padding(.top, 6)
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+    }
+}

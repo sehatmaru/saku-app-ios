@@ -10,8 +10,13 @@ struct AccountListView: View {
     /// Dompet opens from Beranda's hero; this closes it again.
     var onBack: (() -> Void)?
 
-    init(viewModel: AccountListViewModel = AccountListViewModel(), onBack: (() -> Void)? = nil) {
+    /// Opens the add-wallet sheet as soon as the page appears.
+    private let startsAdding: Bool
+
+    init(viewModel: AccountListViewModel = AccountListViewModel(), startsAdding: Bool = false,
+         onBack: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: viewModel)
+        self.startsAdding = startsAdding
         self.onBack = onBack
     }
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
@@ -85,7 +90,7 @@ struct AccountListView: View {
                             ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                         }
                         if groups.isEmpty {
-                            emptyState.padding(.top, 48)
+                            emptyState.padding(.top, 120)
                         }
                         ForEach(groups) { group in
                             groupSection(group)
@@ -117,7 +122,10 @@ struct AccountListView: View {
                 await syncAccountTransactions(userId: userId, forceRefresh: true)
                 await syncCategories(userId: userId)
             }
-            .onAppear { isBalanceVisible = isBalanceVisibleStorage }
+            .onAppear {
+                isBalanceVisible = isBalanceVisibleStorage
+                if startsAdding { showAddWallet = true }
+            }
             .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
@@ -170,21 +178,26 @@ struct AccountListView: View {
                 }
                 .accessibilityLabel("Diarsipkan")
             }
-            Button {
-                withAnimation(.smooth) { isBalanceVisible.toggle() }
-                isBalanceVisibleStorage = isBalanceVisible
-            } label: {
-                Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+            if !viewModel.hasLoadedOnce || !groups.isEmpty {
+                Button {
+                    withAnimation(.smooth) { isBalanceVisible.toggle() }
+                    isBalanceVisibleStorage = isBalanceVisible
+                } label: {
+                    Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+                        .foregroundStyle(viewModel.hasLoadedOnce ? Color.appText : Color.appTextTertiary)
+                }
+                .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
             }
-            .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
             Button {
                 showAddWallet = true
             } label: {
                 Image(systemName: "plus")
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(viewModel.hasLoadedOnce ? Color.appPrimary : Color.appTextTertiary)
             }
             .accessibilityLabel("Tambah dompet")
         }
+        // 13c: the actions wait, greyed, until the wallets are in.
+        .disabled(!viewModel.hasLoadedOnce)
     }
 
     private func errorStateView(message: String) -> some View {
@@ -197,26 +210,74 @@ struct AccountListView: View {
         }
     }
 
+    /// 13c: each group is a title, two peeking card edges and a card.
     private var skeletonContent: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            RoundedRectangle(cornerRadius: 4).fill(Color.appFill).frame(width: 160, height: 14)
-            RoundedRectangle(cornerRadius: 4).fill(Color.appFill).frame(width: 240, height: 48)
-            RoundedRectangle(cornerRadius: 16).fill(Color.appFill).frame(height: cardHeight).padding(.top, 40)
+        VStack(spacing: 30) {
+            ForEach(0..<3, id: \.self) { _ in
+                VStack(spacing: 0) {
+                    HStack {
+                        SkeletonBlock(width: 96, height: 18, radius: 6)
+                        Spacer()
+                        SkeletonBlock(width: 70, height: 13)
+                    }
+                    .frame(height: 36)
+                    UnevenRoundedRectangle(topLeadingRadius: 12, topTrailingRadius: 12)
+                        .fill(Color.appFill.opacity(0.6))
+                        .frame(height: 10)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 12)
+                    UnevenRoundedRectangle(topLeadingRadius: 12, topTrailingRadius: 12)
+                        .fill(Color.appFill)
+                        .frame(height: 10)
+                        .padding(.horizontal, 6)
+                    SkeletonBlock(height: 150, radius: 16)
+                }
+            }
         }
         .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .shimmer()
+        .padding(.top, 12)
+        .accessibilityLabel("Memuat")
     }
 
+    /// 13d: three dashed cards with a + on the front one.
     private var emptyState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(Color.appTextTertiary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                    .frame(height: 96)
+                    .padding(.horizontal, 24)
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.appBackground)
+                    .overlay(RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(Color.appTextTertiary.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                    .frame(height: 100)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 16)
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.appFill)
+                    .frame(height: 100)
+                    .overlay(Image(systemName: "plus").font(.system(size: 26)).foregroundStyle(Color.appTextTertiary))
+                    .padding(.top, 32)
+            }
+            .frame(width: 176, height: 132)
+            .accessibilityHidden(true)
+
             Text("Belum ada dompet")
-                .font(.app(16))
+                .font(.app(20, weight: .semibold))
+                .tracking(-0.2)
+                .foregroundStyle(Color.appText)
+                .padding(.top, 28)
+            Text("Tambahkan rekening bank, e-wallet, kartu kredit, atau uang tunai.")
+                .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
-            Button("Tambah dompet") { showAddWallet = true }
-                .font(.app(16, weight: .medium))
-                .foregroundStyle(Color.appPrimary)
+                .lineSpacing(3)
+                .multilineTextAlignment(.center)
+                .padding(.top, 8)
+            EmptyStateButton(title: "Tambah dompet") { showAddWallet = true }
+                .padding(.top, 24)
         }
+        .padding(.horizontal, 40)
         .frame(maxWidth: .infinity)
     }
 

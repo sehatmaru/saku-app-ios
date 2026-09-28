@@ -4,8 +4,12 @@ struct TransactionListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: TransactionListViewModel
 
-    init(viewModel: TransactionListViewModel = TransactionListViewModel()) {
+    /// Opens the add-transaction form from the empty state.
+    private let onAdd: () -> Void
+
+    init(viewModel: TransactionListViewModel = TransactionListViewModel(), onAdd: @escaping () -> Void = {}) {
         _viewModel = StateObject(wrappedValue: viewModel)
+        self.onAdd = onAdd
     }
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
     @State private var isBalanceVisible = true
@@ -60,7 +64,9 @@ struct TransactionListView: View {
                                 .onAppear { showBackToTop = false }
                                 .onDisappear { showBackToTop = true }
 
-                            filterChips
+                            if !hasNoTransactions {
+                                filterChips
+                            }
 
                             if filteredTransactions.isEmpty {
                                 emptyState
@@ -138,19 +144,66 @@ struct TransactionListView: View {
         hasInitialExpanded = true
     }
 
+    /// 13e: the summary label stays; the amount, chips and rows shimmer.
     private var transactionSkeleton: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            ForEach([180, 240, 0, 0, 0, 0], id: \.self) { width in
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.appFill)
-                    .frame(maxWidth: width == 0 ? .infinity : CGFloat(width))
-                    .frame(height: width == 240 ? 40 : 14)
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Net cashflow \(Self.monthFormatter.string(from: Date()))")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                SkeletonBlock(width: 230, height: 48, radius: 10)
+                    .padding(.top, 8)
+                RoundedRectangle(cornerRadius: 3).fill(Color.appFill)
+                    .frame(height: 6)
+                    .padding(.top, 22)
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 32)
+            .padding(.bottom, 24)
+
+            HStack(spacing: 8) {
+                ForEach([40, 76, 92, 84], id: \.self) { width in
+                    Capsule().fill(Color.appFill).frame(width: CGFloat(width), height: 34)
+                }
+            }
+            .padding(.horizontal, 24)
+
+            VStack(alignment: .leading, spacing: 0) {
+                SkeletonBlock(width: 150, height: 20, radius: 6)
+                GeometryReader { geo in
+                    VStack(spacing: 0) {
+                        ForEach(Self.skeletonRows, id: \.a) { row in
+                            HStack(spacing: 14) {
+                                Circle().fill(Color.appFill).frame(width: 24, height: 24)
+                                VStack(alignment: .leading, spacing: 7) {
+                                    SkeletonBlock(width: geo.size.width * row.a, height: 14)
+                                    RoundedRectangle(cornerRadius: 4).fill(Color.appFill)
+                                        .frame(width: geo.size.width * row.b, height: 11)
+                                }
+                                Spacer(minLength: 0)
+                                SkeletonBlock(width: row.c, height: 14)
+                            }
+                            .padding(.vertical, 12)
+                        }
+                    }
+                }
+                .frame(height: CGFloat(Self.skeletonRows.count) * 48)
+                .padding(.top, 14)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .shimmer()
+        .accessibilityLabel("Memuat")
     }
+
+    /// Widths of the skeleton rows: title and subtitle as shares of the row, amount in points.
+    private static let skeletonRows: [(a: CGFloat, b: CGFloat, c: CGFloat)] = [
+        (0.56, 0.32, 72), (0.44, 0.26, 64), (0.62, 0.36, 80), (0.48, 0.28, 60),
+        (0.58, 0.34, 76), (0.40, 0.24, 68), (0.52, 0.30, 70),
+    ]
+
+    /// Nothing recorded yet, as opposed to a search or filter that matches nothing.
+    private var hasNoTransactions: Bool { viewModel.allTransactions.isEmpty }
 
     // MARK: Search
 
@@ -190,22 +243,28 @@ struct TransactionListView: View {
             HeroAmount(
                 value: net,
                 prefix: net > 0 ? "+Rp" : net < 0 ? "−Rp" : "Rp",
-                color: tone,
-                prefixColor: net == 0 ? .appTextSecondary : tone,
+                color: hasNoTransactions ? .appTextTertiary : tone,
+                prefixColor: hasNoTransactions ? .appTextTertiary : net == 0 ? .appTextSecondary : tone,
                 isVisible: isBalanceVisible,
                 weight: .ultraLight
             )
             .padding(.top, 8)
 
-            FlowSplitBar(income: viewModel.thisMonthIncome, expense: viewModel.thisMonthExpense)
-                .padding(.top, 22)
+            if hasNoTransactions {
+                RoundedRectangle(cornerRadius: 3).fill(Color.appDivider)
+                    .frame(height: 6)
+                    .padding(.top, 22)
+            } else {
+                FlowSplitBar(income: viewModel.thisMonthIncome, expense: viewModel.thisMonthExpense)
+                    .padding(.top, 22)
 
-            HStack {
-                flowTotal("Masuk", viewModel.thisMonthIncome)
-                Spacer()
-                flowTotal("Keluar", viewModel.thisMonthExpense)
+                HStack {
+                    flowTotal("Masuk", viewModel.thisMonthIncome)
+                    Spacer()
+                    flowTotal("Keluar", viewModel.thisMonthExpense)
+                }
+                .padding(.top, 12)
             }
-            .padding(.top, 12)
         }
         .padding(.horizontal, 24)
         .padding(.top, 32)
@@ -488,25 +547,40 @@ struct TransactionListView: View {
 
     // MARK: Empty State
 
+    /// 13f when nothing is recorded yet, 13g when a search or filter matches nothing.
+    @ViewBuilder
     private var emptyState: some View {
-        let trimmedSearchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let isSearchEmpty = !trimmedSearchText.isEmpty
-
-        return VStack(spacing: Spacing.md) {
-            Image(systemName: isSearchEmpty ? "magnifyingglass" : "tray")
-                .font(.system(size: 36, weight: .light))
-                .foregroundStyle(Color.appTextTertiary)
-            Text(isSearchEmpty ? "Tidak ada hasil" : "Belum ada transaksi")
-                .font(.app(16))
-                .foregroundStyle(Color.appTextSecondary)
-            if isSearchEmpty {
-                Text("Cari \"\(trimmedSearchText)\"")
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextTertiary)
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if hasNoTransactions {
+            VStack(spacing: 22) {
+                EmptyMessage(
+                    icon: "tray",
+                    title: "Belum ada transaksi",
+                    message: "Pemasukan dan pengeluaran yang kamu catat di \(Self.monthFormatter.string(from: Date())) akan muncul di sini."
+                )
+                EmptyStateButton(title: "Catat transaksi", action: onAdd)
             }
+            .padding(.horizontal, 40)
+            .padding(.top, 68)
+        } else {
+            VStack(spacing: 22) {
+                EmptyMessage(
+                    icon: "magnifyingglass",
+                    title: "Tidak ada hasil",
+                    message: query.isEmpty
+                        ? "Tidak ada transaksi dengan filter ini."
+                        : "Tidak ada transaksi \"\(query)\" dengan filter ini."
+                )
+                EmptyStateButton(title: "Hapus filter", icon: nil, isSecondary: true) {
+                    withAnimation(.smooth) {
+                        searchText = ""
+                        filter = TransactionFilter()
+                    }
+                }
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 96)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 56)
     }
 
     private static let monthFormatter: DateFormatter = {

@@ -19,6 +19,8 @@ struct DashboardView: View {
     /// Dompet slides in over the app from Beranda's hero; it is no longer a tab.
     @State private var showsWallets = false
     @State private var didWelcome = false
+    /// "Tambah dompet" on the empty Beranda opens Dompet straight into the add sheet.
+    @State private var addsWalletOnOpen = false
 
     enum AppTab: Hashable {
         case home, transactions, budget, profile
@@ -30,7 +32,10 @@ struct DashboardView: View {
         ZStack {
             tabs
             if showsWallets {
-                AccountListView { withAnimation(.settle(0.46)) { showsWallets = false } }
+                AccountListView(startsAdding: addsWalletOnOpen) {
+                    addsWalletOnOpen = false
+                    withAnimation(.settle(0.46)) { showsWallets = false }
+                }
                     .background(Color.appBackground.ignoresSafeArea())
                     .transition(.move(edge: .trailing))
                     .zIndex(1)
@@ -99,7 +104,7 @@ struct DashboardView: View {
             NavigationStack { mainContent }
         } label: { tabLabel("Beranda", "house.fill") }
         Tab(value: AppTab.transactions) {
-            TransactionListView()
+            TransactionListView { showAddSheet = true }
         } label: { tabLabel("Transaksi", "list.bullet") }
         Tab(value: AppTab.add) {
             Color.clear
@@ -149,13 +154,19 @@ struct DashboardView: View {
                         ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                     }
                     summarySection
-                    SectionDivider()
-                    healthSection
-                    SectionDivider()
-                    monthSection
-                    SectionDivider()
-                    budgetSection
-                        .padding(.bottom, 90)
+                    if hasNoWallets {
+                        firstWalletCard
+                        emptyHealthSection
+                            .padding(.bottom, 90)
+                    } else {
+                        SectionDivider()
+                        healthSection
+                        SectionDivider()
+                        monthSection
+                        SectionDivider()
+                        budgetSection
+                            .padding(.bottom, 90)
+                    }
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
@@ -190,18 +201,85 @@ struct DashboardView: View {
         .padding(.top, 8)
     }
 
+    /// 13a: labels stay, only the numbers shimmer.
     private var homeSkeleton: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            ForEach([120, 260, 200, 0, 160, 300, 240], id: \.self) { width in
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.appFill)
-                    .frame(maxWidth: width == 0 ? .infinity : CGFloat(width))
-                    .frame(height: width == 260 ? 48 : 14)
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Total saldo")
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Spacer()
+                    SkeletonBlock(width: 128, height: 48, radius: 24)
+                }
+                SkeletonBlock(width: 250, height: 52, radius: 10)
+                    .padding(.top, 6)
+                RoundedRectangle(cornerRadius: 3).fill(Color.appFill)
+                    .frame(height: 6)
+                    .padding(.top, 28)
+                HStack {
+                    SkeletonBlock(width: 74, height: 14)
+                    Spacer()
+                    SkeletonBlock(width: 74, height: 14)
+                    Spacer()
+                    SkeletonBlock(width: 74, height: 14)
+                }
+                .padding(.top, 14)
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 36)
+
+            SectionDivider()
+
+            VStack(alignment: .leading, spacing: 0) {
+                SectionHeader(title: "Kesehatan finansial")
+                SkeletonBlock(width: 110, height: 50, radius: 10)
+                    .padding(.top, 14)
+                SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
+                    .padding(.top, 16)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 28)
+        }
+        .accessibilityLabel("Memuat")
+    }
+
+    /// 13b: a new user with no wallets gets one card pointing at the first wallet.
+    private var firstWalletCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Tambah dompet pertamamu")
+                .font(.app(17, weight: .semibold))
+                .foregroundStyle(Color.appText)
+            Text("Masukkan saldo rekening bank, e-wallet, atau uang tunai supaya total saldo bisa dihitung.")
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .lineSpacing(3)
+            EmptyStateButton(title: "Tambah dompet", isFullWidth: true) {
+                addsWalletOnOpen = true
+                withAnimation(.settle(0.46)) { showsWallets = true }
+            }
+            .padding(.top, 12)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 22)
+        .padding(.bottom, 20)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .padding(.horizontal, 24)
+    }
+
+    private var emptyHealthSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Kesehatan finansial")
+            SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
+                .padding(.top, 16)
+            Text("Skor muncul setelah kamu mencatat transaksi selama 7 hari.")
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .lineSpacing(3)
+                .padding(.top, 12)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 36)
-        .shimmer()
+        .padding(.vertical, 28)
     }
 
     private func errorStateView(message: String) -> some View {
@@ -226,11 +304,20 @@ struct DashboardView: View {
                 Spacer()
                 walletsButton
             }
-            HeroAmount(value: viewModel.balance, size: .hero, isVisible: isBalanceVisible, weight: .ultraLight)
+            HeroAmount(value: viewModel.balance, size: .hero,
+                       color: hasNoWallets ? .appTextTertiary : .appText,
+                       prefixColor: hasNoWallets ? .appTextTertiary : .appTextSecondary,
+                       isVisible: isBalanceVisible, weight: .ultraLight)
                 .padding(.top, 2)
 
-            FlowSplitBar(income: viewModel.totalIncome, expense: viewModel.totalExpense)
-                .padding(.top, 28)
+            Group {
+                if hasNoWallets {
+                    RoundedRectangle(cornerRadius: 3).fill(Color.appDivider).frame(height: 6)
+                } else {
+                    FlowSplitBar(income: viewModel.totalIncome, expense: viewModel.totalExpense)
+                }
+            }
+            .padding(.top, 28)
 
             HStack {
                 flowStat("Masuk", viewModel.totalIncome)
@@ -243,8 +330,10 @@ struct DashboardView: View {
         }
         .padding(.horizontal, 24)
         .padding(.top, 36)
-        .padding(.bottom, 36)
+        .padding(.bottom, hasNoWallets ? 32 : 36)
     }
+
+    private var hasNoWallets: Bool { !viewModel.accounts.contains(where: \.isActive) }
 
     /// Animated pocket mark with "Dompet · N akun"; opens the Dompet page.
     private var walletsButton: some View {
@@ -279,9 +368,9 @@ struct DashboardView: View {
         let sign = signed ? (amount > 0 ? "+" : amount < 0 ? "−" : "") : ""
         let color: Color = signed ? (amount > 0 ? .appPrimary : amount < 0 ? .appError : .appText) : .appText
         return (Text(label + " ").foregroundStyle(Color.appTextSecondary)
-                + Text(isBalanceVisible ? sign + amount.abbreviatedRupiah() : hiddenAmount)
+                + Text(hasNoWallets ? "–" : isBalanceVisible ? sign + amount.abbreviatedRupiah() : hiddenAmount)
                     .fontWeight(.medium)
-                    .foregroundStyle(color))
+                    .foregroundStyle(hasNoWallets ? Color.appTextTertiary : color))
             .font(.app(15))
             .monospacedDigit()
             .lineLimit(1)
