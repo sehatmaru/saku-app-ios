@@ -84,7 +84,6 @@ struct AccountListView: View {
                         if let error = viewModel.errorMessage {
                             ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                         }
-                        summary
                         if groups.isEmpty {
                             emptyState.padding(.top, 48)
                         }
@@ -165,7 +164,13 @@ struct AccountListView: View {
     // MARK: Header
 
     private var header: some View {
-        ScreenHeader(title: "Dompet", onBack: onBack) {
+        ScreenHeader(title: "", onBack: onBack) {
+            if !archivedAccounts.isEmpty {
+                Button { path.append("archived") } label: {
+                    Image(systemName: "archivebox")
+                }
+                .accessibilityLabel("Diarsipkan")
+            }
             Button {
                 withAnimation(.smooth) { isBalanceVisible.toggle() }
                 isBalanceVisibleStorage = isBalanceVisible
@@ -202,38 +207,6 @@ struct AccountListView: View {
         .padding(.horizontal, 24)
         .padding(.top, 28)
         .shimmer()
-    }
-
-    // MARK: Summary
-
-    private var summary: some View {
-        let activeCount = viewModel.accounts.filter(\.isActive).count
-        let hasCredit = viewModel.accounts.contains { $0.isActive && $0.isCreditCard }
-        return VStack(alignment: .leading, spacing: 0) {
-            Text("Total saldo · \(activeCount) akun aktif")
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-            HeroAmount(value: viewModel.totalBalance, isVisible: isBalanceVisible)
-                .padding(.top, 8)
-            if hasCredit {
-                HStack {
-                    Text("Utang kartu kredit")
-                        .foregroundStyle(Color.appTextSecondary)
-                    Spacer()
-                    Text(masked(viewModel.totalCreditDebt))
-                        .fontWeight(.medium)
-                        .foregroundStyle(Color.appText)
-                }
-                .font(.app(15))
-                .monospacedDigit()
-                .padding(.top, 14)
-                .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
-                .padding(.top, 18)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .padding(.bottom, 4)
     }
 
     private var emptyState: some View {
@@ -301,7 +274,7 @@ struct AccountListView: View {
             }
         }
         .padding(.horizontal, 24)
-        .padding(.top, 26)
+        .padding(.top, group.type == groups.first?.type ? 12 : 26)
     }
 
     private func setGroup(_ type: Account.AccountType, open: Bool) {
@@ -366,7 +339,7 @@ struct AccountListView: View {
                     .opacity(shown ? 1 : 0)
                     .animation(.easeOut(duration: 0.26), value: shown)
 
-                ScreenHeader(title: "Dompet") {
+                ScreenHeader(title: "") {
                     Button("Selesai", action: closeDetail)
                         .font(.app(17, weight: .semibold))
                         .foregroundStyle(Color.appPrimary)
@@ -529,30 +502,6 @@ struct AccountListView: View {
                 .buttonStyle(RowPressStyle())
             }
 
-            if !archivedAccounts.isEmpty {
-                Button { path.append("archived") } label: {
-                    HStack(spacing: 14) {
-                        rowIcon("archivebox")
-                        Text("Diarsipkan")
-                            .font(.app(16))
-                            .foregroundStyle(Color.appTextSecondary)
-                        Spacer()
-                        Text("\(archivedAccounts.count)")
-                            .font(.app(15))
-                            .foregroundStyle(Color.appTextSecondary)
-                        chevron
-                    }
-                    .padding(.vertical, 14)
-                    .overlay(alignment: .top) {
-                        if subscribed == nil || viewModel.totalSubscriptions <= 0 {
-                            Rectangle().fill(Color.appDivider).frame(height: 1)
-                        }
-                    }
-                    .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(RowPressStyle())
-            }
         }
         .padding(.horizontal, 24)
         .padding(.top, 28)

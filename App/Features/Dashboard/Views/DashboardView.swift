@@ -162,7 +162,10 @@ struct DashboardView: View {
 
     private var homeHeader: some View {
         HStack {
-            HomeLogo()
+            Text("SakuQ")
+                .font(.wordmark(19))
+                .tracking(-0.5)
+                .foregroundStyle(Color.appText)
             Spacer()
             Button {
                 withAnimation(.smooth) { isBalanceVisible.toggle() }
@@ -234,23 +237,13 @@ struct DashboardView: View {
         .padding(.bottom, 36)
     }
 
-    /// Mini card stack with "Dompet · N akun"; opens the Dompet page.
+    /// Animated pocket mark with "Dompet · N akun"; opens the Dompet page.
     private var walletsButton: some View {
         Button {
             withAnimation(.settle(0.46)) { showsWallets = true }
         } label: {
             HStack(spacing: 8) {
-                ZStack(alignment: .topLeading) {
-                    ForEach(Array(["D9A93A", "472B91", "1A1F71"].enumerated()), id: \.offset) { i, hex in
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(Color(hex: hex))
-                            .frame(width: 30, height: 20)
-                            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.white.opacity(0.22), lineWidth: 0.5))
-                            .shadow(color: .black.opacity(0.2), radius: 1.5, y: 1)
-                            .offset(x: CGFloat(2 - i) * 3, y: 2 + CGFloat(i) * 5)
-                    }
-                }
-                .frame(width: 36, height: 32, alignment: .topLeading)
+                WalletsMark()
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Dompet")
                         .font(.app(14, weight: .semibold))
@@ -658,36 +651,24 @@ struct DashboardView: View {
     private static let weekdayDayFormatter = formatter("EEE, d MMM")
 }
 
-/// Beranda's header mark: the pocket pops in, cards rise and fan, then "SakuQ" fades up.
-/// Every 5 s the cards drop back in and rise again; tapping replays the whole intro.
-private struct HomeLogo: View {
+/// The Dompet pill's mark: the pocket pops in, then the cards rise and fan.
+/// Every 5 s the cards drop back in and rise again.
+private struct WalletsMark: View {
     @State private var showsPocket = false
     @State private var isOpen = false
     @State private var isFanned = false
-    @State private var showsWord = false
-    @State private var run = 0
 
     var body: some View {
-        Button { run += 1 } label: {
-            HStack(spacing: 8) {
-                PocketLogo(isOpen: isOpen, isFanned: isFanned, stagger: 0.12, duration: 0.9,
-                           pocketColor: .appBrand, isPlain: true)
-                    .frame(width: 24, height: 24)
-                    .opacity(showsPocket ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.3), value: showsPocket)
-                    .scaleEffect(showsPocket ? 1 : 0.6, anchor: .bottom)
-                    .animation(.timingCurve(0.3, 1.4, 0.5, 1, duration: 0.7), value: showsPocket)
-                    .frame(width: 28, height: 28)
-                Text("SakuQ")
-                    .font(.wordmark(19))
-                    .tracking(-0.5)
-                    .foregroundStyle(Color.appText)
-                    .rise(showsWord, y: 6)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("SakuQ")
-        .task(id: run) { await play() }
+        PocketLogo(isOpen: isOpen, isFanned: isFanned, stagger: 0.12, duration: 0.9,
+                   pocketColor: .appBrand, isPlain: true)
+            .frame(width: 29, height: 29)
+            .opacity(showsPocket ? 1 : 0)
+            .animation(.easeInOut(duration: 0.3), value: showsPocket)
+            .scaleEffect(showsPocket ? 1 : 0.6, anchor: .bottom)
+            .animation(.timingCurve(0.3, 1.4, 0.5, 1, duration: 0.7), value: showsPocket)
+            .frame(width: 34, height: 34)
+            .accessibilityHidden(true)
+            .task { await play() }
     }
 
     private func play() async {
@@ -697,20 +678,18 @@ private struct HomeLogo: View {
             showsPocket = false
             isOpen = false
             isFanned = false
-            showsWord = false
         }
         let start = ContinuousClock.now
-        for (t, step) in [(0.15, 1), (0.65, 2), (1.25, 3), (1.6, 4)] {
+        for (t, step) in [(0.15, 1), (0.65, 2), (1.25, 3)] {
             try? await Task.sleep(until: start + .seconds(t), clock: .continuous)
             guard !Task.isCancelled else { return }
             switch step {
             case 1: showsPocket = true
             case 2: isOpen = true
-            case 3: isFanned = true
-            default: showsWord = true
+            default: isFanned = true
             }
         }
-        // Loops until the view goes away or a tap restarts it.
+        // Loops until the view goes away.
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(5))
             guard !Task.isCancelled else { return }
