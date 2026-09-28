@@ -81,8 +81,8 @@ struct BudgetListView: View {
                         if !setItems.isEmpty {
                             VStack(alignment: .leading, spacing: 0) {
                                 SectionHeader(title: "Per kategori", trailing: "\(setItems.count) aktif")
-                                ForEach(setItems) { item in
-                                    budgetCardLink(item)
+                                ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
+                                    budgetCardLink(item, index: i)
                                 }
                             }
                             .padding(.horizontal, 24)
@@ -286,9 +286,9 @@ struct BudgetListView: View {
         .padding(.top, 28)
     }
 
-    private func budgetCardLink(_ item: BudgetListItem) -> some View {
+    private func budgetCardLink(_ item: BudgetListItem, index: Int) -> some View {
         NavigationLink(destination: budgetDetailDestination(for: item)) {
-            BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
+            BudgetCardView(budget: item.budget, category: item.category, fillDelay: 0.3 + Double(index) * 0.08, onSetBudget: { budget in
                 Task {
                     guard let userId = authViewModel.currentUser?.id else { return }
                     await viewModel.setBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
@@ -335,6 +335,8 @@ struct BudgetListView: View {
 struct BudgetCardView: View {
     let budget: Budget?
     let category: Category
+    /// Stagger for the segment bar's fill-in, so rows fill one after another.
+    var fillDelay: Double = 0
     var onSetBudget: ((Budget) -> Void)?
 
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
@@ -474,7 +476,7 @@ struct BudgetCardView: View {
             }
 
             Group {
-                SegmentBar(value: budget.progress, color: progressColor(budget))
+                SegmentBar(value: budget.progress, color: progressColor(budget), delay: fillDelay)
                 Text(isBalanceVisible
                      ? "\(budget.spent.formattedAsCurrency()) dari \(budget.amount.formattedAsCurrency())"
                      : "Rp\(hiddenAmount) dari Rp\(hiddenAmount)")

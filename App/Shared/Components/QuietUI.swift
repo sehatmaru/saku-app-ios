@@ -63,26 +63,36 @@ struct SectionHeader: View {
     }
 }
 
-/// Segmented progress bar in the "Kesehatan finansial" style; segments fill in one by one on appear.
+/// Segmented progress bar in the "Kesehatan finansial" style; segments fill in one by one
+/// each time the bar appears, starting after `delay`.
 struct SegmentBar: View {
     let value: Double
     var color: Color = .appPrimary
     var count = 30
     var height: CGFloat = 8
     var spacing: CGFloat = 2
+    var delay: Double = 0
+    /// For bars that stay mounted while hidden: fills only while true.
+    var isActive = true
     @State private var isShown = false
 
     var body: some View {
-        let filled = isShown ? Int((min(max(value, 0), 1) * Double(count)).rounded()) : 0
+        let filled = isShown && isActive ? Int((min(max(value, 0), 1) * Double(count)).rounded()) : 0
         HStack(spacing: spacing) {
             ForEach(0..<count, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 1)
                     .fill(i < filled ? color : Color.appDivider)
-                    .animation(.easeOut(duration: 0.24).delay(Double(i) * 0.014), value: filled)
+                    .animation(.easeOut(duration: 0.24).delay(delay + Double(i) * 0.014), value: filled)
             }
         }
         .frame(height: height)
-        .onAppear { isShown = true }
+        // Fill on the next frame so the first render is empty and the change animates.
+        .task { isShown = true }
+        .onDisappear {
+            var reset = SwiftUI.Transaction()
+            reset.disablesAnimations = true
+            withTransaction(reset) { isShown = false }
+        }
         .accessibilityElement()
         .accessibilityValue("\(Int((min(max(value, 0), 1) * 100).rounded())) persen")
     }

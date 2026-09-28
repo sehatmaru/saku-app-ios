@@ -374,7 +374,7 @@ struct AccountListView: View {
                 .animation(.easeOut(duration: 0.26), value: shown)
 
                 if let account = cards.first(where: { $0.id == (selectedID ?? lastSelectedID) }) {
-                    detailContent(account)
+                    detailContent(account, isOpen: shown)
                         .padding(.horizontal, 24)
                         .padding(.top, detailCardTop + cardHeight + 20)
                         .opacity(shown ? 1 : 0)
@@ -407,12 +407,12 @@ struct AccountListView: View {
         .onAppear { selectedID = lastSelectedID }
     }
 
-    private func detailContent(_ account: Account) -> some View {
+    private func detailContent(_ account: Account, isOpen: Bool) -> some View {
         let recent = Array((accountTransactions[account.id] ?? []).prefix(3))
         return VStack(alignment: .leading, spacing: 0) {
             if account.isCreditCard, let limit = account.creditLimit {
                 VStack(alignment: .leading, spacing: 6) {
-                    SegmentBar(value: account.creditUtilization ?? 0)
+                    SegmentBar(value: account.creditUtilization ?? 0, delay: 0.35, isActive: isOpen)
                     HStack {
                         Text("Terpakai \(masked(account.balance)) / \(isBalanceVisible ? "Rp" + limit.abbreviatedRupiah() : "Rp" + hiddenAmount)")
                         Spacer()

@@ -555,7 +555,7 @@ struct DashboardView: View {
                     .padding(.top, 14)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(shown) { budgetRow($0) }
+                    ForEach(Array(shown.enumerated()), id: \.element.id) { i, budget in budgetRow(budget, index: i) }
                 }
                 .padding(.top, 6)
             }
@@ -583,7 +583,7 @@ struct DashboardView: View {
         .padding(.vertical, 4)
     }
 
-    private func budgetRow(_ budget: Budget) -> some View {
+    private func budgetRow(_ budget: Budget, index: Int) -> some View {
         let category = viewModel.categories.first { $0.id == budget.categoryId }
         let ratio = budget.progress
         return HStack(spacing: 14) {
@@ -612,7 +612,8 @@ struct DashboardView: View {
                     .monospacedDigit()
                     .lineLimit(1)
                 }
-                SegmentBar(value: ratio, color: ratio >= 1 ? .appError : ratio >= 0.8 ? .appWarning : .appPrimary)
+                SegmentBar(value: ratio, color: ratio >= 1 ? .appError : ratio >= 0.8 ? .appWarning : .appPrimary,
+                           delay: 0.3 + Double(index) * 0.08)
             }
         }
         .padding(.vertical, 14)
