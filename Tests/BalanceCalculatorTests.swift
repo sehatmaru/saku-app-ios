@@ -9,7 +9,10 @@ final class BalanceCalculatorTests: XCTestCase {
             type: .cash,
             icon: nil,
             isArchived: false,
-            openingBalance: 100_000
+            isDefault: false,
+            openingBalance: 100_000,
+            creditLimit: nil,
+            dueDate: nil
         )
         let bank = Account(
             id: "bank",
@@ -17,7 +20,10 @@ final class BalanceCalculatorTests: XCTestCase {
             type: .bank,
             icon: nil,
             isArchived: false,
-            openingBalance: 250_000
+            isDefault: false,
+            openingBalance: 250_000,
+            creditLimit: nil,
+            dueDate: nil
         )
 
         let transactions = [
@@ -30,7 +36,8 @@ final class BalanceCalculatorTests: XCTestCase {
                 type: .income,
                 description: nil,
                 note: nil,
-                date: Date()
+                date: Date(),
+                delta: nil
             ),
             Transaction(
                 id: "expense-1",
@@ -41,7 +48,8 @@ final class BalanceCalculatorTests: XCTestCase {
                 type: .expense,
                 description: nil,
                 note: nil,
-                date: Date()
+                date: Date(),
+                delta: nil
             ),
             Transaction(
                 id: "transfer-1",
@@ -52,7 +60,8 @@ final class BalanceCalculatorTests: XCTestCase {
                 type: .transfer,
                 description: nil,
                 note: nil,
-                date: Date()
+                date: Date(),
+                delta: nil
             )
         ]
 

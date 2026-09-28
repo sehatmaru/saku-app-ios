@@ -215,7 +215,10 @@ final class SupabaseRepository: @unchecked Sendable {
         return transaction
     }
 
-    func updateTransaction(id: String, accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date) async throws -> Transaction {
+    /// Updates a transaction and moves balances with it: the old effect is reversed on the
+    /// old wallet(s) and the new effect applied on the new ones, so changing the wallet,
+    /// amount, type or transfer destination keeps every balance right.
+    func updateTransaction(id: String, accountId: String, counterpartyAccountId: String? = nil, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date) async throws -> Transaction {
         let old: Transaction = try await client
             .from("transactions")
             .select()
@@ -224,7 +227,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .execute()
             .value
 
-        let values: [String: AnyJSON] = [
+        var values: [String: AnyJSON] = [
             "primary_account_id": AnyJSON.string(accountId),
             "category_id": categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
             "amount": AnyJSON.double(amount),
@@ -233,6 +236,9 @@ final class SupabaseRepository: @unchecked Sendable {
             "note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
             "occurred_at": AnyJSON.string(date.iso8601Formatted),
         ]
+        if type == .transfer, let counterpartyAccountId {
+            values["counterparty_account_id"] = AnyJSON.string(counterpartyAccountId)
+        }
         let updated: Transaction = try await client
             .from("transactions")
             .update(values)
@@ -242,37 +248,43 @@ final class SupabaseRepository: @unchecked Sendable {
             .execute()
             .value
 
-        let acc: Account = try await client
+        let ids = Set([old.accountId, accountId] + [old.counterpartyAccountId, updated.counterpartyAccountId].compactMap { $0 })
+        let accounts: [Account] = try await client
             .from("accounts")
             .select()
-            .eq("id", value: accountId)
-            .single()
+            .in("id", values: Array(ids))
             .execute()
             .value
-        let isCredit = acc.isCreditCard
+        let isCredit = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0.isCreditCard) })
 
-        func delta(t: Transaction.TransactionType, a: Double, credit: Bool) -> Double {
-            switch (t, credit) {
-            case (.income, false): return a
-            case (.income, true):  return -a
-            case (.expense, false): return -a
-            case (.expense, true):  return a
-            default: return 0
+        // Net balance change per account: minus the old effect, plus the new one.
+        var net: [String: Double] = [:]
+        for (sign, txn) in [(-1.0, old), (1.0, updated)] {
+            for (accountId, effect) in Self.balanceEffects(of: txn, isCredit: isCredit) {
+                net[accountId, default: 0] += sign * effect
             }
         }
-
-        let oldDelta = delta(t: old.type, a: old.amount, credit: isCredit)
-        let newDelta = delta(t: type, a: amount, credit: isCredit)
-        let net = -oldDelta + newDelta
-
-        if abs(net) > 0.001 {
+        for (accountId, change) in net where abs(change) > 0.001 {
             try await client.rpc("increment_account_balance", params: [
                 "p_account_id": AnyJSON.string(accountId),
-                "p_delta": AnyJSON.double(net),
+                "p_delta": AnyJSON.double(change),
             ]).execute()
         }
 
         return updated
+    }
+
+    /// How a transaction moves each wallet's balance (credit cards track debt, so the sign flips).
+    static func balanceEffects(of txn: Transaction, isCredit: [String: Bool]) -> [(String, Double)] {
+        let credit = isCredit[txn.accountId] ?? false
+        switch txn.type {
+        case .income: return [(txn.accountId, credit ? -txn.amount : txn.amount)]
+        case .expense: return [(txn.accountId, credit ? txn.amount : -txn.amount)]
+        case .transfer:
+            guard let to = txn.counterpartyAccountId else { return [] }
+            return [(txn.accountId, -txn.amount), (to, txn.amount)]
+        case .adjustment: return []
+        }
     }
 
     func softDeleteTransaction(id: String) async throws {
