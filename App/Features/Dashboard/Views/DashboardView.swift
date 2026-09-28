@@ -16,18 +16,33 @@ struct DashboardView: View {
     @State private var selectedDay: Int?
     @State private var showAllBudgets = false
     @State private var selectedTab: AppTab = .home
-    @AppStorage("tabBarStyle") private var tabBarStyle = TabBarStyle.native
     @State private var tabBarScroll = TabBarScroll()
+    /// Dompet slides in over the app from Beranda's hero; it is no longer a tab.
+    @State private var showsWallets = false
+    @State private var didWelcome = false
 
     enum AppTab: Hashable {
-        case home, transactions, budget, wallet, profile
+        case home, transactions, budget, profile
     }
 
     var body: some View {
-        tabs
+        ZStack {
+            tabs
+            if showsWallets {
+                AccountListView { withAnimation(.settle(0.46)) { showsWallets = false } }
+                    .background(Color.appBackground.ignoresSafeArea())
+                    .transition(.move(edge: .trailing))
+                    .zIndex(1)
+            }
+        }
         .onChange(of: selectedTab) { tabBarScroll.reset() }
+        .onChange(of: showAddSheet) { _, isShown in if isShown { Haptics.add() } }
         .tint(.appPrimary)
         .onAppear {
+            if !didWelcome {
+                didWelcome = true
+                Haptics.welcome()
+            }
             isBalanceVisible = isBalanceVisibleStorage
             if let userId = authViewModel.currentUser?.id {
                 Task {
@@ -65,55 +80,21 @@ struct DashboardView: View {
 
     // MARK: - Tabs
 
-    @ViewBuilder
+    /// Our own glass bar over a TabView whose system bar is hidden.
     private var tabs: some View {
-        if tabBarStyle == .custom {
-            customTabs
-        } else if #available(iOS 26, *) {
-            // Five tabs fill the iPhone bar (a sixth would become "Lainnya"), so add
-            // lives in the system accessory above it, which folds in when the bar shrinks.
-            TabView(selection: $selectedTab) {
-                mainTabs(hidesSystemBar: false)
-            }
-            .tabBarMinimizeBehavior(.onScrollDown)
-            .tabViewBottomAccessory {
-                Button { showAddSheet = true } label: {
-                    Label("Tambah transaksi", systemImage: "plus")
-                        .font(.app(15, weight: .semibold))
-                        .foregroundStyle(Color.appPrimary)
-                        .frame(maxWidth: .infinity)
-                }
-                .accessibilityLabel("Tambah transaksi")
-            }
-        } else {
-            TabView(selection: $selectedTab) {
-                mainTabs(hidesSystemBar: false)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                Button { showAddSheet = true } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(Color.appPrimary)
-                        .frame(width: 52, height: 52)
-                        .background(.ultraThinMaterial, in: Circle())
-                        .overlay(Circle().strokeBorder(Color.appDivider))
-                        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
-                }
-                .accessibilityLabel("Tambah transaksi")
-                .padding(.trailing, 16)
-                .padding(.bottom, 57) // above the 49pt tab bar
-            }
-        }
-    }
-
-    /// Same tabs with the system bar hidden under the revamp's own bar.
-    private var customTabs: some View {
         TabView(selection: $selectedTab) {
-            mainTabs(hidesSystemBar: true)
+            mainTabs
         }
         .environment(tabBarScroll)
         .overlay(alignment: .bottom) {
-            CustomTabBar(items: tabItems, selection: $selectedTab, isHidden: tabBarScroll.isHidden) {
+            GlassTabBar(
+                leading: [.init(tab: .home, label: "Beranda", icon: "house.fill"),
+                          .init(tab: .transactions, label: "Transaksi", icon: "list.bullet")],
+                trailing: [.init(tab: .budget, label: "Budget", icon: "chart.pie.fill"),
+                           .init(tab: .profile, label: "Profil", icon: "person.crop.circle.fill", avatar: initials)],
+                selection: $selectedTab,
+                isHidden: tabBarScroll.isHidden
+            ) {
                 showAddSheet = true
             }
         }
@@ -121,46 +102,23 @@ struct DashboardView: View {
 
     private var initials: String { authViewModel.currentUser?.initials ?? "U" }
 
-    private var tabItems: [CustomTabBar<AppTab>.Item] {
-        [
-            .init(tab: .home, label: "Beranda", icon: "house.fill"),
-            .init(tab: .transactions, label: "Transaksi", icon: "list.bullet"),
-            .init(tab: .budget, label: "Budget", icon: "chart.pie.fill"),
-            .init(tab: .wallet, label: "Dompet", icon: "wallet.bifold.fill"),
-            .init(tab: .profile, label: "Profil", icon: "person.crop.circle.fill", avatar: initials),
-        ]
-    }
-
-    /// Initials avatar for the native tab bar, which only takes images; drawn untinted.
-    private var avatarTabImage: UIImage {
-        let renderer = ImageRenderer(content: InitialsAvatar(initials: initials, size: 26, fontSize: 10))
-        renderer.scale = UIScreen.main.scale
-        return (renderer.uiImage ?? UIImage()).withRenderingMode(.alwaysOriginal)
-    }
-
     @TabContentBuilder<AppTab>
-    private func mainTabs(hidesSystemBar: Bool) -> some TabContent<AppTab> {
+    private var mainTabs: some TabContent<AppTab> {
         Tab("Beranda", systemImage: "house.fill", value: AppTab.home) {
             NavigationStack { mainContent }
-                .customTabBarSpace(hidesSystemBar)
+                .glassTabBarSpace()
         }
         Tab("Transaksi", systemImage: "list.bullet", value: AppTab.transactions) {
             TransactionListView()
-                .customTabBarSpace(hidesSystemBar)
+                .glassTabBarSpace()
         }
         Tab("Budget", systemImage: "chart.pie.fill", value: AppTab.budget) {
             BudgetListView()
-                .customTabBarSpace(hidesSystemBar)
+                .glassTabBarSpace()
         }
-        Tab("Dompet", systemImage: "wallet.bifold.fill", value: AppTab.wallet) {
-            AccountListView()
-                .customTabBarSpace(hidesSystemBar)
-        }
-        Tab(value: AppTab.profile) {
+        Tab("Profil", systemImage: "person.crop.circle.fill", value: AppTab.profile) {
             ProfileView()
-                .customTabBarSpace(hidesSystemBar)
-        } label: {
-            Label { Text("Profil") } icon: { Image(uiImage: avatarTabImage) }
+                .glassTabBarSpace()
         }
     }
 
@@ -249,11 +207,15 @@ struct DashboardView: View {
     /// Big total, a green/red bar for money in vs out, then Masuk · Keluar · Net.
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Total saldo")
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
+            HStack {
+                Text("Total saldo")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                walletsButton
+            }
             HeroAmount(value: viewModel.balance, size: .hero, isVisible: isBalanceVisible, weight: .ultraLight)
-                .padding(.top, 8)
+                .padding(.top, 2)
 
             FlowSplitBar(income: viewModel.totalIncome, expense: viewModel.totalExpense)
                 .padding(.top, 28)
@@ -268,8 +230,46 @@ struct DashboardView: View {
             .padding(.top, 12)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 44)
+        .padding(.top, 36)
         .padding(.bottom, 36)
+    }
+
+    /// Mini card stack with "Dompet · N akun"; opens the Dompet page.
+    private var walletsButton: some View {
+        Button {
+            withAnimation(.settle(0.46)) { showsWallets = true }
+        } label: {
+            HStack(spacing: 8) {
+                ZStack(alignment: .topLeading) {
+                    ForEach(Array(["D9A93A", "472B91", "1A1F71"].enumerated()), id: \.offset) { i, hex in
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(Color(hex: hex))
+                            .frame(width: 30, height: 20)
+                            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.white.opacity(0.22), lineWidth: 0.5))
+                            .shadow(color: .black.opacity(0.2), radius: 1.5, y: 1)
+                            .offset(x: CGFloat(2 - i) * 3, y: 2 + CGFloat(i) * 5)
+                    }
+                }
+                .frame(width: 36, height: 32, alignment: .topLeading)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Dompet")
+                        .font(.app(14, weight: .semibold))
+                        .foregroundStyle(Color.appText)
+                    Text("\(viewModel.accounts.filter(\.isActive).count) akun")
+                        .font(.app(11))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Color(light: 0x8E8E93, dark: 0x8E8E93))
+            }
+            .padding(.leading, 8)
+            .padding(.trailing, 12)
+            .frame(height: 48)
+            .background(Color.appFill, in: Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+        .accessibilityLabel("Buka Dompet")
     }
 
     /// "Masuk 12 jt"; Net is green when positive and red when negative.

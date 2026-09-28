@@ -131,10 +131,22 @@ struct SegmentBar: View {
 /// Large 34pt screen title with trailing controls, replacing the nav bar title.
 struct ScreenHeader<Trailing: View>: View {
     let title: String
+    /// Shows a green back chevron before the title when set.
+    var onBack: (() -> Void)?
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
-        HStack {
+        HStack(spacing: 6) {
+            if let onBack {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(width: 32, height: 32)
+                }
+                .padding(.leading, -8)
+                .accessibilityLabel("Kembali")
+            }
             Text(title)
                 .font(.app(34, weight: .bold))
                 .tracking(0.2)

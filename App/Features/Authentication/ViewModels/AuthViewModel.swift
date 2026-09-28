@@ -187,6 +187,7 @@ final class AuthViewModel: ObservableObject {
     // MARK: - Logout
 
     func logout() {
+        Haptics.logout()
         Task {
             try? await SupabaseSDK.client.auth.signOut()
             currentUser = nil

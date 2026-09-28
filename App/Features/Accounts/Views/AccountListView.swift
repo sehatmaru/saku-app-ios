@@ -7,8 +7,12 @@ struct AccountListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: AccountListViewModel
 
-    init(viewModel: AccountListViewModel = AccountListViewModel()) {
+    /// Dompet opens from Beranda's hero; this closes it again.
+    var onBack: (() -> Void)?
+
+    init(viewModel: AccountListViewModel = AccountListViewModel(), onBack: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: viewModel)
+        self.onBack = onBack
     }
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
     @State private var isBalanceVisible = true
@@ -161,7 +165,7 @@ struct AccountListView: View {
     // MARK: Header
 
     private var header: some View {
-        ScreenHeader(title: "Dompet") {
+        ScreenHeader(title: "Dompet", onBack: onBack) {
             Button {
                 withAnimation(.smooth) { isBalanceVisible.toggle() }
                 isBalanceVisibleStorage = isBalanceVisible

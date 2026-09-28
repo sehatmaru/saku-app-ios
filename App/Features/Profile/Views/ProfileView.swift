@@ -16,7 +16,6 @@ struct ProfileView: View {
     @AppStorage("notifTransactions") private var notifTransactions = true
     @AppStorage("notifBudget") private var notifBudget = true
     @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
-    @AppStorage("tabBarStyle") private var tabBarStyle = TabBarStyle.native
 
     enum ThemeOption: String, CaseIterable {
         case light = "Terang"
@@ -136,16 +135,6 @@ struct ProfileView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(RowPressStyle())
-
-            // Temporary: compare the two tab bars; drop once one is chosen.
-            row(icon: "dock.rectangle", title: "Tab bar", subtitle: "Coba dua versi") {
-                Picker("Tab bar", selection: $tabBarStyle) {
-                    ForEach(TabBarStyle.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-            }
         }
     }
 

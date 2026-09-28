@@ -1,14 +1,6 @@
 import SwiftUI
 
-/// Which tab bar to show; chosen in Profil while both versions are being compared.
-enum TabBarStyle: String, CaseIterable {
-    /// iOS's own Liquid Glass tab bar, which shrinks on scroll.
-    case native = "Native"
-    /// The revamp's icon-only bar that slides away on scroll, with a separate green +.
-    case custom = "Custom"
-}
-
-/// Hides the custom tab bar while scrolling down and brings it back on scroll up.
+/// Hides the tab bar while scrolling down and brings it back on scroll up.
 @MainActor @Observable
 final class TabBarScroll {
     var isHidden = false
@@ -30,13 +22,13 @@ final class TabBarScroll {
 }
 
 extension View {
-    /// With the custom bar on, hides the system tab bar and leaves room for ours.
-    func customTabBarSpace(_ isOn: Bool) -> some View {
-        toolbar(isOn ? .hidden : .automatic, for: .tabBar)
-            .safeAreaPadding(.bottom, isOn ? 64 : 0)
+    /// Hides the system tab bar and leaves room at the bottom for the glass bar.
+    func glassTabBarSpace() -> some View {
+        toolbar(.hidden, for: .tabBar)
+            .safeAreaPadding(.bottom, 64)
     }
 
-    /// Reports this scroll view's offset to the custom tab bar; no effect without it.
+    /// Reports this scroll view's offset to the tab bar; no effect outside it.
     func tracksTabBarScroll() -> some View {
         modifier(TabBarScrollReporter())
     }
@@ -57,9 +49,9 @@ private struct TabBarScrollReporter: ViewModifier {
     }
 }
 
-/// Icon-only glass tab bar with a solid green + beside it. The bar slides away when
-/// `isHidden`; the + always stays.
-struct CustomTabBar<Tab: Hashable>: View {
+/// Icon-only Liquid Glass tab bar with + in the middle. When `isHidden`, the bar
+/// morphs down into just the + so adding a transaction is always one tap away.
+struct GlassTabBar<Tab: Hashable>: View {
     struct Item {
         let tab: Tab
         let label: String
@@ -68,82 +60,123 @@ struct CustomTabBar<Tab: Hashable>: View {
         var avatar: String?
     }
 
-    let items: [Item]
+    /// Tabs left and right of the +.
+    let leading: [Item]
+    let trailing: [Item]
     @Binding var selection: Tab
     let isHidden: Bool
     let onAdd: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+    @Namespace private var glass
 
     var body: some View {
         ZStack(alignment: .bottom) {
             // Fades content out under the bar so icons stay readable.
             LinearGradient(stops: [.init(color: Color.appBackground.opacity(0), location: 0),
-                                   .init(color: Color.appBackground, location: 0.6)],
+                                   .init(color: Color.appBackground.opacity(0.8), location: 0.7)],
                            startPoint: .top, endPoint: .bottom)
-                .frame(height: 120)
-                .opacity(isHidden ? 0.6 : 1)
+                .frame(height: 130)
+                .opacity(isHidden ? 0.5 : 1)
                 .animation(.easeInOut(duration: 0.3), value: isHidden)
                 .allowsHitTesting(false)
 
-            HStack(spacing: 8) {
-                bar
-                addButton
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 4)
+            bar
+                .padding(.horizontal, 20)
+                .padding(.bottom, 4)
         }
     }
 
+    @ViewBuilder
     private var bar: some View {
-        HStack(spacing: 0) {
-            ForEach(items, id: \.tab) { tabButton($0) }
-        }
-        .padding(.horizontal, 4)
-        .frame(height: 56)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.5), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.12), radius: 15, y: 10)
-        .offset(y: isHidden ? 110 : 0)
-        .opacity(isHidden ? 0 : 1)
-        .animation(.settle(0.38), value: isHidden)
-        .allowsHitTesting(!isHidden)
-    }
-
-    private func tabButton(_ item: Item) -> some View {
-        let isOn = item.tab == selection
-        let highlight: Color = isOn ? Color.appText.opacity(0.06) : .clear
-        return Button { selection = item.tab } label: {
-            Group {
-                if let initials = item.avatar {
-                    InitialsAvatar(initials: initials, size: 28, fontSize: 11)
-                        .padding(2)
-                        .overlay(Circle().strokeBorder(isOn ? Color.appPrimary : Color.appText.opacity(0.12), lineWidth: isOn ? 2 : 0.5))
+        if #available(iOS 26, *) {
+            GlassEffectContainer {
+                if isHidden {
+                    addButton
+                        .frame(width: 64, height: 64)
+                        .glassEffect(.regular.interactive(), in: Circle())
+                        .glassEffectID("bar", in: glass)
                 } else {
-                    Image(systemName: item.icon)
-                        .font(.system(size: 21))
-                        .foregroundStyle(isOn ? Color.appPrimary : Color.appText)
+                    items
+                        .padding(.horizontal, 6)
+                        .frame(height: 64)
+                        .glassEffect(.regular.interactive(), in: Capsule())
+                        .glassEffectID("bar", in: glass)
                 }
             }
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(highlight, in: Capsule())
-                .contentShape(Capsule())
-                .animation(.easeInOut(duration: 0.22), value: isOn)
+            .animation(.settle(0.42), value: isHidden)
+        } else {
+            Group {
+                if isHidden {
+                    addButton
+                        .frame(width: 64, height: 64)
+                        .background(.regularMaterial, in: Circle())
+                } else {
+                    items
+                        .padding(.horizontal, 6)
+                        .frame(height: 64)
+                        .background(.regularMaterial, in: Capsule())
+                }
+            }
+            .shadow(color: .black.opacity(0.14), radius: 18, y: 12)
+            .animation(.settle(0.42), value: isHidden)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(item.label)
-        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
+    }
+
+    private var items: some View {
+        HStack(spacing: 0) {
+            ForEach(leading, id: \.tab) { tabButton($0) }
+            addButton.frame(maxWidth: .infinity)
+            ForEach(trailing, id: \.tab) { tabButton($0) }
+        }
     }
 
     private var addButton: some View {
         Button(action: onAdd) {
             Image(systemName: "plus")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
-                .background(Color.appBrand, in: Circle())
-                .shadow(color: Color.appBrand.opacity(0.28), radius: 11, y: 8)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(Color.appText)
+                .frame(width: 58, height: 52)
+                .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityLabel("Tambah transaksi")
     }
+
+    private func tabButton(_ item: Item) -> some View {
+        let isOn = item.tab == selection
+        let highlight: Color = isOn ? Color.white.opacity(colorScheme == .dark ? 0.14 : 0.6) : .clear
+        return Button { selection = item.tab } label: {
+            Group {
+                if let initials = item.avatar {
+                    InitialsAvatar(initials: initials, size: 30, fontSize: 11)
+                        .padding(2)
+                        .overlay(Circle().strokeBorder(isOn ? Color.appPrimary : Color.appText.opacity(0.12), lineWidth: isOn ? 2 : 0.5))
+                } else {
+                    Image(systemName: item.icon)
+                        .font(.system(size: 22))
+                        .foregroundStyle(isOn ? Color.appPrimary : Color.appText)
+                }
+            }
+            .frame(width: 58, height: 52)
+            .background(highlight, in: Capsule())
+            .contentShape(Capsule())
+            .animation(.easeInOut(duration: 0.22), value: isOn)
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .accessibilityLabel(item.label)
+        .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
+/// Short taps of feedback for the moments that matter.
+@MainActor
+enum Haptics {
+    /// Opening the add-transaction form.
+    static func add() { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
+    /// Landing on Beranda after the app opens.
+    static func welcome() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    /// Signing out.
+    static func logout() { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
 }
