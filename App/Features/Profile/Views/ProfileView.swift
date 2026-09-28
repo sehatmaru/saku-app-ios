@@ -76,7 +76,9 @@ struct ProfileView: View {
                     authViewModel.logout()
                 }
             } message: {
-                Text("Anda akan keluar dari akun. Data tetap tersimpan.")
+                Text(authViewModel.currentUser?.isGuest == true
+                     ? "Kamu masuk sebagai tamu. Setelah keluar, data di akun tamu ini tidak bisa dibuka lagi."
+                     : "Anda akan keluar dari akun. Data tetap tersimpan.")
             }
         }
     }
@@ -92,7 +94,7 @@ struct ProfileView: View {
                 .foregroundStyle(Color.appText)
                 .lineLimit(1)
                 .padding(.top, 14)
-            Text(authViewModel.currentUser?.email ?? "")
+            Text(authViewModel.currentUser?.isGuest == true ? "Mode tamu" : authViewModel.currentUser?.email ?? "")
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
                 .lineLimit(1)
@@ -291,7 +293,7 @@ struct ProfileEditView: View {
                         .font(.app(12))
                         .foregroundColor(.appTextSecondary)
 
-                    Text(authViewModel.currentUser?.email ?? "")
+                    Text(authViewModel.currentUser?.isGuest == true ? "Mode tamu" : authViewModel.currentUser?.email ?? "")
                         .font(.app(15))
                         .foregroundColor(.appTextSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)

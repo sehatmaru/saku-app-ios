@@ -18,6 +18,8 @@ struct User: Identifiable, Codable {
 
 extension User {
     var fullName: String { displayName ?? "User" }
+    /// Anonymous (guest) sessions carry no email.
+    var isGuest: Bool { email.isEmpty }
 }
 
 extension User {
