@@ -144,9 +144,45 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Guest (placeholder)
+    // MARK: - Guest
 
-    func signInAsGuest(name: String) {}
+    /// Anonymous Supabase session plus the wallets picked during guest setup.
+    /// Needs "Allow anonymous sign-ins" enabled on the Supabase project.
+    func signInAsGuest(name: String, wallets: [(name: String, type: Account.AccountType, icon: String, balance: Double)]) async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
+            // Reuse the guest session from a failed earlier attempt instead of minting another user.
+            let existing = try? await SupabaseSDK.client.auth.session
+            let session = if let existing, existing.user.isAnonymous { existing } else { try await SupabaseSDK.client.auth.signInAnonymously() }
+            // The on_auth_user_created trigger already inserts the profile; just name it.
+            let profile: UserProfile
+            if let created = try? await SupabaseSDK.fetchProfile(authUserId: session.user.id) {
+                try await SupabaseSDK.updateProfile(id: created.id, displayName: name)
+                profile = created
+            } else {
+                profile = try await SupabaseSDK.upsertProfile(authUserId: session.user.id, displayName: name)
+            }
+            // A retry after a partial failure must not duplicate wallets.
+            guard try await SupabaseRepository.shared.fetchAccounts(userId: profile.id.uuidString).isEmpty else {
+                try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: name)
+                return
+            }
+            // Accounts first, so the dashboard opens with them already there.
+            for (i, w) in wallets.enumerated() {
+                _ = try await SupabaseRepository.shared.createAccount(
+                    name: w.name, type: w.type, openingBalance: w.balance, icon: w.icon,
+                    userId: profile.id.uuidString, isDefault: i == 0
+                )
+            }
+            try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: name)
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     // MARK: - Logout
 

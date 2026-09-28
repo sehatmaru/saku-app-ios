@@ -2,190 +2,161 @@ import SwiftUI
 
 struct SignInView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var showGuestSheet = false
-    @State private var guestName = ""
+    @State private var isLogoOpen = false
+    @State private var showsGuest = false
+    @State private var logoTask: Task<Void, Never>?
 
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: Spacing.lg) {
-                Spacer()
-
-                SakuQLogoIcon(walletColor: .white, dashColor: Color(hex: "16875A"))
-                    .frame(width: 100, height: 100)
-
-                HStack(spacing: Spacing.xs) {
-                    Text("kelola")
-                        .font(.app(15, weight: .light))
-                    Text("finansialmu")
-                        .font(.app(22, weight: .bold))
-                    Text("dengan")
-                        .font(.app(15, weight: .light))
-                    Text("SakuQ")
-                        .font(.app(22, weight: .bold))
+        ZStack {
+            if showsGuest {
+                GuestOnboardingView {
+                    withAnimation(.settle(0.5)) { showsGuest = false }
                 }
-                .foregroundColor(.white)
-
-                Spacer()
+                .transition(.move(edge: .trailing))
+            } else {
+                login
+                    .transition(.move(edge: .leading))
             }
-            .frame(maxWidth: .infinity)
-            .background(Color.appPrimary.ignoresSafeArea(edges: .top))
+        }
+    }
 
-            VStack(spacing: Spacing.md) {
-                Spacer().frame(height: Spacing.xxl)
+    private var login: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("SakuQ")
+                    .font(.wordmark(22))
+                    .tracking(-0.5)
+                    .foregroundStyle(.white)
+                    .padding(.top, 20)
+                    .padding(.leading, 24)
+                Spacer(minLength: 16)
+                PocketLogo(isOpen: isLogoOpen, stagger: 0.14, duration: 1)
+                    .frame(maxWidth: 260, maxHeight: 260)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                    .onTapGesture { playLogo() }
+                    .padding(.bottom, 40)
+            }
 
-                socialButton(
-                    label: "Lanjutkan dengan Google",
-                    backgroundColor: googleButtonBg,
-                    foregroundColor: googleButtonFg,
-                    hasBorder: true,
-                    isLoading: authViewModel.isGoogleLoading,
-                    action: authViewModel.signInWithGoogle
-                ) {
-                    Image("GoogleLogo")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                }
+            sheet
+        }
+        .background(Color.appBrand.ignoresSafeArea())
+        .onAppear {
+            authViewModel.errorMessage = nil
+            playLogo()
+        }
+    }
 
-                socialButton(
-                    label: "Lanjutkan dengan Apple",
-                    backgroundColor: appleButtonBg,
-                    foregroundColor: appleButtonFg,
-                    hasBorder: false,
-                    isLoading: authViewModel.isAppleLoading,
-                    action: {}
-                ) {
-                    Image(systemName: "applelogo")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
+    private var sheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Atur uang tanpa ribet.")
+                    .font(.app(30, weight: .bold))
+                    .tracking(-0.2)
+                    .foregroundStyle(Color.appText)
+                Text("Masuk untuk menyimpan data dengan aman dan membukanya di perangkat lain.")
+                    .font(.app(16))
+                    .lineSpacing(2.4)
+                    .foregroundStyle(Color.appTextSecondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+
+            if let error = authViewModel.errorMessage {
+                Text(error)
+                    .font(.app(13))
+                    .foregroundStyle(Color.appError)
+                    .padding(.top, 10)
+            }
+
+            VStack(spacing: 10) {
+                // Apple sign-in stays off until the Apple provider is configured.
+                socialButton("Lanjutkan dengan Apple", isLoading: authViewModel.isAppleLoading,
+                             foreground: Color.appBackground, background: Color.appText, bordered: false) {} icon: {
+                    Image(systemName: "apple.logo").font(.system(size: 20))
                 }
                 .disabled(true)
+                .opacity(0.5)
 
-                HStack(spacing: Spacing.sm) {
-                    Color(.systemGray5)
-                        .frame(height: 1)
-                    Text("atau")
-                        .font(.app(12))
-                        .foregroundColor(.appTextSecondary)
-                    Color(.systemGray5)
-                        .frame(height: 1)
+                socialButton("Lanjutkan dengan Google", isLoading: authViewModel.isGoogleLoading,
+                             foreground: .appText, background: .clear, bordered: true,
+                             action: authViewModel.signInWithGoogle) {
+                    Image("GoogleLogo").resizable().scaledToFit().frame(width: 19, height: 19)
                 }
 
                 Button {
-                    showGuestSheet = true
+                    withAnimation(.settle(0.5)) { showsGuest = true }
                 } label: {
-                    Text("Lanjutkan sebagai Tamu")
-                        .font(.app(15, weight: .medium))
-                        .foregroundColor(.appPrimary)
+                    HStack(spacing: 6) {
+                        Text("Masuk sebagai tamu")
+                        Image(systemName: "arrow.right").font(.system(size: 14, weight: .bold))
+                    }
+                    .font(.app(16, weight: .semibold))
+                    .foregroundStyle(Color.appPrimary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
                 }
                 .buttonStyle(.plain)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.appPrimary.opacity(guestButtonOpacity))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .disabled(true)
+
+                (Text("Dengan melanjutkan, kamu menyetujui ")
+                 + Text("Ketentuan Layanan").foregroundStyle(Color.appText)
+                 + Text(" dan ")
+                 + Text("Kebijakan Privasi").foregroundStyle(Color.appText)
+                 + Text("."))
+                    .font(.app(12))
+                    .foregroundStyle(Color(light: 0x8E8E93, dark: 0x8E8E93))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.bottom, Spacing.xxl + 16)
+            .padding(.top, 22)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.appBackground)
-        .onAppear { authViewModel.errorMessage = nil }
-        .sheet(isPresented: $showGuestSheet) {
-            guestSheet
+        .padding(.horizontal, 24)
+        .padding(.top, 32)
+        .padding(.bottom, 4)
+        .background {
+            UnevenRoundedRectangle(topLeadingRadius: 32, topTrailingRadius: 32)
+                .fill(Color.appBackground)
+                .ignoresSafeArea(edges: .bottom)
         }
     }
 
-    private var appleButtonBg: Color {
-        colorScheme == .dark ? .white : .black
-    }
-
-    private var appleButtonFg: Color {
-        colorScheme == .dark ? .black : .white
-    }
-
-    private var googleButtonBg: Color {
-        .white
-    }
-
-    private var googleButtonFg: Color {
-        colorScheme == .dark ? .black : .appText
-    }
-
-    private var guestButtonOpacity: Double {
-        colorScheme == .dark ? 0.15 : 0.08
-    }
-
-    private var guestSheet: some View {
-        VStack(spacing: Spacing.xl) {
-            VStack(spacing: Spacing.sm) {
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 56))
-                    .foregroundColor(.appPrimary)
-
-                Text("Perkenalkan dirimu")
-                    .font(.app(22, weight: .bold))
-                    .foregroundColor(.appText)
-
-                Text("Masukkan namamu untuk memulai")
-                    .font(.app(14))
-                    .foregroundColor(.appTextSecondary)
-            }
-            .padding(.top, Spacing.xxl)
-
-            TextField("Nama kamu", text: $guestName)
-                .textFieldStyle(.plain)
-                .font(.app(17))
-                .padding()
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal, Spacing.xl)
-
-            PrimaryButton(
-                title: "Simpan",
-                isLoading: false,
-                action: {
-                    authViewModel.signInAsGuest(name: guestName)
-                }
-            )
-            .padding(.horizontal, Spacing.xl)
-
-            Spacer()
+    /// Cards drop back into the pocket, then rise again after 450 ms.
+    private func playLogo() {
+        logoTask?.cancel()
+        isLogoOpen = false
+        logoTask = Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            guard !Task.isCancelled else { return }
+            isLogoOpen = true
         }
-        .interactiveDismissDisabled(guestName.trimmingCharacters(in: .whitespaces).isEmpty)
     }
 
     private func socialButton(
-        label: String,
-        backgroundColor: Color,
-        foregroundColor: Color,
-        hasBorder: Bool,
+        _ label: String,
         isLoading: Bool,
+        foreground: Color,
+        background: Color,
+        bordered: Bool,
         action: @escaping () -> Void,
         @ViewBuilder icon: () -> some View
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: Spacing.sm) {
+            HStack(spacing: 10) {
                 if isLoading {
-                    ProgressView()
-                        .tint(foregroundColor)
-                        .frame(width: 20, height: 20)
+                    ProgressView().tint(foreground)
                 } else {
                     icon()
-                        .frame(width: 20, height: 20)
                     Text(label)
-                        .font(.app(15, weight: .medium))
                 }
             }
+            .font(.app(17, weight: .semibold))
+            .foregroundStyle(foreground)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(backgroundColor)
-            .foregroundColor(foregroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color(.systemGray4), lineWidth: hasBorder ? 1 : 0)
-            )
+            .frame(height: 52)
+            .background(background, in: Capsule())
+            .overlay {
+                if bordered { Capsule().stroke(Color.appBorder, lineWidth: 1) }
+            }
         }
         .buttonStyle(.plain)
         .disabled(isLoading)
