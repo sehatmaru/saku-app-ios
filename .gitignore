@@ -74,3 +74,6 @@ Icon
 build/
 *.log
 *.pid
+
+# Local MCP server config
+.mcp.json
