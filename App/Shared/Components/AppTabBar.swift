@@ -25,7 +25,7 @@ extension View {
     /// Hides the system tab bar and leaves room at the bottom for the glass bar.
     func glassTabBarSpace() -> some View {
         toolbar(.hidden, for: .tabBar)
-            .safeAreaPadding(.bottom, 56)
+            .safeAreaPadding(.bottom, 64)
     }
 
     /// Reports this scroll view's offset to the tab bar; no effect outside it.
@@ -70,7 +70,7 @@ struct GlassTabBar<Tab: Hashable>: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
-    private static var barHeight: CGFloat { 52 }
+    private static var barHeight: CGFloat { 60 }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -107,9 +107,9 @@ struct GlassTabBar<Tab: Hashable>: View {
     private var addButton: some View {
         Button(action: onAdd) {
             Image(systemName: "plus")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(Color.appText)
-                .frame(width: isHidden ? Self.barHeight : 48, height: 44)
+                .frame(width: isHidden ? Self.barHeight : 56, height: 50)
                 .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
@@ -122,16 +122,16 @@ struct GlassTabBar<Tab: Hashable>: View {
         return Button { selection = item.tab } label: {
             Group {
                 if let initials = item.avatar {
-                    InitialsAvatar(initials: initials, size: 25, fontSize: 10)
+                    InitialsAvatar(initials: initials, size: 28, fontSize: 11)
                         .padding(2)
                         .overlay(Circle().strokeBorder(isOn ? Color.appPrimary : Color.appText.opacity(0.12), lineWidth: isOn ? 2 : 0.5))
                 } else {
                     Image(systemName: item.icon)
-                        .font(.system(size: 18))
+                        .font(.system(size: 21))
                         .foregroundStyle(isOn ? Color.appPrimary : Color.appText)
                 }
             }
-            .frame(width: 52, height: 44)
+            .frame(width: 60, height: 50)
             .background(highlight, in: Capsule())
             .contentShape(Capsule())
             .animation(.easeInOut(duration: 0.22), value: isOn)
@@ -140,7 +140,7 @@ struct GlassTabBar<Tab: Hashable>: View {
         // Hidden tabs fade and fold to zero width so the bar closes around the +.
         .opacity(isHidden ? 0 : 1)
         .animation(.easeOut(duration: isHidden ? 0.18 : 0.3).delay(isHidden ? 0 : 0.15), value: isHidden)
-        .frame(width: isHidden ? 0 : 52)
+        .frame(width: isHidden ? 0 : 60)
         .clipped()
         .allowsHitTesting(!isHidden)
         .accessibilityHidden(isHidden)
