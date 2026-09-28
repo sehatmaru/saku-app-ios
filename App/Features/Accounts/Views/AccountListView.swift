@@ -130,7 +130,7 @@ struct AccountListView: View {
                     await syncCategories(userId: userId)
                 }
             }
-            .sheet(item: $transferFrom) { account in
+            .fullScreenCover(item: $transferFrom) { account in
                 if let userId = authViewModel.currentUser?.id {
                     AddTransactionView(
                         categories: categories,
@@ -140,7 +140,6 @@ struct AccountListView: View {
                         initialType: .transfer,
                         initialAccount: account
                     )
-                    .presentationDetents([.fraction(0.68), .large])
                 }
             }
             .sheet(isPresented: $showAddWallet) {

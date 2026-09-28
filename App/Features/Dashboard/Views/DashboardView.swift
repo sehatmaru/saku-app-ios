@@ -51,7 +51,7 @@ struct DashboardView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet) {
+        .fullScreenCover(isPresented: $showAddSheet) {
             if let userId = authViewModel.currentUser?.id {
                 AddTransactionView(
                     categories: viewModel.categories,
@@ -63,7 +63,6 @@ struct DashboardView: View {
                         }
                     }
                 )
-                .presentationDetents([.fraction(0.68), .large])
             }
         }
     }
