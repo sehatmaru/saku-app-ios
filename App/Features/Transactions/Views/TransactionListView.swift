@@ -71,7 +71,6 @@ struct TransactionListView: View {
                     }
                     .padding(.bottom, 24)
                 }
-                .tracksTabBarScroll()
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
                 .background(Color.appBackground)
                 .toolbar(.hidden, for: .navigationBar)

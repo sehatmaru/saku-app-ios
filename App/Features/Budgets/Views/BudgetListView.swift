@@ -96,7 +96,6 @@ struct BudgetListView: View {
                 .padding(.bottom, 24)
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
             }
-            .tracksTabBarScroll()
             .background(Color.appBackground)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showAddBudget) {

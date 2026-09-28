@@ -61,7 +61,6 @@ struct ProfileView: View {
                     .padding(.horizontal, 24)
                 }
             }
-            .tracksTabBarScroll()
             .background(Color.appBackground)
             .toolbar(.hidden, for: .navigationBar)
             .onAppear {

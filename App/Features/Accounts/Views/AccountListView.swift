@@ -96,7 +96,6 @@ struct AccountListView: View {
                 .padding(.bottom, 24)
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
             }
-            .tracksTabBarScroll()
             .scrollDisabled(isOverlayOn)
 
             if isOverlayOn {

@@ -16,13 +16,14 @@ struct DashboardView: View {
     @State private var selectedDay: Int?
     @State private var showAllBudgets = false
     @State private var selectedTab: AppTab = .home
-    @State private var tabBarScroll = TabBarScroll()
     /// Dompet slides in over the app from Beranda's hero; it is no longer a tab.
     @State private var showsWallets = false
     @State private var didWelcome = false
 
     enum AppTab: Hashable {
         case home, transactions, budget, profile
+        /// The + beside the bar; selecting it opens the form instead of a page.
+        case add
     }
 
     var body: some View {
@@ -35,7 +36,6 @@ struct DashboardView: View {
                     .zIndex(1)
             }
         }
-        .onChange(of: selectedTab) { tabBarScroll.reset() }
         .onChange(of: showAddSheet) { _, isShown in if isShown { Haptics.add() } }
         .tint(.appPrimary)
         .onAppear {
@@ -80,46 +80,41 @@ struct DashboardView: View {
 
     // MARK: - Tabs
 
-    /// Our own glass bar over a TabView whose system bar is hidden.
+    /// The system Liquid Glass tab bar: four icon-only tabs, with + as the separate
+    /// circle on the right. It shrinks to the current tab and + on scroll down.
     private var tabs: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: Binding(
+            get: { selectedTab },
+            set: { tab in
+                if tab == .add { showAddSheet = true } else { selectedTab = tab }
+            }
+        )) {
             mainTabs
         }
-        .environment(tabBarScroll)
-        .overlay(alignment: .bottom) {
-            GlassTabBar(
-                leading: [.init(tab: .home, label: "Beranda", icon: "house.fill"),
-                          .init(tab: .transactions, label: "Transaksi", icon: "list.bullet")],
-                trailing: [.init(tab: .budget, label: "Budget", icon: "chart.pie.fill"),
-                           .init(tab: .profile, label: "Profil", icon: "person.crop.circle.fill", avatar: initials)],
-                selection: $selectedTab,
-                isHidden: tabBarScroll.isHidden
-            ) {
-                showAddSheet = true
-            }
-        }
+        .minimizesTabBarOnScroll()
     }
-
-    private var initials: String { authViewModel.currentUser?.initials ?? "U" }
 
     @TabContentBuilder<AppTab>
     private var mainTabs: some TabContent<AppTab> {
-        Tab("Beranda", systemImage: "house.fill", value: AppTab.home) {
+        Tab(value: AppTab.home) {
             NavigationStack { mainContent }
-                .glassTabBarSpace()
-        }
-        Tab("Transaksi", systemImage: "list.bullet", value: AppTab.transactions) {
+        } label: { tabLabel("Beranda", "house.fill") }
+        Tab(value: AppTab.transactions) {
             TransactionListView()
-                .glassTabBarSpace()
-        }
-        Tab("Budget", systemImage: "chart.pie.fill", value: AppTab.budget) {
+        } label: { tabLabel("Transaksi", "list.bullet") }
+        Tab(value: AppTab.budget) {
             BudgetListView()
-                .glassTabBarSpace()
-        }
-        Tab("Profil", systemImage: "person.crop.circle.fill", value: AppTab.profile) {
+        } label: { tabLabel("Budget", "chart.pie.fill") }
+        Tab(value: AppTab.profile) {
             ProfileView()
-                .glassTabBarSpace()
-        }
+        } label: { tabLabel("Profil", "person.crop.circle.fill") }
+        Tab(value: AppTab.add, role: .search) {
+            Color.clear
+        } label: { tabLabel("Tambah transaksi", "plus") }
+    }
+
+    private func tabLabel(_ title: String, _ icon: String) -> some View {
+        Label(title, systemImage: icon).labelStyle(.iconOnly)
     }
 
     // MARK: - Beranda
@@ -150,7 +145,6 @@ struct DashboardView: View {
             }
             .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
         }
-        .tracksTabBarScroll()
         .background(Color.appBackground)
         .refreshable {
             if let userId = authViewModel.currentUser?.id {
