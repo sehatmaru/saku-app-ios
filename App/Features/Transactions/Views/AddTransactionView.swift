@@ -3,6 +3,8 @@ import SwiftUI
 /// Manual entry: a coloured panel you swipe to change type (red expense, green income,
 /// blue transfer), form rows below, and a numpad with Simpan. For expenses the panel
 /// shows the day's remaining budget shrinking as you type.
+///
+/// Pass `editing` to reopen an existing transaction prefilled; Simpan then updates it.
 struct AddTransactionView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -12,6 +14,8 @@ struct AddTransactionView: View {
     let onSave: () -> Void
     var initialType: Transaction.TransactionType = .expense
     var initialAccount: Account?
+    var editing: Transaction?
+    var onUpdated: ((Transaction) -> Void)?
 
     @State private var typeIndex = 0
     @State private var dragX: CGFloat = 0
@@ -44,22 +48,15 @@ struct AddTransactionView: View {
         let footnote: String
     }
 
-    private struct TypeStyle {
-        let type: Transaction.TransactionType
-        let label: String
-        let icon: String
-        let color: Color
-        let sign: String
-    }
+    private static let types = TransactionStyle.entryTypes
 
-    private static let types = [
-        TypeStyle(type: .expense, label: "Pengeluaran", icon: "arrow.up.right", color: Color(hex: "D93636"), sign: "−"),
-        TypeStyle(type: .income, label: "Pemasukan", icon: "arrow.down.left", color: Color(hex: "16875A"), sign: "+"),
-        TypeStyle(type: .transfer, label: "Transfer", icon: "arrow.left.arrow.right", color: Color(hex: "143A73"), sign: ""),
-    ]
-
-    private var style: TypeStyle { Self.types[typeIndex] }
+    private var style: TransactionStyle { Self.types[typeIndex] }
     private var isTransfer: Bool { style.type == .transfer }
+    /// Editing keeps a transfer a transfer, and expense/income on their side of the carousel.
+    private var allowedTypes: ClosedRange<Int> {
+        guard let editing else { return 0...2 }
+        return editing.type == .transfer ? 2...2 : 0...1
+    }
     private var activeAccounts: [Account] {
         accounts.filter(\.isActive).sorted { $0.isDefault && !$1.isDefault }
     }
@@ -97,27 +94,33 @@ struct AddTransactionView: View {
             rows
                 .padding(.top, 10)
             Spacer(minLength: 12)
-            numpad
+            AmountPad(color: style.color, isEnabled: amount > 0, isSaving: isSaving, onPress: press, onSave: save)
+                .animation(.easeInOut(duration: 0.4), value: typeIndex)
+                .disabled(isSaving || done != nil)
                 .padding(.horizontal, 12)
                 .padding(.bottom, 4)
         }
-        .sheet(item: $sheet) { kind in
-            pickerSheet(kind)
-                .presentationDetents([.height(470)])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(28)
-                .presentationBackground(Color.appBackground)
-        }
+        .sheet(item: $sheet) { pickerSheet($0) }
     }
 
     // MARK: - Setup and data
 
     private func setUp() {
         guard account == nil else { return }
-        typeIndex = Self.types.firstIndex { $0.type == initialType } ?? 0
-        account = initialAccount ?? activeAccounts.first
-        category = typeCategories.first
-        target = targetAccounts.first { $0.id != account?.id }
+        if let editing {
+            typeIndex = Self.types.firstIndex { $0.type == editing.type } ?? 0
+            amount = Int(editing.amount)
+            category = categories.first { $0.id == editing.categoryId }
+            account = accounts.first { $0.id == editing.accountId }
+            target = accounts.first { $0.id == editing.counterpartyAccountId }
+            date = editing.date
+            note = editing.description ?? ""
+        } else {
+            typeIndex = Self.types.firstIndex { $0.type == initialType } ?? 0
+            account = initialAccount ?? activeAccounts.first
+            category = typeCategories.first
+            target = targetAccounts.first { $0.id != account?.id }
+        }
         Task {
             try? await Task.sleep(for: .milliseconds(120))
             isEntered = true
@@ -128,7 +131,8 @@ struct AddTransactionView: View {
         async let budgets = SupabaseRepository.shared.fetchBudgets(userId: userId)
         async let transactions = SupabaseRepository.shared.fetchTransactions(userId: userId)
         monthlyBudget = ((try? await budgets) ?? []).filter(\.isActive).reduce(0) { $0 + $1.amount }
-        expenses = ((try? await transactions) ?? []).filter { $0.type == .expense }
+        // The transaction being edited is re-counted with its new amount as you type.
+        expenses = ((try? await transactions) ?? []).filter { $0.type == .expense && $0.id != editing?.id }
     }
 
     private var calendar: Calendar { .current }
@@ -151,9 +155,15 @@ struct AddTransactionView: View {
                     .font(.app(17))
                     .frame(width: 60, alignment: .leading)
                 Spacer()
-                Label("Geser untuk ganti tipe", systemImage: "hand.draw")
-                    .font(.app(13))
-                    .opacity(0.75)
+                if allowedTypes.count > 1 {
+                    Label("Geser untuk ganti tipe", systemImage: "hand.draw")
+                        .font(.app(13))
+                        .opacity(0.75)
+                } else {
+                    Text("Edit transaksi")
+                        .font(.app(13))
+                        .opacity(0.75)
+                }
                 Spacer()
                 Color.clear.frame(width: 60, height: 1)
             }
@@ -195,16 +205,18 @@ struct AddTransactionView: View {
             HStack(spacing: 0) {
                 ForEach(Self.types.indices, id: \.self) { i in
                     let isCurrent = i == typeIndex
-                    Label(Self.types[i].label, systemImage: Self.types[i].icon)
-                        .font(.app(22, weight: .bold))
-                        .labelStyle(TypeLabelStyle())
-                        .frame(width: itemWidth, height: 44)
-                        .opacity(isCurrent ? 1 : 0.45)
-                        .scaleEffect(isCurrent ? 1 : 0.8)
-                        .animation(.settle(0.38), value: typeIndex)
-                        .contentShape(Rectangle())
-                        .onTapGesture { setType(i) }
-                        .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
+                    HStack(spacing: 8) {
+                        Image(systemName: Self.types[i].icon).font(.system(size: 17, weight: .bold))
+                        Text(Self.types[i].label)
+                    }
+                    .font(.app(22, weight: .bold))
+                    .frame(width: itemWidth, height: 44)
+                    .opacity(isCurrent ? 1 : allowedTypes.contains(i) ? 0.45 : 0.15)
+                    .scaleEffect(isCurrent ? 1 : 0.8)
+                    .animation(.settle(0.38), value: typeIndex)
+                    .contentShape(Rectangle())
+                    .onTapGesture { setType(i) }
+                    .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
                 }
             }
             .offset(x: (geo.size.width - itemWidth) / 2 - CGFloat(typeIndex) * itemWidth + dragX)
@@ -217,14 +229,14 @@ struct AddTransactionView: View {
                 .onChanged { value in
                     guard done == nil else { return }
                     var dx = value.translation.width
-                    if (typeIndex == 0 && dx > 0) || (typeIndex == Self.types.count - 1 && dx < 0) { dx *= 0.3 }
+                    if (typeIndex == allowedTypes.lowerBound && dx > 0) || (typeIndex == allowedTypes.upperBound && dx < 0) { dx *= 0.3 }
                     dragX = dx
                 }
                 .onEnded { _ in
                     let dx = dragX
                     let next = dx < -40 ? typeIndex + 1 : dx > 40 ? typeIndex - 1 : typeIndex
                     withAnimation(.settle(0.46)) { dragX = 0 }
-                    setType(min(max(next, 0), Self.types.count - 1))
+                    setType(min(max(next, allowedTypes.lowerBound), allowedTypes.upperBound))
                 }
         )
     }
@@ -289,7 +301,10 @@ struct AddTransactionView: View {
 
     private var incomeText: String {
         guard let account else { return "" }
-        return "Saldo \(account.name) jadi Rp" + (account.balance + Double(amount)).formattedAsDigits()
+        // When editing, the saved amount is already in the balance.
+        let saved = editing?.type == .income && editing?.accountId == account.id ? editing?.amount ?? 0 : 0
+        let next = account.balance - saved + Double(amount)
+        return "Saldo \(account.name) jadi " + (next < 0 ? "−Rp" : "Rp") + next.formattedAsDigits()
     }
 
     private func walletChip(_ account: Account?) -> some View {
@@ -312,7 +327,7 @@ struct AddTransactionView: View {
         let after = daily > 0 ? Int((min(1, (spent + typed) / daily) * 30).rounded()) : 0
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Sisa budget " + dayShort(date))
+                Text("Sisa budget " + TransactionDates.dayShort(date))
                     .font(.app(13))
                     .opacity(0.85)
                 Spacer()
@@ -423,125 +438,25 @@ struct AddTransactionView: View {
         Button {
             if done == nil { sheet = kind }
         } label: {
-            HStack(spacing: 12) {
-                Text(label)
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .frame(width: 76, alignment: .leading)
-                HStack(spacing: 8) {
-                    if let swatch {
-                        RoundedRectangle(cornerRadius: 3).fill(swatch).frame(width: 20, height: 14)
-                    }
-                    if let icon {
-                        Image(systemName: icon)
-                            .font(.system(size: 17))
-                            .foregroundStyle(iconColor)
-                            .animation(.easeInOut(duration: 0.4), value: typeIndex)
-                    }
-                    Text(value)
-                        .font(.app(16, weight: .medium))
-                        .foregroundStyle(Color.appText)
-                        .lineLimit(1)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color(light: 0xC7C7CC, dark: 0x48484A))
-            }
-            .frame(height: 52)
-            .padding(.leading, 24)
-            .padding(.trailing, 20)
-            .background(flashed.contains(kind) ? style.color.opacity(0.1) : .clear)
-            .animation(.easeInOut(duration: 0.45), value: flashed)
-            .rowSeparator()
-            .contentShape(Rectangle())
+            DetailRow(label: label, value: value, swatch: swatch, icon: icon, iconColor: iconColor, showsChevron: true)
+                .background(flashed.contains(kind) ? style.color.opacity(0.1) : .clear)
+                .animation(.easeInOut(duration: 0.45), value: flashed)
         }
         .buttonStyle(.plain)
         .rise(isEntered, y: 14, delay: 0.2 + Double(index) * 0.06, fade: 0.4, move: 0.5)
     }
 
     private var dateValue: String {
-        let name = dayName(date)
+        let name = TransactionDates.dayName(date)
         return calendar.isDateInToday(date) || calendar.isDateInYesterday(date)
-            ? name + " · " + Self.dayMonth.string(from: date)
+            ? name + " · " + TransactionDates.dayMonth.string(from: date)
             : name
-    }
-
-    /// "Hari ini", "Kemarin" or e.g. "Sel, 15 Sep".
-    private func dayName(_ date: Date) -> String {
-        if calendar.isDateInToday(date) { return "Hari ini" }
-        if calendar.isDateInYesterday(date) { return "Kemarin" }
-        return Self.weekdayDayMonth.string(from: date)
-    }
-
-    private func dayShort(_ date: Date) -> String {
-        if calendar.isDateInToday(date) { return "hari ini" }
-        if calendar.isDateInYesterday(date) { return "kemarin" }
-        return Self.dayMonth.string(from: date)
     }
 
     // MARK: - Numpad
 
-    private static let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "del"]
-
-    private var numpad: some View {
-        GeometryReader { geo in
-            // 3:1 split between keys and Simpan, as in the design.
-            let saveWidth = (geo.size.width - 6) / 4
-            HStack(spacing: 6) {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
-                    ForEach(Self.keys, id: \.self) { key in
-                        Button { press(key) } label: {
-                            Group {
-                                if key == "del" {
-                                    Image(systemName: "delete.left").font(.system(size: 22))
-                                } else {
-                                    Text(key).font(.app(24))
-                                }
-                            }
-                            .foregroundStyle(Color.appText)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                        }
-                        .buttonStyle(KeyStyle())
-                        .accessibilityLabel(key == "del" ? "Hapus" : key)
-                    }
-                }
-                .frame(width: geo.size.width - saveWidth - 6)
-
-                Button(action: save) {
-                    VStack(spacing: 6) {
-                        if isSaving {
-                            ProgressView().tint(.white)
-                        } else {
-                            Image(systemName: "checkmark").font(.system(size: 24, weight: .bold))
-                        }
-                        Text("Simpan").font(.app(14, weight: .semibold))
-                    }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(amount > 0 ? style.color : Color(light: 0xC7C7CC, dark: 0x48484A), in: RoundedRectangle(cornerRadius: 14))
-                    .animation(.easeInOut(duration: 0.4), value: typeIndex)
-                    .animation(.easeInOut(duration: 0.4), value: amount > 0)
-                }
-                .buttonStyle(PressScaleStyle())
-                .frame(width: saveWidth)
-                .disabled(isSaving || done != nil)
-            }
-            .frame(width: geo.size.width, height: geo.size.height)
-        }
-        .frame(height: 52 * 4 + 6 * 3)
-    }
-
     private func press(_ key: String) {
-        guard done == nil else { return }
-        let next: Int
-        switch key {
-        case "del": next = amount / 10
-        case "000": next = amount * 1000
-        default: next = amount * 10 + (Int(key) ?? 0)
-        }
-        guard next <= 99_999_999_999 else { return }
+        guard done == nil, let next = NumberPad.apply(key, to: amount) else { return }
         withAnimation(.snappy(duration: 0.2)) { amount = next }
         isBumped = true
         Task {
@@ -553,7 +468,7 @@ struct AddTransactionView: View {
     // MARK: - Type and pickers
 
     private func setType(_ index: Int) {
-        guard done == nil, index != typeIndex else { return }
+        guard done == nil, index != typeIndex, allowedTypes.contains(index) else { return }
         withAnimation(.settle(0.46)) { typeIndex = index }
         if !isTransfer {
             category = typeCategories.first
@@ -583,28 +498,23 @@ struct AddTransactionView: View {
 
     @ViewBuilder
     private func pickerSheet(_ kind: PickerKind) -> some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(sheetTitle(kind)).font(.app(17, weight: .semibold))
-                Spacer()
-                Button("Selesai") { sheet = nil }
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(Color.appPrimary)
-            }
-            .frame(height: 48)
-            .padding(.horizontal, 24)
-            .padding(.top, 14)
-
-            ScrollView {
-                switch kind {
-                case .category: categoryGrid
-                case .account, .target: accountGrid(kind)
-                case .date: calendarPicker
+        PickerSheet(title: sheetTitle(kind), onDone: { sheet = nil }) {
+            switch kind {
+            case .category:
+                CategoryPickerGrid(categories: typeCategories, selectedId: category?.id, color: style.color) { cat in
+                    pick(.category) { category = cat }
+                }
+            case .account, .target:
+                WalletPickerGrid(accounts: kind == .target ? targetAccounts : activeAccounts,
+                                 selectedId: kind == .target ? target?.id : account?.id) { acc in
+                    pick(kind) { choose(acc, for: kind) }
+                }
+            case .date:
+                DayPicker(selected: date, color: style.color) { day in
+                    pick(.date) { date = keepingTime(of: date, on: day) }
                 }
             }
-            .scrollIndicators(.hidden)
         }
-        .foregroundStyle(Color.appText)
     }
 
     private func sheetTitle(_ kind: PickerKind) -> String {
@@ -614,95 +524,6 @@ struct AddTransactionView: View {
         case .target: "Ke dompet"
         case .date: "Tanggal"
         }
-    }
-
-    private var categoryGrid: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 18) {
-            ForEach(typeCategories) { cat in
-                let isOn = cat.id == category?.id
-                Button {
-                    pick(.category) { category = cat }
-                } label: {
-                    VStack(spacing: 7) {
-                        Circle()
-                            .fill(isOn ? style.color : Color.appFill)
-                            .frame(width: 54, height: 54)
-                            .overlay {
-                                Image(systemName: cat.icon ?? "tag")
-                                    .font(.system(size: 22))
-                                    .foregroundStyle(isOn ? Color.white : Color.appText)
-                            }
-                            .scaleEffect(isOn ? 1.08 : 1)
-                            .animation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.32), value: isOn)
-                        Text(cat.name)
-                            .font(.app(12))
-                            .foregroundStyle(isOn ? Color.appText : Color.appTextSecondary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isOn ? .isSelected : [])
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 24)
-    }
-
-    private func accountGrid(_ kind: PickerKind) -> some View {
-        let list = kind == .target ? targetAccounts : activeAccounts
-        let selectedId = kind == .target ? target?.id : account?.id
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-            ForEach(list) { acc in
-                let isOn = acc.id == selectedId
-                let color = walletColor(acc)
-                Button {
-                    pick(kind) { choose(acc, for: kind) }
-                } label: {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text(WalletIcon.resolve(acc.icon)?.shortName ?? String(acc.name.prefix(4)).uppercased())
-                                .font(.app(10, weight: .heavy))
-                                .tracking(0.5)
-                            Spacer()
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 11, weight: .bold))
-                                .opacity(isOn ? 1 : 0)
-                        }
-                        Spacer(minLength: 0)
-                        Text(acc.name)
-                            .font(.app(14, weight: .semibold))
-                            .lineLimit(1)
-                        Text(acc.isCreditCard
-                             ? "Sisa limit Rp" + (acc.availableCredit ?? 0).formattedAsDigits()
-                             : "Rp" + acc.balance.formattedAsDigits())
-                            .font(.app(12))
-                            .opacity(0.82)
-                            .monospacedDigit()
-                            .lineLimit(1)
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .frame(height: 76)
-                    .background(color, in: RoundedRectangle(cornerRadius: 14))
-                    .overlay {
-                        if isOn {
-                            RoundedRectangle(cornerRadius: 16).inset(by: -2).stroke(Color.appBackground, lineWidth: 2)
-                            RoundedRectangle(cornerRadius: 18).inset(by: -4).stroke(color, lineWidth: 2)
-                        }
-                    }
-                    .scaleEffect(isOn ? 1.03 : 1)
-                    .animation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.32), value: isOn)
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isOn ? .isSelected : [])
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
-        .padding(.bottom, 24)
     }
 
     /// Picking the other side of a transfer swaps the two wallets.
@@ -718,115 +539,10 @@ struct AddTransactionView: View {
         }
     }
 
-    // MARK: - Calendar
-
-    @State private var shownMonth = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date())) ?? Date()
-
-    private var calendarPicker: some View {
-        let today = calendar.startOfDay(for: Date())
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
-        let isCurrentMonth = calendar.isDate(shownMonth, equalTo: today, toGranularity: .month)
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                quickDay("Hari ini", today)
-                quickDay("Kemarin", yesterday)
-            }
-
-            HStack {
-                Text(Self.monthYear.string(from: shownMonth))
-                    .font(.app(15, weight: .semibold))
-                Spacer()
-                Button { moveMonth(-1) } label: { Image(systemName: "chevron.left") }
-                    .accessibilityLabel("Bulan sebelumnya")
-                Button { moveMonth(1) } label: { Image(systemName: "chevron.right") }
-                    .disabled(isCurrentMonth)
-                    .accessibilityLabel("Bulan berikutnya")
-            }
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(Color.appText)
-            .padding(.top, 16)
-
-            let grid = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
-            LazyVGrid(columns: grid, spacing: 0) {
-                ForEach(["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"], id: \.self) {
-                    Text($0).font(.app(12)).foregroundStyle(Color(light: 0x8E8E93, dark: 0x8E8E93))
-                }
-            }
-            .padding(.top, 10)
-
-            LazyVGrid(columns: grid, spacing: 0) {
-                ForEach(Array(monthCells.enumerated()), id: \.offset) { _, day in
-                    dayCell(day, today: today)
-                }
-            }
-            .padding(.top, 4)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 4)
-        .padding(.bottom, 24)
-    }
-
-    private func quickDay(_ label: String, _ day: Date) -> some View {
-        let isOn = calendar.isDate(date, inSameDayAs: day)
-        return Button {
-            pick(.date) { date = day; shownMonth = monthStart(day) }
-        } label: {
-            Text(label)
-                .font(.app(15, weight: .medium))
-                .foregroundStyle(isOn ? Color.white : Color.appText)
-                .padding(.horizontal, 16)
-                .frame(height: 36)
-                .background(isOn ? style.color : Color.appBackground, in: Capsule())
-                .overlay(Capsule().stroke(isOn ? style.color : Color.appBorder, lineWidth: 1))
-                .animation(.easeInOut(duration: 0.22), value: isOn)
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// Days of `shownMonth`, padded with nils so the 1st lands under its weekday (Monday first).
-    private var monthCells: [Date?] {
-        let count = calendar.range(of: .day, in: .month, for: shownMonth)?.count ?? 30
-        let weekday = calendar.component(.weekday, from: shownMonth)
-        let lead = (weekday + 5) % 7
-        let days = (0..<count).map { calendar.date(byAdding: .day, value: $0, to: shownMonth) }
-        return Array(repeating: nil, count: lead) + days
-    }
-
-    @ViewBuilder
-    private func dayCell(_ day: Date?, today: Date) -> some View {
-        if let day {
-            let isOn = calendar.isDate(day, inSameDayAs: date)
-            let isToday = calendar.isDate(day, inSameDayAs: today)
-            let isFuture = day > today
-            Button {
-                pick(.date) { date = day }
-            } label: {
-                Text("\(calendar.component(.day, from: day))")
-                    .font(.app(16, weight: isOn || isToday ? .semibold : .regular))
-                    .monospacedDigit()
-                    .foregroundStyle(isOn ? Color.white : isFuture ? Color(light: 0xC7C7CC, dark: 0x48484A) : Color.appText)
-                    .frame(width: 38, height: 38)
-                    .background(isOn ? style.color : .clear, in: Circle())
-                    .overlay {
-                        if isToday && !isOn { Circle().inset(by: 0.75).stroke(style.color, lineWidth: 1.5) }
-                    }
-                    .animation(.easeInOut(duration: 0.2), value: isOn)
-                    .frame(height: 44)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.plain)
-            .disabled(isFuture)
-        } else {
-            Color.clear.frame(height: 44)
-        }
-    }
-
-    private func monthStart(_ day: Date) -> Date {
-        calendar.date(from: calendar.dateComponents([.year, .month], from: day)) ?? day
-    }
-
-    private func moveMonth(_ delta: Int) {
-        shownMonth = calendar.date(byAdding: .month, value: delta, to: shownMonth) ?? shownMonth
+    /// Moves `date` to `day` but keeps its time, so edits don't reset a recorded time to midnight.
+    private func keepingTime(of date: Date, on day: Date) -> Date {
+        let time = calendar.dateComponents([.hour, .minute, .second], from: date)
+        return calendar.date(bySettingHour: time.hour ?? 0, minute: time.minute ?? 0, second: time.second ?? 0, of: day) ?? day
     }
 
     // MARK: - Save
@@ -844,19 +560,27 @@ struct AddTransactionView: View {
         }
         let value = Double(amount)
         let noteText = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let description = noteText.isEmpty ? nil : noteText
         let summary = doneSummary(amount: value, account: account)
         isSaving = true
         Task {
             do {
-                if isTransfer, let target {
+                if let editing {
+                    let updated = try await SupabaseRepository.shared.updateTransaction(
+                        id: editing.id, accountId: account.id, counterpartyAccountId: isTransfer ? target?.id : nil,
+                        categoryId: isTransfer ? nil : category?.id, amount: value, type: style.type,
+                        description: description, note: editing.note, date: date
+                    )
+                    onUpdated?(updated)
+                } else if isTransfer, let target {
                     _ = try await SupabaseRepository.shared.createTransfer(
                         primaryAccountId: account.id, counterpartyAccountId: target.id,
-                        amount: value, description: noteText.isEmpty ? nil : noteText, note: nil, date: date
+                        amount: value, description: description, note: nil, date: date
                     )
                 } else {
                     _ = try await SupabaseRepository.shared.createTransaction(
                         accountId: account.id, categoryId: category?.id,
-                        amount: value, type: style.type, description: noteText.isEmpty ? nil : noteText, note: nil,
+                        amount: value, type: style.type, description: description, note: nil,
                         date: date, userId: userId, isCreditAccount: account.isCreditCard
                     )
                 }
@@ -877,21 +601,23 @@ struct AddTransactionView: View {
 
     private func doneSummary(amount value: Double, account: Account) -> DoneSummary {
         let money = style.sign + "Rp" + value.formattedAsDigits()
+        let day = TransactionDates.dayName(date)
         let detail = isTransfer
-            ? money + " · " + dayName(date)
-            : money + " · " + (category?.name ?? "Tanpa kategori") + " · " + dayName(date)
+            ? money + " · " + day
+            : money + " · " + (category?.name ?? "Tanpa kategori") + " · " + day
         let footnote: String
         switch style.type {
         case .expense:
             let left = dailyBudget - spentOnDate - value
             footnote = dailyBudget <= 0 ? ""
-                : (left < 0 ? "Lewat budget " : "Sisa budget ") + dayShort(date) + " Rp" + abs(left).formattedAsDigits()
+                : (left < 0 ? "Lewat budget " : "Sisa budget ") + TransactionDates.dayShort(date) + " Rp" + abs(left).formattedAsDigits()
         case .income:
-            footnote = "Saldo \(account.name) sekarang Rp" + (account.balance + value).formattedAsDigits()
+            footnote = incomeText.replacingOccurrences(of: " jadi ", with: " sekarang ")
         default:
             footnote = "\(account.name) → \(target?.name ?? "")"
         }
-        return DoneSummary(title: style.label + " tersimpan", detail: detail, footnote: footnote)
+        let title = editing == nil ? style.label + " tersimpan" : "Perubahan tersimpan"
+        return DoneSummary(title: title, detail: detail, footnote: footnote)
     }
 
     private func shake() {
@@ -902,48 +628,50 @@ struct AddTransactionView: View {
             }
         }
     }
-
-    private func walletColor(_ account: Account?) -> Color {
-        account.flatMap { WalletIcon.resolve($0.icon)?.color } ?? .appPrimary
-    }
-
-    private static func formatter(_ format: String) -> DateFormatter {
-        let f = DateFormatter()
-        f.dateFormat = format
-        f.locale = Locale(identifier: "id_ID")
-        return f
-    }
-
-    private static let dayMonth = formatter("d MMM")
-    private static let weekdayDayMonth = formatter("EEE, d MMM")
-    private static let monthYear = formatter("MMMM yyyy")
 }
 
-/// Icon then title, with the design's 8pt gap and a smaller bold icon.
-private struct TypeLabelStyle: LabelStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 8) {
-            configuration.icon.font(.system(size: 17, weight: .bold))
-            configuration.title
+/// One form row: grey label, optional wallet swatch or icon, value, optional chevron.
+struct DetailRow: View {
+    let label: String
+    let value: String
+    var swatch: Color?
+    var icon: String?
+    var iconColor: Color = .appTextSecondary
+    var showsChevron = false
+    var height: CGFloat = 52
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 76, alignment: .leading)
+            HStack(spacing: 8) {
+                if let swatch {
+                    RoundedRectangle(cornerRadius: 3).fill(swatch).frame(width: 20, height: 14)
+                }
+                if let icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 17))
+                        .foregroundStyle(iconColor)
+                }
+                Text(value)
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color(light: 0xC7C7CC, dark: 0x48484A))
+                .opacity(showsChevron ? 1 : 0)
+                .animation(.easeInOut(duration: 0.25), value: showsChevron)
         }
-    }
-}
-
-/// Numpad key: light fill that darkens while pressed.
-private struct KeyStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(configuration.isPressed ? Color(light: 0xE5E5EA, dark: 0x3A3A3C) : Color(light: 0xF7F7F8, dark: 0x1C1C1E),
-                        in: RoundedRectangle(cornerRadius: 12))
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-private struct PressScaleStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+        .frame(height: height)
+        .padding(.leading, 24)
+        .padding(.trailing, 20)
+        .rowSeparator()
+        .contentShape(Rectangle())
     }
 }
 
