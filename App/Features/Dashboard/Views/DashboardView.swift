@@ -16,20 +16,16 @@ struct DashboardView: View {
     @State private var selectedDay: Int?
     @State private var showAllBudgets = false
     @State private var selectedTab: AppTab = .home
+    @AppStorage("tabBarStyle") private var tabBarStyle = TabBarStyle.native
+    @State private var tabBarScroll = TabBarScroll()
 
     enum AppTab: Hashable {
-        case home, transactions, budget, wallet
-        /// iOS 26 "Tambah" circle; selecting it opens the add sheet instead of switching tabs.
-        case add
+        case home, transactions, budget, wallet, profile
     }
 
     var body: some View {
         tabs
-        .onChange(of: selectedTab) { previous, tab in
-            guard tab == .add else { return }
-            selectedTab = previous
-            showAddSheet = true
-        }
+        .onChange(of: selectedTab) { tabBarScroll.reset() }
         .tint(.appPrimary)
         .onAppear {
             isBalanceVisible = isBalanceVisibleStorage
@@ -71,20 +67,27 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var tabs: some View {
-        if #available(iOS 26, *) {
+        if tabBarStyle == .custom {
+            customTabs
+        } else if #available(iOS 26, *) {
+            // Five tabs fill the iPhone bar (a sixth would become "Lainnya"), so add
+            // lives in the system accessory above it, which folds in when the bar shrinks.
             TabView(selection: $selectedTab) {
-                mainTabs
-                // A search-role tab renders as the detached glass circle next to the tab bar.
-                Tab(value: AppTab.add, role: .search) {
-                    Color.clear
-                } label: {
-                    Label { Text("Tambah") } icon: { Image(uiImage: Self.plusIcon) }
-                }
+                mainTabs(hidesSystemBar: false)
             }
             .tabBarMinimizeBehavior(.onScrollDown)
+            .tabViewBottomAccessory {
+                Button { showAddSheet = true } label: {
+                    Label("Tambah transaksi", systemImage: "plus")
+                        .font(.app(15, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(maxWidth: .infinity)
+                }
+                .accessibilityLabel("Tambah transaksi")
+            }
         } else {
             TabView(selection: $selectedTab) {
-                mainTabs
+                mainTabs(hidesSystemBar: false)
             }
             .overlay(alignment: .bottomTrailing) {
                 Button { showAddSheet = true } label: {
@@ -103,28 +106,50 @@ struct DashboardView: View {
         }
     }
 
-    @TabContentBuilder<AppTab>
-    private var mainTabs: some TabContent<AppTab> {
-        Tab("Beranda", systemImage: "house.fill", value: AppTab.home) {
-            NavigationStack { mainContent }
+    /// Same tabs with the system bar hidden under the revamp's own bar.
+    private var customTabs: some View {
+        TabView(selection: $selectedTab) {
+            mainTabs(hidesSystemBar: true)
         }
-        Tab("Transaksi", systemImage: "list.bullet", value: AppTab.transactions) {
-            TransactionListView()
-        }
-        Tab("Budget", systemImage: "chart.pie.fill", value: AppTab.budget) {
-            BudgetListView()
-        }
-        Tab("Dompet", systemImage: "wallet.bifold.fill", value: AppTab.wallet) {
-            AccountListView()
+        .environment(tabBarScroll)
+        .overlay(alignment: .bottom) {
+            CustomTabBar(items: Self.tabItems, selection: $selectedTab, isHidden: tabBarScroll.isHidden) {
+                showAddSheet = true
+            }
         }
     }
 
-    /// Tab bar items are template-tinted; an always-original image keeps the plus green.
-    private static let plusIcon: UIImage = {
-        let config = UIImage.SymbolConfiguration(weight: .semibold)
-        let image = UIImage(systemName: "plus", withConfiguration: config) ?? UIImage()
-        return image.withTintColor(UIColor(Color.appPrimary), renderingMode: .alwaysOriginal)
-    }()
+    private static let tabItems: [CustomTabBar<AppTab>.Item] = [
+        .init(tab: .home, label: "Beranda", icon: "house.fill"),
+        .init(tab: .transactions, label: "Transaksi", icon: "list.bullet"),
+        .init(tab: .budget, label: "Budget", icon: "chart.pie.fill"),
+        .init(tab: .wallet, label: "Dompet", icon: "wallet.bifold.fill"),
+        .init(tab: .profile, label: "Profil", icon: "person.crop.circle.fill"),
+    ]
+
+    @TabContentBuilder<AppTab>
+    private func mainTabs(hidesSystemBar: Bool) -> some TabContent<AppTab> {
+        Tab("Beranda", systemImage: "house.fill", value: AppTab.home) {
+            NavigationStack { mainContent }
+                .customTabBarSpace(hidesSystemBar)
+        }
+        Tab("Transaksi", systemImage: "list.bullet", value: AppTab.transactions) {
+            TransactionListView()
+                .customTabBarSpace(hidesSystemBar)
+        }
+        Tab("Budget", systemImage: "chart.pie.fill", value: AppTab.budget) {
+            BudgetListView()
+                .customTabBarSpace(hidesSystemBar)
+        }
+        Tab("Dompet", systemImage: "wallet.bifold.fill", value: AppTab.wallet) {
+            AccountListView()
+                .customTabBarSpace(hidesSystemBar)
+        }
+        Tab("Profil", systemImage: "person.crop.circle.fill", value: AppTab.profile) {
+            ProfileView()
+                .customTabBarSpace(hidesSystemBar)
+        }
+    }
 
     // MARK: - Beranda
 
@@ -149,12 +174,12 @@ struct DashboardView: View {
                     monthSection
                     SectionDivider()
                     budgetSection
-                    SectionDivider()
-                    billsSection
+                        .padding(.bottom, 90)
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
         }
+        .tracksTabBarScroll()
         .background(Color.appBackground)
         .refreshable {
             if let userId = authViewModel.currentUser?.id {
@@ -179,8 +204,6 @@ struct DashboardView: View {
                     .foregroundStyle(Color.appText)
             }
             .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
-            ProfileAvatarButton()
-                .padding(.leading, 18)
         }
         .padding(.horizontal, 24)
         .padding(.top, 10)
@@ -212,59 +235,43 @@ struct DashboardView: View {
 
     // MARK: Summary
 
+    /// Big total, a green/red bar for money in vs out, then Masuk · Keluar · Net.
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Total saldo")
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
-            HeroAmount(value: viewModel.balance, isVisible: isBalanceVisible)
-                .padding(.top, 6)
+            HeroAmount(value: viewModel.balance, size: .hero, isVisible: isBalanceVisible, weight: .ultraLight)
+                .padding(.top, 8)
 
-            HStack(alignment: .top, spacing: 28) {
-                flowStat("Masuk", amount: viewModel.totalIncome, change: viewModel.incomeChange, base: viewModel.previousMonthIncome)
-                flowStat("Keluar", amount: viewModel.totalExpense, change: viewModel.expenseChange, base: viewModel.previousMonthExpense, highlightsGrowth: false)
-                flowStat("Net", amount: viewModel.netCashflow, change: viewModel.netCashflowChange, base: abs(viewModel.previousMonthNetCashflow), signed: true)
-            }
-            .padding(.top, 22)
+            FlowSplitBar(income: viewModel.totalIncome, expense: viewModel.totalExpense)
+                .padding(.top, 28)
 
-            Button { showAddSheet = true } label: {
-                Label("Tambah transaksi", systemImage: "plus")
-                    .font(.app(16, weight: .medium))
-                    .foregroundStyle(Color.appText)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .overlay(Capsule().strokeBorder(Color.appBorder))
-                    .contentShape(Capsule())
+            HStack {
+                flowStat("Masuk", viewModel.totalIncome)
+                Spacer()
+                flowStat("Keluar", viewModel.totalExpense)
+                Spacer()
+                flowStat("Net", viewModel.netCashflow, signed: true)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 24)
+            .padding(.top, 12)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 36)
-        .padding(.bottom, 28)
+        .padding(.top, 44)
+        .padding(.bottom, 36)
     }
 
-    /// Label, abbreviated amount and month-over-month change; growth is green unless it's spending.
-    private func flowStat(_ label: String, amount: Double, change: Double, base: Double, highlightsGrowth: Bool = true, signed: Bool = false) -> some View {
-        let valueColor: Color = signed && amount > 0 ? .appIncome : .appText
+    /// "Masuk 12 jt"; Net is green when positive and red when negative.
+    private func flowStat(_ label: String, _ amount: Double, signed: Bool = false) -> some View {
         let sign = signed ? (amount > 0 ? "+" : amount < 0 ? "−" : "") : ""
-        return VStack(alignment: .leading, spacing: 3) {
-            Text(label)
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(isBalanceVisible ? sign + amount.abbreviatedRupiah() : hiddenAmount)
-                    .font(.app(17, weight: .medium))
-                    .foregroundStyle(valueColor)
-                if base > 0 {
-                    let pct = Int((change / base * 100).rounded())
-                    Text((pct >= 0 ? "+" : "−") + "\(abs(pct))%")
-                        .font(.app(13))
-                        .foregroundStyle(signed ? (amount > 0 ? Color.appIncome : Color.appTextSecondary) : (highlightsGrowth && pct > 0 ? Color.appIncome : Color.appTextSecondary))
-                }
-            }
+        let color: Color = signed ? (amount > 0 ? .appPrimary : amount < 0 ? .appError : .appText) : .appText
+        return (Text(label + " ").foregroundStyle(Color.appTextSecondary)
+                + Text(isBalanceVisible ? sign + amount.abbreviatedRupiah() : hiddenAmount)
+                    .fontWeight(.medium)
+                    .foregroundStyle(color))
+            .font(.app(15))
             .monospacedDigit()
-        }
+            .lineLimit(1)
     }
 
     // MARK: Health score
@@ -615,83 +622,7 @@ struct DashboardView: View {
                            delay: 0.3 + Double(index) * 0.08)
             }
         }
-        .padding(.vertical, 14)
-        .rowSeparator()
-    }
-
-    // MARK: Bills
-
-    private var billsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(
-                title: "Tagihan terdekat",
-                trailing: viewModel.upcomingSubscriptions.isEmpty ? nil
-                    : (isBalanceVisible ? viewModel.totalMonthlySubscriptions.formattedAsCurrency() : "Rp" + hiddenAmount) + "/bln"
-            )
-
-            if viewModel.upcomingSubscriptions.isEmpty {
-                Text("Belum ada tagihan berulang")
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .padding(.top, 14)
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(viewModel.upcomingSubscriptions) { sub in
-                        billRow(sub)
-                    }
-                }
-                .padding(.top, 8)
-            }
-        }
-        .padding(24)
-        .padding(.vertical, 4)
-    }
-
-    private func billRow(_ sub: CardSubscription) -> some View {
-        let date = sub.nextBillingDateAsDate
-        let daysLeft = date.map { Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: Date()), to: $0).day ?? 0 } ?? 99
-        return HStack(spacing: 16) {
-            VStack(spacing: 3) {
-                Text(date.map { Self.dayFormatter.string(from: $0) } ?? "-")
-                    .font(.app(22, weight: .light))
-                    .monospacedDigit()
-                Text(date.map { Self.monthFormatter.string(from: $0).uppercased() } ?? "")
-                    .font(.app(11, weight: .semibold))
-                    .tracking(0.5)
-                    .foregroundStyle(daysLeft <= 2 ? Color.appWarning : Color.appTextSecondary)
-            }
-            .frame(width: 40)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(sub.name)
-                    .font(.app(16, weight: .medium))
-                    .lineLimit(1)
-                HStack(spacing: 6) {
-                    if let account = viewModel.accounts.first(where: { $0.id == sub.accountId }) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(account.walletColor)
-                            .frame(width: 18, height: 12)
-                    }
-                    Text(accountName(for: sub.accountId))
-                        .lineLimit(1)
-                }
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-            }
-
-            Spacer(minLength: 8)
-
-            Text(isBalanceVisible ? sub.amount.formattedAsCurrency() : "Rp" + hiddenAmount)
-                .font(.app(16))
-                .monospacedDigit()
-        }
-        .foregroundStyle(Color.appText)
-        .padding(.vertical, 14)
-        .rowSeparator()
-    }
-
-    private func accountName(for id: String) -> String {
-        viewModel.accounts.first(where: { $0.id == id })?.name ?? "Kartu Kredit"
+        .padding(.vertical, 12)
     }
 
     // MARK: Formatting
@@ -713,7 +644,6 @@ struct DashboardView: View {
 
     private static let headerDateFormatter = formatter("EEEE, d MMMM")
     private static let shortDayFormatter = formatter("EEEE, d MMM")
-    private static let dayFormatter = formatter("d")
     private static let monthFormatter = formatter("MMM")
     private static let weekdayDayFormatter = formatter("EEE, d MMM")
 }

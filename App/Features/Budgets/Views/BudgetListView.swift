@@ -63,7 +63,6 @@ struct BudgetListView: View {
                                 .foregroundStyle(Color.appPrimary)
                         }
                         .accessibilityLabel("Tambah budget")
-                        ProfileAvatarButton()
                     }
 
                     if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
@@ -97,6 +96,7 @@ struct BudgetListView: View {
                 .padding(.bottom, 24)
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
             }
+            .tracksTabBarScroll()
             .background(Color.appBackground)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showAddBudget) {

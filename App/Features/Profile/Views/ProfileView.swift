@@ -1,8 +1,8 @@
 import SwiftUI
 
+/// Profil tab: account, appearance and notification settings, and sign-out.
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: ProfileViewModel
 
     init(viewModel: ProfileViewModel = ProfileViewModel()) {
@@ -16,7 +16,7 @@ struct ProfileView: View {
     @AppStorage("notifTransactions") private var notifTransactions = true
     @AppStorage("notifBudget") private var notifBudget = true
     @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @AppStorage("tabBarStyle") private var tabBarStyle = TabBarStyle.native
 
     enum ThemeOption: String, CaseIterable {
         case light = "Terang"
@@ -44,29 +44,27 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
+                    ScreenHeader(title: "Profil") {}
                     profileHeader
-                    appearanceSection
-                    notificationSection
-                    logoutButton
-                    Text("Bergabung sejak \(memberSinceDate) · SakuQ versi \(appVersion)")
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextTertiary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 24)
+                    SectionDivider()
+                    VStack(alignment: .leading, spacing: 0) {
+                        appearanceSection
+                        notificationSection
+                        logoutButton
+                        Text("Bergabung sejak \(memberSinceDate) · SakuQ versi \(appVersion)")
+                            .font(.app(13))
+                            .foregroundStyle(Color.appTextTertiary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 16)
+                            .padding(.bottom, 32)
+                    }
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
             }
+            .tracksTabBarScroll()
             .background(Color.appBackground)
-            .navigationTitle("Profil")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Selesai") { dismiss() }
-                        .font(.app(17, weight: .semibold))
-                        .foregroundStyle(Color.appPrimary)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
@@ -85,33 +83,28 @@ struct ProfileView: View {
 
     // MARK: - Header
 
+    /// Avatar, name and email in one row, with "Ubah" to edit.
     private var profileHeader: some View {
-        VStack(spacing: 0) {
-            InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U", size: 88, fontSize: 32)
-            Text(authViewModel.currentUser?.fullName ?? "User")
-                .font(.app(24, weight: .semibold))
-                .tracking(-0.3)
-                .foregroundStyle(Color.appText)
-                .lineLimit(1)
-                .padding(.top, 14)
-            Text(authViewModel.currentUser?.isGuest == true ? "Mode tamu" : authViewModel.currentUser?.email ?? "")
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-                .lineLimit(1)
-                .padding(.top, 4)
-            NavigationLink(destination: ProfileEditView(viewModel: viewModel, authViewModel: authViewModel)) {
-                Label("Ubah profil", systemImage: "pencil")
-                    .font(.app(15, weight: .medium))
+        HStack(spacing: 16) {
+            InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U", size: 64, fontSize: 24)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(authViewModel.currentUser?.fullName ?? "User")
+                    .font(.app(22, weight: .semibold))
+                    .tracking(-0.2)
                     .foregroundStyle(Color.appText)
-                    .padding(.horizontal, 16)
-                    .frame(height: 36)
-                    .background(Color.appFill, in: Capsule())
+                Text(authViewModel.currentUser?.isGuest == true ? "Mode tamu" : authViewModel.currentUser?.email ?? "")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 16)
+            .lineLimit(1)
+            Spacer(minLength: 8)
+            NavigationLink("Ubah") { ProfileEditView(viewModel: viewModel, authViewModel: authViewModel) }
+                .font(.app(15))
+                .foregroundStyle(Color.appPrimary)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 16)
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 28)
     }
 
     // MARK: - Sections
@@ -120,7 +113,7 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 0) {
             sectionCaption("Tampilan")
 
-            row(icon: "circle.lefthalf.filled", title: "Tema") {
+            row(icon: "moon", title: "Tema") {
                 Picker("Tema", selection: $appTheme) {
                     ForEach(ThemeOption.allCases, id: \.self) { option in
                         Text(option.rawValue).tag(option)
@@ -144,13 +137,14 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
 
-            row(icon: "eye.slash", title: "Sembunyikan saldo") {
-                Toggle("Sembunyikan saldo", isOn: Binding(
-                    get: { !isBalanceVisible },
-                    set: { hidden in withAnimation(.smooth) { isBalanceVisible = !hidden } }
-                ))
+            // Temporary: compare the two tab bars; drop once one is chosen.
+            row(icon: "dock.rectangle", title: "Tab bar", subtitle: "Coba dua versi") {
+                Picker("Tab bar", selection: $tabBarStyle) {
+                    ForEach(TabBarStyle.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
                 .labelsHidden()
-                .tint(.appPrimary)
+                .fixedSize()
             }
         }
     }
@@ -174,8 +168,9 @@ struct ProfileView: View {
     private func sectionCaption(_ title: String) -> some View {
         Text(title)
             .font(.app(13))
+            .tracking(0.2)
             .foregroundStyle(Color.appTextSecondary)
-            .padding(.top, 28)
+            .padding(.top, 24)
             .padding(.bottom, 4)
     }
 
@@ -198,11 +193,8 @@ struct ProfileView: View {
             Spacer(minLength: 8)
             trailing()
         }
-        .frame(minHeight: 52)
-        .padding(.vertical, 4)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Color.appDivider).frame(height: 1)
-        }
+        .frame(minHeight: 48)
+        .padding(.vertical, 2)
     }
 
     // MARK: - Logout
@@ -212,14 +204,15 @@ struct ProfileView: View {
             showLogoutAlert = true
         } label: {
             Label("Keluar", systemImage: "rectangle.portrait.and.arrow.right")
-                .font(.app(16, weight: .semibold))
+                .font(.app(16, weight: .medium))
                 .foregroundStyle(Color.appError)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.appError.opacity(0.1), in: Capsule())
+                .frame(height: 48)
+                .overlay(Capsule().strokeBorder(Color.appBorder))
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .padding(.top, 32)
+        .padding(.top, 28)
     }
 }
 

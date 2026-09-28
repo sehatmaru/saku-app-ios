@@ -38,7 +38,6 @@ struct TransactionListView: View {
                                 Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
                             }
                             .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
-                            ProfileAvatarButton()
                         }
 
                         searchField
@@ -72,6 +71,7 @@ struct TransactionListView: View {
                     }
                     .padding(.bottom, 24)
                 }
+                .tracksTabBarScroll()
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
                 .background(Color.appBackground)
                 .toolbar(.hidden, for: .navigationBar)
@@ -179,8 +179,10 @@ struct TransactionListView: View {
 
     // MARK: Summary
 
+    /// Net cashflow in green or red, the money-in vs money-out bar, then Masuk and Keluar.
     private var summary: some View {
         let net = viewModel.thisMonthBalance
+        let tone: Color = net > 0 ? .appIncome : net < 0 ? .appError : .appText
         return VStack(alignment: .leading, spacing: 0) {
             Text("Net cashflow \(Self.monthFormatter.string(from: Date()))")
                 .font(.app(15))
@@ -188,23 +190,27 @@ struct TransactionListView: View {
 
             HeroAmount(
                 value: net,
-                size: .medium,
                 prefix: net > 0 ? "+Rp" : net < 0 ? "−Rp" : "Rp",
-                color: net > 0 ? .appIncome : .appText,
-                prefixColor: net > 0 ? .appIncome : .appTextSecondary,
-                isVisible: isBalanceVisible
+                color: tone,
+                prefixColor: net == 0 ? .appTextSecondary : tone,
+                isVisible: isBalanceVisible,
+                weight: .ultraLight
             )
             .padding(.top, 8)
 
-            HStack(spacing: 28) {
+            FlowSplitBar(income: viewModel.thisMonthIncome, expense: viewModel.thisMonthExpense)
+                .padding(.top, 22)
+
+            HStack {
                 flowTotal("Masuk", viewModel.thisMonthIncome)
+                Spacer()
                 flowTotal("Keluar", viewModel.thisMonthExpense)
             }
             .padding(.top, 12)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .padding(.bottom, 24)
+        .padding(.top, 32)
+        .padding(.bottom, 28)
     }
 
     private func flowTotal(_ label: String, _ amount: Double) -> some View {
@@ -411,7 +417,7 @@ struct TransactionListView: View {
                 if !expanded, isBalanceVisible, net != 0 {
                     Text(" · ")
                     Text((net > 0 ? "+Rp" : "−Rp") + net.abbreviatedRupiah())
-                        .foregroundStyle(net > 0 ? Color.appIncome : Color.appTextSecondary)
+                        .foregroundStyle(net > 0 ? Color.appIncome : Color.appError)
                 }
             }
             .font(.app(13))
@@ -438,7 +444,6 @@ struct TransactionListView: View {
                     showBalance: isBalanceVisible,
                     showDate: false
                 )
-                .rowSeparator()
             }
             .buttonStyle(RowPressStyle())
         }
@@ -463,6 +468,7 @@ struct TransactionListView: View {
             Spacer()
             if isBalanceVisible, total != 0 {
                 Text((total > 0 ? "+" : "−") + abs(total).formattedAsCurrency())
+                    .foregroundStyle(total > 0 ? Color.appIncome : Color.appError)
             }
         }
         .font(.app(13))

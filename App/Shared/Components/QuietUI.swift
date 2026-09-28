@@ -3,9 +3,10 @@ import SwiftUI
 /// Masked value used wherever balances are hidden.
 let hiddenAmount = "••••••"
 
-/// Large light-weight amount with a small "Rp" prefix.
+/// Large light-weight amount with a small "Rp" prefix; a negative value gets "−Rp".
 struct HeroAmount: View {
-    enum Size { case large, medium }
+    /// `hero` is the Beranda total (58pt, extra light).
+    enum Size { case hero, large, medium }
 
     let value: Double
     var size: Size = .large
@@ -13,23 +14,52 @@ struct HeroAmount: View {
     var color: Color = .appText
     var prefixColor: Color = .appTextSecondary
     var isVisible: Bool = true
+    var weight: Font.Weight = .light
 
     var body: some View {
-        let big = size == .large
-        HStack(alignment: .top, spacing: big ? 4 : 3) {
-            Text(prefix)
-                .font(.app(big ? 22 : 17))
+        let (number, symbol, top, tracking, spacing): (CGFloat, CGFloat, CGFloat, CGFloat, CGFloat) = switch size {
+        case .hero: (58, 24, 9, -2.6, 4)
+        case .large: (52, 22, 8, -2, 4)
+        case .medium: (40, 17, 5, -1.4, 3)
+        }
+        HStack(alignment: .top, spacing: spacing) {
+            Text(value < 0 && prefix == "Rp" && isVisible ? "−Rp" : prefix)
+                .font(.app(symbol))
                 .foregroundStyle(prefixColor)
-                .padding(.top, big ? 8 : 5)
+                .padding(.top, top)
             Text(isVisible ? value.formattedAsDigits() : hiddenAmount)
-                .font(.app(big ? 52 : 40, weight: .light))
-                .tracking(big ? -2 : -1.4)
+                .font(.app(number, weight: weight))
+                .tracking(tracking)
                 .foregroundStyle(color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .contentTransition(.numericText())
         }
         .monospacedDigit()
+    }
+}
+
+/// Thin two-colour bar splitting income (green) from spending (red).
+struct FlowSplitBar: View {
+    let income: Double
+    let expense: Double
+
+    var body: some View {
+        let total = income + expense
+        let share = total > 0 ? income / total : 0.5
+        GeometryReader { geo in
+            HStack(spacing: 3) {
+                if income > 0 || total == 0 {
+                    RoundedRectangle(cornerRadius: 3).fill(Color.appPrimary)
+                        .frame(width: total == 0 ? nil : max(0, (geo.size.width - 3) * share))
+                }
+                if expense > 0 || total == 0 {
+                    RoundedRectangle(cornerRadius: 3).fill(total == 0 ? Color.appDivider : Color.appError)
+                }
+            }
+        }
+        .frame(height: 6)
+        .accessibilityHidden(true)
     }
 }
 
