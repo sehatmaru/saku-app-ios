@@ -197,6 +197,8 @@ struct AddTransactionView: View {
                 .animation(.easeInOut(duration: 0.45), value: typeIndex)
                 .ignoresSafeArea(edges: .top)
         }
+        .contentShape(Rectangle())
+        .gesture(typeSwipe)
     }
 
     private var typeCarousel: some View {
@@ -223,22 +225,23 @@ struct AddTransactionView: View {
         }
         .frame(height: 44)
         .clipped()
-        .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 6)
-                .onChanged { value in
-                    guard done == nil else { return }
-                    var dx = value.translation.width
-                    if (typeIndex == allowedTypes.lowerBound && dx > 0) || (typeIndex == allowedTypes.upperBound && dx < 0) { dx *= 0.3 }
-                    dragX = dx
-                }
-                .onEnded { _ in
-                    let dx = dragX
-                    let next = dx < -40 ? typeIndex + 1 : dx > 40 ? typeIndex - 1 : typeIndex
-                    withAnimation(.settle(0.46)) { dragX = 0 }
-                    setType(min(max(next, allowedTypes.lowerBound), allowedTypes.upperBound))
-                }
-        )
+    }
+
+    /// Swiping anywhere on the coloured panel switches type, not just on the title.
+    private var typeSwipe: some Gesture {
+        DragGesture(minimumDistance: 6)
+            .onChanged { value in
+                guard done == nil else { return }
+                var dx = value.translation.width
+                if (typeIndex == allowedTypes.lowerBound && dx > 0) || (typeIndex == allowedTypes.upperBound && dx < 0) { dx *= 0.3 }
+                dragX = dx
+            }
+            .onEnded { _ in
+                let dx = dragX
+                let next = dx < -40 ? typeIndex + 1 : dx > 40 ? typeIndex - 1 : typeIndex
+                withAnimation(.settle(0.46)) { dragX = 0 }
+                setType(min(max(next, allowedTypes.lowerBound), allowedTypes.upperBound))
+            }
     }
 
     private var typeDots: some View {
