@@ -272,7 +272,7 @@ struct DashboardView: View {
             SectionHeader(title: "Kesehatan finansial")
             SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
                 .padding(.top, 16)
-            Text("Skor muncul setelah kamu mencatat transaksi selama 7 hari.")
+            Text("Skor muncul setelah kamu mencatat pemasukan atau pengeluaran.")
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
                 .lineSpacing(3)
@@ -378,52 +378,59 @@ struct DashboardView: View {
 
     // MARK: Health score
 
+    /// Score, bar and the factor costing the most points; tap for every factor and tips.
+    @ViewBuilder
     private var healthSection: some View {
-        let score = viewModel.healthScore
-        return VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Kesehatan finansial", trailing: viewModel.healthScoreLabel, trailingColor: healthColor(score))
+        let health = viewModel.health
+        if !health.isAvailable {
+            emptyHealthSection
+        } else {
+            NavigationLink { HealthDetailView(health: health) } label: {
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionHeader(title: "Kesehatan finansial", trailing: health.label, trailingColor: health.color)
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(score)")
-                    .font(.app(56, weight: .light))
-                    .tracking(-2)
-                Text("/ 100")
-                    .font(.app(17))
-                    .foregroundStyle(Color.appTextSecondary)
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("\(health.score)")
+                            .font(.app(56, weight: .light))
+                            .tracking(-2)
+                            .foregroundStyle(Color.appText)
+                        Text("/ 100")
+                            .font(.app(17))
+                            .foregroundStyle(Color.appTextSecondary)
+                    }
+                    .padding(.top, 14)
+
+                    SegmentBar(value: Double(health.score) / 100, color: health.color, count: 40, height: 22, spacing: 3)
+                        .padding(.top, 16)
+
+                    HStack(spacing: 10) {
+                        if let weakest = health.weakest, !health.isHealthy {
+                            Image(systemName: weakest.icon)
+                                .font(.system(size: 15))
+                                .foregroundStyle(weakest.color)
+                            (Text("Perbaiki ").foregroundStyle(Color.appTextSecondary)
+                             + Text(weakest.title.lowercased()).fontWeight(.medium).foregroundStyle(Color.appText)
+                             + Text(" untuk +\(weakest.missing) poin").foregroundStyle(Color.appTextSecondary))
+                                .font(.app(15))
+                                .lineLimit(1)
+                        } else {
+                            Text("Semua faktor dalam kondisi baik")
+                                .font(.app(15))
+                                .foregroundStyle(Color.appTextSecondary)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.appTextTertiary)
+                    }
+                    .padding(.top, 18)
+                }
+                .padding(24)
+                .padding(.vertical, 4)
+                .contentShape(Rectangle())
             }
-            .padding(.top, 14)
-
-            SegmentBar(value: Double(score) / 100, color: healthColor(score), count: 40, height: 22, spacing: 3)
-                .padding(.top, 16)
-
-            HStack(spacing: 0) {
-                scorePart("Arus kas", viewModel.cashflowScore, of: 40)
-                scorePart("Budget", viewModel.budgetScore, of: 35)
-                scorePart("Diversifikasi", viewModel.diversityScore, of: 25)
-            }
-            .padding(.top, 18)
-        }
-        .padding(24)
-        .padding(.vertical, 4)
-    }
-
-    private func scorePart(_ label: String, _ score: Int, of max: Int) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-            (Text("\(score)").foregroundStyle(Color.appText) + Text("/\(max)").foregroundStyle(Color.appTextTertiary))
-                .font(.app(17))
-                .monospacedDigit()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func healthColor(_ score: Int) -> Color {
-        switch score {
-        case 60...: .appPrimary
-        case 40..<60: .appWarning
-        default: .appError
+            .buttonStyle(RowPressStyle())
+            .accessibilityHint("Lihat detail kesehatan finansial")
         }
     }
 

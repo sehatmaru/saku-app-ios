@@ -80,11 +80,7 @@ final class DashboardViewModel: ObservableObject {
 
     @Published var errorMessage: String?
 
-    @Published var healthScore: Int = 0
-    @Published var healthScoreLabel: String = ""
-    @Published var cashflowScore: Int = 0
-    @Published var budgetScore: Int = 0
-    @Published var diversityScore: Int = 0
+    @Published var health = FinancialHealth.empty
 
     private let calendar = Calendar.current
 
@@ -109,11 +105,7 @@ final class DashboardViewModel: ObservableObject {
             categories = cached.categories
             dailyExpenses = cached.dailyExpenses
             budgets = cached.budgets
-            healthScore = cached.healthScore
-            healthScoreLabel = cached.healthScoreLabel
-            cashflowScore = cached.cashflowScore
-            budgetScore = cached.budgetScore
-            diversityScore = cached.diversityScore
+            health = cached.health
             loadedUserId = userId
             hasLoadedOnce = true
             return
@@ -206,7 +198,7 @@ final class DashboardViewModel: ObservableObject {
                 }
 
             monthlyCashflow = computeMonthlyCashflow(transactions: transactions, months: 5)
-            computeHealthScore()
+            health = computeHealth(transactions: transactions)
             AppDataCache.shared.setDashboardState(.init(
                 balance: balance,
                 creditDebt: creditDebt,
@@ -224,11 +216,7 @@ final class DashboardViewModel: ObservableObject {
                 categories: categories,
                 dailyExpenses: dailyExpenses,
                 budgets: self.budgets,
-                healthScore: healthScore,
-                healthScoreLabel: healthScoreLabel,
-                cashflowScore: cashflowScore,
-                budgetScore: budgetScore,
-                diversityScore: diversityScore
+                health: health
             ), for: userId)
             loadedUserId = userId
             hasLoadedOnce = true
@@ -240,37 +228,30 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
-    private func computeHealthScore() {
-        let savingsRate = totalIncome > 0 ? netCashflow / totalIncome : 0
-
-        if savingsRate >= 0.3 { cashflowScore = 40 }
-        else if savingsRate >= 0.2 { cashflowScore = 35 }
-        else if savingsRate >= 0.1 { cashflowScore = 25 }
-        else if savingsRate >= 0 { cashflowScore = 15 }
-        else if savingsRate >= -0.1 { cashflowScore = 10 }
-        else { cashflowScore = 0 }
-
-        let budgetHealth = totalBudget > 0 ? totalRemaining / totalBudget : 0
-        if budgetHealth >= 0.5 { budgetScore = 35 }
-        else if budgetHealth >= 0.25 { budgetScore = 30 }
-        else if budgetHealth >= 0 { budgetScore = 20 }
-        else if budgetHealth >= -0.2 { budgetScore = 10 }
-        else { budgetScore = 0 }
-
-        let categoryCount = categorySpending.count
-        if categoryCount >= 5 { diversityScore = 25 }
-        else if categoryCount >= 3 { diversityScore = 20 }
-        else if categoryCount >= 1 { diversityScore = 10 }
-        else { diversityScore = 0 }
-
-        healthScore = cashflowScore + budgetScore + diversityScore
-
-        switch healthScore {
-        case 80...100: healthScoreLabel = "Sehat"
-        case 60..<80: healthScoreLabel = "Cukup"
-        case 40..<60: healthScoreLabel = "Kurang"
-        default: healthScoreLabel = "Perlu Perbaikan"
-        }
+    /// Scores the last three months (including this one) and today's balances.
+    private func computeHealth(transactions: [Transaction]) -> FinancialHealth {
+        let now = Date()
+        let recent = monthlyCashflow.suffix(3)
+        let cards = accounts.filter { $0.isActive && $0.isCreditCard }
+        let dayCount = Double(calendar.range(of: .day, in: .month, for: now)?.count ?? 30)
+        let startOfToday = calendar.startOfDay(for: now)
+        let since = calendar.date(byAdding: .day, value: -29, to: startOfToday) ?? startOfToday
+        let activeDays = Set(transactions.filter { $0.date >= since && $0.type != .adjustment }
+            .map { calendar.startOfDay(for: $0.date) }).count
+        return FinancialHealth(.init(
+            monthlyIncome: recent.map(\.income),
+            monthlyExpense: recent.map(\.expense),
+            liquidBalance: balance,
+            creditDebt: max(cards.reduce(0) { $0 + $1.balance }, 0),
+            creditLimit: cards.reduce(0) { $0 + ($1.creditLimit ?? 0) },
+            hasCreditCard: !cards.isEmpty,
+            budgetTotal: totalBudget,
+            budgetSpent: totalSpent,
+            monthProgress: Double(calendar.component(.day, from: now)) / dayCount,
+            activeDays: activeDays,
+            topExpenseCategory: categorySpending.first?.0.name,
+            hasTransactions: transactions.contains { $0.type == .income || $0.type == .expense }
+        ))
     }
 
     private func isCurrentMonth(_ date: Date) -> Bool {

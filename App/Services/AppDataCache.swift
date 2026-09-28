@@ -21,11 +21,7 @@ final class AppDataCache {
         var categories: [Category]
         var dailyExpenses: [Double]
         var budgets: [Budget]
-        var healthScore: Int
-        var healthScoreLabel: String
-        var cashflowScore: Int
-        var budgetScore: Int
-        var diversityScore: Int
+        var health: FinancialHealth
     }
 
     struct BudgetState {

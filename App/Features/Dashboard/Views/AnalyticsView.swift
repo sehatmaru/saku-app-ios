@@ -6,7 +6,6 @@ struct AnalyticsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.lg) {
-                healthSection
                 cashflowSection
                 spendingSection
             }
@@ -15,83 +14,6 @@ struct AnalyticsView: View {
         .background(Color.appGroupedBackground)
         .navigationTitle("Analitik")
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var healthSection: some View {
-        VStack(spacing: Spacing.lg) {
-            HStack {
-                Image(systemName: "heart.fill")
-                    .font(.app(12))
-                    .foregroundColor(.appPrimary)
-                Text("Skor Kesehatan Finansial")
-                    .font(.app(15, weight: .semibold))
-                    .foregroundColor(.appText)
-                Spacer()
-            }
-
-            HStack(spacing: Spacing.xxl) {
-                ZStack {
-                    Circle()
-                        .stroke(Color.appGroupedBackground, lineWidth: 10)
-                        .frame(width: 120, height: 120)
-
-                    Circle()
-                        .trim(from: 0, to: CGFloat(viewModel.healthScore) / 100)
-                        .stroke(healthScoreColor(viewModel.healthScore), style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                        .frame(width: 120, height: 120)
-                        .rotationEffect(.degrees(-90))
-
-                    VStack(spacing: -2) {
-                        Text("\(viewModel.healthScore)")
-                            .font(.app(38, weight: .bold))
-                            .foregroundColor(healthScoreColor(viewModel.healthScore))
-                        Text("/100")
-                            .font(.app(11))
-                            .foregroundColor(.appTextSecondary)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    Text(viewModel.healthScoreLabel)
-                        .font(.app(22, weight: .bold))
-                        .foregroundColor(healthScoreColor(viewModel.healthScore))
-
-                    VStack(alignment: .leading, spacing: Spacing.xs) {
-                        detailRow(label: "Arus Kas", score: viewModel.cashflowScore, maxScore: 40)
-                        detailRow(label: "Budget", score: viewModel.budgetScore, maxScore: 35)
-                        detailRow(label: "Diversifikasi", score: viewModel.diversityScore, maxScore: 25)
-                    }
-                }
-
-                Spacer()
-            }
-        }
-        .padding()
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-    }
-
-    private func detailRow(label: String, score: Int, maxScore: Int) -> some View {
-        HStack(spacing: Spacing.sm) {
-            Text(label)
-                .font(.app(13))
-                .foregroundColor(.appTextSecondary)
-            ProgressView(value: Double(score) / Double(maxScore))
-                .tint(healthScoreColor(score * 100 / max(maxScore, 1)))
-                .frame(width: 60)
-            Text("\(score)/\(maxScore)")
-                .font(.app(12, weight: .semibold))
-                .foregroundColor(.appText)
-        }
-    }
-
-    private func healthScoreColor(_ score: Int) -> Color {
-        switch score {
-        case 80...100: return .appIncome
-        case 60..<80: return Color(red: 0.85, green: 0.65, blue: 0.13)
-        case 40..<60: return .appWarning
-        default: return .appError
-        }
     }
 
     private var cashflowSection: some View {
