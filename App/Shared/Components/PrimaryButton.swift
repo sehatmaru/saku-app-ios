@@ -1,8 +1,11 @@
 import SwiftUI
 
+/// 52pt green pill; turns grey when disabled.
 struct PrimaryButton: View {
     let title: String
-    let isLoading: Bool
+    var isLoading = false
+    var isEnabled = true
+    var trailingIcon: String?
     let action: () -> Void
 
     var body: some View {
@@ -13,15 +16,20 @@ struct PrimaryButton: View {
                         .tint(.white)
                 }
                 Text(title)
-                    .font(.app(17, weight: .semibold))
+                    .contentTransition(.numericText())
+                if let trailingIcon {
+                    Image(systemName: trailingIcon)
+                        .font(.system(size: 15, weight: .bold))
+                }
             }
+            .font(.app(17, weight: .semibold))
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(isLoading ? Color.appSecondary : Color.appPrimary)
-            .foregroundColor(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .frame(height: 52)
+            .background(isEnabled ? Color.appPrimary : Color.appTextTertiary, in: Capsule())
+            .foregroundStyle(.white)
+            .animation(.easeInOut(duration: 0.24), value: isEnabled)
         }
         .buttonStyle(.plain)
-        .disabled(isLoading)
+        .disabled(isLoading || !isEnabled)
     }
 }
