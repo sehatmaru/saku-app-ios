@@ -12,6 +12,8 @@ struct DashboardView: View {
     @State private var showAddSheet = false
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
     @State private var isChartShown = false
+    /// Day index picked in the "Bulan ini" chart; nil means today.
+    @State private var selectedDay: Int?
     @State private var showAllBudgets = false
     @State private var selectedTab: AppTab = .home
 
@@ -340,7 +342,7 @@ struct DashboardView: View {
             .padding(.top, 14)
 
             dailyChart(days, average: average, peak: peak)
-                .padding(.top, 22)
+                .padding(.top, 18)
 
             HStack {
                 Text("1 \(Self.monthFormatter.string(from: Date()))")
@@ -381,39 +383,90 @@ struct DashboardView: View {
         }
     }
 
-    /// One bar per day so far; today in green, dashed line at the daily average. Tap to replay.
+    /// One bar per day so far with a dashed daily-average line. Tap a bar to see that day's spending.
     private func dailyChart(_ days: [Double], average: Double, peak: Double) -> some View {
         let height: CGFloat = 96
-        return HStack(alignment: .bottom, spacing: 3) {
-            ForEach(days.indices, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(i == days.count - 1 ? Color.appPrimary : Self.barGray)
-                    .frame(height: isChartShown ? max(2, height * days[i] / peak) : 2)
-                    .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.7).delay(Double(i) * 0.022), value: isChartShown)
+        let selected = min(selectedDay ?? days.count - 1, days.count - 1)
+        return VStack(spacing: 4) {
+            if selected >= 0 {
+                dayLabel(days, selected: selected)
+            }
+            HStack(alignment: .bottom, spacing: 3) {
+                ForEach(days.indices, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(i == selected ? Color.appPrimary : Self.barGray)
+                        .animation(.easeInOut(duration: 0.2), value: selected)
+                        .frame(height: isChartShown ? max(2, height * days[i] / peak) : 2)
+                        .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.7).delay(Double(i) * 0.022), value: isChartShown)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
+                        .contentShape(Rectangle())
+                        .onTapGesture { selectedDay = i }
+                        .accessibilityElement()
+                        .accessibilityLabel(dayTitle(i, of: days.count))
+                        .accessibilityValue(isBalanceVisible ? "Rp" + days[i].formattedAsDigits() : "tersembunyi")
+                        .accessibilityAddTraits(i == selected ? [.isButton, .isSelected] : .isButton)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .bottom)
+            .overlay(alignment: .bottom) {
+                if average > 0 {
+                    DashedLine()
+                        .stroke(Color.appTextSecondary, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                        .frame(height: 1)
+                        .offset(y: -height * average / peak)
+                        .opacity(isChartShown ? 1 : 0)
+                        .animation(.easeOut(duration: 0.4).delay(isChartShown ? 0.9 : 0), value: isChartShown)
+                        .allowsHitTesting(false)
+                }
             }
         }
-        .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .bottom)
-        .overlay(alignment: .bottom) {
-            if average > 0 {
-                DashedLine()
-                    .stroke(Color.appTextSecondary, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                    .frame(height: 1)
-                    .offset(y: -height * average / peak)
-                    .opacity(isChartShown ? 1 : 0)
-                    .animation(.easeOut(duration: 0.4).delay(isChartShown ? 0.9 : 0), value: isChartShown)
+    }
+
+    /// Black pill above the chart naming the selected day and its spending; follows the bar.
+    private func dayLabel(_ days: [Double], selected: Int) -> some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let x = (CGFloat(selected) + 0.5) * w / CGFloat(days.count)
+            HStack(spacing: 6) {
+                Text(dayTitle(selected, of: days.count))
+                    .foregroundStyle(Color.appBackground.opacity(0.7))
+                Text(isBalanceVisible ? "−Rp" + days[selected].formattedAsDigits() : "Rp" + hiddenAmount)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.appBackground)
+                    .contentTransition(.numericText())
             }
+            .font(.app(13))
+            .monospacedDigit()
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 10)
+            .frame(height: 28)
+            .background(Color.appText, in: Capsule())
+            .position(x: min(max(x, 78), max(w - 78, 78)), y: 14)
+            .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.26), value: selected)
+            .opacity(isChartShown ? 1 : 0)
+            .animation(.easeInOut(duration: 0.3).delay(isChartShown ? 0.7 : 0), value: isChartShown)
         }
-        .contentShape(Rectangle())
-        .onTapGesture(perform: replayChart)
-        .accessibilityElement()
-        .accessibilityLabel("Pengeluaran harian bulan ini")
-        .accessibilityHint("Ketuk untuk memutar ulang")
+        .frame(height: 30)
+        .accessibilityHidden(true)
+    }
+
+    /// "Hari ini" for the last bar, otherwise e.g. "Sel, 15 Sep".
+    private func dayTitle(_ index: Int, of count: Int) -> String {
+        guard index != count - 1 else { return "Hari ini" }
+        let calendar = Calendar.current
+        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: Date())) ?? Date()
+        let date = calendar.date(byAdding: .day, value: index, to: start) ?? start
+        return Self.weekdayDayFormatter.string(from: date)
     }
 
     private func replayChart() {
         var reset = SwiftUI.Transaction()
         reset.disablesAnimations = true
-        withTransaction(reset) { isChartShown = false }
+        withTransaction(reset) {
+            isChartShown = false
+            selectedDay = nil
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { isChartShown = true }
     }
 
@@ -662,4 +715,5 @@ struct DashboardView: View {
     private static let shortDayFormatter = formatter("EEEE, d MMM")
     private static let dayFormatter = formatter("d")
     private static let monthFormatter = formatter("MMM")
+    private static let weekdayDayFormatter = formatter("EEE, d MMM")
 }
