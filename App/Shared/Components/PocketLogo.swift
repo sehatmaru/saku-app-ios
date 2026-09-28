@@ -64,8 +64,13 @@ struct SegmentTrack: View {
 /// Laid out on a 180pt grid and scaled to fit its frame.
 struct PocketLogo: View {
     var isOpen: Bool
+    /// Fans the two back cards out; follows `isOpen` unless set, so it can run as a later step.
+    var isFanned: Bool?
     var stagger = 0.12
     var duration = 0.9
+    var pocketColor: Color = .white
+    /// Plain cards and pocket without chip, stripe, stitching or shadow, for small sizes.
+    var isPlain = false
 
     private let cards: [(color: String, width: CGFloat, top: CGFloat, angle: Double, x: CGFloat)] = [
         ("D9A93A", 132, 0, -7, -10),
@@ -80,10 +85,13 @@ struct PocketLogo: View {
                 ZStack(alignment: .top) {
                     ForEach(cards.indices, id: \.self) { i in
                         let c = cards[i]
+                        let fanned = isFanned ?? isOpen
                         card(Color(hex: c.color), s: s)
                             .frame(width: c.width * s, height: 90 * s)
-                            .rotationEffect(.degrees(isOpen ? c.angle : 0), anchor: .bottom)
-                            .offset(x: isOpen ? c.x * s : 0, y: (c.top + (isOpen ? 0 : 84)) * s)
+                            .rotationEffect(.degrees(fanned ? c.angle : 0), anchor: .bottom)
+                            .offset(x: fanned ? c.x * s : 0)
+                            .animation(.settle(duration * 0.9), value: fanned)
+                            .offset(y: (c.top + (isOpen ? 0 : 84)) * s)
                             .animation(.settle(duration).delay(Double(i) * stagger), value: isOpen)
                     }
                 }
@@ -94,14 +102,10 @@ struct PocketLogo: View {
                 }
 
                 PocketShape(curve: 76 / 102)
-                    .fill(.white)
-                    .shadow(color: .black.opacity(0.08), radius: 7 * s, y: -4 * s)
+                    .fill(pocketColor)
+                    .shadow(color: .black.opacity(isPlain ? 0 : 0.08), radius: 7 * s, y: -4 * s)
                     .overlay(alignment: .top) {
-                        DashedLine()
-                            .stroke(Color.appBrand.opacity(0.45), style: StrokeStyle(lineWidth: 2.5 * s, dash: [6 * s, 4 * s]))
-                            .frame(height: 2.5 * s)
-                            .padding(.horizontal, 20 * s)
-                            .padding(.top, 21 * s)
+                        if !isPlain { stitching(s) }
                     }
                     .frame(width: 180 * s, height: 102 * s)
                     .offset(y: 78 * s)
@@ -114,7 +118,24 @@ struct PocketLogo: View {
         .accessibilityLabel("SakuQ")
     }
 
+    private func stitching(_ s: CGFloat) -> some View {
+        DashedLine()
+            .stroke(Color.appBrand.opacity(0.45), style: StrokeStyle(lineWidth: 2.5 * s, dash: [6 * s, 4 * s]))
+            .frame(height: 2.5 * s)
+            .padding(.horizontal, 20 * s)
+            .padding(.top, 21 * s)
+    }
+
+    @ViewBuilder
     private func card(_ color: Color, s: CGFloat) -> some View {
+        if isPlain {
+            RoundedRectangle(cornerRadius: 10 * s).fill(color)
+        } else {
+            detailedCard(color, s: s)
+        }
+    }
+
+    private func detailedCard(_ color: Color, s: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 10 * s)
             .fill(color)
             .overlay(alignment: .topLeading) {

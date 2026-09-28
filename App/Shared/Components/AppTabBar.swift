@@ -64,6 +64,8 @@ struct CustomTabBar<Tab: Hashable>: View {
         let tab: Tab
         let label: String
         let icon: String
+        /// Shows these initials in a round avatar instead of the icon.
+        var avatar: String?
     }
 
     let items: [Item]
@@ -110,9 +112,17 @@ struct CustomTabBar<Tab: Hashable>: View {
         let isOn = item.tab == selection
         let highlight: Color = isOn ? Color.appText.opacity(0.06) : .clear
         return Button { selection = item.tab } label: {
-            Image(systemName: item.icon)
-                .font(.system(size: 21))
-                .foregroundStyle(isOn ? Color.appPrimary : Color.appText)
+            Group {
+                if let initials = item.avatar {
+                    InitialsAvatar(initials: initials, size: 28, fontSize: 11)
+                        .padding(2)
+                        .overlay(Circle().strokeBorder(isOn ? Color.appPrimary : Color.appText.opacity(0.12), lineWidth: isOn ? 2 : 0.5))
+                } else {
+                    Image(systemName: item.icon)
+                        .font(.system(size: 21))
+                        .foregroundStyle(isOn ? Color.appPrimary : Color.appText)
+                }
+            }
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
                 .background(highlight, in: Capsule())

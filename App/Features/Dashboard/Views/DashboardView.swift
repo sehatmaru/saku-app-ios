@@ -113,19 +113,30 @@ struct DashboardView: View {
         }
         .environment(tabBarScroll)
         .overlay(alignment: .bottom) {
-            CustomTabBar(items: Self.tabItems, selection: $selectedTab, isHidden: tabBarScroll.isHidden) {
+            CustomTabBar(items: tabItems, selection: $selectedTab, isHidden: tabBarScroll.isHidden) {
                 showAddSheet = true
             }
         }
     }
 
-    private static let tabItems: [CustomTabBar<AppTab>.Item] = [
-        .init(tab: .home, label: "Beranda", icon: "house.fill"),
-        .init(tab: .transactions, label: "Transaksi", icon: "list.bullet"),
-        .init(tab: .budget, label: "Budget", icon: "chart.pie.fill"),
-        .init(tab: .wallet, label: "Dompet", icon: "wallet.bifold.fill"),
-        .init(tab: .profile, label: "Profil", icon: "person.crop.circle.fill"),
-    ]
+    private var initials: String { authViewModel.currentUser?.initials ?? "U" }
+
+    private var tabItems: [CustomTabBar<AppTab>.Item] {
+        [
+            .init(tab: .home, label: "Beranda", icon: "house.fill"),
+            .init(tab: .transactions, label: "Transaksi", icon: "list.bullet"),
+            .init(tab: .budget, label: "Budget", icon: "chart.pie.fill"),
+            .init(tab: .wallet, label: "Dompet", icon: "wallet.bifold.fill"),
+            .init(tab: .profile, label: "Profil", icon: "person.crop.circle.fill", avatar: initials),
+        ]
+    }
+
+    /// Initials avatar for the native tab bar, which only takes images; drawn untinted.
+    private var avatarTabImage: UIImage {
+        let renderer = ImageRenderer(content: InitialsAvatar(initials: initials, size: 26, fontSize: 10))
+        renderer.scale = UIScreen.main.scale
+        return (renderer.uiImage ?? UIImage()).withRenderingMode(.alwaysOriginal)
+    }
 
     @TabContentBuilder<AppTab>
     private func mainTabs(hidesSystemBar: Bool) -> some TabContent<AppTab> {
@@ -145,9 +156,11 @@ struct DashboardView: View {
             AccountListView()
                 .customTabBarSpace(hidesSystemBar)
         }
-        Tab("Profil", systemImage: "person.crop.circle.fill", value: AppTab.profile) {
+        Tab(value: AppTab.profile) {
             ProfileView()
                 .customTabBarSpace(hidesSystemBar)
+        } label: {
+            Label { Text("Profil") } icon: { Image(uiImage: avatarTabImage) }
         }
     }
 
@@ -191,9 +204,7 @@ struct DashboardView: View {
 
     private var homeHeader: some View {
         HStack {
-            Text(Self.headerDateFormatter.string(from: Date()))
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
+            HomeLogo()
             Spacer()
             Button {
                 withAnimation(.smooth) { isBalanceVisible.toggle() }
@@ -206,7 +217,7 @@ struct DashboardView: View {
             .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
         }
         .padding(.horizontal, 24)
-        .padding(.top, 10)
+        .padding(.top, 8)
     }
 
     private var homeSkeleton: some View {
@@ -642,8 +653,73 @@ struct DashboardView: View {
         return f
     }
 
-    private static let headerDateFormatter = formatter("EEEE, d MMMM")
     private static let shortDayFormatter = formatter("EEEE, d MMM")
     private static let monthFormatter = formatter("MMM")
     private static let weekdayDayFormatter = formatter("EEE, d MMM")
+}
+
+/// Beranda's header mark: the pocket pops in, cards rise and fan, then "SakuQ" fades up.
+/// Every 5 s the cards drop back in and rise again; tapping replays the whole intro.
+private struct HomeLogo: View {
+    @State private var showsPocket = false
+    @State private var isOpen = false
+    @State private var isFanned = false
+    @State private var showsWord = false
+    @State private var run = 0
+
+    var body: some View {
+        Button { run += 1 } label: {
+            HStack(spacing: 8) {
+                PocketLogo(isOpen: isOpen, isFanned: isFanned, stagger: 0.12, duration: 0.9,
+                           pocketColor: .appBrand, isPlain: true)
+                    .frame(width: 24, height: 24)
+                    .opacity(showsPocket ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.3), value: showsPocket)
+                    .scaleEffect(showsPocket ? 1 : 0.6, anchor: .bottom)
+                    .animation(.timingCurve(0.3, 1.4, 0.5, 1, duration: 0.7), value: showsPocket)
+                    .frame(width: 28, height: 28)
+                Text("SakuQ")
+                    .font(.wordmark(19))
+                    .tracking(-0.5)
+                    .foregroundStyle(Color.appText)
+                    .rise(showsWord, y: 6)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("SakuQ")
+        .task(id: run) { await play() }
+    }
+
+    private func play() async {
+        var reset = SwiftUI.Transaction()
+        reset.disablesAnimations = true
+        withTransaction(reset) {
+            showsPocket = false
+            isOpen = false
+            isFanned = false
+            showsWord = false
+        }
+        let start = ContinuousClock.now
+        for (t, step) in [(0.15, 1), (0.65, 2), (1.25, 3), (1.6, 4)] {
+            try? await Task.sleep(until: start + .seconds(t), clock: .continuous)
+            guard !Task.isCancelled else { return }
+            switch step {
+            case 1: showsPocket = true
+            case 2: isOpen = true
+            case 3: isFanned = true
+            default: showsWord = true
+            }
+        }
+        // Loops until the view goes away or a tap restarts it.
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            isOpen = false
+            isFanned = false
+            try? await Task.sleep(for: .seconds(1))
+            isOpen = true
+            try? await Task.sleep(for: .seconds(0.6))
+            isFanned = true
+        }
+    }
 }

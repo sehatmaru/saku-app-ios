@@ -9,7 +9,7 @@ struct BudgetListView: View {
     }
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
     @State private var isBalanceVisible = true
-    @State private var showUnsetBudget = false
+    @State private var showUnsetBudget = true
     @State private var showAddBudget = false
     @State private var showBudgetSavedToast = false
     @State private var budgetSavedToastMessage = ""
@@ -75,7 +75,7 @@ struct BudgetListView: View {
                             ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                         }
                         summary
-                        historyLink
+                        SectionDivider()
 
                         if !setItems.isEmpty {
                             VStack(alignment: .leading, spacing: 0) {
@@ -172,7 +172,7 @@ struct BudgetListView: View {
             .font(.app(15))
             .foregroundStyle(remaining < 0 ? Color.appError : Color.appTextSecondary)
 
-            HeroAmount(value: max(0, remaining), isVisible: isBalanceVisible)
+            HeroAmount(value: max(0, remaining), size: .hero, isVisible: isBalanceVisible, weight: .ultraLight)
                 .padding(.top, 8)
 
             SegmentBar(
@@ -180,17 +180,14 @@ struct BudgetListView: View {
                 color: remaining < 0 ? .appError : .appPrimary,
                 height: 12
             )
-            .padding(.top, 20)
+            .padding(.top, 24)
 
             HStack {
-                Text("Terpakai " + masked(viewModel.totalSpent))
+                total("Terpakai", viewModel.totalSpent)
                 Spacer()
-                Text("Budget " + masked(viewModel.totalBudget))
+                total("Budget", viewModel.totalBudget)
             }
-            .font(.app(13))
-            .foregroundStyle(Color.appTextSecondary)
-            .monospacedDigit()
-            .padding(.top, 10)
+            .padding(.top, 12)
 
             if viewModel.totalBudget > 0 {
                 Group {
@@ -213,10 +210,23 @@ struct BudgetListView: View {
                 .foregroundStyle(Color.appBody)
                 .padding(.top, 18)
             }
+
+            historyLink
+                .padding(.top, 20)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .padding(.bottom, 24)
+        .padding(.top, 32)
+        .padding(.bottom, 32)
+    }
+
+    /// "Terpakai 3,04 jt" with the amount in the text colour.
+    private func total(_ label: String, _ amount: Double) -> some View {
+        (Text(label + " ").foregroundStyle(Color.appTextSecondary)
+         + Text(isBalanceVisible ? amount.abbreviatedRupiah() : hiddenAmount)
+            .fontWeight(.medium)
+            .foregroundStyle(Color.appText))
+            .font(.app(15))
+            .monospacedDigit()
     }
 
     private func masked(_ amount: Double) -> String {
@@ -225,26 +235,14 @@ struct BudgetListView: View {
 
     private var historyLink: some View {
         NavigationLink(destination: OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions)) {
-            HStack(spacing: 14) {
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 19))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .frame(width: 24)
-                Text("Riwayat bulan sebelumnya")
-                    .font(.app(16))
-                    .foregroundStyle(Color.appText)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.appTextTertiary)
-            }
-            .padding(.vertical, 14)
-            .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
-            .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
-            .contentShape(Rectangle())
+            Label("Riwayat bulan sebelumnya", systemImage: "clock.arrow.circlepath")
+                .font(.app(15, weight: .medium))
+                .foregroundStyle(Color.appText)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(Color.appFill, in: Capsule())
         }
         .buttonStyle(RowPressStyle())
-        .padding(.horizontal, 24)
     }
 
     private var unsetSection: some View {
@@ -355,7 +353,6 @@ struct BudgetCardView: View {
                 unsetCard
             }
         }
-        .rowSeparator()
         .sheet(isPresented: $showSetBudget) {
             setBudgetSheet
                 .presentationDetents([.medium])
@@ -378,7 +375,7 @@ struct BudgetCardView: View {
                 .foregroundStyle(Color.appPrimary)
                 .accessibilityLabel("Atur budget \(category.name)")
         }
-        .padding(.vertical, 14)
+        .padding(.vertical, 11)
     }
 
     private var setBudgetSheet: some View {
@@ -486,7 +483,7 @@ struct BudgetCardView: View {
             }
             .padding(.leading, 38)
         }
-        .padding(.vertical, 16)
+        .padding(.vertical, 13)
         .contentShape(Rectangle())
     }
 
