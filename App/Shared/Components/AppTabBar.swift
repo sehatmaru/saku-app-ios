@@ -1,17 +1,5 @@
 import SwiftUI
 
-extension View {
-    /// Shrinks the system tab bar while scrolling down (iOS 26+).
-    @ViewBuilder
-    func minimizesTabBarOnScroll() -> some View {
-        if #available(iOS 26, *) {
-            tabBarMinimizeBehavior(.onScrollDown)
-        } else {
-            self
-        }
-    }
-}
-
 /// Short taps of feedback for the moments that matter.
 @MainActor
 enum Haptics {

@@ -80,8 +80,8 @@ struct DashboardView: View {
 
     // MARK: - Tabs
 
-    /// The system Liquid Glass tab bar: four icon-only tabs, with + as the separate
-    /// circle on the right. It shrinks to the current tab and + on scroll down.
+    /// The system Liquid Glass tab bar: icon-only tabs with + in the middle and the
+    /// initials avatar for Profil.
     private var tabs: some View {
         TabView(selection: Binding(
             get: { selectedTab },
@@ -91,7 +91,6 @@ struct DashboardView: View {
         )) {
             mainTabs
         }
-        .minimizesTabBarOnScroll()
     }
 
     @TabContentBuilder<AppTab>
@@ -102,19 +101,35 @@ struct DashboardView: View {
         Tab(value: AppTab.transactions) {
             TransactionListView()
         } label: { tabLabel("Transaksi", "list.bullet") }
+        Tab(value: AppTab.add) {
+            Color.clear
+        } label: { tabLabel("Tambah transaksi", "plus") }
         Tab(value: AppTab.budget) {
             BudgetListView()
         } label: { tabLabel("Budget", "chart.pie.fill") }
         Tab(value: AppTab.profile) {
             ProfileView()
-        } label: { tabLabel("Profil", "person.crop.circle.fill") }
-        Tab(value: AppTab.add, role: .search) {
-            Color.clear
-        } label: { tabLabel("Tambah transaksi", "plus") }
+        } label: {
+            Label {
+                Text("Profil")
+            } icon: {
+                Image(uiImage: avatarImage).renderingMode(.original)
+            }
+            .labelStyle(.iconOnly)
+        }
     }
 
     private func tabLabel(_ title: String, _ icon: String) -> some View {
         Label(title, systemImage: icon).labelStyle(.iconOnly)
+    }
+
+    /// The initials avatar drawn as a bitmap, since tab items only take images.
+    @MainActor
+    private var avatarImage: UIImage {
+        let renderer = ImageRenderer(content: InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U",
+                                                             size: 28, fontSize: 11))
+        renderer.scale = UITraitCollection.current.displayScale
+        return renderer.uiImage?.withRenderingMode(.alwaysOriginal) ?? UIImage()
     }
 
     // MARK: - Beranda
