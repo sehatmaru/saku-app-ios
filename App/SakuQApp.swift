@@ -4,6 +4,7 @@ import SwiftUI
 struct SakuQApp: App {
     @StateObject private var authViewModel = AuthViewModel()
     @AppStorage("appTheme") private var appTheme: ThemeOption = .system
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     enum ThemeOption: String {
         case light = "Terang"
@@ -31,6 +32,9 @@ struct SakuQApp: App {
                     DashboardView()
                         .environmentObject(authViewModel)
                         .transition(.opacity)
+                } else if !hasSeenOnboarding {
+                    OnboardingView { hasSeenOnboarding = true }
+                        .transition(.opacity)
                 } else {
                     SignInView()
                         .environmentObject(authViewModel)
@@ -39,6 +43,7 @@ struct SakuQApp: App {
             }
             .animation(.easeInOut(duration: 0.4), value: authViewModel.isAuthenticated)
             .animation(.easeInOut(duration: 0.5), value: authViewModel.showSplash)
+            .animation(.easeInOut(duration: 0.4), value: hasSeenOnboarding)
             .preferredColorScheme(appTheme.colorScheme)
         }
     }
