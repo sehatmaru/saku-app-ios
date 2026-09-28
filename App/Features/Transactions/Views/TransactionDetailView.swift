@@ -4,8 +4,7 @@ import SwiftUI
 /// below, then what the transaction did to the budget or balances. Delete asks first and
 /// can be undone for a few seconds.
 ///
-/// Edit offers two versions for comparison: the full add form prefilled, or editing each
-/// row in place. Keep the one that works better and drop the other.
+/// Edit reopens the add form prefilled with this transaction.
 struct TransactionDetailView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
@@ -21,20 +20,11 @@ struct TransactionDetailView: View {
     @State private var categoryBudget: Budget?
     @State private var isEntered = false
 
-    @State private var isEditingRows = false
     @State private var showsForm = false
-    @State private var sheet: EditSheet?
-    @State private var noteDraft = ""
-    @FocusState private var isNoteFocused: Bool
 
     @State private var isConfirmingDelete = false
     @State private var pendingDelete: Task<Void, Never>?
     @State private var toast: Toast?
-
-    enum EditSheet: String, Identifiable {
-        case category, account, target, date, amount
-        var id: String { rawValue }
-    }
 
     private struct Toast: Equatable {
         let message: String
@@ -74,7 +64,6 @@ struct TransactionDetailView: View {
                     .padding(.bottom, 96)
                 }
                 .scrollIndicators(.hidden)
-                .scrollDismissesKeyboard(.interactively)
             }
             .opacity(isDeleted ? 0.3 : 1)
             .allowsHitTesting(!isDeleted)
@@ -96,7 +85,8 @@ struct TransactionDetailView: View {
         .toolbar(.hidden, for: .tabBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
-            if isEditable && !isDeleted {
+            // Balance adjustments have no form to edit them in.
+            if isEditable && !isDeleted && !isAdjustment {
                 ToolbarItem(placement: .topBarTrailing) { editControl }
             }
         }
@@ -110,7 +100,6 @@ struct TransactionDetailView: View {
             // Leaving during the undo window still deletes.
             if pendingDelete != nil { finishDelete(now: true) }
         }
-        .sheet(item: $sheet) { editSheet($0) }
         .fullScreenCover(isPresented: $showsForm) {
             if let userId = authViewModel.currentUser?.id {
                 AddTransactionView(categories: categories, accounts: accounts, userId: userId, onSave: {},
@@ -144,7 +133,7 @@ struct TransactionDetailView: View {
         }
     }
 
-    /// Takes an edited transaction back from either edit version and refreshes the context.
+    /// Takes the edited transaction back from the form and refreshes the context.
     private func applied(_ updated: Transaction) {
         txn = updated
         onUpdate?(updated)
@@ -162,28 +151,20 @@ struct TransactionDetailView: View {
                 .frame(height: 28)
                 .background(.white.opacity(0.18), in: Capsule())
 
-            Button { if isEditingRows && !isAdjustment { sheet = .amount } } label: {
-                HStack(alignment: .top, spacing: 4) {
-                    Text(amountSign + "Rp")
-                        .font(.app(22))
-                        .opacity(0.75)
-                        .padding(.top, 8)
-                    Text((isAdjustment ? abs(signedAdjustment) : txn.amount).formattedAsDigits())
-                        .font(.app(56, weight: .light))
-                        .tracking(-2)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .contentTransition(.numericText())
-                }
-                .monospacedDigit()
-                .padding(.horizontal, 24)
-                .padding(.vertical, 4)
-                .background(isEditingRows && !isAdjustment ? Color.white.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 14))
-                .animation(.easeInOut(duration: 0.25), value: isEditingRows)
+            HStack(alignment: .top, spacing: 4) {
+                Text(amountSign + "Rp")
+                    .font(.app(22))
+                    .opacity(0.75)
+                    .padding(.top, 8)
+                Text((isAdjustment ? abs(signedAdjustment) : txn.amount).formattedAsDigits())
+                    .font(.app(56, weight: .light))
+                    .tracking(-2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .contentTransition(.numericText())
             }
-            .buttonStyle(.plain)
-            // Not `.disabled`: that would dim the amount while it's only read-only.
-            .allowsHitTesting(isEditingRows && !isAdjustment)
+            .monospacedDigit()
+            .padding(.horizontal, 24)
             .padding(.top, 10)
 
             Text(title)
@@ -218,101 +199,32 @@ struct TransactionDetailView: View {
         return category?.name ?? style.label
     }
 
-    @ViewBuilder
     private var editControl: some View {
-        if isEditingRows {
-            Button("Selesai") {
-                isNoteFocused = false
-                withAnimation(.easeInOut(duration: 0.25)) { isEditingRows = false }
-            }
+        Button("Edit") { showsForm = true }
             .font(.app(17, weight: .semibold))
-        } else {
-            Menu {
-                if !isAdjustment {
-                    Button { showsForm = true } label: {
-                        Label("Edit dengan form", systemImage: "rectangle.and.pencil.and.ellipsis")
-                    }
-                }
-                Button {
-                    noteDraft = txn.description ?? ""
-                    withAnimation(.easeInOut(duration: 0.25)) { isEditingRows = true }
-                } label: {
-                    Label("Edit per baris", systemImage: "list.bullet.rectangle")
-                }
-            } label: {
-                Text("Edit").font(.app(17, weight: .semibold))
-            }
-        }
     }
 
     // MARK: - Rows
 
     private var rows: some View {
         VStack(spacing: 0) {
-            let canEditMoney = !isAdjustment
             if isTransfer {
-                row(.account, label: "Dari", value: account?.name ?? "—", swatch: walletColor(account), index: 0, editable: canEditMoney)
-                row(.target, label: "Ke", value: counterparty?.name ?? "—", swatch: walletColor(counterparty), index: 1, editable: canEditMoney)
+                row(label: "Dari", value: account?.name ?? "—", swatch: walletColor(account), index: 0)
+                row(label: "Ke", value: counterparty?.name ?? "—", swatch: walletColor(counterparty), index: 1)
             } else if isAdjustment {
-                row(.account, label: "Dompet", value: account?.name ?? "—", swatch: walletColor(account), index: 0, editable: false)
+                row(label: "Dompet", value: account?.name ?? "—", swatch: walletColor(account), index: 0)
             } else {
-                row(.category, label: "Kategori", value: category?.name ?? "—", icon: category?.icon ?? "tag", index: 0, editable: true)
-                row(.account, label: "Dompet", value: account?.name ?? "—", swatch: walletColor(account), index: 1, editable: true)
+                row(label: "Kategori", value: category?.name ?? "—", icon: category?.icon ?? "tag", index: 0)
+                row(label: "Dompet", value: account?.name ?? "—", swatch: walletColor(account), index: 1)
             }
-            row(.date, label: "Tanggal", value: TransactionDates.long(txn.date, withYear: false), icon: "calendar", index: 2, editable: true)
-            noteRow
-                .rise(isEntered, y: 12, delay: 0.18 + 3 * 0.06, fade: 0.4, move: 0.5)
+            row(label: "Tanggal", value: TransactionDates.long(txn.date, withYear: false), icon: "calendar", index: 2)
+            row(label: "Catatan", value: txn.description?.isEmpty == false ? txn.description! : "—", icon: "square.and.pencil", index: 3)
         }
     }
 
-    private func row(_ kind: EditSheet, label: String, value: String, swatch: Color? = nil, icon: String? = nil,
-                     index: Int, editable: Bool) -> some View {
-        let isLive = isEditingRows && editable
-        return Button { if isLive { sheet = kind } } label: {
-            DetailRow(label: label, value: value, swatch: swatch, icon: icon, showsChevron: isLive, height: 50)
-                .background(isLive ? Color(light: 0xF7F7F8, dark: 0x1C1C1E) : .clear)
-                .animation(.easeInOut(duration: 0.3), value: isLive)
-        }
-        .buttonStyle(.plain)
-        .allowsHitTesting(isLive)
-        .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
-    }
-
-    @ViewBuilder
-    private var noteRow: some View {
-        if isEditingRows {
-            HStack(spacing: 12) {
-                Text("Catatan")
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .frame(width: 76, alignment: .leading)
-                Image(systemName: "square.and.pencil")
-                    .font(.system(size: 17))
-                    .foregroundStyle(Color.appTextSecondary)
-                TextField("Tambahkan catatan", text: $noteDraft)
-                    .font(.app(16, weight: .medium))
-                    .foregroundStyle(Color.appText)
-                    .tint(style.color)
-                    .focused($isNoteFocused)
-                    .submitLabel(.done)
-                    .onSubmit(saveNote)
-                    .onChange(of: isNoteFocused) { _, focused in if !focused { saveNote() } }
-            }
-            .frame(height: 50)
-            .padding(.leading, 24)
-            .padding(.trailing, 20)
-            .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E))
-            .rowSeparator()
-        } else {
-            DetailRow(label: "Catatan", value: txn.description?.isEmpty == false ? txn.description! : "—",
-                      icon: "square.and.pencil", height: 50)
-        }
-    }
-
-    private func saveNote() {
-        let text = noteDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard text != (txn.description ?? "") else { return }
-        applyEdit(description: .some(text.isEmpty ? nil : text))
+    private func row(label: String, value: String, swatch: Color? = nil, icon: String? = nil, index: Int) -> some View {
+        DetailRow(label: label, value: value, swatch: swatch, icon: icon, height: 50)
+            .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
     }
 
     // MARK: - Impact
@@ -457,93 +369,6 @@ struct TransactionDetailView: View {
         return (before, after, hot)
     }
 
-    // MARK: - Per-row edits
-
-    @ViewBuilder
-    private func editSheet(_ kind: EditSheet) -> some View {
-        switch kind {
-        case .category:
-            PickerSheet(title: "Kategori", onDone: { sheet = nil }) {
-                CategoryPickerGrid(categories: categories.filter { $0.type == (txn.type == .income ? .income : .expense) },
-                                   selectedId: txn.categoryId, color: style.color) { cat in
-                    closeThen { applyEdit(category: .some(cat.id)) }
-                }
-            }
-        case .account, .target:
-            let isTarget = kind == .target
-            PickerSheet(title: isTransfer ? (isTarget ? "Ke dompet" : "Dari dompet") : "Dompet", onDone: { sheet = nil }) {
-                WalletPickerGrid(accounts: accounts.filter { $0.isActive && !(isTarget && $0.isCreditCard) },
-                                 selectedId: isTarget ? txn.counterpartyAccountId : txn.accountId) { acc in
-                    closeThen { pickWallet(acc, isTarget: isTarget) }
-                }
-            }
-        case .date:
-            PickerSheet(title: "Tanggal", onDone: { sheet = nil }) {
-                DayPicker(selected: txn.date, color: style.color) { day in
-                    closeThen { applyEdit(date: keepingTime(of: txn.date, on: day)) }
-                }
-            }
-        case .amount:
-            AmountEditSheet(initial: Int(txn.amount), style: style) { value in
-                sheet = nil
-                applyEdit(amount: Double(value))
-            }
-        }
-    }
-
-    private func closeThen(_ action: @escaping () -> Void) {
-        Task {
-            try? await Task.sleep(for: .milliseconds(200))
-            sheet = nil
-            action()
-        }
-    }
-
-    /// Picking the other side of a transfer swaps the two wallets.
-    private func pickWallet(_ acc: Account, isTarget: Bool) {
-        if isTarget {
-            let from = acc.id == txn.accountId ? txn.counterpartyAccountId ?? txn.accountId : txn.accountId
-            applyEdit(account: from, counterparty: acc.id)
-        } else if isTransfer, acc.id == txn.counterpartyAccountId, account?.isCreditCard == false {
-            applyEdit(account: acc.id, counterparty: txn.accountId)
-        } else {
-            applyEdit(account: acc.id)
-        }
-    }
-
-    private func keepingTime(of date: Date, on day: Date) -> Date {
-        let calendar = Calendar.current
-        let time = calendar.dateComponents([.hour, .minute, .second], from: date)
-        return calendar.date(bySettingHour: time.hour ?? 0, minute: time.minute ?? 0, second: time.second ?? 0, of: day) ?? day
-    }
-
-    /// Saves one changed field; every other field keeps its current value.
-    private func applyEdit(account newAccount: String? = nil, counterparty newCounterparty: String? = nil,
-                           category newCategory: String?? = nil, amount newAmount: Double? = nil,
-                           description newDescription: String?? = nil, date newDate: Date? = nil) {
-        let current = txn
-        Task {
-            do {
-                let updated = try await SupabaseRepository.shared.updateTransaction(
-                    id: current.id,
-                    accountId: newAccount ?? current.accountId,
-                    counterpartyAccountId: newCounterparty ?? current.counterpartyAccountId,
-                    categoryId: newCategory ?? current.categoryId,
-                    amount: newAmount ?? current.amount,
-                    type: current.type,
-                    description: newDescription ?? current.description,
-                    note: current.note,
-                    date: newDate ?? current.date
-                )
-                withAnimation(.snappy) { applied(updated) }
-                NotificationCenter.default.post(name: .dataDidChange, object: nil)
-                show(Toast(message: "Perubahan disimpan", icon: "checkmark.circle.fill"))
-            } catch {
-                show(Toast(message: "Gagal menyimpan", icon: "exclamationmark.circle.fill"))
-            }
-        }
-    }
-
     // MARK: - Delete
 
     private var deleteButton: some View {
@@ -645,7 +470,6 @@ struct TransactionDetailView: View {
 
     /// Hides the transaction and offers Urungkan; the real delete runs when the toast ends.
     private func startDelete() {
-        isEditingRows = false
         show(Toast(message: "Transaksi dihapus", icon: "trash.fill", canUndo: true), duration: 3.8)
         pendingDelete = Task {
             try? await Task.sleep(for: .seconds(3.8))
@@ -724,47 +548,6 @@ struct TransactionDetailView: View {
         f.locale = Locale(identifier: "id_ID")
         return f
     }()
-}
-
-/// Big amount and numpad for changing a transaction's amount from the detail page.
-private struct AmountEditSheet: View {
-    let style: TransactionStyle
-    let onSave: (Int) -> Void
-    @State private var amount: Int
-
-    init(initial: Int, style: TransactionStyle, onSave: @escaping (Int) -> Void) {
-        self.style = style
-        self.onSave = onSave
-        _amount = State(initialValue: initial)
-    }
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Nominal")
-                .font(.app(17, weight: .semibold))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.top, 22)
-            HStack(alignment: .top, spacing: 4) {
-                Text(style.sign + "Rp").font(.app(22)).foregroundStyle(Color.appTextSecondary).padding(.top, 8)
-                Text(Double(amount).formattedAsDigits())
-                    .font(.app(52, weight: .light))
-                    .tracking(-2)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .contentTransition(.numericText())
-            }
-            .monospacedDigit()
-            .foregroundStyle(Color.appText)
-            AmountPad(color: style.color, isEnabled: amount > 0, onPress: { key in
-                if let next = NumberPad.apply(key, to: amount) { withAnimation(.snappy(duration: 0.2)) { amount = next } }
-            }, onSave: { if amount > 0 { onSave(amount) } })
-            .padding(.horizontal, 12)
-        }
-        .presentationDetents([.height(420)])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Color.appBackground)
-    }
 }
 
 /// Small bold icon then the title, for the type pill.
