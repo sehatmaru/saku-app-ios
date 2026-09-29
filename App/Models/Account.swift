@@ -12,6 +12,8 @@ struct Account: Identifiable, Codable, Hashable {
     let creditLimit: Double?
     let dueDate: String?
     var subscriptionsTotal: Double? = nil
+    /// Credit cards: day of the month the statement is printed (cut-off).
+    var statementDay: Int? = nil
 
     var isActive: Bool { !isArchived }
     var isCreditCard: Bool { type == .credit }
@@ -54,5 +56,6 @@ struct Account: Identifiable, Codable, Hashable {
         case currentBalance = "current_balance"
         case creditLimit = "credit_limit"
         case dueDate = "due_date"
+        case statementDay = "statement_day"
     }
 }

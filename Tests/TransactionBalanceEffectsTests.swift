@@ -17,6 +17,9 @@ final class TransactionBalanceEffectsTests: XCTestCase {
         XCTAssertEqual(effects(txn(.expense, 50, from: "card"), credit), ["card": 50])
         XCTAssertEqual(effects(txn(.income, 50, from: "card"), credit), ["card": -50])
         XCTAssertEqual(effects(txn(.transfer, 50, to: "cash"), credit), ["bank": -50, "cash": 50])
+        // Paying the card from the bank lowers both; cash out of the card raises its debt.
+        XCTAssertEqual(effects(txn(.transfer, 50, to: "card"), credit), ["bank": -50, "card": -50])
+        XCTAssertEqual(effects(txn(.transfer, 50, from: "card", to: "cash"), credit), ["card": 50, "cash": 50])
         XCTAssertEqual(effects(txn(.adjustment, 50), credit), [:])
     }
 

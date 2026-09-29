@@ -12,6 +12,8 @@ struct CardSubscription: Identifiable, Codable {
     let note: String?
     let createdAt: String?
     let updatedAt: String?
+    /// Price before the last edit; set only when the amount changed.
+    var previousAmount: Double? = nil
 
     enum Frequency: String, Codable {
         case monthly, yearly
@@ -29,6 +31,13 @@ struct CardSubscription: Identifiable, Codable {
         case note
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case previousAmount = "previous_amount"
+    }
+
+    /// How much the price went up at the last edit; nil when it didn't.
+    var priceIncrease: Double? {
+        guard let previousAmount, amount > previousAmount else { return nil }
+        return amount - previousAmount
     }
 
     var monthlyAmount: Double {

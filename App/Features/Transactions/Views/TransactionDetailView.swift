@@ -18,6 +18,8 @@ struct TransactionDetailView: View {
     @State private var monthTransactions: [Transaction] = []
     @State private var monthlyBudget: Double = 0
     @State private var categoryBudget: Budget?
+    /// The 0% plan this card purchase is split into, if any.
+    @State private var installment: CardInstallment?
     @State private var isEntered = false
 
     @State private var showsForm = false
@@ -46,6 +48,10 @@ struct TransactionDetailView: View {
     private var counterparty: Account? { accounts.first { $0.id == txn.counterpartyAccountId } }
     private var isTransfer: Bool { txn.type == .transfer }
     private var isAdjustment: Bool { txn.type == .adjustment }
+    /// A transfer into a card pays its bill: debt goes down, not an expense.
+    private var isBillPayment: Bool { isTransfer && counterparty?.isCreditCard == true }
+    private var typeLabel: String { isBillPayment ? "Bayar tagihan" : style.label }
+    private var typeIcon: String { isBillPayment ? "creditcard" : style.icon }
     private var signedAdjustment: Double { txn.delta ?? txn.amount }
     private var isDeleted: Bool { pendingDelete != nil }
 
@@ -131,6 +137,12 @@ struct TransactionDetailView: View {
         } else {
             categoryBudget = nil
         }
+        if txn.type == .expense, let card = account, card.isCreditCard {
+            installment = (try? await SupabaseRepository.shared.fetchInstallments(accountIds: [card.id]))?
+                .first { $0.transactionId == txn.id }
+        } else {
+            installment = nil
+        }
     }
 
     /// Takes the edited transaction back from the form and refreshes the context.
@@ -144,7 +156,7 @@ struct TransactionDetailView: View {
 
     private var panel: some View {
         VStack(spacing: 0) {
-            Label(style.label, systemImage: style.icon)
+            Label(typeLabel, systemImage: typeIcon)
                 .font(.app(13, weight: .semibold))
                 .labelStyle(PillLabelStyle())
                 .padding(.horizontal, 12)
@@ -216,6 +228,9 @@ struct TransactionDetailView: View {
             } else {
                 row(label: "Kategori", value: category?.name ?? "—", icon: category?.icon ?? "tag", index: 0)
                 row(label: "Dompet", value: account?.name ?? "—", swatch: walletColor(account), index: 1)
+                if let installment, let card = account {
+                    installmentRow(installment, card: card)
+                }
             }
             row(label: "Tanggal", value: TransactionDates.long(txn.date, withYear: false), icon: "calendar", index: 2)
             row(label: "Catatan", value: txn.description?.isEmpty == false ? txn.description! : "—", icon: "square.and.pencil", index: 3)
@@ -225,6 +240,27 @@ struct TransactionDetailView: View {
     private func row(label: String, value: String, swatch: Color? = nil, icon: String? = nil, index: Int) -> some View {
         DetailRow(label: label, value: value, swatch: swatch, icon: icon, height: 50)
             .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
+    }
+
+    /// "Cicilan 6 bulan · Rp…/bulan" and how many parts the statements have billed so far.
+    private func installmentRow(_ plan: CardInstallment, card: Account) -> some View {
+        let billed = CreditStatement.billedParts(of: plan, purchaseDate: txn.date, card: card)
+        let monthly = txn.amount / Double(max(1, plan.months))
+        return VStack(alignment: .leading, spacing: 0) {
+            DetailRow(label: "Cicilan", value: "\(plan.months) bulan · Rp" + monthly.formattedAsDigits() + "/bulan",
+                      icon: "calendar.badge.clock", height: 50)
+            VStack(alignment: .leading, spacing: 8) {
+                SegmentBar(value: Double(billed) / Double(max(1, plan.months)), count: plan.months, height: 6, spacing: 3)
+                Text("\(billed) dari \(plan.months) sudah ditagih")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .monospacedDigit()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .rowSeparator()
+        }
+        .rise(isEntered, y: 12, delay: 0.3, fade: 0.4, move: 0.5)
     }
 
     // MARK: - Impact
@@ -292,16 +328,27 @@ struct TransactionDetailView: View {
             items.append(cashflowItem)
             return items
         case .transfer:
-            return [account.map { balanceItem($0, sub: "Keluar Rp" + txn.amount.formattedAsDigits()) },
-                    counterparty.map { balanceItem($0, sub: "Masuk Rp" + txn.amount.formattedAsDigits()) }].compactMap { $0 }
+            return [account, counterparty].compactMap { $0 }.map { balanceItem($0, sub: transferSub(for: $0)) }
         case .adjustment:
             let change = (signedAdjustment < 0 ? "−Rp" : "+Rp") + abs(signedAdjustment).formattedAsDigits()
             return account.map { [balanceItem($0, sub: "Penyesuaian " + change)] } ?? []
         }
     }
 
+    /// Wording follows what the transfer did to each side: a card's balance is debt, so money
+    /// into it lowers the bill and cash out of it raises the bill.
+    private func transferSub(for wallet: Account) -> String {
+        let isCredit = Dictionary(accounts.map { ($0.id, $0.isCreditCard) }, uniquingKeysWith: { first, _ in first })
+        let effect = SupabaseRepository.balanceEffects(of: txn, isCredit: isCredit)
+            .filter { $0.0 == wallet.id }.reduce(0) { $0 + $1.1 }
+        let amount = "Rp" + abs(effect).formattedAsDigits()
+        if wallet.isCreditCard { return (effect < 0 ? "Tagihan turun " : "Tagihan naik ") + amount }
+        return (effect < 0 ? "Keluar " : "Masuk ") + amount
+    }
+
     private var impactNote: String? {
         switch txn.type {
+        case .transfer where isBillPayment: "Bayar tagihan kartu kredit bukan pengeluaran, jadi tidak memengaruhi budget."
         case .transfer: "Transfer antar dompet tidak memengaruhi budget."
         case .expense where budgetItems.isEmpty: "Belum ada budget untuk transaksi ini."
         default: nil
@@ -398,6 +445,8 @@ struct TransactionDetailView: View {
         switch txn.type {
         case .expense: restored = account.balance + (account.isCreditCard ? -txn.amount : txn.amount)
         case .income: restored = account.balance - (account.isCreditCard ? -txn.amount : txn.amount)
+        case .transfer where isBillPayment:
+            return "\(amount) akan kembali ke \(account.name) dan tagihan \(counterparty?.name ?? "kartu") naik lagi."
         case .transfer: return "\(amount) akan kembali ke \(account.name) dan keluar dari \(counterparty?.name ?? "dompet tujuan")."
         case .adjustment: restored = account.balance - signedAdjustment
         }

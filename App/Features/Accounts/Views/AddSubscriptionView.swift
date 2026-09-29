@@ -4,7 +4,8 @@ struct AddSubscriptionView: View {
     @Environment(\.dismiss) private var dismiss
 
     let categories: [Category]
-    let account: Account
+    /// Wallets to choose from; empty when the wallet is fixed by the caller.
+    let accounts: [Account]
     let existing: CardSubscription?
     let onSave: () -> Void
 
@@ -20,6 +21,9 @@ struct AddSubscriptionView: View {
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
     @State private var isSaving = false
+    @State private var selectedAccount: Account?
+    @State private var showWalletPicker = false
+    @State private var showDeleteConfirm = false
 
     private var expenseCategories: [Category] {
         categories.filter { $0.type == .expense }
@@ -27,9 +31,19 @@ struct AddSubscriptionView: View {
 
     init(categories: [Category], account: Account, existing: CardSubscription? = nil, onSave: @escaping () -> Void) {
         self.categories = categories
-        self.account = account
+        self.accounts = []
         self.existing = existing
         self.onSave = onSave
+        _selectedAccount = State(initialValue: account)
+    }
+
+    /// Lets the user pick the wallet (any type); editing keeps the subscription's own wallet.
+    init(categories: [Category], accounts: [Account], existing: CardSubscription? = nil, onSave: @escaping () -> Void) {
+        self.categories = categories
+        self.accounts = accounts
+        self.existing = existing
+        self.onSave = onSave
+        _selectedAccount = State(initialValue: existing.flatMap { e in accounts.first { $0.id == e.accountId } } ?? accounts.first)
     }
 
     var body: some View {
@@ -76,6 +90,13 @@ struct AddSubscriptionView: View {
         }
         .sheet(isPresented: $showCategoryPicker) { categoryPickerContent }
         .sheet(isPresented: $showDatePicker) { datePickerContent }
+        .sheet(isPresented: $showWalletPicker) { walletPickerContent }
+        .confirmationDialog("Hapus langganan ini?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("Hapus langganan", role: .destructive) { delete() }
+            Button("Batal", role: .cancel) {}
+        } message: {
+            Text("Tagihan berikutnya tidak akan dicatat lagi.")
+        }
     }
 
     private var topBar: some View {
@@ -136,6 +157,15 @@ struct AddSubscriptionView: View {
         VStack(spacing: 0) {
             fieldRow("Nama", placeholder: "Contoh: Netflix", text: $nameText)
 
+            if !accounts.isEmpty {
+                Button { showWalletPicker = true } label: {
+                    DetailRow(label: "Dompet", value: selectedAccount?.name ?? "Pilih",
+                              swatch: selectedAccount.map { walletColor($0) }, showsChevron: existing == nil)
+                }
+                .buttonStyle(RowPressStyle())
+                .disabled(existing != nil)
+            }
+
             Button { showCategoryPicker = true } label: {
                 DetailRow(label: "Kategori", value: selectedCategory?.name ?? "Pilih",
                           icon: selectedCategory?.icon ?? "tag", showsChevron: true)
@@ -150,6 +180,18 @@ struct AddSubscriptionView: View {
             .buttonStyle(RowPressStyle())
 
             fieldRow("Catatan", placeholder: "Opsional", text: $noteText)
+
+            if existing != nil {
+                Button("Hapus langganan", role: .destructive) { showDeleteConfirm = true }
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(Color.appError)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .overlay(Capsule().stroke(Color.appError.opacity(0.4), lineWidth: 1))
+                    .padding(.horizontal, 24)
+                    .padding(.top, 28)
+                    .disabled(isSaving)
+            }
         }
     }
 
@@ -223,6 +265,14 @@ struct AddSubscriptionView: View {
         }
     }
 
+    private var walletPickerContent: some View {
+        PickerSheet(title: "Pilih dompet", onDone: { showWalletPicker = false }) {
+            WalletPickerGrid(accounts: accounts, selectedId: selectedAccount?.id) { acc in
+                selectedAccount = acc; showWalletPicker = false
+            }
+        }
+    }
+
     private var datePickerContent: some View {
         PickerSheet(title: "Tagihan berikutnya", onDone: { showDatePicker = false }) {
             DatePicker("", selection: $selectedDate, displayedComponents: .date)
@@ -249,7 +299,7 @@ struct AddSubscriptionView: View {
     private var canSave: Bool {
         guard !amountDigits.isEmpty, let amount = Double(amountDigits), amount > 0 else { return false }
         guard !nameText.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
-        return selectedCategory != nil
+        return selectedCategory != nil && selectedAccount != nil
     }
 
     private func save() {
@@ -258,6 +308,9 @@ struct AddSubscriptionView: View {
         }
         guard let category = selectedCategory else {
             validationMessage = "Pilih kategori tagihan."; showValidationAlert = true; return
+        }
+        guard let account = selectedAccount else {
+            validationMessage = "Pilih dompet tagihan."; showValidationAlert = true; return
         }
         isSaving = true
         Task {
@@ -268,7 +321,8 @@ struct AddSubscriptionView: View {
                     _ = try await SupabaseRepository.shared.updateSubscription(
                         id: existing.id, name: nameText.trimmingCharacters(in: .whitespaces),
                         amount: amount, frequency: selectedFrequency, nextBillingDate: nextDate,
-                        isActive: existing.isActive, categoryId: category.id, note: noteText.isEmpty ? nil : noteText
+                        isActive: existing.isActive, categoryId: category.id, note: noteText.isEmpty ? nil : noteText,
+                        previousAmount: existing.amount
                     )
                 } else {
                     _ = try await SupabaseRepository.shared.createSubscription(
@@ -286,6 +340,26 @@ struct AddSubscriptionView: View {
             } catch {
                 isSaving = false
                 validationMessage = "Gagal menyimpan: \(error.localizedDescription)"; showValidationAlert = true
+            }
+        }
+    }
+
+    private func delete() {
+        guard let existing else { return }
+        isSaving = true
+        Task {
+            do {
+                try await SupabaseRepository.shared.deleteSubscription(id: existing.id)
+                await NotificationManager.shared.cancel(for: existing)
+                isSaving = false
+                onSave()
+                NotificationCenter.default.post(name: .dataDidChange, object: nil)
+                dismiss()
+            } catch is CancellationError {
+                return
+            } catch {
+                isSaving = false
+                validationMessage = "Gagal menghapus: \(error.localizedDescription)"; showValidationAlert = true
             }
         }
     }

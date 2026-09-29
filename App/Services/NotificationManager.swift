@@ -16,26 +16,45 @@ final class NotificationManager: @unchecked Sendable {
         "subscription-\(sub.id)"
     }
 
+    /// Three days before a renewal, so there's still time to cancel it.
     func schedule(for sub: CardSubscription) async {
         guard sub.isActive, let billingDate = sub.nextBillingDateAsDate else { return }
+        let body = "\(sub.name) diperpanjang 3 hari lagi sebesar \(sub.amount.formattedAsCurrency()). Batalkan sebelum itu kalau sudah tidak dipakai."
+        await add(id: identifier(for: sub), title: "Langganan: \(sub.name)", body: body, daysBefore: 3, date: billingDate)
+    }
+
+    /// Card bills still owed: a reminder three days and one day before the due date.
+    func resyncCardDue(cards: [Account], statements: [CreditStatement]) async {
+        let center = UNUserNotificationCenter.current()
+        let stale = await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix("card-due-") }
+        center.removePendingNotificationRequests(withIdentifiers: stale)
+        for (card, statement) in zip(cards, statements) where statement.remaining >= 1 {
+            let amount = statement.remaining.formattedAsCurrency()
+            await add(id: "card-due-\(card.id)-3", title: "Tagihan \(card.name)",
+                      body: "Tagihan \(amount) jatuh tempo 3 hari lagi.", daysBefore: 3, date: statement.dueDate)
+            await add(id: "card-due-\(card.id)-1", title: "Tagihan \(card.name)",
+                      body: "Tagihan \(amount) jatuh tempo besok. Bayar penuh supaya tidak kena bunga.", daysBefore: 1, date: statement.dueDate)
+        }
+    }
+
+    /// A one-off reminder at 09:00, `daysBefore` days before `date`; skipped once that's past.
+    private func add(id: String, title: String, body: String, daysBefore: Int, date: Date) async {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
         guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
 
         let calendar = Calendar.current
-        guard let reminderDate = calendar.date(byAdding: .day, value: -1, to: billingDate) else { return }
-        var components = calendar.dateComponents([.year, .month, .day], from: reminderDate)
-        components.hour = 9
-        components.minute = 0
+        guard let day = calendar.date(byAdding: .day, value: -daysBefore, to: calendar.startOfDay(for: date)),
+              let fireDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: day),
+              fireDate > Date() else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Tagihan: \(sub.name)"
-        content.body = "Tagihan \(sub.name) sebesar \(sub.amount.formattedAsCurrency()) jatuh tempo besok."
+        content.title = title
+        content.body = body
         content.sound = .default
-
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-        let request = UNNotificationRequest(identifier: identifier(for: sub), content: content, trigger: trigger)
-        try? await center.add(request)
+        try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
     }
 
     func cancel(for sub: CardSubscription) async {

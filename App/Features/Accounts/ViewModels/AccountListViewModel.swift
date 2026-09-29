@@ -6,8 +6,12 @@ final class AccountListViewModel: ObservableObject {
     @Published var totalBalance: Double = 0
     @Published var totalCreditDebt: Double = 0
     @Published var totalSubscriptions: Double = 0
-    /// Names of active credit-card subscriptions, for the "Tagihan berulang" summary.
+    /// Names of active subscriptions on any wallet, for the "Tagihan berulang" summary.
     @Published var subscriptionNames: [String] = []
+    /// Subscriptions on active wallets, active or paused.
+    @Published var subscriptions: [CardSubscription] = []
+    /// 0% installments on the credit cards.
+    @Published var installments: [CardInstallment] = []
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var hasLoadedOnce = false
@@ -27,6 +31,8 @@ final class AccountListViewModel: ObservableObject {
             accounts = cached
             recalculateBalance()
             hasLoadedOnce = true
+            // Cheap and not cached, so a fresh page still gets them.
+            await loadSubscriptionsAndInstallments()
             return
         }
 
@@ -47,20 +53,7 @@ final class AccountListViewModel: ObservableObject {
             let (fetchedAccounts, transactions) = try await (accountsTask, transactionsTask)
             accounts = fetchedAccounts
 
-            let creditIds = accounts.filter { $0.isCreditCard && $0.isActive }.map { $0.id }
-            subscriptionNames = []
-            if !creditIds.isEmpty {
-                let subs = try? await SupabaseRepository.shared.fetchSubscriptions(accountIds: creditIds)
-                let activeSubs = subs?.filter { $0.isActive } ?? []
-                subscriptionNames = activeSubs.map(\.name)
-                for sub in activeSubs {
-                    if let idx = accounts.firstIndex(where: { $0.id == sub.accountId }) {
-                        var acc = accounts[idx]
-                        acc.subscriptionsTotal = (acc.subscriptionsTotal ?? 0) + sub.monthlyAmount
-                        accounts[idx] = acc
-                    }
-                }
-            }
+            await loadSubscriptionsAndInstallments()
 
             recalculateBalance()
             AppDataCache.shared.setAccounts(accounts, for: userId)
@@ -75,14 +68,14 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, creditLimit: Double? = nil, dueDate: String? = nil) async -> Bool {
+    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil) async -> Bool {
         if accounts.contains(where: { $0.name == name && $0.type == type && $0.isActive }) {
             print("⚠️ Nama '\(name)' sudah digunakan untuk kategori \(type.rawValue)")
             return false
         }
         do {
             let isDefault = accounts.isEmpty
-            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault, creditLimit: creditLimit, dueDate: dueDate)
+            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay)
             accounts.append(account)
             recalculateBalance()
             AppDataCache.shared.setAccounts(accounts, for: userId)
@@ -101,7 +94,7 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil) async -> Bool {
+    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil) async -> Bool {
         do {
             if abs(newBalance - oldBalance) > 0.001 {
                 let delta = newBalance - oldBalance
@@ -116,7 +109,7 @@ final class AccountListViewModel: ObservableObject {
                 }
             }
 
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate)
+            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
                 var updatedAccount = updated
                 if abs(newBalance - oldBalance) > 0.001 {
@@ -201,10 +194,42 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
+    /// Subscriptions on every active wallet and the cards' installments; also sums each
+    /// wallet's monthly subscription total.
+    private func loadSubscriptionsAndInstallments() async {
+        let activeIds = accounts.filter(\.isActive).map(\.id)
+        guard !activeIds.isEmpty else {
+            subscriptions = []
+            installments = []
+            subscriptionNames = []
+            return
+        }
+        let cardIds = accounts.filter { $0.isActive && $0.isCreditCard }.map(\.id)
+        async let subsTask = SupabaseRepository.shared.fetchSubscriptions(accountIds: activeIds)
+        async let plansTask = SupabaseRepository.shared.fetchInstallments(accountIds: cardIds)
+        subscriptions = (try? await subsTask) ?? subscriptions
+        installments = (try? await plansTask) ?? installments
+
+        let active = subscriptions.filter(\.isActive)
+        subscriptionNames = active.map(\.name)
+        let monthly = Dictionary(active.map { ($0.accountId, $0.monthlyAmount) }, uniquingKeysWith: +)
+        accounts = accounts.map { account in
+            var account = account
+            account.subscriptionsTotal = monthly[account.id]
+            return account
+        }
+        recalculateBalance()
+    }
+
+    /// The card's current billing cycle, from its transactions and installments.
+    func statement(for card: Account, transactions: [Transaction]) -> CreditStatement? {
+        CreditStatement(card: card, transactions: transactions, installments: installments)
+    }
+
     private func recalculateBalance() {
         totalBalance = accounts.filter { $0.isActive && !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
         totalCreditDebt = accounts.filter { $0.isActive && $0.isCreditCard }.reduce(0) { $0 + $1.balance }
-        totalSubscriptions = accounts.filter { $0.isActive && $0.isCreditCard }.reduce(0) { $0 + ($1.subscriptionsTotal ?? 0) }
+        totalSubscriptions = accounts.filter(\.isActive).reduce(0) { $0 + ($1.subscriptionsTotal ?? 0) }
     }
 
     private func groupTransactionsByAccount(_ transactions: [Transaction]) -> [String: [Transaction]] {

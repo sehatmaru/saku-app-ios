@@ -22,6 +22,8 @@ final class AppDataCache {
         var dailyExpenses: [Double]
         var budgets: [Budget]
         var health: FinancialHealth
+        var cardDueTotal: Double = 0
+        var upcomingBillsTotal: Double = 0
     }
 
     struct BudgetState {

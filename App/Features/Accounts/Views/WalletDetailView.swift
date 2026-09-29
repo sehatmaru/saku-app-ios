@@ -4,7 +4,10 @@ struct WalletDetailView: View {
     let account: Account
     let transactions: [Transaction]
     let categories: [Category]
-    let onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double, Double?, String?) async -> Bool)?
+    /// Every wallet, for picking where a card bill is paid from.
+    let accounts: [Account]
+    let installments: [CardInstallment]
+    let onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double, Double?, String?, Int?) async -> Bool)?
     let onDelete: ((String) async -> Bool)?
     let onToggleArchive: ((String, Bool) async -> Bool)?
     let onSetDefault: ((String) async -> Void)?
@@ -29,6 +32,9 @@ struct WalletDetailView: View {
     @State private var showCreditLimitKeyboard = false
     @State private var editedDueDay: Int
     @State private var showDueDayPicker = false
+    @State private var editedStatementDay: Int?
+    @State private var showStatementDayPicker = false
+    @State private var showPaySheet = false
     @State private var subscriptions: [CardSubscription] = []
     @State private var showAddSubscription = false
     @State private var selectedSubscription: CardSubscription?
@@ -37,13 +43,17 @@ struct WalletDetailView: View {
 
     init(account: Account, transactions: [Transaction] = [],
          categories: [Category] = [],
-         onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double, Double?, String?) async -> Bool)? = nil,
+         accounts: [Account] = [],
+         installments: [CardInstallment] = [],
+         onSave: ((String, String, Account.AccountType, String?, Bool, Double, Double, Double?, String?, Int?) async -> Bool)? = nil,
          onDelete: ((String) async -> Bool)? = nil,
          onToggleArchive: ((String, Bool) async -> Bool)? = nil,
          onSetDefault: ((String) async -> Void)? = nil) {
         self.account = account
         self.transactions = transactions
         self.categories = categories
+        self.accounts = accounts
+        self.installments = installments
         self.onSave = onSave
         self.onDelete = onDelete
         self.onToggleArchive = onToggleArchive
@@ -55,6 +65,7 @@ struct WalletDetailView: View {
         let limitDigits = account.creditLimit.map { String(Int($0)) } ?? ""
         _creditLimitDigits = State(initialValue: limitDigits)
         _editedDueDay = State(initialValue: account.dueDay ?? 1)
+        _editedStatementDay = State(initialValue: account.statementDay)
     }
 
     private var walletIcon: WalletIcon? {
@@ -67,7 +78,8 @@ struct WalletDetailView: View {
             editedIconId != account.icon ||
             (isCreditCard ? false : balanceDigits != String(Int(account.balance))) ||
             (isCreditCard ? creditLimitDigits != String(Int(account.creditLimit ?? 0)) : false) ||
-            (isCreditCard ? editedDueDay != (account.dueDay ?? 1) : false)
+            (isCreditCard ? editedDueDay != (account.dueDay ?? 1) : false) ||
+            (isCreditCard ? editedStatementDay != account.statementDay : false)
         )
     }
 
@@ -106,7 +118,8 @@ struct WalletDetailView: View {
             currentBalance: isCreditCard ? account.currentBalance : (Double(balanceDigits) ?? 0),
             creditLimit: isCreditCard ? (Double(creditLimitDigits) ?? 0) : account.creditLimit,
             dueDate: isCreditCard ? String(editedDueDay) : account.dueDate,
-            subscriptionsTotal: account.subscriptionsTotal
+            subscriptionsTotal: account.subscriptionsTotal,
+            statementDay: isCreditCard ? editedStatementDay : account.statementDay
         )
     }
 
@@ -118,20 +131,24 @@ struct WalletDetailView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
 
-                if isCreditCard { creditBar.padding(.horizontal, 24).padding(.top, 16) }
-
                 actionButtons
                     .padding(.horizontal, 24)
                     .padding(.top, 20)
 
                 if !account.isActive { archivedNote.padding(.horizontal, 24).padding(.top, 20) }
 
+                if let statement {
+                    statementSection(statement)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 28)
+                }
+
                 transactionsSection
                     .padding(.horizontal, 24)
                     .padding(.top, 22)
                     .padding(.bottom, 28)
 
-                if isCreditCard, account.isActive {
+                if account.isActive {
                     SectionDivider()
                     subscriptionsSection
                         .padding(.horizontal, 24)
@@ -242,7 +259,21 @@ struct WalletDetailView: View {
             .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showDueDayPicker) {
-            dueDaySheet
+            daySheet(title: "Tanggal jatuh tempo", selection: $editedDueDay) { showDueDayPicker = false }
+        }
+        .sheet(isPresented: $showStatementDayPicker) {
+            daySheet(title: "Tanggal cetak tagihan", selection: Binding(
+                get: { editedStatementDay ?? defaultStatementDay },
+                set: { editedStatementDay = $0 }
+            )) {
+                showStatementDayPicker = false
+                if editedStatementDay == nil { editedStatementDay = defaultStatementDay }
+            }
+        }
+        .sheet(isPresented: $showPaySheet) {
+            if let statement {
+                PayCardBillSheet(card: account, statement: statement, wallets: accounts)
+            }
         }
         .sheet(isPresented: $showAddSubscription) {
             AddSubscriptionView(
@@ -261,21 +292,91 @@ struct WalletDetailView: View {
 
     // MARK: - Top
 
-    private var creditBar: some View {
-        let limit = Double(creditLimitDigits) ?? 0
-        let outstanding = account.currentBalance ?? 0
-        let utilization = limit > 0 ? outstanding / limit : 0
-        return VStack(alignment: .leading, spacing: 6) {
-            SegmentBar(value: utilization, color: utilization > 0.8 ? .appError : utilization > 0.5 ? .appWarning : .appPrimary)
-            HStack {
-                Text("Terpakai \(outstanding.formattedAsCurrency()) · \(Int(utilization * 100))%")
-                Spacer()
-                Text("Jatuh tempo tgl \(editedDueDay)")
+    private var statement: CreditStatement? {
+        CreditStatement(card: account, transactions: transactions, installments: installments)
+    }
+
+    /// Same guess as `CreditStatement` makes for cards without a cut-off day.
+    private var defaultStatementDay: Int { (editedDueDay + 15) % 31 + 1 }
+
+    private func statementSection(_ statement: CreditStatement) -> some View {
+        let limit = account.creditLimit ?? 0
+        let utilization = account.creditUtilization ?? 0
+        return VStack(alignment: .leading, spacing: 0) {
+            CardBillSummary(statement: statement, isVisible: isBalanceVisible)
+
+            if account.isActive, account.balance > 0 {
+                EmptyStateButton(title: "Bayar tagihan", icon: "creditcard", isFullWidth: true) { showPaySheet = true }
+                    .padding(.top, 16)
             }
-            .font(.app(13))
-            .foregroundStyle(Color.appTextSecondary)
-            .monospacedDigit()
+
+            if account.statementDay == nil, account.isActive {
+                Button { showStatementDayPicker = true } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "calendar.badge.exclamationmark")
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color.appWarning)
+                            .frame(width: 24)
+                        Text("Atur tanggal cetak tagihan supaya tagihan akurat")
+                            .font(.app(15))
+                            .foregroundStyle(Color.appBody)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 8)
+                        chevron
+                    }
+                    .padding(.vertical, 14)
+                    .rowSeparator()
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(RowPressStyle())
+                .padding(.top, 12)
+            }
+
+            statementRow("Belum ditagih", value: masked(statement.unbilled),
+                         caption: "masuk tagihan \(TransactionDates.dayMonth.string(from: statement.nextStatementDate))")
+            statementRow("Sisa limit", value: masked(account.availableCredit ?? 0),
+                         caption: "Terpakai \(masked(account.balance)) dari \(masked(limit))")
+            SegmentBar(value: utilization, color: utilization > 0.8 ? .appError : utilization > 0.5 ? .appWarning : .appPrimary)
+                .padding(.top, 12)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Hari terbaik belanja")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                Text("Mulai \(TransactionDates.dayMonth.string(from: statement.bestPurchaseDate)), bayar \(TransactionDates.dayMonth.string(from: statement.bestPurchaseDueDate))")
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                Text("Belanja mulai hari itu dapat waktu bebas bunga paling lama.")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+            }
+            .padding(.top, 22)
         }
+    }
+
+    private func statementRow(_ label: String, value: String, caption: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                Text(caption)
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextTertiary)
+                    .monospacedDigit()
+            }
+            Spacer()
+            Text(value)
+                .font(.app(16, weight: .medium))
+                .foregroundStyle(Color.appText)
+                .monospacedDigit()
+        }
+        .padding(.vertical, 12)
+        .rowSeparator()
+    }
+
+    private func masked(_ amount: Double) -> String {
+        isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
     }
 
     private var actionButtons: some View {
@@ -440,9 +541,11 @@ struct WalletDetailView: View {
                 let limit = Double(creditLimitDigits) ?? 0
                 let outstanding = account.currentBalance ?? 0
                 valueRow("Limit", value: limit.formattedAsCurrency()) { showCreditLimitKeyboard = true }
-                valueRow("Sisa limit", value: (limit - outstanding).formattedAsCurrency())
                 valueRow("Jatuh tempo", value: "Setiap tanggal \(editedDueDay)") { showDueDayPicker = true }
-                valueRow("Tagihan", value: outstanding.formattedAsCurrency(), color: .appError)
+                valueRow("Tanggal cetak tagihan", value: editedStatementDay.map { "Setiap tanggal \($0)" } ?? "Belum diatur") {
+                    showStatementDayPicker = true
+                }
+                valueRow("Total utang", value: outstanding.formattedAsCurrency(), color: .appError)
                 valueRow("Bulan ini", value: monthlyExpense > 0 ? abbreviatedAmount(monthlyExpense) : "Rp0", color: .appError)
             } else {
                 valueRow("Saldo", value: "Rp" + (balanceDigits.isEmpty ? "0" : balanceDigits.formattedWithThousandSeparator)) {
@@ -467,7 +570,8 @@ struct WalletDetailView: View {
                 Text(label)
                     .font(.app(15))
                     .foregroundStyle(Color.appTextSecondary)
-                    .frame(width: 96, alignment: .leading)
+                    .lineLimit(1)
+                    .frame(minWidth: 96, alignment: .leading)
                 Spacer()
                 Text(value)
                     .font(.app(16, weight: .medium))
@@ -565,19 +669,19 @@ struct WalletDetailView: View {
         }
     }
 
-    private var dueDaySheet: some View {
+    private func daySheet(title: String, selection: Binding<Int>, onDone: @escaping () -> Void) -> some View {
         VStack(spacing: 0) {
             HStack {
-                Button("Batal") { showDueDayPicker = false }
+                Button("Batal") { showDueDayPicker = false; showStatementDayPicker = false }
                     .font(.app(17))
                     .foregroundStyle(Color.appTextSecondary)
                 Spacer()
-                Button("Simpan") { showDueDayPicker = false; confirmChanges() }
+                Button("Simpan") { onDone(); confirmChanges() }
                     .font(.app(17, weight: .semibold))
                     .foregroundStyle(Color.appPrimary)
             }
             .overlay {
-                Text("Tanggal jatuh tempo")
+                Text(title)
                     .font(.app(17, weight: .semibold))
                     .foregroundStyle(Color.appText)
             }
@@ -585,7 +689,7 @@ struct WalletDetailView: View {
             .padding(.horizontal, 24)
             .padding(.top, 14)
 
-            Picker("Tanggal Jatuh Tempo", selection: $editedDueDay) {
+            Picker(title, selection: selection) {
                 ForEach(1...31, id: \.self) { day in
                     Text("\(day)").tag(day)
                 }
@@ -603,7 +707,8 @@ struct WalletDetailView: View {
             let dueDateStr = isCreditCard ? String(editedDueDay) : nil
             let creditLimit = isCreditCard ? (Double(creditLimitDigits) ?? 0) : nil
             let newBalance = Double(balanceDigits) ?? 0
-            let success = await onSave?(account.id, editedName.trimmingCharacters(in: .whitespaces), account.type, editedIconId, account.isArchived, newBalance, account.balance, creditLimit, dueDateStr) ?? true
+            let statementDay = isCreditCard ? editedStatementDay : nil
+            let success = await onSave?(account.id, editedName.trimmingCharacters(in: .whitespaces), account.type, editedIconId, account.isArchived, newBalance, account.balance, creditLimit, dueDateStr, statementDay) ?? true
             hasConfirmed = success
             isSaving = false
             toastMessage = success ? "Perubahan berhasil disimpan" : "Gagal menyimpan perubahan"
@@ -627,7 +732,6 @@ struct WalletDetailView: View {
     // MARK: - Subscriptions
 
     private func loadSubscriptions() async {
-        guard account.isCreditCard else { return }
         do {
             let subs = try await SupabaseRepository.shared.fetchSubscriptions(accountIds: [account.id])
             subscriptions = subs
@@ -703,6 +807,12 @@ struct WalletDetailView: View {
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
+                if let increase = sub.priceIncrease {
+                    Text("Naik " + increase.formattedAsCurrency())
+                        .font(.app(13))
+                        .foregroundStyle(Color.appError)
+                        .monospacedDigit()
+                }
             }
 
             Spacer()
@@ -721,6 +831,7 @@ struct WalletDetailView: View {
                     try? await SupabaseRepository.shared.deleteSubscription(id: sub.id)
                     await NotificationManager.shared.cancel(for: sub)
                     await loadSubscriptions()
+                    NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 }
             } label: {
                 Image(systemName: "trash")
@@ -744,6 +855,7 @@ struct WalletDetailView: View {
                     try? await SupabaseRepository.shared.deleteSubscription(id: sub.id)
                     await NotificationManager.shared.cancel(for: sub)
                     await loadSubscriptions()
+                    NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 }
             } label: {
                 Label("Hapus", systemImage: "trash")
@@ -761,6 +873,300 @@ struct WalletDetailView: View {
                 Label(sub.isActive ? "Nonaktifkan" : "Aktifkan", systemImage: sub.isActive ? "pause" : "play")
             }
             .tint(.appWarning)
+        }
+    }
+}
+
+// MARK: - Card bill
+
+extension CreditStatement {
+    var statusText: String {
+        switch status {
+        case .none: "Tidak ada tagihan"
+        case .unpaid: "Belum dibayar"
+        case .partial: "Dibayar sebagian"
+        case .paid: "Lunas"
+        case .overdue: "Terlambat"
+        }
+    }
+
+    var statusColor: Color {
+        switch status {
+        case .overdue: .appError
+        case .paid: .appPrimary
+        default: .appTextSecondary
+        }
+    }
+
+    /// "Jatuh tempo 20 Okt · 3 hari lagi"; the countdown only while something is owed.
+    var dueText: String {
+        let due = "Jatuh tempo " + TransactionDates.dayMonth.string(from: dueDate)
+        guard status == .unpaid || status == .partial || status == .overdue else { return due }
+        let calendar = Calendar.current
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: Date()), to: dueDate).day ?? 0
+        let left = switch days {
+        case ..<0: "lewat \(-days) hari"
+        case 0: "hari ini"
+        case 1: "besok"
+        default: "\(days) hari lagi"
+        }
+        return due + " · " + left
+    }
+}
+
+/// What's still owed on a card's last statement, its status and due date.
+struct CardBillSummary: View {
+    let statement: CreditStatement
+    var isVisible = true
+    /// One line for the Dompet card overlay.
+    var compact = false
+
+    private var title: String { "Tagihan " + TransactionDates.dayMonth.string(from: statement.statementDate) }
+
+    var body: some View {
+        if compact {
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Text(isVisible ? statement.remaining.formattedAsCurrency() : "Rp" + hiddenAmount)
+                        .font(.app(20, weight: .semibold))
+                        .tracking(-0.2)
+                        .foregroundStyle(Color.appText)
+                        .monospacedDigit()
+                }
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(statement.statusText)
+                        .font(.app(13, weight: .medium))
+                        .foregroundStyle(statement.statusColor)
+                    Text(statement.dueText)
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .monospacedDigit()
+                }
+            }
+            .accessibilityElement(children: .combine)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                HeroAmount(value: statement.remaining, size: .medium, isVisible: isVisible)
+                Text(statement.statusText)
+                    .font(.app(15, weight: .medium))
+                    .foregroundStyle(statement.statusColor)
+                Text(statement.dueText)
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .monospacedDigit()
+                if statement.status == .partial {
+                    Text("Sudah dibayar " + (isVisible ? statement.paid.formattedAsCurrency() : "Rp" + hiddenAmount))
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .monospacedDigit()
+                }
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+}
+
+/// Pays a card bill: a transfer from a cash wallet into the card, which lowers its debt.
+struct PayCardBillSheet: View {
+    let card: Account
+    let statement: CreditStatement
+    let wallets: [Account]
+
+    private enum Choice { case full, minimum, custom }
+
+    @State private var choice = Choice.full
+    @State private var customAmount = 0
+    @State private var sourceId: String?
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+    @Environment(\.dismiss) private var dismiss
+
+    private var sources: [Account] { wallets.filter { $0.isActive && !$0.isCreditCard } }
+    private var source: Account? { sources.first { $0.id == sourceId } }
+    /// Nothing billed yet but the card has debt: offer paying all of it.
+    private var fullAmount: Double { statement.remaining > 0 ? statement.remaining : card.balance }
+
+    private var amount: Double {
+        switch choice {
+        case .full: fullAmount
+        case .minimum: statement.minimumDue
+        case .custom: Double(customAmount)
+        }
+    }
+
+    private var canPay: Bool { amount > 0 && source != nil && !isSaving }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button("Batal") { dismiss() }
+                    .font(.app(17))
+                    .foregroundStyle(Color.appTextSecondary)
+                Spacer()
+            }
+            .overlay {
+                Text("Bayar tagihan")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+            }
+            .frame(height: 48)
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    HeroAmount(value: amount, size: .medium)
+                        .opacity(amount > 0 ? 1 : 0.55)
+                    Text("ke \(card.name)")
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .padding(.top, 4)
+
+                    VStack(spacing: 0) {
+                        choiceRow(.full, title: "Bayar penuh",
+                                  caption: statement.remaining > 0 ? "Sisa tagihan" : "Seluruh utang kartu",
+                                  amount: fullAmount)
+                        if statement.minimumDue > 0 {
+                            choiceRow(.minimum, title: "Minimum", caption: "Pembayaran minimum", amount: statement.minimumDue)
+                        }
+                        choiceRow(.custom, title: "Nominal lain", caption: "Ketik sendiri", amount: nil)
+                    }
+                    .padding(.top, 20)
+
+                    if statement.remaining > 0, amount < statement.remaining {
+                        let left = statement.remaining - amount
+                        Text("Sisa \(left.formattedAsCurrency()) kena bunga sekitar \((left * CreditStatement.monthlyInterest).formattedAsCurrency())/bulan")
+                            .font(.app(13))
+                            .foregroundStyle(Color.appWarning)
+                            .monospacedDigit()
+                            .padding(.top, 12)
+                    }
+
+                    SectionHeader(title: "Bayar dari")
+                        .padding(.top, 28)
+                        .padding(.bottom, 12)
+                    if sources.isEmpty {
+                        Text("Belum ada dompet untuk membayar")
+                            .font(.app(15))
+                            .foregroundStyle(Color.appTextSecondary)
+                    } else {
+                        WalletPickerGrid(accounts: sources, selectedId: sourceId) { sourceId = $0.id }
+                        if let source {
+                            Text("Saldo \(source.name) \(source.balance.formattedAsCurrency())")
+                                .font(.app(13))
+                                .foregroundStyle(Color.appTextSecondary)
+                                .monospacedDigit()
+                                .padding(.top, 12)
+                            if source.balance < amount {
+                                Text("Saldo tidak cukup untuk nominal ini")
+                                    .font(.app(13))
+                                    .foregroundStyle(Color.appError)
+                                    .padding(.top, 4)
+                            }
+                        }
+                    }
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.app(13))
+                            .foregroundStyle(Color.appError)
+                            .padding(.top, 12)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
+            }
+
+            Group {
+                if choice == .custom {
+                    AmountPad(color: .appPrimary, isEnabled: canPay, isSaving: isSaving, onPress: { key in
+                        if let next = NumberPad.apply(key, to: customAmount) { customAmount = next }
+                    }, onSave: pay)
+                } else {
+                    Button(action: pay) {
+                        Group {
+                            if isSaving { ProgressView().tint(.white) } else { Text("Bayar") }
+                        }
+                        .font(.app(16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Color.appPrimary.opacity(canPay ? 1 : 0.4), in: Capsule())
+                    }
+                    .buttonStyle(PressScaleStyle())
+                    .disabled(!canPay)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 16)
+        }
+        .background(Color.appBackground)
+        .presentationDetents([.large])
+        .presentationBackground(Color.appBackground)
+        .onAppear {
+            if sourceId == nil { sourceId = (sources.first(where: \.isDefault) ?? sources.first)?.id }
+        }
+    }
+
+    private func choiceRow(_ value: Choice, title: String, caption: String, amount: Double?) -> some View {
+        let isOn = choice == value
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) { choice = value }
+        } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.app(16, weight: isOn ? .semibold : .regular))
+                        .foregroundStyle(Color.appText)
+                    Text(caption)
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+                Spacer()
+                if let amount {
+                    Text(amount.formattedAsCurrency())
+                        .font(.app(16))
+                        .foregroundStyle(Color.appText)
+                        .monospacedDigit()
+                }
+                Image(systemName: "checkmark")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Color.appPrimary)
+                    .opacity(isOn ? 1 : 0)
+            }
+            .padding(.vertical, 12)
+            .rowSeparator()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+
+    private func pay() {
+        guard canPay, let source else { return }
+        isSaving = true
+        errorMessage = nil
+        Task {
+            do {
+                _ = try await SupabaseRepository.shared.createTransfer(
+                    primaryAccountId: source.id, counterpartyAccountId: card.id, amount: amount,
+                    description: "Bayar tagihan \(card.name)", note: nil, date: Date()
+                )
+                NotificationCenter.default.post(name: .dataDidChange, object: nil)
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                dismiss()
+            } catch {
+                isSaving = false
+                errorMessage = "Gagal membayar tagihan. Coba lagi."
+            }
         }
     }
 }

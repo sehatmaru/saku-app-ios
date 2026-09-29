@@ -23,12 +23,20 @@ final class DashboardViewModel: ObservableObject {
     @Published var budgets: [Budget] = []
     @Published var upcomingSubscriptions: [CardSubscription] = []
     @Published var totalMonthlySubscriptions: Double = 0
+    /// Card statements still owed now, across all active cards.
+    @Published var cardDueTotal: Double = 0
+    /// Subscriptions charged to cash, bank or e-wallet from today to month end.
+    @Published var upcomingBillsTotal: Double = 0
     @Published var isLoading = false
     @Published var isRefreshing = false
     @Published var hasLoadedOnce = false
     private var loadedUserId: String?
 
     var totalRemaining: Double { totalBudget - totalSpent }
+
+    /// Balance minus what already has to leave it this month: printed card bills and
+    /// subscriptions paid from a wallet.
+    var safeToSpend: Double { balance - cardDueTotal - upcomingBillsTotal }
 
     var averageDailySpending: Double {
         let now = Date()
@@ -106,6 +114,8 @@ final class DashboardViewModel: ObservableObject {
             dailyExpenses = cached.dailyExpenses
             budgets = cached.budgets
             health = cached.health
+            cardDueTotal = cached.cardDueTotal
+            upcomingBillsTotal = cached.upcomingBillsTotal
             loadedUserId = userId
             hasLoadedOnce = true
             return
@@ -132,21 +142,30 @@ final class DashboardViewModel: ObservableObject {
             accounts = fetchedAccounts
             categories = fetchedCategories
 
-            let creditIds = fetchedAccounts
-                .filter { $0.isCreditCard && $0.isActive }
-                .map { $0.id }
-            if !creditIds.isEmpty {
-                let subs = (try? await SupabaseRepository.shared.fetchSubscriptions(accountIds: creditIds)) ?? []
-                let activeSubs = subs.filter { $0.isActive && $0.nextBillingDate != nil }
-                upcomingSubscriptions = activeSubs
-                    .sorted { ($0.nextBillingDate ?? "") < ($1.nextBillingDate ?? "") }
-                    .prefix(5)
-                    .map { $0 }
-                totalMonthlySubscriptions = activeSubs.reduce(0) { $0 + $1.monthlyAmount }
-            } else {
-                upcomingSubscriptions = []
-                totalMonthlySubscriptions = 0
-            }
+            // Subscriptions can sit on any active wallet.
+            let activeAccounts = fetchedAccounts.filter(\.isActive)
+            let cards = activeAccounts.filter(\.isCreditCard)
+            async let subsTask = SupabaseRepository.shared.fetchSubscriptions(accountIds: activeAccounts.map(\.id))
+            async let plansTask = SupabaseRepository.shared.fetchInstallments(accountIds: cards.map(\.id))
+            let subs = activeAccounts.isEmpty ? [] : ((try? await subsTask) ?? [])
+            let installments = (try? await plansTask) ?? []
+            let activeSubs = subs.filter { $0.isActive && $0.nextBillingDate != nil }
+            upcomingSubscriptions = activeSubs
+                .sorted { ($0.nextBillingDate ?? "") < ($1.nextBillingDate ?? "") }
+                .prefix(5)
+                .map { $0 }
+            totalMonthlySubscriptions = activeSubs.reduce(0) { $0 + $1.monthlyAmount }
+
+            let statements = cards.compactMap { CreditStatement(card: $0, transactions: transactions, installments: installments) }
+            cardDueTotal = statements.reduce(0) { $0 + $1.remaining }
+            let cardIds = Set(cards.map(\.id))
+            let monthEnd = calendar.dateInterval(of: .month, for: Date())?.end ?? Date()
+            let todayStart = calendar.startOfDay(for: Date())
+            upcomingBillsTotal = activeSubs
+                .filter { !cardIds.contains($0.accountId) }
+                .filter { sub in sub.nextBillingDateAsDate.map { $0 >= todayStart && $0 < monthEnd } ?? false }
+                .reduce(0) { $0 + $1.amount }
+            await NotificationManager.shared.resyncCardDue(cards: cards, statements: statements)
 
             balance = accounts.filter { !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
             creditDebt = accounts.filter { $0.isCreditCard }.reduce(0) { $0 + $1.balance }
@@ -216,7 +235,9 @@ final class DashboardViewModel: ObservableObject {
                 categories: categories,
                 dailyExpenses: dailyExpenses,
                 budgets: self.budgets,
-                health: health
+                health: health,
+                cardDueTotal: cardDueTotal,
+                upcomingBillsTotal: upcomingBillsTotal
             ), for: userId)
             loadedUserId = userId
             hasLoadedOnce = true

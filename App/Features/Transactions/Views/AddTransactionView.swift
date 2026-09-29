@@ -36,9 +36,13 @@ struct AddTransactionView: View {
     /// Sum of this month's budgets and every expense, for the daily-budget strip.
     @State private var monthlyBudget: Double = 0
     @State private var expenses: [Transaction] = []
+    /// 0% installment months for a new card expense; 0 means none.
+    @State private var installmentMonths = 0
+    /// The expense saved but its installment didn't; closing after the alert avoids a duplicate on retry.
+    @State private var closesAfterAlert = false
 
     enum PickerKind: String, Identifiable {
-        case category, account, target, date
+        case category, account, target, date, installment
         var id: String { rawValue }
     }
 
@@ -61,6 +65,10 @@ struct AddTransactionView: View {
         accounts.filter(\.isActive).sorted { $0.isDefault && !$1.isDefault }
     }
     private var targetAccounts: [Account] { activeAccounts.filter { !$0.isCreditCard } }
+    private var isCardExpense: Bool { style.type == .expense && account?.isCreditCard == true }
+    /// The plan that will actually be saved: only new card expenses can be split.
+    private var planMonths: Int { isCardExpense && editing == nil ? installmentMonths : 0 }
+    private static let installmentOptions = [0, 3, 6, 12, 24]
     private var typeCategories: [Category] {
         categories.filter { $0.type == (style.type == .income ? .income : .expense) }
     }
@@ -84,7 +92,7 @@ struct AddTransactionView: View {
         .onAppear(perform: setUp)
         .task { await loadBudgetData() }
         .alert("Gagal menyimpan", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-            Button("OK", role: .cancel) {}
+            Button("OK", role: .cancel) { if closesAfterAlert { dismiss() } }
         } message: { Text(errorMessage ?? "") }
     }
 
@@ -414,6 +422,18 @@ struct AddTransactionView: View {
                 row(.category, label: "Kategori", value: category?.name ?? "Pilih",
                     icon: category?.icon ?? "tag", iconColor: style.color, index: 0)
                 row(.account, label: "Dompet", value: account?.name ?? "Pilih", swatch: walletColor(account), index: 1)
+                if isCardExpense, let account {
+                    if planMonths == 0 {
+                        cardCaption(billingText(card: account))
+                    }
+                    if editing == nil {
+                        row(.installment, label: "Cicilan", value: installmentMonths == 0 ? "Tidak" : "\(installmentMonths) bulan",
+                            icon: "calendar.badge.clock", iconColor: .appTextSecondary, index: 1)
+                        if planMonths > 0 {
+                            cardCaption(planText(card: account))
+                        }
+                    }
+                }
             }
             row(.date, label: "Tanggal", value: dateValue, icon: "calendar", iconColor: .appTextSecondary, index: 2)
 
@@ -447,6 +467,31 @@ struct AddTransactionView: View {
         }
         .buttonStyle(.plain)
         .rise(isEntered, y: 14, delay: 0.2 + Double(index) * 0.06, fade: 0.4, move: 0.5)
+    }
+
+    /// Small grey line under a card row: which statement this lands on, or the installment split.
+    private func cardCaption(_ text: String) -> some View {
+        Text(text)
+            .font(.app(13))
+            .foregroundStyle(Color.appTextSecondary)
+            .monospacedDigit()
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 8)
+            .transition(.opacity)
+    }
+
+    private func billingText(card: Account) -> String {
+        let billing = CreditStatement.billing(forPurchaseOn: date, card: card)
+        return "Masuk tagihan " + TransactionDates.dayMonth.string(from: billing.statement)
+            + ", bayar " + TransactionDates.dayMonth.string(from: billing.due)
+    }
+
+    private func planText(card: Account) -> String {
+        let monthly = Double(amount) / Double(max(1, planMonths))
+        let billing = CreditStatement.billing(forPurchaseOn: date, card: card)
+        return "Rp" + monthly.formattedAsDigits() + "/bulan · mulai tagihan " + TransactionDates.dayMonth.string(from: billing.statement)
     }
 
     private var dateValue: String {
@@ -516,6 +561,8 @@ struct AddTransactionView: View {
                 DayPicker(selected: date, color: style.color) { day in
                     pick(.date) { date = keepingTime(of: date, on: day) }
                 }
+            case .installment:
+                installmentChips
             }
         }
     }
@@ -526,7 +573,36 @@ struct AddTransactionView: View {
         case .account: isTransfer ? "Dari dompet" : "Dompet"
         case .target: "Ke dompet"
         case .date: "Tanggal"
+        case .installment: "Cicilan 0%"
         }
+    }
+
+    private var installmentChips: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                ForEach(Self.installmentOptions, id: \.self) { months in
+                    let isOn = months == installmentMonths
+                    Button {
+                        pick(.installment) { installmentMonths = months }
+                    } label: {
+                        Text(months == 0 ? "Tidak" : "\(months) bulan")
+                            .font(.app(15, weight: .medium))
+                            .foregroundStyle(isOn ? Color.appBackground : Color.appText)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(isOn ? Color.appText : Color.appFill, in: Capsule())
+                    }
+                    .buttonStyle(PressScaleStyle())
+                    .accessibilityAddTraits(isOn ? .isSelected : [])
+                }
+            }
+            Text("Seluruh nominal langsung memakai limit kartu, tapi tiap tagihan hanya menagih satu bagian.")
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+        .padding(.bottom, 24)
     }
 
     /// Picking the other side of a transfer swaps the two wallets.
@@ -581,11 +657,25 @@ struct AddTransactionView: View {
                         amount: value, description: description, note: nil, date: date
                     )
                 } else {
-                    _ = try await SupabaseRepository.shared.createTransaction(
+                    let created = try await SupabaseRepository.shared.createTransaction(
                         accountId: account.id, categoryId: category?.id,
                         amount: value, type: style.type, description: description, note: nil,
                         date: date, userId: userId, isCreditAccount: account.isCreditCard
                     )
+                    if planMonths > 0 {
+                        do {
+                            try await SupabaseRepository.shared.createInstallment(
+                                accountId: account.id, transactionId: created.id, months: planMonths
+                            )
+                        } catch {
+                            isSaving = false
+                            onSave()
+                            NotificationCenter.default.post(name: .dataDidChange, object: nil)
+                            closesAfterAlert = true
+                            errorMessage = "Pengeluaran tersimpan, tapi cicilan gagal dibuat. " + error.localizedDescription
+                            return
+                        }
+                    }
                 }
                 isSaving = false
                 done = summary

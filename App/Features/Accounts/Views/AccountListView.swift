@@ -7,17 +7,17 @@ struct AccountListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: AccountListViewModel
 
-    /// Dompet opens from Beranda's hero; this closes it again.
-    var onBack: (() -> Void)?
-
     /// Opens the add-wallet sheet as soon as the page appears.
     private let startsAdding: Bool
+    /// Beranda's navigation path: Dompet is pushed onto it and pushes its own pages there too,
+    /// so the system back button and edge swipe work like everywhere else.
+    @Binding private var path: NavigationPath
 
     init(viewModel: AccountListViewModel = AccountListViewModel(), startsAdding: Bool = false,
-         onBack: (() -> Void)? = nil) {
+         path: Binding<NavigationPath>) {
         _viewModel = StateObject(wrappedValue: viewModel)
         self.startsAdding = startsAdding
-        self.onBack = onBack
+        _path = path
     }
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
     @State private var isBalanceVisible = true
@@ -26,7 +26,6 @@ struct AccountListView: View {
     @State private var categories: [Category] = []
     @State private var cachedUserId: String?
     @State private var openGroups: Set<Account.AccountType> = []
-    @State private var path = NavigationPath()
     /// The detail overlay is on screen (also while cards fly back into their stacks).
     @State private var isOverlayOn = false
     /// Card lifted to the top; nil while the overlay opens or closes.
@@ -35,6 +34,7 @@ struct AccountListView: View {
     @State private var lastSelectedID: String?
     @State private var cardTops = CardTops()
     @State private var transferFrom: Account?
+    @State private var payCard: Account?
 
     /// Card positions kept outside view state so scrolling doesn't re-render the screen.
     private final class CardTops {
@@ -43,7 +43,7 @@ struct AccountListView: View {
 
     private static let space = "dompet"
     // Detail layout from design 5a, in points.
-    private let detailCardTop: CGFloat = 58
+    private let detailCardTop: CGFloat = 8
     /// How much of the bottom pile peeks above the tab bar.
     private let pileVisible: CGFloat = 40
     private let pileStep: CGFloat = 8
@@ -74,12 +74,10 @@ struct AccountListView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        Group {
             ZStack(alignment: .top) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    header
-
                     if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
                         errorStateView(message: error)
                             .padding(24)
@@ -109,12 +107,24 @@ struct AccountListView: View {
             }
             .coordinateSpace(.named(Self.space))
             .background(Color.appBackground)
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationTitle("Dompet")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(selectedID != nil)
+            .toolbar { toolbarItems }
             .navigationDestination(for: Account.self) { account in
                 walletDetail(account)
             }
-            .navigationDestination(for: String.self) { _ in
-                ArchivedWalletsView(accounts: archivedAccounts) { walletDetail($0) }
+            .navigationDestination(for: String.self) { route in
+                if route == Self.subscriptionsRoute {
+                    SubscriptionsView(
+                        accounts: viewModel.accounts.filter(\.isActive),
+                        subscriptions: viewModel.subscriptions,
+                        categories: categories,
+                        onChange: reload
+                    )
+                } else {
+                    ArchivedWalletsView(accounts: archivedAccounts) { walletDetail($0) }
+                }
             }
             .refreshable {
                 guard let userId = authViewModel.currentUser?.id else { return }
@@ -133,12 +143,10 @@ struct AccountListView: View {
                 await syncAccountTransactions(userId: userId)
                 await syncCategories(userId: userId)
             }
-            .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
-                guard let userId = authViewModel.currentUser?.id else { return }
-                Task {
-                    await viewModel.loadAccounts(userId: userId, forceRefresh: true)
-                    await syncAccountTransactions(userId: userId, forceRefresh: true)
-                    await syncCategories(userId: userId)
+            .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in reload() }
+            .sheet(item: $payCard) { card in
+                if let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) {
+                    PayCardBillSheet(card: card, statement: statement, wallets: viewModel.accounts)
                 }
             }
             .fullScreenCover(item: $transferFrom) { account in
@@ -155,8 +163,8 @@ struct AccountListView: View {
             }
             .sheet(isPresented: $showAddWallet) {
                 if let userId = authViewModel.currentUser?.id {
-                    AddWalletView { name, type, balance, icon, creditLimit, dueDate in
-                        let success = await viewModel.addAccount(name: name, type: type, openingBalance: balance, icon: icon, userId: userId, creditLimit: creditLimit, dueDate: dueDate)
+                    AddWalletView { name, type, balance, icon, creditLimit, dueDate, statementDay in
+                        let success = await viewModel.addAccount(name: name, type: type, openingBalance: balance, icon: icon, userId: userId, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay)
                         if success {
                             await syncAccountTransactions(userId: userId)
                         }
@@ -170,34 +178,44 @@ struct AccountListView: View {
 
     // MARK: Header
 
-    private var header: some View {
-        ScreenHeader(title: "", onBack: onBack) {
-            if !archivedAccounts.isEmpty {
-                Button { path.append("archived") } label: {
-                    Image(systemName: "archivebox")
+    /// Archive, balance and add; while a card's detail is open, only "Selesai".
+    @ToolbarContentBuilder
+    private var toolbarItems: some ToolbarContent {
+        if selectedID != nil {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Selesai", action: closeDetail)
+                    .fontWeight(.semibold)
+            }
+        } else {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                // 13c: the actions wait until the wallets are in.
+                Group {
+                    if !archivedAccounts.isEmpty {
+                        Button { path.append("archived") } label: {
+                            Image(systemName: "archivebox")
+                        }
+                        .accessibilityLabel("Diarsipkan")
+                    }
+                    if !viewModel.hasLoadedOnce || !groups.isEmpty {
+                        Button {
+                            withAnimation(.smooth) { isBalanceVisible.toggle() }
+                            isBalanceVisibleStorage = isBalanceVisible
+                        } label: {
+                            Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+                        }
+                        .tint(Color.appText)
+                        .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+                    }
+                    Button {
+                        showAddWallet = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("Tambah dompet")
                 }
-                .accessibilityLabel("Diarsipkan")
+                .disabled(!viewModel.hasLoadedOnce)
             }
-            if !viewModel.hasLoadedOnce || !groups.isEmpty {
-                Button {
-                    withAnimation(.smooth) { isBalanceVisible.toggle() }
-                    isBalanceVisibleStorage = isBalanceVisible
-                } label: {
-                    Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
-                        .foregroundStyle(viewModel.hasLoadedOnce ? Color.appText : Color.appTextTertiary)
-                }
-                .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
-            }
-            Button {
-                showAddWallet = true
-            } label: {
-                Image(systemName: "plus")
-                    .foregroundStyle(viewModel.hasLoadedOnce ? Color.appPrimary : Color.appTextTertiary)
-            }
-            .accessibilityLabel("Tambah dompet")
         }
-        // 13c: the actions wait, greyed, until the wallets are in.
-        .disabled(!viewModel.hasLoadedOnce)
     }
 
     private func errorStateView(message: String) -> some View {
@@ -399,14 +417,6 @@ struct AccountListView: View {
                     .opacity(shown ? 1 : 0)
                     .animation(.easeOut(duration: 0.26), value: shown)
 
-                ScreenHeader(title: "") {
-                    Button("Selesai", action: closeDetail)
-                        .font(.app(17, weight: .semibold))
-                        .foregroundStyle(Color.appPrimary)
-                }
-                .opacity(shown ? 1 : 0)
-                .animation(.easeOut(duration: 0.26), value: shown)
-
                 if let account = cards.first(where: { $0.id == (selectedID ?? lastSelectedID) }) {
                     detailContent(account, isOpen: shown)
                         .padding(.horizontal, 24)
@@ -444,25 +454,17 @@ struct AccountListView: View {
     private func detailContent(_ account: Account, isOpen: Bool) -> some View {
         let recent = Array((accountTransactions[account.id] ?? []).prefix(3))
         return VStack(alignment: .leading, spacing: 0) {
-            if account.isCreditCard, let limit = account.creditLimit {
-                VStack(alignment: .leading, spacing: 6) {
-                    SegmentBar(value: account.creditUtilization ?? 0, delay: 0.35, isActive: isOpen)
-                    HStack {
-                        Text("Terpakai \(masked(account.balance)) / \(isBalanceVisible ? "Rp" + limit.abbreviatedRupiah() : "Rp" + hiddenAmount)")
-                        Spacer()
-                        if let day = account.dueDay {
-                            Text("Jatuh tempo \(day) \(Self.nextDueMonth(day: day))")
-                        }
-                    }
-                    .font(.app(12))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .monospacedDigit()
-                }
-                .padding(.bottom, 16)
+            if let statement = viewModel.statement(for: account, transactions: accountTransactions[account.id] ?? []) {
+                CardBillSummary(statement: statement, isVisible: isBalanceVisible, compact: true)
+                    .padding(.bottom, 16)
             }
 
             HStack(spacing: 0) {
-                detailAction("Transfer", icon: "arrow.left.arrow.right") { transferFrom = account }
+                if account.isCreditCard {
+                    detailAction("Bayar", icon: "creditcard") { payCard = account }
+                } else {
+                    detailAction("Transfer", icon: "arrow.left.arrow.right") { transferFrom = account }
+                }
                 detailAction("Sesuaikan", icon: "slider.horizontal.3") { path.append(account) }
                 detailAction("Riwayat", icon: "clock.arrow.circlepath") { path.append(account) }
                 detailAction("Ubah", icon: "pencil") { path.append(account) }
@@ -516,24 +518,12 @@ struct AccountListView: View {
         .buttonStyle(RowPressStyle())
     }
 
-    /// Short month of the next occurrence of `day`, e.g. "Okt".
-    private static func nextDueMonth(day: Int) -> String {
-        let calendar = Calendar.current
-        let now = Date()
-        let date = calendar.component(.day, from: now) <= day ? now : (calendar.date(byAdding: .month, value: 1, to: now) ?? now)
-        let f = DateFormatter()
-        f.dateFormat = "MMM"
-        f.locale = Locale(identifier: "id_ID")
-        return f.string(from: date)
-    }
-
     // MARK: Footer
 
     private var footerRows: some View {
-        let subscribed = viewModel.accounts.first { $0.isActive && ($0.subscriptionsTotal ?? 0) > 0 }
-        return VStack(spacing: 0) {
-            if let subscribed, viewModel.totalSubscriptions > 0 {
-                Button { path.append(subscribed) } label: {
+        VStack(spacing: 0) {
+            if !viewModel.subscriptions.isEmpty {
+                Button { path.append(Self.subscriptionsRoute) } label: {
                     HStack(spacing: 14) {
                         rowIcon("repeat")
                         VStack(alignment: .leading, spacing: 2) {
@@ -580,17 +570,25 @@ struct AccountListView: View {
             .foregroundStyle(Color.appTextTertiary)
     }
 
+    private static let subscriptionsRoute = "subscriptions"
+
     private func masked(_ amount: Double) -> String {
         isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
     }
 
     private func walletDetail(_ account: Account) -> some View {
-        WalletDetailView(
-            account: account,
+        // A card's debt moves when its bill is paid from its page; take the fresh balance so the
+        // statement matches the reloaded transactions. Other wallets keep the pushed snapshot,
+        // since their balance field is edited in place.
+        let shown = account.isCreditCard ? (viewModel.accounts.first { $0.id == account.id } ?? account) : account
+        return WalletDetailView(
+            account: shown,
             transactions: accountTransactions[account.id] ?? [],
             categories: categories,
-            onSave: { id, name, type, icon, isArchived, newBalance, oldBalance, creditLimit, dueDate in
-                return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "", creditLimit: creditLimit, dueDate: dueDate)
+            accounts: viewModel.accounts,
+            installments: viewModel.installments,
+            onSave: { id, name, type, icon, isArchived, newBalance, oldBalance, creditLimit, dueDate, statementDay in
+                return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "", creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay)
             },
             onDelete: { id in return await viewModel.removeAccount(id: id) },
             onToggleArchive: { id, _ in return await viewModel.toggleAccountArchive(id: id) },
@@ -601,6 +599,16 @@ struct AccountListView: View {
     }
 
     // MARK: Data
+
+    /// Same reload as after any write elsewhere.
+    private func reload() {
+        guard let userId = authViewModel.currentUser?.id else { return }
+        Task {
+            await viewModel.loadAccounts(userId: userId, forceRefresh: true)
+            await syncAccountTransactions(userId: userId, forceRefresh: true)
+            await syncCategories(userId: userId)
+        }
+    }
 
     private func syncAccountTransactions(userId: String, forceRefresh: Bool = false) async {
         if forceRefresh {

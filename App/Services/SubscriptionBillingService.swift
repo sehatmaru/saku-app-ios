@@ -3,17 +3,16 @@ import Foundation
 enum SubscriptionBillingService {
     static func processDueBills(userId: String) async {
         do {
-            let accounts = try await SupabaseRepository.shared.fetchAccounts(userId: userId)
-            let creditIds = accounts
-                .filter { $0.isCreditCard && $0.isActive }
-                .map { $0.id }
-            guard !creditIds.isEmpty else { return }
+            // Any active wallet can carry a subscription: a card, a bank account or an e-wallet.
+            let accounts = try await SupabaseRepository.shared.fetchAccounts(userId: userId).filter(\.isActive)
+            guard !accounts.isEmpty else { return }
+            let isCredit = Dictionary(accounts.map { ($0.id, $0.isCreditCard) }, uniquingKeysWith: { first, _ in first })
 
-            let subscriptions = try await SupabaseRepository.shared.fetchSubscriptions(accountIds: creditIds)
+            let subscriptions = try await SupabaseRepository.shared.fetchSubscriptions(accountIds: Array(isCredit.keys))
             let calendar = Calendar.current
             let today = calendar.startOfDay(for: Date())
 
-            for sub in subscriptions where sub.isActive {
+            for sub in subscriptions where sub.isActive && isCredit[sub.accountId] != nil {
                 guard var billingDate = sub.nextBillingDateAsDate else { continue }
                 billingDate = calendar.startOfDay(for: billingDate)
                 var iterations = 0
@@ -31,7 +30,7 @@ enum SubscriptionBillingService {
                         note: "Tagihan berulang: \(sub.name)",
                         date: billingDate,
                         userId: userId,
-                        isCreditAccount: true,
+                        isCreditAccount: isCredit[sub.accountId] ?? false,
                         clientOperationId: operationId
                     )
 
@@ -56,12 +55,9 @@ enum SubscriptionBillingService {
 
     static func resyncNotifications(userId: String) async {
         do {
-            let accounts = try await SupabaseRepository.shared.fetchAccounts(userId: userId)
-            let creditIds = accounts
-                .filter { $0.isCreditCard && $0.isActive }
-                .map { $0.id }
-            guard !creditIds.isEmpty else { return }
-            let subscriptions = try await SupabaseRepository.shared.fetchSubscriptions(accountIds: creditIds)
+            let accounts = try await SupabaseRepository.shared.fetchAccounts(userId: userId).filter(\.isActive)
+            guard !accounts.isEmpty else { return }
+            let subscriptions = try await SupabaseRepository.shared.fetchSubscriptions(accountIds: accounts.map(\.id))
             await NotificationManager.shared.resyncAll(subscriptions: subscriptions)
         } catch {
             print("❌ resyncNotifications failed: \(error)")

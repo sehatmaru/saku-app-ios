@@ -16,11 +16,12 @@ struct DashboardView: View {
     @State private var selectedDay: Int?
     @State private var showAllBudgets = false
     @State private var selectedTab: AppTab = .home
-    /// Dompet slides in over the app from Beranda's hero; it is no longer a tab.
-    @State private var showsWallets = false
+    /// Beranda's stack; Dompet is pushed here from the hero's pill.
+    @State private var homePath = NavigationPath()
     @State private var didWelcome = false
     /// "Tambah dompet" on the empty Beranda opens Dompet straight into the add sheet.
     @State private var addsWalletOnOpen = false
+    @State private var showsSafeInfo = false
 
     enum AppTab: Hashable {
         case home, transactions, budget, profile
@@ -28,19 +29,13 @@ struct DashboardView: View {
         case add
     }
 
+    /// Pages pushed on Beranda by value.
+    enum HomeRoute: Hashable {
+        case wallets
+    }
+
     var body: some View {
-        ZStack {
-            tabs
-            if showsWallets {
-                AccountListView(startsAdding: addsWalletOnOpen) {
-                    addsWalletOnOpen = false
-                    withAnimation(.settle(0.46)) { showsWallets = false }
-                }
-                    .background(Color.appBackground.ignoresSafeArea())
-                    .transition(.move(edge: .trailing))
-                    .zIndex(1)
-            }
-        }
+        tabs
         .onChange(of: showAddSheet) { _, isShown in if isShown { Haptics.add() } }
         .tint(.appPrimary)
         .onAppear {
@@ -101,7 +96,13 @@ struct DashboardView: View {
     @TabContentBuilder<AppTab>
     private var mainTabs: some TabContent<AppTab> {
         Tab(value: AppTab.home) {
-            NavigationStack { mainContent }
+            NavigationStack(path: $homePath) {
+                mainContent
+                    .navigationDestination(for: HomeRoute.self) { _ in
+                        AccountListView(startsAdding: addsWalletOnOpen, path: $homePath)
+                    }
+            }
+            .onChange(of: homePath.count) { _, count in if count == 0 { addsWalletOnOpen = false } }
         } label: { tabLabel("Beranda", "house.fill") }
         Tab(value: AppTab.transactions) {
             TransactionListView { showAddSheet = true }
@@ -256,7 +257,7 @@ struct DashboardView: View {
                 .lineSpacing(3)
             EmptyStateButton(title: "Tambah dompet", isFullWidth: true) {
                 addsWalletOnOpen = true
-                withAnimation(.settle(0.46)) { showsWallets = true }
+                homePath.append(HomeRoute.wallets)
             }
             .padding(.top, 12)
         }
@@ -327,10 +328,94 @@ struct DashboardView: View {
                 flowStat("Net", viewModel.netCashflow, signed: true)
             }
             .padding(.top, 12)
+
+            if !hasNoWallets, viewModel.cardDueTotal + viewModel.upcomingBillsTotal > 0 {
+                safeToSpendRow
+            }
         }
         .padding(.horizontal, 24)
         .padding(.top, 36)
         .padding(.bottom, hasNoWallets ? 32 : 36)
+    }
+
+    // MARK: Safe to spend
+
+    /// Rp amount honouring the eye toggle; negative gets a minus sign.
+    private func maskedAmount(_ amount: Double, negative: Bool = false) -> String {
+        guard isBalanceVisible else { return hiddenAmount }
+        return (negative ? "−" : "") + "Rp" + amount.formattedAsDigits()
+    }
+
+    /// "Aman dipakai Rp…" under the flow stats: balance minus card bills and subscriptions due.
+    private var safeToSpendRow: some View {
+        let safe = viewModel.safeToSpend
+        return Button { showsSafeInfo = true } label: {
+            HStack(spacing: 6) {
+                Text("Aman dipakai")
+                    .foregroundStyle(Color.appTextSecondary)
+                Text(maskedAmount(safe, negative: safe < 0))
+                    .fontWeight(.medium)
+                    .foregroundStyle(safe < 0 ? Color.appError : Color.appText)
+                    .monospacedDigit()
+                Image(systemName: "info.circle")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.appTextTertiary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
+            }
+            .font(.app(15))
+            .lineLimit(1)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 14)
+        .accessibilityHint("Lihat cara menghitungnya")
+        .sheet(isPresented: $showsSafeInfo) { safeToSpendSheet }
+    }
+
+    private var safeToSpendSheet: some View {
+        let safe = viewModel.safeToSpend
+        return PickerSheet(title: "Aman dipakai", onDone: { showsSafeInfo = false }) {
+            VStack(alignment: .leading, spacing: 0) {
+                safeRow("Total saldo", maskedAmount(viewModel.balance))
+                safeRow("Tagihan kartu kredit", maskedAmount(viewModel.cardDueTotal, negative: true))
+                safeRow("Langganan sampai akhir bulan", maskedAmount(viewModel.upcomingBillsTotal, negative: true))
+                HStack {
+                    Text("Aman dipakai")
+                        .font(.app(17, weight: .semibold))
+                    Spacer()
+                    Text(maskedAmount(safe, negative: safe < 0))
+                        .font(.app(17, weight: .semibold))
+                        .foregroundStyle(safe < 0 ? Color.appError : Color.appText)
+                        .monospacedDigit()
+                }
+                .padding(.vertical, 14)
+                Text("Saldo yang tersisa setelah tagihan kartu kredit yang belum dibayar dan langganan yang jatuh tempo bulan ini, supaya kamu tidak memakai uang yang sudah ada peruntukannya.")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appBody)
+                    .padding(.top, 12)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+        }
+    }
+
+    private func safeRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+            Spacer()
+            Text(value)
+                .font(.app(16))
+                .foregroundStyle(Color.appText)
+                .monospacedDigit()
+        }
+        .padding(.vertical, 14)
+        .rowSeparator()
     }
 
     private var hasNoWallets: Bool { !viewModel.accounts.contains(where: \.isActive) }
@@ -338,7 +423,7 @@ struct DashboardView: View {
     /// Animated pocket mark with "Dompet · N akun"; opens the Dompet page.
     private var walletsButton: some View {
         Button {
-            withAnimation(.settle(0.46)) { showsWallets = true }
+            homePath.append(HomeRoute.wallets)
         } label: {
             HStack(spacing: 8) {
                 WalletsMark()

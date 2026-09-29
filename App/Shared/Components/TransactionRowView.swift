@@ -19,10 +19,16 @@ struct TransactionRowView: View {
         accounts.first { $0.id == id }?.name
     }
 
+    /// A transfer into a credit card pays its bill.
+    private var isCardPayment: Bool {
+        transaction.type == .transfer
+            && accounts.first { $0.id == transaction.counterpartyAccountId }?.isCreditCard == true
+    }
+
     private var iconName: String {
         switch transaction.type {
         case .adjustment: "arrow.2.circlepath"
-        case .transfer: "arrow.left.arrow.right"
+        case .transfer: isCardPayment ? "creditcard" : "arrow.left.arrow.right"
         case .income: category?.icon ?? "arrow.down"
         case .expense: category?.icon ?? "arrow.up"
         }
@@ -32,7 +38,7 @@ struct TransactionRowView: View {
         switch transaction.type {
         case .income: "Pemasukan"
         case .expense: "Pengeluaran"
-        case .transfer: "Transfer"
+        case .transfer: isCardPayment ? "Bayar tagihan" : "Transfer"
         case .adjustment: "Penyesuaian saldo"
         }
     }

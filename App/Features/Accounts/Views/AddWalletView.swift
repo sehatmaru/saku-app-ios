@@ -16,11 +16,13 @@ struct AddWalletView: View {
     @State private var showToast = false
     @State private var toastMessage = ""
     @State private var selectedDueDay = 1
+    /// Credit cards: cut-off day; nil when the user skips it.
+    @State private var selectedStatementDay: Int?
     @FocusState private var nameFieldFocused: Bool
 
-    let onSave: (String, Account.AccountType, Double, String?, Double?, String?) async -> Bool
+    let onSave: (String, Account.AccountType, Double, String?, Double?, String?, Int?) async -> Bool
 
-    init(initialType: Account.AccountType = .bank, onSave: @escaping (String, Account.AccountType, Double, String?, Double?, String?) async -> Bool) {
+    init(initialType: Account.AccountType = .bank, onSave: @escaping (String, Account.AccountType, Double, String?, Double?, String?, Int?) async -> Bool) {
         _category = State(initialValue: initialType)
         self.onSave = onSave
     }
@@ -28,7 +30,7 @@ struct AddWalletView: View {
     private var totalSteps: Int {
         switch category {
         case .cash: 3
-        case .credit: 5
+        case .credit: 6
         default: 4
         }
     }
@@ -38,7 +40,7 @@ struct AddWalletView: View {
         case 1: true
         case 2: category == .cash ? !name.trimmingCharacters(in: .whitespaces).isEmpty : selectedIcon != nil
         case 3: category == .cash ? true : !name.trimmingCharacters(in: .whitespaces).isEmpty
-        case 4, 5: true
+        case 4, 5, 6: true
         default: false
         }
     }
@@ -71,6 +73,7 @@ struct AddWalletView: View {
                     case 3: Group { if category == .cash { amountStep } else { nameStep } }
                     case 4: amountStep
                     case 5: creditStep
+                    case 6: statementStep
                     default: EmptyView()
                     }
                 }
@@ -89,6 +92,7 @@ struct AddWalletView: View {
                             else if step == 3 { name = "" }
                             else if step == 4 { amountDigits = "" }
                             else if step == 5 { selectedDueDay = 1 }
+                            else if step == 6 { selectedStatementDay = nil }
                             step -= 1
                         }
                     } label: {
@@ -343,7 +347,7 @@ struct AddWalletView: View {
             stepTitle("Jatuh tempo", "Tagihan akan jatuh tempo setiap tanggal")
 
             HStack {
-                Text("Tanggal tagihan")
+                Text("Tanggal jatuh tempo")
                     .font(.app(15))
                     .foregroundStyle(Color.appTextSecondary)
                 Spacer()
@@ -356,36 +360,65 @@ struct AddWalletView: View {
             .rowSeparator()
             .padding(.horizontal, 24)
 
-            let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
-            LazyVGrid(columns: columns, spacing: 2) {
-                let today = Date()
-                let firstOfMonth = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: today)) ?? today
-                let offsetDays = Calendar.current.component(.weekday, from: firstOfMonth) - 1
-                let daysInMonth = Calendar.current.range(of: .day, in: .month, for: today)?.count ?? 31
-                ForEach(0..<offsetDays, id: \.self) { _ in
-                    Color.clear.frame(height: 44)
-                }
-                ForEach(1...daysInMonth, id: \.self) { day in
-                    let isSelected = day == selectedDueDay
-                    Button {
-                        withAnimation(.spring(response: 0.3)) { selectedDueDay = day }
-                    } label: {
-                        Text("\(day)")
-                            .font(.app(16, weight: isSelected ? .semibold : .regular))
-                            .monospacedDigit()
-                            .foregroundStyle(isSelected ? Color.white : Color.appText)
-                            .frame(width: 38, height: 38)
-                            .background(isSelected ? Color.appPrimary : .clear, in: Circle())
-                            .frame(height: 44)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
+            dayGrid(selected: selectedDueDay) { selectedDueDay = $0 }
         }
+    }
+
+    // MARK: - Step 6: Credit only (Statement day)
+
+    private var statementStep: some View {
+        VStack(spacing: 0) {
+            stepTitle("Tanggal cetak tagihan", "Belanja sampai tanggal ini masuk tagihan bulan itu. Lewati jika belum tahu.")
+
+            HStack {
+                Text("Tanggal cetak tagihan")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                Text(selectedStatementDay.map { "\($0)" } ?? "Belum diatur")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(selectedStatementDay == nil ? Color.appTextTertiary : Color.appText)
+                    .monospacedDigit()
+            }
+            .frame(height: 44)
+            .rowSeparator()
+            .padding(.horizontal, 24)
+
+            dayGrid(selected: selectedStatementDay) { selectedStatementDay = $0 }
+        }
+    }
+
+    /// Days 1–31 laid out like this month's calendar.
+    private func dayGrid(selected: Int?, onPick: @escaping (Int) -> Void) -> some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+        return LazyVGrid(columns: columns, spacing: 2) {
+            let today = Date()
+            let firstOfMonth = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: today)) ?? today
+            let offsetDays = Calendar.current.component(.weekday, from: firstOfMonth) - 1
+            let daysInMonth = Calendar.current.range(of: .day, in: .month, for: today)?.count ?? 31
+            ForEach(0..<offsetDays, id: \.self) { _ in
+                Color.clear.frame(height: 44)
+            }
+            ForEach(1...daysInMonth, id: \.self) { day in
+                let isSelected = day == selected
+                Button {
+                    withAnimation(.spring(response: 0.3)) { onPick(day) }
+                } label: {
+                    Text("\(day)")
+                        .font(.app(16, weight: isSelected ? .semibold : .regular))
+                        .monospacedDigit()
+                        .foregroundStyle(isSelected ? Color.white : Color.appText)
+                        .frame(width: 38, height: 38)
+                        .background(isSelected ? Color.appPrimary : .clear, in: Circle())
+                        .frame(height: 44)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
     }
 
     // MARK: - Navigation
@@ -397,6 +430,7 @@ struct AddWalletView: View {
             if target < 3 { name = "" }
             if target < 4 { amountDigits = "" }
             if target < 5 { selectedDueDay = 1 }
+            if target < 6 { selectedStatementDay = nil }
             step = target
             if step < amountStep {
                 showKeyboard = false
@@ -417,12 +451,13 @@ struct AddWalletView: View {
         let balance = category == .credit ? 0 : amount
         let creditLimit = category == .credit ? amount : nil
         let dueDate = category == .credit ? String(selectedDueDay) : nil
+        let statementDay = category == .credit ? selectedStatementDay : nil
         let iconId: String?
         if category == .cash { iconId = "cash" } else { iconId = selectedIcon?.id }
 
         isSaving = true
         Task {
-            let success = await onSave(name.trimmingCharacters(in: .whitespaces), category, balance, iconId, creditLimit, dueDate)
+            let success = await onSave(name.trimmingCharacters(in: .whitespaces), category, balance, iconId, creditLimit, dueDate, statementDay)
             isSaving = false
             if success {
                 toastMessage = "Berhasil ditambahkan"
