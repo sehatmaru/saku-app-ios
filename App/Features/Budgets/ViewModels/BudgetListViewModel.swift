@@ -6,12 +6,6 @@ struct BudgetListItem: Identifiable {
     let budget: Budget?
 }
 
-enum BudgetAddResult {
-    case success
-    case duplicate
-    case failure
-}
-
 @MainActor
 final class BudgetListViewModel: ObservableObject {
     @Published var budgets: [Budget] = []
@@ -24,6 +18,8 @@ final class BudgetListViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var allExpenseTransactions: [Transaction] = []
     @Published var accounts: [Account] = []
+    /// Hidden categories (and their budgets) stay off the Budget page and Tambah budget.
+    @Published var preferences: [CategoryPreference] = []
 
     private var loadedUserId: String?
 
@@ -45,7 +41,28 @@ final class BudgetListViewModel: ObservableObject {
     }
 
     private var expenseCategories: [Category] {
-        categories.filter { $0.type == .expense }
+        categories.filter { $0.type == .expense }.arranged(by: preferences).shown
+    }
+
+    /// Budgets of shown categories only.
+    var visibleBudgets: [Budget] {
+        let shown = Set(expenseCategories.map(\.id))
+        return budgets.filter { shown.contains($0.categoryId) }
+    }
+
+    /// Shown expense categories without a budget, in the user's order (Tambah budget step 1).
+    var availableCategories: [Category] {
+        expenseCategories.filter { category in !budgets.contains { $0.categoryId == category.id } }
+    }
+
+    /// Average spent in the category over the last 3 full payday periods.
+    func threeMonthAverage(categoryId: String) -> Double {
+        let cycle = PaydayCycle.current
+        let periods = (1...3).map { cycle.period(offset: -$0) }
+        let total = allExpenseTransactions
+            .filter { tx in tx.type == .expense && tx.categoryId == categoryId && periods.contains { $0.start <= tx.date && tx.date < $0.end } }
+            .reduce(0) { $0 + $1.amount }
+        return (total / 3).rounded()
     }
 
     func loadBudgets(userId: String, forceRefresh: Bool = false) async {
@@ -63,6 +80,7 @@ final class BudgetListViewModel: ObservableObject {
             categories = cached.categories
             allExpenseTransactions = cached.allExpenseTransactions
             accounts = cached.accounts
+            preferences = (try? await SupabaseRepository.shared.fetchCategoryPreferences()) ?? preferences
             recalculate()
             return
         }
@@ -83,6 +101,7 @@ final class BudgetListViewModel: ObservableObject {
             async let categoriesTask = SupabaseRepository.shared.fetchCategories()
             async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
+            async let preferencesTask = SupabaseRepository.shared.fetchCategoryPreferences()
 
             let (fetchedBudgets, fetchedCategories, fetchedTransactions, fetchedAccounts) = try await (
                 budgetsTask,
@@ -103,6 +122,7 @@ final class BudgetListViewModel: ObservableObject {
                 budgetsWithSpent.append(budget)
             }
 
+            preferences = (try? await preferencesTask) ?? preferences
             budgets = budgetsWithSpent
             categories = fetchedCategories
             allExpenseTransactions = fetchedTransactions
@@ -141,44 +161,6 @@ final class BudgetListViewModel: ObservableObject {
         } catch {
             print("❌ addBudget failed: \(error)")
             return false
-        }
-    }
-
-    func addBudget(name: String, icon: String?, userId: String, amount: Double) async -> BudgetAddResult {
-        let trimmed = name.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return .failure }
-        if categories.contains(where: { $0.name.lowercased() == trimmed.lowercased() }) {
-            print("⚠️ Budget '\(trimmed)' sudah ada")
-            return .duplicate
-        }
-        do {
-            let category = try await SupabaseRepository.shared.createCategory(name: trimmed, type: .expense, icon: icon, color: "#FF6B6B", userId: userId)
-            categories.append(category)
-            categories.sort { $0.name < $1.name }
-
-            do {
-                let startDate = ISO8601DateFormatter().string(from: Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!)
-                let budget = try await SupabaseRepository.shared.createBudget(
-                    categoryId: category.id, name: category.name, amount: amount,
-                    periodUnit: "month", periodInterval: 1,
-                    startDate: startDate, endDate: nil, userId: userId
-                )
-                budgets.append(budget)
-            } catch {
-                categories.removeAll { $0.id == category.id }
-                try? await SupabaseRepository.shared.softDeleteCategory(id: category.id)
-                throw error
-            }
-
-            recalculate()
-            cacheCurrentState()
-            NotificationCenter.default.post(name: .dataDidChange, object: nil)
-            return .success
-        } catch is CancellationError {
-            return .failure
-        } catch {
-            print("❌ addBudget failed: \(error)")
-            return .failure
         }
     }
 
@@ -241,8 +223,8 @@ final class BudgetListViewModel: ObservableObject {
     }
 
     private func recalculate() {
-        totalBudget = budgets.reduce(0) { $0 + $1.amount }
-        totalSpent = budgets.reduce(0) { $0 + $1.spent }
+        totalBudget = visibleBudgets.reduce(0) { $0 + $1.amount }
+        totalSpent = visibleBudgets.reduce(0) { $0 + $1.spent }
     }
 
     private func cacheCurrentState() {

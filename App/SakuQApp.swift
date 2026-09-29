@@ -19,6 +19,7 @@ struct RootView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @AppStorage("appTheme") private var appTheme: ThemeOption = .system
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @State private var isPaydaySavedToastShown = false
 
     enum ThemeOption: String {
         case light = "Terang"
@@ -41,6 +42,17 @@ struct RootView: View {
                     Task { await authViewModel.checkSession() }
                 }
                 .transition(.opacity)
+            } else if authViewModel.isAuthenticated, authViewModel.needsPaydayOnboarding {
+                PaydayOnboardingView { day in
+                    authViewModel.needsPaydayOnboarding = false
+                    if day != nil {
+                        Task {
+                            try? await Task.sleep(for: .milliseconds(900))
+                            isPaydaySavedToastShown = true
+                        }
+                    }
+                }
+                .transition(.opacity)
             } else if authViewModel.isAuthenticated {
                 DashboardView()
                     .transition(.opacity)
@@ -55,6 +67,8 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.4), value: authViewModel.isAuthenticated)
         .animation(.easeInOut(duration: 0.5), value: authViewModel.showSplash)
         .animation(.easeInOut(duration: 0.4), value: hasSeenOnboarding)
+        .animation(.easeInOut(duration: 0.4), value: authViewModel.needsPaydayOnboarding)
+        .toast("Tanggal gajian disimpan", isShown: $isPaydaySavedToastShown)
         .preferredColorScheme(appTheme.colorScheme)
     }
 }

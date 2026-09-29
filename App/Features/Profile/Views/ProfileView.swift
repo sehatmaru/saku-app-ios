@@ -10,6 +10,11 @@ struct ProfileView: View {
     }
 
     @State private var showLogoutAlert = false
+    @State private var showsPayday = false
+    @State private var isPaydayToastShown = false
+    @State private var isPaydayFlashing = false
+    /// Mirrors PaydaySetting.day (0 = not set) so the row updates when the payday changes.
+    @AppStorage("paydayDay") private var paydayDay = 0
 
     @AppStorage("appLanguage") private var appLanguage = "id"
     @AppStorage("appTheme") private var appTheme: ThemeOption = .system
@@ -47,6 +52,7 @@ struct ProfileView: View {
                     profileHeader
                     SectionDivider()
                     VStack(alignment: .leading, spacing: 0) {
+                        financeSection
                         appearanceSection
                         notificationSection
                         logoutButton
@@ -63,6 +69,17 @@ struct ProfileView: View {
             }
             .background(Color.appBackground)
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showsPayday) {
+                PaydaySheet(context: .settings) { day in
+                    guard day != nil else { return }
+                    isPaydayToastShown = true
+                    withAnimation(.easeOut(duration: 0.2)) { isPaydayFlashing = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+                        withAnimation(.easeOut(duration: 0.6)) { isPaydayFlashing = false }
+                    }
+                }
+            }
+            .toast("Tanggal gajian disimpan", isShown: $isPaydayToastShown)
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
@@ -106,6 +123,41 @@ struct ProfileView: View {
     }
 
     // MARK: - Sections
+
+    /// Kategori and the payday that budgets and "bulan ini" run from.
+    private var financeSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionCaption("Keuangan")
+
+            NavigationLink(destination: CategoriesView().detailPage()) {
+                row(icon: "square.grid.2x2", title: "Kategori", subtitle: "Tambah, urutkan, sembunyikan") {
+                    chevron
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+
+            Button { showsPayday = true } label: {
+                row(icon: "calendar", title: "Tanggal gajian", subtitle: "Awal periode budget & ringkasan") {
+                    Text(paydayDay == 0 ? "Belum diatur" : "Tgl \(paydayDay)")
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .contentTransition(.numericText())
+                    chevron
+                }
+                .background(isPaydayFlashing ? Color(light: 0xE8F5EE, dark: 0x1E3A2C) : .clear)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+            .animation(.settle(0.4), value: paydayDay)
+        }
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Color.appTextTertiary)
+    }
 
     private var appearanceSection: some View {
         VStack(alignment: .leading, spacing: 0) {

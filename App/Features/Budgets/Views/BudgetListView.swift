@@ -7,18 +7,31 @@ struct BudgetListView: View {
     init(viewModel: BudgetListViewModel = BudgetListViewModel()) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
-    @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
-    @State private var isBalanceVisible = true
-    @State private var showUnsetBudget = true
+    /// Same key as `PaydaySetting`, so the header follows a payday saved anywhere.
+    @AppStorage("paydayDay") private var paydayRaw = 0
+    /// "Nanti saja" on the "Kapan kamu gajian?" card, per device.
+    @AppStorage("paydayCardDismissed") private var isPaydayCardDismissed = false
     @State private var showAddBudget = false
-    @State private var showBudgetSavedToast = false
-    @State private var budgetSavedToastMessage = ""
+    @State private var showPaydaySheet = false
+    /// Payday the header keeps showing while it fades out to the new period.
+    @State private var frozenPayday: Int?
+    @State private var isPeriodHidden = false
+    /// Row that just got a budget, tinted for a moment.
+    @State private var flashId: String?
+    @State private var toastText = ""
+    @State private var isToastShown = false
+
     private var setItems: [BudgetListItem] {
         viewModel.budgetItems.filter { $0.budget != nil }
     }
 
-    private var unsetItems: [BudgetListItem] {
-        viewModel.budgetItems.filter { $0.budget == nil }
+    private var headerPayday: Int? {
+        let day = frozenPayday ?? paydayRaw
+        return day == 0 ? nil : day
+    }
+
+    private var showsPaydayCard: Bool {
+        viewModel.hasLoadedOnce && paydayRaw == 0 && !isPaydayCardDismissed
     }
 
     private var overallMonthlyHistory: [OverallHistoryItem] {
@@ -50,20 +63,32 @@ struct BudgetListView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     ScreenHeader(title: "Budget") {
-                        Button {
-                            withAnimation(.smooth) { isBalanceVisible.toggle() }
-                            isBalanceVisibleStorage = isBalanceVisible
-                        } label: {
-                            Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+                        NavigationLink(destination: OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions).detailPage()) {
+                            Image(systemName: "clock.arrow.circlepath")
                         }
-                        .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+                        .accessibilityLabel("Riwayat bulan sebelumnya")
                         Button {
                             showAddBudget = true
                         } label: {
                             Image(systemName: "plus")
-                                .foregroundStyle(Color.appPrimary)
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 38, height: 38)
+                                .background(Color.appPrimary, in: Circle())
                         }
+                        .buttonStyle(PressScaleStyle())
+                        .opacity(viewModel.hasLoadedOnce ? 1 : 0.4)
+                        .disabled(!viewModel.hasLoadedOnce)
                         .accessibilityLabel("Tambah budget")
+                    }
+
+                    periodHeader
+
+                    if showsPaydayCard {
+                        paydayCard
+                            .padding(.horizontal, 24)
+                            .padding(.top, 18)
+                            .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
                     }
 
                     if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
@@ -72,281 +97,231 @@ struct BudgetListView: View {
                     } else if !viewModel.hasLoadedOnce {
                         budgetSkeleton
                     } else {
-                            if let error = viewModel.errorMessage {
-                                ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
-                            }
-                            summary
-                            SectionDivider()
-
-                            if !setItems.isEmpty {
-                                VStack(alignment: .leading, spacing: 0) {
-                                    SectionHeader(title: "Per kategori", trailing: "\(setItems.count) aktif")
-                                    ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
-                                        budgetCardLink(item, index: i)
-                                    }
-                                }
-                                .padding(.horizontal, 24)
-                                .padding(.top, 28)
-                            }
-
-                            if !unsetItems.isEmpty {
-                                unsetSection
-                            }
+                        if let error = viewModel.errorMessage {
+                            ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
+                        }
+                        if setItems.isEmpty {
+                            emptyState
+                        } else {
+                            budgetList
                         }
                     }
-                    .padding(.bottom, 24)
-                    .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
                 }
-                .background(Color.appBackground)
-                .toolbar(.hidden, for: .navigationBar)
-                .sheet(isPresented: $showAddBudget) {
-                    AddBudgetView { name, icon, amount in
-                        guard let userId = authViewModel.currentUser?.id else { return .failure }
-                        let result = await viewModel.addBudget(name: name, icon: icon, userId: userId, amount: amount)
-                        if result == .success {
-                            budgetSavedToastMessage = "Budget \(name) berhasil ditambahkan"
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                withAnimation { showBudgetSavedToast = true }
-                            }
-                        }
-                        return result
+                .padding(.bottom, 24)
+                .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
+                .animation(.settle(0.42), value: showsPaydayCard)
+            }
+            .background(Color.appBackground)
+            .toolbar(.hidden, for: .navigationBar)
+            .fullScreenCover(isPresented: $showAddBudget) {
+                if let userId = authViewModel.currentUser?.id {
+                    AddBudgetView(viewModel: viewModel, userId: userId) { category in
+                        budgetAdded(category)
                     }
-                    .presentationDetents([.height(560), .large])
-                }
-                .toast(isPresented: $showBudgetSavedToast, message: budgetSavedToastMessage)
-                .onAppear { isBalanceVisible = isBalanceVisibleStorage }
-                .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
-                .task {
-                    guard let userId = authViewModel.currentUser?.id else { return }
-                    await viewModel.loadBudgets(userId: userId)
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
-                    guard let userId = authViewModel.currentUser?.id else { return }
-                    Task {
-                        await viewModel.loadBudgets(userId: userId, forceRefresh: true)
-                    }
-                }
-                .refreshable {
-                    guard let userId = authViewModel.currentUser?.id else { return }
-                    await viewModel.loadBudgets(userId: userId, forceRefresh: true)
                 }
             }
-        }
-
-        private func errorStateView(message: String) -> some View {
-            ErrorStateView(message: message) {
+            .sheet(isPresented: $showPaydaySheet) {
+                PaydaySheet(context: .card) { day in paydayPicked(day) }
+            }
+            .toast(toastText, isShown: $isToastShown)
+            .task {
+                guard let userId = authViewModel.currentUser?.id else { return }
+                await viewModel.loadBudgets(userId: userId)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
                 guard let userId = authViewModel.currentUser?.id else { return }
                 Task {
                     await viewModel.loadBudgets(userId: userId, forceRefresh: true)
                 }
             }
-        }
-
-        /// 13h: labels stay; the amount and category rows shimmer.
-        private var budgetSkeleton: some View {
-            VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Sisa budget \(Self.monthFormatter.string(from: Date()))")
-                        .font(.app(15))
-                        .foregroundStyle(Color.appTextSecondary)
-                    SkeletonBlock(width: 250, height: 52, radius: 10)
-                        .padding(.top, 8)
-                    SegmentBar(value: 0, height: 12)
-                        .padding(.top, 24)
-                    SkeletonBlock(width: 220, height: 14)
-                        .padding(.top, 18)
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 32)
-
-                SectionDivider()
-
-                VStack(alignment: .leading, spacing: 0) {
-                    SectionHeader(title: "Per kategori")
-                    ForEach([(120.0, 60.0), (96.0, 52.0), (136.0, 66.0), (104.0, 48.0)], id: \.0) { name, amount in
-                        HStack(alignment: .top, spacing: 14) {
-                            Circle().fill(Color.appFill).frame(width: 24, height: 24)
-                            VStack(spacing: 10) {
-                                HStack {
-                                    SkeletonBlock(width: name, height: 14)
-                                    Spacer()
-                                    RoundedRectangle(cornerRadius: 5).fill(Color.appFill).frame(width: amount, height: 14)
-                                }
-                                RoundedRectangle(cornerRadius: 2).fill(Color.appFill).frame(height: 8)
-                            }
-                        }
-                        .padding(.vertical, 13)
-                    }
-                    .padding(.top, 6)
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 28)
-            }
-            .accessibilityLabel("Memuat")
-        }
-
-        // MARK: Summary
-
-        private var summary: some View {
-            let remaining = viewModel.totalRemaining
-            let pct = viewModel.totalBudget > 0 ? Int(max(0, remaining / viewModel.totalBudget * 100)) : 0
-            let calendar = Calendar.current
-            let daysLeft = (calendar.range(of: .day, in: .month, for: Date())?.count ?? 30) - calendar.component(.day, from: Date())
-            return VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Sisa budget \(Self.monthFormatter.string(from: Date()))")
-                    Spacer()
-                    if !hasNoBudgets { Text("\(pct)%").monospacedDigit() }
-                }
-                .font(.app(15))
-                .foregroundStyle(remaining < 0 ? Color.appError : Color.appTextSecondary)
-
-                HeroAmount(value: max(0, remaining), size: .hero,
-                           color: hasNoBudgets ? .appTextTertiary : .appText,
-                           prefixColor: hasNoBudgets ? .appTextTertiary : .appTextSecondary,
-                           isVisible: isBalanceVisible, weight: .ultraLight)
-                    .padding(.top, 8)
-
-                SegmentBar(
-                    value: viewModel.totalBudget > 0 ? viewModel.totalSpent / viewModel.totalBudget : 0,
-                    color: remaining < 0 ? .appError : .appPrimary,
-                    height: 12
-                )
-                .padding(.top, 24)
-
-                if hasNoBudgets {
-                    // 13i: no limits yet, so one line of why and the button to set the first.
-                    Text("Atur batas pengeluaran per kategori supaya tahu berapa yang aman dipakai tiap hari.")
-                        .font(.app(15))
-                        .lineSpacing(3)
-                        .foregroundStyle(Color.appBody)
-                        .padding(.top, 18)
-                    EmptyStateButton(title: "Buat budget", isFullWidth: true) { showAddBudget = true }
-                        .padding(.top, 20)
-                } else {
-                HStack {
-                    total("Terpakai", viewModel.totalSpent)
-                    Spacer()
-                    total("Budget", viewModel.totalBudget)
-                }
-                .padding(.top, 12)
-
-                if viewModel.totalBudget > 0 {
-                    Group {
-                        if remaining <= 0 {
-                            Text("Budget bulan ini sudah habis.")
-                        } else if daysLeft > 0 {
-                            Text("Aman dipakai ")
-                                + Text(masked(remaining / Double(daysLeft)) + "/hari")
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(Color.appText)
-                                + Text(" untuk \(daysLeft) hari tersisa.")
-                        } else {
-                            Text("Hari terakhir: sisa ")
-                                + Text(masked(remaining)).fontWeight(.semibold).foregroundStyle(Color.appText)
-                                + Text(" bisa dipakai hari ini.")
-                        }
-                    }
-                    .font(.app(15))
-                    .lineSpacing(3)
-                    .foregroundStyle(Color.appBody)
-                    .padding(.top, 18)
-                }
-
-                historyLink
-                    .padding(.top, 20)
+            .refreshable {
+                guard let userId = authViewModel.currentUser?.id else { return }
+                await viewModel.loadBudgets(userId: userId, forceRefresh: true)
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 32)
-        .padding(.bottom, hasNoBudgets ? 28 : 32)
     }
 
-    private var hasNoBudgets: Bool { setItems.isEmpty }
+    private func errorStateView(message: String) -> some View {
+        ErrorStateView(message: message) {
+            guard let userId = authViewModel.currentUser?.id else { return }
+            Task {
+                await viewModel.loadBudgets(userId: userId, forceRefresh: true)
+            }
+        }
+    }
 
-    /// "Terpakai 3,04 jt" with the amount in the text colour.
-    private func total(_ label: String, _ amount: Double) -> some View {
-        (Text(label + " ").foregroundStyle(Color.appTextSecondary)
-         + Text(isBalanceVisible ? amount.abbreviatedRupiah() : hiddenAmount)
-            .fontWeight(.medium)
-            .foregroundStyle(Color.appText))
-            .font(.app(15))
+    private func showToast(_ text: String) {
+        toastText = text
+        isToastShown = true
+    }
+
+    // MARK: Period
+
+    /// "25 Sep – 24 Okt", days left, and one tick per day of the period.
+    private var periodHeader: some View {
+        let cycle = PaydayCycle(day: headerPayday ?? 1)
+        let days = cycle.days()
+        let dayNumber = days.total - days.left
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(cycle.rangeLabel())
+                    .font(.app(20, weight: .semibold))
+                    .tracking(-0.3)
+                    .foregroundStyle(Color.appText)
+                Spacer()
+                Text("\(days.left + 1) hari lagi")
+                    .font(.app(15, weight: .semibold))
+                    .foregroundStyle(Color.appPrimary)
+            }
             .monospacedDigit()
-    }
-
-    private func masked(_ amount: Double) -> String {
-        isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
-    }
-
-    private var historyLink: some View {
-        NavigationLink(destination: OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions).detailPage()) {
-            Label("Riwayat bulan sebelumnya", systemImage: "clock.arrow.circlepath")
-                .font(.app(15, weight: .medium))
-                .foregroundStyle(Color.appText)
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(Color.appFill, in: Capsule())
+            SegmentBar(value: Double(dayNumber) / Double(max(days.total, 1)), count: days.total,
+                       isActive: !isPeriodHidden)
+                .id(days.total)
+                .padding(.top, 10)
+            Text(headerPayday.map { "Gajian tiap tanggal \($0)" } ?? "Mengikuti tanggal 1")
+                + Text(" · hari ke-\(dayNumber) dari \(days.total)")
         }
-        .buttonStyle(RowPressStyle())
+        .font(.app(13))
+        .foregroundStyle(Color.appTextSecondary)
+        .padding(.horizontal, 24)
+        .padding(.top, 14)
+        .opacity(isPeriodHidden ? 0 : 1)
+        .offset(y: isPeriodHidden ? 8 : 0)
+        .animation(.easeInOut(duration: 0.22), value: isPeriodHidden)
+        .accessibilityElement(children: .combine)
     }
 
-    private var unsetSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation { showUnsetBudget.toggle() }
-            } label: {
-                HStack(alignment: .firstTextBaseline) {
-                    HStack(spacing: 8) {
-                        Text("Belum diatur")
-                            .font(.app(20, weight: .semibold))
-                            .tracking(-0.2)
-                            .foregroundStyle(Color.appText)
-                        Image(systemName: showUnsetBudget ? "chevron.down" : "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.appTextSecondary)
+    private var paydayCard: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: "calendar.badge.checkmark")
+                .font(.system(size: 19))
+                .foregroundStyle(Color.appPrimary)
+                .frame(width: 40, height: 40)
+                .background(Color.appBackground, in: Circle())
+                .shadow(color: .black.opacity(0.06), radius: 1, y: 1)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Kapan kamu gajian?")
+                    .font(.app(16, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+                Text("Kami pakai tanggal ini supaya budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1.")
+                    .font(.app(14))
+                    .lineSpacing(2)
+                    .foregroundStyle(Color.appTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 14) {
+                    Button {
+                        frozenPayday = paydayRaw
+                        showPaydaySheet = true
+                    } label: {
+                        Text("Atur")
+                            .font(.app(15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 18)
+                            .frame(height: 34)
+                            .background(Color.appPrimary, in: Capsule())
                     }
-                    Spacer()
-                    Text("\(unsetItems.count)")
-                        .font(.app(13))
+                    .buttonStyle(PressScaleStyle())
+                    Button("Nanti saja") { isPaydayCardDismissed = true }
+                        .font(.app(15, weight: .medium))
                         .foregroundStyle(Color.appTextSecondary)
                 }
-                .contentShape(Rectangle())
+                .padding(.top, 8)
             }
-            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+    }
 
-            if showUnsetBudget {
-                ForEach(unsetItems) { item in
-                    BudgetCardView(budget: item.budget, category: item.category, onSetBudget: { budget in
-                        Task {
-                            guard let userId = authViewModel.currentUser?.id else { return }
-                            await viewModel.setBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
+    /// Card sheet closed: fade the header out, bring it back on the new period, then say so.
+    private func paydayPicked(_ day: Int?) {
+        guard day != nil else { frozenPayday = nil; return }
+        isPeriodHidden = true
+        Task {
+            try? await Task.sleep(for: .milliseconds(360))
+            frozenPayday = nil
+            isPeriodHidden = false
+            try? await Task.sleep(for: .milliseconds(140))
+            showToast("Periode budget diperbarui")
+        }
+    }
+
+    // MARK: Budgets
+
+    private var budgetList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Per kategori", trailing: "\(setItems.count) aktif")
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+                .padding(.bottom, 4)
+            ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
+                NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
+                    BudgetCardView(budget: item.budget, category: item.category,
+                                   fillDelay: 0.3 + Double(i) * 0.07, isFillActive: !isPeriodHidden)
+                        .padding(.horizontal, 24)
+                        .background(flashId == item.category.id ? Color.appPrimary.opacity(0.1) : .clear)
+                        .animation(.easeInOut(duration: 0.7), value: flashId)
+                }
+                .buttonStyle(RowPressStyle())
+            }
+            Text("Budget dihitung per kategori. Tiap periode mulai dari nol, sisa tidak terbawa ke periode berikutnya.")
+                .font(.app(13))
+                .lineSpacing(2)
+                .foregroundStyle(Color.appTextTertiary)
+                .padding(.horizontal, 24)
+                .padding(.top, 18)
+                .padding(.bottom, 36)
+        }
+        .padding(.top, 12)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 18) {
+            EmptyMessage(icon: "chart.pie",
+                         title: "Belum ada budget",
+                         message: "Atur batas pengeluaran per kategori. Tiap periode mulai dari nol, sisa tidak terbawa.")
+            EmptyStateButton(title: "Tambah budget") { showAddBudget = true }
+        }
+        .padding(.horizontal, 40)
+        .padding(.top, 90)
+    }
+
+    private func budgetAdded(_ category: Category) {
+        flashId = category.id
+        Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            showToast("Budget \(category.name) aktif")
+            try? await Task.sleep(for: .milliseconds(1100))
+            flashId = nil
+        }
+    }
+
+    /// Placeholder rows while budgets load.
+    private var budgetSkeleton: some View {
+        VStack(spacing: 0) {
+            ForEach([0.46, 0.58, 0.40, 0.62, 0.50], id: \.self) { share in
+                HStack(spacing: 14) {
+                    Circle().fill(Color.appFill).frame(width: 40, height: 40)
+                    GeometryReader { geo in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                SkeletonBlock(width: geo.size.width * share, height: 14, radius: 7)
+                                Spacer()
+                                SkeletonBlock(width: geo.size.width * 0.22, height: 14, radius: 7)
+                            }
+                            SkeletonBlock(height: 4, radius: 2)
+                            SkeletonBlock(width: geo.size.width * 0.55, height: 11, radius: 6)
                         }
-                    })
+                        .frame(maxHeight: .infinity)
+                    }
                 }
+                .frame(height: 80)
+                .padding(.horizontal, 24)
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
+        .padding(.top, 14)
+        .accessibilityLabel("Memuat")
     }
-
-    private func budgetCardLink(_ item: BudgetListItem, index: Int) -> some View {
-        NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
-            BudgetCardView(budget: item.budget, category: item.category, fillDelay: 0.3 + Double(index) * 0.08, onSetBudget: { budget in
-                Task {
-                    guard let userId = authViewModel.currentUser?.id else { return }
-                    await viewModel.setBudget(categoryId: budget.categoryId, name: budget.name, amount: budget.amount, periodUnit: budget.periodUnit, periodInterval: budget.periodInterval, startDate: budget.startDate, endDate: budget.endDate, userId: userId)
-                }
-            })
-        }
-        .buttonStyle(RowPressStyle())
-    }
-
-    private static let monthFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMMM"
-        f.locale = Locale(identifier: "id_ID")
-        return f
-    }()
 
     private func budgetDetailDestination(for item: BudgetListItem) -> BudgetDetailView {
         BudgetDetailView(
@@ -375,132 +350,48 @@ struct BudgetListView: View {
     }
 }
 
+/// Budget row: name and status, 30 ticks green / orange from 80% / red from 100%, spent of amount.
 struct BudgetCardView: View {
     let budget: Budget?
     let category: Category
     /// Stagger for the segment bar's fill-in, so rows fill one after another.
     var fillDelay: Double = 0
-    var onSetBudget: ((Budget) -> Void)?
+    /// Empties the bar while false, e.g. while the period changes.
+    var isFillActive = true
 
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
-    @State private var showSetBudget = false
-    @State private var amountDigits = ""
-    @State private var isSaving = false
-    @State private var showBudgetToast = false
-    @State private var budgetToastMessage = ""
 
     var body: some View {
-        Group {
-            if let budget {
-                setCard(budget)
-            } else {
-                unsetCard
-            }
-        }
-        .sheet(isPresented: $showSetBudget) {
-            setBudgetSheet
-                .presentationDetents([.height(500)])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(28)
-                .presentationBackground(Color.appBackground)
+        if let budget {
+            row(budget)
         }
     }
 
-    private var unsetCard: some View {
-        HStack(spacing: 14) {
-            Image(systemName: category.icon ?? "tag")
-                .font(.system(size: 19))
-                .foregroundStyle(Color.appTextTertiary)
-                .frame(width: 24)
-            Text(category.name)
-                .font(.app(16))
-                .foregroundStyle(Color.appTextSecondary)
-                .lineLimit(1)
-            Spacer()
-            Button("Atur") { showSetBudget = true }
-                .font(.app(15, weight: .medium))
-                .foregroundStyle(Color.appPrimary)
-                .accessibilityLabel("Atur budget \(category.name)")
-        }
-        .padding(.vertical, 11)
+    private func money(_ amount: Double) -> String {
+        isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
     }
 
-    private var amountValue: Int { Int(amountDigits) ?? 0 }
-
-    private var setBudgetSheet: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button("Batal") { showSetBudget = false }
-                    .font(.app(17))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .frame(width: 60, alignment: .leading)
-                Spacer()
-                Text("Atur budget")
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(Color.appText)
-                Spacer()
-                Color.clear.frame(width: 60, height: 1)
-            }
-            .frame(height: 48)
-            .padding(.horizontal, 24)
-            .padding(.top, 14)
-
-            HStack(spacing: 8) {
-                Image(systemName: category.icon ?? "tag")
-                    .font(.system(size: 17))
-                    .foregroundStyle(Color.appTextSecondary)
-                Text(category.name)
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                Text("· per bulan")
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextTertiary)
-            }
-            .padding(.top, 16)
-
-            HeroAmount(value: Double(amountValue), size: .large,
-                       color: amountValue > 0 ? .appText : .appTextTertiary)
-                .padding(.top, 8)
-                .padding(.horizontal, 24)
-                .accessibilityLabel("Nominal Rp\(amountValue)")
-
-            Spacer(minLength: 16)
-
-            AmountPad(color: .appPrimary, isEnabled: amountValue > 0, isSaving: isSaving, onPress: { key in
-                guard let next = NumberPad.apply(key, to: amountValue) else { return }
-                withAnimation(.snappy(duration: 0.2)) { amountDigits = next > 0 ? String(next) : "" }
-            }, onSave: save)
-            .disabled(isSaving)
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
-        }
-        .background(Color.appBackground)
-        .toast(isPresented: $showBudgetToast, message: budgetToastMessage)
-    }
-
-    private func setCard(_ budget: Budget) -> some View {
+    private func row(_ budget: Budget) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: category.icon ?? "tag")
-                .font(.system(size: 19))
+                .font(.system(size: 20))
                 .foregroundStyle(Color.appTextSecondary)
                 .frame(width: 24)
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(category.name)
-                        .font(.app(16))
+                        .font(.app(16, weight: .medium))
                         .foregroundStyle(Color.appText)
                         .lineLimit(1)
-                    Spacer(minLength: 8)
+                    Spacer(minLength: 0)
                     Text(statusText(budget))
-                        .font(.app(15))
-                        .foregroundStyle(statusColor(budget))
+                        .font(.app(14))
+                        .foregroundStyle(budget.progress >= 0.8 ? color(budget) : Color.appTextSecondary)
                         .monospacedDigit()
                         .lineLimit(1)
                 }
-                SegmentBar(value: budget.progress, color: progressColor(budget), delay: fillDelay)
-                Text(isBalanceVisible
-                     ? "\(budget.spent.formattedAsCurrency()) dari \(budget.amount.formattedAsCurrency())"
-                     : "Rp\(hiddenAmount) dari Rp\(hiddenAmount)")
+                SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive)
+                Text("\(money(budget.spent)) dari \(money(budget.amount))")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
@@ -511,48 +402,18 @@ struct BudgetCardView: View {
     }
 
     private func statusText(_ budget: Budget) -> String {
-        let amount: (Double) -> String = { isBalanceVisible ? $0.formattedAsCurrency() : "Rp" + hiddenAmount }
-        switch budget.spendingStatus {
-        case .normal: return "Sisa " + amount(budget.remaining)
-        case .warning: return amount(budget.dailyRemaining) + "/hari"
-        case .overbudget: return budget.remaining == 0 ? "Habis" : "Lewat " + amount(abs(budget.remaining))
+        if budget.remaining < 0 {
+            // Big overruns shortened ("Lewat Rp6 M") so the status fits beside the name.
+            let over = -budget.remaining
+            return "Lewat " + (over >= 10_000_000 && isBalanceVisible ? "Rp" + over.abbreviatedRupiah() : money(over))
         }
+        if budget.remaining == 0 { return "Habis" }
+        // Today still counts as a day to spend in.
+        return money(budget.remaining / Double(budget.daysRemaining + 1)) + "/hari"
     }
 
-    private func statusColor(_ budget: Budget) -> Color {
-        budget.spendingStatus == .normal ? .appTextSecondary : progressColor(budget)
-    }
-
-    private func progressColor(_ budget: Budget) -> Color {
-        switch budget.spendingStatus {
-        case .overbudget: return .appError
-        case .warning: return .appWarning
-        case .normal: return .appPrimary
-        }
-    }
-
-    private func save() {
-        guard let amount = Double(amountDigits), amount > 0 else { return }
-        isSaving = true
-        let startDate = ISO8601DateFormatter().string(from: Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!)
-        let budget = Budget(
-            id: UUID().uuidString,
-            categoryId: category.id,
-            name: category.name,
-            amount: amount,
-            periodUnit: "month",
-            periodInterval: 1,
-            startDate: startDate,
-            endDate: nil,
-            isActive: true,
-            spent: 0
-        )
-        onSetBudget?(budget)
-        isSaving = false
-        showSetBudget = false
-        amountDigits = ""
-        budgetToastMessage = "Perubahan berhasil disimpan"
-        withAnimation { showBudgetToast = true }
+    private func color(_ budget: Budget) -> Color {
+        budget.progress >= 1 ? .appError : budget.progress >= 0.8 ? .appWarning : .appPrimary
     }
 }
 

@@ -23,6 +23,8 @@ final class AuthViewModel: ObservableObject {
     @Published var isAppleLoading = false
     @Published var errorMessage: String?
     @Published var showSplash = true
+    /// Just signed up and no payday yet: RootView shows PaydayOnboardingView once.
+    @Published var needsPaydayOnboarding = false
 
     private var authListener: Any?
 
@@ -59,7 +61,8 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    private func fetchProfileAndSetUser(authUserId: UUID, email: String, displayName: String?) async throws {
+    /// `createdAt` of the auth user when this is a fresh sign-in (not a restored session).
+    private func fetchProfileAndSetUser(authUserId: UUID, email: String, displayName: String?, createdAt: Date? = nil) async throws {
         var profile: UserProfile
         if let existing = try? await SupabaseSDK.fetchProfile(authUserId: authUserId) {
             if existing.displayName == nil, let displayName {
@@ -76,6 +79,9 @@ final class AuthViewModel: ObservableObject {
             displayName: profile.displayName ?? displayName,
             defaultCurrencyCode: profile.defaultCurrencyCode
         )
+        // Accounts made in the last 10 minutes count as a sign-up; existing users never see it.
+        let isNewAccount = createdAt.map { Date().timeIntervalSince($0) < 600 } ?? false
+        needsPaydayOnboarding = isNewAccount && profile.paydayDay == nil
         withAnimation(.easeInOut(duration: 0.4)) {
             isAuthenticated = true
         }
@@ -110,7 +116,7 @@ final class AuthViewModel: ObservableObject {
                 )
 
                 let name = authResponse.user.userMetadata["full_name"]?.stringValue ?? authResponse.user.userMetadata["name"]?.stringValue
-                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name)
+                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name, createdAt: authResponse.user.createdAt)
             } catch is CancellationError {
                 return
             } catch {
@@ -134,7 +140,7 @@ final class AuthViewModel: ObservableObject {
                 }
 
                 let name = authResponse.user.userMetadata["full_name"]?.stringValue ?? authResponse.user.userMetadata["name"]?.stringValue
-                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name)
+                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name, createdAt: authResponse.user.createdAt)
             } catch is CancellationError {
                 return
             } catch {
@@ -166,7 +172,7 @@ final class AuthViewModel: ObservableObject {
             }
             // A retry after a partial failure must not duplicate wallets.
             guard try await SupabaseRepository.shared.fetchAccounts(userId: profile.id.uuidString).isEmpty else {
-                try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: name)
+                try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: name, createdAt: session.user.createdAt)
                 return
             }
             // Accounts first, so the dashboard opens with them already there.
@@ -176,7 +182,7 @@ final class AuthViewModel: ObservableObject {
                     userId: profile.id.uuidString, isDefault: i == 0
                 )
             }
-            try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: name)
+            try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: name, createdAt: session.user.createdAt)
         } catch is CancellationError {
             return
         } catch {

@@ -21,7 +21,6 @@ struct AddSubscriptionView: View {
     @State private var billingDay: Int
     @State private var bump = false
     @State private var shake: CGFloat = 0
-    @State private var swipeReset = 0
     @State private var flash: Row?
     @State private var hasEntered = false
     @State private var isDone = false
@@ -92,15 +91,13 @@ struct AddSubscriptionView: View {
                     .padding(.top, 10)
             }
             Spacer(minLength: 12)
-            VStack(spacing: 10) {
-                NumberPadKeys(onPress: press)
-                SwipeToConfirm(label: "Geser untuk simpan", color: color, isEnabled: isValid,
-                               resetToken: swipeReset, onBlocked: blocked, onConfirm: save)
-                    .offset(x: shake)
-                    .padding(.horizontal, 12)
+            // v4: Simpan sits beside the keys again; tapping it while invalid shows why.
+            AmountPad(color: color, isEnabled: isValid, isSaving: isSaving, onPress: press) {
+                isValid ? save() : blocked()
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
+            .sensoryFeedback(.success, trigger: isDone) { _, done in done }
         }
         .background(Color.appBackground)
         .ignoresSafeArea(.keyboard)
@@ -634,7 +631,7 @@ struct AddSubscriptionView: View {
 
     private func save() {
         guard !isDone, !isSaving else { return }
-        guard isValid else { blocked(); swipeReset += 1; return }
+        guard isValid else { blocked(); return }
         isSaving = true
         errorMessage = nil
         let name = nameText.trimmingCharacters(in: .whitespaces)
@@ -668,7 +665,6 @@ struct AddSubscriptionView: View {
                 return
             } catch {
                 isSaving = false
-                swipeReset += 1
                 errorMessage = "Gagal menyimpan. Coba lagi."
             }
         }
