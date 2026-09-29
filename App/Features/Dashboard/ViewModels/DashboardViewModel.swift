@@ -196,11 +196,17 @@ final class DashboardViewModel: ObservableObject {
             self.budgets = budgetsWithSpent
             totalSpent = budgetsWithSpent.reduce(0) { $0 + $1.spent }
 
-            let today = calendar.component(.day, from: Date())
+            // One bar per day of the current period so far, from payday.
+            let periodStart = PaydayCycle.current.period(containing: Date(), calendar: calendar).start
+            let cal = calendar
+            let dayIndex = { (date: Date) in
+                cal.dateComponents([.day], from: periodStart, to: cal.startOfDay(for: date)).day ?? 0
+            }
+            let today = dayIndex(Date()) + 1
             var perDay = Array(repeating: 0.0, count: today)
             for tx in thisMonthTransactions where tx.type == .expense {
-                let day = calendar.component(.day, from: tx.date)
-                if day <= today { perDay[day - 1] += tx.amount }
+                let index = dayIndex(tx.date)
+                if index >= 0, index < today { perDay[index] += tx.amount }
             }
             dailyExpenses = perDay
 
@@ -276,10 +282,9 @@ final class DashboardViewModel: ObservableObject {
         ))
     }
 
+    /// "Bulan ini" runs from payday (the calendar month when payday is the 1st).
     private func isCurrentMonth(_ date: Date) -> Bool {
-        let now = Date()
-        return calendar.component(.month, from: date) == calendar.component(.month, from: now)
-            && calendar.component(.year, from: date) == calendar.component(.year, from: now)
+        PaydayCycle.current.contains(date, calendar: calendar)
     }
 
     private func computeMonthlyCashflow(transactions: [Transaction], months: Int) -> [(String, income: Double, expense: Double)] {

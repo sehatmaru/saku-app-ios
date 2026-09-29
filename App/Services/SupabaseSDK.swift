@@ -8,13 +8,26 @@ enum SupabaseSDK {
     )
 
     static func fetchProfile(authUserId: UUID) async throws -> UserProfile {
-        try await client
+        let profile: UserProfile = try await client
             .from("user_profiles")
             .select()
             .eq("auth_user_id", value: authUserId)
             .single()
             .execute()
             .value
+        PaydaySetting.day = profile.paydayDay
+        return profile
+    }
+
+    /// Saves the payday (1–31) on the profile and mirrors it on the device.
+    static func updatePayday(profileId: UUID, day: Int) async throws {
+        let day = min(max(day, 1), 31)
+        try await client
+            .from("user_profiles")
+            .update(["payday_day": AnyJSON.integer(day)] as [String: AnyJSON])
+            .eq("id", value: profileId)
+            .execute()
+        PaydaySetting.day = day
     }
 
     static func updateProfile(id: UUID, displayName: String?) async throws {
@@ -37,13 +50,15 @@ enum SupabaseSDK {
             "locale": AnyJSON.string("id"),
             "timezone": AnyJSON.string("Asia/Jakarta"),
         ]
-        return try await client
+        let profile: UserProfile = try await client
             .from("user_profiles")
             .upsert(payload)
             .select()
             .single()
             .execute()
             .value
+        PaydaySetting.day = profile.paydayDay
+        return profile
     }
 }
 
@@ -54,6 +69,8 @@ struct UserProfile: Codable, Identifiable {
     let defaultCurrencyCode: String
     let locale: String
     let timezone: String
+    /// Payday (1–31); nil until the user sets it.
+    var paydayDay: Int? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -62,6 +79,7 @@ struct UserProfile: Codable, Identifiable {
         case defaultCurrencyCode = "default_currency_code"
         case locale
         case timezone
+        case paydayDay = "payday_day"
     }
 }
 

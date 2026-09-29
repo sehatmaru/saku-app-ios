@@ -21,17 +21,13 @@ struct Budget: Identifiable, Codable {
     var remaining: Double { amount - spent }
     var progress: Double { amount > 0 ? spent / amount : 0 }
 
-    var daysInMonth: Int {
-        Calendar.current.range(of: .day, in: .month, for: Date())?.count ?? 30
-    }
+    /// Days in the current period; monthly budgets run from payday (see PaydayCycle).
+    var daysInMonth: Int { PaydayCycle.current.days().total }
 
-    var currentDay: Int {
-        Calendar.current.component(.day, from: Date())
-    }
+    /// Day number within the current period, 1 on payday.
+    var currentDay: Int { daysInMonth - daysRemaining }
 
-    var daysRemaining: Int {
-        max(daysInMonth - currentDay, 0)
-    }
+    var daysRemaining: Int { PaydayCycle.current.days().left }
 
     var idealDailyBudget: Double {
         amount / Double(daysInMonth)
@@ -48,8 +44,7 @@ struct Budget: Identifiable, Codable {
 
         switch periodUnit {
         case "month":
-            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
-            return formatter.string(from: start)
+            return formatter.string(from: PaydayCycle.current.period(containing: now, calendar: calendar).start)
         case "week":
             let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
             return formatter.string(from: start)
@@ -65,9 +60,9 @@ struct Budget: Identifiable, Codable {
 
         switch periodUnit {
         case "month":
-            guard let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
-                  let next = calendar.date(byAdding: .month, value: periodInterval, to: start) else { return nil }
-            return formatter.string(from: next)
+            let start = PaydayCycle.current.period(containing: now, calendar: calendar).start
+            guard let later = calendar.date(byAdding: .month, value: periodInterval - 1, to: start) else { return nil }
+            return formatter.string(from: PaydayCycle.current.period(containing: later, calendar: calendar).end)
         case "week":
             guard let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)),
                   let next = calendar.date(byAdding: .weekOfYear, value: periodInterval, to: start) else { return nil }

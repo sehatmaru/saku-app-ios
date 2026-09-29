@@ -124,7 +124,7 @@ struct TransactionDetailView: View {
         if let fetched = try? await fetchedAccounts { accounts = fetched }
         let calendar = Calendar.current
         monthTransactions = ((try? await transactions) ?? []).filter {
-            calendar.isDate($0.date, equalTo: txn.date, toGranularity: .month)
+            PaydayCycle.current.contains($0.date, periodOf: txn.date, calendar: calendar)
         }
         let active = ((try? await budgets) ?? []).filter(\.isActive)
         monthlyBudget = active.reduce(0) { $0 + $1.amount }

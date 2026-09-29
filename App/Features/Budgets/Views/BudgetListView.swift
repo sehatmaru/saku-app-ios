@@ -24,7 +24,8 @@ struct BudgetListView: View {
     private var overallMonthlyHistory: [OverallHistoryItem] {
         let calendar = Calendar.current
         let now = Date()
-        let currentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+        // Periods run from payday; each is keyed by its first day.
+        let currentMonth = PaydayCycle.current.period(containing: now, calendar: calendar).start
 
         let budgetCategoryIds = Set(viewModel.budgetItems.filter { $0.budget != nil }.map { $0.category.id })
         let expenseTransactions = viewModel.allExpenseTransactions.filter {
@@ -33,7 +34,7 @@ struct BudgetListView: View {
         }
 
         let grouped = Dictionary(grouping: expenseTransactions) { tx in
-            calendar.date(from: calendar.dateComponents([.year, .month], from: tx.date))!
+            PaydayCycle.current.period(containing: tx.date, calendar: calendar).start
         }
 
         return grouped
@@ -755,9 +756,9 @@ struct OverallMonthDetailView: View {
     }
 
     private var transactions: [Transaction] {
-        let calendar = Calendar.current
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: month)),
-              let nextMonth = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return [] }
+        // `month` is the first day of a payday period.
+        let period = PaydayCycle.current.period(containing: month)
+        let (monthStart, nextMonth) = (period.start, period.end)
         return allExpenseTransactions
             .filter { $0.date >= monthStart && $0.date < nextMonth }
             .sorted { $0.date > $1.date }

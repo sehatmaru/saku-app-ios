@@ -31,9 +31,7 @@ struct BudgetDetailView: View {
     private var transactions: [Transaction] {
         let calendar = Calendar.current
         let now = Date()
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
-              let nextMonth = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return [] }
-        return allTransactions.filter { $0.date >= monthStart && $0.date < nextMonth }
+        return allTransactions.filter { PaydayCycle.current.contains($0.date, periodOf: now, calendar: calendar) }
     }
 
     private var displayedTransactions: [Transaction] {
@@ -43,10 +41,11 @@ struct BudgetDetailView: View {
     private var monthlyHistory: [MonthlySpending] {
         let calendar = Calendar.current
         let now = Date()
-        let currentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+        // Periods run from payday; each is keyed by its first day.
+        let currentMonth = PaydayCycle.current.period(containing: now, calendar: calendar).start
 
         let grouped = Dictionary(grouping: allTransactions) { tx in
-            calendar.date(from: calendar.dateComponents([.year, .month], from: tx.date))!
+            PaydayCycle.current.period(containing: tx.date, calendar: calendar).start
         }
 
         return grouped
@@ -611,9 +610,9 @@ fileprivate struct BudgetMonthDetailView: View {
     }
 
     private var transactions: [Transaction] {
-        let calendar = Calendar.current
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: month)),
-              let nextMonth = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return [] }
+        // `month` is the first day of a payday period.
+        let period = PaydayCycle.current.period(containing: month)
+        let (monthStart, nextMonth) = (period.start, period.end)
         return allTransactions
             .filter { $0.date >= monthStart && $0.date < nextMonth }
             .sorted { $0.date > $1.date }

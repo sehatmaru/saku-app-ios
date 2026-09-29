@@ -545,7 +545,7 @@ struct DashboardView: View {
                 .padding(.top, 18)
 
             HStack {
-                Text("1 \(Self.monthFormatter.string(from: Date()))")
+                Text(Self.dayMonthFormatter.string(from: PaydayCycle.current.period(containing: Date()).start))
                 Spacer()
                 Text("Hari ini")
             }
@@ -655,7 +655,7 @@ struct DashboardView: View {
     private func dayTitle(_ index: Int, of count: Int) -> String {
         guard index != count - 1 else { return "Hari ini" }
         let calendar = Calendar.current
-        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: Date())) ?? Date()
+        let start = PaydayCycle.current.period(containing: Date(), calendar: calendar).start
         let date = calendar.date(byAdding: .day, value: index, to: start) ?? start
         return Self.weekdayDayFormatter.string(from: date)
     }
@@ -837,7 +837,7 @@ struct DashboardView: View {
     }
 
     private static let shortDayFormatter = formatter("EEEE, d MMM")
-    private static let monthFormatter = formatter("MMM")
+    private static let dayMonthFormatter = formatter("d MMM")
     private static let weekdayDayFormatter = formatter("EEE, d MMM")
 }
 

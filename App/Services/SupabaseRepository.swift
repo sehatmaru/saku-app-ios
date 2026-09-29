@@ -448,6 +448,57 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
+    /// Renames or restyles one of the user's own categories (built-in ones can only be hidden).
+    func updateCategory(id: String, name: String, icon: String?, color: String?) async throws -> Category {
+        try await client
+            .from("categories")
+            .update([
+                "name": AnyJSON.string(name),
+                "normalized_name": AnyJSON.string(name.lowercased()),
+                "icon": icon.map { AnyJSON.string($0) } ?? AnyJSON.null,
+                "color": color.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            ] as [String: AnyJSON])
+            .eq("id", value: id)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    func fetchCategoryPreferences() async throws -> [CategoryPreference] {
+        try await client
+            .from("category_preferences")
+            .select("category_id,is_hidden,sort_order")
+            .execute()
+            .value
+    }
+
+    /// Hides or shows a category for this user. Hidden ones leave the pickers (and budgets);
+    /// transactions and the budget row are kept, so showing it again brings everything back.
+    func setCategoryHidden(id: String, hidden: Bool) async throws {
+        try await client
+            .from("category_preferences")
+            .upsert([
+                "category_id": AnyJSON.string(id),
+                "is_hidden": AnyJSON.bool(hidden),
+                "updated_at": AnyJSON.string(Date().iso8601Formatted),
+            ] as [String: AnyJSON], onConflict: "user_id,category_id")
+            .execute()
+    }
+
+    /// Saves the order of a list of categories (the ones passed get 0, 1, 2, …).
+    /// Upserting only these columns leaves `is_hidden` as it was.
+    func setCategoryOrder(_ ids: [String]) async throws {
+        guard !ids.isEmpty else { return }
+        let rows: [[String: AnyJSON]] = ids.enumerated().map { index, id in
+            ["category_id": .string(id), "sort_order": .integer(index), "updated_at": .string(Date().iso8601Formatted)]
+        }
+        try await client
+            .from("category_preferences")
+            .upsert(rows, onConflict: "user_id,category_id")
+            .execute()
+    }
+
     func softDeleteCategory(id: String) async throws {
         try await client
             .from("categories")
