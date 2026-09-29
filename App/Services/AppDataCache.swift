@@ -45,7 +45,16 @@ final class AppDataCache {
     private var transactionsByUserId: [String: TransactionState] = [:]
     private var accountTransactionsByUserId: [String: [String: [Transaction]]] = [:]
 
-    private init() {}
+    private init() {
+        // Wallet screens are rebuilt on each push and read these first, so a write made
+        // anywhere else must drop them or a card's limit stays stale until relaunch.
+        NotificationCenter.default.addObserver(forName: .dataDidChange, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated {
+                AppDataCache.shared.accountsByUserId = [:]
+                AppDataCache.shared.accountTransactionsByUserId = [:]
+            }
+        }
+    }
 
     func dashboardState(for userId: String) -> DashboardState? { dashboardByUserId[userId] }
     func setDashboardState(_ state: DashboardState, for userId: String) { dashboardByUserId[userId] = state }

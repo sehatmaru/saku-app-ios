@@ -103,7 +103,7 @@ struct AccountListView: View {
                         footerRows
                     }
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, 88) // clears the floating +
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
             }
             .scrollDisabled(isOverlayOn)
@@ -356,12 +356,8 @@ struct AccountListView: View {
         let debt = activeCards.reduce(0) { $0 + max($1.balance, 0) }
         let limit = activeCards.reduce(0) { $0 + ($1.creditLimit ?? 0) }
         let share = limit > 0 ? min(debt / limit, 1) : 0
-        // The bill still owed, or for a card with nothing owed, the next cycle's due day.
-        let nextDue = activeCards.compactMap { card -> Date? in
-            guard let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) else { return nil }
-            return statement.remaining >= 1 ? statement.dueDate : CreditStatement.billing(forPurchaseOn: Date(), card: card).due
-        }
-        .min()
+        // One card: its due day in the subtitle. Several: each card gets its own row below.
+        let nextDue = activeCards.count == 1 ? activeCards.first.flatMap(dueDate(of:)) : nil
         return VStack(spacing: 10) {
             HStack(spacing: 10) {
                 RoundedRectangle(cornerRadius: 10)
@@ -370,7 +366,8 @@ struct AccountListView: View {
                     .overlay(Image(systemName: "creditcard").font(.system(size: 15)).foregroundStyle(.white))
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Kartu kredit").font(.app(15, weight: .semibold))
-                    Text("Terpakai" + (nextDue.map { " · tempo " + Self.dayMonth.string(from: $0) } ?? ""))
+                    Text("Terpakai" + (nextDue.map { " · tempo " + Self.dayMonth.string(from: $0) }
+                                       ?? (activeCards.count > 1 ? " · \(activeCards.count) kartu" : "")))
                         .font(.app(12))
                         .foregroundStyle(Color.appTextSecondary)
                 }
@@ -404,10 +401,32 @@ struct AccountListView: View {
             .font(.app(12))
             .foregroundStyle(Color.appTextSecondary)
             .monospacedDigit()
+            if activeCards.count > 1 {
+                Divider().padding(.vertical, 2)
+                ForEach(activeCards) { card in
+                    HStack(spacing: 8) {
+                        Circle().fill(card.walletColor).frame(width: 8, height: 8)
+                        Text(card.name).foregroundStyle(Color.appText).lineLimit(1)
+                        if let due = dueDate(of: card) {
+                            Text("tempo " + Self.dayMonth.string(from: due)).foregroundStyle(Color.appTextSecondary)
+                        }
+                        Spacer(minLength: 8)
+                        Text(masked(max(card.balance, 0))).foregroundStyle(Color.appText)
+                    }
+                    .font(.app(13))
+                    .monospacedDigit()
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// The bill still owed, or for a card with nothing owed, the next cycle's due day.
+    private func dueDate(of card: Account) -> Date? {
+        guard let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) else { return nil }
+        return statement.remaining >= 1 ? statement.dueDate : CreditStatement.billing(forPurchaseOn: Date(), card: card).due
     }
 
     /// Resets the odometer at once, then rolls it in after `delay`.
@@ -650,7 +669,8 @@ struct AccountListView: View {
 
     private var footerRows: some View {
         VStack(spacing: 0) {
-            if !viewModel.subscriptions.isEmpty {
+            // Always shown: it's the way in to add a subscription on any wallet.
+            if !allCards.isEmpty {
                 Button { path.append(Self.subscriptionsRoute) } label: {
                     HStack(spacing: 14) {
                         rowIcon("repeat")
@@ -658,7 +678,12 @@ struct AccountListView: View {
                             Text("Tagihan berulang")
                                 .font(.app(16))
                                 .foregroundStyle(Color.appText)
-                            if !viewModel.subscriptionNames.isEmpty {
+                            if viewModel.subscriptions.isEmpty {
+                                Text("Netflix, Spotify, dan tagihan rutin lain")
+                                    .font(.app(13))
+                                    .foregroundStyle(Color.appTextSecondary)
+                                    .lineLimit(1)
+                            } else if !viewModel.subscriptionNames.isEmpty {
                                 Text(viewModel.subscriptionNames.joined(separator: ", "))
                                     .font(.app(13))
                                     .foregroundStyle(Color.appTextSecondary)
@@ -666,7 +691,7 @@ struct AccountListView: View {
                             }
                         }
                         Spacer(minLength: 8)
-                        Text(masked(viewModel.totalSubscriptions) + "/bln")
+                        Text(viewModel.subscriptions.isEmpty ? "Tambah" : masked(viewModel.totalSubscriptions) + "/bln")
                             .font(.app(15))
                             .foregroundStyle(Color.appTextSecondary)
                             .monospacedDigit()
