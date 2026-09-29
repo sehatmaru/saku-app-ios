@@ -172,7 +172,7 @@ struct AccountListView: View {
                 }
             }
             .toast(toastText, isShown: $isToastShown)
-            .sheet(item: $payCard) { card in
+            .fullScreenCover(item: $payCard) { card in
                 if let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) {
                     PayCardBillSheet(card: card, statement: statement, wallets: viewModel.accounts,
                                      onPaid: { _, _ in showToast("Pembayaran tercatat") })

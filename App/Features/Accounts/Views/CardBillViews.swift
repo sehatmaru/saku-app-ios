@@ -96,33 +96,45 @@ struct CardBillSummary: View {
     }
 }
 
-/// Pays a card bill (design 1d): a transfer from a cash wallet into the card, which lowers its debt.
+/// Pays a card bill full-screen (design 1e): a transfer from a cash wallet into the card, which lowers its debt.
 struct PayCardBillSheet: View {
     let card: Account
     let statement: CreditStatement
     let wallets: [Account]
-    /// Called after a successful payment with the amount and the wallet it came from.
+    /// Called after a successful payment, just before the screen closes, with the amount and the wallet it came from.
     var onPaid: ((Double, Account) -> Void)? = nil
 
     private enum Choice { case full, minimum, custom }
 
     @State private var choice = Choice.full
     @State private var customAmount = 0
-    /// The first key press after choosing "Nominal lain" starts a new number.
+    /// The first key press after switching to "Nominal lain" starts a new number.
     @State private var isFresh = true
-    @State private var isPadOpen = false
     @State private var bump = false
+    @State private var shake: CGFloat = 0
     @State private var sourceId: String?
+    @State private var noteText = ""
+    @State private var showSourceSheet = false
+    @State private var isSourceFlashing = false
+    @State private var hasEntered = false
     @State private var isSaving = false
+    @State private var isDone = false
+    @State private var swipeReset = 0
+    /// Done-state lines, fixed at success so the reload after paying doesn't change them.
+    @State private var doneLines = ("", "")
     @State private var errorMessage: String?
+    @FocusState private var isNoteFocused: Bool
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @Environment(\.dismiss) private var dismiss
 
     private var sources: [Account] { wallets.filter { $0.isActive && !$0.isCreditCard } }
     private var source: Account? { sources.first { $0.id == sourceId } }
+    private var color: Color { source?.walletColor ?? .appPrimary }
     /// Nothing billed yet but the card has debt: offer paying all of it.
     private var fullAmount: Double { statement.remaining > 0 ? statement.remaining : card.balance }
     private var showsMinimum: Bool { statement.minimumDue > 0 && statement.minimumDue < statement.remaining }
+    /// Paying unbilled charges early is fine; more than the whole debt isn't.
+    private var maxPayable: Double { max(card.balance, statement.remaining) }
 
     private var amount: Double {
         switch choice {
@@ -132,26 +144,377 @@ struct PayCardBillSheet: View {
         }
     }
 
-    private var shortfall: Double { max(amount - (source?.balance ?? 0), 0) }
-    private var canPay: Bool { amount > 0 && source != nil && shortfall == 0 && !isSaving }
+    private var sourceBalance: Double { source?.balance ?? 0 }
+    private var shortfall: Double { source == nil ? 0 : max(amount - sourceBalance, 0) }
+    private var isOverDebt: Bool { amount > maxPayable + 0.5 }
+    private var isBlocked: Bool { shortfall > 0 || isOverDebt }
+    private var canPay: Bool { amount > 0 && source != nil && !isBlocked }
+    private var remainingAfter: Double { max(statement.remaining - amount, 0) }
 
-    private var buttonTitle: String {
+    private var sliderLabel: String {
         if source == nil { return "Pilih dompet" }
         if amount <= 0 { return "Masukkan nominal" }
         if shortfall > 0 { return "Saldo tidak cukup" }
-        return "Bayar " + amount.formattedAsCurrency()
+        if isOverDebt { return "Melebihi utang" }
+        return "Geser untuk bayar"
     }
+
+    private func money(_ value: Double) -> String {
+        isBalanceVisible ? value.formattedAsCurrency() : "Rp" + hiddenAmount
+    }
+
+    // MARK: Body
 
     var body: some View {
         VStack(spacing: 0) {
+            panel
+            rows
+                .padding(.top, 10)
+                .opacity(isDone ? 0 : 1)
+                .animation(.easeOut(duration: 0.3), value: isDone)
+            Group {
+                if let errorMessage {
+                    Text(errorMessage).foregroundStyle(Color.appError)
+                } else if statement.remaining > 0, amount > 0, amount < statement.remaining, !isDone {
+                    Text("Sisa \(remainingAfter.formattedAsCurrency()) kena bunga sekitar \((remainingAfter * CreditStatement.monthlyInterest).formattedAsCurrency())/bulan")
+                        .foregroundStyle(Color.appWarning)
+                }
+            }
+            .font(.app(13))
+            .monospacedDigit()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, 10)
+            .animation(.easeInOut(duration: 0.2), value: amount)
+            Spacer(minLength: 8)
+            VStack(spacing: 10) {
+                NumberPadKeys(onPress: press)
+                SwipeToConfirm(label: sliderLabel, color: color, isEnabled: canPay && !isSaving,
+                               resetToken: swipeReset, onBlocked: blocked, onConfirm: pay)
+                    .offset(x: shake)
+                    .padding(.horizontal, 12)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+        }
+        .background(Color.appBackground)
+        .ignoresSafeArea(.keyboard)
+        .onAppear {
+            if sourceId == nil { sourceId = (sources.first(where: \.isDefault) ?? sources.first)?.id }
+            hasEntered = true
+        }
+        .sheet(isPresented: $showSourceSheet) { sourceSheet }
+    }
+
+    // MARK: Panel
+
+    private var panel: some View {
+        VStack(spacing: 0) {
             HStack {
                 Button("Batal") { dismiss() }
+                    .font(.app(17))
+                    .foregroundStyle(.white)
+                    .disabled(isSaving)
+                Spacer()
+            }
+            .overlay {
+                HStack(spacing: 8) {
+                    Image(systemName: "creditcard").font(.system(size: 15, weight: .bold))
+                    Text("Bayar tagihan").font(.app(17, weight: .semibold))
+                }
+            }
+            .frame(height: 44)
+            .padding(.horizontal, 20)
+
+            ZStack(alignment: .top) {
+                panelContent
+                    .opacity(isDone ? 0 : 1)
+                    .offset(y: isDone ? -14 : 0)
+                    .scaleEffect(isDone ? 0.97 : 1)
+                    .animation(.settle(0.42), value: isDone)
+                doneContent
+            }
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(.white)
+        .frame(height: 266)
+        .frame(maxWidth: .infinity)
+        .background {
+            UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32)
+                .fill(color)
+                .overlay {
+                    LinearGradient(stops: [.init(color: .white.opacity(0.14), location: 0), .init(color: .white.opacity(0), location: 0.55)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+                .overlay(alignment: .topTrailing) {
+                    Image(systemName: "creditcard")
+                        .font(.system(size: 170, weight: .ultraLight))
+                        .foregroundStyle(.white.opacity(0.06))
+                        .offset(x: 40, y: 90)
+                }
+                .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32))
+                .animation(.easeInOut(duration: 0.45), value: sourceId)
+                .ignoresSafeArea(edges: .top)
+        }
+    }
+
+    private func swatch(_ fill: Color) -> some View {
+        RoundedRectangle(cornerRadius: 2)
+            .fill(fill)
+            .frame(width: 16, height: 11)
+            .overlay(RoundedRectangle(cornerRadius: 2).stroke(.white.opacity(0.6), lineWidth: 1))
+    }
+
+    private var panelContent: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 7) {
+                swatch(color)
+                Text(source?.name ?? "Pilih dompet").lineLimit(1)
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .opacity(0.7)
+                swatch(card.walletColor)
+                Text(card.name).lineLimit(1)
+            }
+            .font(.app(13, weight: .medium))
+            .padding(.leading, 6)
+            .padding(.trailing, 12)
+            .frame(height: 28)
+            .background(.white.opacity(0.14), in: Capsule())
+            .padding(.horizontal, 24)
+            .padding(.top, 6)
+
+            HStack(alignment: .top, spacing: 4) {
+                Text("Rp")
+                    .font(.app(22))
+                    .opacity(0.75)
+                    .padding(.top, 8)
+                Text(amount.formattedAsDigits())
+                    .font(.app(56, weight: .light))
+                    .tracking(-2)
+                    .contentTransition(.numericText())
+            }
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .opacity(amount > 0 ? 1 : 0.55)
+            .scaleEffect(bump ? 1.04 : 1)
+            .offset(x: shake)
+            .animation(.easeOut(duration: 0.12), value: bump)
+            .animation(.easeOut(duration: 0.2), value: amount > 0)
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+
+            ViewThatFits(in: .horizontal) {
+                modeChips.padding(.horizontal, 24)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    modeChips.padding(.horizontal, 24)
+                }
+            }
+            .padding(.top, 14)
+
+            ZStack(alignment: .top) {
+                VStack(spacing: 6) {
+                    infoRow("Saldo \(source?.name ?? "")",
+                            "\(money(sourceBalance)) → \(money(max(sourceBalance - amount, 0)))")
+                    infoRow("Sisa tagihan",
+                            "\(money(statement.remaining)) → \(money(remainingAfter))")
+                }
+                .opacity(isBlocked ? 0 : 1)
+                warningPill
+                    .padding(.top, 6)
+            }
+            .frame(height: 44, alignment: .top)
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .animation(.easeInOut(duration: 0.22), value: isBlocked)
+        }
+    }
+
+    private var modeChips: some View {
+        HStack(spacing: 8) {
+            modeChip(.full, "Bayar penuh " + fullAmount.formattedAsCurrency())
+            if showsMinimum { modeChip(.minimum, "Minimum " + statement.minimumDue.formattedAsCurrency()) }
+            modeChip(.custom, "Nominal lain")
+        }
+    }
+
+    private func modeChip(_ value: Choice, _ title: String) -> some View {
+        let isOn = choice == value
+        return Button {
+            withAnimation(.easeInOut(duration: 0.22)) {
+                choice = value
+                if value == .custom { customAmount = 0; isFresh = true }
+            }
+        } label: {
+            Text(title)
+                .font(.app(14, weight: .semibold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .foregroundStyle(isOn ? color : .white)
+                .padding(.horizontal, showsMinimum ? 12 : 14)
+                .frame(height: 32)
+                .background(isOn ? Color.white : Color.white.opacity(0.16), in: Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+        .disabled(isDone || isSaving)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+
+    private func infoRow(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title).opacity(0.85).lineLimit(1)
+            Spacer(minLength: 8)
+            Text(value).fontWeight(.semibold).lineLimit(1)
+        }
+        .font(.app(13))
+        .monospacedDigit()
+    }
+
+    private var warningPill: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.circle.fill").font(.system(size: 15))
+            Text(shortfall > 0 ? "Saldo \(source?.name ?? "") kurang \(shortfall.formattedAsCurrency())"
+                               : "Melebihi utang kartu \(maxPayable.formattedAsCurrency())")
+                .lineLimit(1)
+        }
+        .font(.app(13, weight: .semibold))
+        .monospacedDigit()
+        .foregroundStyle(Color(hex: "D93025"))
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
+        .background(.white, in: RoundedRectangle(cornerRadius: 10))
+        .opacity(isBlocked ? 1 : 0)
+        .scaleEffect(isBlocked ? 1 : 0.96)
+        .offset(y: isBlocked ? 0 : 6)
+        .animation(.spring(duration: 0.38, bounce: 0.45), value: isBlocked)
+    }
+
+    private var doneContent: some View {
+        VStack(spacing: 8) {
+            Circle()
+                .fill(.white)
+                .frame(width: 64, height: 64)
+                .overlay {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(color)
+                }
+                .scaleEffect(isDone ? 1 : 0.4)
+                .animation(.spring(duration: 0.56, bounce: 0.5), value: isDone)
+            Text("Pembayaran berhasil")
+                .font(.app(20, weight: .semibold))
+                .padding(.top, 6)
+            Text(doneLines.0)
+                .font(.app(14))
+                .opacity(0.85)
+            Text(doneLines.1)
+                .font(.app(13))
+                .opacity(0.75)
+        }
+        .monospacedDigit()
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 24)
+        .padding(.top, 14)
+        .opacity(isDone ? 1 : 0)
+        .animation(.easeOut(duration: 0.3), value: isDone)
+        .allowsHitTesting(false)
+    }
+
+    // MARK: Rows
+
+    private func entering<V: View>(_ view: V, index: Int) -> some View {
+        view
+            .opacity(hasEntered ? 1 : 0)
+            .offset(y: hasEntered ? 0 : 14)
+            .animation(.settle(0.5).delay(Double(index) * 0.06 + 0.2), value: hasEntered)
+    }
+
+    private func label(_ text: String) -> some View {
+        Text(text)
+            .font(.app(15))
+            .foregroundStyle(Color.appTextSecondary)
+            .frame(width: 76, alignment: .leading)
+    }
+
+    private var rows: some View {
+        VStack(spacing: 0) {
+            entering(sourceRow, index: 0)
+            entering(noteRow, index: 1)
+        }
+        .disabled(isDone || isSaving)
+    }
+
+    private var sourceRow: some View {
+        Button {
+            isNoteFocused = false
+            showSourceSheet = true
+        } label: {
+            HStack(spacing: 12) {
+                label("Dari")
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(color)
+                        .frame(width: 20, height: 14)
+                    Text(source?.name ?? "Pilih")
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(source == nil ? Color.appTextSecondary : Color.appText)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                if source != nil {
+                    Text(money(sourceBalance))
+                        .font(.app(14))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
+            }
+            .frame(height: 52)
+            .padding(.leading, 24)
+            .padding(.trailing, 20)
+            .background(isSourceFlashing ? Color.appText.opacity(0.05) : .clear)
+            .animation(.easeOut(duration: 0.45), value: isSourceFlashing)
+            .rowSeparator()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+        .accessibilityValue(source?.name ?? "Belum dipilih")
+    }
+
+    private var noteRow: some View {
+        HStack(spacing: 12) {
+            label("Catatan")
+            TextField("Opsional", text: $noteText)
+                .font(.app(16, weight: .medium))
+                .foregroundStyle(Color.appText)
+                .focused($isNoteFocused)
+                .submitLabel(.done)
+                .onChange(of: noteText) { _, new in
+                    if new.count > 40 { noteText = String(new.prefix(40)) }
+                }
+        }
+        .frame(height: 52)
+        .padding(.leading, 24)
+        .padding(.trailing, 20)
+        .contentShape(Rectangle())
+        .onTapGesture { isNoteFocused = true }
+    }
+
+    // MARK: Source sheet
+
+    private var sourceSheet: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button("Batal") { showSourceSheet = false }
                     .font(.app(17))
                     .foregroundStyle(Color.appPrimary)
                 Spacer()
             }
             .overlay {
-                Text("Bayar tagihan")
+                Text("Bayar dari")
                     .font(.app(17, weight: .semibold))
                     .foregroundStyle(Color.appText)
             }
@@ -160,210 +523,46 @@ struct PayCardBillSheet: View {
             .padding(.top, 13)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    amountHeader
-                    modeRows
-                    if statement.remaining > 0, amount > 0, amount < statement.remaining {
-                        let left = statement.remaining - amount
-                        Text("Sisa \(left.formattedAsCurrency()) kena bunga sekitar \((left * CreditStatement.monthlyInterest).formattedAsCurrency())/bulan")
-                            .font(.app(13))
-                            .foregroundStyle(Color.appWarning)
-                            .monospacedDigit()
-                            .padding(.horizontal, 24)
-                            .padding(.top, 12)
-                            .transition(.opacity)
-                    }
-                    if !isPadOpen {
-                        sourceSection
-                            .transition(.opacity)
-                    }
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.app(13))
-                            .foregroundStyle(Color.appError)
-                            .padding(.horizontal, 24)
-                            .padding(.top, 12)
-                    }
-                }
-                .padding(.bottom, 16)
-            }
-            .scrollBounceBehavior(.basedOnSize)
-
-            if isPadOpen {
-                PayPad(onPress: press) {
-                    withAnimation(.settle(0.4)) { isPadOpen = false }
-                }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else {
-                payButton
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 8)
-                    .transition(.opacity)
-            }
-        }
-        .background(Color.appBackground)
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Color.appBackground)
-        .onAppear {
-            if sourceId == nil { sourceId = (sources.first(where: \.isDefault) ?? sources.first)?.id }
-        }
-    }
-
-    // MARK: Amount
-
-    private var amountHeader: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top, spacing: 4) {
-                Text("Rp")
-                    .font(.app(20))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .padding(.top, 7)
-                Text(amount.formattedAsDigits())
-                    .font(.app(48, weight: .light))
-                    .tracking(-1.8)
-                    .foregroundStyle(amount > 0 ? Color.appText : Color.appTextTertiary)
-                    .contentTransition(.numericText())
-            }
-            .monospacedDigit()
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
-            .scaleEffect(bump ? 1.04 : 1, anchor: .leading)
-            .animation(.easeOut(duration: 0.14), value: bump)
-            Text("ke \(card.name)")
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 14)
-        .padding(.bottom, 22)
-        .accessibilityElement(children: .combine)
-    }
-
-    // MARK: Modes
-
-    private var modeRows: some View {
-        VStack(spacing: 0) {
-            modeRow(.full, title: "Bayar penuh",
-                    caption: statement.remaining > 0 ? "Sisa tagihan" : "Seluruh utang kartu",
-                    value: fullAmount.formattedAsCurrency())
-            if showsMinimum {
-                modeRow(.minimum, title: "Bayar minimum", caption: "Pembayaran minimum",
-                        value: statement.minimumDue.formattedAsCurrency())
-            }
-            modeRow(.custom, title: "Nominal lain", caption: "Ketik sendiri",
-                    value: choice == .custom && customAmount > 0 ? Double(customAmount).formattedAsCurrency() : "")
-        }
-        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-    }
-
-    private func modeRow(_ value: Choice, title: String, caption: String, value text: String) -> some View {
-        let isOn = choice == value
-        return Button {
-            withAnimation(.settle(0.4)) {
-                choice = value
-                isPadOpen = value == .custom
-                if value == .custom { isFresh = true }
-            }
-        } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.app(16, weight: isOn ? .semibold : .regular))
-                        .foregroundStyle(Color.appText)
-                    Text(caption)
-                        .font(.app(13))
+                if sources.isEmpty {
+                    Text("Belum ada dompet untuk membayar")
+                        .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
+                        .padding(.top, 24)
                 }
-                Spacer()
-                Text(text)
-                    .font(.app(16))
-                    .foregroundStyle(Color.appText)
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                Image(systemName: "checkmark")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(Color.appPrimary)
-                    .opacity(isOn ? 1 : 0)
-                    .scaleEffect(isOn ? 1 : 0.4)
-                    .animation(.spring(duration: 0.38, bounce: 0.5), value: isOn)
-            }
-            .frame(height: 64)
-            .padding(.horizontal, 24)
-            .rowSeparator()
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(RowPressStyle())
-        .accessibilityAddTraits(isOn ? .isSelected : [])
-    }
-
-    // MARK: Source
-
-    private var sourceSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Bayar dari")
-                .font(.app(20, weight: .semibold))
-                .tracking(-0.3)
-                .foregroundStyle(Color.appText)
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, 10)
-            if sources.isEmpty {
-                Text("Belum ada dompet untuk membayar")
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .padding(.horizontal, 24)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(sources) { wallet in
-                            SourceCard(account: wallet, isSelected: wallet.id == sourceId, isBalanceVisible: isBalanceVisible) {
-                                sourceId = wallet.id
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                    ForEach(sources) { wallet in
+                        SourceCard(account: wallet, isSelected: wallet.id == sourceId, isBalanceVisible: isBalanceVisible) {
+                            sourceId = wallet.id
+                            Task {
+                                try? await Task.sleep(for: .milliseconds(200))
+                                showSourceSheet = false
+                                try? await Task.sleep(for: .milliseconds(250))
+                                isSourceFlashing = true
+                                try? await Task.sleep(for: .milliseconds(650))
+                                isSourceFlashing = false
                             }
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 6)
-                    .padding(.bottom, 8)
                 }
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.circle.fill").font(.system(size: 14))
-                    Text("Saldo \(source?.name ?? "") kurang \(shortfall.formattedAsCurrency())")
-                        .monospacedDigit()
-                }
-                .font(.app(13))
-                .foregroundStyle(Color.appError)
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
-                .opacity(shortfall > 0 && source != nil ? 1 : 0)
-                .animation(.easeInOut(duration: 0.22), value: shortfall > 0)
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 16)
             }
         }
-    }
-
-    private var payButton: some View {
-        Button(action: pay) {
-            Group {
-                if isSaving { ProgressView().tint(.white) } else { Text(buttonTitle) }
-            }
-            .font(.app(17, weight: .semibold))
-            .foregroundStyle(canPay || isSaving ? Color.white : Color.appTextSecondary)
-            .monospacedDigit()
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(canPay || isSaving ? Color.appPrimary : Color(light: 0xE5E5EA, dark: 0x3A3A3C), in: Capsule())
-            .animation(.easeInOut(duration: 0.22), value: canPay)
-        }
-        .buttonStyle(PressScaleStyle())
-        .disabled(!canPay)
+        .background(Color.appBackground)
+        .presentationDetents([.height(min(CGFloat((sources.count + 1) / 2) * 108 + 110, 620)), .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Color.appBackground)
     }
 
     // MARK: Logic
 
     private func press(_ key: String) {
-        let base = isFresh ? 0 : customAmount
+        guard !isDone, !isSaving else { return }
+        isNoteFocused = false
+        var base = isFresh || choice != .custom ? 0 : customAmount
+        if choice != .custom { withAnimation(.easeInOut(duration: 0.22)) { choice = .custom } }
+        if key == "del", isFresh { base = 0 }
         guard let next = NumberPad.apply(key, to: base) else { return }
         isFresh = false
         withAnimation(.easeOut(duration: 0.14)) { customAmount = next }
@@ -374,30 +573,48 @@ struct PayCardBillSheet: View {
         }
     }
 
+    private func blocked() {
+        guard !isDone, !isSaving else { return }
+        Task {
+            for value: CGFloat in [-10, 9, -6, 4, 0] {
+                withAnimation(.easeInOut(duration: 0.06)) { shake = value }
+                try? await Task.sleep(for: .milliseconds(60))
+            }
+        }
+        if isBlocked { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
+        if source == nil { showSourceSheet = true }
+    }
+
     private func pay() {
-        guard canPay, let source else { return }
+        guard canPay, !isSaving, let source else { swipeReset += 1; return }
         let paid = amount
+        let left = remainingAfter
+        let note = noteText.trimmingCharacters(in: .whitespaces)
         isSaving = true
         errorMessage = nil
         Task {
             do {
                 _ = try await SupabaseRepository.shared.createTransfer(
                     primaryAccountId: source.id, counterpartyAccountId: card.id, amount: paid,
-                    description: "Bayar tagihan \(card.name)", note: nil, date: Date()
+                    description: "Bayar tagihan \(card.name)", note: note.isEmpty ? nil : note, date: Date()
                 )
+                doneLines = ("\(paid.formattedAsCurrency()) dari \(source.name)",
+                             "Sisa tagihan \(left.formattedAsCurrency())")
                 NotificationCenter.default.post(name: .dataDidChange, object: nil)
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                isDone = true
+                try? await Task.sleep(for: .milliseconds(1500))
                 onPaid?(paid, source)
                 dismiss()
             } catch {
                 isSaving = false
+                swipeReset += 1
                 errorMessage = "Gagal membayar tagihan. Coba lagi."
             }
         }
     }
 }
 
-/// 156×96 wallet card to pay from: ringed and full size when chosen, a touch smaller otherwise.
+/// 96pt wallet card to pay from: ringed, a touch larger and checked when chosen.
 private struct SourceCard: View {
     let account: Account
     let isSelected: Bool
@@ -447,7 +664,7 @@ private struct SourceCard: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .frame(width: 156, height: 96, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 96, maxHeight: 96, alignment: .leading)
             .background {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(color)
@@ -472,39 +689,11 @@ private struct SourceCard: View {
                 .opacity(isSelected ? 1 : 0)
                 .animation(.easeInOut(duration: 0.22), value: isSelected)
             }
-            .scaleEffect(isSelected ? 1 : 0.96)
+            .scaleEffect(isSelected ? 1.03 : 1)
             .animation(.spring(duration: 0.38, bounce: 0.45), value: isSelected)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(account.name), saldo \(account.balance.formattedAsCurrency())")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-}
-
-/// Number keys with a green Selesai key, for "Nominal lain".
-private struct PayPad: View {
-    let onPress: (String) -> Void
-    let onDone: () -> Void
-
-    var body: some View {
-        GeometryReader { geo in
-            let doneWidth = (geo.size.width - 6) / 4
-            HStack(spacing: 6) {
-                NumberPadKeys(onPress: onPress)
-                    .frame(width: geo.size.width - doneWidth - 6)
-                Button(action: onDone) {
-                    VStack(spacing: 6) {
-                        Image(systemName: "checkmark").font(.system(size: 24, weight: .bold))
-                        Text("Selesai").font(.app(14, weight: .semibold))
-                    }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.appPrimary, in: RoundedRectangle(cornerRadius: 14))
-                }
-                .buttonStyle(PressScaleStyle())
-                .frame(width: doneWidth)
-            }
-        }
-        .frame(height: 52 * 4 + 6 * 3)
     }
 }

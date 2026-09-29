@@ -21,6 +21,7 @@ struct AddSubscriptionView: View {
     @State private var billingDay: Int
     @State private var bump = false
     @State private var shake: CGFloat = 0
+    @State private var swipeReset = 0
     @State private var flash: Row?
     @State private var hasEntered = false
     @State private var isDone = false
@@ -91,9 +92,15 @@ struct AddSubscriptionView: View {
                     .padding(.top, 10)
             }
             Spacer(minLength: 12)
-            AmountPad(color: color, isEnabled: isValid, isSaving: isSaving, onPress: press, onSave: save)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+            VStack(spacing: 10) {
+                NumberPadKeys(onPress: press)
+                SwipeToConfirm(label: "Geser untuk simpan", color: color, isEnabled: isValid,
+                               resetToken: swipeReset, onBlocked: blocked, onConfirm: save)
+                    .offset(x: shake)
+                    .padding(.horizontal, 12)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
         }
         .background(Color.appBackground)
         .ignoresSafeArea(.keyboard)
@@ -610,7 +617,8 @@ struct AddSubscriptionView: View {
         (selectedCategory ?? expenseCategories.first { $0.name.localizedCaseInsensitiveCompare("Lainnya") == .orderedSame })?.id
     }
 
-    private func save() {
+    /// Why the slider won't go: shake for no amount or over the limit, flash the name when it's missing.
+    private func blocked() {
         guard !isDone, !isSaving else { return }
         if amount == 0 { shakeAmount(); return }
         if isOverLimit {
@@ -621,8 +629,12 @@ struct AddSubscriptionView: View {
         if nameText.trimmingCharacters(in: .whitespaces).isEmpty {
             flashRow(.name)
             isNameFocused = true
-            return
         }
+    }
+
+    private func save() {
+        guard !isDone, !isSaving else { return }
+        guard isValid else { blocked(); swipeReset += 1; return }
         isSaving = true
         errorMessage = nil
         let name = nameText.trimmingCharacters(in: .whitespaces)
@@ -647,7 +659,6 @@ struct AddSubscriptionView: View {
                 await NotificationManager.shared.schedule(for: saved)
                 isSaving = false
                 isNameFocused = false
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
                 NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 isDone = true
                 try? await Task.sleep(for: .milliseconds(1500))
@@ -657,6 +668,7 @@ struct AddSubscriptionView: View {
                 return
             } catch {
                 isSaving = false
+                swipeReset += 1
                 errorMessage = "Gagal menyimpan. Coba lagi."
             }
         }
