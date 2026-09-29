@@ -278,7 +278,7 @@ struct BudgetListView: View {
     }
 
     private var historyLink: some View {
-        NavigationLink(destination: OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions)) {
+        NavigationLink(destination: OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions).detailPage()) {
             Label("Riwayat bulan sebelumnya", systemImage: "clock.arrow.circlepath")
                 .font(.app(15, weight: .medium))
                 .foregroundStyle(Color.appText)
@@ -329,7 +329,7 @@ struct BudgetListView: View {
     }
 
     private func budgetCardLink(_ item: BudgetListItem, index: Int) -> some View {
-        NavigationLink(destination: budgetDetailDestination(for: item)) {
+        NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
             BudgetCardView(budget: item.budget, category: item.category, fillDelay: 0.3 + Double(index) * 0.08, onSetBudget: { budget in
                 Task {
                     guard let userId = authViewModel.currentUser?.id else { return }
@@ -682,7 +682,7 @@ struct OverallBudgetHistoryView: View {
             if isExpanded {
                 VStack(spacing: 0) {
                     ForEach(items) { history in
-                        NavigationLink(destination: OverallMonthDetailView(totalBudget: totalBudget, month: history.month, budgetItems: budgetItems, allExpenseTransactions: allExpenseTransactions)) {
+                        NavigationLink(destination: OverallMonthDetailView(totalBudget: totalBudget, month: history.month, budgetItems: budgetItems, allExpenseTransactions: allExpenseTransactions).detailPage()) {
                             historyRow(history)
                         }
                         .buttonStyle(RowPressStyle())
@@ -783,7 +783,7 @@ struct OverallMonthDetailView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         SectionHeader(title: "Per kategori", trailing: "\(setItems.count)")
                         ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
-                            NavigationLink(destination: BudgetDetailView(budget: item.budget!, category: item.category, allTransactions: [], accounts: [], showHistoryButton: false)) {
+                            NavigationLink(destination: BudgetDetailView(budget: item.budget!, category: item.category, allTransactions: [], accounts: [], showHistoryButton: false).detailPage()) {
                                 BudgetCardView(budget: item.budget, category: item.category, fillDelay: 0.3 + Double(i) * 0.08)
                             }
                             .buttonStyle(RowPressStyle())

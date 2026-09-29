@@ -428,8 +428,10 @@ struct TransactionDetailView: View {
                 .background(Color(light: 0xFDECEC, dark: 0x3A1D1F), in: Capsule())
         }
         .buttonStyle(PressScaleStyle())
-        .padding(.horizontal, 24)
-        .padding(.bottom, 4)
+        .padding(.leading, 24)
+        // Room for the floating + at the right (56pt plus its 20pt margin), centred on it.
+        .padding(.trailing, 88)
+        .padding(.bottom, 12)
         .background(alignment: .bottom) {
             LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .bottom)
                 .frame(height: 90)

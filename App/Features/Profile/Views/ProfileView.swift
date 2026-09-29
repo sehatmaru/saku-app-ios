@@ -96,7 +96,7 @@ struct ProfileView: View {
             }
             .lineLimit(1)
             Spacer(minLength: 8)
-            NavigationLink("Ubah") { ProfileEditView(viewModel: viewModel, authViewModel: authViewModel) }
+            NavigationLink("Ubah") { ProfileEditView(viewModel: viewModel, authViewModel: authViewModel).detailPage() }
                 .font(.app(15))
                 .foregroundStyle(Color.appPrimary)
         }
@@ -122,7 +122,7 @@ struct ProfileView: View {
                 .fixedSize()
             }
 
-            NavigationLink(destination: LanguageView(appLanguage: $appLanguage)) {
+            NavigationLink(destination: LanguageView(appLanguage: $appLanguage).detailPage()) {
                 row(icon: "globe", title: "Bahasa") {
                     Text(languageLabel)
                         .font(.app(15))

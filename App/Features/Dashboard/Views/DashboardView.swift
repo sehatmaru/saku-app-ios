@@ -91,6 +91,7 @@ struct DashboardView: View {
         )) {
             mainTabs
         }
+        .environment(\.addTransaction, AddTransactionAction { showAddSheet = true })
     }
 
     @TabContentBuilder<AppTab>
@@ -99,7 +100,7 @@ struct DashboardView: View {
             NavigationStack(path: $homePath) {
                 mainContent
                     .navigationDestination(for: HomeRoute.self) { _ in
-                        AccountListView(startsAdding: addsWalletOnOpen, path: $homePath)
+                        AccountListView(startsAdding: addsWalletOnOpen, path: $homePath).detailPage()
                     }
             }
             .onChange(of: homePath.count) { _, count in if count == 0 { addsWalletOnOpen = false } }
@@ -470,7 +471,7 @@ struct DashboardView: View {
         if !health.isAvailable {
             emptyHealthSection
         } else {
-            NavigationLink { HealthDetailView(health: health) } label: {
+            NavigationLink { HealthDetailView(health: health).detailPage() } label: {
                 VStack(alignment: .leading, spacing: 0) {
                     SectionHeader(title: "Kesehatan finansial", trailing: health.label, trailingColor: health.color)
 
@@ -528,7 +529,7 @@ struct DashboardView: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 SectionHeader(title: "Bulan ini")
-                NavigationLink("Analisis") { AnalyticsView(viewModel: viewModel) }
+                NavigationLink("Analisis") { AnalyticsView(viewModel: viewModel).detailPage() }
                     .font(.app(15))
                     .foregroundStyle(Color.appPrimary)
             }

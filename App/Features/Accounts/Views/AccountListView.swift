@@ -110,9 +110,11 @@ struct AccountListView: View {
             .navigationTitle("Dompet")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(selectedID != nil)
+            // The card pile sits at the bottom while a card's detail is open.
+            .hidesDetailAddButton(isOverlayOn)
             .toolbar { toolbarItems }
             .navigationDestination(for: Account.self) { account in
-                walletDetail(account)
+                walletDetail(account).detailPage()
             }
             .navigationDestination(for: String.self) { route in
                 if route == Self.subscriptionsRoute {
@@ -122,8 +124,10 @@ struct AccountListView: View {
                         categories: categories,
                         onChange: reload
                     )
+                    .detailPage()
                 } else {
-                    ArchivedWalletsView(accounts: archivedAccounts) { walletDetail($0) }
+                    ArchivedWalletsView(accounts: archivedAccounts) { walletDetail($0).detailPage() }
+                        .detailPage()
                 }
             }
             .refreshable {

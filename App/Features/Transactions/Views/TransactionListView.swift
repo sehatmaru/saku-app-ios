@@ -494,7 +494,7 @@ struct TransactionListView: View {
             if index == 0 || !Calendar.current.isDate(transaction.date, inSameDayAs: rows[index - 1].date) {
                 dayHeader(for: transaction.date, in: section.transactions)
             }
-            NavigationLink(destination: TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts)) {
+            NavigationLink(destination: TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts).detailPage()) {
                 TransactionRowView(
                     transaction: transaction,
                     categories: viewModel.categories,
