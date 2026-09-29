@@ -35,6 +35,8 @@ struct AccountListView: View {
     @State private var cardTops = CardTops()
     @State private var transferFrom: Account?
     @State private var payCard: Account?
+    /// Rolls the hero's numbers in; replayed when the page opens and when a card closes.
+    @State private var odometerOn = false
 
     /// Card positions kept outside view state so scrolling doesn't re-render the screen.
     private final class CardTops {
@@ -89,6 +91,11 @@ struct AccountListView: View {
                         }
                         if groups.isEmpty {
                             emptyState.padding(.top, 120)
+                        } else {
+                            hero
+                                .opacity(selectedID == nil ? 1 : 0)
+                                .offset(y: selectedID == nil ? 0 : -12)
+                                .animation(.settle(0.46), value: selectedID)
                         }
                         ForEach(groups) { group in
                             groupSection(group)
@@ -197,12 +204,11 @@ struct AccountListView: View {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 // 13c: the actions wait until the wallets are in.
                 Group {
-                    if !archivedAccounts.isEmpty {
-                        Button { path.append("archived") } label: {
-                            Image(systemName: "archivebox")
-                        }
-                        .accessibilityLabel("Diarsipkan")
+                    Button { path.append("archived") } label: {
+                        Image(systemName: "archivebox")
                     }
+                    .tint(Color.appText)
+                    .accessibilityLabel("Diarsipkan")
                     if !viewModel.hasLoadedOnce || !groups.isEmpty {
                         Button {
                             withAnimation(.smooth) { isBalanceVisible.toggle() }
@@ -306,6 +312,119 @@ struct AccountListView: View {
         .frame(maxWidth: .infinity)
     }
 
+    // MARK: Hero
+
+    private var activeCards: [Account] { groups.first { $0.type == .credit }?.accounts ?? [] }
+
+    /// Total saldo rolling in, plus one box summing every credit card (design 3a, v14).
+    private var hero: some View {
+        let count = viewModel.accounts.filter(\.isActive).count
+        let total = viewModel.totalBalance
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Total saldo").font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                Text("\(count) dompet").font(.app(13)).foregroundStyle(Color.appTextTertiary)
+            }
+            HStack(alignment: .top, spacing: 4) {
+                Text(total < 0 && isBalanceVisible ? "−Rp" : "Rp")
+                    .font(.app(22))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.top, 8)
+                if isBalanceVisible {
+                    OdometerText(text: total.formattedAsDigits(), digitHeight: 52,
+                                 font: .app(52, weight: .ultraLight), isOn: odometerOn)
+                        .tracking(-2.2)
+                } else {
+                    Text(hiddenAmount).font(.app(52, weight: .ultraLight)).frame(height: 52)
+                }
+            }
+            .foregroundStyle(Color.appText)
+            .padding(.top, 4)
+
+            if !activeCards.isEmpty {
+                creditSummary.padding(.top, 18)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 6)
+        .padding(.bottom, 14)
+        .onAppear { playOdometer(after: 0.3) }
+    }
+
+    private var creditSummary: some View {
+        let debt = activeCards.reduce(0) { $0 + max($1.balance, 0) }
+        let limit = activeCards.reduce(0) { $0 + ($1.creditLimit ?? 0) }
+        let share = limit > 0 ? min(debt / limit, 1) : 0
+        // The bill still owed, or for a card with nothing owed, the next cycle's due day.
+        let nextDue = activeCards.compactMap { card -> Date? in
+            guard let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) else { return nil }
+            return statement.remaining >= 1 ? statement.dueDate : CreditStatement.billing(forPurchaseOn: Date(), card: card).due
+        }
+        .min()
+        return VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(hex: "1A1F71"))
+                    .frame(width: 32, height: 32)
+                    .overlay(Image(systemName: "creditcard").font(.system(size: 15)).foregroundStyle(.white))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Kartu kredit").font(.app(15, weight: .semibold))
+                    Text("Terpakai" + (nextDue.map { " · tempo " + Self.dayMonth.string(from: $0) } ?? ""))
+                        .font(.app(12))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+                .lineLimit(1)
+                Spacer(minLength: 8)
+                HStack(spacing: 0) {
+                    Text("Rp")
+                    if isBalanceVisible {
+                        OdometerText(text: debt.formattedAsDigits(), digitHeight: 22,
+                                     font: .app(17, weight: .semibold), delay: 0.35, isOn: odometerOn)
+                    } else {
+                        Text(hiddenAmount)
+                    }
+                }
+                .font(.app(17, weight: .semibold))
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color(light: 0xE5E5EA, dark: 0x3A3A3C))
+                    Capsule().fill(Color.appText)
+                        .frame(width: geo.size.width * (odometerOn ? share : 0))
+                        .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 1.1).delay(0.5), value: odometerOn)
+                }
+            }
+            .frame(height: 4)
+            HStack {
+                Text("\(Int((share * 100).rounded()))% dari limit \(masked(limit))")
+                Spacer()
+                Text("Sisa \(masked(max(limit - debt, 0)))")
+            }
+            .font(.app(12))
+            .foregroundStyle(Color.appTextSecondary)
+            .monospacedDigit()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// Resets the odometer at once, then rolls it in after `delay`.
+    private func playOdometer(after delay: Double) {
+        var reset = SwiftUI.Transaction()
+        reset.disablesAnimations = true
+        withTransaction(reset) { odometerOn = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { odometerOn = true }
+    }
+
+    private static let dayMonth: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM"
+        f.locale = Locale(identifier: "id_ID")
+        return f
+    }()
+
     // MARK: Stacks
 
     private func groupSection(_ group: WalletGroup) -> some View {
@@ -388,6 +507,7 @@ struct AccountListView: View {
 
     private func closeDetail() {
         selectedID = nil
+        playOdometer(after: 0.45)
         let settle = 0.54 + Double(allCards.count) * 0.03
         DispatchQueue.main.asyncAfter(deadline: .now() + settle) {
             if selectedID == nil { isOverlayOn = false }
@@ -932,6 +1052,12 @@ struct ArchivedWalletsView<Destination: View>: View {
 
     var body: some View {
         ScrollView {
+            if accounts.isEmpty {
+                EmptyMessage(icon: "archivebox", title: "Belum ada yang diarsipkan",
+                             message: "Dompet yang diarsipkan disimpan di sini, lengkap dengan riwayatnya.")
+                    .padding(.horizontal, 40)
+                    .padding(.top, 120)
+            }
             LazyVStack(spacing: 0) {
                 ForEach(accounts) { account in
                     NavigationLink(destination: destination(account)) {

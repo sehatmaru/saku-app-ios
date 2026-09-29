@@ -270,3 +270,47 @@ struct EmptyMessage: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+/// Digits that roll up into place like an odometer. Each digit spins through two full turns;
+/// the right-most starts first and the left ones settle last. Flip `isOn` from false to true
+/// (with animations disabled for the reset) to replay.
+struct OdometerText: View {
+    let text: String
+    /// Line height of one digit; the font should fit it.
+    let digitHeight: CGFloat
+    let font: Font
+    /// Seconds before the last digit starts.
+    var delay: Double = 0
+    var isOn: Bool
+
+    var body: some View {
+        let chars = Array(text)
+        let digitCount = chars.filter(\.isNumber).count
+        let digitIndex: [Int?] = {
+            var k = 0
+            return chars.map { c in c.isNumber ? { defer { k += 1 }; return k }() : nil }
+        }()
+        HStack(spacing: 0) {
+            ForEach(Array(chars.enumerated()), id: \.offset) { position, char in
+                if let i = digitIndex[position], let value = char.wholeNumberValue {
+                    VStack(spacing: 0) {
+                        ForEach(0..<30, id: \.self) { n in
+                            Text("\(n % 10)").frame(height: digitHeight)
+                        }
+                    }
+                    .offset(y: -CGFloat(isOn ? 20 + value : 0) * digitHeight)
+                    .frame(height: digitHeight, alignment: .top)
+                    .clipped()
+                    .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 1.3 + Double(i) * 0.09)
+                        .delay(delay + Double(digitCount - 1 - i) * 0.04), value: isOn)
+                } else {
+                    Text(String(char)).frame(height: digitHeight)
+                }
+            }
+        }
+        .font(font)
+        .monospacedDigit()
+        .accessibilityElement()
+        .accessibilityLabel(text)
+    }
+}
