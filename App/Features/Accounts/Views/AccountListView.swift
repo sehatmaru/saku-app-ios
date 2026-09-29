@@ -39,6 +39,7 @@ struct AccountListView: View {
     @State private var pendingDefaultID: String?
     /// The subscription form: a new one on `account`, or `existing` to edit.
     @State private var subscriptionForm: SubscriptionForm?
+    @State private var archiving: Account?
     /// Rolls the hero's numbers in; replayed when the page opens and when a card closes.
     @State private var odometerOn = false
 
@@ -156,6 +157,13 @@ struct AccountListView: View {
                 await syncCategories(userId: userId)
             }
             .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in reload() }
+            .alert("Arsipkan dompet?", isPresented: Binding(get: { archiving != nil }, set: { if !$0 { archiving = nil } }),
+                   presenting: archiving) { account in
+                Button("Batal", role: .cancel) {}
+                Button("Arsipkan") { archive(account) }
+            } message: { account in
+                Text("\(account.name) akan diarsipkan dan tidak bisa dipakai untuk transaksi baru. Kamu bisa mengaktifkannya lagi dari Diarsipkan.")
+            }
             .sheet(item: $subscriptionForm) { form in
                 AddSubscriptionView(categories: categories, account: form.account, existing: form.existing) {
                     subscriptionForm = nil
@@ -588,7 +596,8 @@ struct AccountListView: View {
                         account: account,
                         showsStripAmount: !shown && showsStrip(account),
                         isBalanceVisible: isBalanceVisible,
-                        showsUsage: !shown,
+                        // An open card keeps its usage bar; the pile doesn't need it.
+                        showsUsage: !shown || account.id == selectedID,
                         isMain: account.id == mainWalletID
                     )
                     .frame(height: cardHeight)
@@ -624,6 +633,7 @@ struct AccountListView: View {
                 }
                 detailAction("Riwayat", icon: "clock.arrow.circlepath") { path.append(WalletHistoryRoute(account: account)) }
                 detailAction("Ubah", icon: "pencil") { path.append(account) }
+                detailAction("Arsipkan", icon: "archivebox") { archiving = account }
             }
 
             defaultRow(account)
@@ -771,11 +781,12 @@ struct AccountListView: View {
                     Text(isDefault ? "Dompet utama" : "Jadikan utama")
                         .font(.app(15, weight: .semibold))
                         .foregroundStyle(Color.appText)
-                    Text("Terpilih otomatis saat mencatat")
+                    Text("Dipilih otomatis saat catat transaksi")
                         .font(.app(12))
                         .foregroundStyle(Color.appTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .lineLimit(1)
+                .lineLimit(2)
                 Spacer(minLength: 8)
                 if isDefault {
                     Image(systemName: "checkmark.circle.fill")
@@ -807,6 +818,15 @@ struct AccountListView: View {
     /// The main wallet, switched at once while a change is saving.
     private var mainWalletID: String? {
         pendingDefaultID ?? viewModel.accounts.first(where: \.isDefault)?.id
+    }
+
+    /// Closes the detail first so the card settles back, then it leaves the list.
+    private func archive(_ account: Account) {
+        closeDetail()
+        Task {
+            try? await Task.sleep(for: .milliseconds(600))
+            _ = await viewModel.toggleAccountArchive(id: account.id)
+        }
     }
 
     private func makeDefault(_ account: Account) {

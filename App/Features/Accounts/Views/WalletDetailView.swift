@@ -123,7 +123,7 @@ struct WalletDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                WalletCard(account: previewAccount, showsStripAmount: false, isBalanceVisible: isBalanceVisible)
+                WalletCard(account: previewAccount, showsStripAmount: false, isBalanceVisible: isBalanceVisible, showsUsage: false)
                     .frame(height: 216)
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
