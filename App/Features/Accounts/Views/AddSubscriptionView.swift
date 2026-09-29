@@ -33,269 +33,205 @@ struct AddSubscriptionView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: Spacing.lg) {
-                        amountSection
-                        formCard
-                    }
-                    .padding(Spacing.lg)
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .gesture(showKeyboard ? TapGesture().onEnded { showKeyboard = false } : nil)
+        VStack(spacing: 0) {
+            topBar
 
-                if showKeyboard {
-                    AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
-                        showKeyboard = false
-                    }
-                    .padding(.top, 20)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    amountSection
+                    formRows
+                        .padding(.top, 12)
                 }
+                .padding(.bottom, 24)
             }
-            .animation(.easeInOut(duration: 0.25), value: showKeyboard)
-            .background(Color.appGroupedBackground)
-            .navigationTitle(existing != nil ? "Edit Tagihan" : "Tambah Tagihan")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { dismiss() }
+            .scrollDismissesKeyboard(.interactively)
+            .gesture(showKeyboard ? TapGesture().onEnded { showKeyboard = false } : nil)
+
+            if showKeyboard {
+                AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
+                    showKeyboard = false
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    if isSaving {
-                        ProgressView()
-                            .tint(.appPrimary)
-                    } else {
-                        Button("Simpan") { save() }
-                            .font(.app(15, weight: .bold))
-                            .foregroundColor(canSave ? .appPrimary : .appTextSecondary.opacity(0.4))
-                            .disabled(!canSave)
-                    }
-                }
+                .padding(.top, 20)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .alert("Perhatian", isPresented: $showValidationAlert) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(validationMessage) }
-            .onAppear {
-                selectedCategory = existing.flatMap { e in expenseCategories.first { $0.id == e.categoryId } }
-                if let existing {
-                    nameText = existing.name
-                    amountDigits = String(Int(existing.amount))
-                    selectedFrequency = existing.frequency
-                    selectedDate = existing.nextBillingDateAsDate ?? Date()
-                    noteText = existing.note ?? ""
-                    if !amountDigits.isEmpty { showKeyboard = false }
-                } else {
-                    showKeyboard = true
-                }
-            }
-            .sheet(isPresented: $showCategoryPicker) { categoryPickerContent }
-            .sheet(isPresented: $showDatePicker) { datePickerContent }
         }
+        .animation(.easeInOut(duration: 0.25), value: showKeyboard)
+        .background(Color.appBackground)
+        .presentationBackground(Color.appBackground)
+        .alert("Perhatian", isPresented: $showValidationAlert) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(validationMessage) }
+        .onAppear {
+            selectedCategory = existing.flatMap { e in expenseCategories.first { $0.id == e.categoryId } }
+            if let existing {
+                nameText = existing.name
+                amountDigits = String(Int(existing.amount))
+                selectedFrequency = existing.frequency
+                selectedDate = existing.nextBillingDateAsDate ?? Date()
+                noteText = existing.note ?? ""
+                if !amountDigits.isEmpty { showKeyboard = false }
+            } else {
+                showKeyboard = true
+            }
+        }
+        .sheet(isPresented: $showCategoryPicker) { categoryPickerContent }
+        .sheet(isPresented: $showDatePicker) { datePickerContent }
+    }
+
+    private var topBar: some View {
+        HStack {
+            Button("Batal") { dismiss() }
+                .font(.app(17))
+                .foregroundStyle(Color.appTextSecondary)
+            Spacer()
+            if isSaving {
+                ProgressView()
+                    .tint(.appPrimary)
+            } else {
+                Button("Simpan") { save() }
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(canSave ? Color.appPrimary : Color.appTextTertiary)
+                    .disabled(!canSave)
+            }
+        }
+        .overlay {
+            Text(existing != nil ? "Edit tagihan" : "Tambah tagihan")
+                .font(.app(17, weight: .semibold))
+                .foregroundStyle(Color.appText)
+        }
+        .frame(height: 48)
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
     }
 
     // MARK: Amount
 
     private var amountSection: some View {
-        HStack(spacing: 4) {
-            Text("Rp")
-                .font(.app(34, weight: .bold))
-                .foregroundColor(.appText)
-            Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
-                .font(.app(34, weight: .bold))
-                .foregroundColor(.appText)
+        HStack(alignment: .center) {
+            HeroAmount(value: Double(amountDigits) ?? 0, size: .medium)
+                .opacity(amountDigits.isEmpty ? 0.55 : 1)
             Spacer()
             if !amountDigits.isEmpty {
                 Button {
                     amountDigits = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.app(20))
-                        .foregroundColor(.appTextSecondary.opacity(0.4))
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.appTextTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Hapus nominal")
             }
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.sm)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { showKeyboard = true }
     }
 
-    // MARK: Form Card
+    // MARK: Rows
 
-    private var formCard: some View {
+    private var formRows: some View {
         VStack(spacing: 0) {
-            inputRow(icon: "pencil", iconColor: .appTextSecondary, label: "Nama Tagihan") {
-                TextField("Contoh: Netflix", text: $nameText)
-                    .font(.app(15)).foregroundColor(.appText)
-            } accessory: {
-                if !nameText.isEmpty { clearBtn { nameText = "" } }
+            fieldRow("Nama", placeholder: "Contoh: Netflix", text: $nameText)
+
+            Button { showCategoryPicker = true } label: {
+                DetailRow(label: "Kategori", value: selectedCategory?.name ?? "Pilih",
+                          icon: selectedCategory?.icon ?? "tag", showsChevron: true)
             }
-
-            rowDivider
-
-            tappableRow(icon: selectedCategory?.icon ?? "tag.fill", iconColor: .appExpense, label: "Kategori", value: selectedCategory?.name ?? "Pilih", isSelected: selectedCategory != nil)
-                .onTapGesture { showCategoryPicker = true }
-
-            rowDivider
+            .buttonStyle(RowPressStyle())
 
             frequencyRow
 
-            rowDivider
+            Button { showDatePicker = true } label: {
+                DetailRow(label: "Tagihan", value: formattedDate(selectedDate), icon: "calendar", showsChevron: true)
+            }
+            .buttonStyle(RowPressStyle())
 
-            tappableRow(icon: "calendar", iconColor: .appPrimary, label: "Tagihan Berikutnya", value: formattedDate(selectedDate), isSelected: true)
-                .onTapGesture { showDatePicker = true }
+            fieldRow("Catatan", placeholder: "Opsional", text: $noteText)
+        }
+    }
 
-            rowDivider
-
-            inputRow(icon: "doc.text", iconColor: .appTextSecondary, label: "Catatan") {
-                TextField("Opsional", text: $noteText)
-                    .font(.app(15)).foregroundColor(.appText)
-            } accessory: {
-                if !noteText.isEmpty { clearBtn { noteText = "" } }
+    private func fieldRow(_ label: String, placeholder: String, text: Binding<String>) -> some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 76, alignment: .leading)
+            TextField(placeholder, text: text)
+                .font(.app(16, weight: .medium))
+                .foregroundStyle(Color.appText)
+                .submitLabel(.done)
+            if !text.wrappedValue.isEmpty {
+                Button { text.wrappedValue = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.appTextTertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Hapus \(label.lowercased())")
             }
         }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .frame(height: 52)
+        .padding(.leading, 24)
+        .padding(.trailing, 20)
+        .rowSeparator()
     }
 
     private var frequencyRow: some View {
-        HStack(spacing: Spacing.md) {
-            iconCircle("repeat", .appPrimary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Frekuensi").font(.app(10)).foregroundColor(.appTextSecondary)
-                Picker("Frekuensi", selection: $selectedFrequency) {
-                    Text("Bulanan").tag(CardSubscription.Frequency.monthly)
-                    Text("Tahunan").tag(CardSubscription.Frequency.yearly)
-                }
-                .pickerStyle(.segmented)
-                .frame(maxWidth: 220)
-                .tint(.appPrimary)
+        HStack(spacing: 12) {
+            Text("Frekuensi")
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 76, alignment: .leading)
+            HStack(spacing: 8) {
+                frequencyChip("Bulanan", .monthly)
+                frequencyChip("Tahunan", .yearly)
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, 14)
+        .frame(height: 52)
+        .padding(.leading, 24)
+        .padding(.trailing, 20)
+        .rowSeparator()
     }
 
-    // MARK: Rows
-
-    private func inputRow<Content: View, Accessory: View>(
-        icon: String, iconColor: Color, label: String,
-        @ViewBuilder content: () -> Content,
-        @ViewBuilder accessory: () -> Accessory
-    ) -> some View {
-        HStack(spacing: Spacing.md) {
-            iconCircle(icon, iconColor)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.app(10)).foregroundColor(.appTextSecondary)
-                content()
-            }
-            Spacer(minLength: 8)
-            accessory()
+    private func frequencyChip(_ title: String, _ frequency: CardSubscription.Frequency) -> some View {
+        let isOn = selectedFrequency == frequency
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) { selectedFrequency = frequency }
+        } label: {
+            Text(title)
+                .font(.app(14, weight: .medium))
+                .foregroundStyle(isOn ? Color.appBackground : Color.appText)
+                .padding(.horizontal, 14)
+                .frame(height: 32)
+                .background(isOn ? Color.appText : Color.appFill, in: Capsule())
         }
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, 14)
-    }
-
-    private func tappableRow(icon: String, iconColor: Color, label: String, value: String, isSelected: Bool = false) -> some View {
-        HStack(spacing: Spacing.md) {
-            iconCircle(icon, isSelected ? iconColor : .appTextSecondary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.app(10)).foregroundColor(.appTextSecondary)
-                Text(value).font(.app(15)).foregroundColor(isSelected ? .appText : .appTextSecondary.opacity(0.6))
-            }
-            Spacer(minLength: 8)
-            Image(systemName: "chevron.right").font(.app(10)).foregroundColor(.appTextSecondary.opacity(0.4))
-        }
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, 14)
-        .contentShape(Rectangle())
-    }
-
-    private func iconCircle(_ icon: String, _ color: Color) -> some View {
-        ZStack {
-            Circle().fill(color.opacity(0.12)).frame(width: 34, height: 34)
-            Image(systemName: icon).font(.app(14, weight: .semibold)).foregroundColor(color)
-        }
-    }
-
-    private var rowDivider: some View {
-        Divider().padding(.leading, 60)
-    }
-
-    private func clearBtn(action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: "xmark.circle.fill")
-                .font(.app(16))
-                .foregroundColor(.appTextSecondary.opacity(0.4))
-        }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScaleStyle())
+        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     // MARK: Pickers
 
     private var categoryPickerContent: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: Spacing.sm), GridItem(.flexible(), spacing: Spacing.sm)], spacing: Spacing.sm) {
-                    ForEach(expenseCategories) { cat in
-                        chipBtn(icon: cat.icon ?? "tag", label: cat.name, color: .appExpense, isSelected: selectedCategory?.id == cat.id) {
-                            selectedCategory = cat; showCategoryPicker = false
-                        }
-                    }
-                }
-                .padding(Spacing.lg)
-            }
-            .background(Color.appGroupedBackground)
-            .navigationTitle("Pilih Kategori")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Tutup") { showCategoryPicker = false } }
+        PickerSheet(title: "Pilih kategori", onDone: { showCategoryPicker = false }) {
+            CategoryPickerGrid(categories: expenseCategories, selectedId: selectedCategory?.id, color: .appError) { cat in
+                selectedCategory = cat; showCategoryPicker = false
             }
         }
-        .presentationDetents([.medium])
-    }
-
-    private func chipBtn(icon: String, label: String, color: Color, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: Spacing.sm) {
-                Image(systemName: icon).font(.app(15)).foregroundColor(isSelected ? color : color.opacity(0.7))
-                Text(label).font(.app(14)).fontWeight(isSelected ? .semibold : .regular).lineLimit(1)
-                Spacer(minLength: 0)
-                if isSelected { Image(systemName: "checkmark").font(.app(11, weight: .bold)).foregroundColor(color) }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, 14)
-            .background(isSelected ? color.opacity(0.1) : Color.appCardBackground)
-            .foregroundColor(isSelected ? color : .appText)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .buttonStyle(.plain)
     }
 
     private var datePickerContent: some View {
-        NavigationStack {
-            VStack(spacing: Spacing.lg) {
-                DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .tint(.appPrimary)
-                    .labelsHidden()
-                    .onChange(of: selectedDate) { _, _ in showDatePicker = false }
-                Spacer()
-            }
-            .padding(Spacing.lg)
-            .background(Color.appGroupedBackground)
-            .navigationTitle("Pilih Tanggal")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Batal") { showDatePicker = false } }
-            }
+        PickerSheet(title: "Tagihan berikutnya", onDone: { showDatePicker = false }) {
+            DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .tint(.appPrimary)
+                .labelsHidden()
+                .onChange(of: selectedDate) { _, _ in showDatePicker = false }
+                .padding(.horizontal, 16)
         }
-        .presentationDetents([.medium])
     }
 
     // MARK: Helpers

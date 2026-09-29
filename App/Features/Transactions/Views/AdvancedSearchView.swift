@@ -15,87 +15,72 @@ struct AdvancedSearchView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            topBar
             ScrollView {
-                VStack(spacing: Spacing.xl) {
+                VStack(alignment: .leading, spacing: 0) {
                     typeSection
-                    Divider()
+                    SectionDivider()
                     expenseCategorySection
-                    Divider()
+                    SectionDivider()
                     incomeCategorySection
-                    Divider()
+                    SectionDivider()
                     dateRangeSection
                 }
-                .padding()
-            }
-            .background(Color.appGroupedBackground)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { dismiss() }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        filter.reset()
-                        dismiss()
-                    } label: {
-                        HStack(spacing: Spacing.xs) {
-                            Image(systemName: "arrow.counterclockwise")
-                                .font(.app(11))
-                            Text("Reset")
-                                .font(.app(13))
-                        }
-                    }
-                    .foregroundColor(.appExpense)
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                bottomBar
+                .padding(.bottom, 24)
             }
         }
+        .background(Color.appBackground)
+        .safeAreaInset(edge: .bottom) {
+            bottomBar
+        }
+    }
+
+    // MARK: Top bar
+
+    private var topBar: some View {
+        ZStack {
+            Text("Filter")
+                .font(.app(17, weight: .semibold))
+                .foregroundStyle(Color.appText)
+            HStack {
+                Button("Batal") { dismiss() }
+                    .font(.app(16))
+                    .foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                Button("Reset") {
+                    filter.reset()
+                    dismiss()
+                }
+                .font(.app(16))
+                .foregroundStyle(Color.appError)
+            }
+        }
+        .padding(.horizontal, 20)
+        .frame(height: 56)
     }
 
     // MARK: Transaction Type
 
     private var typeSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            sectionHeader("Kategori Transaksi", icon: "arrow.left.arrow.right")
-
-            HStack(spacing: 0) {
-                typeSegment(title: "Pemasukan", isSelected: draft.transactionTypes.contains(.income)) {
-                    toggleDraftType(.income)
-                }
-                typeSegmentDivider
-                typeSegment(title: "Pengeluaran", isSelected: draft.transactionTypes.contains(.expense)) {
-                    toggleDraftType(.expense)
-                }
-                typeSegmentDivider
-                typeSegment(title: "Transfer", isSelected: draft.transactionTypes.contains(.transfer)) {
-                    toggleDraftType(.transfer)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Jenis transaksi")
+            HStack(spacing: 8) {
+                typeChip("Pemasukan", .income)
+                typeChip("Pengeluaran", .expense)
+                typeChip("Transfer", .transfer)
             }
-            .frame(maxWidth: .infinity)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .padding(.top, 14)
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+        .padding(.bottom, 28)
     }
 
-    private func typeSegment(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.app(13, weight: isSelected ? .semibold : .regular))
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(isSelected ? Color.appPrimary : Color.clear)
-                .foregroundColor(isSelected ? .white : .appText)
+    private func typeChip(_ title: String, _ type: Transaction.TransactionType) -> some View {
+        FilterChip(title: title, isSelected: draft.transactionTypes.contains(type)) {
+            toggleDraftType(type)
         }
-        .buttonStyle(.plain)
-    }
-
-    private var typeSegmentDivider: some View {
-        Rectangle()
-            .fill(Color(.separator))
-            .frame(width: 1, height: 20)
     }
 
     private func toggleDraftType(_ type: Transaction.TransactionType) {
@@ -113,69 +98,48 @@ struct AdvancedSearchView: View {
     // MARK: Expense Categories
 
     private var expenseCategorySection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            sectionHeader("Kategori Pengeluaran", icon: "arrow.up")
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(
+                title: "Kategori pengeluaran",
+                trailing: expenseCategories.count > 8 ? (showAllExpense ? "Ringkas" : "Lihat semua") : nil,
+                trailingColor: .appPrimary,
+                action: { withAnimation(.snappy) { showAllExpense.toggle() } }
+            )
 
-            let items = showAllExpense
-                ? expenseCategories
-                : Array(expenseCategories.prefix(4))
-
-            LazyVGrid(
-                columns: Array(repeating: .init(.flexible(), spacing: Spacing.sm), count: 2),
-                spacing: Spacing.sm
-            ) {
-                ForEach(items) { category in
-                    categoryChip(
-                        category: category,
-                        isSelected: draft.expenseCategoryIds.contains(category.id)
-                    ) {
-                        if draft.expenseCategoryIds.contains(category.id) {
-                            draft.expenseCategoryIds.remove(category.id)
-                        } else {
-                            draft.expenseCategoryIds.insert(category.id)
+            let items = showAllExpense ? expenseCategories : Array(expenseCategories.prefix(8))
+            if items.isEmpty {
+                emptyText("Tidak ada kategori pengeluaran")
+            } else {
+                ChipFlow {
+                    ForEach(items) { category in
+                        categoryChip(category: category, isSelected: draft.expenseCategoryIds.contains(category.id)) {
+                            if draft.expenseCategoryIds.contains(category.id) {
+                                draft.expenseCategoryIds.remove(category.id)
+                            } else {
+                                draft.expenseCategoryIds.insert(category.id)
+                            }
                         }
                     }
                 }
-            }
-
-            if expenseCategories.count > 4 {
-                Button {
-                    withAnimation { showAllExpense.toggle() }
-                } label: {
-                    HStack(spacing: Spacing.xs) {
-                        Text(showAllExpense ? "Ringkas" : "Lihat Semua (\(expenseCategories.count))")
-                            .font(.app(13, weight: .medium))
-                        Image(systemName: "chevron.down")
-                            .font(.app(10))
-                            .rotationEffect(.degrees(showAllExpense ? 180 : 0))
-                    }
-                    .foregroundColor(.appPrimary)
-                }
+                .padding(.top, 14)
             }
         }
+        .sectionPadding()
     }
 
     // MARK: Income Categories
 
     private var incomeCategorySection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            sectionHeader("Kategori Pemasukan", icon: "arrow.down")
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Kategori pemasukan")
 
             let incomeCategories = categories.filter { $0.type == .income }
             if incomeCategories.isEmpty {
-                Text("Tidak ada kategori pemasukan")
-                    .font(.app(13))
-                    .foregroundColor(.appTextSecondary)
+                emptyText("Tidak ada kategori pemasukan")
             } else {
-                LazyVGrid(
-                    columns: Array(repeating: .init(.flexible(), spacing: Spacing.sm), count: 2),
-                    spacing: Spacing.sm
-                ) {
+                ChipFlow {
                     ForEach(incomeCategories) { category in
-                        categoryChip(
-                            category: category,
-                            isSelected: draft.incomeCategoryIds.contains(category.id)
-                        ) {
+                        categoryChip(category: category, isSelected: draft.incomeCategoryIds.contains(category.id)) {
                             if draft.incomeCategoryIds.contains(category.id) {
                                 draft.incomeCategoryIds.remove(category.id)
                             } else {
@@ -184,8 +148,10 @@ struct AdvancedSearchView: View {
                         }
                     }
                 }
+                .padding(.top, 14)
             }
         }
+        .sectionPadding()
     }
 
     // MARK: Date Range
@@ -202,11 +168,12 @@ struct AdvancedSearchView: View {
     }
 
     private var dateRangeSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            sectionHeader("Range Tanggal", icon: "calendar")
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Rentang tanggal")
+                .padding(.horizontal, 24)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.sm) {
+                HStack(spacing: 8) {
                     datePresetChip(preset: .today, isSelected: selectedDatePreset == .today) {
                         selectedDatePreset = .today
                         let today = Date()
@@ -230,89 +197,32 @@ struct AdvancedSearchView: View {
                         draft.dateFrom = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: now))
                     }
                 }
+                .padding(.horizontal, 24)
             }
+            .padding(.top, 14)
+            .padding(.bottom, 8)
 
-            HStack(spacing: 0) {
-                Button {
-                    selectedDatePreset = nil
-                    showStartPicker = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "calendar")
-                            .font(.app(12))
-                            .foregroundColor(.appPrimary)
-                        Group {
-                            if let date = draft.dateFrom {
-                                Text(date.formatted(date: .numeric, time: .omitted))
-                            } else {
-                                Text("Pilih tanggal")
-                            }
-                        }
-                        .font(.app(14, weight: .medium))
-                        if draft.dateFrom != nil {
-                            Button {
-                                selectedDatePreset = nil
-                                draft.dateFrom = nil
-                                draft.dateTo = nil
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.app(12))
-                                    .foregroundColor(.appTextSecondary)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .foregroundColor(draft.dateFrom != nil ? .appText : .appTextSecondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                }
-                .buttonStyle(.plain)
+            dateRow(label: "Dari", date: draft.dateFrom, onTap: {
+                selectedDatePreset = nil
+                showStartPicker = true
+            }, onClear: {
+                selectedDatePreset = nil
+                draft.dateFrom = nil
+                draft.dateTo = nil
+            })
 
-                Rectangle()
-                    .fill(Color(.separator))
-                    .frame(width: 1, height: 24)
-
-                Button {
-                    selectedDatePreset = nil
-                    guard draft.dateFrom != nil else { return }
-                    showEndPicker = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "calendar")
-                            .font(.app(12))
-                            .foregroundColor(.appPrimary)
-                        Group {
-                            if let date = draft.dateTo {
-                                Text(date.formatted(date: .numeric, time: .omitted))
-                            } else {
-                                Text("Pilih tanggal")
-                            }
-                        }
-                        .font(.app(14, weight: .medium))
-                        if draft.dateTo != nil {
-                            Button {
-                                selectedDatePreset = nil
-                                draft.dateTo = nil
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.app(12))
-                                    .foregroundColor(.appTextSecondary)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .foregroundColor(draft.dateTo != nil ? .appText : .appTextSecondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                }
-                .buttonStyle(.plain)
-                .disabled(draft.dateFrom == nil)
-                .opacity(draft.dateFrom == nil ? 0.4 : 1)
-            }
-            .padding(.horizontal, Spacing.md)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            dateRow(label: "Sampai", date: draft.dateTo, onTap: {
+                selectedDatePreset = nil
+                guard draft.dateFrom != nil else { return }
+                showEndPicker = true
+            }, onClear: {
+                selectedDatePreset = nil
+                draft.dateTo = nil
+            })
+            .disabled(draft.dateFrom == nil)
+            .opacity(draft.dateFrom == nil ? 0.4 : 1)
         }
+        .padding(.top, 28)
         .sheet(isPresented: $showStartPicker) {
             datePickerSheet(
                 title: "Dari Tanggal",
@@ -340,6 +250,45 @@ struct AdvancedSearchView: View {
         }
     }
 
+    /// Label left, date right, like the form rows in AddTransactionView; a clear button once set.
+    private func dateRow(label: String, date: Date?, onTap: @escaping () -> Void, onClear: @escaping () -> Void) -> some View {
+        HStack(spacing: 12) {
+            Button(action: onTap) {
+                HStack(spacing: 12) {
+                    Text(label)
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .frame(width: 76, alignment: .leading)
+                    Text(date?.formatted(date: .abbreviated, time: .omitted) ?? "Pilih tanggal")
+                        .font(.app(16, weight: date == nil ? .regular : .medium))
+                        .foregroundStyle(date == nil ? Color.appTextTertiary : Color.appText)
+                        .monospacedDigit()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if date == nil {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.appTextTertiary)
+                    }
+                }
+                .frame(height: 52)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+            if date != nil {
+                Button(action: onClear) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Color.appTextTertiary)
+                        .frame(width: 32, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Hapus tanggal \(label.lowercased())")
+            }
+        }
+        .padding(.horizontal, 24)
+        .rowSeparator()
+    }
+
     private func datePresetChip(preset: DatePreset, isSelected: Bool, action: @escaping () -> Void) -> some View {
         FilterChip(title: preset.rawValue, isSelected: isSelected, action: action)
     }
@@ -349,6 +298,7 @@ struct AdvancedSearchView: View {
             DatePicker(title, selection: date, in: minimumDate.map { $0... } ?? Date.distantPast..., displayedComponents: .date)
                 .datePickerStyle(.graphical)
                 .tint(.appPrimary)
+                .padding(.horizontal, 16)
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -360,6 +310,8 @@ struct AdvancedSearchView: View {
                                 showEndPicker = false
                             }
                         }
+                        .font(.app(16, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
                     }
                 }
         }
@@ -368,57 +320,83 @@ struct AdvancedSearchView: View {
 
     // MARK: Shared Components
 
-    private func sectionHeader(_ title: String, icon: String) -> some View {
-        HStack(spacing: Spacing.sm) {
-            Image(systemName: icon)
-                .font(.app(13))
-                .foregroundColor(.appPrimary)
-            Text(title)
-                .font(.app(15, weight: .semibold))
-        }
+    private func emptyText(_ text: String) -> some View {
+        Text(text)
+            .font(.app(15))
+            .foregroundStyle(Color.appTextSecondary)
+            .padding(.top, 12)
     }
 
+    /// FilterChip look with the category icon in front.
     private func categoryChip(category: Category, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: Spacing.sm) {
+            HStack(spacing: 6) {
                 Image(systemName: category.icon ?? "tag")
-                    .font(.app(14))
-
+                    .font(.system(size: 13))
                 Text(category.name)
-                    .font(.app(13))
-                    .fontWeight(isSelected ? .semibold : .regular)
+                    .font(.app(14, weight: isSelected ? .medium : .regular))
                     .lineLimit(1)
-
-                Spacer(minLength: 0)
-
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.app(10, weight: .bold))
-                        .foregroundColor(Color.appPrimary)
-                }
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, 12)
-            .background(isSelected ? Color.appPrimary.opacity(0.12) : Color(.systemGray6))
-            .foregroundColor(isSelected ? Color.appPrimary : .appText)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 14)
+            .frame(height: 34)
+            .foregroundStyle(isSelected ? Color.appBackground : Color.appText)
+            .background(isSelected ? Color.appText : Color.clear, in: Capsule())
+            .overlay(Capsule().strokeBorder(isSelected ? Color.clear : Color.appBorder))
+            .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScaleStyle())
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private var bottomBar: some View {
-        Button("Terapkan Filter") {
+        EmptyStateButton(title: "Terapkan Filter", icon: nil, isFullWidth: true) {
             filter = draft
             dismiss()
         }
-        .font(.app(15, weight: .semibold))
-        .foregroundColor(.white)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .background(Color.appPrimary)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .padding(.horizontal)
-        .padding(.vertical, Spacing.sm)
-        .background(Color.appCardBackground)
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background(Color.appBackground)
+    }
+}
+
+private extension View {
+    func sectionPadding() -> some View {
+        padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 28)
+    }
+}
+
+/// Wraps chips onto as many lines as needed.
+private struct ChipFlow: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(width: proposal.width ?? .infinity, subviews: subviews)
+        return CGSize(width: proposal.width ?? rows.width, height: rows.height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let rows = arrange(width: bounds.width, subviews: subviews)
+        for (index, point) in rows.origins.enumerated() {
+            subviews[index].place(at: CGPoint(x: bounds.minX + point.x, y: bounds.minY + point.y), proposal: .unspecified)
+        }
+    }
+
+    private func arrange(width: CGFloat, subviews: Subviews) -> (origins: [CGPoint], width: CGFloat, height: CGFloat) {
+        var origins: [CGPoint] = []
+        var x: CGFloat = 0, y: CGFloat = 0, lineHeight: CGFloat = 0, maxX: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > width {
+                x = 0
+                y += lineHeight + spacing
+                lineHeight = 0
+            }
+            origins.append(CGPoint(x: x, y: y))
+            x += size.width + spacing
+            lineHeight = max(lineHeight, size.height)
+            maxX = max(maxX, x - spacing)
+        }
+        return (origins, maxX, y + lineHeight)
     }
 }

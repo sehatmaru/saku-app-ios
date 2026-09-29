@@ -110,7 +110,7 @@ struct BudgetListView: View {
                         }
                         return result
                     }
-                    .presentationDetents([.fraction(0.68), .large])
+                    .presentationDetents([.height(560), .large])
                 }
                 .toast(isPresented: $showBudgetSavedToast, message: budgetSavedToastMessage)
                 .onAppear { isBalanceVisible = isBalanceVisibleStorage }
@@ -383,7 +383,6 @@ struct BudgetCardView: View {
 
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var showSetBudget = false
-    @State private var showAmountKeyboard = false
     @State private var amountDigits = ""
     @State private var isSaving = false
     @State private var showBudgetToast = false
@@ -399,8 +398,10 @@ struct BudgetCardView: View {
         }
         .sheet(isPresented: $showSetBudget) {
             setBudgetSheet
-                .presentationDetents([.medium])
-                .presentationBackground(Color.appCardBackground)
+                .presentationDetents([.height(500)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(28)
+                .presentationBackground(Color.appBackground)
         }
     }
 
@@ -413,6 +414,7 @@ struct BudgetCardView: View {
             Text(category.name)
                 .font(.app(16))
                 .foregroundStyle(Color.appTextSecondary)
+                .lineLimit(1)
             Spacer()
             Button("Atur") { showSetBudget = true }
                 .font(.app(15, weight: .medium))
@@ -422,101 +424,78 @@ struct BudgetCardView: View {
         .padding(.vertical, 11)
     }
 
+    private var amountValue: Int { Int(amountDigits) ?? 0 }
+
     private var setBudgetSheet: some View {
-        NavigationStack {
-            VStack(spacing: Spacing.xl) {
-                VStack(spacing: Spacing.sm) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.appPrimary.opacity(0.12))
-                            .frame(width: 64, height: 64)
-                        Image(systemName: category.icon ?? "tag")
-                            .font(.app(26, weight: .medium))
-                            .foregroundColor(.appPrimary)
-                    }
-
-                    Text(category.name)
-                        .font(.app(17, weight: .semibold))
-                        .foregroundColor(.appText)
-                }
-                .padding(.top, Spacing.xl)
-
-                HStack {
-                    Text("Rp")
-                        .font(.app(17, weight: .medium))
-                        .foregroundColor(.appTextSecondary)
-                    Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
-                        .font(.app(17, weight: .medium))
-                        .foregroundColor(.appText)
-                }
-                .padding()
-                .background(Color.appGroupedBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .padding(.horizontal, Spacing.xl)
-                .contentShape(Rectangle())
-                .onTapGesture { showAmountKeyboard = true }
-
+        VStack(spacing: 0) {
+            HStack {
+                Button("Batal") { showSetBudget = false }
+                    .font(.app(17))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .frame(width: 60, alignment: .leading)
                 Spacer()
-
-                if isSaving {
-                    ProgressView()
-                        .tint(.appPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, Spacing.xl)
-                        .padding(.bottom, Spacing.xl)
-                } else {
-                    Button("Simpan") {
-                        save()
-                    }
-                    .frame(maxWidth: .infinity)
+                Text("Atur budget")
                     .font(.app(17, weight: .semibold))
-                    .foregroundColor(.appPrimary)
-                    .disabled(amountDigits.isEmpty)
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.bottom, Spacing.xl)
-                }
+                    .foregroundStyle(Color.appText)
+                Spacer()
+                Color.clear.frame(width: 60, height: 1)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if showAmountKeyboard {
-                    AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
-                        showAmountKeyboard = false
-                    }
-                    .padding(.top, 8)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
+            .frame(height: 48)
+            .padding(.horizontal, 24)
+            .padding(.top, 14)
+
+            HStack(spacing: 8) {
+                Image(systemName: category.icon ?? "tag")
+                    .font(.system(size: 17))
+                    .foregroundStyle(Color.appTextSecondary)
+                Text(category.name)
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                Text("· per bulan")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextTertiary)
             }
-            .onTapGesture { if showAmountKeyboard { showAmountKeyboard = false } }
-            .animation(.easeInOut(duration: 0.25), value: showAmountKeyboard)
-            .toast(isPresented: $showBudgetToast, message: budgetToastMessage)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") {
-                        showSetBudget = false
-                    }
-                }
-            }
+            .padding(.top, 16)
+
+            HeroAmount(value: Double(amountValue), size: .large,
+                       color: amountValue > 0 ? .appText : .appTextTertiary)
+                .padding(.top, 8)
+                .padding(.horizontal, 24)
+                .accessibilityLabel("Nominal Rp\(amountValue)")
+
+            Spacer(minLength: 16)
+
+            AmountPad(color: .appPrimary, isEnabled: amountValue > 0, isSaving: isSaving, onPress: { key in
+                guard let next = NumberPad.apply(key, to: amountValue) else { return }
+                withAnimation(.snappy(duration: 0.2)) { amountDigits = next > 0 ? String(next) : "" }
+            }, onSave: save)
+            .disabled(isSaving)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
         }
+        .background(Color.appBackground)
+        .toast(isPresented: $showBudgetToast, message: budgetToastMessage)
     }
 
     private func setCard(_ budget: Budget) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 14) {
-                Image(systemName: category.icon ?? "tag")
-                    .font(.system(size: 19))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .frame(width: 24)
-                Text(category.name)
-                    .font(.app(16, weight: .medium))
-                    .foregroundStyle(Color.appText)
-                    .lineLimit(1)
-                Spacer(minLength: 8)
-                Text(statusText(budget))
-                    .font(.app(14))
-                    .foregroundStyle(statusColor(budget))
-                    .monospacedDigit()
-            }
-
-            Group {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: category.icon ?? "tag")
+                .font(.system(size: 19))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(category.name)
+                        .font(.app(16))
+                        .foregroundStyle(Color.appText)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    Text(statusText(budget))
+                        .font(.app(15))
+                        .foregroundStyle(statusColor(budget))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                }
                 SegmentBar(value: budget.progress, color: progressColor(budget), delay: fillDelay)
                 Text(isBalanceVisible
                      ? "\(budget.spent.formattedAsCurrency()) dari \(budget.amount.formattedAsCurrency())"
@@ -525,7 +504,6 @@ struct BudgetCardView: View {
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
             }
-            .padding(.leading, 38)
         }
         .padding(.vertical, 13)
         .contentShape(Rectangle())
@@ -597,6 +575,29 @@ struct OverallHistoryItem: Identifiable {
         let r = remainingPct(totalBudget)
         return r <= 0 ? .appError : r <= 20 ? .appWarning : .appPrimary
     }
+
+    /// Spent share of the budget for the bar, 0 when there is no budget.
+    func progress(_ totalBudget: Double) -> Double {
+        totalBudget > 0 ? spent / totalBudget : 0
+    }
+}
+
+/// Thin 6pt rounded progress bar for history rows.
+private struct ThinBar: View {
+    let value: Double
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 3).fill(Color.appDivider)
+                RoundedRectangle(cornerRadius: 3).fill(color)
+                    .frame(width: geo.size.width * min(max(value, 0), 1))
+            }
+        }
+        .frame(height: 6)
+        .accessibilityHidden(true)
+    }
 }
 
 struct OverallBudgetHistoryView: View {
@@ -605,6 +606,7 @@ struct OverallBudgetHistoryView: View {
     let budgetItems: [BudgetListItem]
     let allExpenseTransactions: [Transaction]
 
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var expandedYears: Set<Int> = []
 
     private var groupedByYear: [(year: Int, items: [OverallHistoryItem])] {
@@ -617,129 +619,123 @@ struct OverallBudgetHistoryView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: Spacing.md) {
-                    ForEach(groupedByYear, id: \.year) { group in
-                        VStack(spacing: 0) {
-                            Button {
-                                withAnimation {
-                                    if expandedYears.contains(group.year) {
-                                        expandedYears.remove(group.year)
-                                    } else {
-                                        expandedYears.insert(group.year)
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Image(systemName: "calendar")
-                                        .font(.app(12))
-                                        .foregroundColor(.appTextSecondary)
-                                    Text(String(group.year))
-                                        .font(.app(13, weight: .medium))
-                                        .foregroundColor(.appText)
-                                    Spacer()
-                                    Text("\(group.items.count)")
-                                        .font(.app(12, weight: .semibold))
-                                        .foregroundColor(.appTextSecondary)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 2)
-                                        .background(Color.appTextSecondary.opacity(0.15))
-                                        .clipShape(Capsule())
-                                    Image(systemName: "chevron.down")
-                                        .font(.app(10))
-                                        .foregroundColor(.appTextSecondary)
-                                        .rotationEffect(.degrees(expandedYears.contains(group.year) ? 180 : 0))
-                                }
-                                .frame(maxWidth: .infinity)
-                                .contentShape(Rectangle())
-                                .padding(.vertical, 12)
-                                .padding(.horizontal, Spacing.lg)
-                            }
-                            .buttonStyle(.plain)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                if monthlyHistory.isEmpty {
+                    EmptyMessage(icon: "clock.arrow.circlepath",
+                                 title: "Belum ada riwayat",
+                                 message: "Riwayat muncul setelah bulan pertama budget kamu selesai.")
+                        .padding(.horizontal, 24)
+                        .padding(.top, 80)
+                }
+                ForEach(Array(groupedByYear.enumerated()), id: \.element.year) { i, group in
+                    if i > 0 { SectionDivider() }
+                    yearSection(group.year, group.items)
+                }
+            }
+            .padding(.bottom, 24)
+        }
+        .background(Color.appBackground)
+        .onAppear {
+            if expandedYears.isEmpty {
+                let currentYear = Calendar.current.component(.year, from: Date())
+                expandedYears = [currentYear]
+            }
+        }
+        .navigationTitle("Riwayat Budget")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+    }
 
-                            if expandedYears.contains(group.year) {
-                                VStack(spacing: 0) {
-                                    ForEach(Array(group.items.enumerated()), id: \.element.id) { index, history in
-                                        NavigationLink(destination: OverallMonthDetailView(totalBudget: totalBudget, month: history.month, budgetItems: budgetItems, allExpenseTransactions: allExpenseTransactions)) {
-                                            historyRow(history)
-                                        }
-                                        .buttonStyle(.plain)
-                                        if index < group.items.count - 1 {
-                                            Divider()
-                                                .padding(.leading, 48)
-                                        }
-                                    }
-                                }
-                                .padding(.top, Spacing.sm)
-                                .padding(.bottom, Spacing.md)
-                                .padding(.horizontal, Spacing.lg)
-                            }
-                        }
-                        .background(Color.appCardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .padding(.horizontal)
+    private func yearSection(_ year: Int, _ items: [OverallHistoryItem]) -> some View {
+        let isExpanded = expandedYears.contains(year)
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation {
+                    if isExpanded {
+                        expandedYears.remove(year)
+                    } else {
+                        expandedYears.insert(year)
                     }
                 }
-                .padding(.top)
-            }
-            .background(Color.appGroupedBackground)
-            .onAppear {
-                if expandedYears.isEmpty {
-                    let currentYear = Calendar.current.component(.year, from: Date())
-                    expandedYears = [currentYear]
+            } label: {
+                HStack(alignment: .firstTextBaseline) {
+                    HStack(spacing: 8) {
+                        Text(String(year))
+                            .font(.app(20, weight: .semibold))
+                            .tracking(-0.2)
+                            .foregroundStyle(Color.appText)
+                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.appTextSecondary)
+                    }
+                    Spacer()
+                    Text("\(items.count) bulan")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
                 }
+                .contentShape(Rectangle())
             }
-            .background(Color.appGroupedBackground)
-            .navigationTitle("Riwayat Budget")
-            .navigationBarTitleDisplayMode(.inline)
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(isExpanded ? .isSelected : [])
+
+            if isExpanded {
+                VStack(spacing: 0) {
+                    ForEach(items) { history in
+                        NavigationLink(destination: OverallMonthDetailView(totalBudget: totalBudget, month: history.month, budgetItems: budgetItems, allExpenseTransactions: allExpenseTransactions)) {
+                            historyRow(history)
+                        }
+                        .buttonStyle(RowPressStyle())
+                    }
+                }
+                .padding(.top, 6)
+            }
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
+        .padding(.bottom, 8)
+    }
+
+    private func money(_ amount: Double) -> String {
+        isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
     }
 
     private func historyRow(_ history: OverallHistoryItem) -> some View {
-        VStack(spacing: Spacing.sm) {
-            HStack(spacing: Spacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(history.statusColor(totalBudget).opacity(0.12))
-                        .frame(width: 32, height: 32)
-                    Image(systemName: history.statusColor(totalBudget) == .appPrimary ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                        .font(.app(11, weight: .semibold))
-                        .foregroundColor(history.statusColor(totalBudget))
-                }
-
-                VStack(alignment: .leading, spacing: 1) {
+        let color = history.statusColor(totalBudget)
+        return HStack(alignment: .top, spacing: 14) {
+            Image(systemName: color == .appPrimary ? "checkmark.circle" : "exclamationmark.circle")
+                .font(.system(size: 19))
+                .foregroundStyle(color)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
                     Text(history.monthLabel)
-                        .font(.app(14, weight: .medium))
-                        .foregroundColor(.appText)
-                    Text("Budget \(totalBudget.formattedAsCurrency())")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
+                        .font(.app(16))
+                        .foregroundStyle(Color.appText)
+                    Spacer(minLength: 8)
+                    Text(money(history.spent))
+                        .font(.app(15))
+                        .foregroundStyle(color == .appPrimary ? Color.appText : color)
+                        .monospacedDigit()
                 }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text(history.spent.formattedAsCurrency())
-                        .font(.app(14, weight: .semibold))
-                        .foregroundColor(history.statusColor(totalBudget))
-                    Text("\(Int(history.remainingPct(totalBudget)))%")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
+                ThinBar(value: history.progress(totalBudget), color: color)
+                HStack {
+                    Text("Budget \(money(totalBudget))")
+                    Spacer()
+                    Text("Sisa \(Int(history.remainingPct(totalBudget)))%")
                 }
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
+                .monospacedDigit()
             }
-
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.appCardBackground)
-                    .frame(height: 6)
-                Capsule()
-                    .fill(history.statusColor(totalBudget))
-                    .frame(width: nil, height: 6)
-                    .scaleEffect(x: min(history.spent / totalBudget, 1), y: 1, anchor: .leading)
-            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.appTextTertiary)
+                .padding(.top, 4)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 14)
+        .rowSeparator()
+        .contentShape(Rectangle())
     }
 }
 
@@ -748,6 +744,8 @@ struct OverallMonthDetailView: View {
     let month: Date
     let budgetItems: [BudgetListItem]
     let allExpenseTransactions: [Transaction]
+
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
 
     private var monthLabel: String {
         let formatter = DateFormatter()
@@ -773,165 +771,72 @@ struct OverallMonthDetailView: View {
     private var progress: Double { totalBudget > 0 ? spent / totalBudget : 0 }
     private var remainingPct: Double { progress >= 1 ? 0 : (1 - progress) * 100 }
     private var progressColor: Color { remainingPct <= 0 ? .appError : remainingPct <= 20 ? .appWarning : .appPrimary }
+    private var setItems: [BudgetListItem] { budgetItems.filter { $0.budget != nil } }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                VStack(spacing: 0) {
-                    HStack(spacing: Spacing.sm) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.appPrimary.opacity(0.12))
-                                .frame(width: 40, height: 40)
-                            Image(systemName: "chart.pie.fill")
-                                .font(.app(17, weight: .medium))
-                                .foregroundColor(.appPrimary)
+            VStack(alignment: .leading, spacing: 0) {
+                summary
+                SectionDivider()
+
+                if !setItems.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        SectionHeader(title: "Per kategori", trailing: "\(setItems.count)")
+                        ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
+                            NavigationLink(destination: BudgetDetailView(budget: item.budget!, category: item.category, allTransactions: [], accounts: [], showHistoryButton: false)) {
+                                BudgetCardView(budget: item.budget, category: item.category, fillDelay: 0.3 + Double(i) * 0.08)
+                            }
+                            .buttonStyle(RowPressStyle())
                         }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(monthLabel)
-                                .font(.app(17, weight: .semibold))
-                                .foregroundColor(.appText)
-                            Text("Budget \(totalBudget.formattedAsCurrency())")
-                                .font(.app(12))
-                                .foregroundColor(.appTextSecondary)
-                        }
-                        Spacer()
-                        let pctText = progress >= 1 ? "0%" : "\(Int((1 - progress) * 100))%"
-                        Text(pctText)
-                            .font(.app(15, weight: .semibold))
-                            .foregroundColor(progressColor)
+                        .padding(.top, 6)
                     }
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.xl)
-
-                    HStack(spacing: 0) {
-                        Text("Rp")
-                            .font(.app(28, weight: .bold))
-                            .foregroundColor(.appText)
-                        Text(remainingPct <= 0 ? "0" : remaining.formattedAsCurrency().replacingOccurrences(of: "Rp", with: ""))
-                            .font(.app(28, weight: .bold))
-                            .foregroundColor(.appText)
-                        Spacer()
-                    }
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.xs)
-
-                    Divider()
-                        .padding(.horizontal, Spacing.xl)
-                        .padding(.top, Spacing.md)
-
-                    HStack(spacing: 0) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Total Budget")
-                                .font(.app(11))
-                                .foregroundColor(.appTextSecondary)
-                            Text(totalBudget.formattedAsCurrency())
-                                .font(.app(14, weight: .semibold))
-                                .foregroundColor(.appText)
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 3) {
-                            Text("Terpakai")
-                                .font(.app(11))
-                                .foregroundColor(.appTextSecondary)
-                            Text(spent.formattedAsCurrency())
-                                .font(.app(14, weight: .semibold))
-                                .foregroundColor(.appExpense)
-                        }
-                    }
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.md)
-
-                    ProgressView(value: min(progress, 1.0))
-                        .tint(progressColor)
-                        .padding(.horizontal, Spacing.xl)
-                        .padding(.top, Spacing.sm)
-                        .padding(.bottom, Spacing.lg)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 28)
                 }
-                .background(Color.appCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .padding(.horizontal)
-
-                VStack(spacing: Spacing.sm) {
-                    ForEach(budgetItems.filter { $0.budget != nil }) { item in
-                        NavigationLink(destination: BudgetDetailView(budget: item.budget!, category: item.category, allTransactions: [], accounts: [], showHistoryButton: false)) {
-                            budgetCardContent(item.budget!, item.category)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding()
-
-                Color.clear
-                    .frame(height: Spacing.xl)
-                    .padding(.bottom)
             }
+            .padding(.bottom, 24)
         }
-        .background(Color.appGroupedBackground)
+        .background(Color.appBackground)
         .navigationTitle(monthLabel)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
     }
 
-    private func budgetCardContent(_ budget: Budget, _ category: Category) -> some View {
-        VStack(spacing: Spacing.sm) {
-            HStack {
-                Image(systemName: category.icon ?? "tag")
-                    .font(.app(17))
-                    .foregroundColor(budget.spendingStatus == .overbudget ? .appError : budget.spendingStatus == .warning ? .appWarning : .appPrimary)
-                Text(category.name)
-                    .font(.app(15, weight: .medium))
+    private var summary: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sisa budget")
                 Spacer()
-                Text(budget.progress >= 1 ? "0%" : "\(Int((1 - budget.progress) * 100))%")
-                    .font(.app(12, weight: .semibold))
-                    .foregroundColor(cardProgressColor(budget))
+                Text("\(Int(remainingPct))%").monospacedDigit()
             }
+            .font(.app(15))
+            .foregroundStyle(remainingPct <= 0 ? Color.appError : Color.appTextSecondary)
 
-            ProgressView(value: min(budget.progress, 1.0))
-                .tint(cardProgressColor(budget))
+            HeroAmount(value: remainingPct <= 0 ? 0 : remaining, size: .large,
+                       isVisible: isBalanceVisible, weight: .ultraLight)
+                .padding(.top, 8)
+
+            SegmentBar(value: progress, color: progressColor, height: 12)
+                .padding(.top, 24)
 
             HStack {
-                Text("\(budget.spent.formattedAsCurrency()) / \(budget.amount.formattedAsCurrency())")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
+                total("Terpakai", spent)
                 Spacer()
-                switch budget.spendingStatus {
-                case .normal:
-                    HStack(spacing: 2) {
-                        Image(systemName: "arrow.down.left")
-                            .font(.app(9))
-                        Text(budget.remaining.formattedAsCurrency())
-                            .font(.app(11))
-                    }
-                    .foregroundColor(.appTextSecondary)
-                case .warning:
-                    HStack(spacing: 2) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.app(9))
-                        Text("\(budget.dailyRemaining.formattedAsCurrency())/hari")
-                            .font(.app(11))
-                    }
-                    .foregroundColor(.appWarning)
-                case .overbudget:
-                    HStack(spacing: 2) {
-                        Image(systemName: "arrow.up.right")
-                            .font(.app(9))
-                        Text(abs(budget.remaining).formattedAsCurrency())
-                            .font(.app(11))
-                    }
-                    .foregroundColor(.appError)
-                }
+                total("Budget", totalBudget)
             }
+            .padding(.top, 12)
         }
-        .padding()
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 32)
     }
 
-    private func cardProgressColor(_ budget: Budget) -> Color {
-        switch budget.spendingStatus {
-        case .overbudget: return .appError
-        case .warning: return .appWarning
-        case .normal: return .appPrimary
-        }
+    private func total(_ label: String, _ amount: Double) -> some View {
+        (Text(label + " ").foregroundStyle(Color.appTextSecondary)
+         + Text(isBalanceVisible ? amount.abbreviatedRupiah() : hiddenAmount)
+            .fontWeight(.medium)
+            .foregroundStyle(Color.appText))
+            .font(.app(15))
+            .monospacedDigit()
     }
 }

@@ -215,109 +215,84 @@ struct ProfileEditView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: Spacing.xl) {
-                VStack(spacing: Spacing.sm) {
-                    Button {
-                        // TODO: Image picker
-                    } label: {
-                        ZStack {
-                            LinearGradient(
-                                colors: [.appPrimary, .appPrimary.opacity(0.6)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 22))
+            VStack(spacing: 0) {
+                // TODO: Image picker
+                InitialsAvatar(initials: initials, size: 88, fontSize: 32)
+                    .padding(.top, 24)
+                    .padding(.bottom, 32)
+                    .accessibilityHidden(true)
 
-                            Text(initials)
-                                .font(.app(28, weight: .bold))
-                                .foregroundColor(.white)
-
-                            VStack {
-                                Spacer()
-                                HStack {
-                                    Spacer()
-                                    Image(systemName: "camera.fill")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.white)
-                                        .padding(6)
-                                        .background(Color.black.opacity(0.45))
-                                        .clipShape(Circle())
-                                        .offset(x: 2, y: 2)
-                                }
-                            }
-                        }
+                VStack(spacing: 0) {
+                    formRow("Nama") {
+                        TextField("Masukkan nama", text: $viewModel.displayName)
+                            .font(.app(16))
+                            .foregroundStyle(Color.appText)
+                            .textContentType(.name)
+                            .submitLabel(.done)
                     }
-                    .buttonStyle(.plain)
-
-                    Text("Ubah Profil")
-                        .font(.app(17, weight: .semibold))
-                        .foregroundColor(.appText)
-                }
-                .padding(.top, Spacing.xl)
-
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text("Nama Tampilan")
-                        .font(.app(12))
-                        .foregroundColor(.appTextSecondary)
-
-                    TextField("Masukkan nama", text: $viewModel.displayName)
-                        .font(.app(17))
-                        .padding()
-                        .background(Color.appGroupedBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .padding(.horizontal, Spacing.xl)
-
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text("Email")
-                        .font(.app(12))
-                        .foregroundColor(.appTextSecondary)
-
-                    Text(authViewModel.currentUser?.isGuest == true ? "Mode tamu" : authViewModel.currentUser?.email ?? "")
-                        .font(.app(15))
-                        .foregroundColor(.appTextSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color.appGroupedBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .padding(.horizontal, Spacing.xl)
-
-                Spacer()
-
-                Button {
-                    Task {
-                        if let updated = await viewModel.saveDisplayName(user: authViewModel.currentUser) {
-                            authViewModel.currentUser = updated
-                            toastMessage = "Profil berhasil disimpan"
-                            withAnimation { showToast = true }
-                        }
+                    formRow("Email") {
+                        Text(authViewModel.currentUser?.isGuest == true ? "Mode tamu" : authViewModel.currentUser?.email ?? "")
+                            .font(.app(16))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .lineLimit(1)
                     }
-                } label: {
-                    HStack(spacing: Spacing.sm) {
-                        if viewModel.isLoading {
-                            ProgressView()
-                                .tint(.white)
-                        }
-                        Text("Simpan")
-                            .font(.app(17, weight: .semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.appPrimary)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .disabled(viewModel.isLoading)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.bottom, Spacing.xl)
+                .overlay(alignment: .top) {
+                    Rectangle().fill(Color.appSeparator).frame(height: 1)
+                }
+
+                saveButton
+                    .padding(.horizontal, 24)
+                    .padding(.top, 32)
+                    .padding(.bottom, 32)
             }
         }
-        .background(Color.appGroupedBackground)
-        .navigationTitle("Profil")
+        .background(Color.appBackground)
+        .navigationTitle("Ubah Profil")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .toast(isPresented: $showToast, message: toastMessage)
+    }
+
+    /// Label on the left in secondary, value on the right, hairline below.
+    private func formRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 76, alignment: .leading)
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(height: 52)
+        .padding(.horizontal, 24)
+        .rowSeparator()
+    }
+
+    private var saveButton: some View {
+        Button {
+            Task {
+                if let updated = await viewModel.saveDisplayName(user: authViewModel.currentUser) {
+                    authViewModel.currentUser = updated
+                    toastMessage = "Profil berhasil disimpan"
+                    withAnimation { showToast = true }
+                }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                if viewModel.isLoading {
+                    ProgressView().tint(.white)
+                }
+                Text("Simpan")
+                    .font(.app(16, weight: .semibold))
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(Color.appPrimary, in: Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+        .disabled(viewModel.isLoading)
     }
 
     private var initials: String {
@@ -339,42 +314,45 @@ struct LanguageView: View {
     ]
 
     var body: some View {
-        List {
-            ForEach(options, id: \.code) { option in
-                Button {
-                    appLanguage = option.code
-                } label: {
-                    HStack(spacing: Spacing.md) {
-                        Text(option.flag)
-                            .font(.system(size: 28))
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(option.name)
-                                .font(.app(15, weight: .medium))
-                                .foregroundColor(.appText)
-                            Text(option.native)
-                                .font(.app(12))
-                                .foregroundColor(.appTextSecondary)
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(options, id: \.code) { option in
+                    Button {
+                        appLanguage = option.code
+                    } label: {
+                        HStack(spacing: 14) {
+                            Text(option.flag)
+                                .font(.system(size: 22))
+                                .frame(width: 24)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(option.native)
+                                    .font(.app(16))
+                                    .foregroundStyle(Color.appText)
+                                Text(option.name)
+                                    .font(.app(13))
+                                    .foregroundStyle(Color.appTextSecondary)
+                            }
+                            Spacer()
+                            if appLanguage == option.code {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(Color.appPrimary)
+                            }
                         }
-
-                        Spacer()
-
-                        if appLanguage == option.code {
-                            Image(systemName: "checkmark")
-                                .font(.app(14, weight: .semibold))
-                                .foregroundColor(.appPrimary)
-                        }
+                        .frame(minHeight: 60)
+                        .padding(.horizontal, 24)
+                        .rowSeparator()
+                        .contentShape(Rectangle())
                     }
-                    .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle())
+                    .buttonStyle(RowPressStyle())
+                    .accessibilityAddTraits(appLanguage == option.code ? .isSelected : [])
                 }
-                .buttonStyle(.plain)
             }
+            .padding(.top, 8)
         }
-        .listStyle(.insetGrouped)
-        .background(Color.appGroupedBackground)
-        .scrollContentBackground(.hidden)
+        .background(Color.appBackground)
         .navigationTitle("Bahasa")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
     }
 }

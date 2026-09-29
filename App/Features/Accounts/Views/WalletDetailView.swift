@@ -87,75 +87,64 @@ struct WalletDetailView: View {
         thisMonthTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
     }
 
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @State private var showEditCustomSheet = false
+
+    private var isCreditCard: Bool { account.isCreditCard }
+    private var canChangeIcon: Bool { account.type != .cash && !isCreditCard && account.isActive }
+
+    /// The account with the unsaved edits applied, so the card follows along while editing.
+    private var previewAccount: Account {
+        Account(
+            id: account.id,
+            name: editedName.isEmpty ? account.name : editedName,
+            type: account.type,
+            icon: editedIconId.isEmpty ? account.icon : editedIconId,
+            isArchived: account.isArchived,
+            isDefault: account.isDefault,
+            openingBalance: account.openingBalance,
+            currentBalance: isCreditCard ? account.currentBalance : (Double(balanceDigits) ?? 0),
+            creditLimit: isCreditCard ? (Double(creditLimitDigits) ?? 0) : account.creditLimit,
+            dueDate: isCreditCard ? String(editedDueDay) : account.dueDate,
+            subscriptionsTotal: account.subscriptionsTotal
+        )
+    }
+
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                headerSection
-                    .padding(.horizontal)
-                    .padding(.top)
+            VStack(alignment: .leading, spacing: 0) {
+                WalletCard(account: previewAccount, showsStripAmount: false, isBalanceVisible: isBalanceVisible)
+                    .frame(height: 216)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
 
-                hintCard
-                    .padding(.horizontal)
-                    .padding(.top, Spacing.md)
+                if isCreditCard { creditBar.padding(.horizontal, 24).padding(.top, 16) }
 
-                if !account.isActive {
-                    HStack(spacing: Spacing.md) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.appWarning.opacity(0.15))
-                                .frame(width: 36, height: 36)
-                            Image(systemName: "archivebox.fill")
-                                .font(.app(14))
-                                .foregroundColor(.appWarning)
-                        }
+                actionButtons
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Dompet Diarsipkan")
-                                .font(.app(13, weight: .semibold))
-                                .foregroundColor(.appText)
-                            Text("Tidak dapat digunakan untuk transaksi baru")
-                                .font(.app(11))
-                                .foregroundColor(.appTextSecondary)
-                        }
+                if !account.isActive { archivedNote.padding(.horizontal, 24).padding(.top, 20) }
 
-                        Spacer()
-                    }
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.vertical, 12)
-                    .background(Color.appCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color.appWarning.opacity(0.3), lineWidth: 1)
-                    )
-                    .padding(.horizontal)
-                    .padding(.top, Spacing.md)
-                }
+                transactionsSection
+                    .padding(.horizontal, 24)
+                    .padding(.top, 22)
+                    .padding(.bottom, 28)
 
                 if isCreditCard, account.isActive {
+                    SectionDivider()
                     subscriptionsSection
-                        .padding(.horizontal)
-                        .padding(.top, Spacing.md)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 28)
                 }
 
-                let monthTxs = thisMonthTransactions
-                HStack {
-                    Text("Transaksi Bulan Ini")
-                        .font(.app(15, weight: .semibold))
-                    Spacer()
-                    Text("\(monthTxs.count) transaksi")
-                        .font(.app(12))
-                        .foregroundColor(.appTextSecondary)
-                }
-                .padding(.horizontal)
-                .padding(.top, Spacing.md)
-
-                transactionListContent
-                    .padding([.horizontal, .top])
-                    .padding(.bottom)
+                SectionDivider()
+                detailsSection
+                    .padding(.top, 28)
+                    .padding(.bottom, 24)
             }
         }
-        .background(Color.appGroupedBackground)
+        .background(Color.appBackground)
         .navigationTitle(account.name)
         .navigationBarTitleDisplayMode(.inline)
         .onTapGesture { if showBalanceKeyboard { showBalanceKeyboard = false } }
@@ -169,7 +158,8 @@ struct WalletDetailView: View {
                         Button("Simpan") {
                             confirmChanges()
                         }
-                        .font(.app(15, weight: .semibold))
+                        .font(.app(17, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
                     }
                 }
             }
@@ -217,8 +207,6 @@ struct WalletDetailView: View {
         }
         .sheet(isPresented: $showIconPicker) {
             iconPickerSheet
-                .presentationDetents([.medium])
-                .presentationBackground(Color.appCardBackground)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if showBalanceKeyboard {
@@ -253,407 +241,360 @@ struct WalletDetailView: View {
             )
             .presentationDetents([.medium, .large])
         }
-            .sheet(isPresented: $showDueDayPicker) {
-                NavigationStack {
-                    VStack(spacing: 0) {
-                        Picker("Tanggal Jatuh Tempo", selection: $editedDueDay) {
-                            ForEach(1...31, id: \.self) { day in
-                                Text("\(day)").tag(day)
-                            }
-                        }
-                        .pickerStyle(.wheel)
-                        .padding()
-                    }
-                    .navigationTitle("Pilih Tanggal")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Simpan") { showDueDayPicker = false; confirmChanges() }
-                        }
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Batal") { showDueDayPicker = false }
-                        }
-                    }
-                }
-                .presentationDetents([.height(300)])
-            }
-            .sheet(isPresented: $showAddSubscription) {
-                AddSubscriptionView(
-                    categories: categories,
-                    account: account,
-                    existing: selectedSubscription,
-                    onSave: {
-                        showAddSubscription = false
-                        Task { await loadSubscriptions() }
-                    }
-                )
-                .presentationDetents([.fraction(0.68), .large])
-            }
-            .task { await loadSubscriptions() }
+        .sheet(isPresented: $showDueDayPicker) {
+            dueDaySheet
         }
-    
-    private var balanceOpacity: Double { 1.0 }
-    private var isCreditCard: Bool { account.isCreditCard }
-
-    private var dueDateFormatted: String {
-        "Setiap tanggal \(editedDueDay)"
+        .sheet(isPresented: $showAddSubscription) {
+            AddSubscriptionView(
+                categories: categories,
+                account: account,
+                existing: selectedSubscription,
+                onSave: {
+                    showAddSubscription = false
+                    Task { await loadSubscriptions() }
+                }
+            )
+            .presentationDetents([.fraction(0.68), .large])
+        }
+        .task { await loadSubscriptions() }
     }
 
-    private var headerSection: some View {
-        Group {
-            if isCreditCard {
-                creditCardSection
-            } else {
-                walletHeaderSection
+    // MARK: - Top
+
+    private var creditBar: some View {
+        let limit = Double(creditLimitDigits) ?? 0
+        let outstanding = account.currentBalance ?? 0
+        let utilization = limit > 0 ? outstanding / limit : 0
+        return VStack(alignment: .leading, spacing: 6) {
+            SegmentBar(value: utilization, color: utilization > 0.8 ? .appError : utilization > 0.5 ? .appWarning : .appPrimary)
+            HStack {
+                Text("Terpakai \(outstanding.formattedAsCurrency()) · \(Int(utilization * 100))%")
+                Spacer()
+                Text("Jatuh tempo tgl \(editedDueDay)")
             }
-        }
-    }
-
-    private var creditCardSection: some View {
-        VStack(spacing: Spacing.md) {
-            // Card 1: Header + Limit + Actions
-            VStack(spacing: 0) {
-                headerRow
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.xl)
-
-                let limit = Double(creditLimitDigits) ?? 0
-                let outstanding = account.currentBalance ?? 0
-                let utilization = limit > 0 ? outstanding / limit : 0
-
-                VStack(spacing: 4) {
-                    HStack {
-                        Text("Total Limit")
-                            .font(.app(11))
-                            .foregroundColor(.appTextSecondary)
-                        Spacer()
-                        Text(limit.formattedAsCurrency())
-                            .font(.app(13, weight: .semibold))
-                            .foregroundColor(.appText)
-                            .contentShape(Rectangle())
-                            .onTapGesture { showCreditLimitKeyboard = true }
-                    }
-
-                    HStack {
-                        Text("Sisa Limit")
-                            .font(.app(11))
-                            .foregroundColor(.appTextSecondary)
-                        Spacer()
-                        Text((limit - outstanding).formattedAsCurrency())
-                            .font(.app(13, weight: .semibold))
-                            .foregroundColor(.appText)
-                    }
-
-                    Spacer().frame(height: 4)
-
-                    ProgressView(value: min(utilization, 1.0))
-                        .tint(utilization > 0.8 ? .appError : utilization > 0.5 ? .appWarning : .appPrimary)
-
-                    Text("\(Int(utilization * 100))% terpakai")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, Spacing.lg)
-
-                actionButtons
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.bottom, Spacing.lg)
-            }
-            .background(Color.appCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-
-            // Card 2: Due Date + Stats
-            VStack(spacing: 0) {
-                Button {
-                    showDueDayPicker = true
-                } label: {
-                    HStack(spacing: Spacing.md) {
-                        Circle()
-                            .fill(Color.appPrimary.opacity(0.1))
-                            .frame(width: 36, height: 36)
-                            .overlay {
-                                Image(systemName: "calendar")
-                                    .font(.app(13))
-                                    .foregroundColor(.appPrimary)
-                            }
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Jatuh Tempo")
-                                .font(.app(11))
-                                .foregroundColor(.appTextSecondary)
-                            Text(dueDateFormatted)
-                                .font(.app(15, weight: .medium))
-                                .foregroundColor(.appText)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.app(10))
-                            .foregroundColor(.appTextSecondary.opacity(0.4))
-                    }
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.vertical, 10)
-                }
-                .buttonStyle(.plain)
-
-                Divider()
-                    .padding(.leading, 52)
-                    .padding(.trailing, Spacing.lg)
-
-                HStack(spacing: 0) {
-                    VStack(spacing: 4) {
-                        Text("Total Tagihan")
-                            .font(.app(11))
-                            .foregroundColor(.appTextSecondary)
-                        Text((account.currentBalance ?? 0).formattedAsCurrency())
-                            .font(.app(13, weight: .semibold))
-                            .foregroundColor(.appExpense)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Divider().frame(height: 28)
-                    VStack(spacing: 4) {
-                        Text("Bulan Ini")
-                            .font(.app(11))
-                            .foregroundColor(.appTextSecondary)
-                        Text(monthlyExpense > 0 ? abbreviatedAmount(monthlyExpense) : "Rp0")
-                            .font(.app(13, weight: .semibold))
-                            .foregroundColor(.appExpense)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .padding(.horizontal, Spacing.xl)
-                .padding(.vertical, Spacing.md)
-            }
-            .background(Color.appCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-        }
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: isCreditCard ? "creditcard.fill" : "wallet.pass.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.appExpense.opacity(0.08))
-                .offset(x: -12, y: -4)
-        }
-        .onTapGesture {
-            if !isCreditCard { showBalanceKeyboard = true }
-            if isCreditCard { showCreditLimitKeyboard = true }
-        }
-    }
-
-    private var headerRow: some View {
-        HStack(spacing: Spacing.sm) {
-            Button { if account.type != .cash, !isCreditCard { showIconPicker = true } } label: {
-                WalletIconView(icon: walletIcon, size: 36)
-            }
-            .disabled(account.type == .cash || isCreditCard || !account.isActive)
-
-            TextField("Nama", text: $editedName)
-                .font(.app(17, weight: .semibold))
-                .disabled(!account.isActive)
-                .focused($isNameFocused)
-
-            Spacer()
-
-            Text(isCreditCard ? "Kartu Kredit" : account.type.rawValue)
-                .font(.app(12))
-                .foregroundColor(.appTextSecondary)
+            .font(.app(13))
+            .foregroundStyle(Color.appTextSecondary)
+            .monospacedDigit()
         }
     }
 
     private var actionButtons: some View {
-        Group {
+        HStack(spacing: 0) {
             if account.isActive {
-                HStack(spacing: Spacing.md) {
-                    if !account.isDefault {
-                        Button { Task { await onSetDefault?(account.id) } } label: {
-                            HStack(spacing: Spacing.sm) {
-                                Image(systemName: "star.fill").font(.app(11))
-                                Text("Jadikan Utama").font(.app(11, weight: .semibold))
-                            }
-                            .frame(maxWidth: .infinity).padding(.vertical, 12)
-                            .background(Color.appWarning.opacity(0.1)).foregroundColor(.appWarning)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                    }
-                    Button { showArchiveAlert = true } label: {
-                        HStack(spacing: Spacing.sm) {
-                            Image(systemName: "archivebox").font(.app(11))
-                            Text("Arsipkan").font(.app(11, weight: .semibold))
-                        }
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(Color.appPrimary.opacity(0.1)).foregroundColor(.appPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    Button(role: .destructive) {
-                        if !transactions.isEmpty {
-                            deleteWarningMessage = "Tidak bisa menghapus akun yang masih memiliki transaksi (\(transactions.count) transaksi). Jika tidak lagi digunakan, kamu bisa mengarsipkannya."
-                            showDeleteWarningAlert = true
-                        } else { showDeleteAlert = true }
-                    } label: {
-                        HStack(spacing: Spacing.sm) {
-                            Image(systemName: "trash").font(.app(11))
-                            Text("Hapus").font(.app(11, weight: .semibold))
-                        }
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
-                        .background(Color.appError.opacity(0.1)).foregroundColor(.appError)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
+                if !account.isDefault {
+                    detailAction("Jadikan utama", icon: "star") { Task { await onSetDefault?(account.id) } }
+                }
+                detailAction("Sesuaikan", icon: "slider.horizontal.3", perform: adjust)
+                detailAction("Arsipkan", icon: "archivebox") { showArchiveAlert = true }
+                detailAction("Hapus", icon: "trash", tint: .appError) {
+                    if !transactions.isEmpty {
+                        deleteWarningMessage = "Tidak bisa menghapus akun yang masih memiliki transaksi (\(transactions.count) transaksi). Jika tidak lagi digunakan, kamu bisa mengarsipkannya."
+                        showDeleteWarningAlert = true
+                    } else { showDeleteAlert = true }
                 }
             } else {
-                Button { showUnarchiveAlert = true } label: {
-                    HStack(spacing: Spacing.sm) {
-                        Image(systemName: "archivebox.fill").font(.app(11))
-                        Text("Aktifkan").font(.app(11, weight: .semibold))
+                detailAction("Aktifkan", icon: "arrow.uturn.backward") { showUnarchiveAlert = true }
+                detailAction("Sesuaikan", icon: "slider.horizontal.3", perform: adjust)
+            }
+        }
+    }
+
+    private func adjust() {
+        if isCreditCard { showCreditLimitKeyboard = true } else { showBalanceKeyboard = true }
+    }
+
+    private func detailAction(_ title: String, icon: String, tint: Color = .appText, perform: @escaping () -> Void) -> some View {
+        Button(action: perform) {
+            VStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundStyle(tint)
+                    .frame(width: 44, height: 44)
+                    .background(Color.appFill, in: Circle())
+                Text(title)
+                    .font(.app(12))
+                    .foregroundStyle(Color.appBody)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(RowPressStyle())
+    }
+
+    private var archivedNote: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "archivebox")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.appWarning)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Dompet diarsipkan")
+                    .font(.app(16, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+                Text("Tidak dapat digunakan untuk transaksi baru")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+            }
+        }
+    }
+
+    // MARK: - Transactions
+
+    private var transactionsSection: some View {
+        let monthTxs = thisMonthTransactions
+        let displayTxs = showAllTransactions ? monthTxs : Array(monthTxs.prefix(5))
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Transaksi terakhir")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+                Spacer()
+                if monthTxs.count > 5 {
+                    Button(showAllTransactions ? "Sembunyikan" : "Semua (\(monthTxs.count))") {
+                        withAnimation(.easeInOut(duration: 0.2)) { showAllTransactions.toggle() }
                     }
-                    .frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .background(Color.appPrimary.opacity(0.1)).foregroundColor(.appPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .font(.app(15))
+                    .foregroundStyle(Color.appPrimary)
+                } else {
+                    Text("\(monthTxs.count) bulan ini")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+            }
+
+            if monthTxs.isEmpty {
+                Text("Belum ada transaksi bulan ini")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.top, 12)
+            } else {
+                ForEach(displayTxs) { transaction in
+                    Button { detailTransaction = transaction } label: {
+                        TransactionRowView(
+                            transaction: transaction,
+                            categories: categories,
+                            accounts: [account],
+                            showBalance: isBalanceVisible,
+                            showArchivedBadge: !account.isActive
+                        )
+                        .rowSeparator()
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(RowPressStyle())
                 }
             }
         }
     }
 
-    private var walletHeaderSection: some View {
-        VStack(spacing: 0) {
-            headerRow
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.xl)
+    // MARK: - Details
 
-            HStack(spacing: 6) {
-                Text("Rp")
-                    .font(.app(34, weight: .bold))
-                    .foregroundColor(.appText)
+    private var detailsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Detail dompet")
+                .padding(.horizontal, 24)
+                .padding(.bottom, 4)
 
-                Text(balanceDigits.isEmpty ? "0" : balanceDigits.formattedWithThousandSeparator)
-                    .font(.app(34, weight: .bold))
-                    .foregroundColor(.appText)
-                    .contentShape(Rectangle())
-                    .onTapGesture { showBalanceKeyboard = true }
+            HStack(spacing: 12) {
+                Text("Nama")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .frame(width: 76, alignment: .leading)
+                TextField("Nama", text: $editedName)
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(Color.appText)
                     .disabled(!account.isActive)
+                    .focused($isNameFocused)
+                    .submitLabel(.done)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.sm)
+            .frame(height: 52)
+            .padding(.leading, 24)
+            .padding(.trailing, 20)
+            .rowSeparator()
 
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-
-            HStack(spacing: 0) {
-                VStack(spacing: 4) {
-                    Text("Pemasukan Bulan Ini")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text(monthlyIncome > 0 ? abbreviatedAmount(monthlyIncome) : "Rp0")
-                        .font(.app(13, weight: .semibold))
-                        .foregroundColor(.appIncome)
+            if account.type != .cash, !isCreditCard {
+                Button { if canChangeIcon { showIconPicker = true } } label: {
+                    HStack(spacing: 12) {
+                        Text("Ikon")
+                            .font(.app(15))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .frame(width: 76, alignment: .leading)
+                        WalletIconView(icon: walletIcon, size: 24)
+                        Text(walletIcon?.name ?? "Pilih")
+                            .font(.app(16, weight: .medium))
+                            .foregroundStyle(Color.appText)
+                            .lineLimit(1)
+                        Spacer()
+                        chevron.opacity(canChangeIcon ? 1 : 0)
+                    }
+                    .frame(height: 52)
+                    .padding(.leading, 24)
+                    .padding(.trailing, 20)
+                    .rowSeparator()
+                    .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity)
-                Divider().frame(height: 28)
-                VStack(spacing: 4) {
-                    Text("Pengeluaran Bulan Ini")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text(monthlyExpense > 0 ? abbreviatedAmount(monthlyExpense) : "Rp0")
-                        .font(.app(13, weight: .semibold))
-                        .foregroundColor(.appExpense)
-                }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(RowPressStyle())
+                .disabled(!canChangeIcon)
             }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.sm)
 
-            actionButtons
-                .padding(.horizontal, Spacing.xl)
-                .padding(.bottom, Spacing.lg)
-        }
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appCardBackground)
-        )
-        .overlay(alignment: .topTrailing) {
-            Image(systemName: "wallet.pass.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.appPrimary.opacity(0.08))
-                .offset(x: -12, y: -4)
-        }
-        .onTapGesture {
-            showBalanceKeyboard = true
+            if isCreditCard {
+                let limit = Double(creditLimitDigits) ?? 0
+                let outstanding = account.currentBalance ?? 0
+                valueRow("Limit", value: limit.formattedAsCurrency()) { showCreditLimitKeyboard = true }
+                valueRow("Sisa limit", value: (limit - outstanding).formattedAsCurrency())
+                valueRow("Jatuh tempo", value: "Setiap tanggal \(editedDueDay)") { showDueDayPicker = true }
+                valueRow("Tagihan", value: outstanding.formattedAsCurrency(), color: .appError)
+                valueRow("Bulan ini", value: monthlyExpense > 0 ? abbreviatedAmount(monthlyExpense) : "Rp0", color: .appError)
+            } else {
+                valueRow("Saldo", value: "Rp" + (balanceDigits.isEmpty ? "0" : balanceDigits.formattedWithThousandSeparator)) {
+                    showBalanceKeyboard = true
+                }
+                monthFlow
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+            }
+
+            Text("Ketuk bagian yang ingin diubah, perubahan tersimpan otomatis.")
+                .font(.app(13))
+                .foregroundStyle(Color.appTextTertiary)
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
         }
     }
 
-    @State private var showEditCustomSheet = false
+    private func valueRow(_ label: String, value: String, color: Color = .appText, action: (() -> Void)? = nil) -> some View {
+        Button { action?() } label: {
+            HStack(spacing: 12) {
+                Text(label)
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .frame(width: 96, alignment: .leading)
+                Spacer()
+                Text(value)
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(color)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                if action != nil { chevron }
+            }
+            .frame(height: 52)
+            .padding(.leading, 24)
+            .padding(.trailing, 20)
+            .rowSeparator()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+        .disabled(action == nil)
+    }
+
+    private var monthFlow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FlowSplitBar(income: monthlyIncome, expense: monthlyExpense)
+            HStack {
+                Label(monthlyIncome > 0 ? abbreviatedAmount(monthlyIncome) : "Rp0", systemImage: "arrow.down.left")
+                    .foregroundStyle(Color.appPrimary)
+                Spacer()
+                Label(monthlyExpense > 0 ? abbreviatedAmount(monthlyExpense) : "Rp0", systemImage: "arrow.up.right")
+                    .foregroundStyle(Color.appError)
+            }
+            .font(.app(13))
+            .monospacedDigit()
+            Text("Pemasukan dan pengeluaran bulan ini")
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
+        }
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Color.appTextTertiary)
+    }
+
+    // MARK: - Sheets
 
     private var iconPickerSheet: some View {
-        NavigationStack {
-            List {
-                Section {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
-                        ForEach(WalletIcon.icons(for: account.type)) { icon in
-                            Button {
-                                editedIconId = icon.id
-                                showIconPicker = false
-                            } label: {
-                                VStack(spacing: 4) {
-                                    Circle()
-                                        .fill(editedIconId == icon.id ? icon.color : icon.color.opacity(0.2))
-                                        .frame(width: 52, height: 52)
-                                        .overlay {
-                                            Text(icon.shortName)
-                                                .font(.app(10, weight: .bold))
-                                                .foregroundColor(editedIconId == icon.id ? .white : icon.color)
-                                        }
-                                    Text(icon.name)
-                                        .font(.app(9))
-                                        .foregroundColor(.appTextSecondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .buttonStyle(.plain)
+        PickerSheet(title: "Ganti ikon", onDone: { showIconPicker = false }) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 18) {
+                ForEach(WalletIcon.icons(for: account.type)) { icon in
+                    let isOn = editedIconId == icon.id
+                    Button {
+                        editedIconId = icon.id
+                        showIconPicker = false
+                    } label: {
+                        iconCell(title: icon.name, isOn: isOn, fill: isOn ? icon.color : Color.appFill) {
+                            Text(icon.shortName)
+                                .font(.app(11, weight: .heavy))
+                                .foregroundStyle(isOn ? Color.white : icon.color)
                         }
-                        Button {
-                            showEditCustomSheet = true
-                        } label: {
-                            VStack(spacing: 4) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.appPrimary.opacity(0.2))
-                                        .frame(width: 52, height: 52)
-                                    Image(systemName: "plus")
-                                        .font(.app(14, weight: .bold))
-                                        .foregroundColor(.appPrimary)
-                                }
-                                Text("Custom")
-                                    .font(.app(9))
-                                    .foregroundColor(.appTextSecondary)
-                                    .lineLimit(1)
-                            }
-                        }
-                        .buttonStyle(.plain)
                     }
-                    .padding(.vertical, 8)
-                } header: {
-                    Text("Pilih Icon")
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(isOn ? .isSelected : [])
                 }
+                Button { showEditCustomSheet = true } label: {
+                    iconCell(title: "Custom", isOn: false, fill: Color.appFill) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20))
+                            .foregroundStyle(Color.appText)
+                    }
+                }
+                .buttonStyle(.plain)
             }
-            .navigationTitle("Ganti Icon")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { showIconPicker = false }
-                }
-            }
-            .sheet(isPresented: $showEditCustomSheet) {
-                CustomIconSheet { text, colorName in
-                    editedIconId = WalletIcon.customIconId(text: text, colorName: colorName)
-                    showIconPicker = false
-                }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 24)
+        }
+        .sheet(isPresented: $showEditCustomSheet) {
+            CustomIconSheet { text, colorName in
+                editedIconId = WalletIcon.customIconId(text: text, colorName: colorName)
+                showIconPicker = false
             }
         }
+    }
+
+    private func iconCell<Glyph: View>(title: String, isOn: Bool, fill: Color, @ViewBuilder glyph: () -> Glyph) -> some View {
+        VStack(spacing: 7) {
+            Circle()
+                .fill(fill)
+                .frame(width: 54, height: 54)
+                .overlay { glyph() }
+                .scaleEffect(isOn ? 1.08 : 1)
+            Text(title)
+                .font(.app(12))
+                .foregroundStyle(isOn ? Color.appText : Color.appTextSecondary)
+                .lineLimit(1)
+        }
+    }
+
+    private var dueDaySheet: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button("Batal") { showDueDayPicker = false }
+                    .font(.app(17))
+                    .foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                Button("Simpan") { showDueDayPicker = false; confirmChanges() }
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appPrimary)
+            }
+            .overlay {
+                Text("Tanggal jatuh tempo")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+            }
+            .frame(height: 48)
+            .padding(.horizontal, 24)
+            .padding(.top, 14)
+
+            Picker("Tanggal Jatuh Tempo", selection: $editedDueDay) {
+                ForEach(1...31, id: \.self) { day in
+                    Text("\(day)").tag(day)
+                }
+            }
+            .pickerStyle(.wheel)
+            .padding(.horizontal, 24)
+        }
+        .presentationDetents([.height(300)])
+        .presentationBackground(Color.appBackground)
     }
 
     private func confirmChanges() {
@@ -683,88 +624,6 @@ struct WalletDetailView: View {
         }
     }
 
-    private var transactionListContent: some View {
-        let monthTxs = thisMonthTransactions
-        let displayTxs = showAllTransactions ? monthTxs : Array(monthTxs.prefix(5))
-
-        return Group {
-            if monthTxs.isEmpty {
-                VStack(spacing: Spacing.sm) {
-                    Image(systemName: "tray")
-                        .font(.app(32))
-                        .foregroundColor(.appTextSecondary.opacity(0.5))
-                    Text("Belum ada transaksi")
-                        .font(.app(13))
-                        .foregroundColor(.appTextSecondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.xxxl)
-                .background(Color.appCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(displayTxs) { transaction in
-                        Button { detailTransaction = transaction } label: { transactionRow(transaction) }
-                            .buttonStyle(.plain)
-                        if transaction.id != displayTxs.last?.id {
-                            Divider()
-                                .padding(.leading, 52)
-                        }
-                    }
-
-                    if monthTxs.count > 5 {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showAllTransactions.toggle()
-                            }
-                        } label: {
-                            HStack(spacing: Spacing.xs) {
-                                Image(systemName: showAllTransactions ? "chevron.up" : "chevron.down")
-                                    .font(.app(10))
-                                Text(showAllTransactions ? "Sembunyikan" : "Lihat Semua (\(monthTxs.count))")
-                                    .font(.app(12, weight: .medium))
-                            }
-                            .foregroundColor(.appPrimary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                        }
-                    }
-                }
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.sm)
-                .background(Color.appCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
-        }
-    }
-
-    private func transactionRow(_ transaction: Transaction) -> some View {
-        TransactionRowView(transaction: transaction, categories: categories, accounts: [account], showArchivedBadge: !account.isActive)
-    }
-
-    private var hintCard: some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: "hand.tap.fill")
-                .font(.app(18))
-                .foregroundColor(.appPrimary)
-
-            Text("Tap langsung pada bagian yang ingin diubah, perubahan akan tersimpan secara otomatis.")
-                .font(.app(13))
-                .foregroundColor(.appTextSecondary)
-                .lineSpacing(2)
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, 14)
-        .background(Color.appPrimary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.appPrimary.opacity(0.15), lineWidth: 1)
-        )
-    }
-
     // MARK: - Subscriptions
 
     private func loadSubscriptions() async {
@@ -778,36 +637,20 @@ struct WalletDetailView: View {
         }
     }
 
+
     private var subscriptionsSection: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "repeat")
-                    .font(.app(13))
-                    .foregroundColor(.appPrimary)
-                Text("Tagihan Berulang")
-                    .font(.app(15, weight: .semibold))
-                Spacer()
-                Button {
-                    selectedSubscription = nil
-                    showAddSubscription = true
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.app(18))
-                        .foregroundColor(.appPrimary)
-                }
-                .buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: "Tagihan berulang", trailing: "Tambah", trailingColor: .appPrimary) {
+                selectedSubscription = nil
+                showAddSubscription = true
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.top, Spacing.md)
-            .padding(.bottom, Spacing.sm)
+            .padding(.bottom, 4)
 
             if subscriptions.isEmpty {
                 Text("Belum ada tagihan berulang")
-                    .font(.app(12))
-                    .foregroundColor(.appTextSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.bottom, Spacing.md)
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.top, 8)
             } else {
                 let monthlyTotal = subscriptions.filter { $0.isActive }.reduce(0) { $0 + $1.monthlyAmount }
                 let yearlyTotal = subscriptions.filter { $0.isActive }.reduce(0) { $0 + $1.yearlyAmount }
@@ -815,99 +658,62 @@ struct WalletDetailView: View {
 
                 ForEach(subscriptions) { sub in
                     subscriptionRow(sub)
-                    if sub.id != subscriptions.last?.id {
-                        Divider().padding(.leading, 52)
+                }
+
+                VStack(spacing: 8) {
+                    totalRow("Total per bulan", monthlyTotal.formattedAsCurrency(), color: .appError)
+                    totalRow("Total per tahun", yearlyTotal.formattedAsCurrency(), color: .appError)
+                    if let limit = account.creditLimit {
+                        totalRow("Limit tersisa", (limit - projectedBalance).formattedAsCurrency())
                     }
                 }
-
-                Divider()
-
-                HStack {
-                    Text("Total per bulan")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Spacer()
-                    Text(monthlyTotal.formattedAsCurrency())
-                        .font(.app(13, weight: .semibold))
-                        .foregroundColor(.appExpense)
-                }
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.sm)
-
-                HStack {
-                    Text("Total per tahun")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Spacer()
-                    Text(yearlyTotal.formattedAsCurrency())
-                        .font(.app(13, weight: .semibold))
-                        .foregroundColor(.appExpense)
-                }
-                .padding(.horizontal, Spacing.lg)
-                .padding(.bottom, Spacing.sm)
-
-                if let limit = account.creditLimit {
-                    let adjusted = limit - projectedBalance
-                    HStack {
-                        Text("Limit tersisa")
-                            .font(.app(11))
-                            .foregroundColor(.appTextSecondary)
-                        Spacer()
-                        Text(adjusted.formattedAsCurrency())
-                            .font(.app(13, weight: .semibold))
-                            .foregroundColor(.appText)
-                    }
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.bottom, Spacing.md)
-                }
+                .padding(.top, 14)
             }
         }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func totalRow(_ label: String, _ value: String, color: Color = .appText) -> some View {
+        HStack {
+            Text(label)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+            Spacer()
+            Text(value)
+                .font(.app(15, weight: .semibold))
+                .foregroundStyle(color)
+                .monospacedDigit()
+        }
     }
 
     private func subscriptionRow(_ sub: CardSubscription) -> some View {
         let category = sub.categoryId.flatMap { cid in categories.first { $0.id == cid } }
-        let iconName = category?.icon ?? "creditcard.fill"
-        let iconColor = category.flatMap { $0.color }.map { Color(hex: $0) } ?? .appExpense
+        let iconName = category?.icon ?? "creditcard"
 
-        return HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(sub.isActive ? iconColor.opacity(0.1) : Color(.systemGray5))
-                    .frame(width: 36, height: 36)
-                Image(systemName: iconName)
-                    .font(.app(12))
-                    .foregroundColor(sub.isActive ? iconColor : .appTextSecondary)
-            }
+        return HStack(spacing: 14) {
+            Image(systemName: iconName)
+                .font(.system(size: 19))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(sub.name)
-                    .font(.app(13, weight: .medium))
-                    .foregroundColor(.appText)
-                HStack(spacing: 4) {
-                    Text(sub.amount.formattedAsCurrency())
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text("•")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text(sub.frequency == .monthly ? "Bulanan" : "Tahunan")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                }
+                    .font(.app(16))
+                    .foregroundStyle(sub.isActive ? Color.appText : Color.appTextSecondary)
+                Text(sub.amount.formattedAsCurrency() + " · " + (sub.frequency == .monthly ? "Bulanan" : "Tahunan"))
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .monospacedDigit()
             }
 
             Spacer()
 
             if !sub.isActive {
                 Text("Nonaktif")
-                    .font(.app(10, weight: .medium))
-                    .foregroundColor(.appTextSecondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(.systemGray5))
-                    .clipShape(Capsule())
+                    .font(.app(13, weight: .medium))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
+                    .background(Color.appFill, in: Capsule())
             }
 
             Button {
@@ -918,14 +724,15 @@ struct WalletDetailView: View {
                 }
             } label: {
                 Image(systemName: "trash")
-                    .font(.app(13))
-                    .foregroundColor(.appExpense.opacity(0.7))
+                    .font(.system(size: 17))
+                    .foregroundStyle(Color.appError)
+                    .frame(width: 32, height: 32)
             }
-            .buttonStyle(.plain)
-            .padding(.leading, 8)
+            .buttonStyle(RowPressStyle())
+            .accessibilityLabel("Hapus \(sub.name)")
         }
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
+        .rowSeparator()
         .contentShape(Rectangle())
         .onTapGesture {
             selectedSubscription = sub

@@ -110,6 +110,8 @@ struct TransactionRowView: View {
                 .font(.app(16))
                 .monospacedDigit()
                 .foregroundStyle(signedAmount > 0 ? Color.appIncome : Color.appText)
+                .lineLimit(1)
+                .fixedSize()
         }
         .padding(.vertical, 14)
         .contentShape(Rectangle())

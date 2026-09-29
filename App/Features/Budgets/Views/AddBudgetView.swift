@@ -7,12 +7,12 @@ struct AddBudgetView: View {
 
     @State private var nameText = ""
     @State private var amountDigits = ""
-    @State private var showKeyboard = false
     @State private var selectedIcon = "tag.fill"
     @State private var showIconPicker = false
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
     @State private var isSaving = false
+    @FocusState private var isNameFocused: Bool
 
     private static let iconOptions: [String] = [
         "cart", "bag", "tshirt", "gamecontroller", "car", "heart", "stethoscope",
@@ -24,162 +24,133 @@ struct AddBudgetView: View {
         "ellipsis", "tag.fill",
     ]
 
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: Spacing.lg) {
-                        amountSection
-                        formCard
-                    }
-                    .padding(Spacing.lg)
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .gesture(showKeyboard ? TapGesture().onEnded { showKeyboard = false } : nil)
+    private var amountValue: Int { Int(amountDigits) ?? 0 }
 
-                if showKeyboard {
-                    AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
-                        showKeyboard = false
+    var body: some View {
+        VStack(spacing: 0) {
+            topBar
+
+            amountSection
+                .padding(.top, 12)
+
+            VStack(spacing: 0) {
+                Button { showIconPicker = true } label: {
+                    DetailRow(label: "Ikon", value: "Ganti", icon: selectedIcon, iconColor: .appText, showsChevron: true)
+                }
+                .buttonStyle(RowPressStyle())
+
+                HStack(spacing: 12) {
+                    Text("Nama")
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .frame(width: 76, alignment: .leading)
+                    TextField("cth: Transport Online", text: $nameText)
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(Color.appText)
+                        .focused($isNameFocused)
+                        .submitLabel(.done)
+                    if !nameText.isEmpty {
+                        Button { nameText = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Color.appTextTertiary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Hapus nama")
                     }
-                    .padding(.top, 20)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+                .frame(height: 52)
+                .padding(.leading, 24)
+                .padding(.trailing, 20)
+                .rowSeparator()
             }
-            .animation(.easeInOut(duration: 0.25), value: showKeyboard)
-            .background(Color.appGroupedBackground)
-            .navigationTitle("Tambah Budget")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    if isSaving {
-                        ProgressView()
-                            .tint(.appPrimary)
-                    } else {
-                        Button("Simpan") { save() }
-                            .font(.app(15, weight: .bold))
-                            .foregroundColor(canSave ? .appPrimary : .appTextSecondary.opacity(0.4))
-                            .disabled(!canSave)
-                    }
-                }
-            }
-            .alert("Perhatian", isPresented: $showValidationAlert) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(validationMessage) }
-            .onAppear { showKeyboard = true }
-            .sheet(isPresented: $showIconPicker) { iconPickerContent }
+            .padding(.top, 20)
+
+            Spacer(minLength: 12)
+
+            AmountPad(color: .appPrimary, isEnabled: canSave, isSaving: isSaving, onPress: press, onSave: save)
+                .disabled(isSaving)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 4)
         }
+        .background(Color.appBackground)
+        .alert("Perhatian", isPresented: $showValidationAlert) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(validationMessage) }
+        .sheet(isPresented: $showIconPicker) { iconPickerContent }
+    }
+
+    private var topBar: some View {
+        HStack {
+            Button("Batal") { dismiss() }
+                .font(.app(17))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 60, alignment: .leading)
+            Spacer()
+            Text("Tambah budget")
+                .font(.app(17, weight: .semibold))
+                .foregroundStyle(Color.appText)
+            Spacer()
+            Color.clear.frame(width: 60, height: 1)
+        }
+        .frame(height: 48)
+        .padding(.horizontal, 24)
+        .padding(.top, 14)
     }
 
     // MARK: Amount
 
     private var amountSection: some View {
-        HStack(spacing: 4) {
-            Text("Rp")
-                .font(.app(34, weight: .bold))
-                .foregroundColor(.appText)
-            Text(amountDigits.isEmpty ? "0" : amountDigits.formattedWithThousandSeparator)
-                .font(.app(34, weight: .bold))
-                .foregroundColor(.appText)
-            Spacer()
-            if !amountDigits.isEmpty {
-                Button {
-                    amountDigits = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.app(20))
-                        .foregroundColor(.appTextSecondary.opacity(0.4))
-                }
-                .buttonStyle(.plain)
-            }
+        VStack(spacing: 4) {
+            Text("Batas per bulan")
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+            HeroAmount(value: Double(amountValue), size: .large,
+                       color: amountValue > 0 ? .appText : .appTextTertiary)
+                .accessibilityElement()
+                .accessibilityLabel("Nominal Rp\(amountValue)")
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.sm)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
-        .onTapGesture { showKeyboard = true }
+        .onTapGesture { isNameFocused = false }
     }
 
-    // MARK: Form Card
-
-    private var formCard: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: Spacing.md) {
-                Button {
-                    showIconPicker = true
-                } label: {
-                    iconCircle(selectedIcon, .appExpense)
-                }
-                .buttonStyle(.plain)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Nama Budget").font(.app(10)).foregroundColor(.appTextSecondary)
-                    TextField("cth: Transport Online", text: $nameText)
-                        .font(.app(15)).foregroundColor(.appText)
-                }
-                Spacer(minLength: 8)
-                if !nameText.isEmpty { clearBtn { nameText = "" } }
-            }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, 14)
-        }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-    }
-
-    // MARK: Rows
-
-    private func iconCircle(_ icon: String, _ color: Color) -> some View {
-        ZStack {
-            Circle().fill(color.opacity(0.12)).frame(width: 34, height: 34)
-            Image(systemName: icon).font(.app(14, weight: .semibold)).foregroundColor(color)
-        }
-    }
-
-    private func clearBtn(action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: "xmark.circle.fill")
-                .font(.app(16))
-                .foregroundColor(.appTextSecondary.opacity(0.4))
-        }
-        .buttonStyle(.plain)
+    private func press(_ key: String) {
+        isNameFocused = false
+        guard let next = NumberPad.apply(key, to: amountValue) else { return }
+        withAnimation(.snappy(duration: 0.2)) { amountDigits = next > 0 ? String(next) : "" }
     }
 
     // MARK: Icon Picker
 
     private var iconPickerContent: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.sm), count: 6), spacing: Spacing.sm) {
-                    ForEach(Self.iconOptions, id: \.self) { icon in
-                        Button {
-                            selectedIcon = icon
-                            showIconPicker = false
-                        } label: {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.appExpense.opacity(selectedIcon == icon ? 0.2 : 0.08))
-                                    .frame(width: 44, height: 44)
+        PickerSheet(title: "Pilih ikon", onDone: { showIconPicker = false }) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 16) {
+                ForEach(Self.iconOptions, id: \.self) { icon in
+                    let isOn = selectedIcon == icon
+                    Button {
+                        selectedIcon = icon
+                        showIconPicker = false
+                    } label: {
+                        Circle()
+                            .fill(isOn ? Color.appText : Color.appFill)
+                            .frame(width: 54, height: 54)
+                            .overlay {
                                 Image(systemName: icon)
-                                    .font(.app(17, weight: .medium))
-                                    .foregroundColor(selectedIcon == icon ? .appExpense : .appTextSecondary)
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(isOn ? Color.appBackground : Color.appText)
                             }
-                        }
-                        .buttonStyle(.plain)
                     }
+                    .buttonStyle(PressScaleStyle())
+                    .accessibilityLabel(icon)
+                    .accessibilityAddTraits(isOn ? .isSelected : [])
                 }
-                .padding(Spacing.lg)
             }
-            .background(Color.appGroupedBackground)
-            .navigationTitle("Pilih Ikon")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Tutup") { showIconPicker = false } }
-            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 24)
         }
-        .presentationDetents([.medium])
     }
 
     // MARK: Save

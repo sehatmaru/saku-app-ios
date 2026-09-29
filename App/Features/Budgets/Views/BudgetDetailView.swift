@@ -59,30 +59,78 @@ struct BudgetDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                summaryCard
-                    .padding(.horizontal)
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    BudgetSummary(amount: budget.amount, spent: budget.spent, month: Date(), showPace: true)
 
-                HStack {
-                    Text("Transaksi Bulan Ini")
-                        .font(.app(15, weight: .semibold))
-                    Spacer()
-                    Text("\(transactions.count) transaksi")
-                        .font(.app(12))
-                        .foregroundColor(.appTextSecondary)
+                    if showHistoryButton {
+                        Button {
+                            showHistory = true
+                        } label: {
+                            Label("Riwayat bulan sebelumnya", systemImage: "clock.arrow.circlepath")
+                                .font(.app(15, weight: .medium))
+                                .foregroundStyle(Color.appText)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(Color.appFill, in: Capsule())
+                        }
+                        .buttonStyle(RowPressStyle())
+                        .padding(.top, 20)
+                    }
+
+                    if onAdjustBudget != nil || onUnsetBudget != nil {
+                        HStack(spacing: 12) {
+                            if onAdjustBudget != nil {
+                                Button {
+                                    adjustAmountText = ""
+                                    adjustAmountDigits = ""
+                                    showAdjustBudget = true
+                                } label: {
+                                    Label("Sesuaikan", systemImage: "slider.horizontal.3")
+                                        .font(.app(15, weight: .medium))
+                                        .foregroundStyle(Color.appText)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 44)
+                                        .background(Color.appFill, in: Capsule())
+                                }
+                                .buttonStyle(PressScaleStyle())
+                            }
+
+                            if onUnsetBudget != nil {
+                                Button(role: .destructive) {
+                                    showUnsetAlert = true
+                                } label: {
+                                    Label("Hapus budget", systemImage: "xmark")
+                                        .font(.app(15, weight: .medium))
+                                        .foregroundStyle(Color.appError)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 44)
+                                        .overlay(Capsule().strokeBorder(Color.appBorder))
+                                        .contentShape(Capsule())
+                                }
+                                .buttonStyle(PressScaleStyle())
+                            }
+                        }
+                        .padding(.top, 12)
+                    }
                 }
-                .padding(.horizontal)
-                .padding(.top, Spacing.md)
+                .padding(.horizontal, 24)
+                .padding(.top, 32)
+                .padding(.bottom, 32)
 
-                transactionListContent
-                    .padding([.horizontal, .top])
+                SectionDivider()
 
-                Color.clear
-                    .frame(height: Spacing.xl)
-                    .padding(.bottom)
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionHeader(title: "Transaksi bulan ini", trailing: "\(transactions.count) transaksi")
+                    transactionListContent
+                        .padding(.top, 6)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 28)
+                .padding(.bottom, 32)
             }
         }
-        .background(Color.appGroupedBackground)
+        .background(Color.appBackground)
         .navigationTitle(category.name)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showHistory) {
@@ -91,7 +139,7 @@ struct BudgetDetailView: View {
         .sheet(isPresented: $showAdjustBudget) {
             adjustBudgetSheet
                 .presentationDetents([.medium])
-                .presentationBackground(Color.appCardBackground)
+                .presentationBackground(Color.appBackground)
         }
         .alert("Konfirmasi Perubahan", isPresented: $showAdjustConfirm) {
             Button("Batal", role: .cancel) {}
@@ -135,298 +183,107 @@ struct BudgetDetailView: View {
         }
     }
 
-    private var summaryCard: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: Spacing.sm) {
-                ZStack {
-                    Circle()
-                        .fill(Color.appPrimary.opacity(0.12))
-                        .frame(width: 40, height: 40)
-                    Image(systemName: category.icon ?? "tag")
-                        .font(.app(17, weight: .medium))
-                        .foregroundColor(.appPrimary)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(category.name)
-                        .font(.app(17, weight: .semibold))
-                        .foregroundColor(.appText)
-                    Text("Budget Bulanan")
-                        .font(.app(12))
-                        .foregroundColor(.appTextSecondary)
-                }
-                Spacer()
-                Text(budget.progress >= 1 ? "0%" : "\(Int((1 - budget.progress) * 100))%")
-                    .font(.app(15, weight: .semibold))
-                    .foregroundColor(progressColor)
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xl)
-
-            HStack(spacing: 0) {
-                Text("Rp")
-                    .font(.app(28, weight: .bold))
-                    .foregroundColor(.appText)
-                Text(budget.progress >= 1 ? "0" : budget.remaining.formattedAsCurrency().replacingOccurrences(of: "Rp", with: ""))
-                    .font(.app(28, weight: .bold))
-                    .foregroundColor(.appText)
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.xs)
-
-            Divider()
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.md)
-
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Total Budget")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text(budget.amount.formattedAsCurrency())
-                        .font(.app(14, weight: .semibold))
-                        .foregroundColor(.appText)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text("Terpakai")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                    Text(budget.spent.formattedAsCurrency())
-                        .font(.app(14, weight: .semibold))
-                        .foregroundColor(.appExpense)
-                }
-            }
-            .padding(.horizontal, Spacing.xl)
-            .padding(.top, Spacing.md)
-
-            ProgressView(value: min(budget.progress, 1.0))
-                .tint(progressColor)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.sm)
-                .padding(.bottom, Spacing.lg)
-
-            if showHistoryButton {
-                Divider()
-                    .padding(.horizontal, Spacing.xl)
-
-                Button {
-                    showHistory = true
-                } label: {
-                    HStack(spacing: Spacing.md) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.appPrimary.opacity(0.1))
-                                .frame(width: 32, height: 32)
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.app(13))
-                                .foregroundColor(.appPrimary)
-                        }
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Riwayat Bulan Sebelumnya")
-                                .font(.app(13, weight: .medium))
-                                .foregroundColor(.appText)
-                            Text("Lihat performa bulan lalu")
-                                .font(.app(10))
-                                .foregroundColor(.appTextSecondary)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.app(10))
-                            .foregroundColor(.appTextSecondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle())
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.vertical, 10)
-                }
-                .buttonStyle(.plain)
-            }
-
-            if onAdjustBudget != nil || onUnsetBudget != nil {
-                Divider()
-                    .padding(.horizontal, Spacing.xl)
-
-                HStack(spacing: Spacing.md) {
-                    if onAdjustBudget != nil {
-                        Button {
-                            adjustAmountText = ""
-                            adjustAmountDigits = ""
-                            showAdjustBudget = true
-                        } label: {
-                            HStack(spacing: Spacing.sm) {
-                                Image(systemName: "slider.horizontal.3")
-                                    .font(.app(11))
-                                Text("Sesuaikan Budget")
-                                    .font(.app(11, weight: .semibold))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.appPrimary.opacity(0.1))
-                            .foregroundColor(.appPrimary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                    }
-
-                    if onUnsetBudget != nil {
-                        Button(role: .destructive) {
-                            showUnsetAlert = true
-                        } label: {
-                            HStack(spacing: Spacing.sm) {
-                                Image(systemName: "xmark")
-                                    .font(.app(11))
-                                Text("Hapus Budget")
-                                    .font(.app(11, weight: .semibold))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.appError.opacity(0.1))
-                            .foregroundColor(.appError)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                    }
-                }
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, Spacing.lg)
-            }
-        }
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-    }
-
-    private func miniStatCard(icon: String, label: String, amount: String, color: Color) -> some View {
-        VStack(spacing: Spacing.xs) {
-            Circle()
-                .fill(color.opacity(0.12))
-                .frame(width: 32, height: 32)
-                .overlay {
-                    Image(systemName: icon)
-                        .font(.app(11, weight: .semibold))
-                        .foregroundColor(color)
-                }
-            Text(label)
-                .font(.app(10))
-                .foregroundColor(.appTextSecondary)
-            Text(amount)
-                .font(.app(12, weight: .semibold))
-                .foregroundColor(color)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private var remainingPct: Double {
-        budget.progress >= 1 ? 0 : (1 - budget.progress) * 100
-    }
-
-    private var progressColor: Color {
-        remainingPct <= 0 ? .appError : remainingPct <= 20 ? .appWarning : .appPrimary
-    }
-
     private var adjustBudgetSheet: some View {
-        NavigationStack {
-            VStack(spacing: Spacing.xl) {
-                scopePicker
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.xl)
-
-                HStack {
-                    Text("Rp")
-                        .font(.app(17, weight: .medium))
-                        .foregroundColor(.appTextSecondary)
-                    TextField("\(String(Int(budget.amount)).formattedWithThousandSeparator)", text: $adjustAmountText)
-                        .font(.app(17, weight: .medium))
-                        .keyboardType(.numberPad)
+        VStack(spacing: 0) {
+            HStack {
+                Button("Batal") {
+                    showAdjustBudget = false
                 }
-                .padding()
-                .background(Color.appGroupedBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .padding(.horizontal, Spacing.xl)
-
+                .font(.app(17))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 70, alignment: .leading)
                 Spacer()
-
+                Text("Sesuaikan Budget \(category.name)")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer()
                 Button("Simpan") {
                     guard let amount = Double(adjustAmountDigits), amount > 0 else { return }
                     pendingAmount = amount
                     showAdjustConfirm = true
                 }
-                .frame(maxWidth: .infinity)
                 .font(.app(17, weight: .semibold))
-                .foregroundColor(.appPrimary)
+                .foregroundStyle(adjustAmountDigits.isEmpty ? Color.appTextTertiary : Color.appPrimary)
                 .disabled(adjustAmountDigits.isEmpty)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.bottom, Spacing.xl)
+                .frame(width: 70, alignment: .trailing)
             }
-            .navigationTitle("Sesuaikan Budget \(category.name)")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") {
-                        showAdjustBudget = false
-                    }
-                }
+            .frame(height: 44)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+
+            HStack(spacing: 8) {
+                Text("Rp")
+                    .font(.app(17))
+                    .foregroundStyle(Color.appTextSecondary)
+                TextField("\(String(Int(budget.amount)).formattedWithThousandSeparator)", text: $adjustAmountText)
+                    .font(.app(17, weight: .medium))
+                    .monospacedDigit()
+                    .keyboardType(.numberPad)
             }
-            .onChange(of: adjustAmountText) { _, newValue in
-                let digits = String(newValue.filter { $0.isWholeNumber })
-                let formatted = digits.formattedWithThousandSeparator
-                if formatted != newValue {
-                    adjustAmountText = formatted
-                }
-                adjustAmountDigits = digits
+            .padding(.horizontal, 16)
+            .frame(height: 48)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+
+            scopePicker
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+
+            Spacer()
+        }
+        .background(Color.appBackground)
+        .onChange(of: adjustAmountText) { _, newValue in
+            let digits = String(newValue.filter { $0.isWholeNumber })
+            let formatted = digits.formattedWithThousandSeparator
+            if formatted != newValue {
+                adjustAmountText = formatted
             }
+            adjustAmountDigits = digits
         }
     }
 
     private var scopePicker: some View {
-        VStack(spacing: Spacing.md) {
+        VStack(spacing: 0) {
             ForEach(Array(AdjustScope.allCases), id: \.self) { scope in
                 Button {
                     withAnimation(.spring(duration: 0.25)) {
                         adjustScope = scope
                     }
                 } label: {
-                    HStack(spacing: Spacing.md) {
-                        ZStack {
-                            Circle()
-                                .fill(adjustScope == scope ? Color.appPrimary : Color.appGroupedBackground)
-                                .frame(width: 44, height: 44)
-                            Image(systemName: scope == .thisMonth ? "calendar.badge.clock" : "calendar.badge.plus")
-                                .font(.app(16))
-                                .foregroundColor(adjustScope == scope ? .white : .appTextSecondary)
-                        }
+                    HStack(spacing: 14) {
+                        Image(systemName: scope == .thisMonth ? "calendar.badge.clock" : "calendar.badge.plus")
+                            .font(.system(size: 19))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .frame(width: 24)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(scope.rawValue)
-                                .font(.app(14, weight: .semibold))
-                                .foregroundColor(adjustScope == scope ? .appPrimary : .appText)
+                                .font(.app(16, weight: .medium))
+                                .foregroundStyle(Color.appText)
                             Text(scope == .thisMonth ? "Ubah budget hanya untuk bulan berjalan" : "Terapkan untuk bulan ini dan seterusnya")
-                                .font(.app(11))
-                                .foregroundColor(.appTextSecondary)
+                                .font(.app(13))
+                                .foregroundStyle(Color.appTextSecondary)
                                 .lineLimit(2)
                         }
 
                         Spacer()
 
                         if adjustScope == scope {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.app(18))
-                                .foregroundColor(.appPrimary)
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.appPrimary)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, Spacing.lg)
                     .padding(.vertical, 14)
-                    .background(adjustScope == scope ? Color.appPrimary.opacity(0.06) : Color.appCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(adjustScope == scope ? Color.appPrimary.opacity(0.3) : Color.clear, lineWidth: 1.5)
-                    )
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                    .rowSeparator()
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(RowPressStyle())
+                .accessibilityAddTraits(adjustScope == scope ? .isSelected : [])
             }
         }
     }
@@ -434,28 +291,16 @@ struct BudgetDetailView: View {
     @ViewBuilder
     private var transactionListContent: some View {
         if transactions.isEmpty {
-            VStack(spacing: Spacing.sm) {
-                Image(systemName: "tray")
-                    .font(.app(32))
-                    .foregroundColor(.appTextSecondary)
-                Text("Belum ada transaksi")
-                    .font(.app(15))
-                    .foregroundColor(.appTextSecondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.xxxl)
-            .background(Color.appCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            EmptyMessage(icon: "tray", title: "Belum ada transaksi", message: "Pengeluaran kategori ini bulan ini muncul di sini.")
+                .padding(.vertical, 32)
         } else {
             VStack(spacing: 0) {
                 ForEach(displayedTransactions) { transaction in
-                    transactionRow(transaction)
-                        .contentShape(Rectangle())
-                        .onTapGesture { detailTransaction = transaction }
-                    if transaction.id != displayedTransactions.last?.id {
-                        Divider()
-                            .padding(.leading, 52)
+                    Button { detailTransaction = transaction } label: {
+                        transactionRow(transaction)
+                            .rowSeparator()
                     }
+                    .buttonStyle(RowPressStyle())
                 }
 
                 if transactions.count > 5 {
@@ -464,22 +309,21 @@ struct BudgetDetailView: View {
                             showAllTransactions.toggle()
                         }
                     } label: {
-                        HStack(spacing: Spacing.xs) {
-                            Image(systemName: showAllTransactions ? "chevron.up" : "chevron.down")
-                                .font(.app(10))
+                        HStack(spacing: 6) {
                             Text(showAllTransactions ? "Sembunyikan" : "Lihat Semua (\(transactions.count))")
-                                .font(.app(12, weight: .medium))
+                                .font(.app(15, weight: .medium))
+                            Image(systemName: showAllTransactions ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 12, weight: .semibold))
                         }
-                        .foregroundColor(.appPrimary)
+                        .foregroundStyle(Color.appPrimary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .frame(height: 44)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .padding(.top, 8)
                 }
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.sm)
-            .background(Color.appCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
         }
     }
 
@@ -488,7 +332,109 @@ struct BudgetDetailView: View {
     }
 }
 
-// MARK: - Transaction
+// MARK: - Summary
+
+/// "Sisa budget" hero, segment bar and totals, as on the Budget tab.
+fileprivate struct BudgetSummary: View {
+    let amount: Double
+    let spent: Double
+    let month: Date
+    /// The per-day "Aman dipakai" line; only meaningful for the running month.
+    var showPace = false
+
+    private var remaining: Double { amount - spent }
+    private var progress: Double { amount > 0 ? spent / amount : 0 }
+    private var remainingPct: Double { progress >= 1 ? 0 : (1 - progress) * 100 }
+
+    private var barColor: Color {
+        remainingPct <= 0 ? .appError : remainingPct <= 20 ? .appWarning : .appPrimary
+    }
+
+    var body: some View {
+        let calendar = Calendar.current
+        let daysLeft = (calendar.range(of: .day, in: .month, for: month)?.count ?? 30) - calendar.component(.day, from: month)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sisa budget \(Self.monthFormatter.string(from: month))")
+                Spacer()
+                Text("\(Int(remainingPct))%").monospacedDigit()
+            }
+            .font(.app(15))
+            .foregroundStyle(remaining < 0 ? Color.appError : Color.appTextSecondary)
+
+            HeroAmount(value: max(0, remaining), size: .hero, weight: .ultraLight)
+                .padding(.top, 8)
+
+            SegmentBar(value: progress, color: barColor, height: 12)
+                .padding(.top, 24)
+
+            HStack {
+                total("Terpakai", spent)
+                Spacer()
+                total("Budget", amount)
+            }
+            .padding(.top, 12)
+
+            if showPace && amount > 0 {
+                Group {
+                    if remaining <= 0 {
+                        Text("Budget bulan ini sudah habis.")
+                    } else if daysLeft > 0 {
+                        Text("Aman dipakai ")
+                            + Text((remaining / Double(daysLeft)).formattedAsCurrency() + "/hari")
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.appText)
+                            + Text(" untuk \(daysLeft) hari tersisa.")
+                    } else {
+                        Text("Hari terakhir: sisa ")
+                            + Text(remaining.formattedAsCurrency()).fontWeight(.semibold).foregroundStyle(Color.appText)
+                            + Text(" bisa dipakai hari ini.")
+                    }
+                }
+                .font(.app(15))
+                .lineSpacing(3)
+                .foregroundStyle(Color.appBody)
+                .padding(.top, 18)
+            }
+        }
+    }
+
+    private func total(_ label: String, _ value: Double) -> some View {
+        (Text(label + " ").foregroundStyle(Color.appTextSecondary)
+         + Text(value.abbreviatedRupiah())
+            .fontWeight(.medium)
+            .foregroundStyle(Color.appText))
+            .font(.app(15))
+            .monospacedDigit()
+    }
+
+    private static let monthFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM"
+        f.locale = Locale(identifier: "id_ID")
+        return f
+    }()
+}
+
+/// 6pt rounded progress bar for history rows.
+fileprivate struct ThinBar: View {
+    let value: Double
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.appDivider)
+                Capsule().fill(color)
+                    .frame(width: geo.size.width * min(max(value, 0), 1))
+            }
+        }
+        .frame(height: 6)
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - History
 
 fileprivate struct MonthlySpending: Identifiable {
     let id = UUID()
@@ -515,10 +461,6 @@ fileprivate struct MonthlySpending: Identifiable {
         let r = remainingPct(budgetAmount)
         return r <= 0 ? .appError : r <= 20 ? .appWarning : .appPrimary
     }
-
-    func statusIcon(_ budgetAmount: Double) -> String {
-        remainingPct(budgetAmount) <= 0 ? "exclamationmark.circle.fill" : "checkmark.circle.fill"
-    }
 }
 
 fileprivate struct BudgetHistoryView: View {
@@ -543,71 +485,20 @@ fileprivate struct BudgetHistoryView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Spacing.md) {
-                    ForEach(groupedByYear, id: \.year) { group in
-                        VStack(spacing: 0) {
-                            Button {
-                                withAnimation {
-                                    if expandedYears.contains(group.year) {
-                                        expandedYears.remove(group.year)
-                                    } else {
-                                        expandedYears.insert(group.year)
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Image(systemName: "calendar")
-                                        .font(.app(12))
-                                        .foregroundColor(.appTextSecondary)
-                                    Text(String(group.year))
-                                        .font(.app(13, weight: .medium))
-                                        .foregroundColor(.appText)
-                                    Spacer()
-                                    Text("\(group.items.count)")
-                                        .font(.app(12, weight: .semibold))
-                                        .foregroundColor(.appTextSecondary)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 2)
-                                        .background(Color.appTextSecondary.opacity(0.15))
-                                        .clipShape(Capsule())
-                                    Image(systemName: "chevron.down")
-                                        .font(.app(10))
-                                        .foregroundColor(.appTextSecondary)
-                                        .rotationEffect(.degrees(expandedYears.contains(group.year) ? 180 : 0))
-                                }
-                                .frame(maxWidth: .infinity)
-                                .contentShape(Rectangle())
-                                .padding(.vertical, 12)
-                                .padding(.horizontal, Spacing.lg)
-                            }
-                            .buttonStyle(.plain)
-
-                            if expandedYears.contains(group.year) {
-                                VStack(spacing: 0) {
-                                    ForEach(Array(group.items.enumerated()), id: \.element.id) { index, history in
-                                        NavigationLink(destination: BudgetMonthDetailView(budget: budget, category: category, month: history.month, allTransactions: allTransactions, accounts: accounts)) {
-                                            historyRow(history)
-                                        }
-                                        .buttonStyle(.plain)
-                                        if index < group.items.count - 1 {
-                                            Divider()
-                                                .padding(.leading, 48)
-                                        }
-                                    }
-                                }
-                                .padding(.top, Spacing.sm)
-                                .padding(.bottom, Spacing.md)
-                                .padding(.horizontal, Spacing.lg)
-                            }
-                        }
-                        .background(Color.appCardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .padding(.horizontal)
+                VStack(alignment: .leading, spacing: 0) {
+                    if groupedByYear.isEmpty {
+                        EmptyMessage(icon: "clock.arrow.circlepath", title: "Belum ada riwayat", message: "Riwayat muncul setelah bulan berjalan selesai.")
+                            .padding(.horizontal, 24)
+                            .padding(.top, 80)
+                    }
+                    ForEach(Array(groupedByYear.enumerated()), id: \.element.year) { index, group in
+                        if index > 0 { SectionDivider() }
+                        yearSection(group)
                     }
                 }
-                .padding(.top)
+                .padding(.bottom, 32)
             }
-            .background(Color.appGroupedBackground)
+            .background(Color.appBackground)
             .navigationTitle("Riwayat Budget")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -615,7 +506,8 @@ fileprivate struct BudgetHistoryView: View {
                     Button("Tutup") {
                         dismiss()
                     }
-                    .font(.app(15, weight: .medium))
+                    .font(.app(17))
+                    .foregroundStyle(Color.appPrimary)
                 }
             }
             .onAppear {
@@ -627,50 +519,78 @@ fileprivate struct BudgetHistoryView: View {
         }
     }
 
-    private func historyRow(_ history: MonthlySpending) -> some View {
-        VStack(spacing: Spacing.sm) {
-            HStack(spacing: Spacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(history.statusColor(budget.amount).opacity(0.12))
-                        .frame(width: 32, height: 32)
-                    Image(systemName: history.statusIcon(budget.amount))
-                        .font(.app(11, weight: .semibold))
-                        .foregroundColor(history.statusColor(budget.amount))
+    private func yearSection(_ group: (year: Int, items: [MonthlySpending])) -> some View {
+        let isExpanded = expandedYears.contains(group.year)
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation {
+                    if isExpanded {
+                        expandedYears.remove(group.year)
+                    } else {
+                        expandedYears.insert(group.year)
+                    }
                 }
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(history.monthLabel)
-                        .font(.app(14, weight: .medium))
-                        .foregroundColor(.appText)
-                    Text("Budget \(budget.amount.formattedAsCurrency())")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
+            } label: {
+                HStack(alignment: .firstTextBaseline) {
+                    HStack(spacing: 8) {
+                        Text(String(group.year))
+                            .font(.app(20, weight: .semibold))
+                            .tracking(-0.2)
+                            .foregroundStyle(Color.appText)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                    }
+                    Spacer()
+                    Text("\(group.items.count) bulan")
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
                 }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text(history.spent.formattedAsCurrency())
-                        .font(.app(14, weight: .semibold))
-                        .foregroundColor(history.statusColor(budget.amount))
-                    Text("\(Int(history.remainingPct(budget.amount)))%")
-                        .font(.app(11))
-                        .foregroundColor(.appTextSecondary)
-                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.appCardBackground)
-                    .frame(height: 6)
-                Capsule()
-                    .fill(history.statusColor(budget.amount))
-                    .frame(width: nil, height: 6)
-                    .scaleEffect(x: min(history.progress(budget.amount), 1), y: 1, anchor: .leading)
+            if isExpanded {
+                VStack(spacing: 0) {
+                    ForEach(group.items) { history in
+                        NavigationLink(destination: BudgetMonthDetailView(budget: budget, category: category, month: history.month, allTransactions: allTransactions, accounts: accounts)) {
+                            historyRow(history)
+                        }
+                        .buttonStyle(RowPressStyle())
+                    }
+                }
+                .padding(.top, 6)
             }
         }
-        .padding(.vertical, 10)
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
+        .padding(.bottom, 12)
+    }
+
+    private func historyRow(_ history: MonthlySpending) -> some View {
+        HStack(spacing: 16) {
+            Text(history.monthLabel)
+                .font(.app(16))
+                .foregroundStyle(Color.appText)
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 8) {
+                Text(history.spent.formattedAsCurrency())
+                    .font(.app(16))
+                    .monospacedDigit()
+                    .foregroundStyle(history.progress(budget.amount) > 1 ? Color.appError : Color.appText)
+                ThinBar(value: history.progress(budget.amount), color: history.statusColor(budget.amount))
+                    .frame(width: 120)
+            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.appTextTertiary)
+        }
+        .padding(.vertical, 14)
+        .contentShape(Rectangle())
+        .rowSeparator()
+        .accessibilityElement(children: .combine)
+        .accessibilityValue("Sisa \(Int(history.remainingPct(budget.amount))) persen")
     }
 }
 
@@ -703,149 +623,41 @@ fileprivate struct BudgetMonthDetailView: View {
         transactions.reduce(0) { $0 + $1.amount }
     }
 
-    private var remaining: Double {
-        budget.amount - spent
-    }
-
-    private var progress: Double {
-        budget.amount > 0 ? spent / budget.amount : 0
-    }
-
-    private var remainingPct: Double {
-        progress >= 1 ? 0 : (1 - progress) * 100
-    }
-
-    private var progressColor: Color {
-        remainingPct <= 0 ? .appError : remainingPct <= 20 ? .appWarning : .appPrimary
-    }
-
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                VStack(spacing: 0) {
-                    HStack(spacing: Spacing.sm) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.appPrimary.opacity(0.12))
-                                .frame(width: 40, height: 40)
-                            Image(systemName: category.icon ?? "tag")
-                                .font(.app(17, weight: .medium))
-                                .foregroundColor(.appPrimary)
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(monthLabel)
-                                .font(.app(17, weight: .semibold))
-                                .foregroundColor(.appText)
-                            Text("Budget \(budget.amount.formattedAsCurrency())")
-                                .font(.app(12))
-                                .foregroundColor(.appTextSecondary)
-                        }
-                        Spacer()
-                        Text(progress >= 1 ? "0%" : "\(Int((1 - progress) * 100))%")
-                            .font(.app(15, weight: .semibold))
-                            .foregroundColor(progressColor)
-                    }
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.xl)
+            VStack(alignment: .leading, spacing: 0) {
+                BudgetSummary(amount: budget.amount, spent: spent, month: month)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 32)
+                    .padding(.bottom, 32)
 
-                    HStack(spacing: 0) {
-                        Text("Rp")
-                            .font(.app(28, weight: .bold))
-                            .foregroundColor(.appText)
-                        Text(progress >= 1 ? "0" : remaining.formattedAsCurrency().replacingOccurrences(of: "Rp", with: ""))
-                            .font(.app(28, weight: .bold))
-                            .foregroundColor(.appText)
-                        Spacer()
-                    }
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.xs)
+                SectionDivider()
 
-                    Divider()
-                        .padding(.horizontal, Spacing.xl)
-                        .padding(.top, Spacing.md)
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionHeader(title: "Transaksi", trailing: "\(transactions.count) transaksi")
 
-                    HStack(spacing: 0) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Total Budget")
-                                .font(.app(11))
-                                .foregroundColor(.appTextSecondary)
-                            Text(budget.amount.formattedAsCurrency())
-                                .font(.app(14, weight: .semibold))
-                                .foregroundColor(.appText)
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 3) {
-                            Text("Terpakai")
-                                .font(.app(11))
-                                .foregroundColor(.appTextSecondary)
-                            Text(spent.formattedAsCurrency())
-                                .font(.app(14, weight: .semibold))
-                                .foregroundColor(.appExpense)
-                        }
-                    }
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.top, Spacing.md)
-
-                    ProgressView(value: min(progress, 1.0))
-                        .tint(progressColor)
-                        .padding(.horizontal, Spacing.xl)
-                        .padding(.top, Spacing.sm)
-                        .padding(.bottom, Spacing.lg)
-                }
-                .background(Color.appCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .padding(.horizontal)
-
-                HStack {
-                    Text("Transaksi")
-                        .font(.app(15, weight: .semibold))
-                    Spacer()
-                    Text("\(transactions.count) transaksi")
-                        .font(.app(12))
-                        .foregroundColor(.appTextSecondary)
-                }
-                .padding(.horizontal)
-                .padding(.top, Spacing.md)
-
-                if transactions.isEmpty {
-                    VStack(spacing: Spacing.sm) {
-                        Image(systemName: "tray")
-                            .font(.app(32))
-                            .foregroundColor(.appTextSecondary)
-                        Text("Belum ada transaksi")
-                            .font(.app(15))
-                            .foregroundColor(.appTextSecondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.xxxl)
-                    .background(Color.appCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .padding([.horizontal, .top])
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(transactions) { transaction in
-                            transactionRow(transaction)
-                                .contentShape(Rectangle())
-                                .onTapGesture { detailTransaction = transaction }
-                            if transaction.id != transactions.last?.id {
-                                Divider()
-                                    .padding(.leading, 52)
+                    if transactions.isEmpty {
+                        EmptyMessage(icon: "tray", title: "Belum ada transaksi", message: "Tidak ada pengeluaran kategori ini di bulan ini.")
+                            .padding(.vertical, 32)
+                    } else {
+                        VStack(spacing: 0) {
+                            ForEach(transactions) { transaction in
+                                Button { detailTransaction = transaction } label: {
+                                    TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showAccount: true)
+                                        .rowSeparator()
+                                }
+                                .buttonStyle(RowPressStyle())
                             }
                         }
+                        .padding(.top, 6)
                     }
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.vertical, Spacing.sm)
-                    .background(Color.appCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .padding([.horizontal, .top])
                 }
-
-                Color.clear
-                    .frame(height: Spacing.xl)
-                    .padding(.bottom)
+                .padding(.horizontal, 24)
+                .padding(.top, 28)
+                .padding(.bottom, 32)
             }
         }
-        .background(Color.appGroupedBackground)
+        .background(Color.appBackground)
         .navigationTitle(monthLabel)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $detailTransaction) { txn in
@@ -857,29 +669,5 @@ fileprivate struct BudgetMonthDetailView: View {
             )
             .presentationDetents([.medium, .large])
         }
-    }
-
-    private func miniStatCard(icon: String, label: String, amount: String, color: Color) -> some View {
-        VStack(spacing: Spacing.xs) {
-            Circle()
-                .fill(color.opacity(0.12))
-                .frame(width: 32, height: 32)
-                .overlay {
-                    Image(systemName: icon)
-                        .font(.app(11, weight: .semibold))
-                        .foregroundColor(color)
-                }
-            Text(label)
-                .font(.app(10))
-                .foregroundColor(.appTextSecondary)
-            Text(amount)
-                .font(.app(12, weight: .semibold))
-                .foregroundColor(color)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func transactionRow(_ transaction: Transaction) -> some View {
-        TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showAccount: true)
     }
 }
