@@ -35,6 +35,8 @@ struct AccountListView: View {
     @State private var cardTops = CardTops()
     @State private var transferFrom: Account?
     @State private var payCard: Account?
+    /// Shown as the main wallet at once while the change is saved.
+    @State private var pendingDefaultID: String?
     /// Rolls the hero's numbers in; replayed when the page opens and when a card closes.
     @State private var odometerOn = false
 
@@ -125,6 +127,11 @@ struct AccountListView: View {
             .detailPage(addLabel: "Tambah dompet") { showAddWallet = true }
             .navigationDestination(for: Account.self) { account in
                 walletDetail(account).detailPage()
+            }
+            .navigationDestination(for: WalletHistoryRoute.self) { route in
+                WalletHistoryView(account: route.account, transactions: accountTransactions[route.account.id] ?? [],
+                                  categories: categories, accounts: viewModel.accounts, isBalanceVisible: isBalanceVisible)
+                    .detailPage()
             }
             .navigationDestination(for: String.self) { route in
                 if route == Self.subscriptionsRoute {
@@ -609,17 +616,19 @@ struct AccountListView: View {
                 } else {
                     detailAction("Transfer", icon: "arrow.left.arrow.right") { transferFrom = account }
                 }
-                detailAction("Sesuaikan", icon: "slider.horizontal.3") { path.append(account) }
-                detailAction("Riwayat", icon: "clock.arrow.circlepath") { path.append(account) }
+                detailAction("Riwayat", icon: "clock.arrow.circlepath") { path.append(WalletHistoryRoute(account: account)) }
                 detailAction("Ubah", icon: "pencil") { path.append(account) }
             }
+
+            defaultRow(account)
+                .padding(.top, 18)
 
             HStack(alignment: .firstTextBaseline) {
                 Text("Transaksi terakhir")
                     .font(.app(17, weight: .semibold))
                     .foregroundStyle(Color.appText)
                 Spacer()
-                Button("Semua") { path.append(account) }
+                Button("Semua") { path.append(WalletHistoryRoute(account: account)) }
                     .font(.app(15))
                     .foregroundStyle(Color.appPrimary)
             }
@@ -642,6 +651,68 @@ struct AccountListView: View {
                     .rowSeparator()
                 }
             }
+        }
+    }
+
+    /// "Jadikan utama" right on the card's detail: the star fills and the row settles into
+    /// "Dompet utama" at once, while the change saves.
+    private func defaultRow(_ account: Account) -> some View {
+        let currentDefault = pendingDefaultID ?? viewModel.accounts.first(where: \.isDefault)?.id
+        let isDefault = account.id == currentDefault
+        let gold = Color(hex: "F5B301")
+        return Button { makeDefault(account) } label: {
+            HStack(spacing: 12) {
+                Image(systemName: isDefault ? "star.fill" : "star")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(isDefault ? gold : Color.appText)
+                    .contentTransition(.symbolEffect(.replace))
+                    .symbolEffect(.bounce, value: isDefault)
+                    .frame(width: 36, height: 36)
+                    .background(isDefault ? gold.opacity(0.16) : Color.appFill, in: Circle())
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(isDefault ? "Dompet utama" : "Jadikan dompet utama")
+                        .font(.app(15, weight: .semibold))
+                        .foregroundStyle(Color.appText)
+                    Text("Otomatis terpilih saat mencatat")
+                        .font(.app(12))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+                .lineLimit(1)
+                Spacer(minLength: 8)
+                if isDefault {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(Color.appPrimary)
+                        .transition(.scale(scale: 0.4).combined(with: .opacity))
+                } else {
+                    Text("Jadikan")
+                        .font(.app(14, weight: .semibold))
+                        .foregroundStyle(Color.appBackground)
+                        .padding(.horizontal, 14)
+                        .frame(height: 32)
+                        .background(Color.appText, in: Capsule())
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                }
+            }
+            .padding(12)
+            .background(isDefault ? gold.opacity(0.08) : Color(light: 0xF7F7F8, dark: 0x1C1C1E),
+                        in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(PressScaleStyle())
+        .disabled(isDefault)
+        .animation(.spring(duration: 0.45, bounce: 0.3), value: isDefault)
+        .sensoryFeedback(.success, trigger: isDefault) { _, now in now }
+        .accessibilityLabel(isDefault ? "Dompet utama" : "Jadikan dompet utama")
+    }
+
+    private func makeDefault(_ account: Account) {
+        guard let userId = authViewModel.currentUser?.id else { return }
+        pendingDefaultID = account.id
+        Task {
+            await viewModel.setDefaultAccount(id: account.id, userId: userId)
+            pendingDefaultID = nil
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
         }
     }
 
