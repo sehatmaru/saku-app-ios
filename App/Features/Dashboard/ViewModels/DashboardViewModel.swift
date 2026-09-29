@@ -167,8 +167,9 @@ final class DashboardViewModel: ObservableObject {
                 .reduce(0) { $0 + $1.amount }
             await NotificationManager.shared.resyncCardDue(cards: cards, statements: statements)
 
-            balance = accounts.filter { !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
-            creditDebt = accounts.filter { $0.isCreditCard }.reduce(0) { $0 + $1.balance }
+            // Archived wallets leave the totals, same as on Dompet.
+            balance = activeAccounts.filter { !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
+            creditDebt = cards.reduce(0) { $0 + $1.balance }
 
             let thisMonthTransactions = transactions.filter { isCurrentMonth($0.date) }
             currentMonthTransactionCount = thisMonthTransactions.count
