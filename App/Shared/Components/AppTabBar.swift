@@ -13,16 +13,6 @@ enum Haptics {
 
 // MARK: - Detail pages
 
-/// Opens the add-transaction form; set once by the tab host so any page can reach it.
-struct AddTransactionAction {
-    var run: () -> Void = {}
-    func callAsFunction() { run() }
-}
-
-extension EnvironmentValues {
-    @Entry var addTransaction = AddTransactionAction()
-}
-
 /// Lets a detail page hide the floating + while something covers the bottom of the screen.
 struct HidesDetailAddButton: PreferenceKey {
     static let defaultValue = false
@@ -30,10 +20,10 @@ struct HidesDetailAddButton: PreferenceKey {
 }
 
 extension View {
-    /// A page pushed over the tabs: the tab bar slides away and a lone glass + takes its
-    /// place at the bottom right.
-    func detailPage() -> some View {
-        modifier(DetailPageChrome())
+    /// A page pushed over the tabs: the tab bar slides away. With `onAdd`, a lone glass +
+    /// takes its place at the bottom right.
+    func detailPage(addLabel: String = "Tambah", onAdd: (() -> Void)? = nil) -> some View {
+        modifier(DetailPageChrome(addLabel: addLabel, onAdd: onAdd))
     }
 
     /// Hides the detail page's + while `hidden` is true.
@@ -43,7 +33,8 @@ extension View {
 }
 
 private struct DetailPageChrome: ViewModifier {
-    @Environment(\.addTransaction) private var addTransaction
+    let addLabel: String
+    let onAdd: (() -> Void)?
     @State private var isShown = false
     @State private var isHiddenByPage = false
 
@@ -54,8 +45,8 @@ private struct DetailPageChrome: ViewModifier {
                 withAnimation(.spring(duration: 0.3)) { isHiddenByPage = hidden }
             }
             .overlay(alignment: .bottomTrailing) {
-                if isShown && !isHiddenByPage {
-                    Button { addTransaction() } label: {
+                if let onAdd, isShown && !isHiddenByPage {
+                    Button(action: onAdd) {
                         Image(systemName: "plus")
                             .font(.system(size: 22, weight: .semibold))
                             .foregroundStyle(Color.appText)
@@ -67,7 +58,7 @@ private struct DetailPageChrome: ViewModifier {
                     .padding(.trailing, 20)
                     .padding(.bottom, 8)
                     .transition(.scale(scale: 0.5).combined(with: .opacity))
-                    .accessibilityLabel("Tambah transaksi")
+                    .accessibilityLabel(addLabel)
                 }
             }
             // Appears as the tab bar slides away, so the + reads as what's left of it.

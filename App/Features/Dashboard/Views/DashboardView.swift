@@ -91,7 +91,6 @@ struct DashboardView: View {
         )) {
             mainTabs
         }
-        .environment(\.addTransaction, AddTransactionAction { showAddSheet = true })
     }
 
     @TabContentBuilder<AppTab>
@@ -100,7 +99,7 @@ struct DashboardView: View {
             NavigationStack(path: $homePath) {
                 mainContent
                     .navigationDestination(for: HomeRoute.self) { _ in
-                        AccountListView(startsAdding: addsWalletOnOpen, path: $homePath).detailPage()
+                        AccountListView(startsAdding: addsWalletOnOpen, path: $homePath)
                     }
             }
             .onChange(of: homePath.count) { _, count in if count == 0 { addsWalletOnOpen = false } }

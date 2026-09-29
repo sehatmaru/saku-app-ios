@@ -114,12 +114,15 @@ struct AccountListView: View {
             }
             .coordinateSpace(.named(Self.space))
             .background(Color.appBackground)
-            .navigationTitle("Dompet")
+            .scrollIndicators(.hidden)
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .navigationBarBackButtonHidden(selectedID != nil)
             // The card pile sits at the bottom while a card's detail is open.
             .hidesDetailAddButton(isOverlayOn)
             .toolbar { toolbarItems }
+            .detailPage(addLabel: "Tambah dompet") { showAddWallet = true }
             .navigationDestination(for: Account.self) { account in
                 walletDetail(account).detailPage()
             }
@@ -192,7 +195,7 @@ struct AccountListView: View {
 
     // MARK: Header
 
-    /// Archive, balance and add; while a card's detail is open, only "Selesai".
+    /// Archive and balance; while a card's detail is open, only "Selesai".
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         if selectedID != nil {
@@ -219,12 +222,6 @@ struct AccountListView: View {
                         .tint(Color.appText)
                         .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
                     }
-                    Button {
-                        showAddWallet = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("Tambah dompet")
                 }
                 .disabled(!viewModel.hasLoadedOnce)
             }
