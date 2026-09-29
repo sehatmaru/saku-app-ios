@@ -44,7 +44,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool, isDefault: Bool? = nil, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil) async throws -> Account {
+    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool, isDefault: Bool? = nil, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil) async throws -> Account {
         var payload: [String: AnyJSON] = [
             "name": AnyJSON.string(name),
             "account_type": AnyJSON.string(type.rawValue),
@@ -57,6 +57,8 @@ final class SupabaseRepository: @unchecked Sendable {
         if let creditLimit { payload["credit_limit"] = AnyJSON.double(creditLimit) }
         if let dueDate { payload["due_date"] = AnyJSON.string(dueDate) }
         if let statementDay { payload["statement_day"] = AnyJSON.integer(statementDay) }
+        if let color { payload["color"] = AnyJSON.string(color) }
+        if let cardNetwork { payload["card_network"] = AnyJSON.string(cardNetwork) }
         return try await client
             .from("accounts")
             .update(payload)

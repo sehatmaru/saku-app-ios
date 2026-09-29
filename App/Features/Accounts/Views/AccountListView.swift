@@ -37,9 +37,9 @@ struct AccountListView: View {
     @State private var payCard: Account?
     /// Shown as the main wallet at once while the change is saved.
     @State private var pendingDefaultID: String?
-    /// The subscription form: a new one on `account`, or `existing` to edit.
-    @State private var subscriptionForm: SubscriptionForm?
     @State private var archiving: Account?
+    @State private var toastText = ""
+    @State private var isToastShown = false
     /// Rolls the hero's numbers in; replayed when the page opens and when a card closes.
     @State private var odometerOn = false
 
@@ -135,9 +135,17 @@ struct AccountListView: View {
                                   categories: categories, accounts: viewModel.accounts, isBalanceVisible: isBalanceVisible)
                     .detailPage()
             }
-            .navigationDestination(for: String.self) { route in
-                ArchivedWalletsView(accounts: archivedAccounts) { walletDetail($0).detailPage() }
+            .navigationDestination(for: WalletSubscriptionsRoute.self) { route in
+                WalletSubscriptionsView(account: route.account,
+                                        subscriptions: viewModel.subscriptions.filter { $0.accountId == route.account.id },
+                                        categories: categories)
                     .detailPage()
+            }
+            .navigationDestination(for: String.self) { route in
+                ArchivedWalletsView(accounts: archivedAccounts) { account in
+                    await viewModel.toggleAccountArchive(id: account.id)
+                }
+                .detailPage()
             }
             .refreshable {
                 guard let userId = authViewModel.currentUser?.id else { return }
@@ -157,22 +165,17 @@ struct AccountListView: View {
                 await syncCategories(userId: userId)
             }
             .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in reload() }
-            .alert("Arsipkan dompet?", isPresented: Binding(get: { archiving != nil }, set: { if !$0 { archiving = nil } }),
-                   presenting: archiving) { account in
-                Button("Batal", role: .cancel) {}
-                Button("Arsipkan") { archive(account) }
-            } message: { account in
-                Text("\(account.name) akan diarsipkan dan tidak bisa dipakai untuk transaksi baru. Kamu bisa mengaktifkannya lagi dari Diarsipkan.")
-            }
-            .sheet(item: $subscriptionForm) { form in
-                AddSubscriptionView(categories: categories, account: form.account, existing: form.existing) {
-                    subscriptionForm = nil
+            .sheet(item: $archiving) { account in
+                ArchiveWalletSheet(name: account.name) {
+                    archiving = nil
+                    archive(account)
                 }
-                .presentationDetents([.fraction(0.68), .large])
             }
+            .toast(toastText, isShown: $isToastShown)
             .sheet(item: $payCard) { card in
                 if let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) {
-                    PayCardBillSheet(card: card, statement: statement, wallets: viewModel.accounts)
+                    PayCardBillSheet(card: card, statement: statement, wallets: viewModel.accounts,
+                                     onPaid: { _, _ in showToast("Pembayaran tercatat") })
                 }
             }
             .fullScreenCover(item: $transferFrom) { account in
@@ -454,6 +457,13 @@ struct AccountListView: View {
         return f
     }()
 
+    private static let monthName: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM"
+        f.locale = Locale(identifier: "id_ID")
+        return f
+    }()
+
     // MARK: Stacks
 
     private func groupSection(_ group: WalletGroup) -> some View {
@@ -617,17 +627,14 @@ struct AccountListView: View {
         .onAppear { selectedID = lastSelectedID }
     }
 
+    /// Design 1a: four actions, the bill, the main-wallet switch and the way into the
+    /// wallet's recurring bills.
     private func detailContent(_ account: Account, isOpen: Bool) -> some View {
-        let recent = Array((accountTransactions[account.id] ?? []).prefix(3))
+        let statement = viewModel.statement(for: account, transactions: accountTransactions[account.id] ?? [])
         return VStack(alignment: .leading, spacing: 0) {
-            if let statement = viewModel.statement(for: account, transactions: accountTransactions[account.id] ?? []) {
-                CardBillSummary(statement: statement, isVisible: isBalanceVisible, compact: true)
-                    .padding(.bottom, 16)
-            }
-
             HStack(spacing: 0) {
                 if account.isCreditCard {
-                    detailAction("Bayar", icon: "creditcard") { payCard = account }
+                    detailAction("Bayar", icon: "creditcard", isPrimary: true) { payCard = account }
                 } else {
                     detailAction("Transfer", icon: "arrow.left.arrow.right") { transferFrom = account }
                 }
@@ -635,184 +642,117 @@ struct AccountListView: View {
                 detailAction("Ubah", icon: "pencil") { path.append(account) }
                 detailAction("Arsipkan", icon: "archivebox") { archiving = account }
             }
+            .padding(.horizontal, -8)
 
-            defaultRow(account)
-                .padding(.top, 18)
-
-            HStack(alignment: .firstTextBaseline) {
-                Text("Transaksi terakhir")
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(Color.appText)
-                Spacer()
-                Button("Semua") { path.append(WalletHistoryRoute(account: account)) }
-                    .font(.app(15))
-                    .foregroundStyle(Color.appPrimary)
+            if let statement {
+                billBox(statement, card: account)
+                    .padding(.top, 18)
             }
-            .padding(.top, 22)
 
-            if recent.isEmpty {
-                Text("Belum ada transaksi")
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .padding(.top, 12)
-            } else {
-                ForEach(recent) { transaction in
-                    TransactionRowView(
-                        transaction: transaction,
-                        categories: categories,
-                        accounts: viewModel.accounts,
-                        showBalance: isBalanceVisible,
-                        showDate: false
-                    )
-                    .rowSeparator()
-                }
-            }
+            defaultToggle(account)
+                .padding(.top, 14)
 
             if account.type != .cash {
-                subscriptionsSection(account)
-                    .padding(.top, 26)
+                subscriptionsLink(account)
+                    .padding(.top, 6)
             }
         }
     }
 
-    /// Netflix, Spotify and other bills that post on this wallet by themselves. Cash has none.
-    private func subscriptionsSection(_ account: Account) -> some View {
-        let subs = viewModel.subscriptions.filter { $0.accountId == account.id }
-            .sorted { ($0.isActive ? 0 : 1, $0.nextBillingDateAsDate ?? .distantFuture) < ($1.isActive ? 0 : 1, $1.nextBillingDateAsDate ?? .distantFuture) }
-        let monthly = subs.filter(\.isActive).reduce(0) { $0 + $1.monthlyAmount }
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Tagihan berulang")
-                    .font(.app(17, weight: .semibold))
+    /// What's owed on the last statement; tap to pay it.
+    private func billBox(_ statement: CreditStatement, card: Account) -> some View {
+        let owes = statement.remaining >= 1
+        let month = Self.monthName.string(from: statement.statementDate)
+        let (status, color): (String, Color) = switch statement.status {
+        case .overdue: ("Lewat jatuh tempo", .appError)
+        case .unpaid, .partial: ("Jatuh tempo " + Self.dayMonth.string(from: statement.dueDate), Color(hex: "C2410C"))
+        case .paid: ("Terima kasih", .appPrimary)
+        case .none: ("Belum ada tagihan", .appTextSecondary)
+        }
+        return Button { payCard = card } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Tagihan " + month)
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Text(owes ? masked(statement.remaining) : statement.status == .paid ? "Lunas" : "Rp0")
+                        .font(.app(20, weight: .semibold))
+                        .tracking(-0.3)
+                        .foregroundStyle(Color.appText)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                }
+                Spacer(minLength: 8)
+                Text(status)
+                    .font(.app(13))
+                    .foregroundStyle(color)
+                    .multilineTextAlignment(.trailing)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(PressScaleStyle())
+        .animation(.settle(0.4), value: statement.remaining)
+    }
+
+    /// The system switch: on makes this the main wallet; there's always one, so it can't
+    /// be switched off here.
+    private func defaultToggle(_ account: Account) -> some View {
+        let isDefault = account.id == mainWalletID
+        return HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Dompet utama")
+                    .font(.app(16))
                     .foregroundStyle(Color.appText)
-                if monthly > 0 {
-                    Text(masked(monthly) + "/bln")
+                Text("Dipilih otomatis saat mencatat transaksi")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+            }
+            Spacer(minLength: 8)
+            Toggle("Dompet utama", isOn: Binding(get: { isDefault }, set: { if $0 { makeDefault(account) } }))
+                .labelsHidden()
+                .tint(.appPrimary)
+                .allowsHitTesting(!isDefault)
+        }
+        .frame(height: 64)
+        .sensoryFeedback(.success, trigger: isDefault) { _, now in now }
+    }
+
+    private func subscriptionsLink(_ account: Account) -> some View {
+        let active = viewModel.subscriptions.filter { $0.accountId == account.id && $0.isActive }
+        let monthly = active.reduce(0) { $0 + $1.monthlyAmount }
+        return Button { path.append(WalletSubscriptionsRoute(account: account)) } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "repeat")
+                    .font(.system(size: 17))
+                    .foregroundStyle(Color.appBody)
+                    .frame(width: 40, height: 40)
+                    .background(Color.appFill, in: Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Tagihan berulang")
+                        .font(.app(16))
+                        .foregroundStyle(Color.appText)
+                    Text(active.isEmpty ? "Belum ada" : "\(active.count) tagihan · \(masked(monthly))/bulan")
                         .font(.app(13))
                         .foregroundStyle(Color.appTextSecondary)
                         .monospacedDigit()
                 }
-                Spacer()
-                Button("Tambah") { subscriptionForm = SubscriptionForm(account: account, existing: nil) }
-                    .font(.app(15))
-                    .foregroundStyle(Color.appPrimary)
-            }
-
-            if subs.isEmpty {
-                Button { subscriptionForm = SubscriptionForm(account: account, existing: nil) } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "repeat")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .frame(width: 36, height: 36)
-                            .background(Color.appFill, in: Circle())
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Catat langganan").font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
-                            Text("Netflix, Spotify, dan tagihan rutin lain").font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                        }
-                        Spacer()
-                        Image(systemName: "plus").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
-                    }
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(RowPressStyle())
-                .padding(.top, 6)
-            } else {
-                ForEach(subs) { sub in
-                    Button { subscriptionForm = SubscriptionForm(account: account, existing: sub) } label: {
-                        subscriptionRow(sub)
-                    }
-                    .buttonStyle(RowPressStyle())
-                }
-            }
-        }
-        .animation(.settle(0.4), value: subs.map(\.id))
-    }
-
-    private func subscriptionRow(_ sub: CardSubscription) -> some View {
-        let icon = sub.categoryId.flatMap { id in categories.first { $0.id == id }?.icon } ?? "repeat"
-        return HStack(spacing: 14) {
-            Image(systemName: icon)
-                .font(.system(size: 19))
-                .foregroundStyle(Color.appTextSecondary)
-                .frame(width: 24)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(sub.name)
-                    .font(.app(16))
-                    .foregroundStyle(sub.isActive ? Color.appText : Color.appTextSecondary)
-                Group {
-                    if !sub.isActive {
-                        Text("Dijeda")
-                    } else if let increase = sub.priceIncrease {
-                        Text("Naik " + increase.formattedAsCurrency()).foregroundStyle(Color.appError)
-                    } else if let next = sub.nextBillingDateAsDate {
-                        Text("Berikutnya " + Self.dayMonth.string(from: next))
-                    }
-                }
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-            }
-            Spacer(minLength: 8)
-            Text(masked(sub.amount) + (sub.frequency == .monthly ? "/bln" : "/thn"))
-                .font(.app(15))
-                .foregroundStyle(sub.isActive ? Color.appText : Color.appTextSecondary)
-                .monospacedDigit()
-        }
-        .padding(.vertical, 12)
-        .rowSeparator()
-        .contentShape(Rectangle())
-    }
-
-    /// "Jadikan utama" right on the card's detail: the star fills and the row settles into
-    /// "Dompet utama" at once, while the change saves.
-    private func defaultRow(_ account: Account) -> some View {
-        let isDefault = account.id == mainWalletID
-        let gold = Color(hex: "F5B301")
-        return Button { makeDefault(account) } label: {
-            HStack(spacing: 12) {
-                Image(systemName: isDefault ? "star.fill" : "star")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(isDefault ? gold : Color.appText)
-                    .contentTransition(.symbolEffect(.replace))
-                    .symbolEffect(.bounce, value: isDefault)
-                    .frame(width: 36, height: 36)
-                    .background(isDefault ? gold.opacity(0.16) : Color.appFill, in: Circle())
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(isDefault ? "Dompet utama" : "Jadikan utama")
-                        .font(.app(15, weight: .semibold))
-                        .foregroundStyle(Color.appText)
-                    Text("Dipilih otomatis saat catat transaksi")
-                        .font(.app(12))
-                        .foregroundStyle(Color.appTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .lineLimit(2)
                 Spacer(minLength: 8)
-                if isDefault {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Color.appPrimary)
-                        .transition(.scale(scale: 0.4).combined(with: .opacity))
-                } else {
-                    Text("Jadikan")
-                        .font(.app(14, weight: .semibold))
-                        .foregroundStyle(Color.appBackground)
-                        .padding(.horizontal, 14)
-                        .frame(height: 32)
-                        .background(Color.appText, in: Capsule())
-                        .transition(.scale(scale: 0.8).combined(with: .opacity))
-                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
             }
-            .padding(12)
-            .background(isDefault ? gold.opacity(0.08) : Color(light: 0xF7F7F8, dark: 0x1C1C1E),
-                        in: RoundedRectangle(cornerRadius: 16))
-            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .frame(height: 64)
+            .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+            .contentShape(Rectangle())
         }
-        .buttonStyle(PressScaleStyle())
-        .disabled(isDefault)
-        .animation(.spring(duration: 0.45, bounce: 0.3), value: isDefault)
-        .sensoryFeedback(.success, trigger: isDefault) { _, now in now }
-        .accessibilityLabel(isDefault ? "Dompet utama" : "Jadikan dompet utama")
+        .buttonStyle(RowPressStyle())
     }
 
     /// The main wallet, switched at once while a change is saving.
@@ -825,8 +765,15 @@ struct AccountListView: View {
         closeDetail()
         Task {
             try? await Task.sleep(for: .milliseconds(600))
-            _ = await viewModel.toggleAccountArchive(id: account.id)
+            if await viewModel.toggleAccountArchive(id: account.id) {
+                showToast(account.name + " diarsipkan")
+            }
         }
+    }
+
+    private func showToast(_ text: String) {
+        toastText = text
+        isToastShown = true
     }
 
     private func makeDefault(_ account: Account) {
@@ -839,49 +786,52 @@ struct AccountListView: View {
         }
     }
 
-    private func detailAction(_ title: String, icon: String, perform: @escaping () -> Void) -> some View {
+    private func detailAction(_ title: String, icon: String, isPrimary: Bool = false,
+                              perform: @escaping () -> Void) -> some View {
         Button(action: perform) {
-            VStack(spacing: 6) {
+            VStack(spacing: 7) {
                 Image(systemName: icon)
-                    .font(.system(size: 18))
-                    .foregroundStyle(Color.appText)
-                    .frame(width: 44, height: 44)
-                    .background(Color.appFill, in: Circle())
+                    .font(.system(size: 20))
+                    .foregroundStyle(isPrimary ? .white : Color.appText)
+                    .frame(width: 52, height: 52)
+                    .background(isPrimary ? Color.appPrimary : Color.appFill, in: Circle())
                 Text(title)
-                    .font(.app(12))
+                    .font(.app(13))
                     .foregroundStyle(Color.appBody)
             }
             .frame(maxWidth: .infinity)
         }
-        .buttonStyle(RowPressStyle())
+        .buttonStyle(PressScaleStyle())
     }
-
-    // MARK: Footer
 
     private func masked(_ amount: Double) -> String {
         isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
     }
 
     private func walletDetail(_ account: Account) -> some View {
-        // A card's debt moves when its bill is paid from its page; take the fresh balance so the
-        // statement matches the reloaded transactions. Other wallets keep the pushed snapshot,
-        // since their balance field is edited in place.
-        let shown = account.isCreditCard ? (viewModel.accounts.first { $0.id == account.id } ?? account) : account
-        return WalletDetailView(
-            account: shown,
-            transactions: accountTransactions[account.id] ?? [],
-            categories: categories,
-            accounts: viewModel.accounts,
-            installments: viewModel.installments,
-            onSave: { id, name, type, icon, isArchived, newBalance, oldBalance, creditLimit, dueDate, statementDay in
-                return await viewModel.rebalanceAccount(id: id, name: name, type: type, icon: icon, isArchived: isArchived, newBalance: newBalance, oldBalance: oldBalance, userId: authViewModel.currentUser?.id ?? "", creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay)
-            },
-            onDelete: { id in return await viewModel.removeAccount(id: id) },
-            onToggleArchive: { id, _ in return await viewModel.toggleAccountArchive(id: id) },
-            onSetDefault: account.isActive
-                ? { id in await viewModel.setDefaultAccount(id: id, userId: authViewModel.currentUser?.id ?? "") }
-                : nil
+        let fresh = viewModel.accounts.first { $0.id == account.id } ?? account
+        return EditWalletView(
+            account: fresh,
+            transactionCount: accountTransactions[account.id]?.count ?? 0,
+            onSave: { edit in await save(edit, on: fresh) },
+            onArchive: { await viewModel.toggleAccountArchive(id: account.id) },
+            onUnarchive: { await viewModel.toggleAccountArchive(id: account.id) },
+            onDelete: { await viewModel.removeAccount(id: account.id) }
         )
+    }
+
+    /// Writes the Ubah dompet edits; a new saldo is logged as an adjustment by the view model.
+    private func save(_ edit: WalletEdit, on account: Account) async -> Bool {
+        guard let userId = authViewModel.currentUser?.id else { return false }
+        let saved = await viewModel.rebalanceAccount(
+            id: account.id, name: edit.name, type: account.type, icon: edit.icon, isArchived: account.isArchived,
+            newBalance: edit.balance, oldBalance: account.balance, userId: userId,
+            creditLimit: edit.creditLimit, dueDate: edit.dueDay.map(String.init), statementDay: edit.statementDay,
+            color: edit.color, cardNetwork: edit.cardNetwork)
+        if saved, edit.isDefault, !account.isDefault {
+            await viewModel.setDefaultAccount(id: account.id, userId: userId)
+        }
+        return saved
     }
 
     // MARK: Data
@@ -1243,10 +1193,12 @@ struct MiniWalletCard: View {
 
 // MARK: - Archived
 
-struct ArchivedWalletsView<Destination: View>: View {
+/// Archived wallets, each with "Pulihkan" to bring it back to the list.
+struct ArchivedWalletsView: View {
     let accounts: [Account]
-    @ViewBuilder let destination: (Account) -> Destination
+    let onRestore: (Account) async -> Bool
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @State private var restoring: Set<String> = []
 
     var body: some View {
         ScrollView {
@@ -1255,29 +1207,50 @@ struct ArchivedWalletsView<Destination: View>: View {
                              message: "Dompet yang diarsipkan disimpan di sini, lengkap dengan riwayatnya.")
                     .padding(.horizontal, 40)
                     .padding(.top, 120)
+                    .transition(.opacity)
             }
             LazyVStack(spacing: 0) {
                 ForEach(accounts) { account in
-                    NavigationLink(destination: destination(account)) {
-                        HStack(spacing: 14) {
-                            MiniWalletCard(account: account)
+                    HStack(spacing: 14) {
+                        MiniWalletCard(account: account)
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(account.name)
                                 .font(.app(16, weight: .medium))
                                 .foregroundStyle(Color.appText)
-                            Spacer()
                             Text(isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp" + hiddenAmount)
-                                .font(.app(16))
+                                .font(.app(13))
                                 .monospacedDigit()
                                 .foregroundStyle(Color.appTextSecondary)
                         }
-                        .padding(.vertical, 12)
-                        .rowSeparator()
-                        .contentShape(Rectangle())
+                        Spacer()
+                        Button {
+                            restoring.insert(account.id)
+                            Task {
+                                _ = await onRestore(account)
+                                restoring.remove(account.id)
+                            }
+                        } label: {
+                            Group {
+                                if restoring.contains(account.id) {
+                                    ProgressView().controlSize(.small)
+                                } else {
+                                    Text("Pulihkan").font(.app(14, weight: .semibold))
+                                }
+                            }
+                            .foregroundStyle(Color.appText)
+                            .frame(width: 88, height: 34)
+                            .background(Color.appFill, in: Capsule())
+                        }
+                        .buttonStyle(PressScaleStyle())
+                        .disabled(restoring.contains(account.id))
                     }
-                    .buttonStyle(RowPressStyle())
+                    .padding(.vertical, 12)
+                    .rowSeparator()
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
             .padding(.horizontal, 24)
+            .animation(.settle(0.4), value: accounts.map(\.id))
         }
         .background(Color.appBackground)
         .navigationTitle("Diarsipkan")
@@ -1285,8 +1258,47 @@ struct ArchivedWalletsView<Destination: View>: View {
     }
 }
 
-private struct SubscriptionForm: Identifiable {
+/// Pushes a wallet's recurring bills.
+struct WalletSubscriptionsRoute: Hashable {
     let account: Account
-    let existing: CardSubscription?
-    var id: String { existing?.id ?? "new-" + account.id }
+}
+
+/// "Arsipkan <name>?" as a short sheet with one black button.
+private struct ArchiveWalletSheet: View {
+    let name: String
+    let onArchive: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                Text("Arsipkan \(name)?")
+                    .font(.app(17, weight: .semibold))
+                Spacer()
+                Button("Batal") { dismiss() }
+                    .font(.app(17))
+                    .foregroundStyle(Color.appPrimary)
+            }
+            .frame(height: 48)
+            Text("Dompet disembunyikan dari daftar dan total. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja.")
+                .font(.app(15))
+                .lineSpacing(3)
+                .foregroundStyle(Color.appBody)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(action: onArchive) {
+                Label("Arsipkan", systemImage: "archivebox")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appBackground)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color.appText, in: Capsule())
+            }
+            .buttonStyle(PressScaleStyle())
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
+        .presentationDetents([.height(250)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+    }
 }

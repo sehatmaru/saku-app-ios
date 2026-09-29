@@ -1,29 +1,25 @@
 import SwiftUI
 
+/// "Tambah tagihan" sheet (design 1b): amount, name, category chips, billing day, frequency and a numpad.
 struct AddSubscriptionView: View {
     @Environment(\.dismiss) private var dismiss
 
     let categories: [Category]
-    /// Wallets to choose from; empty when the wallet is fixed by the caller.
-    let accounts: [Account]
+    let account: Account
     let existing: CardSubscription?
     let onSave: () -> Void
 
+    @State private var amount = 0
     @State private var nameText = ""
-    @State private var amountDigits = ""
-    @State private var showKeyboard = false
     @State private var selectedCategory: Category?
+    @State private var isCategoryOpen = false
     @State private var selectedFrequency: CardSubscription.Frequency = .monthly
-    @State private var selectedDate = Date()
-    @State private var noteText = ""
-    @State private var showCategoryPicker = false
-    @State private var showDatePicker = false
-    @State private var showValidationAlert = false
-    @State private var validationMessage = ""
+    @State private var billingDay = Calendar.current.component(.day, from: Date())
+    @State private var bump = false
     @State private var isSaving = false
-    @State private var selectedAccount: Account?
-    @State private var showWalletPicker = false
+    @State private var errorMessage: String?
     @State private var showDeleteConfirm = false
+    @FocusState private var isNameFocused: Bool
 
     private var expenseCategories: [Category] {
         categories.filter { $0.type == .expense }
@@ -31,188 +27,233 @@ struct AddSubscriptionView: View {
 
     init(categories: [Category], account: Account, existing: CardSubscription? = nil, onSave: @escaping () -> Void) {
         self.categories = categories
-        self.accounts = []
+        self.account = account
         self.existing = existing
         self.onSave = onSave
-        _selectedAccount = State(initialValue: account)
     }
 
-    /// Lets the user pick the wallet (any type); editing keeps the subscription's own wallet.
-    init(categories: [Category], accounts: [Account], existing: CardSubscription? = nil, onSave: @escaping () -> Void) {
-        self.categories = categories
-        self.accounts = accounts
-        self.existing = existing
-        self.onSave = onSave
-        _selectedAccount = State(initialValue: existing.flatMap { e in accounts.first { $0.id == e.accountId } } ?? accounts.first)
+    private var canSave: Bool {
+        amount > 0 && !nameText.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving
     }
+
+    private var frequencyText: String { selectedFrequency == .monthly ? "tiap bulan" : "tiap tahun" }
 
     var body: some View {
         VStack(spacing: 0) {
             topBar
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(spacing: 0) {
                     amountSection
-                    formRows
-                        .padding(.top, 12)
-                }
-                .padding(.bottom, 24)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .gesture(showKeyboard ? TapGesture().onEnded { showKeyboard = false } : nil)
+                    VStack(spacing: 0) {
+                        nameRow
+                        categoryRow
+                        categoryChips
+                        dayRow
+                        frequencyRow
+                        if existing != nil { manageRow }
+                    }
+                    .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
 
-            if showKeyboard {
-                AmountKeyboard(amountDigits: $amountDigits, maxDigits: 12) {
-                    showKeyboard = false
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.app(13))
+                            .foregroundStyle(Color.appError)
+                            .padding(.horizontal, 24)
+                            .padding(.top, 12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
-                .padding(.top, 20)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+            .scrollBounceBehavior(.basedOnSize)
+            .scrollDismissesKeyboard(.interactively)
+
+            AmountPad(color: .appPrimary, isEnabled: canSave, isSaving: isSaving, onPress: press, onSave: save)
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
         }
-        .animation(.easeInOut(duration: 0.25), value: showKeyboard)
         .background(Color.appBackground)
         .presentationBackground(Color.appBackground)
-        .alert("Perhatian", isPresented: $showValidationAlert) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(validationMessage) }
-        .onAppear {
-            selectedCategory = existing.flatMap { e in expenseCategories.first { $0.id == e.categoryId } }
-            if let existing {
-                nameText = existing.name
-                amountDigits = String(Int(existing.amount))
-                selectedFrequency = existing.frequency
-                selectedDate = existing.nextBillingDateAsDate ?? Date()
-                noteText = existing.note ?? ""
-                if !amountDigits.isEmpty { showKeyboard = false }
-            } else {
-                showKeyboard = true
-            }
-        }
-        .sheet(isPresented: $showCategoryPicker) { categoryPickerContent }
-        .sheet(isPresented: $showDatePicker) { datePickerContent }
-        .sheet(isPresented: $showWalletPicker) { walletPickerContent }
-        .confirmationDialog("Hapus langganan ini?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
-            Button("Hapus langganan", role: .destructive) { delete() }
+        .presentationDragIndicator(.visible)
+        .onAppear(perform: prefill)
+        .confirmationDialog("Hapus tagihan ini?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("Hapus tagihan", role: .destructive) { delete() }
             Button("Batal", role: .cancel) {}
         } message: {
             Text("Tagihan berikutnya tidak akan dicatat lagi.")
         }
     }
 
+    // MARK: Header
+
     private var topBar: some View {
         HStack {
             Button("Batal") { dismiss() }
                 .font(.app(17))
-                .foregroundStyle(Color.appTextSecondary)
+                .foregroundStyle(Color.appPrimary)
             Spacer()
-            if isSaving {
-                ProgressView()
-                    .tint(.appPrimary)
-            } else {
-                Button("Simpan") { save() }
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(canSave ? Color.appPrimary : Color.appTextTertiary)
-                    .disabled(!canSave)
-            }
         }
         .overlay {
-            Text(existing != nil ? "Edit tagihan" : "Tambah tagihan")
+            Text(existing != nil ? "Ubah tagihan" : "Tambah tagihan")
                 .font(.app(17, weight: .semibold))
                 .foregroundStyle(Color.appText)
         }
         .frame(height: 48)
         .padding(.horizontal, 24)
-        .padding(.top, 8)
+        .padding(.top, 13)
     }
 
     // MARK: Amount
 
     private var amountSection: some View {
-        HStack(alignment: .center) {
-            HeroAmount(value: Double(amountDigits) ?? 0, size: .medium)
-                .opacity(amountDigits.isEmpty ? 0.55 : 1)
-            Spacer()
-            if !amountDigits.isEmpty {
-                Button {
-                    amountDigits = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Color.appTextTertiary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Hapus nominal")
+        VStack(spacing: 6) {
+            HStack(alignment: .top, spacing: 4) {
+                Text("Rp")
+                    .font(.app(20))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.top, 7)
+                Text(Double(amount).formattedAsDigits())
+                    .font(.app(48, weight: .light))
+                    .tracking(-1.8)
+                    .foregroundStyle(amount > 0 ? Color.appText : Color.appTextTertiary)
+                    .animation(.easeInOut(duration: 0.2), value: amount > 0)
+                    .contentTransition(.numericText())
             }
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .scaleEffect(bump ? 1.04 : 1)
+            .animation(.easeOut(duration: 0.14), value: bump)
+            Text("Ditagih ke \(account.name) \(frequencyText)")
+                .font(.app(13))
+                .foregroundStyle(Color.appTextTertiary)
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 24)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture { showKeyboard = true }
+        .padding(.top, 14)
+        .padding(.bottom, 20)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: Rows
 
-    private var formRows: some View {
-        VStack(spacing: 0) {
-            fieldRow("Nama", placeholder: "Contoh: Netflix", text: $nameText)
-
-            if !accounts.isEmpty {
-                Button { showWalletPicker = true } label: {
-                    DetailRow(label: "Dompet", value: selectedAccount?.name ?? "Pilih",
-                              swatch: selectedAccount.map { walletColor($0) }, showsChevron: existing == nil)
-                }
-                .buttonStyle(RowPressStyle())
-                .disabled(existing != nil)
-            }
-
-            Button { showCategoryPicker = true } label: {
-                DetailRow(label: "Kategori", value: selectedCategory?.name ?? "Pilih",
-                          icon: selectedCategory?.icon ?? "tag", showsChevron: true)
-            }
-            .buttonStyle(RowPressStyle())
-
-            frequencyRow
-
-            Button { showDatePicker = true } label: {
-                DetailRow(label: "Tagihan", value: formattedDate(selectedDate), icon: "calendar", showsChevron: true)
-            }
-            .buttonStyle(RowPressStyle())
-
-            fieldRow("Catatan", placeholder: "Opsional", text: $noteText)
-
-            if existing != nil {
-                Button("Hapus langganan", role: .destructive) { showDeleteConfirm = true }
-                    .font(.app(16, weight: .medium))
-                    .foregroundStyle(Color.appError)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .overlay(Capsule().stroke(Color.appError.opacity(0.4), lineWidth: 1))
-                    .padding(.horizontal, 24)
-                    .padding(.top, 28)
-                    .disabled(isSaving)
-            }
-        }
+    private func label(_ text: String) -> some View {
+        Text(text)
+            .font(.app(15))
+            .foregroundStyle(Color.appTextSecondary)
+            .lineLimit(1)
+            .frame(width: 100, alignment: .leading)
     }
 
-    private func fieldRow(_ label: String, placeholder: String, text: Binding<String>) -> some View {
+    private var nameRow: some View {
         HStack(spacing: 12) {
-            Text(label)
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-                .frame(width: 76, alignment: .leading)
-            TextField(placeholder, text: text)
+            label("Nama")
+            TextField("Contoh: Netflix", text: $nameText)
                 .font(.app(16, weight: .medium))
                 .foregroundStyle(Color.appText)
+                .focused($isNameFocused)
                 .submitLabel(.done)
-            if !text.wrappedValue.isEmpty {
-                Button { text.wrappedValue = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
+                .onChange(of: nameText) { _, new in
+                    if new.count > 40 { nameText = String(new.prefix(40)) }
+                }
+        }
+        .frame(height: 52)
+        .padding(.leading, 24)
+        .padding(.trailing, 20)
+        .rowSeparator()
+    }
+
+    private var categoryRow: some View {
+        Button {
+            isNameFocused = false
+            withAnimation(.easeInOut(duration: 0.3)) { isCategoryOpen.toggle() }
+        } label: {
+            HStack(spacing: 12) {
+                label("Kategori")
+                HStack(spacing: 8) {
+                    Image(systemName: selectedCategory?.icon ?? "tag")
+                        .font(.system(size: 17))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Text(selectedCategory?.name ?? "Pilih")
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(selectedCategory == nil ? Color.appTextSecondary : Color.appText)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
+                    .rotationEffect(.degrees(isCategoryOpen ? 180 : 0))
+            }
+            .frame(height: 52)
+            .padding(.leading, 24)
+            .padding(.trailing, 20)
+            .rowSeparator()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+        .accessibilityValue(selectedCategory?.name ?? "Belum dipilih")
+    }
+
+    private var categoryChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(expenseCategories) { category in
+                    let isOn = category.id == selectedCategory?.id
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { selectedCategory = category }
+                        Task {
+                            try? await Task.sleep(for: .milliseconds(240))
+                            withAnimation(.easeInOut(duration: 0.3)) { isCategoryOpen = false }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: category.icon ?? "tag").font(.system(size: 14))
+                            Text(category.name).font(.app(14, weight: .medium))
+                        }
+                        .foregroundStyle(isOn ? Color.appBackground : Color.appText)
+                        .padding(.leading, 11)
+                        .padding(.trailing, 14)
+                        .frame(height: 36)
+                        .background(isOn ? Color.appText : Color.appFill, in: Capsule())
+                    }
+                    .buttonStyle(PressScaleStyle())
+                    .accessibilityAddTraits(isOn ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 10)
+        }
+        .frame(height: isCategoryOpen ? 56 : 0, alignment: .top)
+        .opacity(isCategoryOpen ? 1 : 0)
+        .clipped()
+        .rowSeparator()
+        .allowsHitTesting(isCategoryOpen)
+    }
+
+    private var dayRow: some View {
+        HStack(spacing: 12) {
+            label("Tanggal tagih")
+            Menu {
+                Picker("Tanggal tagih", selection: $billingDay) {
+                    ForEach(1...31, id: \.self) { Text("Tanggal \($0)").tag($0) }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Text("Tanggal \(billingDay)")
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(Color.appText)
+                    Text("· " + TransactionDates.dayMonth.string(from: nextBillingDate))
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color.appTextTertiary)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Hapus \(label.lowercased())")
+                .monospacedDigit()
+                .contentShape(Rectangle())
             }
         }
         .frame(height: 52)
@@ -223,10 +264,7 @@ struct AddSubscriptionView: View {
 
     private var frequencyRow: some View {
         HStack(spacing: 12) {
-            Text("Frekuensi")
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-                .frame(width: 76, alignment: .leading)
+            label("Frekuensi")
             HStack(spacing: 8) {
                 frequencyChip("Bulanan", .monthly)
                 frequencyChip("Tahunan", .yearly)
@@ -255,40 +293,78 @@ struct AddSubscriptionView: View {
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
-    // MARK: Pickers
-
-    private var categoryPickerContent: some View {
-        PickerSheet(title: "Pilih kategori", onDone: { showCategoryPicker = false }) {
-            CategoryPickerGrid(categories: expenseCategories, selectedId: selectedCategory?.id, color: .appError) { cat in
-                selectedCategory = cat; showCategoryPicker = false
+    /// Pause/resume and delete, only when editing.
+    private var manageRow: some View {
+        HStack(spacing: 8) {
+            Button { togglePause() } label: {
+                Label(existing?.isActive == false ? "Aktifkan" : "Jeda",
+                      systemImage: existing?.isActive == false ? "play.fill" : "pause.fill")
+                    .font(.app(14, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                    .padding(.horizontal, 14)
+                    .frame(height: 32)
+                    .background(Color.appFill, in: Capsule())
             }
-        }
-    }
-
-    private var walletPickerContent: some View {
-        PickerSheet(title: "Pilih dompet", onDone: { showWalletPicker = false }) {
-            WalletPickerGrid(accounts: accounts, selectedId: selectedAccount?.id) { acc in
-                selectedAccount = acc; showWalletPicker = false
+            .buttonStyle(PressScaleStyle())
+            Button { showDeleteConfirm = true } label: {
+                Label("Hapus", systemImage: "trash")
+                    .font(.app(14, weight: .medium))
+                    .foregroundStyle(Color.appError)
+                    .padding(.horizontal, 14)
+                    .frame(height: 32)
+                    .overlay(Capsule().stroke(Color.appError.opacity(0.4), lineWidth: 1))
             }
+            .buttonStyle(PressScaleStyle())
+            Spacer(minLength: 0)
+        }
+        .disabled(isSaving)
+        .padding(.horizontal, 24)
+        .padding(.top, 14)
+    }
+
+    // MARK: Logic
+
+    private func press(_ key: String) {
+        guard let next = NumberPad.apply(key, to: amount) else { return }
+        withAnimation(.easeOut(duration: 0.14)) { amount = next }
+        bump = true
+        Task {
+            try? await Task.sleep(for: .milliseconds(110))
+            bump = false
         }
     }
 
-    private var datePickerContent: some View {
-        PickerSheet(title: "Tagihan berikutnya", onDone: { showDatePicker = false }) {
-            DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .tint(.appPrimary)
-                .labelsHidden()
-                .onChange(of: selectedDate) { _, _ in showDatePicker = false }
-                .padding(.horizontal, 16)
+    private func prefill() {
+        guard let existing else { return }
+        nameText = existing.name
+        amount = Int(existing.amount)
+        selectedFrequency = existing.frequency
+        selectedCategory = expenseCategories.first { $0.id == existing.categoryId }
+        if let date = existing.nextBillingDateAsDate {
+            billingDay = Calendar.current.component(.day, from: date)
         }
     }
 
-    // MARK: Helpers
+    /// Next date on `billingDay` from today (today included), clamped to short months.
+    /// When editing and the day wasn't changed, the stored date stays (yearly ones keep their month).
+    private var nextBillingDate: Date {
+        if let date = existing?.nextBillingDateAsDate, Calendar.current.component(.day, from: date) == billingDay {
+            return date
+        }
+        return Self.nextOccurrence(ofDay: billingDay, from: Date())
+    }
 
-    private func formattedDate(_ date: Date) -> String {
-        let f = DateFormatter(); f.dateFormat = "d MMMM yyyy"; f.locale = Locale(identifier: "id_ID")
-        return f.string(from: date)
+    static func nextOccurrence(ofDay day: Int, from now: Date) -> Date {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: now)
+        for offset in 0...1 {
+            guard let month = calendar.date(byAdding: .month, value: offset, to: today),
+                  let range = calendar.range(of: .day, in: .month, for: month) else { continue }
+            var parts = calendar.dateComponents([.year, .month], from: month)
+            parts.day = min(day, range.count)
+            if let date = calendar.date(from: parts), date >= today { return date }
+        }
+        return today
     }
 
     private func dateString(_ date: Date) -> String {
@@ -296,50 +372,67 @@ struct AddSubscriptionView: View {
         return f.string(from: date)
     }
 
-    private var canSave: Bool {
-        guard !amountDigits.isEmpty, let amount = Double(amountDigits), amount > 0 else { return false }
-        guard !nameText.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
-        return selectedCategory != nil && selectedAccount != nil
+    /// The chosen category, or "Lainnya" when none was picked.
+    private var categoryId: String? {
+        (selectedCategory ?? expenseCategories.first { $0.name.localizedCaseInsensitiveCompare("Lainnya") == .orderedSame })?.id
     }
 
     private func save() {
-        guard let amount = Double(amountDigits), amount > 0 else {
-            validationMessage = "Nominal tidak valid."; showValidationAlert = true; return
-        }
-        guard let category = selectedCategory else {
-            validationMessage = "Pilih kategori tagihan."; showValidationAlert = true; return
-        }
-        guard let account = selectedAccount else {
-            validationMessage = "Pilih dompet tagihan."; showValidationAlert = true; return
-        }
+        guard canSave else { return }
         isSaving = true
+        errorMessage = nil
+        let name = nameText.trimmingCharacters(in: .whitespaces)
+        let value = Double(amount)
+        let nextDate = dateString(nextBillingDate)
         Task {
             do {
                 await NotificationManager.shared.requestPermissionIfNeeded()
-                let nextDate = dateString(selectedDate)
+                let saved: CardSubscription
                 if let existing {
-                    _ = try await SupabaseRepository.shared.updateSubscription(
-                        id: existing.id, name: nameText.trimmingCharacters(in: .whitespaces),
-                        amount: amount, frequency: selectedFrequency, nextBillingDate: nextDate,
-                        isActive: existing.isActive, categoryId: category.id, note: noteText.isEmpty ? nil : noteText,
-                        previousAmount: existing.amount
+                    saved = try await SupabaseRepository.shared.updateSubscription(
+                        id: existing.id, name: name, amount: value, frequency: selectedFrequency,
+                        nextBillingDate: nextDate, isActive: existing.isActive, categoryId: categoryId,
+                        note: existing.note, previousAmount: existing.amount
                     )
                 } else {
-                    _ = try await SupabaseRepository.shared.createSubscription(
-                        accountId: account.id, name: nameText.trimmingCharacters(in: .whitespaces),
-                        amount: amount, frequency: selectedFrequency, nextBillingDate: nextDate,
-                        categoryId: category.id, note: noteText.isEmpty ? nil : noteText
+                    saved = try await SupabaseRepository.shared.createSubscription(
+                        accountId: account.id, name: name, amount: value, frequency: selectedFrequency,
+                        nextBillingDate: nextDate, categoryId: categoryId, note: nil
                     )
                 }
-                isSaving = false
-                onSave()
-                NotificationCenter.default.post(name: .dataDidChange, object: nil)
-                dismiss()
+                await NotificationManager.shared.schedule(for: saved)
+                finish()
             } catch is CancellationError {
                 return
             } catch {
                 isSaving = false
-                validationMessage = "Gagal menyimpan: \(error.localizedDescription)"; showValidationAlert = true
+                errorMessage = "Gagal menyimpan. Coba lagi."
+            }
+        }
+    }
+
+    private func togglePause() {
+        guard let existing else { return }
+        isSaving = true
+        errorMessage = nil
+        Task {
+            do {
+                let saved = try await SupabaseRepository.shared.updateSubscription(
+                    id: existing.id, name: existing.name, amount: existing.amount, frequency: existing.frequency,
+                    nextBillingDate: existing.nextBillingDate, isActive: !existing.isActive,
+                    categoryId: existing.categoryId, note: existing.note
+                )
+                if saved.isActive {
+                    await NotificationManager.shared.schedule(for: saved)
+                } else {
+                    await NotificationManager.shared.cancel(for: existing)
+                }
+                finish()
+            } catch is CancellationError {
+                return
+            } catch {
+                isSaving = false
+                errorMessage = "Gagal menyimpan. Coba lagi."
             }
         }
     }
@@ -347,20 +440,26 @@ struct AddSubscriptionView: View {
     private func delete() {
         guard let existing else { return }
         isSaving = true
+        errorMessage = nil
         Task {
             do {
                 try await SupabaseRepository.shared.deleteSubscription(id: existing.id)
                 await NotificationManager.shared.cancel(for: existing)
-                isSaving = false
-                onSave()
-                NotificationCenter.default.post(name: .dataDidChange, object: nil)
-                dismiss()
+                finish()
             } catch is CancellationError {
                 return
             } catch {
                 isSaving = false
-                validationMessage = "Gagal menghapus: \(error.localizedDescription)"; showValidationAlert = true
+                errorMessage = "Gagal menghapus. Coba lagi."
             }
         }
+    }
+
+    private func finish() {
+        isSaving = false
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        onSave()
+        NotificationCenter.default.post(name: .dataDidChange, object: nil)
+        dismiss()
     }
 }

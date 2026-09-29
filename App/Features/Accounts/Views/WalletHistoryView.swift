@@ -55,43 +55,40 @@ struct WalletHistoryView: View {
         }
         .scrollIndicators(.hidden)
         .background(Color.appBackground)
-        .navigationTitle("")
+        .navigationTitle("Riwayat")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
         .task {
             try? await Task.sleep(for: .milliseconds(120))
             isEntered = true
         }
     }
 
+    /// Design 1c: this month's two totals side by side in a soft box.
     private var header: some View {
         let flow = monthFlow
-        return VStack(alignment: .leading, spacing: 6) {
-            Text("Riwayat")
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-            Text(account.name)
-                .font(.app(30, weight: .semibold))
-                .tracking(-0.4)
-                .foregroundStyle(Color.appText)
-            HStack(spacing: 16) {
-                flowLabel(account.isCreditCard ? "Dibayar bulan ini" : "Masuk bulan ini", flow.in, color: .appIncome)
-                flowLabel(account.isCreditCard ? "Terpakai bulan ini" : "Keluar bulan ini", flow.out, color: .appError)
-            }
-            .padding(.top, 10)
+        let card = account.isCreditCard
+        return HStack(spacing: 0) {
+            flowLabel(card ? "Terpakai bulan ini" : "Keluar bulan ini", flow.out, color: .appText)
+            Rectangle().fill(Color(light: 0xE5E5EA, dark: 0x3A3A3C)).frame(width: 1)
+            flowLabel(card ? "Dibayar bulan ini" : "Masuk bulan ini", flow.in, color: .appPrimary)
         }
+        .fixedSize(horizontal: false, vertical: true)
+        .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
         .padding(.top, 8)
-        .padding(.bottom, 4)
     }
 
     private func flowLabel(_ title: String, _ amount: Double, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-            Text(isBalanceVisible ? amount.formattedAsCurrency() : "Rp•••")
-                .font(.app(16, weight: .semibold))
-                .foregroundStyle(amount > 0 ? color : Color.appText)
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            Text(isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount)
+                .font(.app(18, weight: .semibold))
+                .foregroundStyle(color)
                 .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -101,10 +98,10 @@ struct WalletHistoryView: View {
             ForEach(Array(list.enumerated()), id: \.element.id) { index, transaction in
                 if index == 0 || !Calendar.current.isDate(transaction.date, inSameDayAs: list[index - 1].date) {
                     Text(DashboardView.dayHeader(for: transaction.date))
-                        .font(.app(13))
-                        .tracking(0.2)
+                        .font(.app(13, weight: .semibold))
                         .foregroundStyle(Color.appTextSecondary)
                         .padding(.top, 22)
+                        .padding(.bottom, 4)
                 }
                 NavigationLink(destination: TransactionDetailView(transaction: transaction, categories: categories,
                                                                   accounts: accounts).detailPage()) {
@@ -113,6 +110,11 @@ struct WalletHistoryView: View {
                 }
                 .buttonStyle(RowPressStyle())
             }
+            Text("Semua transaksi sudah ditampilkan")
+                .font(.app(13))
+                .foregroundStyle(Color.appTextTertiary)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 28)
         }
     }
 }

@@ -94,7 +94,7 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil) async -> Bool {
+    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil) async -> Bool {
         do {
             if abs(newBalance - oldBalance) > 0.001 {
                 let delta = newBalance - oldBalance
@@ -109,7 +109,7 @@ final class AccountListViewModel: ObservableObject {
                 }
             }
 
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay)
+            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
                 var updatedAccount = updated
                 if abs(newBalance - oldBalance) > 0.001 {

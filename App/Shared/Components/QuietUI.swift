@@ -314,3 +314,42 @@ struct OdometerText: View {
         .accessibilityLabel(text)
     }
 }
+
+/// Black pill with a green check that drops in at the top of the screen, e.g. "Perubahan
+/// disimpan". Show it with `.toast(text, isShown:)`; it hides itself after a moment.
+struct ToastPill: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 17))
+                .foregroundStyle(Color(hex: "3DDC97"))
+            Text(text).font(.app(15, weight: .medium))
+        }
+        .foregroundStyle(.white)
+        .padding(.leading, 12)
+        .padding(.trailing, 16)
+        .frame(height: 40)
+        .background(Color(hex: "111111"), in: Capsule())
+        .shadow(color: .black.opacity(0.2), radius: 12, y: 8)
+    }
+}
+
+extension View {
+    /// Shows `text` as a ToastPill at the top for 1.9s whenever `isShown` turns true.
+    func toast(_ text: String, isShown: Binding<Bool>) -> some View {
+        overlay(alignment: .top) {
+            if isShown.wrappedValue {
+                ToastPill(text: text)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(1.9))
+                        withAnimation(.easeOut(duration: 0.26)) { isShown.wrappedValue = false }
+                    }
+            }
+        }
+        .animation(.spring(duration: 0.48, bounce: 0.35), value: isShown.wrappedValue)
+    }
+}

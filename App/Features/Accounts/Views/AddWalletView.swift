@@ -40,12 +40,12 @@ struct AddWalletView: View {
         (.cash, "Tunai", "616161", "Uang fisik di dompet atau celengan"),
         (.credit, "Kartu kredit", "1A1F71", "Lacak limit, tagihan, dan jatuh tempo"),
     ]
-    private static let swatches = ["616161", "16875A", "0066AE", "472B91", "C2410C", "9D174D"]
+    static let swatches = ["616161", "16875A", "0066AE", "472B91", "C2410C", "9D174D"]
     /// Card issuers and the card colour each one gets.
-    private static let issuers: [(id: String, color: String)] = [
+    static let issuers: [(id: String, color: String)] = [
         ("bca", "1A1F71"), ("mandiri", "0B2545"), ("bni", "C2410C"), ("bri", "1F3A93"),
     ]
-    private static let networks: [(id: String, label: String)] = [
+    static let networks: [(id: String, label: String)] = [
         ("visa", "Visa"), ("mastercard", "Mastercard"), ("jcb", "JCB"), ("amex", "Amex"), ("gpn", "GPN"),
     ]
     private static let cashNames = ["Dompet tunai", "Celengan", "Uang darurat", "Amplop belanja"]
