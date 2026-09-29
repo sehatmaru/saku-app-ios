@@ -13,6 +13,8 @@ struct AddTransactionView: View {
     let userId: String
     let onSave: () -> Void
     var initialType: Transaction.TransactionType = .expense
+    /// Keeps the form on `initialType`, e.g. a transfer started from a wallet.
+    var locksType = false
     var initialAccount: Account?
     var editing: Transaction?
     var onUpdated: ((Transaction) -> Void)?
@@ -58,8 +60,9 @@ struct AddTransactionView: View {
     private var isTransfer: Bool { style.type == .transfer }
     /// Editing keeps a transfer a transfer, and expense/income on their side of the carousel.
     private var allowedTypes: ClosedRange<Int> {
-        guard let editing else { return 0...2 }
-        return editing.type == .transfer ? 2...2 : 0...1
+        if let editing { return editing.type == .transfer ? 2...2 : 0...1 }
+        if locksType, let i = Self.types.firstIndex(where: { $0.type == initialType }) { return i...i }
+        return 0...2
     }
     private var activeAccounts: [Account] {
         accounts.filter(\.isActive).sorted { $0.isDefault && !$1.isDefault }
@@ -167,7 +170,7 @@ struct AddTransactionView: View {
                     Label("Geser untuk ganti tipe", systemImage: "hand.draw")
                         .font(.app(13))
                         .opacity(0.75)
-                } else {
+                } else if editing != nil {
                     Text("Edit transaksi")
                         .font(.app(13))
                         .opacity(0.75)
@@ -183,6 +186,7 @@ struct AddTransactionView: View {
                     .padding(.top, 4)
                 typeDots
                     .padding(.top, 6)
+                    .opacity(locksType ? 0 : 1)
                 amountText
                     .padding(.top, 16)
                 info
@@ -221,7 +225,7 @@ struct AddTransactionView: View {
                     }
                     .font(.app(22, weight: .bold))
                     .frame(width: itemWidth, height: 44)
-                    .opacity(isCurrent ? 1 : allowedTypes.contains(i) ? 0.45 : 0.15)
+                    .opacity(isCurrent ? 1 : allowedTypes.contains(i) ? 0.45 : locksType ? 0 : 0.15)
                     .scaleEffect(isCurrent ? 1 : 0.8)
                     .animation(.settle(0.38), value: typeIndex)
                     .contentShape(Rectangle())

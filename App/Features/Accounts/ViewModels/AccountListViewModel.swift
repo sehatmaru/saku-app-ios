@@ -5,9 +5,6 @@ final class AccountListViewModel: ObservableObject {
     @Published var accounts: [Account] = []
     @Published var totalBalance: Double = 0
     @Published var totalCreditDebt: Double = 0
-    @Published var totalSubscriptions: Double = 0
-    /// Names of active subscriptions on any wallet, for the "Tagihan berulang" summary.
-    @Published var subscriptionNames: [String] = []
     /// Subscriptions on active wallets, active or paused.
     @Published var subscriptions: [CardSubscription] = []
     /// 0% installments on the credit cards.
@@ -204,7 +201,6 @@ final class AccountListViewModel: ObservableObject {
         guard !activeIds.isEmpty else {
             subscriptions = []
             installments = []
-            subscriptionNames = []
             return
         }
         let cardIds = accounts.filter { $0.isActive && $0.isCreditCard }.map(\.id)
@@ -214,7 +210,6 @@ final class AccountListViewModel: ObservableObject {
         installments = (try? await plansTask) ?? installments
 
         let active = subscriptions.filter(\.isActive)
-        subscriptionNames = active.map(\.name)
         let monthly = Dictionary(active.map { ($0.accountId, $0.monthlyAmount) }, uniquingKeysWith: +)
         accounts = accounts.map { account in
             var account = account
@@ -232,7 +227,6 @@ final class AccountListViewModel: ObservableObject {
     private func recalculateBalance() {
         totalBalance = accounts.filter { $0.isActive && !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
         totalCreditDebt = accounts.filter { $0.isActive && $0.isCreditCard }.reduce(0) { $0 + $1.balance }
-        totalSubscriptions = accounts.filter(\.isActive).reduce(0) { $0 + ($1.subscriptionsTotal ?? 0) }
     }
 
     private func groupTransactionsByAccount(_ transactions: [Transaction]) -> [String: [Transaction]] {

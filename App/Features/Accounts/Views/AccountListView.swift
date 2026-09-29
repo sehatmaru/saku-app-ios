@@ -37,6 +37,8 @@ struct AccountListView: View {
     @State private var payCard: Account?
     /// Shown as the main wallet at once while the change is saved.
     @State private var pendingDefaultID: String?
+    /// The subscription form: a new one on `account`, or `existing` to edit.
+    @State private var subscriptionForm: SubscriptionForm?
     /// Rolls the hero's numbers in; replayed when the page opens and when a card closes.
     @State private var odometerOn = false
 
@@ -102,7 +104,6 @@ struct AccountListView: View {
                         ForEach(groups) { group in
                             groupSection(group)
                         }
-                        footerRows
                     }
                 }
                 .padding(.bottom, 88) // clears the floating +
@@ -134,18 +135,8 @@ struct AccountListView: View {
                     .detailPage()
             }
             .navigationDestination(for: String.self) { route in
-                if route == Self.subscriptionsRoute {
-                    SubscriptionsView(
-                        accounts: viewModel.accounts.filter(\.isActive),
-                        subscriptions: viewModel.subscriptions,
-                        categories: categories,
-                        onChange: reload
-                    )
+                ArchivedWalletsView(accounts: archivedAccounts) { walletDetail($0).detailPage() }
                     .detailPage()
-                } else {
-                    ArchivedWalletsView(accounts: archivedAccounts) { walletDetail($0).detailPage() }
-                        .detailPage()
-                }
             }
             .refreshable {
                 guard let userId = authViewModel.currentUser?.id else { return }
@@ -165,6 +156,12 @@ struct AccountListView: View {
                 await syncCategories(userId: userId)
             }
             .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in reload() }
+            .sheet(item: $subscriptionForm) { form in
+                AddSubscriptionView(categories: categories, account: form.account, existing: form.existing) {
+                    subscriptionForm = nil
+                }
+                .presentationDetents([.fraction(0.68), .large])
+            }
             .sheet(item: $payCard) { card in
                 if let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) {
                     PayCardBillSheet(card: card, statement: statement, wallets: viewModel.accounts)
@@ -178,6 +175,7 @@ struct AccountListView: View {
                         userId: userId,
                         onSave: {},
                         initialType: .transfer,
+                        locksType: true,
                         initialAccount: account
                     )
                 }
@@ -485,7 +483,8 @@ struct AccountListView: View {
                     WalletCard(
                         account: account,
                         showsStripAmount: !isOpen && index != group.accounts.count - 1,
-                        isBalanceVisible: isBalanceVisible
+                        isBalanceVisible: isBalanceVisible,
+                        isMain: account.id == mainWalletID
                     )
                     .frame(height: cardHeight)
                     .opacity(isOverlayOn ? 0 : 1)
@@ -568,9 +567,15 @@ struct AccountListView: View {
                     .animation(.easeOut(duration: 0.26), value: shown)
 
                 if let account = cards.first(where: { $0.id == (selectedID ?? lastSelectedID) }) {
-                    detailContent(account, isOpen: shown)
-                        .padding(.horizontal, 24)
-                        .padding(.top, detailCardTop + cardHeight + 20)
+                    let contentTop = detailCardTop + cardHeight + 20
+                    ScrollView {
+                        detailContent(account, isOpen: shown)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 24)
+                    }
+                    .scrollIndicators(.hidden)
+                    .frame(height: max(pileTop - contentTop - 8, 0))
+                    .padding(.top, contentTop)
                         .opacity(shown ? 1 : 0)
                         .offset(y: shown ? 0 : 18)
                         .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.46).delay(shown ? 0.2 : 0), value: selectedID)
@@ -583,7 +588,8 @@ struct AccountListView: View {
                         account: account,
                         showsStripAmount: !shown && showsStrip(account),
                         isBalanceVisible: isBalanceVisible,
-                        showsUsage: !shown
+                        showsUsage: !shown,
+                        isMain: account.id == mainWalletID
                     )
                     .frame(height: cardHeight)
                     .scaleEffect(layout.scale, anchor: .top)
@@ -651,14 +657,106 @@ struct AccountListView: View {
                     .rowSeparator()
                 }
             }
+
+            if account.type != .cash {
+                subscriptionsSection(account)
+                    .padding(.top, 26)
+            }
         }
+    }
+
+    /// Netflix, Spotify and other bills that post on this wallet by themselves. Cash has none.
+    private func subscriptionsSection(_ account: Account) -> some View {
+        let subs = viewModel.subscriptions.filter { $0.accountId == account.id }
+            .sorted { ($0.isActive ? 0 : 1, $0.nextBillingDateAsDate ?? .distantFuture) < ($1.isActive ? 0 : 1, $1.nextBillingDateAsDate ?? .distantFuture) }
+        let monthly = subs.filter(\.isActive).reduce(0) { $0 + $1.monthlyAmount }
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Tagihan berulang")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+                if monthly > 0 {
+                    Text(masked(monthly) + "/bln")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .monospacedDigit()
+                }
+                Spacer()
+                Button("Tambah") { subscriptionForm = SubscriptionForm(account: account, existing: nil) }
+                    .font(.app(15))
+                    .foregroundStyle(Color.appPrimary)
+            }
+
+            if subs.isEmpty {
+                Button { subscriptionForm = SubscriptionForm(account: account, existing: nil) } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "repeat")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .frame(width: 36, height: 36)
+                            .background(Color.appFill, in: Circle())
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Catat langganan").font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
+                            Text("Netflix, Spotify, dan tagihan rutin lain").font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                        }
+                        Spacer()
+                        Image(systemName: "plus").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+                    }
+                    .padding(.vertical, 12)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(RowPressStyle())
+                .padding(.top, 6)
+            } else {
+                ForEach(subs) { sub in
+                    Button { subscriptionForm = SubscriptionForm(account: account, existing: sub) } label: {
+                        subscriptionRow(sub)
+                    }
+                    .buttonStyle(RowPressStyle())
+                }
+            }
+        }
+        .animation(.settle(0.4), value: subs.map(\.id))
+    }
+
+    private func subscriptionRow(_ sub: CardSubscription) -> some View {
+        let icon = sub.categoryId.flatMap { id in categories.first { $0.id == id }?.icon } ?? "repeat"
+        return HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 19))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(sub.name)
+                    .font(.app(16))
+                    .foregroundStyle(sub.isActive ? Color.appText : Color.appTextSecondary)
+                Group {
+                    if !sub.isActive {
+                        Text("Dijeda")
+                    } else if let increase = sub.priceIncrease {
+                        Text("Naik " + increase.formattedAsCurrency()).foregroundStyle(Color.appError)
+                    } else if let next = sub.nextBillingDateAsDate {
+                        Text("Berikutnya " + Self.dayMonth.string(from: next))
+                    }
+                }
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
+            }
+            Spacer(minLength: 8)
+            Text(masked(sub.amount) + (sub.frequency == .monthly ? "/bln" : "/thn"))
+                .font(.app(15))
+                .foregroundStyle(sub.isActive ? Color.appText : Color.appTextSecondary)
+                .monospacedDigit()
+        }
+        .padding(.vertical, 12)
+        .rowSeparator()
+        .contentShape(Rectangle())
     }
 
     /// "Jadikan utama" right on the card's detail: the star fills and the row settles into
     /// "Dompet utama" at once, while the change saves.
     private func defaultRow(_ account: Account) -> some View {
-        let currentDefault = pendingDefaultID ?? viewModel.accounts.first(where: \.isDefault)?.id
-        let isDefault = account.id == currentDefault
+        let isDefault = account.id == mainWalletID
         let gold = Color(hex: "F5B301")
         return Button { makeDefault(account) } label: {
             HStack(spacing: 12) {
@@ -670,10 +768,10 @@ struct AccountListView: View {
                     .frame(width: 36, height: 36)
                     .background(isDefault ? gold.opacity(0.16) : Color.appFill, in: Circle())
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(isDefault ? "Dompet utama" : "Jadikan dompet utama")
+                    Text(isDefault ? "Dompet utama" : "Jadikan utama")
                         .font(.app(15, weight: .semibold))
                         .foregroundStyle(Color.appText)
-                    Text("Otomatis terpilih saat mencatat")
+                    Text("Terpilih otomatis saat mencatat")
                         .font(.app(12))
                         .foregroundStyle(Color.appTextSecondary)
                 }
@@ -706,6 +804,11 @@ struct AccountListView: View {
         .accessibilityLabel(isDefault ? "Dompet utama" : "Jadikan dompet utama")
     }
 
+    /// The main wallet, switched at once while a change is saving.
+    private var mainWalletID: String? {
+        pendingDefaultID ?? viewModel.accounts.first(where: \.isDefault)?.id
+    }
+
     private func makeDefault(_ account: Account) {
         guard let userId = authViewModel.currentUser?.id else { return }
         pendingDefaultID = account.id
@@ -734,64 +837,6 @@ struct AccountListView: View {
     }
 
     // MARK: Footer
-
-    private var footerRows: some View {
-        VStack(spacing: 0) {
-            // Always shown: it's the way in to add a subscription on any wallet.
-            if !allCards.isEmpty {
-                Button { path.append(Self.subscriptionsRoute) } label: {
-                    HStack(spacing: 14) {
-                        rowIcon("repeat")
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Tagihan berulang")
-                                .font(.app(16))
-                                .foregroundStyle(Color.appText)
-                            if viewModel.subscriptions.isEmpty {
-                                Text("Netflix, Spotify, dan tagihan rutin lain")
-                                    .font(.app(13))
-                                    .foregroundStyle(Color.appTextSecondary)
-                                    .lineLimit(1)
-                            } else if !viewModel.subscriptionNames.isEmpty {
-                                Text(viewModel.subscriptionNames.joined(separator: ", "))
-                                    .font(.app(13))
-                                    .foregroundStyle(Color.appTextSecondary)
-                                    .lineLimit(1)
-                            }
-                        }
-                        Spacer(minLength: 8)
-                        Text(viewModel.subscriptions.isEmpty ? "Tambah" : masked(viewModel.totalSubscriptions) + "/bln")
-                            .font(.app(15))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .monospacedDigit()
-                        chevron
-                    }
-                    .padding(.vertical, 14)
-                    .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
-                    .rowSeparator()
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(RowPressStyle())
-            }
-
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-    }
-
-    private func rowIcon(_ name: String) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 19))
-            .foregroundStyle(Color.appTextSecondary)
-            .frame(width: 24)
-    }
-
-    private var chevron: some View {
-        Image(systemName: "chevron.right")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Color.appTextTertiary)
-    }
-
-    private static let subscriptionsRoute = "subscriptions"
 
     private func masked(_ amount: Double) -> String {
         isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
@@ -905,7 +950,7 @@ extension Account {
     var typeLabel: String {
         switch type {
         case .cash: "Cash"
-        case .bank: isDefault ? "Bank · Utama" : "Bank"
+        case .bank: "Bank"
         case .ewallet: "E-Wallet"
         case .credit: "Kartu kredit"
         }
@@ -1033,10 +1078,26 @@ struct WalletCard: View {
     var isBalanceVisible: Bool
     /// Credit cards: the limit-usage bar, shown while the card sits in its stack.
     var showsUsage = true
+    /// Marks the main wallet on the top strip, so it shows even inside a stack.
+    var isMain = false
 
     private var amountText: String {
         let value = account.isCreditCard ? (account.availableCredit ?? 0) : account.balance
         return isBalanceVisible ? value.formattedAsCurrency() : "Rp" + hiddenAmount
+    }
+
+    private func nameRow(compactBadge: Bool) -> some View {
+        HStack(spacing: 8) {
+            Text(account.name)
+                .font(.app(17, weight: .semibold))
+                .tracking(-0.2)
+                .lineLimit(1)
+                .fixedSize(horizontal: !compactBadge, vertical: false)
+            if isMain {
+                MainWalletBadge(compact: compactBadge)
+                    .transition(.scale(scale: 0.4, anchor: .leading).combined(with: .opacity))
+            }
+        }
     }
 
     var body: some View {
@@ -1044,20 +1105,25 @@ struct WalletCard: View {
             .overlay(alignment: .top) {
                 HStack(spacing: 12) {
                     CardLogoBox(logo: account.brandLogo, symbol: account.typeSymbol, color: account.walletColor)
-                    Text(account.name)
-                        .font(.app(17, weight: .semibold))
-                        .tracking(-0.2)
-                        .lineLimit(1)
+                    // The pill when it fits; on a tight strip, just the star.
+                    ViewThatFits(in: .horizontal) {
+                        nameRow(compactBadge: false)
+                        nameRow(compactBadge: true)
+                    }
                     Spacer(minLength: 8)
-                    Text(amountText)
-                        .font(.app(15, weight: .semibold))
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .opacity(showsStripAmount ? 1 : 0)
-                        .animation(.easeInOut(duration: 0.22), value: showsStripAmount)
+                    if showsStripAmount {
+                        Text(amountText)
+                            .font(.app(15, weight: .semibold))
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .fixedSize()
+                            .transition(.opacity)
+                    }
                 }
+                .animation(.easeInOut(duration: 0.22), value: showsStripAmount)
                 .frame(height: 56)
                 .padding(.horizontal, 20)
+                .animation(.spring(duration: 0.45, bounce: 0.35), value: isMain)
             }
             .overlay(alignment: .bottom) {
                 VStack(spacing: 10) {
@@ -1107,6 +1173,25 @@ struct WalletCard: View {
             .foregroundStyle(.white)
             .contentShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .combine)
+    }
+}
+
+/// Gold "Utama" pill on the main wallet's card.
+struct MainWalletBadge: View {
+    /// Star only, for a strip with little room.
+    var compact = false
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "star.fill").font(.system(size: 9, weight: .bold))
+            if !compact { Text("Utama").font(.app(11, weight: .semibold)) }
+        }
+        .foregroundStyle(Color(hex: "3D2E00"))
+        .padding(.horizontal, compact ? 5.5 : 7)
+        .frame(height: 20)
+        .background(Color(hex: "F5B301"), in: Capsule())
+        .fixedSize()
+        .accessibilityLabel("Dompet utama")
     }
 }
 
@@ -1178,4 +1263,10 @@ struct ArchivedWalletsView<Destination: View>: View {
         .navigationTitle("Diarsipkan")
         .navigationBarTitleDisplayMode(.inline)
     }
+}
+
+private struct SubscriptionForm: Identifiable {
+    let account: Account
+    let existing: CardSubscription?
+    var id: String { existing?.id ?? "new-" + account.id }
 }

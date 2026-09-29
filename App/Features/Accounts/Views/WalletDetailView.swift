@@ -35,9 +35,6 @@ struct WalletDetailView: View {
     @State private var editedStatementDay: Int?
     @State private var showStatementDayPicker = false
     @State private var showPaySheet = false
-    @State private var subscriptions: [CardSubscription] = []
-    @State private var showAddSubscription = false
-    @State private var selectedSubscription: CardSubscription?
     @FocusState private var isNameFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
@@ -147,13 +144,6 @@ struct WalletDetailView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 22)
                     .padding(.bottom, 28)
-
-                if account.isActive {
-                    SectionDivider()
-                    subscriptionsSection
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 28)
-                }
 
                 SectionDivider()
                 detailsSection
@@ -275,19 +265,6 @@ struct WalletDetailView: View {
                 PayCardBillSheet(card: account, statement: statement, wallets: accounts)
             }
         }
-        .sheet(isPresented: $showAddSubscription) {
-            AddSubscriptionView(
-                categories: categories,
-                account: account,
-                existing: selectedSubscription,
-                onSave: {
-                    showAddSubscription = false
-                    Task { await loadSubscriptions() }
-                }
-            )
-            .presentationDetents([.fraction(0.68), .large])
-        }
-        .task { await loadSubscriptions() }
     }
 
     // MARK: - Top
@@ -729,152 +706,6 @@ struct WalletDetailView: View {
         }
     }
 
-    // MARK: - Subscriptions
-
-    private func loadSubscriptions() async {
-        do {
-            let subs = try await SupabaseRepository.shared.fetchSubscriptions(accountIds: [account.id])
-            subscriptions = subs
-            await NotificationManager.shared.resyncAll(subscriptions: subs)
-        } catch {
-            print("❌ loadSubscriptions failed: \(error)")
-        }
-    }
-
-
-    private var subscriptionsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Tagihan berulang", trailing: "Tambah", trailingColor: .appPrimary) {
-                selectedSubscription = nil
-                showAddSubscription = true
-            }
-            .padding(.bottom, 4)
-
-            if subscriptions.isEmpty {
-                Text("Belum ada tagihan berulang")
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .padding(.top, 8)
-            } else {
-                let monthlyTotal = subscriptions.filter { $0.isActive }.reduce(0) { $0 + $1.monthlyAmount }
-                let yearlyTotal = subscriptions.filter { $0.isActive }.reduce(0) { $0 + $1.yearlyAmount }
-                let projectedBalance = (account.currentBalance ?? account.openingBalance) + monthlyTotal
-
-                ForEach(subscriptions) { sub in
-                    subscriptionRow(sub)
-                }
-
-                VStack(spacing: 8) {
-                    totalRow("Total per bulan", monthlyTotal.formattedAsCurrency(), color: .appError)
-                    totalRow("Total per tahun", yearlyTotal.formattedAsCurrency(), color: .appError)
-                    if let limit = account.creditLimit {
-                        totalRow("Limit tersisa", (limit - projectedBalance).formattedAsCurrency())
-                    }
-                }
-                .padding(.top, 14)
-            }
-        }
-    }
-
-    private func totalRow(_ label: String, _ value: String, color: Color = .appText) -> some View {
-        HStack {
-            Text(label)
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-            Spacer()
-            Text(value)
-                .font(.app(15, weight: .semibold))
-                .foregroundStyle(color)
-                .monospacedDigit()
-        }
-    }
-
-    private func subscriptionRow(_ sub: CardSubscription) -> some View {
-        let category = sub.categoryId.flatMap { cid in categories.first { $0.id == cid } }
-        let iconName = category?.icon ?? "creditcard"
-
-        return HStack(spacing: 14) {
-            Image(systemName: iconName)
-                .font(.system(size: 19))
-                .foregroundStyle(Color.appTextSecondary)
-                .frame(width: 24)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(sub.name)
-                    .font(.app(16))
-                    .foregroundStyle(sub.isActive ? Color.appText : Color.appTextSecondary)
-                Text(sub.amount.formattedAsCurrency() + " · " + (sub.frequency == .monthly ? "Bulanan" : "Tahunan"))
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .monospacedDigit()
-                if let increase = sub.priceIncrease {
-                    Text("Naik " + increase.formattedAsCurrency())
-                        .font(.app(13))
-                        .foregroundStyle(Color.appError)
-                        .monospacedDigit()
-                }
-            }
-
-            Spacer()
-
-            if !sub.isActive {
-                Text("Nonaktif")
-                    .font(.app(13, weight: .medium))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .padding(.horizontal, 10)
-                    .frame(height: 26)
-                    .background(Color.appFill, in: Capsule())
-            }
-
-            Button {
-                Task {
-                    try? await SupabaseRepository.shared.deleteSubscription(id: sub.id)
-                    await NotificationManager.shared.cancel(for: sub)
-                    await loadSubscriptions()
-                    NotificationCenter.default.post(name: .dataDidChange, object: nil)
-                }
-            } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 17))
-                    .foregroundStyle(Color.appError)
-                    .frame(width: 32, height: 32)
-            }
-            .buttonStyle(RowPressStyle())
-            .accessibilityLabel("Hapus \(sub.name)")
-        }
-        .padding(.vertical, 12)
-        .rowSeparator()
-        .contentShape(Rectangle())
-        .onTapGesture {
-            selectedSubscription = sub
-            showAddSubscription = true
-        }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                Task {
-                    try? await SupabaseRepository.shared.deleteSubscription(id: sub.id)
-                    await NotificationManager.shared.cancel(for: sub)
-                    await loadSubscriptions()
-                    NotificationCenter.default.post(name: .dataDidChange, object: nil)
-                }
-            } label: {
-                Label("Hapus", systemImage: "trash")
-            }
-            Button {
-                Task {
-                    _ = try? await SupabaseRepository.shared.updateSubscription(
-                        id: sub.id, name: sub.name, amount: sub.amount,
-                        frequency: sub.frequency, nextBillingDate: sub.nextBillingDate,
-                        isActive: !sub.isActive, categoryId: sub.categoryId, note: sub.note
-                    )
-                    await loadSubscriptions()
-                }
-            } label: {
-                Label(sub.isActive ? "Nonaktifkan" : "Aktifkan", systemImage: sub.isActive ? "pause" : "play")
-            }
-            .tint(.appWarning)
-        }
-    }
 }
 
 // MARK: - Card bill
