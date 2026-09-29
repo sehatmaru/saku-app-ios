@@ -79,3 +79,16 @@ extension View {
         }
     }
 }
+
+// Keeps the edge swipe-back working on pages that hide the system back button
+// (e.g. Ubah dompet, which puts "Batal" there instead).
+extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
+    override open func viewDidLoad() {
+        super.viewDidLoad()
+        interactivePopGestureRecognizer?.delegate = self
+    }
+
+    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        viewControllers.count > 1
+    }
+}
