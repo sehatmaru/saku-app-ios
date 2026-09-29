@@ -1,82 +1,105 @@
 import SwiftUI
 
-/// "Tambah tagihan" sheet (design 1b): amount, name, category chips, billing day, frequency and a numpad.
+/// Full-screen "Tagihan berulang" form (design 1c): wallet-coloured panel with the amount and the
+/// month's billing days, rows for name, category and day, and a numpad.
 struct AddSubscriptionView: View {
     @Environment(\.dismiss) private var dismiss
 
     let categories: [Category]
     let account: Account
+    /// The wallet's subscriptions when the form opened, for the totals and the billing-day ticks;
+    /// kept fixed so the reload after saving doesn't count the new one twice.
+    @State private var subscriptions: [CardSubscription]
     let existing: CardSubscription?
     let onSave: () -> Void
+
+    private enum Row { case name, category, day }
 
     @State private var amount = 0
     @State private var nameText = ""
     @State private var selectedCategory: Category?
-    @State private var isCategoryOpen = false
-    @State private var selectedFrequency: CardSubscription.Frequency = .monthly
-    @State private var billingDay = Calendar.current.component(.day, from: Date())
+    @State private var billingDay: Int
     @State private var bump = false
+    @State private var shake: CGFloat = 0
+    @State private var flash: Row?
+    @State private var hasEntered = false
+    @State private var isDone = false
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var showCategorySheet = false
+    @State private var showDaySheet = false
     @State private var showDeleteConfirm = false
     @FocusState private var isNameFocused: Bool
 
-    private var expenseCategories: [Category] {
-        categories.filter { $0.type == .expense }
-    }
-
-    init(categories: [Category], account: Account, existing: CardSubscription? = nil, onSave: @escaping () -> Void) {
+    init(categories: [Category], account: Account, subscriptions: [CardSubscription],
+         existing: CardSubscription? = nil, day: Int? = nil, onSave: @escaping () -> Void) {
         self.categories = categories
         self.account = account
+        _subscriptions = State(initialValue: subscriptions)
         self.existing = existing
         self.onSave = onSave
+        let existingDay = existing?.nextBillingDateAsDate.map { Calendar.current.component(.day, from: $0) }
+        _billingDay = State(initialValue: existingDay ?? day ?? Calendar.current.component(.day, from: Date()))
     }
 
-    private var canSave: Bool {
-        amount > 0 && !nameText.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving
+    // MARK: Derived
+
+    private var color: Color { account.walletColor }
+    private var expenseCategories: [Category] { categories.filter { $0.type == .expense } }
+    private var frequency: CardSubscription.Frequency { existing?.frequency ?? .monthly }
+    private var others: [CardSubscription] { subscriptions.filter { $0.id != existing?.id } }
+    private var othersMonthly: Double { others.filter(\.isActive).reduce(0) { $0 + $1.monthlyAmount } }
+    private var newMonthly: Double { frequency == .yearly ? Double(amount) / 12 : Double(amount) }
+    private var totalAfter: Double { othersMonthly + newMonthly }
+
+    private func day(of sub: CardSubscription) -> Int? {
+        sub.nextBillingDateAsDate.map { Calendar.current.component(.day, from: $0) }
+    }
+    private var busyDays: Set<Int> { Set(others.compactMap(day(of:))) }
+    private var sameDayCount: Int { others.filter { day(of: $0) == billingDay }.count }
+
+    /// Credit cards only: the month's bills wouldn't fit in what's left of the limit.
+    private var isOverLimit: Bool {
+        guard amount > 0, let available = account.availableCredit else { return false }
+        return totalAfter > available
     }
 
-    private var frequencyText: String { selectedFrequency == .monthly ? "tiap bulan" : "tiap tahun" }
+    private var isValid: Bool {
+        amount > 0 && !isOverLimit && !nameText.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    private var chipLogo: String? {
+        if let network = account.networkId { return network == "gpn" ? nil : network }
+        return account.brandLogo
+    }
+
+    // MARK: Body
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
-
-            ScrollView {
-                VStack(spacing: 0) {
-                    amountSection
-                    VStack(spacing: 0) {
-                        nameRow
-                        categoryRow
-                        categoryChips
-                        dayRow
-                        frequencyRow
-                        if existing != nil { manageRow }
-                    }
-                    .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.app(13))
-                            .foregroundStyle(Color.appError)
-                            .padding(.horizontal, 24)
-                            .padding(.top, 12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
+            panel
+            rows
+                .padding(.top, 10)
+                .opacity(isDone ? 0 : 1)
+                .animation(.easeOut(duration: 0.3), value: isDone)
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.app(13))
+                    .foregroundStyle(Color.appError)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 10)
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .scrollDismissesKeyboard(.interactively)
-
-            AmountPad(color: .appPrimary, isEnabled: canSave, isSaving: isSaving, onPress: press, onSave: save)
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
+            Spacer(minLength: 12)
+            AmountPad(color: color, isEnabled: isValid, isSaving: isSaving, onPress: press, onSave: save)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
         }
         .background(Color.appBackground)
-        .presentationBackground(Color.appBackground)
-        .presentationDragIndicator(.visible)
-        .onAppear(perform: prefill)
+        .ignoresSafeArea(.keyboard)
+        .onAppear { hasEntered = true; prefill() }
+        .sheet(isPresented: $showCategorySheet) { categorySheet }
+        .sheet(isPresented: $showDaySheet) { daySheet }
         .confirmationDialog("Hapus tagihan ini?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("Hapus tagihan", role: .destructive) { delete() }
             Button("Batal", role: .cancel) {}
@@ -85,65 +108,246 @@ struct AddSubscriptionView: View {
         }
     }
 
-    // MARK: Header
+    // MARK: Panel
 
-    private var topBar: some View {
+    private var panel: some View {
+        VStack(spacing: 0) {
+            navRow
+            ZStack(alignment: .top) {
+                panelContent
+                    .opacity(isDone ? 0 : 1)
+                    .offset(y: isDone ? -14 : 0)
+                    .scaleEffect(isDone ? 0.97 : 1)
+                    .animation(.settle(0.42), value: isDone)
+                doneContent
+            }
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(.white)
+        .frame(height: 256)
+        .frame(maxWidth: .infinity)
+        .background {
+            UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32)
+                .fill(color)
+                .overlay {
+                    LinearGradient(stops: [.init(color: .white.opacity(0.14), location: 0), .init(color: .white.opacity(0), location: 0.55)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+                .overlay(alignment: .topTrailing) {
+                    Image(systemName: "repeat")
+                        .font(.system(size: 170, weight: .ultraLight))
+                        .foregroundStyle(.white.opacity(0.06))
+                        .offset(x: 30, y: 90)
+                }
+                .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32))
+                .ignoresSafeArea(edges: .top)
+        }
+    }
+
+    private var navRow: some View {
         HStack {
             Button("Batal") { dismiss() }
                 .font(.app(17))
-                .foregroundStyle(Color.appPrimary)
+                .foregroundStyle(.white)
             Spacer()
+            if let existing, !isDone {
+                Menu {
+                    Button(existing.isActive ? "Jeda" : "Aktifkan",
+                           systemImage: existing.isActive ? "pause" : "play") { togglePause() }
+                    Button("Hapus", systemImage: "trash", role: .destructive) { showDeleteConfirm = true }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .disabled(isSaving)
+                .accessibilityLabel("Lainnya")
+            }
         }
         .overlay {
-            Text(existing != nil ? "Ubah tagihan" : "Tambah tagihan")
-                .font(.app(17, weight: .semibold))
-                .foregroundStyle(Color.appText)
+            HStack(spacing: 8) {
+                if existing == nil { Image(systemName: "repeat").font(.system(size: 15, weight: .bold)) }
+                Text(existing == nil ? "Tagihan berulang" : "Ubah tagihan")
+                    .font(.app(17, weight: .semibold))
+            }
         }
-        .frame(height: 48)
-        .padding(.horizontal, 24)
-        .padding(.top, 13)
+        .frame(height: 44)
+        .padding(.horizontal, 20)
     }
 
-    // MARK: Amount
+    private var panelContent: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(.white)
+                    .frame(width: 28, height: 18)
+                    .overlay {
+                        if let chipLogo {
+                            Image(chipLogo).resizable().scaledToFit().frame(width: 20, height: 11)
+                        } else {
+                            Image(systemName: account.typeSymbol)
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(color)
+                        }
+                    }
+                Text("Ditagih ke \(account.name)")
+                    .font(.app(13, weight: .medium))
+                    .lineLimit(1)
+            }
+            .padding(.leading, 5)
+            .padding(.trailing, 12)
+            .frame(height: 28)
+            .background(.white.opacity(0.14), in: Capsule())
+            .padding(.top, 6)
 
-    private var amountSection: some View {
-        VStack(spacing: 6) {
             HStack(alignment: .top, spacing: 4) {
                 Text("Rp")
-                    .font(.app(20))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .padding(.top, 7)
+                    .font(.app(22))
+                    .opacity(0.75)
+                    .padding(.top, 8)
                 Text(Double(amount).formattedAsDigits())
-                    .font(.app(48, weight: .light))
-                    .tracking(-1.8)
-                    .foregroundStyle(amount > 0 ? Color.appText : Color.appTextTertiary)
-                    .animation(.easeInOut(duration: 0.2), value: amount > 0)
+                    .font(.app(56, weight: .light))
+                    .tracking(-2)
                     .contentTransition(.numericText())
             }
             .monospacedDigit()
             .lineLimit(1)
             .minimumScaleFactor(0.5)
+            .opacity(amount > 0 ? 1 : 0.55)
             .scaleEffect(bump ? 1.04 : 1)
-            .animation(.easeOut(duration: 0.14), value: bump)
-            Text("Ditagih ke \(account.name) \(frequencyText)")
-                .font(.app(13))
-                .foregroundStyle(Color.appTextTertiary)
+            .offset(x: shake)
+            .animation(.easeOut(duration: 0.12), value: bump)
+            .animation(.easeOut(duration: 0.2), value: amount > 0)
+            .padding(.horizontal, 24)
+            .padding(.top, 18)
+
+            VStack(spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Total per bulan")
+                        .font(.app(13))
+                        .opacity(0.85)
+                    Spacer()
+                    Text(amount > 0 ? "\(othersMonthly.formattedAsCurrency()) → \(totalAfter.formattedAsCurrency())"
+                                    : othersMonthly.formattedAsCurrency())
+                        .font(.app(15, weight: .semibold))
+                        .foregroundStyle(isOverLimit ? Color(hex: "FFB4AE") : .white)
+                        .animation(.easeInOut(duration: 0.22), value: isOverLimit)
+                }
+                .monospacedDigit()
+
+                HStack(alignment: .bottom, spacing: 2) {
+                    ForEach(1...31, id: \.self) { d in
+                        let isOn = d == billingDay
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(isOn ? .white : busyDays.contains(d) ? .white.opacity(0.5) : .black.opacity(0.22))
+                            .frame(height: isOn ? 8 : 5)
+                            .animation(.spring(duration: 0.3, bounce: 0.5), value: isOn)
+                    }
+                }
+                .frame(height: 8)
+                .padding(.top, 8)
+
+                ZStack(alignment: .topLeading) {
+                    Text("Tiap tanggal \(billingDay)" + (sameDayCount > 0
+                         ? " · sudah ada \(sameDayCount) tagihan di tanggal ini" : " · belum ada tagihan lain"))
+                        .font(.app(12))
+                        .monospacedDigit()
+                        .opacity(isOverLimit ? 0 : 0.75)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    overLimitPill
+                        .offset(y: -2)
+                }
+                .frame(height: 30)
+                .padding(.top, 7)
+                .animation(.easeInOut(duration: 0.22), value: isOverLimit)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 22)
         }
-        .frame(maxWidth: .infinity)
+    }
+
+    private var overLimitPill: some View {
+        let available = account.availableCredit ?? 0
+        return HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.circle.fill").font(.system(size: 15))
+            Text("Melebihi sisa limit \(available.formattedAsCurrency()) · lebih \((totalAfter - available).formattedAsCurrency())")
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .font(.app(13, weight: .semibold))
+        .monospacedDigit()
+        .foregroundStyle(Color(hex: "D93025"))
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
+        .background(.white, in: RoundedRectangle(cornerRadius: 10))
+        .opacity(isOverLimit ? 1 : 0)
+        .scaleEffect(isOverLimit ? 1 : 0.96)
+        .offset(x: isOverLimit ? shake : 0, y: isOverLimit ? 0 : 6)
+        .animation(.spring(duration: 0.38, bounce: 0.45), value: isOverLimit)
+    }
+
+    private var doneContent: some View {
+        VStack(spacing: 8) {
+            Circle()
+                .fill(.white)
+                .frame(width: 64, height: 64)
+                .overlay {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(color)
+                }
+                .scaleEffect(isDone ? 1 : 0.4)
+                .animation(.spring(duration: 0.56, bounce: 0.5), value: isDone)
+            Text("Tagihan berulang tersimpan")
+                .font(.app(20, weight: .semibold))
+                .padding(.top, 6)
+            Text(([Double(amount).formattedAsCurrency()] + (selectedCategory.map { [$0.name] } ?? []) + ["tiap tgl \(billingDay)"])
+                .joined(separator: " · "))
+                .font(.app(14))
+                .opacity(0.85)
+            Text("Total jadi \(totalAfter.formattedAsCurrency())/bulan")
+                .font(.app(13))
+                .opacity(0.75)
+        }
+        .monospacedDigit()
+        .multilineTextAlignment(.center)
         .padding(.horizontal, 24)
         .padding(.top, 14)
-        .padding(.bottom, 20)
-        .accessibilityElement(children: .combine)
+        .opacity(isDone ? 1 : 0)
+        .animation(.easeOut(duration: 0.3), value: isDone)
+        .allowsHitTesting(false)
     }
 
     // MARK: Rows
+
+    private func flashFill(_ row: Row) -> Color {
+        guard flash == row else { return .clear }
+        return row == .name ? Color(light: 0xFDECEA, dark: 0x3A1D1B) : color.opacity(0.08)
+    }
+
+    private func entering<V: View>(_ view: V, index: Int) -> some View {
+        view
+            .opacity(hasEntered ? 1 : 0)
+            .offset(y: hasEntered ? 0 : 14)
+            .animation(.settle(0.5).delay(Double(index) * 0.06 + 0.2), value: hasEntered)
+    }
 
     private func label(_ text: String) -> some View {
         Text(text)
             .font(.app(15))
             .foregroundStyle(Color.appTextSecondary)
-            .lineLimit(1)
-            .frame(width: 100, alignment: .leading)
+            .frame(width: 76, alignment: .leading)
+    }
+
+    private var rows: some View {
+        VStack(spacing: 0) {
+            entering(nameRow, index: 0)
+            entering(categoryRow, index: 1)
+            entering(dayRow, index: 2)
+        }
+        .disabled(isDone)
     }
 
     private var nameRow: some View {
@@ -161,171 +365,195 @@ struct AddSubscriptionView: View {
         .frame(height: 52)
         .padding(.leading, 24)
         .padding(.trailing, 20)
+        .background(flashFill(.name))
+        .animation(.easeOut(duration: 0.45), value: flash)
         .rowSeparator()
+        .contentShape(Rectangle())
+        .onTapGesture { isNameFocused = true }
     }
 
-    private var categoryRow: some View {
-        Button {
-            isNameFocused = false
-            withAnimation(.easeInOut(duration: 0.3)) { isCategoryOpen.toggle() }
-        } label: {
+    private func pickerRow(_ title: String, row: Row, icon: String, iconColor: Color, value: String,
+                           valueColor: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 12) {
-                label("Kategori")
+                label(title)
                 HStack(spacing: 8) {
-                    Image(systemName: selectedCategory?.icon ?? "tag")
+                    Image(systemName: icon)
                         .font(.system(size: 17))
-                        .foregroundStyle(Color.appTextSecondary)
-                    Text(selectedCategory?.name ?? "Pilih")
+                        .foregroundStyle(iconColor)
+                    Text(value)
                         .font(.app(16, weight: .medium))
-                        .foregroundStyle(selectedCategory == nil ? Color.appTextSecondary : Color.appText)
+                        .foregroundStyle(valueColor)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.down")
+                Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.appTextTertiary)
-                    .rotationEffect(.degrees(isCategoryOpen ? 180 : 0))
             }
             .frame(height: 52)
             .padding(.leading, 24)
             .padding(.trailing, 20)
+            .background(flashFill(row))
+            .animation(.easeOut(duration: 0.45), value: flash)
             .rowSeparator()
             .contentShape(Rectangle())
         }
         .buttonStyle(RowPressStyle())
-        .accessibilityValue(selectedCategory?.name ?? "Belum dipilih")
     }
 
-    private var categoryChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(expenseCategories) { category in
-                    let isOn = category.id == selectedCategory?.id
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) { selectedCategory = category }
-                        Task {
-                            try? await Task.sleep(for: .milliseconds(240))
-                            withAnimation(.easeInOut(duration: 0.3)) { isCategoryOpen = false }
+    private var categoryRow: some View {
+        pickerRow("Kategori", row: .category, icon: selectedCategory?.icon ?? "tag",
+                  iconColor: selectedCategory == nil ? .appTextSecondary : color,
+                  value: selectedCategory?.name ?? "Pilih",
+                  valueColor: selectedCategory == nil ? .appTextSecondary : .appText) {
+            isNameFocused = false
+            showCategorySheet = true
+        }
+    }
+
+    private var dayRow: some View {
+        pickerRow("Tanggal", row: .day, icon: "calendar", iconColor: .appTextSecondary,
+                  value: "Tiap tanggal \(billingDay)", valueColor: .appText) {
+            isNameFocused = false
+            showDaySheet = true
+        }
+    }
+
+    // MARK: Sheets
+
+    private func sheetHeader(_ title: String, close: @escaping () -> Void) -> some View {
+        HStack {
+            Button("Batal", action: close)
+                .font(.app(17))
+                .foregroundStyle(Color.appPrimary)
+            Spacer()
+        }
+        .overlay {
+            Text(title)
+                .font(.app(17, weight: .semibold))
+                .foregroundStyle(Color.appText)
+        }
+        .frame(height: 48)
+        .padding(.horizontal, 24)
+        .padding(.top, 13)
+    }
+
+    private var categorySheet: some View {
+        VStack(spacing: 0) {
+            sheetHeader("Kategori") { showCategorySheet = false }
+            ScrollView {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 4), spacing: 18) {
+                    ForEach(expenseCategories) { category in
+                        let isOn = category.id == selectedCategory?.id
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.22)) { selectedCategory = category }
+                            pickThenClose(.category) { showCategorySheet = false }
+                        } label: {
+                            VStack(spacing: 7) {
+                                Circle()
+                                    .fill(isOn ? color : Color.appFill)
+                                    .frame(width: 54, height: 54)
+                                    .overlay {
+                                        Image(systemName: category.icon ?? "tag")
+                                            .font(.system(size: 22))
+                                            .foregroundStyle(isOn ? Color.white : Color.appText)
+                                    }
+                                    .scaleEffect(isOn ? 1.08 : 1)
+                                    .animation(.spring(duration: 0.32, bounce: 0.5), value: isOn)
+                                Text(category.name)
+                                    .font(.app(12))
+                                    .foregroundStyle(isOn ? Color.appText : Color.appTextSecondary)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(2)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: category.icon ?? "tag").font(.system(size: 14))
-                            Text(category.name).font(.app(14, weight: .medium))
-                        }
-                        .foregroundStyle(isOn ? Color.appBackground : Color.appText)
-                        .padding(.leading, 11)
-                        .padding(.trailing, 14)
-                        .frame(height: 36)
-                        .background(isOn ? Color.appText : Color.appFill, in: Capsule())
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(isOn ? .isSelected : [])
                     }
-                    .buttonStyle(PressScaleStyle())
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+            }
+        }
+        .background(Color.appBackground)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Color.appBackground)
+    }
+
+    private var daySheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sheetHeader("Tanggal tagih") { showDaySheet = false }
+            Text("Ditagih tiap bulan di tanggal yang sama. Titik = sudah ada tagihan.")
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 8)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 2) {
+                ForEach(1...31, id: \.self) { d in
+                    let isOn = d == billingDay
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { billingDay = d }
+                        pickThenClose(.day) { showDaySheet = false }
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text("\(d)")
+                                .font(.app(16, weight: isOn ? .semibold : .regular))
+                                .monospacedDigit()
+                                .foregroundStyle(isOn ? Color.white : Color.appText)
+                                .frame(width: 38, height: 38)
+                                .background(Circle().fill(isOn ? color : .clear))
+                                .scaleEffect(isOn ? 1.06 : 1)
+                                .animation(.spring(duration: 0.38, bounce: 0.45), value: isOn)
+                            Circle()
+                                .fill(Color.appPrimary)
+                                .frame(width: 4, height: 4)
+                                .opacity(busyDays.contains(d) ? 1 : 0)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Tanggal \(d)" + (busyDays.contains(d) ? ", sudah ada tagihan" : ""))
                     .accessibilityAddTraits(isOn ? .isSelected : [])
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.vertical, 10)
-        }
-        .frame(height: isCategoryOpen ? 56 : 0, alignment: .top)
-        .opacity(isCategoryOpen ? 1 : 0)
-        .clipped()
-        .rowSeparator()
-        .allowsHitTesting(isCategoryOpen)
-    }
-
-    private var dayRow: some View {
-        HStack(spacing: 12) {
-            label("Tanggal tagih")
-            Menu {
-                Picker("Tanggal tagih", selection: $billingDay) {
-                    ForEach(1...31, id: \.self) { Text("Tanggal \($0)").tag($0) }
-                }
-            } label: {
-                HStack(spacing: 6) {
-                    Text("Tanggal \(billingDay)")
-                        .font(.app(16, weight: .medium))
-                        .foregroundStyle(Color.appText)
-                    Text("· " + TransactionDates.dayMonth.string(from: nextBillingDate))
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.appTextTertiary)
-                }
-                .monospacedDigit()
-                .contentShape(Rectangle())
-            }
-        }
-        .frame(height: 52)
-        .padding(.leading, 24)
-        .padding(.trailing, 20)
-        .rowSeparator()
-    }
-
-    private var frequencyRow: some View {
-        HStack(spacing: 12) {
-            label("Frekuensi")
-            HStack(spacing: 8) {
-                frequencyChip("Bulanan", .monthly)
-                frequencyChip("Tahunan", .yearly)
-            }
             Spacer(minLength: 0)
         }
-        .frame(height: 52)
-        .padding(.leading, 24)
-        .padding(.trailing, 20)
-        .rowSeparator()
+        .background(Color.appBackground)
+        .presentationDetents([.height(420)])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Color.appBackground)
     }
 
-    private func frequencyChip(_ title: String, _ frequency: CardSubscription.Frequency) -> some View {
-        let isOn = selectedFrequency == frequency
-        return Button {
-            withAnimation(.easeInOut(duration: 0.2)) { selectedFrequency = frequency }
-        } label: {
-            Text(title)
-                .font(.app(14, weight: .medium))
-                .foregroundStyle(isOn ? Color.appBackground : Color.appText)
-                .padding(.horizontal, 14)
-                .frame(height: 32)
-                .background(isOn ? Color.appText : Color.appFill, in: Capsule())
+    /// Closes a picker 200ms after the pick, then flashes the row it filled.
+    private func pickThenClose(_ row: Row, close: @escaping () -> Void) {
+        Task {
+            try? await Task.sleep(for: .milliseconds(200))
+            close()
+            try? await Task.sleep(for: .milliseconds(250))
+            flashRow(row)
         }
-        .buttonStyle(PressScaleStyle())
-        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
-    /// Pause/resume and delete, only when editing.
-    private var manageRow: some View {
-        HStack(spacing: 8) {
-            Button { togglePause() } label: {
-                Label(existing?.isActive == false ? "Aktifkan" : "Jeda",
-                      systemImage: existing?.isActive == false ? "play.fill" : "pause.fill")
-                    .font(.app(14, weight: .medium))
-                    .foregroundStyle(Color.appText)
-                    .padding(.horizontal, 14)
-                    .frame(height: 32)
-                    .background(Color.appFill, in: Capsule())
-            }
-            .buttonStyle(PressScaleStyle())
-            Button { showDeleteConfirm = true } label: {
-                Label("Hapus", systemImage: "trash")
-                    .font(.app(14, weight: .medium))
-                    .foregroundStyle(Color.appError)
-                    .padding(.horizontal, 14)
-                    .frame(height: 32)
-                    .overlay(Capsule().stroke(Color.appError.opacity(0.4), lineWidth: 1))
-            }
-            .buttonStyle(PressScaleStyle())
-            Spacer(minLength: 0)
+    private func flashRow(_ row: Row) {
+        flash = row
+        Task {
+            try? await Task.sleep(for: .milliseconds(650))
+            if flash == row { flash = nil }
         }
-        .disabled(isSaving)
-        .padding(.horizontal, 24)
-        .padding(.top, 14)
     }
 
     // MARK: Logic
 
     private func press(_ key: String) {
-        guard let next = NumberPad.apply(key, to: amount) else { return }
+        guard !isDone, let next = NumberPad.apply(key, to: amount) else { return }
+        isNameFocused = false
         withAnimation(.easeOut(duration: 0.14)) { amount = next }
         bump = true
         Task {
@@ -334,15 +562,20 @@ struct AddSubscriptionView: View {
         }
     }
 
+    private func shakeAmount() {
+        Task {
+            for value: CGFloat in [-10, 9, -6, 4, 0] {
+                withAnimation(.easeInOut(duration: 0.06)) { shake = value }
+                try? await Task.sleep(for: .milliseconds(60))
+            }
+        }
+    }
+
     private func prefill() {
         guard let existing else { return }
         nameText = existing.name
         amount = Int(existing.amount)
-        selectedFrequency = existing.frequency
         selectedCategory = expenseCategories.first { $0.id == existing.categoryId }
-        if let date = existing.nextBillingDateAsDate {
-            billingDay = Calendar.current.component(.day, from: date)
-        }
     }
 
     /// Next date on `billingDay` from today (today included), clamped to short months.
@@ -378,7 +611,18 @@ struct AddSubscriptionView: View {
     }
 
     private func save() {
-        guard canSave else { return }
+        guard !isDone, !isSaving else { return }
+        if amount == 0 { shakeAmount(); return }
+        if isOverLimit {
+            shakeAmount()
+            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            return
+        }
+        if nameText.trimmingCharacters(in: .whitespaces).isEmpty {
+            flashRow(.name)
+            isNameFocused = true
+            return
+        }
         isSaving = true
         errorMessage = nil
         let name = nameText.trimmingCharacters(in: .whitespaces)
@@ -390,18 +634,25 @@ struct AddSubscriptionView: View {
                 let saved: CardSubscription
                 if let existing {
                     saved = try await SupabaseRepository.shared.updateSubscription(
-                        id: existing.id, name: name, amount: value, frequency: selectedFrequency,
+                        id: existing.id, name: name, amount: value, frequency: frequency,
                         nextBillingDate: nextDate, isActive: existing.isActive, categoryId: categoryId,
                         note: existing.note, previousAmount: existing.amount
                     )
                 } else {
                     saved = try await SupabaseRepository.shared.createSubscription(
-                        accountId: account.id, name: name, amount: value, frequency: selectedFrequency,
+                        accountId: account.id, name: name, amount: value, frequency: .monthly,
                         nextBillingDate: nextDate, categoryId: categoryId, note: nil
                     )
                 }
                 await NotificationManager.shared.schedule(for: saved)
-                finish()
+                isSaving = false
+                isNameFocused = false
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                NotificationCenter.default.post(name: .dataDidChange, object: nil)
+                isDone = true
+                try? await Task.sleep(for: .milliseconds(1500))
+                onSave()
+                dismiss()
             } catch is CancellationError {
                 return
             } catch {
