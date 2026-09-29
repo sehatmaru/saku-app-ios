@@ -20,7 +20,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, isDefault: Bool = false, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil) async throws -> Account {
+    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, isDefault: Bool = false, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil) async throws -> Account {
         var payload: [String: AnyJSON] = [
             "user_id": AnyJSON.string(userId),
             "name": AnyJSON.string(name),
@@ -33,6 +33,8 @@ final class SupabaseRepository: @unchecked Sendable {
         if let creditLimit { payload["credit_limit"] = AnyJSON.double(creditLimit) }
         if let dueDate { payload["due_date"] = AnyJSON.string(dueDate) }
         if let statementDay { payload["statement_day"] = AnyJSON.integer(statementDay) }
+        if let color { payload["color"] = AnyJSON.string(color) }
+        if let cardNetwork { payload["card_network"] = AnyJSON.string(cardNetwork) }
         return try await client
             .from("accounts")
             .insert(payload)

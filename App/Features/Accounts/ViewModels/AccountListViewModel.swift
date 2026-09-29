@@ -68,15 +68,18 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil) async -> Bool {
+    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, makeDefault: Bool = false) async -> Bool {
         if accounts.contains(where: { $0.name == name && $0.type == type && $0.isActive }) {
             print("⚠️ Nama '\(name)' sudah digunakan untuk kategori \(type.rawValue)")
             return false
         }
         do {
             let isDefault = accounts.isEmpty
-            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay)
+            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork)
             accounts.append(account)
+            if makeDefault && !isDefault {
+                await setDefaultAccount(id: account.id, userId: userId)
+            }
             recalculateBalance()
             AppDataCache.shared.setAccounts(accounts, for: userId)
             loadedUserId = userId

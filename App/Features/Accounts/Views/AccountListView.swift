@@ -165,16 +165,19 @@ struct AccountListView: View {
                     )
                 }
             }
-            .sheet(isPresented: $showAddWallet) {
+            .fullScreenCover(isPresented: $showAddWallet) {
                 if let userId = authViewModel.currentUser?.id {
-                    AddWalletView { name, type, balance, icon, creditLimit, dueDate, statementDay in
-                        let success = await viewModel.addAccount(name: name, type: type, openingBalance: balance, icon: icon, userId: userId, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay)
+                    AddWalletView { wallet in
+                        let success = await viewModel.addAccount(
+                            name: wallet.name, type: wallet.type, openingBalance: wallet.balance, icon: wallet.icon,
+                            userId: userId, creditLimit: wallet.creditLimit, dueDate: wallet.dueDate,
+                            statementDay: wallet.statementDay, color: wallet.color, cardNetwork: wallet.cardNetwork,
+                            makeDefault: wallet.isDefault)
                         if success {
                             await syncAccountTransactions(userId: userId)
                         }
                         return success
                     }
-                    .presentationDetents([.medium, .large])
                 }
             }
         }
@@ -436,7 +439,8 @@ struct AccountListView: View {
                     WalletCard(
                         account: account,
                         showsStripAmount: !shown && showsStrip(account),
-                        isBalanceVisible: isBalanceVisible
+                        isBalanceVisible: isBalanceVisible,
+                        showsUsage: !shown
                     )
                     .frame(height: cardHeight)
                     .scaleEffect(layout.scale, anchor: .top)
@@ -661,12 +665,29 @@ struct AccountListView: View {
 
 extension Account {
     var walletColor: Color {
-        WalletIcon.resolve(icon)?.color ?? .appPrimary
+        if let color, !color.isEmpty { return Color(hex: color) }
+        return WalletIcon.resolve(icon)?.color ?? .appPrimary
     }
 
     var walletShortName: String {
         WalletIcon.resolve(icon)?.shortName ?? String(name.prefix(4)).uppercased()
     }
+
+    /// Asset name of the bank or e-wallet logo shown in the card's white box.
+    var brandLogo: String? {
+        guard let icon, let brand = WalletIcon.allIcons.first(where: { $0.id == icon }),
+              brand.category == .bank || brand.category == .ewallet else { return nil }
+        return brand.id
+    }
+
+    /// Card network; cards saved before the network had its own field kept it as the icon.
+    var networkId: String? {
+        guard isCreditCard else { return nil }
+        if let cardNetwork { return cardNetwork }
+        return WalletIcon.icons(for: .credit).contains { $0.id == icon } ? icon : nil
+    }
+
+    var typeSymbol: String { type.cardSymbol }
 
     var typeLabel: String {
         switch type {
@@ -678,11 +699,127 @@ extension Account {
     }
 }
 
-/// Full-size brand-colored wallet card.
+extension Account.AccountType {
+    /// Outline symbol drawn large and faint in the card's corner.
+    var cardSymbol: String {
+        switch self {
+        case .bank: "building.columns"
+        case .ewallet: "wallet.bifold"
+        case .cash: "banknote"
+        case .credit: "creditcard"
+        }
+    }
+}
+
+// MARK: - Card pieces (design 2a/3a)
+
+/// The coloured card body: a soft light sweep from the top-left and the type symbol, faint, in the corner.
+struct CardSurface: View {
+    let color: Color
+    let symbol: String
+    var symbolTilted = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 22)
+            .fill(color)
+            .overlay(
+                LinearGradient(stops: [.init(color: .white.opacity(0.18), location: 0), .init(color: .white.opacity(0), location: 0.55)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                    .clipShape(RoundedRectangle(cornerRadius: 22))
+            )
+            .overlay(alignment: .bottomTrailing) {
+                Image(systemName: symbol)
+                    .font(.system(size: 150, weight: .ultraLight))
+                    .foregroundStyle(.white.opacity(0.08))
+                    .rotationEffect(.degrees(symbolTilted ? -8 : 0))
+                    .offset(x: symbolTilted ? -2 : 18, y: symbolTilted ? 20 : 30)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 22))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22)
+                    .strokeBorder(LinearGradient(colors: [.white.opacity(0.22), .white.opacity(0)], startPoint: .top, endPoint: .center), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+            .shadow(color: .black.opacity(0.28), radius: 15, y: 14)
+    }
+}
+
+/// White 46×30 box with the brand logo, or the type symbol in the card colour.
+struct CardLogoBox: View {
+    let logo: String?
+    let symbol: String
+    let color: Color
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(.white)
+            .frame(width: 46, height: 30)
+            .overlay {
+                if let logo {
+                    Image(logo).resizable().scaledToFit().frame(width: 34, height: 18)
+                } else {
+                    Image(systemName: symbol)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(color)
+                }
+            }
+    }
+}
+
+/// Network logo on a white 52×32 plate; GPN has no logo, so its name in red.
+struct CardNetworkBadge: View {
+    let network: String
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 7)
+            .fill(.white)
+            .frame(width: 52, height: 32)
+            .overlay {
+                if network == "gpn" {
+                    Text("GPN")
+                        .font(.app(13, weight: .heavy))
+                        .tracking(0.5)
+                        .foregroundStyle(Color(hex: "C8102E"))
+                } else {
+                    Image(network).resizable().scaledToFit().frame(width: 40, height: 22)
+                }
+            }
+    }
+}
+
+/// Thin white limit-usage bar with "Terpakai …" and the percentage above it.
+struct CardUsageBar: View {
+    let usedText: String
+    let share: Double
+
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack {
+                Text("Terpakai \(usedText)")
+                Spacer()
+                Text("\(Int((min(max(share, 0), 1) * 100).rounded()))%")
+            }
+            .font(.app(12))
+            .foregroundStyle(.white.opacity(0.82))
+            .monospacedDigit()
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.25))
+                    Capsule().fill(.white).frame(width: geo.size.width * min(max(share, 0), 1))
+                }
+            }
+            .frame(height: 4)
+        }
+    }
+}
+
+/// Full-size brand-coloured wallet card (design 3a).
 struct WalletCard: View {
     let account: Account
     var showsStripAmount: Bool
     var isBalanceVisible: Bool
+    /// Credit cards: the limit-usage bar, shown while the card sits in its stack.
+    var showsUsage = true
 
     private var amountText: String {
         let value = account.isCreditCard ? (account.availableCredit ?? 0) : account.balance
@@ -690,63 +827,72 @@ struct WalletCard: View {
     }
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 16)
-            .fill(account.walletColor)
-            .overlay(alignment: .topTrailing) {
-                ZStack(alignment: .topTrailing) {
-                    Circle()
-                        .strokeBorder(.white.opacity(0.1))
-                        .frame(width: 220, height: 220)
-                        .offset(x: 50, y: -70)
-                    Circle()
-                        .fill(.white.opacity(0.06))
-                        .frame(width: 150, height: 150)
-                        .offset(x: 20, y: -40)
-                }
-            }
+        CardSurface(color: account.walletColor, symbol: account.typeSymbol)
             .overlay(alignment: .top) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(account.walletShortName)
-                        .font(.app(15, weight: .heavy))
-                        .tracking(0.6)
+                HStack(spacing: 12) {
+                    CardLogoBox(logo: account.brandLogo, symbol: account.typeSymbol, color: account.walletColor)
                     Text(account.name)
-                        .font(.app(13))
-                        .foregroundStyle(.white.opacity(0.82))
+                        .font(.app(17, weight: .semibold))
+                        .tracking(-0.2)
                         .lineLimit(1)
-                    Spacer()
+                    Spacer(minLength: 8)
                     Text(amountText)
                         .font(.app(15, weight: .semibold))
                         .monospacedDigit()
+                        .lineLimit(1)
                         .opacity(showsStripAmount ? 1 : 0)
                         .animation(.easeInOut(duration: 0.22), value: showsStripAmount)
                 }
                 .frame(height: 56)
-                .padding(.horizontal, 18)
+                .padding(.horizontal, 20)
             }
             .overlay(alignment: .bottom) {
-                HStack(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(account.isCreditCard ? "Sisa limit" : "Saldo")
-                            .font(.app(12))
-                            .foregroundStyle(.white.opacity(0.82))
-                        Text(amountText)
-                            .font(.app(24, weight: .semibold))
-                            .tracking(-0.4)
-                            .monospacedDigit()
+                VStack(spacing: 10) {
+                    if account.isCreditCard, showsUsage, let limit = account.creditLimit, limit > 0 {
+                        CardUsageBar(usedText: isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp" + hiddenAmount,
+                                     share: account.balance / limit)
+                            .transition(.opacity)
                     }
-                    Spacer()
-                    Text(account.typeLabel)
-                        .font(.app(12))
-                        .foregroundStyle(.white.opacity(0.82))
+                    HStack(alignment: .bottom, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(account.isCreditCard ? "Sisa limit" : "Saldo")
+                                .font(.app(12))
+                                .foregroundStyle(.white.opacity(0.8))
+                            Text(amountText)
+                                .font(.app(32))
+                                .tracking(-0.8)
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                        }
+                        Spacer(minLength: 0)
+                        if account.isCreditCard {
+                            VStack(alignment: .trailing, spacing: 2) {
+                                if let network = account.networkId {
+                                    CardNetworkBadge(network: network).padding(.bottom, 6)
+                                }
+                                Text("Jatuh tempo")
+                                    .font(.app(12))
+                                    .foregroundStyle(.white.opacity(0.8))
+                                Text(account.dueDay.map { "Tgl \($0)" } ?? "—")
+                                    .font(.app(15, weight: .semibold))
+                                    .monospacedDigit()
+                            }
+                            .padding(.bottom, 3)
+                        } else {
+                            Text(account.typeLabel)
+                                .font(.app(12))
+                                .foregroundStyle(.white.opacity(0.82))
+                                .padding(.bottom, 5)
+                        }
+                    }
                 }
-                .padding(.horizontal, 18)
-                .padding(.bottom, 16)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 18)
+                .animation(.easeInOut(duration: 0.25), value: showsUsage)
             }
             .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
-            .shadow(color: .black.opacity(0.14), radius: 6, y: -3)
-            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .combine)
     }
 }
@@ -756,20 +902,23 @@ struct MiniWalletCard: View {
     let account: Account
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 6)
+        RoundedRectangle(cornerRadius: 7)
             .fill(account.walletColor)
-            .overlay(alignment: .topTrailing) {
-                Circle().fill(.white.opacity(0.14)).frame(width: 30, height: 30).offset(x: 10, y: -12)
+            .overlay(
+                LinearGradient(colors: [.white.opacity(0.2), .white.opacity(0)], startPoint: .topLeading, endPoint: .center)
+                    .clipShape(RoundedRectangle(cornerRadius: 7))
+            )
+            .overlay(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(.white)
+                    .frame(width: 18, height: 12)
+                    .overlay {
+                        if let logo = account.brandLogo {
+                            Image(logo).resizable().scaledToFit().frame(width: 14, height: 8)
+                        }
+                    }
+                    .padding(5)
             }
-            .overlay(alignment: .bottomLeading) {
-                Text(account.walletShortName)
-                    .font(.app(8, weight: .bold))
-                    .tracking(0.4)
-                    .foregroundStyle(.white)
-                    .padding(.leading, 6)
-                    .padding(.bottom, 4)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 6))
             .frame(width: 46, height: 30)
     }
 }

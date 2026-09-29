@@ -14,6 +14,10 @@ struct Account: Identifiable, Codable, Hashable {
     var subscriptionsTotal: Double? = nil
     /// Credit cards: day of the month the statement is printed (cut-off).
     var statementDay: Int? = nil
+    /// Card colour as hex (no #), picked when the wallet was added; nil uses the brand colour.
+    var color: String? = nil
+    /// Credit cards: visa, mastercard, jcb, amex or gpn.
+    var cardNetwork: String? = nil
 
     var isActive: Bool { !isArchived }
     var isCreditCard: Bool { type == .credit }
@@ -57,5 +61,7 @@ struct Account: Identifiable, Codable, Hashable {
         case creditLimit = "credit_limit"
         case dueDate = "due_date"
         case statementDay = "statement_day"
+        case color
+        case cardNetwork = "card_network"
     }
 }
