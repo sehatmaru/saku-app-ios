@@ -548,8 +548,7 @@ struct AddTransactionView: View {
                 VStack(spacing: 0) {
                     ForEach(Self.repeatOptions, id: \.1) { option, title in
                         Button {
-                            repeatFrequency = option
-                            showsRepeatMenu = false
+                            withAnimation(.settle(0.3)) { repeatFrequency = option }
                         } label: {
                             HStack(spacing: 12) {
                                 Text(title).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
