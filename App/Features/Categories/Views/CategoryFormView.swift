@@ -138,7 +138,7 @@ struct CategoryFormView: View {
     private var tint: Color { CategoryCatalog.typeColor(type) }
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var error: String? {
-        isBuiltIn ? nil : CategoryCatalog.validate(name, type: type, excluding: editing?.id, in: categories, hiddenIds: hiddenIds)
+        CategoryCatalog.validate(name, type: type, excluding: editing?.id, in: categories, hiddenIds: hiddenIds)
     }
     private var showsError: Bool { error != nil && (triedSave || !trimmedName.isEmpty) }
     private var savesBudget: Bool { type == .expense && budgetOn && budgetAmount > 0 }
@@ -266,7 +266,7 @@ struct CategoryFormView: View {
                 .multilineTextAlignment(.center)
                 .tint(.white)
                 .submitLabel(.done)
-                .disabled(isBuiltIn || isDone)
+                .disabled(isDone)
                 .padding(.horizontal, 32)
                 .padding(.top, 14)
                 .offset(x: shakeX)
@@ -344,7 +344,7 @@ struct CategoryFormView: View {
                     .transition(.opacity)
             }
             if isBuiltIn {
-                Label("Nama dan ikon kategori bawaan tidak bisa diubah", systemImage: "lock")
+                Label("Ikon dan warna kategori bawaan tidak bisa diubah", systemImage: "lock")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextTertiary)
                     .padding(.horizontal, 24)
@@ -720,8 +720,15 @@ struct CategoryFormView: View {
             let category: Category
             do {
                 if let editing {
-                    category = editing.isBuiltIn ? editing
-                        : try await repo.updateCategory(id: editing.id, name: name, icon: icon, color: color)
+                    if editing.isBuiltIn {
+                        // Only the user's own name changes; typing the shared name again restores it.
+                        category = editing.named(name)
+                        if name != editing.name {
+                            try await repo.setCategoryName(id: editing.id, name: category.defaultName == nil ? nil : name)
+                        }
+                    } else {
+                        category = try await repo.updateCategory(id: editing.id, name: name, icon: icon, color: color)
+                    }
                 } else {
                     category = try await repo.createCategory(name: name, type: type, icon: icon, color: color, userId: userId)
                 }

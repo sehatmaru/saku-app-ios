@@ -38,6 +38,8 @@ struct AddTransactionView: View {
     /// Sum of this month's budgets and every expense, for the daily-budget strip.
     @State private var monthlyBudget: Double = 0
     @State private var expenses: [Transaction] = []
+    /// Every transaction, for "Terakhir dipakai" and "Sering dipakai" in the pickers.
+    @State private var history: [Transaction] = []
     /// 0% installment months for a new card expense; 0 means none.
     @State private var installmentMonths = 0
     /// The expense saved but its installment didn't; closing after the alert avoids a duplicate on retry.
@@ -181,7 +183,9 @@ struct AddTransactionView: View {
         async let transactions = SupabaseRepository.shared.fetchTransactions(userId: userId)
         monthlyBudget = ((try? await budgets) ?? []).filter(\.isActive).reduce(0) { $0 + $1.amount }
         // The transaction being edited is re-counted with its new amount as you type.
-        expenses = ((try? await transactions) ?? []).filter { $0.type == .expense && $0.id != editing?.id }
+        let all = ((try? await transactions) ?? []).filter { $0.id != editing?.id }
+        history = all
+        expenses = all.filter { $0.type == .expense }
     }
 
     private var calendar: Calendar { .current }
@@ -763,18 +767,54 @@ struct AddTransactionView: View {
 
     @ViewBuilder
     private func pickerSheet(_ kind: PickerKind) -> some View {
+        switch kind {
+        case .category:
+            CategoryPickerSheet(title: sheetTitle(kind), categories: typeCategories, selectedId: category?.id,
+                                frequentIds: frequentCategoryIds, onDone: { sheet = nil }) { cat in
+                didPickCategory = true
+                pick(.category) { category = cat }
+            }
+        case .account, .target:
+            let list = kind == .target ? targetAccounts : activeAccounts
+            WalletPickerSheet(title: sheetTitle(kind), accounts: list,
+                              selectedId: kind == .target ? target?.id : account?.id,
+                              mainId: activeAccounts.first(where: \.isDefault)?.id,
+                              recentIds: recentWalletIds(among: list), onDone: { sheet = nil }) { acc in
+                pick(kind) { choose(acc, for: kind) }
+            }
+        default:
+            optionSheet(kind)
+        }
+    }
+
+    /// The last three wallets used, newest first.
+    private func recentWalletIds(among list: [Account]) -> [String] {
+        let allowed = Set(list.map(\.id))
+        var seen: [String] = []
+        for txn in history.sorted(by: { $0.date > $1.date }) {
+            for id in [txn.accountId] + [txn.counterpartyAccountId].compactMap({ $0 }) where allowed.contains(id) && !seen.contains(id) {
+                seen.append(id)
+            }
+            if seen.count >= 3 { break }
+        }
+        return seen
+    }
+
+    /// The categories used most for this kind of transaction, most used first.
+    private var frequentCategoryIds: [String] {
+        let allowed = Set(typeCategories.map(\.id))
+        let counts = history.filter { $0.type == style.type }
+            .compactMap(\.categoryId).filter(allowed.contains)
+            .reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        return counts.sorted { $0.value > $1.value }.prefix(3).map(\.key)
+    }
+
+    @ViewBuilder
+    private func optionSheet(_ kind: PickerKind) -> some View {
         PickerSheet(title: sheetTitle(kind), onDone: { sheet = nil }) {
             switch kind {
-            case .category:
-                CategoryPickerGrid(categories: typeCategories, selectedId: category?.id, color: style.color) { cat in
-                    didPickCategory = true
-                    pick(.category) { category = cat }
-                }
-            case .account, .target:
-                WalletPickerGrid(accounts: kind == .target ? targetAccounts : activeAccounts,
-                                 selectedId: kind == .target ? target?.id : account?.id) { acc in
-                    pick(kind) { choose(acc, for: kind) }
-                }
+            case .category, .account, .target:
+                EmptyView()
             case .date:
                 DayPicker(selected: date, color: style.color) { day in
                     pick(.date) { date = keepingTime(of: date, on: day) }

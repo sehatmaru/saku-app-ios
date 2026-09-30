@@ -439,14 +439,18 @@ final class SupabaseRepository: @unchecked Sendable {
 
     // MARK: - Categories
 
+    /// Categories under the user's own names (renamed built-in ones included).
     func fetchCategories() async throws -> [Category] {
-        try await client
+        async let loaded: [Category] = client
             .from("categories")
             .select()
             .is("deleted_at", value: nil)
             .order("name", ascending: true)
             .execute()
             .value
+        let names = ((try? await fetchCategoryPreferences()) ?? [])
+            .reduce(into: [String: String]()) { if let name = $1.customName { $0[$1.categoryId] = name } }
+        return try await loaded.map { names[$0.id].map($0.named) ?? $0 }
     }
 
     func createCategory(name: String, type: CategoryType, icon: String?, color: String?, userId: String) async throws -> Category {
@@ -487,7 +491,7 @@ final class SupabaseRepository: @unchecked Sendable {
     func fetchCategoryPreferences() async throws -> [CategoryPreference] {
         try await client
             .from("category_preferences")
-            .select("category_id,is_hidden,sort_order")
+            .select("category_id,is_hidden,sort_order,custom_name")
             .execute()
             .value
     }
@@ -500,6 +504,18 @@ final class SupabaseRepository: @unchecked Sendable {
             .upsert([
                 "category_id": AnyJSON.string(id),
                 "is_hidden": AnyJSON.bool(hidden),
+                "updated_at": AnyJSON.string(Date().iso8601Formatted),
+            ] as [String: AnyJSON], onConflict: "user_id,category_id")
+            .execute()
+    }
+
+    /// Gives a category (built-in ones too) the user's own name; nil brings the shared name back.
+    func setCategoryName(id: String, name: String?) async throws {
+        try await client
+            .from("category_preferences")
+            .upsert([
+                "category_id": AnyJSON.string(id),
+                "custom_name": name.map { AnyJSON.string($0) } ?? AnyJSON.null,
                 "updated_at": AnyJSON.string(Date().iso8601Formatted),
             ] as [String: AnyJSON], onConflict: "user_id,category_id")
             .execute()
