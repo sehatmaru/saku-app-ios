@@ -10,6 +10,9 @@ struct ProfileView: View {
     }
 
     @State private var showLogoutAlert = false
+    @State private var showResetAlert = false
+    @State private var isResetting = false
+    @State private var resetError: String?
     @State private var showsPayday = false
     @State private var isPaydayToastShown = false
     @State private var isPaydayFlashing = false
@@ -55,6 +58,7 @@ struct ProfileView: View {
                         financeSection
                         appearanceSection
                         notificationSection
+                        if DevTools.isAccountResetEnabled { developmentSection }
                         logoutButton
                         Text("Bergabung sejak \(memberSinceDate) · SakuQ versi \(appVersion)")
                             .font(.app(13))
@@ -83,6 +87,29 @@ struct ProfileView: View {
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
+            .alert("Hapus akun dan semua data?", isPresented: $showResetAlert) {
+                Button("Batal", role: .cancel) {}
+                Button("Hapus semua", role: .destructive) { resetAccount() }
+            } message: {
+                Text("Akun ini beserta dompet, transaksi, budget, kategori, dan pengaturannya dihapus permanen, lalu kamu kembali ke awal. Tidak bisa dibatalkan.")
+            }
+            .alert("Gagal menghapus akun", isPresented: Binding(get: { resetError != nil }, set: { if !$0 { resetError = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(resetError ?? "")
+            }
+            .overlay {
+                if isResetting {
+                    ZStack {
+                        Color.black.opacity(0.3).ignoresSafeArea()
+                        ProgressView("Menghapus…")
+                            .padding(24)
+                            .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: isResetting)
             .alert("Keluar", isPresented: $showLogoutAlert) {
                 Button("Batal", role: .cancel) {}
                 Button("Keluar", role: .destructive) {
@@ -130,7 +157,7 @@ struct ProfileView: View {
             sectionCaption("Keuangan")
 
             NavigationLink(destination: CategoriesView()) {
-                row(icon: "square.grid.2x2", title: "Kategori", subtitle: "Tambah, urutkan, sembunyikan") {
+                row(icon: "square.grid.2x2", title: "Kategori", subtitle: "Tambah, ubah, sembunyikan") {
                     chevron
                 }
                 .contentShape(Rectangle())
@@ -214,16 +241,16 @@ struct ProfileView: View {
             .padding(.bottom, 4)
     }
 
-    private func row<Trailing: View>(icon: String, title: String, subtitle: String? = nil, @ViewBuilder trailing: () -> Trailing) -> some View {
+    private func row<Trailing: View>(icon: String, title: String, subtitle: String? = nil, isDestructive: Bool = false, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 19))
-                .foregroundStyle(Color.appTextSecondary)
+                .foregroundStyle(isDestructive ? Color.appError : Color.appTextSecondary)
                 .frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.app(16))
-                    .foregroundStyle(Color.appText)
+                    .foregroundStyle(isDestructive ? Color.appError : Color.appText)
                 if let subtitle {
                     Text(subtitle)
                         .font(.app(13))
@@ -238,6 +265,30 @@ struct ProfileView: View {
     }
 
     // MARK: - Logout
+
+    /// Only while the app is in development and testing (see `DevTools`).
+    private var developmentSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionCaption("Pengembangan")
+            Button { showResetAlert = true } label: {
+                row(icon: "trash", title: "Hapus akun & data", subtitle: "Untuk uji coba: mulai lagi dari nol", isDestructive: true) {
+                    chevron
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+            .disabled(isResetting)
+        }
+    }
+
+    private func resetAccount() {
+        isResetting = true
+        Task {
+            let ok = await authViewModel.deleteAccountAndData()
+            isResetting = false
+            if !ok { resetError = authViewModel.errorMessage ?? "Coba lagi." }
+        }
+    }
 
     private var logoutButton: some View {
         Button {

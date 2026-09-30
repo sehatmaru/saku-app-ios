@@ -6,7 +6,17 @@ import SwiftUI
 struct AddBudgetView: View {
     @ObservedObject var viewModel: BudgetListViewModel
     let userId: String
-    var onAdded: (Category) -> Void = { _ in }
+    var onAdded: (Category) -> Void
+
+    /// With `category`, opens straight on the amount step for it (tapping a row without a budget).
+    init(viewModel: BudgetListViewModel, userId: String, category: Category? = nil,
+         onAdded: @escaping (Category) -> Void = { _ in }) {
+        self.viewModel = viewModel
+        self.userId = userId
+        self.onAdded = onAdded
+        _category = State(initialValue: category)
+        _step = State(initialValue: category == nil ? 1 : 2)
+    }
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
@@ -31,8 +41,13 @@ struct AddBudgetView: View {
                 pickStep
                     .offset(x: step == 2 ? -geo.size.width * 0.3 : 0)
                 amountStep
-                    .background(Color.appBackground)
-                    .shadow(color: .black.opacity(step == 2 ? 0.08 : 0), radius: 15, x: -10)
+                    // The edge shadow belongs to the page's background alone: on the whole page it
+                    // also blurred every number key.
+                    .background {
+                        Color.appBackground
+                            .ignoresSafeArea()
+                            .shadow(color: .black.opacity(step == 2 ? 0.08 : 0), radius: 15, x: -10)
+                    }
                     .offset(x: step == 2 ? 0 : geo.size.width + 20)
             }
             .animation(.settle(0.48), value: step)
@@ -210,10 +225,11 @@ struct AddBudgetView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 12)
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: 12)
             AmountPad(color: .appPrimary, isEnabled: amount > 0, isSaving: isSaving, onPress: press, onSave: save)
+                .disabled(isSaving || isDone)
                 .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+                .padding(.bottom, 4)
         }
     }
 

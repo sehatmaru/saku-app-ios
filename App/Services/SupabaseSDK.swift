@@ -19,6 +19,11 @@ enum SupabaseSDK {
         return profile
     }
 
+    /// Development tool: deletes the signed-in account and all its data on the server.
+    static func deleteMyAccount() async throws {
+        try await client.rpc("delete_my_account").execute()
+    }
+
     /// Saves the payday (1–31) on the profile and mirrors it on the device.
     static func updatePayday(profileId: UUID, day: Int) async throws {
         let day = min(max(day, 1), 31)

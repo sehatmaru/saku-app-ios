@@ -11,7 +11,13 @@ struct BudgetListView: View {
     @AppStorage("paydayDay") private var paydayRaw = 0
     /// "Nanti saja" on the "Kapan kamu gajian?" card, per device.
     @AppStorage("paydayCardDismissed") private var isPaydayCardDismissed = false
-    @State private var showAddBudget = false
+    /// Tambah budget is showing: for `category` when a row was tapped, else from the pick step.
+    @State private var addTarget: AddTarget?
+
+    private struct AddTarget: Identifiable {
+        let id = UUID()
+        let category: Category?
+    }
     @State private var showPaydaySheet = false
     /// Payday the header keeps showing while it fades out to the new period.
     @State private var frozenPayday: Int?
@@ -20,9 +26,14 @@ struct BudgetListView: View {
     @State private var flashId: String?
     @State private var toastText = ""
     @State private var isToastShown = false
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
 
     private var setItems: [BudgetListItem] {
         viewModel.budgetItems.filter { $0.budget != nil }
+    }
+
+    private var unsetItems: [BudgetListItem] {
+        viewModel.budgetItems.filter { $0.budget == nil }
     }
 
     private var headerPayday: Int? {
@@ -62,7 +73,7 @@ struct BudgetListView: View {
                         if let error = viewModel.errorMessage {
                             ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                         }
-                        if setItems.isEmpty {
+                        if viewModel.budgetItems.isEmpty {
                             emptyState
                         } else {
                             budgetList
@@ -75,9 +86,9 @@ struct BudgetListView: View {
             }
             .background(Color.appBackground)
             .toolbar(.hidden, for: .navigationBar)
-            .fullScreenCover(isPresented: $showAddBudget) {
+            .fullScreenCover(item: $addTarget) { target in
                 if let userId = authViewModel.currentUser?.id {
-                    AddBudgetView(viewModel: viewModel, userId: userId) { category in
+                    AddBudgetView(viewModel: viewModel, userId: userId, category: target.category) { category in
                         budgetAdded(category)
                     }
                 }
@@ -156,7 +167,7 @@ struct BudgetListView: View {
 
     /// Right under the period hero; dimmed until the budgets have loaded.
     private var addBudgetButton: some View {
-        EmptyStateButton(title: "Tambah budget", isFullWidth: true) { showAddBudget = true }
+        EmptyStateButton(title: "Tambah budget", isFullWidth: true) { addTarget = AddTarget(category: nil) }
             .opacity(viewModel.hasLoadedOnce ? 1 : 0.4)
             .disabled(!viewModel.hasLoadedOnce)
             .accessibilityLabel("Tambah budget")
@@ -221,10 +232,12 @@ struct BudgetListView: View {
 
     private var budgetList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Per kategori", trailing: "\(setItems.count) aktif")
-                .padding(.horizontal, 24)
-                .padding(.top, 14)
-                .padding(.bottom, 4)
+            if !setItems.isEmpty {
+                SectionHeader(title: "Per kategori", trailing: "\(setItems.count) aktif")
+                    .padding(.horizontal, 24)
+                    .padding(.top, 14)
+                    .padding(.bottom, 4)
+            }
             ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
                 NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
                     BudgetCardView(budget: item.budget, category: item.category,
@@ -235,6 +248,19 @@ struct BudgetListView: View {
                 }
                 .buttonStyle(RowPressStyle())
             }
+            if !unsetItems.isEmpty {
+                SectionHeader(title: "Belum diatur", trailing: "\(unsetItems.count)")
+                    .padding(.horizontal, 24)
+                    .padding(.top, setItems.isEmpty ? 14 : 22)
+                    .padding(.bottom, 4)
+                ForEach(unsetItems) { item in
+                    Button { addTarget = AddTarget(category: item.category) } label: {
+                        unsetRow(item.category)
+                            .padding(.horizontal, 24)
+                    }
+                    .buttonStyle(RowPressStyle())
+                }
+            }
             Text("Budget dihitung per kategori. Tiap periode mulai dari nol, sisa tidak terbawa ke periode berikutnya.")
                 .font(.app(13))
                 .lineSpacing(2)
@@ -244,6 +270,41 @@ struct BudgetListView: View {
                 .padding(.bottom, 36)
         }
         .padding(.top, 12)
+    }
+
+    /// A category without a budget: tap to set one, starting on the amount.
+    private func unsetRow(_ category: Category) -> some View {
+        let average = viewModel.threeMonthAverage(categoryId: category.id)
+        return HStack(spacing: 14) {
+            Image(systemName: category.icon ?? "tag")
+                .font(.system(size: 20))
+                .foregroundStyle(Color.appTextTertiary)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(category.name)
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                    .lineLimit(1)
+                Text(average > 0
+                     ? "Rata-rata 3 bulan " + (isBalanceVisible ? average.formattedAsCurrency() : "Rp" + hiddenAmount)
+                     : "Belum dipakai")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            Text("Atur")
+                .font(.app(14, weight: .semibold))
+                .foregroundStyle(Color.appPrimary)
+                .padding(.horizontal, 14)
+                .frame(height: 32)
+                .background(Color.appPrimary.opacity(0.1), in: Capsule())
+        }
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Atur budget")
     }
 
     private var emptyState: some View {

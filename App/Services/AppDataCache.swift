@@ -56,6 +56,15 @@ final class AppDataCache {
         }
     }
 
+    /// Forgets everything cached, for every user (sign-out after an account reset).
+    func clearAll() {
+        dashboardByUserId = [:]
+        budgetsByUserId = [:]
+        accountsByUserId = [:]
+        transactionsByUserId = [:]
+        accountTransactionsByUserId = [:]
+    }
+
     func dashboardState(for userId: String) -> DashboardState? { dashboardByUserId[userId] }
     func setDashboardState(_ state: DashboardState, for userId: String) { dashboardByUserId[userId] = state }
 

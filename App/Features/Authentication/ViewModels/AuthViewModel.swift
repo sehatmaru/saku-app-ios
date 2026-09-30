@@ -226,6 +226,32 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Account reset (development)
+
+    /// Deletes the account and all its data on the server, forgets what this device kept
+    /// (cache, reminders, payday, intro) and returns to the start. False when the server refused.
+    func deleteAccountAndData() async -> Bool {
+        do {
+            try await SupabaseSDK.deleteMyAccount()
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+        // The auth user is gone, so the server can't revoke anything; clear the local session.
+        try? await SupabaseSDK.client.auth.signOut(scope: .local)
+        GIDSignIn.sharedInstance.signOut()
+        NotificationManager.shared.cancelAll()
+        AppDataCache.shared.clearAll()
+        PaydaySetting.day = nil
+        for key in ["paydayCardDismissed", "hasSeenOnboarding", "memberSince"] {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        needsSetup = false
+        currentUser = nil
+        withAnimation(.easeInOut(duration: 0.4)) { isAuthenticated = false }
+        return true
+    }
+
     // MARK: - Logout
 
     func logout() {

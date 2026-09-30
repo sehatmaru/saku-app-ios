@@ -12,6 +12,11 @@ final class NotificationManager: @unchecked Sendable {
         _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
     }
 
+    /// Drops every reminder still waiting (account reset).
+    func cancelAll() {
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+    }
+
     private func identifier(for sub: CardSubscription) -> String {
         "subscription-\(sub.id)"
     }
