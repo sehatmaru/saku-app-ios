@@ -21,6 +21,14 @@ struct FinancialHealth {
         var activeDays: Int
         var topExpenseCategory: String?
         var hasTransactions: Bool
+        /// Card statements still owed past their due date.
+        var overdueBills: [OverdueBill] = []
+    }
+
+    struct OverdueBill: Equatable {
+        let cardName: String
+        let amount: Double
+        let daysLate: Int
     }
 
     enum Kind: CaseIterable {
@@ -166,8 +174,20 @@ struct FinancialHealth {
         return Factor(kind: .emergencyFund, points: points, maxPoints: 25, summary: summary, tip: tip)
     }
 
-    /// Credit card use against the limit, or against monthly income when no limit is set.
+    /// Credit card use, capped while a bill is overdue: a week late still earns 8 of 20, later earns none.
     private static func debt(_ input: Input) -> Factor {
+        let usage = debtUsage(input)
+        guard let worst = input.overdueBills.max(by: { $0.daysLate < $1.daysLate }) else { return usage }
+        let points = min(usage.points, worst.daysLate > 7 ? 0 : 8)
+        let summary = input.overdueBills.count == 1
+            ? "Tagihan \(worst.cardName) \(worst.amount.formattedAsCurrency()) lewat jatuh tempo \(worst.daysLate) hari."
+            : "\(input.overdueBills.count) tagihan kartu kredit lewat jatuh tempo, total \(input.overdueBills.reduce(0) { $0 + $1.amount }.formattedAsCurrency())."
+        return Factor(kind: .debt, points: points, maxPoints: 20, summary: summary,
+                      tip: "Bayar tagihannya, atau catat pembayarannya kalau sudah kamu bayar, supaya skor pulih dan tidak kena bunga.")
+    }
+
+    /// Credit card use against the limit, or against monthly income when no limit is set.
+    private static func debtUsage(_ input: Input) -> Factor {
         guard input.hasCreditCard, input.creditDebt > 0 else {
             return Factor(kind: .debt, points: 20, maxPoints: 20,
                           summary: input.hasCreditCard ? "Tagihan kartu kreditmu sudah lunas." : "Tidak ada utang kartu kredit.",

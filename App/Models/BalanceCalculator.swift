@@ -26,6 +26,8 @@ enum BalanceCalculator {
                 balances[transaction.accountId, default: 0] -= transaction.amount
             case .adjustment:
                 balances[transaction.accountId, default: 0] += transaction.amount
+            case .cardPayment:
+                balances[transaction.accountId, default: 0] -= transaction.amount
             case .transfer:
                 balances[transaction.accountId, default: 0] -= transaction.amount
                 if let counterpartyAccountId = transaction.counterpartyAccountId {

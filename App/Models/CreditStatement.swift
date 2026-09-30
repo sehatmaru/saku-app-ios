@@ -30,6 +30,9 @@ struct CreditStatement {
     let minimumDue: Double
     /// Rough interest next month if only the minimum is paid.
     let interestIfMinimum: Double
+    /// Days past the due date while the statement is still owed; 0 otherwise.
+    let daysOverdue: Int
+
     /// The first day whose purchases get the longest interest-free period, and when they're due.
     let bestPurchaseDate: Date
     let bestPurchaseDueDate: Date
@@ -60,6 +63,7 @@ struct CreditStatement {
             let effect = Self.debtEffect(of: txn, on: card.id)
             changeSince += effect
             if txn.type == .transfer, txn.counterpartyAccountId == card.id { paidSince += txn.amount }
+            if txn.type == .cardPayment, txn.accountId == card.id { paidSince += txn.amount }
         }
         let balanceAtCutoff = card.balance - changeSince
 
@@ -90,6 +94,10 @@ struct CreditStatement {
         default: .unpaid
         }
 
+        daysOverdue = status == .overdue
+            ? max(calendar.dateComponents([.day], from: dueDate, to: todayStart).day ?? 0, 0)
+            : 0
+
         // Buying the day after a cut-off pushes the bill out a full cycle.
         bestPurchaseDate = boundary == todayStart ? todayStart : cycle.dayAfter(nextStatementDate)
         let bestStatement = cycle.cutoff(monthAfter: boundary == todayStart ? last : nextStatementDate)
@@ -105,6 +113,7 @@ struct CreditStatement {
         case .income where txn.accountId == cardId: -txn.amount
         case .transfer where txn.accountId == cardId: txn.amount
         case .transfer where txn.counterpartyAccountId == cardId: -txn.amount
+        case .cardPayment where txn.accountId == cardId: -txn.amount
         default: 0
         }
     }

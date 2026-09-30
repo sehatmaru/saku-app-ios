@@ -92,7 +92,7 @@ struct TransactionDetailView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             // Balance adjustments have no form to edit them in.
-            if isEditable && !isDeleted && !isAdjustment {
+            if isEditable && !isDeleted && !isAdjustment && txn.type != .cardPayment {
                 ToolbarItem(placement: .topBarTrailing) { editControl }
             }
         }
@@ -332,6 +332,8 @@ struct TransactionDetailView: View {
         case .adjustment:
             let change = (signedAdjustment < 0 ? "−Rp" : "+Rp") + abs(signedAdjustment).formattedAsDigits()
             return account.map { [balanceItem($0, sub: "Penyesuaian " + change)] } ?? []
+        case .cardPayment:
+            return account.map { [balanceItem($0, sub: "Tagihan turun Rp" + txn.amount.formattedAsDigits())] } ?? []
         }
     }
 
@@ -449,6 +451,7 @@ struct TransactionDetailView: View {
             return "\(amount) akan kembali ke \(account.name) dan tagihan \(counterparty?.name ?? "kartu") naik lagi."
         case .transfer: return "\(amount) akan kembali ke \(account.name) dan keluar dari \(counterparty?.name ?? "dompet tujuan")."
         case .adjustment: restored = account.balance - signedAdjustment
+        case .cardPayment: restored = account.balance + txn.amount
         }
         let base = (account.isCreditCard ? "Tagihan " : "Saldo ") + account.name + " kembali jadi " + rupiah(restored)
         if txn.type == .expense, let name = category?.name, categoryBudget != nil {

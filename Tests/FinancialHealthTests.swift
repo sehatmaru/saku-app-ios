@@ -9,12 +9,13 @@ final class FinancialHealthTests: XCTestCase {
         liquid: Double = 50_000_000,
         debt: Double = 0, limit: Double = 0, hasCard: Bool = false,
         budget: Double = 5_000_000, spent: Double = 2_000_000, progress: Double = 0.5,
-        activeDays: Int = 25
+        activeDays: Int = 25,
+        overdue: [FinancialHealth.OverdueBill] = []
     ) -> FinancialHealth.Input {
         .init(monthlyIncome: income, monthlyExpense: expense, liquidBalance: liquid,
               creditDebt: debt, creditLimit: limit, hasCreditCard: hasCard,
               budgetTotal: budget, budgetSpent: spent, monthProgress: progress,
-              activeDays: activeDays, topExpenseCategory: "Makan", hasTransactions: true)
+              activeDays: activeDays, topExpenseCategory: "Makan", hasTransactions: true, overdueBills: overdue)
     }
 
     private func points(_ health: FinancialHealth, _ kind: FinancialHealth.Kind) -> Int {
@@ -48,6 +49,32 @@ final class FinancialHealthTests: XCTestCase {
         XCTAssertEqual(points(FinancialHealth(input(debt: 500_000, limit: 10_000_000, hasCard: true)), .debt), 20)
         XCTAssertEqual(points(FinancialHealth(input(debt: 4_000_000, limit: 10_000_000, hasCard: true)), .debt), 8)
         XCTAssertEqual(points(FinancialHealth(input(debt: 9_000_000, limit: 10_000_000, hasCard: true)), .debt), 0)
+    }
+
+    func testOverdueBillCapsTheDebtFactor() {
+        let week = FinancialHealth.OverdueBill(cardName: "BCA Visa", amount: 838_084, daysLate: 3)
+        let late = FinancialHealth.OverdueBill(cardName: "BCA Visa", amount: 838_084, daysLate: 12)
+        // Low use would score 20; a bill up to a week late holds it to 8, later than that to 0.
+        XCTAssertEqual(points(FinancialHealth(input(debt: 500_000, limit: 10_000_000, hasCard: true, overdue: [week])), .debt), 8)
+        XCTAssertEqual(points(FinancialHealth(input(debt: 500_000, limit: 10_000_000, hasCard: true, overdue: [late])), .debt), 0)
+        // Heavy use already scores below the cap, so the cap never raises it.
+        XCTAssertEqual(points(FinancialHealth(input(debt: 9_000_000, limit: 10_000_000, hasCard: true, overdue: [week])), .debt), 0)
+        // The longest overdue bill decides.
+        XCTAssertEqual(points(FinancialHealth(input(debt: 500_000, limit: 10_000_000, hasCard: true, overdue: [week, late])), .debt), 0)
+        // Nothing overdue any more: back to full points, no tip.
+        let paid = FinancialHealth(input(debt: 500_000, limit: 10_000_000, hasCard: true))
+        XCTAssertEqual(points(paid, .debt), 20)
+        XCTAssertNil(paid.factors.first { $0.kind == .debt }?.tip)
+    }
+
+    func testOverdueBillExplainsItselfAndBecomesTheTip() {
+        let late = FinancialHealth.OverdueBill(cardName: "BCA Visa", amount: 838_084, daysLate: 10)
+        let health = FinancialHealth(input(debt: 500_000, limit: 10_000_000, hasCard: true, overdue: [late]))
+        let debt = health.factors.first { $0.kind == .debt }!
+        XCTAssertTrue(debt.summary.contains("BCA Visa"))
+        XCTAssertTrue(debt.summary.contains("10 hari"))
+        XCTAssertNotNil(debt.tip)
+        XCTAssertLessThan(health.score, 100)
     }
 
     func testBudgetPace() {

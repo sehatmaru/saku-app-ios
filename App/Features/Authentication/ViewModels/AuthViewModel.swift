@@ -243,7 +243,7 @@ final class AuthViewModel: ObservableObject {
         NotificationManager.shared.cancelAll()
         AppDataCache.shared.clearAll()
         PaydaySetting.day = nil
-        for key in ["paydayCardDismissed", "hasSeenOnboarding", "memberSince"] {
+        for key in ["paydayCardDismissed", "hasSeenOnboarding", "memberSince", "billReminderSnoozedUntil"] {
             UserDefaults.standard.removeObject(forKey: key)
         }
         needsSetup = false

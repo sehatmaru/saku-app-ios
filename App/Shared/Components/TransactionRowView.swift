@@ -28,6 +28,7 @@ struct TransactionRowView: View {
     private var iconName: String {
         switch transaction.type {
         case .adjustment: "arrow.2.circlepath"
+        case .cardPayment: "creditcard"
         case .transfer: isCardPayment ? "creditcard" : "arrow.left.arrow.right"
         case .income: category?.icon ?? "arrow.down"
         case .expense: category?.icon ?? "arrow.up"
@@ -40,6 +41,7 @@ struct TransactionRowView: View {
         case .expense: "Pengeluaran"
         case .transfer: isCardPayment ? "Bayar tagihan" : "Transfer"
         case .adjustment: "Penyesuaian saldo"
+        case .cardPayment: "Bayar tagihan"
         }
     }
 
@@ -52,7 +54,9 @@ struct TransactionRowView: View {
         let kind = (transaction.type == .income || transaction.type == .expense) ? category?.name : typeLabel
         if let kind, kind != title { parts.append(kind) }
         if showAccount {
-            if transaction.type == .transfer,
+            if transaction.type == .cardPayment {
+                parts.append("Sumber lain")
+            } else if transaction.type == .transfer,
                let src = accountName(transaction.accountId),
                let dst = accountName(transaction.counterpartyAccountId) {
                 parts.append("\(src) → \(dst)")
@@ -70,6 +74,7 @@ struct TransactionRowView: View {
         case .expense: -transaction.amount
         case .transfer: 0
         case .adjustment: transaction.delta ?? transaction.amount
+        case .cardPayment: transaction.amount
         }
     }
 

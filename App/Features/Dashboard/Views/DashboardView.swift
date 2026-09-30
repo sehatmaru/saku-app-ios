@@ -22,6 +22,12 @@ struct DashboardView: View {
     /// "Tambah dompet" on the empty Beranda opens Dompet straight into the add sheet.
     @State private var addsWalletOnOpen = false
     @State private var showsSafeInfo = false
+    /// Catat tagihan for an overdue card bill, from the banner or a notification.
+    /// Kept as the bill it was opened with, so the sheet survives the reload after paying.
+    @State private var recordCard: OverdueCardBill?
+    @State private var toastText = ""
+    @State private var isToastShown = false
+    @ObservedObject private var notificationRouter = NotificationRouter.shared
 
     enum AppTab: Hashable {
         case home, transactions, budget, profile
@@ -62,6 +68,16 @@ struct DashboardView: View {
                 }
             }
         }
+        .fullScreenCover(item: $recordCard) { bill in
+            PayCardBillSheet(card: bill.card, statement: bill.statement, wallets: viewModel.accounts, mode: .record,
+                             onPaid: { amount, _, isFull in
+                toastText = isFull ? "\(bill.card.name) lunas · pembayaran tercatat" : "Pembayaran \(amount.formattedAsCurrency()) tercatat"
+                isToastShown = true
+            })
+        }
+        .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
+        .onChange(of: viewModel.overdueBills.map(\.id)) { _, _ in openPendingRecord() }
+        .toast(toastText, isShown: $isToastShown)
         .fullScreenCover(isPresented: $showAddSheet) {
             if let userId = authViewModel.currentUser?.id {
                 AddTransactionView(
@@ -76,6 +92,14 @@ struct DashboardView: View {
                 )
             }
         }
+    }
+
+    /// "Sudah, catat" on the notification: open its card once the bills have loaded.
+    private func openPendingRecord() {
+        guard let id = notificationRouter.pendingCardId,
+              let bill = viewModel.overdueBills.first(where: { $0.card.id == id }) else { return }
+        notificationRouter.pendingCardId = nil
+        recordCard = bill
     }
 
     // MARK: - Tabs
@@ -155,6 +179,11 @@ struct DashboardView: View {
                         ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                     }
                     summarySection
+                    if !viewModel.overdueBills.isEmpty {
+                        OverdueBillBanner(bills: viewModel.overdueBills, isBalanceVisible: isBalanceVisible) { bill in
+                            recordCard = bill
+                        }
+                    }
                     if hasNoWallets {
                         firstWalletCard
                         emptyHealthSection

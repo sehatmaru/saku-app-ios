@@ -97,12 +97,18 @@ struct CardBillSummary: View {
 }
 
 /// Pays a card bill full-screen (design 1e): a transfer from a cash wallet into the card, which lowers its debt.
+/// In `.record` mode (Pengingat Tagihan 2c) it instead notes a bill that was already paid: on a past
+/// date, and possibly from outside Saku, which moves no wallet.
 struct PayCardBillSheet: View {
+    enum Mode { case pay, record }
+
     let card: Account
     let statement: CreditStatement
     let wallets: [Account]
-    /// Called after a successful payment, just before the screen closes, with the amount and the wallet it came from.
-    var onPaid: ((Double, Account) -> Void)? = nil
+    var mode: Mode = .pay
+    /// Called after a successful payment, just before the screen closes, with the amount, the wallet it
+    /// came from (nil for "Sumber lain"), and whether the statement is now fully paid.
+    var onPaid: ((Double, Account?, Bool) -> Void)? = nil
 
     private enum Choice { case full, minimum, custom }
 
@@ -115,6 +121,9 @@ struct PayCardBillSheet: View {
     @State private var sourceId: String?
     @State private var noteText = ""
     @State private var showSourceSheet = false
+    @State private var isOtherSource = false
+    @State private var paidOn: Date?
+    @State private var showDateSheet = false
     @State private var isSourceFlashing = false
     @State private var hasEntered = false
     @State private var isSaving = false
@@ -127,14 +136,24 @@ struct PayCardBillSheet: View {
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @Environment(\.dismiss) private var dismiss
 
+    private var isRecord: Bool { mode == .record }
     private var sources: [Account] { wallets.filter { $0.isActive && !$0.isCreditCard } }
-    private var source: Account? { sources.first { $0.id == sourceId } }
-    private var color: Color { source?.walletColor ?? .appPrimary }
+    private var source: Account? { isOtherSource ? nil : sources.first { $0.id == sourceId } }
+    private var color: Color { isOtherSource ? Color(hex: "48484A") : source?.walletColor ?? .appPrimary }
     /// Nothing billed yet but the card has debt: offer paying all of it.
-    private var fullAmount: Double { statement.remaining > 0 ? statement.remaining : card.balance }
-    private var showsMinimum: Bool { statement.minimumDue > 0 && statement.minimumDue < statement.remaining }
-    /// Paying unbilled charges early is fine; more than the whole debt isn't.
-    private var maxPayable: Double { max(card.balance, statement.remaining) }
+    private var fullAmount: Double { statement.remaining > 0 || isRecord ? statement.remaining : card.balance }
+    private var showsMinimum: Bool { !isRecord && statement.minimumDue > 0 && statement.minimumDue < statement.remaining }
+    /// Paying unbilled charges early is fine; more than the whole debt isn't. A recorded payment answers
+    /// one statement, so it can't exceed what that statement still owes.
+    private var maxPayable: Double { isRecord ? statement.remaining : max(card.balance, statement.remaining) }
+    private var today: Date { Calendar.current.startOfDay(for: Date()) }
+    /// The day the bill was paid; the due date until the user picks another, but never in the future.
+    private var payDate: Date { paidOn ?? min(statement.dueDate, today) }
+    /// The first day a payment can count for this statement, and the last.
+    private var payRange: ClosedRange<Date> {
+        let first = Calendar.current.date(byAdding: .day, value: 1, to: statement.statementDate) ?? statement.statementDate
+        return min(first, today)...today
+    }
 
     private var amount: Double {
         switch choice {
@@ -148,15 +167,15 @@ struct PayCardBillSheet: View {
     private var shortfall: Double { source == nil ? 0 : max(amount - sourceBalance, 0) }
     private var isOverDebt: Bool { amount > maxPayable + 0.5 }
     private var isBlocked: Bool { shortfall > 0 || isOverDebt }
-    private var canPay: Bool { amount > 0 && source != nil && !isBlocked }
+    private var canPay: Bool { amount > 0 && (source != nil || isOtherSource) && !isBlocked }
     private var remainingAfter: Double { max(statement.remaining - amount, 0) }
 
     private var sliderLabel: String {
-        if source == nil { return "Pilih dompet" }
+        if source == nil, !isOtherSource { return "Pilih dompet" }
         if amount <= 0 { return "Masukkan nominal" }
         if shortfall > 0 { return "Saldo tidak cukup" }
-        if isOverDebt { return "Melebihi utang" }
-        return "Geser untuk bayar"
+        if isOverDebt { return isRecord ? "Melebihi tagihan" : "Melebihi utang" }
+        return isRecord ? "Geser untuk catat" : "Geser untuk bayar"
     }
 
     private func money(_ value: Double) -> String {
@@ -204,6 +223,12 @@ struct PayCardBillSheet: View {
             hasEntered = true
         }
         .sheet(isPresented: $showSourceSheet) { sourceSheet }
+        .sheet(isPresented: $showDateSheet) {
+            BillDateSheet(range: payRange, dueDate: statement.dueDate, color: card.walletColor, selected: payDate) { day in
+                paidOn = day
+                showDateSheet = false
+            }
+        }
     }
 
     // MARK: Panel
@@ -219,8 +244,8 @@ struct PayCardBillSheet: View {
             }
             .overlay {
                 HStack(spacing: 8) {
-                    Image(systemName: "creditcard").font(.system(size: 15, weight: .bold))
-                    Text("Bayar tagihan").font(.app(17, weight: .semibold))
+                    Image(systemName: isRecord ? "receipt" : "creditcard").font(.system(size: 15, weight: .bold))
+                    Text(isRecord ? "Catat tagihan" : "Bayar tagihan").font(.app(17, weight: .semibold))
                 }
             }
             .frame(height: 44)
@@ -237,7 +262,7 @@ struct PayCardBillSheet: View {
             Spacer(minLength: 0)
         }
         .foregroundStyle(.white)
-        .frame(height: 266)
+        .frame(height: isRecord ? 312 : 266)
         .frame(maxWidth: .infinity)
         .background {
             UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32)
@@ -247,7 +272,7 @@ struct PayCardBillSheet: View {
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                 }
                 .overlay(alignment: .topTrailing) {
-                    Image(systemName: "creditcard")
+                    Image(systemName: isRecord ? "receipt" : "creditcard")
                         .font(.system(size: 170, weight: .ultraLight))
                         .foregroundStyle(.white.opacity(0.06))
                         .offset(x: 40, y: 90)
@@ -269,7 +294,7 @@ struct PayCardBillSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 7) {
                 swatch(color)
-                Text(source?.name ?? "Pilih dompet").lineLimit(1)
+                Text(isOtherSource ? "Sumber lain" : source?.name ?? "Pilih dompet").lineLimit(1)
                 Image(systemName: "arrow.right")
                     .font(.system(size: 11, weight: .bold))
                     .opacity(0.7)
@@ -283,6 +308,13 @@ struct PayCardBillSheet: View {
             .background(.white.opacity(0.14), in: Capsule())
             .padding(.horizontal, 24)
             .padding(.top, 6)
+
+            if isRecord {
+                Text("Tagihan cut-off \(TransactionDates.dayMonth.string(from: statement.statementDate)), jatuh tempo \(TransactionDates.dayMonth.string(from: statement.dueDate))")
+                    .font(.app(13))
+                    .opacity(0.82)
+                    .padding(.top, 8)
+            }
 
             HStack(alignment: .top, spacing: 4) {
                 Text("Rp")
@@ -315,16 +347,24 @@ struct PayCardBillSheet: View {
 
             ZStack(alignment: .top) {
                 VStack(spacing: 6) {
-                    infoRow("Saldo \(source?.name ?? "")",
-                            "\(money(sourceBalance)) → \(money(max(sourceBalance - amount, 0)))")
-                    infoRow("Sisa tagihan",
-                            "\(money(statement.remaining)) → \(money(remainingAfter))")
+                    if isRecord {
+                        infoRow(isOtherSource ? "Sumber lain" : "Saldo \(source?.name ?? "")",
+                                isOtherSource ? "Tidak mengurangi saldo" : "\(money(sourceBalance)) → \(money(max(sourceBalance - amount, 0)))")
+                        infoRow("Terpakai \(card.name)",
+                                "\(money(card.balance)) → \(money(max(card.balance - amount, 0)))")
+                        infoRow("Status", recordStatusText)
+                    } else {
+                        infoRow("Saldo \(source?.name ?? "")",
+                                "\(money(sourceBalance)) → \(money(max(sourceBalance - amount, 0)))")
+                        infoRow("Sisa tagihan",
+                                "\(money(statement.remaining)) → \(money(remainingAfter))")
+                    }
                 }
                 .opacity(isBlocked ? 0 : 1)
                 warningPill
                     .padding(.top, 6)
             }
-            .frame(height: 44, alignment: .top)
+            .frame(height: isRecord ? 66 : 44, alignment: .top)
             .padding(.horizontal, 24)
             .padding(.top, 16)
             .animation(.easeInOut(duration: 0.22), value: isBlocked)
@@ -333,10 +373,16 @@ struct PayCardBillSheet: View {
 
     private var modeChips: some View {
         HStack(spacing: 8) {
-            modeChip(.full, "Bayar penuh " + fullAmount.formattedAsCurrency())
+            modeChip(.full, (isRecord ? "Lunas penuh " : "Bayar penuh ") + fullAmount.formattedAsCurrency())
             if showsMinimum { modeChip(.minimum, "Minimum " + statement.minimumDue.formattedAsCurrency()) }
-            modeChip(.custom, "Nominal lain")
+            modeChip(.custom, isRecord && choice == .custom && amount > 0 && amount < statement.remaining ? "Sebagian" : "Nominal lain")
         }
+    }
+
+    private var recordStatusText: String {
+        if amount >= statement.remaining, amount > 0 { return "Lewat jatuh tempo → Lunas" }
+        if amount > 0 { return "→ Sebagian · sisa \(money(remainingAfter))" }
+        return "Lewat jatuh tempo"
     }
 
     private func modeChip(_ value: Choice, _ title: String) -> some View {
@@ -374,9 +420,10 @@ struct PayCardBillSheet: View {
     private var warningPill: some View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.circle.fill").font(.system(size: 15))
-            Text(shortfall > 0 ? "Saldo \(source?.name ?? "") kurang \(shortfall.formattedAsCurrency())"
-                               : "Melebihi utang kartu \(maxPayable.formattedAsCurrency())")
+            Text(shortfall > 0 ? "Saldo \(source?.name ?? "") kurang \(shortfall.formattedAsCurrency())" + (isRecord ? " · pilih dompet lain" : "")
+                               : (isRecord ? "Melebihi sisa tagihan" : "Melebihi utang kartu") + " \(maxPayable.formattedAsCurrency())")
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .font(.app(13, weight: .semibold))
         .monospacedDigit()
@@ -402,7 +449,7 @@ struct PayCardBillSheet: View {
                 }
                 .scaleEffect(isDone ? 1 : 0.4)
                 .animation(.spring(duration: 0.56, bounce: 0.5), value: isDone)
-            Text("Pembayaran berhasil")
+            Text(isRecord ? "Pembayaran tercatat" : "Pembayaran berhasil")
                 .font(.app(20, weight: .semibold))
                 .padding(.top, 6)
             Text(doneLines.0)
@@ -434,13 +481,14 @@ struct PayCardBillSheet: View {
         Text(text)
             .font(.app(15))
             .foregroundStyle(Color.appTextSecondary)
-            .frame(width: 76, alignment: .leading)
+            .frame(width: isRecord ? 96 : 76, alignment: .leading)
     }
 
     private var rows: some View {
         VStack(spacing: 0) {
             entering(sourceRow, index: 0)
-            entering(noteRow, index: 1)
+            if isRecord { entering(dateRow, index: 1) }
+            entering(noteRow, index: isRecord ? 2 : 1)
         }
         .disabled(isDone || isSaving)
     }
@@ -451,14 +499,14 @@ struct PayCardBillSheet: View {
             showSourceSheet = true
         } label: {
             HStack(spacing: 12) {
-                label("Dari")
+                label(isRecord ? "Dibayar dari" : "Dari")
                 HStack(spacing: 8) {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(color)
                         .frame(width: 20, height: 14)
-                    Text(source?.name ?? "Pilih")
+                    Text(isOtherSource ? "Sumber lain" : source?.name ?? "Pilih")
                         .font(.app(16, weight: .medium))
-                        .foregroundStyle(source == nil ? Color.appTextSecondary : Color.appText)
+                        .foregroundStyle(source == nil && !isOtherSource ? Color.appTextSecondary : Color.appText)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 8)
@@ -481,8 +529,59 @@ struct PayCardBillSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(RowPressStyle())
-        .accessibilityValue(source?.name ?? "Belum dipilih")
+        .accessibilityValue(isOtherSource ? "Sumber lain" : source?.name ?? "Belum dipilih")
     }
+
+    /// Record mode: the day the bill was paid, defaulting to its due date.
+    private var dateRow: some View {
+        Button {
+            isNoteFocused = false
+            showDateSheet = true
+        } label: {
+            HStack(spacing: 12) {
+                label("Tanggal bayar")
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 17))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Text(Self.payDateFormatter.string(from: payDate))
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(Color.appText)
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+                Spacer(minLength: 8)
+                Text(payDateHint)
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .lineLimit(1)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
+            }
+            .frame(height: 52)
+            .padding(.leading, 24)
+            .padding(.trailing, 20)
+            .rowSeparator()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+        .accessibilityValue(Self.payDateFormatter.string(from: payDate))
+    }
+
+    private var payDateHint: String {
+        let calendar = Calendar.current
+        if calendar.isDate(payDate, inSameDayAs: statement.dueDate) { return "Jatuh tempo" }
+        if calendar.isDate(payDate, inSameDayAs: today) { return "Hari ini" }
+        return ""
+    }
+
+    private static let payDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "id_ID")
+        formatter.dateFormat = "EEE, d MMM"
+        return formatter
+    }()
 
     private var noteRow: some View {
         HStack(spacing: 12) {
@@ -514,7 +613,7 @@ struct PayCardBillSheet: View {
                 Spacer()
             }
             .overlay {
-                Text("Bayar dari")
+                Text(isRecord ? "Dibayar dari" : "Bayar dari")
                     .font(.app(17, weight: .semibold))
                     .foregroundStyle(Color.appText)
             }
@@ -531,8 +630,9 @@ struct PayCardBillSheet: View {
                 }
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                     ForEach(sources) { wallet in
-                        SourceCard(account: wallet, isSelected: wallet.id == sourceId, isBalanceVisible: isBalanceVisible) {
+                        SourceCard(account: wallet, isSelected: !isOtherSource && wallet.id == sourceId, isBalanceVisible: isBalanceVisible) {
                             sourceId = wallet.id
+                            isOtherSource = false
                             Task {
                                 try? await Task.sleep(for: .milliseconds(200))
                                 showSourceSheet = false
@@ -546,13 +646,69 @@ struct PayCardBillSheet: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
-                .padding(.bottom, 16)
+                .padding(.bottom, isRecord ? 4 : 16)
+                if isRecord { otherSourceRow }
             }
         }
         .background(Color.appBackground)
-        .presentationDetents([.height(min(CGFloat((sources.count + 1) / 2) * 108 + 110, 620)), .large])
+        .presentationDetents([.height(min(CGFloat((sources.count + 1) / 2) * 108 + 110 + (isRecord ? 120 : 0), 700)), .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(Color.appBackground)
+    }
+
+    /// Paid from an account outside Saku, or before the user started using it: no wallet moves.
+    private var otherSourceRow: some View {
+        Button {
+            isOtherSource = true
+            Task {
+                try? await Task.sleep(for: .milliseconds(200))
+                showSourceSheet = false
+                try? await Task.sleep(for: .milliseconds(250))
+                isSourceFlashing = true
+                try? await Task.sleep(for: .milliseconds(650))
+                isSourceFlashing = false
+            }
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "arrow.down.to.line.compact")
+                    .font(.system(size: 17))
+                    .foregroundStyle(Color.appBody)
+                    .frame(width: 36, height: 36)
+                    .background(Color.appBackground, in: Circle())
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Sumber lain")
+                        .font(.app(16, weight: .semibold))
+                        .foregroundStyle(Color.appText)
+                    Text("Tidak mengurangi saldo. Pilih ini kalau tagihan dibayar dari rekening di luar Saku atau sebelum mulai pakai Saku.")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Color.appBackground)
+                    .frame(width: 22, height: 22)
+                    .background(Color.appText, in: Circle())
+                    .scaleEffect(isOtherSource ? 1 : 0.001)
+                    .animation(.spring(duration: 0.42, bounce: 0.5), value: isOtherSource)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.appText, lineWidth: 2)
+                    .opacity(isOtherSource ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.22), value: isOtherSource)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(PressScaleStyle())
+        .padding(.horizontal, 20)
+        .padding(.bottom, 16)
+        .accessibilityAddTraits(isOtherSource ? .isSelected : [])
     }
 
     // MARK: Logic
@@ -582,33 +738,57 @@ struct PayCardBillSheet: View {
             }
         }
         if isBlocked { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
-        if source == nil { showSourceSheet = true }
+        if source == nil, !isOtherSource { showSourceSheet = true }
+    }
+
+    /// When the payment is dated: now for today, midday for an earlier day so no time zone shifts it.
+    private var paymentMoment: Date {
+        guard isRecord, !Calendar.current.isDate(payDate, inSameDayAs: today) else { return Date() }
+        return Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: payDate) ?? payDate
     }
 
     private func pay() {
-        guard canPay, !isSaving, let source else { swipeReset += 1; return }
+        guard canPay, !isSaving else { swipeReset += 1; return }
+        let source = self.source
         let paid = amount
         let left = remainingAfter
+        let isFull = paid >= statement.remaining
+        let usedAfter = max(card.balance - paid, 0)
         let note = noteText.trimmingCharacters(in: .whitespaces)
+        let when = paymentMoment
         isSaving = true
         errorMessage = nil
         Task {
             do {
-                _ = try await SupabaseRepository.shared.createTransfer(
-                    primaryAccountId: source.id, counterpartyAccountId: card.id, amount: paid,
-                    description: "Bayar tagihan \(card.name)", note: note.isEmpty ? nil : note, date: Date()
-                )
-                doneLines = ("\(paid.formattedAsCurrency()) dari \(source.name)",
-                             "Sisa tagihan \(left.formattedAsCurrency())")
+                if let source {
+                    _ = try await SupabaseRepository.shared.createTransfer(
+                        primaryAccountId: source.id, counterpartyAccountId: card.id, amount: paid,
+                        description: "Bayar tagihan \(card.name)", note: note.isEmpty ? nil : note, date: when
+                    )
+                } else {
+                    try await SupabaseRepository.shared.createCardPayment(
+                        cardId: card.id, amount: paid, note: note.isEmpty ? nil : note, date: when
+                    )
+                }
+                if isRecord {
+                    let from = source.map { "Dari \($0.name)" } ?? "Sumber lain"
+                    doneLines = ("\(paid.formattedAsCurrency()) · \(from) · \(TransactionDates.dayMonth.string(from: when))",
+                                 isFull ? "Terpakai jadi \(usedAfter.formattedAsCurrency()) · status Lunas"
+                                        : "Sisa tagihan \(left.formattedAsCurrency())")
+                } else {
+                    doneLines = ("\(paid.formattedAsCurrency()) dari \(source?.name ?? "")",
+                                 "Sisa tagihan \(left.formattedAsCurrency())")
+                }
+                BillReminderStore().clear(card: card.id, statementDate: statement.statementDate)
                 NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 isDone = true
                 try? await Task.sleep(for: .milliseconds(1500))
-                onPaid?(paid, source)
+                onPaid?(paid, source, isFull)
                 dismiss()
             } catch {
                 isSaving = false
                 swipeReset += 1
-                errorMessage = "Gagal membayar tagihan. Coba lagi."
+                errorMessage = isRecord ? "Gagal mencatat pembayaran. Coba lagi." : "Gagal membayar tagihan. Coba lagi."
             }
         }
     }

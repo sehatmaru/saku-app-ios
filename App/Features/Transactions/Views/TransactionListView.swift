@@ -377,6 +377,7 @@ struct TransactionListView: View {
         case .expense: "Pengeluaran"
         case .transfer: "Transfer"
         case .adjustment: "Penyesuaian saldo"
+        case .cardPayment: "Bayar tagihan"
         }
     }
 
@@ -541,7 +542,7 @@ struct TransactionListView: View {
         switch transaction.type {
         case .income: transaction.amount
         case .expense: -transaction.amount
-        case .transfer, .adjustment: 0
+        case .transfer, .adjustment, .cardPayment: 0
         }
     }
 

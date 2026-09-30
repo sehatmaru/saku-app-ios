@@ -73,6 +73,29 @@ final class CreditStatementTests: XCTestCase {
         XCTAssertEqual(s.status, .overdue)
     }
 
+    func testDaysOverdueCountsFromTheDueDate() {
+        let charge = [txn("a", .expense, 1_000_000, date(2026, 9, 10))]
+        XCTAssertEqual(statement(card(balance: 1_000_000), charge, today: date(2026, 10, 5)).daysOverdue, 0)
+        XCTAssertEqual(statement(card(balance: 1_000_000), charge, today: date(2026, 10, 6)).daysOverdue, 1)
+        XCTAssertEqual(statement(card(balance: 1_000_000), charge, today: date(2026, 10, 15)).daysOverdue, 10)
+    }
+
+    /// A bill paid from outside Saku (card payment) clears the overdue statement like a transfer would.
+    func testCardPaymentSettlesTheStatement() {
+        let charge = txn("a", .expense, 1_000_000, date(2026, 9, 10))
+        let payment = txn("p", .cardPayment, 1_000_000, date(2026, 10, 5))
+        let s = statement(card(balance: 0), [charge, payment], today: date(2026, 10, 6))
+        XCTAssertEqual(s.status, .paid)
+        XCTAssertEqual(s.daysOverdue, 0)
+        XCTAssertEqual(s.paid, 1_000_000)
+
+        let partial = txn("q", .cardPayment, 400_000, date(2026, 10, 5))
+        let rest = statement(card(balance: 600_000), [charge, partial], today: date(2026, 10, 6))
+        XCTAssertEqual(rest.status, .overdue)
+        XCTAssertEqual(rest.remaining, 600_000)
+        XCTAssertEqual(rest.paid, 400_000)
+    }
+
     func testInstallmentBillsOnePartPerStatement() {
         // Rp6 jt over 6 months bought 25 Aug: first part on the 20 Sep statement.
         let purchase = txn("tv", .expense, 6_000_000, date(2026, 8, 25))

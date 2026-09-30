@@ -165,6 +165,7 @@ final class SupabaseRepository: @unchecked Sendable {
         case .expense: delta = isCreditAccount ? amount : -amount
         case .transfer: delta = 0
         case .adjustment: delta = 0
+        case .cardPayment: delta = 0
         }
         if delta != 0 {
             try await client.rpc("increment_account_balance", params: [
@@ -182,6 +183,22 @@ final class SupabaseRepository: @unchecked Sendable {
             "p_amount": AnyJSON.double(amount),
             "p_note": AnyJSON.string(note),
             "p_occurred_at": AnyJSON.string(date.iso8601Formatted),
+        ]).execute()
+    }
+
+    /// Records a card bill paid from outside Saku: the card's debt drops, no wallet moves.
+    func createCardPayment(cardId: String, amount: Double, note: String?, date: Date) async throws {
+        let params: [String: AnyJSON] = [
+            "p_card_id": AnyJSON.string(cardId),
+            "p_amount": AnyJSON.double(amount),
+            "p_client_operation_id": AnyJSON.string(UUID().uuidString),
+            "p_note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "p_occurred_at": AnyJSON.string(date.iso8601Formatted),
+        ]
+        _ = try await client.rpc("create_card_payment", params: params).execute()
+        try await client.rpc("increment_account_balance", params: [
+            "p_account_id": AnyJSON.string(cardId),
+            "p_delta": AnyJSON.double(-amount),
         ]).execute()
     }
 
@@ -280,6 +297,8 @@ final class SupabaseRepository: @unchecked Sendable {
             return [(txn.accountId, credit ? txn.amount : -txn.amount),
                     (to, (isCredit[to] ?? false) ? -txn.amount : txn.amount)]
         case .adjustment: return []
+        // Only ever on a card, whose balance is debt.
+        case .cardPayment: return [(txn.accountId, -txn.amount)]
         }
     }
 

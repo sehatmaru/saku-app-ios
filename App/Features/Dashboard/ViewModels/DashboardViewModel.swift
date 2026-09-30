@@ -25,6 +25,8 @@ final class DashboardViewModel: ObservableObject {
     @Published var totalMonthlySubscriptions: Double = 0
     /// Card statements still owed now, across all active cards.
     @Published var cardDueTotal: Double = 0
+    /// Cards whose last statement is past due and still owed, the longest overdue first.
+    @Published var overdueBills: [OverdueCardBill] = []
     /// Subscriptions charged to cash, bank or e-wallet from today to month end.
     @Published var upcomingBillsTotal: Double = 0
     @Published var isLoading = false
@@ -115,6 +117,7 @@ final class DashboardViewModel: ObservableObject {
             budgets = cached.budgets
             health = cached.health
             cardDueTotal = cached.cardDueTotal
+            overdueBills = cached.overdueBills
             upcomingBillsTotal = cached.upcomingBillsTotal
             loadedUserId = userId
             hasLoadedOnce = true
@@ -158,6 +161,10 @@ final class DashboardViewModel: ObservableObject {
 
             let statements = cards.compactMap { CreditStatement(card: $0, transactions: transactions, installments: installments) }
             cardDueTotal = statements.reduce(0) { $0 + $1.remaining }
+            overdueBills = zip(cards, statements)
+                .filter { $0.1.status == .overdue }
+                .map { OverdueCardBill(card: $0.0, statement: $0.1) }
+                .sorted { $0.statement.daysOverdue > $1.statement.daysOverdue }
             let cardIds = Set(cards.map(\.id))
             let monthEnd = calendar.dateInterval(of: .month, for: Date())?.end ?? Date()
             let todayStart = calendar.startOfDay(for: Date())
@@ -244,7 +251,8 @@ final class DashboardViewModel: ObservableObject {
                 budgets: self.budgets,
                 health: health,
                 cardDueTotal: cardDueTotal,
-                upcomingBillsTotal: upcomingBillsTotal
+                upcomingBillsTotal: upcomingBillsTotal,
+                overdueBills: overdueBills
             ), for: userId)
             loadedUserId = userId
             hasLoadedOnce = true
@@ -278,7 +286,10 @@ final class DashboardViewModel: ObservableObject {
             monthProgress: Double(calendar.component(.day, from: now)) / dayCount,
             activeDays: activeDays,
             topExpenseCategory: categorySpending.first?.0.name,
-            hasTransactions: transactions.contains { $0.type == .income || $0.type == .expense }
+            hasTransactions: transactions.contains { $0.type == .income || $0.type == .expense },
+            overdueBills: overdueBills.map {
+                .init(cardName: $0.card.name, amount: $0.statement.remaining, daysLate: $0.statement.daysOverdue)
+            }
         ))
     }
 
@@ -317,4 +328,12 @@ final class DashboardViewModel: ObservableObject {
         guard let date = calendar.date(from: DateComponents(year: year, month: month)) else { return "" }
         return formatter.string(from: date)
     }
+}
+
+
+/// A card whose last statement is past due and still owed.
+struct OverdueCardBill: Identifiable {
+    let card: Account
+    let statement: CreditStatement
+    var id: String { card.id }
 }

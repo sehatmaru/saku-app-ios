@@ -13,6 +13,8 @@ struct TransactionStyle {
     static let transfer = TransactionStyle(type: .transfer, label: "Transfer", icon: "arrow.left.arrow.right", color: Color(hex: "143A73"), sign: "")
     static let adjustment = TransactionStyle(type: .adjustment, label: "Penyesuaian saldo", icon: "arrow.triangle.2.circlepath", color: Color(hex: "616161"), sign: "")
 
+    static let cardPayment = TransactionStyle(type: .cardPayment, label: "Bayar tagihan", icon: "creditcard", color: Color(hex: "16875A"), sign: "+")
+
     /// The three types the add form's carousel offers, in order.
     static let entryTypes = [expense, income, transfer]
 
@@ -22,6 +24,7 @@ struct TransactionStyle {
         case .income: income
         case .transfer: transfer
         case .adjustment: adjustment
+        case .cardPayment: cardPayment
         }
     }
 }

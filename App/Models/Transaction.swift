@@ -17,6 +17,8 @@ struct Transaction: Identifiable, Codable {
         case expense = "expense"
         case transfer = "transfer"
         case adjustment = "adjustment"
+        /// A card bill paid from outside Saku: lowers the card's debt, moves no wallet.
+        case cardPayment = "card_payment"
     }
 
     enum CodingKeys: String, CodingKey {

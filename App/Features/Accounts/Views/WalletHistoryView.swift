@@ -23,7 +23,7 @@ struct WalletHistoryView: View {
         return sorted.filter { calendar.isDate($0.date, equalTo: Date(), toGranularity: .month) }
             .reduce(into: (0.0, 0.0)) { flow, txn in
                 switch txn.type {
-                case .income: flow.0 += txn.amount
+                case .income, .cardPayment: flow.0 += txn.amount
                 case .expense: flow.1 += txn.amount
                 case .transfer:
                     if txn.counterpartyAccountId == account.id { flow.0 += txn.amount } else { flow.1 += txn.amount }

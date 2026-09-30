@@ -35,6 +35,8 @@ struct AccountListView: View {
     @State private var cardTops = CardTops()
     @State private var transferFrom: Account?
     @State private var payCard: Account?
+    /// Catat tagihan: a bill that was already paid, opened from the overdue block.
+    @State private var recordCard: Account?
     /// Shown as the main wallet at once while the change is saved.
     @State private var pendingDefaultID: String?
     @State private var archiving: Account?
@@ -184,7 +186,15 @@ struct AccountListView: View {
             .fullScreenCover(item: $payCard) { card in
                 if let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) {
                     PayCardBillSheet(card: card, statement: statement, wallets: viewModel.accounts,
-                                     onPaid: { _, _ in showToast("Pembayaran tercatat") })
+                                     onPaid: { _, _, _ in showToast("Pembayaran tercatat") })
+                }
+            }
+            .fullScreenCover(item: $recordCard) { card in
+                if let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) {
+                    PayCardBillSheet(card: card, statement: statement, wallets: viewModel.accounts, mode: .record,
+                                     onPaid: { amount, _, isFull in
+                        showToast(isFull ? "\(card.name) lunas · pembayaran tercatat" : "Pembayaran \(amount.formattedAsCurrency()) tercatat")
+                    })
                 }
             }
             .fullScreenCover(item: $transferFrom) { account in
@@ -668,8 +678,115 @@ struct AccountListView: View {
         }
     }
 
-    /// What's owed on the last statement; tap to pay it.
+    /// The last statement: a warm question once it is overdue (Pengingat Tagihan 2f), a quiet
+    /// "Lunas" once paid (2g), otherwise what's owed with a tap to pay.
+    @ViewBuilder
     private func billBox(_ statement: CreditStatement, card: Account) -> some View {
+        if statement.status == .overdue {
+            overdueBillBox(statement, card: card)
+        } else if statement.status == .paid {
+            paidBillBox(statement, card: card)
+        } else {
+            standardBillBox(statement, card: card)
+        }
+    }
+
+    private func overdueBillBox(_ statement: CreditStatement, card: Account) -> some View {
+        let paid = statement.paid >= 1 ? "Sudah dibayar " + masked(statement.paid) + ". " : ""
+        let ink = Color(light: 0xC2410C, dark: 0xFFA05C)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Tagihan cut-off " + Self.dayMonth.string(from: statement.statementDate))
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Text(masked(statement.remaining))
+                        .font(.app(20, weight: .semibold))
+                        .tracking(-0.3)
+                        .foregroundStyle(Color.appText)
+                        .monospacedDigit()
+                }
+                Spacer(minLength: 8)
+                Label {
+                    Text("Lewat jatuh tempo")
+                } icon: {
+                    Image(systemName: "clock.fill").font(.system(size: 11, weight: .bold))
+                }
+                .font(.app(12, weight: .semibold))
+                .foregroundStyle(ink)
+                .lineLimit(1)
+                .fixedSize()
+                .padding(.horizontal, 10)
+                .frame(height: 24)
+                .background(Color(light: 0xFFE6D5, dark: 0x4A2A14), in: Capsule())
+            }
+            Text(paid + "Jatuh tempo " + Self.dayMonth.string(from: statement.dueDate) + ". Kalau sudah kamu bayar di luar Saku, catat supaya terpakai dan status kartu tetap akurat.")
+                .font(.app(14))
+                .foregroundStyle(Color.appBody)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                Button { payCard = card } label: {
+                    Text("Bayar sekarang")
+                        .font(.app(15, weight: .medium))
+                        .foregroundStyle(Color.appText)
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                        .background(Color.appBackground, in: Capsule())
+                        .overlay(Capsule().stroke(Color.appText.opacity(0.06), lineWidth: 1))
+                }
+                Button { recordCard = card } label: {
+                    Text("Sudah, catat")
+                        .font(.app(15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                        .background(Color.appPrimary, in: Capsule())
+                }
+            }
+            .buttonStyle(PressScaleStyle())
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 16)
+        .background(Color(light: 0xFFF6EE, dark: 0x2A1E15), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func paidBillBox(_ statement: CreditStatement, card: Account) -> some View {
+        let payments = (accountTransactions[card.id] ?? []).filter {
+            $0.date > statement.statementDate
+                && (($0.type == .transfer && $0.counterpartyAccountId == card.id) || ($0.type == .cardPayment && $0.accountId == card.id))
+        }
+        let paidOn = payments.map(\.date).max()
+        return Button { path.append(WalletHistoryRoute(account: card)) } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Tagihan cut-off " + Self.dayMonth.string(from: statement.statementDate))
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Text("Lunas")
+                        .font(.app(20, weight: .semibold))
+                        .tracking(-0.3)
+                        .foregroundStyle(Color.appText)
+                }
+                Spacer(minLength: 8)
+                if let paidOn {
+                    Label("Dibayar " + Self.dayMonth.string(from: paidOn), systemImage: "checkmark.circle.fill")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appPrimary)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(PressScaleStyle())
+    }
+
+    /// What's owed on the last statement; tap to pay it.
+    private func standardBillBox(_ statement: CreditStatement, card: Account) -> some View {
         let owes = statement.remaining >= 1
         let month = Self.monthName.string(from: statement.statementDate)
         let (status, color): (String, Color) = switch statement.status {

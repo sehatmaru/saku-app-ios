@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct SakuQApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var authViewModel = AuthViewModel()
 
     var body: some Scene {
