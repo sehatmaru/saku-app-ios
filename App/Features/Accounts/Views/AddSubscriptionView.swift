@@ -89,6 +89,14 @@ struct AddSubscriptionView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
                     .padding(.top, 10)
+            } else {
+                Label("Dicatat otomatis saat kamu buka Saku di tanggal ini.", systemImage: "info.circle")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 10)
+                    .opacity(isDone ? 0 : 1)
             }
             Spacer(minLength: 12)
             // v4: Simpan sits beside the keys again; tapping it while invalid shows why.
@@ -491,7 +499,7 @@ struct AddSubscriptionView: View {
     private var daySheet: some View {
         VStack(alignment: .leading, spacing: 0) {
             sheetHeader("Tanggal tagih") { showDaySheet = false }
-            Text("Ditagih tiap bulan di tanggal yang sama. Titik = sudah ada tagihan.")
+            Text("Ditagih tiap bulan di tanggal yang sama, dan dicatat otomatis saat kamu buka Saku di tanggal itu. Titik = sudah ada tagihan.")
                 .font(.app(13))
                 .foregroundStyle(Color.appTextSecondary)
                 .padding(.horizontal, 24)

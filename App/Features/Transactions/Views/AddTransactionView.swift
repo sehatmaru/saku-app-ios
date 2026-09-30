@@ -45,6 +45,16 @@ struct AddTransactionView: View {
     /// Hidden flags and order for the category picker.
     @State private var preferences: [CategoryPreference] = []
     @State private var didPickCategory = false
+    /// Also make this expense a recurring bill, posted again each period; nil for a one-off.
+    @State private var repeatFrequency: CardSubscription.Frequency?
+    /// Short screens (iPhone SE) get a tighter header, rows and keys so nothing runs under the pad.
+    @State private var isCompact = false
+    @State private var showsRepeatMenu = false
+    /// One-line hint under the repeat icon, e.g. why it can't be used right now.
+    @State private var repeatBubble: String?
+    /// The first-time tooltip on the repeat icon; shown once, ever.
+    @AppStorage("seenRepeatTip") private var seenRepeatTip = false
+    @State private var showsRepeatTip = false
 
     enum PickerKind: String, Identifiable {
         case category, account, target, date, installment
@@ -75,6 +85,9 @@ struct AddTransactionView: View {
     /// The plan that will actually be saved: only new card expenses can be split.
     private var planMonths: Int { isCardExpense && editing == nil ? installmentMonths : 0 }
     private static let installmentOptions = [0, 3, 6, 12, 24]
+    /// New expenses can become a recurring bill, unless they're already split into installments.
+    private var canRepeat: Bool { style.type == .expense && editing == nil && planMonths == 0 }
+    private var repeatToSave: CardSubscription.Frequency? { canRepeat ? repeatFrequency : nil }
     private var categoryKind: CategoryType { style.type == .income ? .income : .expense }
     /// The picker's categories in the user's order, without hidden ones and Penyesuaian Saldo;
     /// a hidden one stays only when the transaction being edited already uses it.
@@ -115,14 +128,18 @@ struct AddTransactionView: View {
         VStack(spacing: 0) {
             panel
             rows
-                .padding(.top, 10)
-            Spacer(minLength: 12)
-            AmountPad(color: style.color, isEnabled: amount > 0, isSaving: isSaving, onPress: press, onSave: save)
+                .padding(.top, isCompact ? 4 : 10)
+            Spacer(minLength: isCompact ? 4 : 12)
+            AmountPad(color: style.color, isEnabled: amount > 0, isSaving: isSaving, onPress: press, onSave: save,
+                      keyHeight: isCompact ? 46 : 52)
                 .animation(.easeInOut(duration: 0.4), value: typeIndex)
                 .disabled(isSaving || done != nil)
                 .padding(.horizontal, 12)
                 .padding(.bottom, 4)
         }
+        .onGeometryChange(for: Bool.self, of: { $0.size.height < 720 }) { isCompact = $0 }
+        .simultaneousGesture(TapGesture().onEnded { hideRepeatTip() })
+        .sheet(isPresented: $showsRepeatMenu) { repeatSheet }
         .sheet(item: $sheet) { pickerSheet($0) }
     }
 
@@ -182,38 +199,34 @@ struct AddTransactionView: View {
 
     private var panel: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button("Batal") { dismiss() }
-                    .font(.app(17))
-                    .frame(width: 60, alignment: .leading)
-                Spacer()
+            ZStack {
+                HStack {
+                    Button("Batal") { dismiss() }
+                        .font(.app(17))
+                    Spacer()
+                    repeatControl
+                }
                 if allowedTypes.count > 1 {
-                    Label("Geser untuk ganti tipe", systemImage: "hand.draw")
-                        .font(.app(13))
-                        .opacity(0.75)
+                    typeDots
                 } else if editing != nil {
                     Text("Edit transaksi")
                         .font(.app(13))
                         .opacity(0.75)
                 }
-                Spacer()
-                Color.clear.frame(width: 60, height: 1)
             }
-            .frame(height: 44)
+            .frame(height: isCompact ? 40 : 44)
             .padding(.horizontal, 20)
+            .zIndex(1)
 
             VStack(spacing: 0) {
                 typeCarousel
                     .padding(.top, 4)
-                typeDots
-                    .padding(.top, 6)
-                    .opacity(locksType ? 0 : 1)
                 amountText
-                    .padding(.top, 16)
+                    .padding(.top, isCompact ? 4 : 12)
                 info
-                    .frame(height: 52)
+                    .frame(height: isCompact ? 32 : 54, alignment: .top)
                     .padding(.horizontal, 24)
-                    .padding(.top, 18)
+                    .padding(.top, isCompact ? 8 : 16)
             }
             .opacity(done == nil ? 1 : 0)
             .scaleEffect(done == nil ? 1 : 0.97)
@@ -221,7 +234,7 @@ struct AddTransactionView: View {
             .animation(.settle(0.42), value: done == nil)
             .overlay(alignment: .top) { doneOverlay }
         }
-        .padding(.bottom, 22)
+        .padding(.bottom, isCompact ? 12 : 18)
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
         .background {
@@ -256,7 +269,7 @@ struct AddTransactionView: View {
             }
             .offset(x: (geo.size.width - itemWidth) / 2 - CGFloat(typeIndex) * itemWidth + dragX)
         }
-        .frame(height: 44)
+        .frame(height: isCompact ? 38 : 44)
         .clipped()
     }
 
@@ -297,7 +310,7 @@ struct AddTransactionView: View {
                 .opacity(0.75)
                 .padding(.top, 8)
             Text(amount > 0 ? Double(amount).formattedAsDigits() : "0")
-                .font(.app(56, weight: .light))
+                .font(.app(isCompact ? 44 : 56, weight: .light))
                 .tracking(-2)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
@@ -387,10 +400,12 @@ struct AddTransactionView: View {
             }
             .frame(height: 6)
             .padding(.top, 8)
-            Text(budgetFootnote(daily: daily, spent: spent, typed: typed))
-                .font(.app(12))
-                .opacity(0.75)
-                .padding(.top, 7)
+            if !isCompact {
+                Text(budgetFootnote(daily: daily, spent: spent, typed: typed))
+                    .font(.app(12))
+                    .opacity(0.75)
+                    .padding(.top, 7)
+            }
         }
         .monospacedDigit()
     }
@@ -436,6 +451,186 @@ struct AddTransactionView: View {
         .allowsHitTesting(false)
     }
 
+    // MARK: - Repeat (Ulangi)
+
+    /// Only new expenses can repeat; a card's installment excludes it.
+    private var showsRepeat: Bool { style.type == .expense && editing == nil }
+
+    private static let repeatOptions: [(CardSubscription.Frequency?, String)] = [(nil, "Tidak"), (.monthly, "Tiap bulan"), (.yearly, "Tiap tahun")]
+
+    /// The ↻ icon in the top corner, or a white pill with the next date once it's on.
+    @ViewBuilder
+    private var repeatControl: some View {
+        if showsRepeat {
+            let isOn = repeatToSave != nil
+            Button {
+                hideRepeatTip()
+                if planMonths > 0 {
+                    flashRepeatBubble("Matikan cicilan dulu")
+                } else {
+                    showsRepeatMenu = true
+                }
+            } label: {
+                Group {
+                    if isOn {
+                        Label(TransactionDates.dayMonth.string(from: nextRepeatDate), systemImage: "repeat")
+                            .font(.app(14, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(style.color)
+                            .padding(.horizontal, 12)
+                            .frame(height: 32)
+                            .background(.white, in: Capsule())
+                    } else {
+                        Image(systemName: "repeat")
+                            .font(.system(size: 17, weight: .bold))
+                            .frame(width: 36, height: 36)
+                            .background(.white.opacity(0.2), in: Circle())
+                    }
+                }
+                .opacity(planMonths > 0 ? 0.45 : 1)
+            }
+            .buttonStyle(PressScaleStyle())
+            .accessibilityLabel(isOn ? "Ulangi, berikutnya \(TransactionDates.dayMonth.string(from: nextRepeatDate))" : "Ulangi")
+            .overlay(alignment: .topTrailing) { repeatBubbles }
+            .onAppear(perform: showRepeatTipOnce)
+        }
+    }
+
+    /// The dark bubble under the icon: the one-time tooltip, or a short reason.
+    @ViewBuilder
+    private var repeatBubbles: some View {
+        let text = repeatBubble ?? (showsRepeatTip ? "Jadikan tagihan berulang" : nil)
+        if let text, !showsRepeatMenu {
+            Text(text)
+                .font(.app(14, weight: .semibold))
+                .foregroundStyle(.white)
+                .fixedSize()
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color(hex: "111111"), in: RoundedRectangle(cornerRadius: 12))
+                .shadow(color: .black.opacity(0.25), radius: 12, y: 8)
+                .offset(y: 46)
+                .transition(.opacity.combined(with: .offset(y: -4)))
+                .allowsHitTesting(false)
+                .zIndex(5)
+        }
+    }
+
+    private func showRepeatTipOnce() {
+        guard !seenRepeatTip else { return }
+        seenRepeatTip = true
+        Task {
+            try? await Task.sleep(for: .milliseconds(700))
+            withAnimation(.easeOut(duration: 0.25)) { showsRepeatTip = true }
+            try? await Task.sleep(for: .seconds(5))
+            hideRepeatTip()
+        }
+    }
+
+    private func hideRepeatTip() {
+        guard showsRepeatTip else { return }
+        withAnimation(.easeOut(duration: 0.2)) { showsRepeatTip = false }
+    }
+
+    private func flashRepeatBubble(_ text: String) {
+        withAnimation(.easeOut(duration: 0.2)) { repeatBubble = text }
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.easeOut(duration: 0.2)) { repeatBubble = nil }
+        }
+    }
+
+    /// Bottom sheet from the ↻ icon (Pengingat Tagihan 4b): pick Tidak / Tiap bulan / Tiap tahun,
+    /// see the next date, then Selesai.
+    private var repeatSheet: some View {
+        PickerSheet(title: "Tagihan berulang", onDone: { showsRepeatMenu = false }) {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(spacing: 0) {
+                    ForEach(Self.repeatOptions, id: \.1) { option, title in
+                        Button {
+                            repeatFrequency = option
+                            showsRepeatMenu = false
+                        } label: {
+                            HStack(spacing: 12) {
+                                Text(title).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
+                                Spacer()
+                                if let option {
+                                    Text(repeatMenuDate(option))
+                                        .font(.app(14))
+                                        .monospacedDigit()
+                                        .foregroundStyle(Color.appTextSecondary)
+                                }
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(Color.appPrimary)
+                                    .opacity(option == repeatFrequency ? 1 : 0)
+                                    .frame(width: 16)
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 52)
+                            .rowSeparator()
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(RowPressStyle())
+                        .accessibilityAddTraits(option == repeatFrequency ? .isSelected : [])
+                    }
+                }
+                .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 14))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                if let frequency = repeatFrequency {
+                    HStack(spacing: 12) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .frame(width: 38, height: 38)
+                            .background(Color.appBackground, in: Circle())
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Tagihan berikutnya")
+                                .font(.app(12))
+                                .foregroundStyle(Color.appTextTertiary)
+                            Text(Self.longDate.string(from: repeatDate(frequency)))
+                                .font(.app(17, weight: .semibold))
+                                .foregroundStyle(Color.appText)
+                            Text("−Rp" + Double(amount).formattedAsDigits() + (account.map { " · " + $0.name } ?? ""))
+                                .font(.app(13))
+                                .monospacedDigit()
+                                .foregroundStyle(Color.appTextSecondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
+                    .padding(.top, 14)
+                    .transition(.opacity)
+                }
+
+                Text("Dicatat otomatis sebagai pengeluaran saat kamu membuka Saku di tanggal itu. Tidak bisa digabung dengan Cicilan 0%.")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 4)
+            .padding(.bottom, 24)
+        }
+    }
+
+    private static let longDate: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "id_ID")
+        f.dateFormat = "EEEE, d MMM yyyy"
+        return f
+    }()
+
+    private func repeatMenuDate(_ frequency: CardSubscription.Frequency) -> String {
+        let date = repeatDate(frequency)
+        return frequency == .yearly ? TransactionDates.dayMonth.string(from: date) + " " + String(calendar.component(.year, from: date))
+            : TransactionDates.dayMonth.string(from: date)
+    }
+
     // MARK: - Rows
 
     private var rows: some View {
@@ -446,18 +641,12 @@ struct AddTransactionView: View {
             } else {
                 row(.category, label: "Kategori", value: category?.name ?? "Pilih",
                     icon: category?.icon ?? "tag", iconColor: style.color, index: 0)
-                row(.account, label: "Dompet", value: account?.name ?? "Pilih", swatch: walletColor(account), index: 1)
-                if isCardExpense, let account {
-                    if planMonths == 0 {
-                        cardCaption(billingText(card: account))
-                    }
-                    if editing == nil {
-                        row(.installment, label: "Cicilan", value: installmentMonths == 0 ? "Tidak" : "\(installmentMonths) bulan",
-                            icon: "calendar.badge.clock", iconColor: .appTextSecondary, index: 1)
-                        if planMonths > 0 {
-                            cardCaption(planText(card: account))
-                        }
-                    }
+                row(.account, label: "Dompet", value: account?.name ?? "Pilih", swatch: walletColor(account),
+                    sub: isCardExpense && planMonths == 0 ? account.map(billingText) : nil, index: 1)
+                if isCardExpense, let account, editing == nil {
+                    row(.installment, label: "Cicilan", value: installmentMonths == 0 ? "Tidak" : "\(installmentMonths) bulan",
+                        icon: "calendar.badge.clock", iconColor: .appTextSecondary,
+                        sub: planMonths > 0 ? planText(card: account) : nil, index: 1)
                 }
             }
             row(.date, label: "Tanggal", value: dateValue, icon: "calendar", iconColor: .appTextSecondary, index: 2)
@@ -472,7 +661,7 @@ struct AddTransactionView: View {
                     .foregroundStyle(Color.appText)
                     .submitLabel(.done)
             }
-            .frame(height: 52)
+            .frame(height: rowHeight)
             .padding(.leading, 24)
             .padding(.trailing, 20)
             .rise(isEntered, y: 14, delay: 0.38, fade: 0.4, move: 0.5)
@@ -482,11 +671,12 @@ struct AddTransactionView: View {
     }
 
     private func row(_ kind: PickerKind, label: String, value: String, swatch: Color? = nil,
-                     icon: String? = nil, iconColor: Color = .appTextSecondary, index: Int) -> some View {
+                     icon: String? = nil, iconColor: Color = .appTextSecondary, sub: String? = nil, index: Int) -> some View {
         Button {
             if done == nil { sheet = kind }
         } label: {
-            DetailRow(label: label, value: value, swatch: swatch, icon: icon, iconColor: iconColor, showsChevron: true)
+            DetailRow(label: label, value: value, swatch: swatch, icon: icon, iconColor: iconColor, sub: sub,
+                      showsChevron: true, height: rowHeight)
                 .background(flashed.contains(kind) ? style.color.opacity(0.1) : .clear)
                 .animation(.easeInOut(duration: 0.45), value: flashed)
         }
@@ -494,23 +684,26 @@ struct AddTransactionView: View {
         .rise(isEntered, y: 14, delay: 0.2 + Double(index) * 0.06, fade: 0.4, move: 0.5)
     }
 
-    /// Small grey line under a card row: which statement this lands on, or the installment split.
-    private func cardCaption(_ text: String) -> some View {
-        Text(text)
-            .font(.app(13))
-            .foregroundStyle(Color.appTextSecondary)
-            .monospacedDigit()
-            .lineLimit(1)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 8)
-            .transition(.opacity)
+    private var rowHeight: CGFloat { isCompact ? 46 : 48 }
+
+    private var nextRepeatDate: Date { repeatDate(repeatFrequency ?? .monthly) }
+
+    /// The bill after this one: a period on from the transaction, and never a day that is already
+    /// past, so saving doesn't post extra transactions by itself.
+    private func repeatDate(_ frequency: CardSubscription.Frequency) -> Date {
+        let component: Calendar.Component = frequency == .yearly ? .year : .month
+        let today = calendar.startOfDay(for: Date())
+        var next = calendar.startOfDay(for: date)
+        repeat {
+            next = calendar.date(byAdding: component, value: 1, to: next) ?? today.addingTimeInterval(86_400)
+        } while next <= today
+        return next
     }
 
     private func billingText(card: Account) -> String {
         let billing = CreditStatement.billing(forPurchaseOn: date, card: card)
-        return "Masuk tagihan " + TransactionDates.dayMonth.string(from: billing.statement)
-            + ", bayar " + TransactionDates.dayMonth.string(from: billing.due)
+        return "Tagihan " + TransactionDates.dayMonth.string(from: billing.statement)
+            + " · bayar " + TransactionDates.dayMonth.string(from: billing.due)
     }
 
     private func planText(card: Account) -> String {
@@ -702,6 +895,24 @@ struct AddTransactionView: View {
                             return
                         }
                     }
+                    if let frequency = repeatToSave {
+                        do {
+                            await NotificationManager.shared.requestPermissionIfNeeded()
+                            let bill = try await SupabaseRepository.shared.createSubscription(
+                                accountId: account.id, name: description ?? category?.name ?? "Tagihan", amount: value,
+                                frequency: frequency, nextBillingDate: Self.dayString(nextRepeatDate),
+                                categoryId: category?.id, note: nil
+                            )
+                            await NotificationManager.shared.schedule(for: bill)
+                        } catch {
+                            isSaving = false
+                            onSave()
+                            NotificationCenter.default.post(name: .dataDidChange, object: nil)
+                            closesAfterAlert = true
+                            errorMessage = "Pengeluaran tersimpan, tapi tagihan berulangnya gagal dibuat. " + error.localizedDescription
+                            return
+                        }
+                    }
                 }
                 isSaving = false
                 done = summary
@@ -716,6 +927,13 @@ struct AddTransactionView: View {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    private static func dayString(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: date)
     }
 
     private func doneSummary(amount value: Double, account: Account) -> DoneSummary {
@@ -756,6 +974,8 @@ struct DetailRow: View {
     var swatch: Color?
     var icon: String?
     var iconColor: Color = .appTextSecondary
+    /// A small grey line under the value.
+    var sub: String?
     var showsChevron = false
     var height: CGFloat = 52
 
@@ -774,10 +994,19 @@ struct DetailRow: View {
                         .font(.system(size: 17))
                         .foregroundStyle(iconColor)
                 }
-                Text(value)
-                    .font(.app(16, weight: .medium))
-                    .foregroundStyle(Color.appText)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(value)
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(Color.appText)
+                        .lineLimit(1)
+                    if let sub {
+                        Text(sub)
+                            .font(.app(12))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .monospacedDigit()
+                            .lineLimit(1)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: "chevron.right")

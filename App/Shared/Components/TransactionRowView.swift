@@ -46,7 +46,7 @@ struct TransactionRowView: View {
     }
 
     private var title: String {
-        transaction.note ?? category?.name ?? typeLabel
+        transaction.recurringName ?? transaction.note ?? category?.name ?? typeLabel
     }
 
     private var subtitle: String {
@@ -98,6 +98,15 @@ struct TransactionRowView: View {
                         .font(.app(16, weight: .medium))
                         .foregroundStyle(Color.appText)
                         .lineLimit(1)
+                    if transaction.isRecurring {
+                        Label("Berulang", systemImage: "repeat")
+                            .font(.app(11, weight: .medium))
+                            .foregroundStyle(Color.appPrimary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 1)
+                            .background(Color.appPrimary.opacity(0.12), in: Capsule())
+                            .fixedSize()
+                    }
                     if showArchivedBadge {
                         Text("Diarsipkan")
                             .font(.app(11, weight: .medium))

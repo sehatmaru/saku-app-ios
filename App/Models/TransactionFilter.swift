@@ -6,6 +6,8 @@ struct TransactionFilter: Equatable {
     var incomeCategoryIds: Set<String> = []
     var dateFrom: Date?
     var dateTo: Date?
+    /// Only transactions posted from recurring bills.
+    var recurringOnly = false
 
     var hasActiveFilters: Bool {
         !transactionTypes.isEmpty
@@ -13,6 +15,7 @@ struct TransactionFilter: Equatable {
             || !incomeCategoryIds.isEmpty
             || dateFrom != nil
             || dateTo != nil
+            || recurringOnly
     }
 
     var activeFilterCount: Int {
@@ -21,6 +24,7 @@ struct TransactionFilter: Equatable {
         if !expenseCategoryIds.isEmpty { count += 1 }
         if !incomeCategoryIds.isEmpty { count += 1 }
         if dateFrom != nil || dateTo != nil { count += 1 }
+        if recurringOnly { count += 1 }
         return count
     }
 
@@ -30,5 +34,6 @@ struct TransactionFilter: Equatable {
         incomeCategoryIds = []
         dateFrom = nil
         dateTo = nil
+        recurringOnly = false
     }
 }

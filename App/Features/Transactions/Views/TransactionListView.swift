@@ -297,6 +297,9 @@ struct TransactionListView: View {
                         filter.transactionTypes = filter.transactionTypes == [type] ? [] : [type]
                     }
                 }
+                FilterChip(title: "Berulang", isSelected: filter.recurringOnly) {
+                    filter.recurringOnly.toggle()
+                }
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 2)
@@ -347,7 +350,7 @@ struct TransactionListView: View {
     }
 
     private var filterButton: some View {
-        let count = filter.activeFilterCount - (filter.transactionTypes.isEmpty ? 0 : 1)
+        let count = filter.activeFilterCount - (filter.transactionTypes.isEmpty ? 0 : 1) - (filter.recurringOnly ? 1 : 0)
         return Button {
             showAdvancedSearch = true
         } label: {
@@ -388,6 +391,10 @@ struct TransactionListView: View {
 
         if !filter.transactionTypes.isEmpty {
             result = result.filter { filter.transactionTypes.contains($0.type) }
+        }
+
+        if filter.recurringOnly {
+            result = result.filter(\.isRecurring)
         }
 
         if !filter.expenseCategoryIds.isEmpty {

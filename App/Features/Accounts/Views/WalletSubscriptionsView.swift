@@ -5,6 +5,8 @@ struct WalletSubscriptionsView: View {
     let account: Account
     let subscriptions: [CardSubscription]
     let categories: [Category]
+    /// Transactions this wallet's recurring bills have posted on their own.
+    var recorded: [Transaction] = []
 
     private struct Editing: Identifiable {
         let existing: CardSubscription?
@@ -17,15 +19,17 @@ struct WalletSubscriptionsView: View {
     @State private var selectedDay = Calendar.current.component(.day, from: Date())
     @State private var toastText = ""
     @State private var isToastShown = false
+    @State private var showsAllRecorded = false
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
 
     static let dueColor = Color(light: 0xC2410C, dark: 0xF07A45)
     private static let dueFill = Color(light: 0xFFF1E8, dark: 0x3A2418)
 
-    init(account: Account, subscriptions: [CardSubscription], categories: [Category]) {
+    init(account: Account, subscriptions: [CardSubscription], categories: [Category], recorded: [Transaction] = []) {
         self.account = account
         self.subscriptions = subscriptions
         self.categories = categories
+        self.recorded = recorded
     }
 
     // MARK: Month maths
@@ -80,6 +84,7 @@ struct WalletSubscriptionsView: View {
         ScrollView {
             VStack(spacing: 0) {
                 totalBox
+                autoNote
                 monthHeader
                 calendarGrid
                 legend
@@ -90,6 +95,8 @@ struct WalletSubscriptionsView: View {
                 .padding(.top, 16)
                 dayList
                     .padding(.top, 18)
+                recordedList
+                    .padding(.top, 24)
             }
             .padding(.bottom, 60)
         }
@@ -136,6 +143,17 @@ struct WalletSubscriptionsView: View {
         .padding(.top, 8)
         .animation(.settle(0.4), value: monthlyTotal)
         .accessibilityElement(children: .combine)
+    }
+
+    /// Says up front that bills post themselves, so nobody adds them by hand as well.
+    private var autoNote: some View {
+        Label("Tagihan dicatat otomatis sebagai pengeluaran saat kamu membuka Saku di tanggal tagih. Kalau baru dibuka setelahnya, tetap dicatat dengan tanggal tagihnya.",
+              systemImage: "info.circle")
+            .font(.app(13))
+            .foregroundStyle(Color.appTextSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
     }
 
     private var monthHeader: some View {
@@ -294,6 +312,79 @@ struct WalletSubscriptionsView: View {
         }
         .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
         .animation(.settle(0.35), value: subscriptions.map(\.id))
+    }
+
+    // MARK: Recorded
+
+    private static let recordedDate: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "id_ID"); f.dateFormat = "d MMM yyyy"; return f
+    }()
+
+    /// What the recurring bills already posted, newest first.
+    private var recordedList: some View {
+        let sorted = recorded.sorted { $0.date > $1.date }
+        let shown = showsAllRecorded ? sorted : Array(sorted.prefix(8))
+        return VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sudah dicatat otomatis")
+                    .font(.app(13, weight: .semibold))
+                    .foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                if !sorted.isEmpty {
+                    Text("\(sorted.count) transaksi")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .padding(.bottom, 4)
+
+            if sorted.isEmpty {
+                Text("Belum ada. Tagihan yang jatuh tempo muncul di sini setelah dicatat.")
+                    .font(.app(15))
+                    .foregroundStyle(Color(light: 0xA1A1A6, dark: 0x8E8E93))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 10)
+            }
+            ForEach(shown) { txn in
+                HStack(spacing: 14) {
+                    iconCircle("checkmark", fill: Color.appPrimary.opacity(0.12), tint: .appPrimary)
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(txn.recurringName ?? "Tagihan berulang")
+                                .font(.app(16))
+                                .foregroundStyle(Color.appText)
+                                .lineLimit(1)
+                            Text(Self.recordedDate.string(from: txn.date))
+                                .font(.app(13))
+                                .foregroundStyle(Color.appTextSecondary)
+                        }
+                        Spacer(minLength: 0)
+                        Text("−" + money(txn.amount))
+                            .font(.app(16))
+                            .monospacedDigit()
+                            .foregroundStyle(Color.appText)
+                    }
+                    .frame(height: 64)
+                    .rowSeparator()
+                }
+                .padding(.horizontal, 24)
+                .accessibilityElement(children: .combine)
+            }
+            if sorted.count > shown.count {
+                Button("Lihat semua (\(sorted.count))") {
+                    withAnimation(.settle(0.35)) { showsAllRecorded = true }
+                }
+                .font(.app(15, weight: .medium))
+                .foregroundStyle(Color.appPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+            }
+        }
+        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
     }
 
     private func iconCircle(_ symbol: String, fill: Color, tint: Color) -> some View {

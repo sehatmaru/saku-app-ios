@@ -11,6 +11,8 @@ struct Transaction: Identifiable, Codable {
     let note: String?
     let date: Date
     let delta: Double?
+    /// The client operation id; recurring bills post as `sub_<subscription>_<date>`.
+    var clientReferenceId: String? = nil
 
     enum TransactionType: String, Codable {
         case income = "income"
@@ -32,5 +34,16 @@ struct Transaction: Identifiable, Codable {
         case note
         case date = "occurred_at"
         case delta
+        case clientReferenceId = "client_reference_id"
+    }
+
+    /// Posted automatically from a recurring bill when its date arrived.
+    var isRecurring: Bool { clientReferenceId?.hasPrefix("sub_") == true }
+
+    /// "Spotify" out of the "Tagihan berulang: Spotify" note the auto-posting writes.
+    var recurringName: String? {
+        guard isRecurring, let note else { return nil }
+        let prefix = "Tagihan berulang: "
+        return note.hasPrefix(prefix) ? String(note.dropFirst(prefix.count)) : note
     }
 }

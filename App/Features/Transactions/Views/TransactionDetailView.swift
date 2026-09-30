@@ -233,6 +233,9 @@ struct TransactionDetailView: View {
                 }
             }
             row(label: "Tanggal", value: TransactionDates.long(txn.date, withYear: false), icon: "calendar", index: 2)
+            if txn.isRecurring {
+                row(label: "Sumber", value: "Tagihan berulang · otomatis", icon: "repeat", index: 2)
+            }
             row(label: "Catatan", value: txn.description?.isEmpty == false ? txn.description! : "—", icon: "square.and.pencil", index: 3)
         }
     }

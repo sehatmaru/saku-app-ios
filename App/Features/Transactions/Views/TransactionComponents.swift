@@ -309,6 +309,7 @@ enum NumberPad {
 /// 3×4 grid of number keys.
 struct NumberPadKeys: View {
     let onPress: (String) -> Void
+    var keyHeight: CGFloat = 52
 
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
@@ -323,7 +324,7 @@ struct NumberPadKeys: View {
                     }
                     .foregroundStyle(Color.appText)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    .frame(height: keyHeight)
                 }
                 .buttonStyle(KeyStyle())
                 .accessibilityLabel(key == "del" ? "Hapus" : key)
@@ -365,19 +366,20 @@ struct AmountPad: View {
     var isSaving = false
     let onPress: (String) -> Void
     let onSave: () -> Void
+    var keyHeight: CGFloat = 52
 
     var body: some View {
         GeometryReader { geo in
             let saveWidth = (geo.size.width - 6) / 4
             HStack(spacing: 6) {
-                NumberPadKeys(onPress: onPress)
+                NumberPadKeys(onPress: onPress, keyHeight: keyHeight)
                     .frame(width: geo.size.width - saveWidth - 6)
                 SaveKey(color: color, isEnabled: isEnabled, isSaving: isSaving, action: onSave)
                     .frame(width: saveWidth)
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
-        .frame(height: 52 * 4 + 6 * 3)
+        .frame(height: keyHeight * 4 + 6 * 3)
     }
 }
 

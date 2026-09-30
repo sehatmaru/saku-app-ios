@@ -140,7 +140,8 @@ struct AccountListView: View {
             .navigationDestination(for: WalletSubscriptionsRoute.self) { route in
                 WalletSubscriptionsView(account: route.account,
                                         subscriptions: viewModel.subscriptions.filter { $0.accountId == route.account.id },
-                                        categories: categories)
+                                        categories: categories,
+                                        recorded: (accountTransactions[route.account.id] ?? []).filter(\.isRecurring))
                     .detailPage()
             }
             .navigationDestination(for: String.self) { route in
