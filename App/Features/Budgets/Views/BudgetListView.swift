@@ -53,10 +53,6 @@ struct BudgetListView: View {
 
                     periodHeader
 
-                    addBudgetButton
-                        .padding(.horizontal, 24)
-                        .padding(.top, 18)
-
                     if showsPaydayCard {
                         paydayCard
                             .padding(.horizontal, 24)
@@ -163,14 +159,6 @@ struct BudgetListView: View {
         .offset(y: isPeriodHidden ? 8 : 0)
         .animation(.easeInOut(duration: 0.22), value: isPeriodHidden)
         .accessibilityElement(children: .combine)
-    }
-
-    /// Right under the period hero; dimmed until the budgets have loaded.
-    private var addBudgetButton: some View {
-        EmptyStateButton(title: "Tambah budget", isFullWidth: true) { addTarget = AddTarget(category: nil) }
-            .opacity(viewModel.hasLoadedOnce ? 1 : 0.4)
-            .disabled(!viewModel.hasLoadedOnce)
-            .accessibilityLabel("Tambah budget")
     }
 
     private var paydayCard: some View {

@@ -24,6 +24,7 @@ struct AddTransactionView: View {
     @State private var amount = 0
     @State private var isBumped = false
     @State private var shakeX: CGFloat = 0
+    @State private var categoryShakeX: CGFloat = 0
     @State private var category: Category?
     @State private var account: Account?
     @State private var target: Account?
@@ -46,7 +47,6 @@ struct AddTransactionView: View {
     @State private var closesAfterAlert = false
     /// Hidden flags and order for the category picker.
     @State private var preferences: [CategoryPreference] = []
-    @State private var didPickCategory = false
     /// Also make this expense a recurring bill, posted again each period; nil for a one-off.
     @State private var repeatFrequency: CardSubscription.Frequency?
     /// Short screens (iPhone SE) get a tighter header, rows and keys so nothing runs under the pad.
@@ -132,7 +132,7 @@ struct AddTransactionView: View {
             rows
                 .padding(.top, isCompact ? 4 : 10)
             Spacer(minLength: isCompact ? 4 : 12)
-            AmountPad(color: style.color, isEnabled: amount > 0, isSaving: isSaving, onPress: press, onSave: save,
+            AmountPad(color: style.color, isEnabled: amount > 0 && (isTransfer || category != nil), isSaving: isSaving, onPress: press, onSave: save,
                       keyHeight: isCompact ? 46 : 52)
                 .animation(.easeInOut(duration: 0.4), value: typeIndex)
                 .disabled(isSaving || done != nil)
@@ -160,7 +160,6 @@ struct AddTransactionView: View {
         } else {
             typeIndex = Self.types.firstIndex { $0.type == initialType } ?? 0
             account = initialAccount ?? activeAccounts.first
-            category = typeCategories.first
             target = targetAccounts.first { $0.id != account?.id }
         }
         Task {
@@ -172,10 +171,6 @@ struct AddTransactionView: View {
     private func loadPreferences() async {
         guard let loaded = try? await SupabaseRepository.shared.fetchCategoryPreferences() else { return }
         preferences = loaded
-        // A new entry starts on the user's first category unless they already picked one.
-        if editing == nil, !didPickCategory, !isTransfer {
-            category = typeCategories.first
-        }
     }
 
     private func loadBudgetData() async {
@@ -642,8 +637,8 @@ struct AddTransactionView: View {
                 row(.account, label: "Dari", value: account?.name ?? "Pilih", swatch: walletColor(account), index: 0)
                 row(.target, label: "Ke", value: target?.name ?? "Pilih", swatch: walletColor(target), index: 1)
             } else {
-                row(.category, label: "Kategori", value: category?.name ?? "Pilih",
-                    icon: category?.icon ?? "tag", iconColor: style.color, index: 0)
+                row(.category, label: "Kategori", value: category?.name ?? "Belum dipilih",
+                    icon: category?.icon, iconColor: style.color, isPlaceholder: category == nil, index: 0)
                 row(.account, label: "Dompet", value: account?.name ?? "Pilih", swatch: walletColor(account),
                     sub: isCardExpense && planMonths == 0 ? account.map(billingText) : nil, index: 1)
                 if isCardExpense, let account, editing == nil {
@@ -674,14 +669,17 @@ struct AddTransactionView: View {
     }
 
     private func row(_ kind: PickerKind, label: String, value: String, swatch: Color? = nil,
-                     icon: String? = nil, iconColor: Color = .appTextSecondary, sub: String? = nil, index: Int) -> some View {
+                     icon: String? = nil, iconColor: Color = .appTextSecondary, sub: String? = nil,
+                     isPlaceholder: Bool = false, index: Int) -> some View {
         Button {
             if done == nil { sheet = kind }
         } label: {
             DetailRow(label: label, value: value, swatch: swatch, icon: icon, iconColor: iconColor, sub: sub,
-                      showsChevron: true, height: rowHeight)
+                      showsChevron: true, height: rowHeight, isPlaceholder: isPlaceholder)
                 .background(flashed.contains(kind) ? style.color.opacity(0.1) : .clear)
                 .animation(.easeInOut(duration: 0.45), value: flashed)
+                .offset(x: kind == .category ? categoryShakeX : 0)
+                .animation(.easeOut(duration: 0.06), value: categoryShakeX)
         }
         .buttonStyle(.plain)
         .rise(isEntered, y: 14, delay: 0.2 + Double(index) * 0.06, fade: 0.4, move: 0.5)
@@ -740,7 +738,7 @@ struct AddTransactionView: View {
         guard done == nil, index != typeIndex, allowedTypes.contains(index) else { return }
         withAnimation(.settle(0.46)) { typeIndex = index }
         if !isTransfer {
-            category = typeCategories.first
+            category = nil
         } else if target == nil || target?.id == account?.id {
             target = targetAccounts.first { $0.id != account?.id }
         }
@@ -771,7 +769,6 @@ struct AddTransactionView: View {
         case .category:
             CategoryPickerSheet(title: sheetTitle(kind), categories: typeCategories, selectedId: category?.id,
                                 frequentIds: frequentCategoryIds, onDone: { sheet = nil }) { cat in
-                didPickCategory = true
                 pick(.category) { category = cat }
             }
         case .account, .target:
@@ -887,10 +884,14 @@ struct AddTransactionView: View {
     private func save() {
         guard done == nil, !isSaving else { return }
         guard amount > 0 else {
-            shake()
+            shake($shakeX)
             return
         }
         guard let account else { return }
+        guard isTransfer || category != nil else {
+            shake($categoryShakeX)
+            return
+        }
         if isTransfer, target == nil || target?.id == account.id {
             errorMessage = "Pilih dompet tujuan yang berbeda."
             return
@@ -996,10 +997,10 @@ struct AddTransactionView: View {
         return DoneSummary(title: title, detail: detail, footnote: footnote)
     }
 
-    private func shake() {
+    private func shake(_ offset: Binding<CGFloat>) {
         Task {
             for x in [-10, 9, -6, 4, 0] as [CGFloat] {
-                shakeX = x
+                offset.wrappedValue = x
                 try? await Task.sleep(for: .milliseconds(60))
             }
         }
@@ -1017,6 +1018,8 @@ struct DetailRow: View {
     var sub: String?
     var showsChevron = false
     var height: CGFloat = 52
+    /// Nothing chosen yet: the value reads grey.
+    var isPlaceholder = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1036,7 +1039,7 @@ struct DetailRow: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(value)
                         .font(.app(16, weight: .medium))
-                        .foregroundStyle(Color.appText)
+                        .foregroundStyle(isPlaceholder ? Color.appTextTertiary : Color.appText)
                         .lineLimit(1)
                     if let sub {
                         Text(sub)

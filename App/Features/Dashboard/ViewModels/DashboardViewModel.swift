@@ -160,7 +160,7 @@ final class DashboardViewModel: ObservableObject {
             totalMonthlySubscriptions = activeSubs.reduce(0) { $0 + $1.monthlyAmount }
 
             let statements = cards.compactMap { CreditStatement(card: $0, transactions: transactions, installments: installments) }
-            cardDueTotal = statements.reduce(0) { $0 + $1.remaining }
+            cardDueTotal = statements.reduce(0) { $0 + $1.remaining + $1.currentPeriod }
             overdueBills = zip(cards, statements)
                 .filter { $0.1.status == .overdue }
                 .map { OverdueCardBill(card: $0.0, statement: $0.1) }

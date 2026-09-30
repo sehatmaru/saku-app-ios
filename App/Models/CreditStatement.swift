@@ -25,6 +25,8 @@ struct CreditStatement {
     let remaining: Double
     /// Debt not billed yet: charges since the cut-off and installment parts still to come.
     let unbilled: Double
+    /// Charges since the last cut-off (payments not netted): what the next statement will bill.
+    let currentPeriod: Double
     let status: Status
     /// What's left of the minimum payment after what was already paid.
     let minimumDue: Double
@@ -81,6 +83,7 @@ struct CreditStatement {
         paid = paidSince
         remaining = max(0, billedAmount - paidSince)
         unbilled = max(0, card.balance - remaining)
+        currentPeriod = max(0, changeSince + paidSince)
 
         let minimum = billedAmount > 0 ? min(billedAmount, max(billedAmount * Self.minimumShare, Self.minimumFloor)) : 0
         minimumDue = max(0, minimum - paidSince)

@@ -409,7 +409,7 @@ struct DashboardView: View {
         return PickerSheet(title: "Aman dipakai", onDone: { showsSafeInfo = false }) {
             VStack(alignment: .leading, spacing: 0) {
                 safeRow("Total saldo", maskedAmount(viewModel.balance))
-                safeRow("Tagihan kartu kredit", maskedAmount(viewModel.cardDueTotal, negative: true))
+                safeRow("Tagihan kartu kredit (termasuk periode berjalan)", maskedAmount(viewModel.cardDueTotal, negative: true))
                 safeRow("Langganan sampai akhir bulan", maskedAmount(viewModel.upcomingBillsTotal, negative: true))
                 HStack {
                     Text("Aman dipakai")
@@ -421,7 +421,7 @@ struct DashboardView: View {
                         .monospacedDigit()
                 }
                 .padding(.vertical, 14)
-                Text("Saldo yang tersisa setelah tagihan kartu kredit yang belum dibayar dan langganan yang jatuh tempo bulan ini, supaya kamu tidak memakai uang yang sudah ada peruntukannya.")
+                Text("Saldo yang tersisa setelah tagihan kartu kredit yang belum dibayar, belanja kartu periode berjalan yang akan ditagih, dan langganan yang jatuh tempo bulan ini, supaya kamu tidak memakai uang yang sudah ada peruntukannya.")
                     .font(.app(15))
                     .foregroundStyle(Color.appBody)
                     .padding(.top, 12)
