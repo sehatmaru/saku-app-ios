@@ -34,55 +34,17 @@ struct BudgetListView: View {
         viewModel.hasLoadedOnce && paydayRaw == 0 && !isPaydayCardDismissed
     }
 
-    private var overallMonthlyHistory: [OverallHistoryItem] {
-        let calendar = Calendar.current
-        let now = Date()
-        // Periods run from payday; each is keyed by its first day.
-        let currentMonth = PaydayCycle.current.period(containing: now, calendar: calendar).start
-
-        let budgetCategoryIds = Set(viewModel.budgetItems.filter { $0.budget != nil }.map { $0.category.id })
-        let expenseTransactions = viewModel.allExpenseTransactions.filter {
-            guard let catId = $0.categoryId else { return false }
-            return budgetCategoryIds.contains(catId) && $0.type == .expense
-        }
-
-        let grouped = Dictionary(grouping: expenseTransactions) { tx in
-            PaydayCycle.current.period(containing: tx.date, calendar: calendar).start
-        }
-
-        return grouped
-            .filter { $0.key < currentMonth }
-            .map { month, txs in
-                OverallHistoryItem(month: month, spent: txs.reduce(0) { $0 + $1.amount })
-            }
-            .sorted { $0.month > $1.month }
-    }
-
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ScreenHeader(title: "Budget") {
-                        NavigationLink(destination: OverallBudgetHistoryView(totalBudget: viewModel.totalBudget, monthlyHistory: overallMonthlyHistory, budgetItems: viewModel.budgetItems, allExpenseTransactions: viewModel.allExpenseTransactions).detailPage()) {
-                            Image(systemName: "clock.arrow.circlepath")
-                        }
-                        .accessibilityLabel("Riwayat bulan sebelumnya")
-                        Button {
-                            showAddBudget = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 38, height: 38)
-                                .background(Color.appPrimary, in: Circle())
-                        }
-                        .buttonStyle(PressScaleStyle())
-                        .opacity(viewModel.hasLoadedOnce ? 1 : 0.4)
-                        .disabled(!viewModel.hasLoadedOnce)
-                        .accessibilityLabel("Tambah budget")
-                    }
+                    ScreenHeader(title: "Budget") {}
 
                     periodHeader
+
+                    addBudgetButton
+                        .padding(.horizontal, 24)
+                        .padding(.top, 18)
 
                     if showsPaydayCard {
                         paydayCard
@@ -178,8 +140,9 @@ struct BudgetListView: View {
                        isActive: !isPeriodHidden)
                 .id(days.total)
                 .padding(.top, 10)
-            Text(headerPayday.map { "Gajian tiap tanggal \($0)" } ?? "Mengikuti tanggal 1")
-                + Text(" · hari ke-\(dayNumber) dari \(days.total)")
+            (Text(headerPayday.map { "Gajian tiap tanggal \($0)" } ?? "Mengikuti tanggal 1")
+                + Text(" · hari ke-\(dayNumber) dari \(days.total)"))
+                .padding(.top, 12)
         }
         .font(.app(13))
         .foregroundStyle(Color.appTextSecondary)
@@ -189,6 +152,14 @@ struct BudgetListView: View {
         .offset(y: isPeriodHidden ? 8 : 0)
         .animation(.easeInOut(duration: 0.22), value: isPeriodHidden)
         .accessibilityElement(children: .combine)
+    }
+
+    /// Right under the period hero; dimmed until the budgets have loaded.
+    private var addBudgetButton: some View {
+        EmptyStateButton(title: "Tambah budget", isFullWidth: true) { showAddBudget = true }
+            .opacity(viewModel.hasLoadedOnce ? 1 : 0.4)
+            .disabled(!viewModel.hasLoadedOnce)
+            .accessibilityLabel("Tambah budget")
     }
 
     private var paydayCard: some View {
@@ -276,14 +247,11 @@ struct BudgetListView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 18) {
-            EmptyMessage(icon: "chart.pie",
-                         title: "Belum ada budget",
-                         message: "Atur batas pengeluaran per kategori. Tiap periode mulai dari nol, sisa tidak terbawa.")
-            EmptyStateButton(title: "Tambah budget") { showAddBudget = true }
-        }
-        .padding(.horizontal, 40)
-        .padding(.top, 90)
+        EmptyMessage(icon: "chart.pie",
+                     title: "Belum ada budget",
+                     message: "Atur batas pengeluaran per kategori. Tiap periode mulai dari nol, sisa tidak terbawa.")
+            .padding(.horizontal, 40)
+            .padding(.top, 70)
     }
 
     private func budgetAdded(_ category: Category) {
@@ -414,291 +382,5 @@ struct BudgetCardView: View {
 
     private func color(_ budget: Budget) -> Color {
         budget.progress >= 1 ? .appError : budget.progress >= 0.8 ? .appWarning : .appPrimary
-    }
-}
-
-struct OverallHistoryItem: Identifiable {
-    let id = UUID()
-    let month: Date
-    let spent: Double
-
-    var monthLabel: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        formatter.locale = Locale(identifier: "id_ID")
-        return formatter.string(from: month)
-    }
-
-    func remainingPct(_ totalBudget: Double) -> Double {
-        totalBudget > 0 ? max(0, (1 - spent / totalBudget) * 100) : 0
-    }
-
-    func statusColor(_ totalBudget: Double) -> Color {
-        let r = remainingPct(totalBudget)
-        return r <= 0 ? .appError : r <= 20 ? .appWarning : .appPrimary
-    }
-
-    /// Spent share of the budget for the bar, 0 when there is no budget.
-    func progress(_ totalBudget: Double) -> Double {
-        totalBudget > 0 ? spent / totalBudget : 0
-    }
-}
-
-/// Thin 6pt rounded progress bar for history rows.
-private struct ThinBar: View {
-    let value: Double
-    let color: Color
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 3).fill(Color.appDivider)
-                RoundedRectangle(cornerRadius: 3).fill(color)
-                    .frame(width: geo.size.width * min(max(value, 0), 1))
-            }
-        }
-        .frame(height: 6)
-        .accessibilityHidden(true)
-    }
-}
-
-struct OverallBudgetHistoryView: View {
-    let totalBudget: Double
-    let monthlyHistory: [OverallHistoryItem]
-    let budgetItems: [BudgetListItem]
-    let allExpenseTransactions: [Transaction]
-
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
-    @State private var expandedYears: Set<Int> = []
-
-    private var groupedByYear: [(year: Int, items: [OverallHistoryItem])] {
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: monthlyHistory) { history in
-            calendar.component(.year, from: history.month)
-        }
-        return grouped.map { (year: $0.key, items: $0.value.sorted { $0.month > $1.month }) }
-            .sorted { $0.year > $1.year }
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                if monthlyHistory.isEmpty {
-                    EmptyMessage(icon: "clock.arrow.circlepath",
-                                 title: "Belum ada riwayat",
-                                 message: "Riwayat muncul setelah bulan pertama budget kamu selesai.")
-                        .padding(.horizontal, 24)
-                        .padding(.top, 80)
-                }
-                ForEach(Array(groupedByYear.enumerated()), id: \.element.year) { i, group in
-                    if i > 0 { SectionDivider() }
-                    yearSection(group.year, group.items)
-                }
-            }
-            .padding(.bottom, 24)
-        }
-        .background(Color.appBackground)
-        .onAppear {
-            if expandedYears.isEmpty {
-                let currentYear = Calendar.current.component(.year, from: Date())
-                expandedYears = [currentYear]
-            }
-        }
-        .navigationTitle("Riwayat Budget")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
-    }
-
-    private func yearSection(_ year: Int, _ items: [OverallHistoryItem]) -> some View {
-        let isExpanded = expandedYears.contains(year)
-        return VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation {
-                    if isExpanded {
-                        expandedYears.remove(year)
-                    } else {
-                        expandedYears.insert(year)
-                    }
-                }
-            } label: {
-                HStack(alignment: .firstTextBaseline) {
-                    HStack(spacing: 8) {
-                        Text(String(year))
-                            .font(.app(20, weight: .semibold))
-                            .tracking(-0.2)
-                            .foregroundStyle(Color.appText)
-                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.appTextSecondary)
-                    }
-                    Spacer()
-                    Text("\(items.count) bulan")
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityAddTraits(isExpanded ? .isSelected : [])
-
-            if isExpanded {
-                VStack(spacing: 0) {
-                    ForEach(items) { history in
-                        NavigationLink(destination: OverallMonthDetailView(totalBudget: totalBudget, month: history.month, budgetItems: budgetItems, allExpenseTransactions: allExpenseTransactions).detailPage()) {
-                            historyRow(history)
-                        }
-                        .buttonStyle(RowPressStyle())
-                    }
-                }
-                .padding(.top, 6)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .padding(.bottom, 8)
-    }
-
-    private func money(_ amount: Double) -> String {
-        isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
-    }
-
-    private func historyRow(_ history: OverallHistoryItem) -> some View {
-        let color = history.statusColor(totalBudget)
-        return HStack(alignment: .top, spacing: 14) {
-            Image(systemName: color == .appPrimary ? "checkmark.circle" : "exclamationmark.circle")
-                .font(.system(size: 19))
-                .foregroundStyle(color)
-                .frame(width: 24)
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(history.monthLabel)
-                        .font(.app(16))
-                        .foregroundStyle(Color.appText)
-                    Spacer(minLength: 8)
-                    Text(money(history.spent))
-                        .font(.app(15))
-                        .foregroundStyle(color == .appPrimary ? Color.appText : color)
-                        .monospacedDigit()
-                }
-                ThinBar(value: history.progress(totalBudget), color: color)
-                HStack {
-                    Text("Budget \(money(totalBudget))")
-                    Spacer()
-                    Text("Sisa \(Int(history.remainingPct(totalBudget)))%")
-                }
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-                .monospacedDigit()
-            }
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.appTextTertiary)
-                .padding(.top, 4)
-        }
-        .padding(.vertical, 14)
-        .rowSeparator()
-        .contentShape(Rectangle())
-    }
-}
-
-struct OverallMonthDetailView: View {
-    let totalBudget: Double
-    let month: Date
-    let budgetItems: [BudgetListItem]
-    let allExpenseTransactions: [Transaction]
-
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
-
-    private var monthLabel: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        formatter.locale = Locale(identifier: "id_ID")
-        return formatter.string(from: month)
-    }
-
-    private var transactions: [Transaction] {
-        // `month` is the first day of a payday period.
-        let period = PaydayCycle.current.period(containing: month)
-        let (monthStart, nextMonth) = (period.start, period.end)
-        return allExpenseTransactions
-            .filter { $0.date >= monthStart && $0.date < nextMonth }
-            .sorted { $0.date > $1.date }
-    }
-
-    private var spent: Double {
-        transactions.reduce(0) { $0 + $1.amount }
-    }
-
-    private var remaining: Double { totalBudget - spent }
-    private var progress: Double { totalBudget > 0 ? spent / totalBudget : 0 }
-    private var remainingPct: Double { progress >= 1 ? 0 : (1 - progress) * 100 }
-    private var progressColor: Color { remainingPct <= 0 ? .appError : remainingPct <= 20 ? .appWarning : .appPrimary }
-    private var setItems: [BudgetListItem] { budgetItems.filter { $0.budget != nil } }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                summary
-                SectionDivider()
-
-                if !setItems.isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
-                        SectionHeader(title: "Per kategori", trailing: "\(setItems.count)")
-                        ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
-                            NavigationLink(destination: BudgetDetailView(budget: item.budget!, category: item.category, allTransactions: [], accounts: [], showHistoryButton: false).detailPage()) {
-                                BudgetCardView(budget: item.budget, category: item.category, fillDelay: 0.3 + Double(i) * 0.08)
-                            }
-                            .buttonStyle(RowPressStyle())
-                        }
-                        .padding(.top, 6)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 28)
-                }
-            }
-            .padding(.bottom, 24)
-        }
-        .background(Color.appBackground)
-        .navigationTitle(monthLabel)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
-    }
-
-    private var summary: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Sisa budget")
-                Spacer()
-                Text("\(Int(remainingPct))%").monospacedDigit()
-            }
-            .font(.app(15))
-            .foregroundStyle(remainingPct <= 0 ? Color.appError : Color.appTextSecondary)
-
-            HeroAmount(value: remainingPct <= 0 ? 0 : remaining, size: .large,
-                       isVisible: isBalanceVisible, weight: .ultraLight)
-                .padding(.top, 8)
-
-            SegmentBar(value: progress, color: progressColor, height: 12)
-                .padding(.top, 24)
-
-            HStack {
-                total("Terpakai", spent)
-                Spacer()
-                total("Budget", totalBudget)
-            }
-            .padding(.top, 12)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 24)
-        .padding(.bottom, 32)
-    }
-
-    private func total(_ label: String, _ amount: Double) -> some View {
-        (Text(label + " ").foregroundStyle(Color.appTextSecondary)
-         + Text(isBalanceVisible ? amount.abbreviatedRupiah() : hiddenAmount)
-            .fontWeight(.medium)
-            .foregroundStyle(Color.appText))
-            .font(.app(15))
-            .monospacedDigit()
     }
 }

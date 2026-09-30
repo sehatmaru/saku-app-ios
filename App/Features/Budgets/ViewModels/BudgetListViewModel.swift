@@ -41,7 +41,8 @@ final class BudgetListViewModel: ObservableObject {
     }
 
     private var expenseCategories: [Category] {
-        categories.filter { $0.type == .expense }.arranged(by: preferences).shown
+        // Penyesuaian Saldo is used by balance corrections on its own and never gets a budget.
+        categories.filter { $0.type == .expense && !CategoryCatalog.isSystem($0) }.arranged(by: preferences).shown
     }
 
     /// Budgets of shown categories only.

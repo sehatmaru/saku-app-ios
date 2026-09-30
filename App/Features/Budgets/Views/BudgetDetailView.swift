@@ -5,14 +5,12 @@ struct BudgetDetailView: View {
     let category: Category
     let allTransactions: [Transaction]
     let accounts: [Account]
-    var showHistoryButton: Bool = true
     var onAdjustBudget: ((Budget) -> Void)?
     var onUnsetBudget: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
 
     @State private var showAllTransactions = false
-    @State private var showHistory = false
     @State private var showAdjustBudget = false
     @State private var showUnsetAlert = false
     @State private var adjustAmountText = ""
@@ -38,44 +36,11 @@ struct BudgetDetailView: View {
         showAllTransactions ? transactions : Array(transactions.prefix(5))
     }
 
-    private var monthlyHistory: [MonthlySpending] {
-        let calendar = Calendar.current
-        let now = Date()
-        // Periods run from payday; each is keyed by its first day.
-        let currentMonth = PaydayCycle.current.period(containing: now, calendar: calendar).start
-
-        let grouped = Dictionary(grouping: allTransactions) { tx in
-            PaydayCycle.current.period(containing: tx.date, calendar: calendar).start
-        }
-
-        return grouped
-            .filter { $0.key < currentMonth }
-            .map { month, txs in
-                MonthlySpending(month: month, spent: txs.reduce(0) { $0 + $1.amount })
-            }
-            .sorted { $0.month > $1.month }
-    }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 0) {
                     BudgetSummary(amount: budget.amount, spent: budget.spent, month: Date(), showPace: true)
-
-                    if showHistoryButton {
-                        Button {
-                            showHistory = true
-                        } label: {
-                            Label("Riwayat bulan sebelumnya", systemImage: "clock.arrow.circlepath")
-                                .font(.app(15, weight: .medium))
-                                .foregroundStyle(Color.appText)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color.appFill, in: Capsule())
-                        }
-                        .buttonStyle(RowPressStyle())
-                        .padding(.top, 20)
-                    }
 
                     if onAdjustBudget != nil || onUnsetBudget != nil {
                         HStack(spacing: 12) {
@@ -132,9 +97,6 @@ struct BudgetDetailView: View {
         .background(Color.appBackground)
         .navigationTitle(category.name)
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showHistory) {
-            BudgetHistoryView(budget: budget, category: category, monthlyHistory: monthlyHistory, allTransactions: allTransactions, accounts: accounts)
-        }
         .sheet(isPresented: $showAdjustBudget) {
             adjustBudgetSheet
                 .presentationDetents([.medium])
@@ -413,260 +375,4 @@ fileprivate struct BudgetSummary: View {
         f.locale = Locale(identifier: "id_ID")
         return f
     }()
-}
-
-/// 6pt rounded progress bar for history rows.
-fileprivate struct ThinBar: View {
-    let value: Double
-    let color: Color
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.appDivider)
-                Capsule().fill(color)
-                    .frame(width: geo.size.width * min(max(value, 0), 1))
-            }
-        }
-        .frame(height: 6)
-        .accessibilityHidden(true)
-    }
-}
-
-// MARK: - History
-
-fileprivate struct MonthlySpending: Identifiable {
-    let id = UUID()
-    let month: Date
-    let spent: Double
-
-    var monthLabel: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        formatter.locale = Locale(identifier: "id_ID")
-        return formatter.string(from: month)
-    }
-
-    func progress(_ budgetAmount: Double) -> Double {
-        budgetAmount > 0 ? spent / budgetAmount : 0
-    }
-
-    func remainingPct(_ budgetAmount: Double) -> Double {
-        let p = progress(budgetAmount)
-        return p >= 1 ? 0 : (1 - p) * 100
-    }
-
-    func statusColor(_ budgetAmount: Double) -> Color {
-        let r = remainingPct(budgetAmount)
-        return r <= 0 ? .appError : r <= 20 ? .appWarning : .appPrimary
-    }
-}
-
-fileprivate struct BudgetHistoryView: View {
-    let budget: Budget
-    let category: Category
-    let monthlyHistory: [MonthlySpending]
-    let allTransactions: [Transaction]
-    let accounts: [Account]
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var expandedYears: Set<Int> = []
-
-    private var groupedByYear: [(year: Int, items: [MonthlySpending])] {
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: monthlyHistory) { history in
-            calendar.component(.year, from: history.month)
-        }
-        return grouped.map { (year: $0.key, items: $0.value.sorted { $0.month > $1.month }) }
-            .sorted { $0.year > $1.year }
-    }
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    if groupedByYear.isEmpty {
-                        EmptyMessage(icon: "clock.arrow.circlepath", title: "Belum ada riwayat", message: "Riwayat muncul setelah bulan berjalan selesai.")
-                            .padding(.horizontal, 24)
-                            .padding(.top, 80)
-                    }
-                    ForEach(Array(groupedByYear.enumerated()), id: \.element.year) { index, group in
-                        if index > 0 { SectionDivider() }
-                        yearSection(group)
-                    }
-                }
-                .padding(.bottom, 32)
-            }
-            .background(Color.appBackground)
-            .navigationTitle("Riwayat Budget")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Tutup") {
-                        dismiss()
-                    }
-                    .font(.app(17))
-                    .foregroundStyle(Color.appPrimary)
-                }
-            }
-            .onAppear {
-                if expandedYears.isEmpty {
-                    let currentYear = Calendar.current.component(.year, from: Date())
-                    expandedYears = [currentYear]
-                }
-            }
-        }
-    }
-
-    private func yearSection(_ group: (year: Int, items: [MonthlySpending])) -> some View {
-        let isExpanded = expandedYears.contains(group.year)
-        return VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation {
-                    if isExpanded {
-                        expandedYears.remove(group.year)
-                    } else {
-                        expandedYears.insert(group.year)
-                    }
-                }
-            } label: {
-                HStack(alignment: .firstTextBaseline) {
-                    HStack(spacing: 8) {
-                        Text(String(group.year))
-                            .font(.app(20, weight: .semibold))
-                            .tracking(-0.2)
-                            .foregroundStyle(Color.appText)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .rotationEffect(.degrees(isExpanded ? 0 : -90))
-                    }
-                    Spacer()
-                    Text("\(group.items.count) bulan")
-                        .font(.app(15))
-                        .foregroundStyle(Color.appTextSecondary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if isExpanded {
-                VStack(spacing: 0) {
-                    ForEach(group.items) { history in
-                        NavigationLink(destination: BudgetMonthDetailView(budget: budget, category: category, month: history.month, allTransactions: allTransactions, accounts: accounts)) {
-                            historyRow(history)
-                        }
-                        .buttonStyle(RowPressStyle())
-                    }
-                }
-                .padding(.top, 6)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .padding(.bottom, 12)
-    }
-
-    private func historyRow(_ history: MonthlySpending) -> some View {
-        HStack(spacing: 16) {
-            Text(history.monthLabel)
-                .font(.app(16))
-                .foregroundStyle(Color.appText)
-            Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 8) {
-                Text(history.spent.formattedAsCurrency())
-                    .font(.app(16))
-                    .monospacedDigit()
-                    .foregroundStyle(history.progress(budget.amount) > 1 ? Color.appError : Color.appText)
-                ThinBar(value: history.progress(budget.amount), color: history.statusColor(budget.amount))
-                    .frame(width: 120)
-            }
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.appTextTertiary)
-        }
-        .padding(.vertical, 14)
-        .contentShape(Rectangle())
-        .rowSeparator()
-        .accessibilityElement(children: .combine)
-        .accessibilityValue("Sisa \(Int(history.remainingPct(budget.amount))) persen")
-    }
-}
-
-fileprivate struct BudgetMonthDetailView: View {
-    let budget: Budget
-    let category: Category
-    let month: Date
-    let allTransactions: [Transaction]
-    let accounts: [Account]
-
-    @State private var detailTransaction: Transaction?
-
-    private var monthLabel: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        formatter.locale = Locale(identifier: "id_ID")
-        return formatter.string(from: month)
-    }
-
-    private var transactions: [Transaction] {
-        // `month` is the first day of a payday period.
-        let period = PaydayCycle.current.period(containing: month)
-        let (monthStart, nextMonth) = (period.start, period.end)
-        return allTransactions
-            .filter { $0.date >= monthStart && $0.date < nextMonth }
-            .sorted { $0.date > $1.date }
-    }
-
-    private var spent: Double {
-        transactions.reduce(0) { $0 + $1.amount }
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                BudgetSummary(amount: budget.amount, spent: spent, month: month)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 32)
-                    .padding(.bottom, 32)
-
-                SectionDivider()
-
-                VStack(alignment: .leading, spacing: 0) {
-                    SectionHeader(title: "Transaksi", trailing: "\(transactions.count) transaksi")
-
-                    if transactions.isEmpty {
-                        EmptyMessage(icon: "tray", title: "Belum ada transaksi", message: "Tidak ada pengeluaran kategori ini di bulan ini.")
-                            .padding(.vertical, 32)
-                    } else {
-                        VStack(spacing: 0) {
-                            ForEach(transactions) { transaction in
-                                Button { detailTransaction = transaction } label: {
-                                    TransactionRowView(transaction: transaction, categories: [category], accounts: accounts, showAccount: true)
-                                        .rowSeparator()
-                                }
-                                .buttonStyle(RowPressStyle())
-                            }
-                        }
-                        .padding(.top, 6)
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 28)
-                .padding(.bottom, 32)
-            }
-        }
-        .background(Color.appBackground)
-        .navigationTitle(monthLabel)
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $detailTransaction) { txn in
-            TransactionDetailView(
-                transaction: txn,
-                categories: [category],
-                accounts: accounts,
-                isEditable: false
-            )
-            .presentationDetents([.medium, .large])
-        }
-    }
 }
