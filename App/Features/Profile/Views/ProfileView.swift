@@ -129,7 +129,7 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 0) {
             sectionCaption("Keuangan")
 
-            NavigationLink(destination: CategoriesView().detailPage()) {
+            NavigationLink(destination: CategoriesView()) {
                 row(icon: "square.grid.2x2", title: "Kategori", subtitle: "Tambah, urutkan, sembunyikan") {
                     chevron
                 }

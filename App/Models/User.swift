@@ -4,7 +4,7 @@ struct User: Identifiable, Codable {
     let id: String
     let authUserId: String
     let email: String
-    let displayName: String?
+    var displayName: String?
     let defaultCurrencyCode: String
 
     enum CodingKeys: String, CodingKey {

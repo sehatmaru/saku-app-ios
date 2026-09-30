@@ -65,13 +65,10 @@ struct PickerSheet<Content: View>: View {
 }
 
 /// Four-column grid of round category icons; the picked one fills with `color`.
-/// With `onNew` a "Kategori baru" tile ends the grid; `popId`'s tile pops in when shown.
 struct CategoryPickerGrid: View {
     let categories: [Category]
     let selectedId: String?
     let color: Color
-    var popId: String? = nil
-    var onNew: (() -> Void)? = nil
     let onPick: (Category) -> Void
 
     var body: some View {
@@ -96,208 +93,14 @@ struct CategoryPickerGrid: View {
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
                     }
-                    .modifier(PopIn(isActive: cat.id == popId))
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(isOn ? .isSelected : [])
-            }
-            if let onNew {
-                Button(action: onNew) {
-                    VStack(spacing: 7) {
-                        Circle()
-                            .strokeBorder(Color.appBorder, lineWidth: 1.5)
-                            .frame(width: 54, height: 54)
-                            .overlay {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .foregroundStyle(Color.appPrimary)
-                            }
-                        Text("Kategori baru")
-                            .font(.app(12))
-                            .foregroundStyle(Color.appPrimary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                    }
-                }
-                .buttonStyle(PressScaleStyle())
             }
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
         .padding(.bottom, 24)
-    }
-}
-
-/// Starts small and transparent and springs in on appear, when active.
-private struct PopIn: ViewModifier {
-    let isActive: Bool
-    @State private var isShown = false
-
-    func body(content: Content) -> some View {
-        let hidden = isActive && !isShown
-        content
-            .scaleEffect(hidden ? 0.2 : 1)
-            .opacity(hidden ? 0 : 1)
-            .task {
-                guard isActive, !isShown else { return }
-                try? await Task.sleep(for: .milliseconds(90))
-                withAnimation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.46)) { isShown = true }
-            }
-    }
-}
-
-/// Kategori baru inside the picker sheet: icon preview with the name field, the naming
-/// error, every icon in an 8-column grid and Simpan. Calls `onCreated` with the saved category.
-struct QuickCategoryForm: View {
-    let type: CategoryType
-    let color: Color
-    /// Every category (hidden ones too) for the duplicate check.
-    let categories: [Category]
-    let hiddenIds: Set<String>
-    let userId: String
-    let onCreated: (Category) -> Void
-
-    @State private var name = ""
-    @State private var icon = CategoryCatalog.defaultIcon
-    @State private var triedSave = false
-    @State private var shakeX: CGFloat = 0
-    @State private var isBumped = false
-    @State private var isSaving = false
-    @State private var saveError: String?
-
-    private var error: String? {
-        saveError ?? CategoryCatalog.validate(name, type: type, excluding: nil, in: categories, hiddenIds: hiddenIds)
-    }
-    private var showsError: Bool {
-        error != nil && (triedSave || saveError != nil || !name.trimmingCharacters(in: .whitespaces).isEmpty)
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 14) {
-                Circle()
-                    .fill(Color.appFill)
-                    .frame(width: 52, height: 52)
-                    .overlay {
-                        Image(systemName: icon)
-                            .font(.system(size: 22))
-                            .foregroundStyle(Color.appText)
-                    }
-                    .scaleEffect(isBumped ? 1.12 : 1)
-                    .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.38), value: isBumped)
-                TextField("Nama kategori", text: $name)
-                    .font(.app(20, weight: .semibold))
-                    .foregroundStyle(Color.appText)
-                    .submitLabel(.done)
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-            .offset(x: shakeX)
-            .animation(.easeOut(duration: 0.09), value: shakeX)
-
-            HStack(spacing: 5) {
-                Image(systemName: "exclamationmark.circle.fill").font(.system(size: 13))
-                Text(error ?? "").font(.app(13)).lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(Color(hex: "D93025"))
-            .frame(height: 26)
-            .padding(.top, 6)
-            .padding(.leading, 90)
-            .padding(.trailing, 24)
-            .opacity(showsError ? 1 : 0)
-            .animation(.easeInOut(duration: 0.2), value: showsError)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 8), spacing: 8) {
-                ForEach(CategoryCatalog.allIcons, id: \.self) { symbol in
-                    let isOn = symbol == icon
-                    Button {
-                        icon = symbol
-                        isBumped = true
-                        Task {
-                            try? await Task.sleep(for: .milliseconds(170))
-                            isBumped = false
-                        }
-                    } label: {
-                        Circle()
-                            .fill(isOn ? color : Color.appFill)
-                            .frame(width: 38, height: 38)
-                            .overlay {
-                                Image(systemName: symbol)
-                                    .font(.system(size: 16))
-                                    .foregroundStyle(isOn ? Color.white : Color.appBody)
-                            }
-                            .scaleEffect(isOn ? 1.1 : 1)
-                            .animation(.easeInOut(duration: 0.22), value: isOn)
-                            .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.36), value: isOn)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(symbol)
-                    .accessibilityAddTraits(isOn ? .isSelected : [])
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 16)
-            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-
-            Button(action: save) {
-                HStack(spacing: 8) {
-                    if isSaving {
-                        ProgressView().tint(.white)
-                    } else {
-                        Image(systemName: "checkmark").font(.system(size: 16, weight: .bold))
-                    }
-                    Text("Simpan").font(.app(17, weight: .semibold))
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(error == nil ? color : Color(light: 0xC7C7CC, dark: 0x48484A), in: Capsule())
-                .animation(.easeInOut(duration: 0.3), value: error == nil)
-            }
-            .buttonStyle(PressScaleStyle())
-            .disabled(isSaving)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
-        }
-        .onChange(of: name) { _, value in
-            saveError = nil
-            if value.count > 24 { name = String(value.prefix(24)) }
-        }
-    }
-
-    private func save() {
-        guard !isSaving else { return }
-        guard CategoryCatalog.validate(name, type: type, excluding: nil, in: categories, hiddenIds: hiddenIds) == nil else {
-            triedSave = true
-            shake()
-            return
-        }
-        isSaving = true
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        Task {
-            do {
-                let category = try await SupabaseRepository.shared.createCategory(
-                    name: trimmed, type: type, icon: icon, color: CategoryCatalog.defaultColor, userId: userId)
-                NotificationCenter.default.post(name: .dataDidChange, object: nil)
-                isSaving = false
-                onCreated(category)
-            } catch {
-                isSaving = false
-                saveError = "Gagal menyimpan, coba lagi"
-                shake()
-            }
-        }
-    }
-
-    private func shake() {
-        Task {
-            for x in [-10, 9, -6, 4, 0] as [CGFloat] {
-                shakeX = x
-                try? await Task.sleep(for: .milliseconds(60))
-            }
-        }
     }
 }
 

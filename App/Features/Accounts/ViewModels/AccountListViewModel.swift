@@ -166,19 +166,8 @@ final class AccountListViewModel: ObservableObject {
         do {
             try await SupabaseRepository.shared.toggleArchiveAccount(id: id, archived: !account.isArchived)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
-                let updated = Account(
-                    id: account.id,
-                    name: account.name,
-                    type: account.type,
-                    icon: account.icon,
-                    isArchived: !account.isArchived,
-                    isDefault: account.isDefault,
-                    openingBalance: account.openingBalance,
-                    currentBalance: account.currentBalance,
-                    creditLimit: account.creditLimit,
-                    dueDate: account.dueDate
-                )
-                accounts[index] = updated
+                // Keep every other field (statement day, colour, network, …) as it was.
+                accounts[index].isArchived.toggle()
             }
             recalculateBalance()
             if let loadedUserId {

@@ -44,10 +44,6 @@ struct AddTransactionView: View {
     @State private var closesAfterAlert = false
     /// Hidden flags and order for the category picker.
     @State private var preferences: [CategoryPreference] = []
-    /// Categories made with "+ Kategori baru" here, shown at the end of the picker.
-    @State private var createdCategories: [Category] = []
-    @State private var isQuickCreating = false
-    @State private var popId: String?
     @State private var didPickCategory = false
 
     enum PickerKind: String, Identifiable {
@@ -80,16 +76,11 @@ struct AddTransactionView: View {
     private var planMonths: Int { isCardExpense && editing == nil ? installmentMonths : 0 }
     private static let installmentOptions = [0, 3, 6, 12, 24]
     private var categoryKind: CategoryType { style.type == .income ? .income : .expense }
-    /// Every category incl. hidden ones and ones made here (for the duplicate check).
-    private var allCategories: [Category] {
-        categories + createdCategories.filter { new in !categories.contains { $0.id == new.id } }
-    }
     /// The picker's categories in the user's order, without hidden ones and Penyesuaian Saldo;
     /// a hidden one stays only when the transaction being edited already uses it.
     private var typeCategories: [Category] {
-        let createdIds = Set(createdCategories.map(\.id))
-        let lists = allCategories.filter { $0.type == categoryKind && !CategoryCatalog.isSystem($0) }.arranged(by: preferences)
-        var shown = lists.shown.filter { !createdIds.contains($0.id) } + createdCategories.filter { $0.type == categoryKind }
+        let lists = categories.filter { $0.type == categoryKind && !CategoryCatalog.isSystem($0) }.arranged(by: preferences)
+        var shown = lists.shown
         if let id = editing?.categoryId, let kept = lists.hidden.first(where: { $0.id == id }) {
             shown.append(kept)
         }
@@ -132,10 +123,7 @@ struct AddTransactionView: View {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 4)
         }
-        .sheet(item: $sheet, onDismiss: {
-            isQuickCreating = false
-            popId = nil
-        }) { pickerSheet($0) }
+        .sheet(item: $sheet) { pickerSheet($0) }
     }
 
     // MARK: - Setup and data
@@ -583,28 +571,12 @@ struct AddTransactionView: View {
 
     @ViewBuilder
     private func pickerSheet(_ kind: PickerKind) -> some View {
-        let isNew = kind == .category && isQuickCreating
-        PickerSheet(title: isNew ? "Kategori baru" : sheetTitle(kind), actionTitle: isNew ? "Batal" : "Selesai", onDone: {
-            if isNew {
-                withAnimation(.settle(0.3)) { isQuickCreating = false }
-            } else {
-                sheet = nil
-            }
-        }) {
+        PickerSheet(title: sheetTitle(kind), onDone: { sheet = nil }) {
             switch kind {
             case .category:
-                if isNew {
-                    QuickCategoryForm(type: categoryKind, color: style.color, categories: allCategories,
-                                      hiddenIds: Set(preferences.filter(\.isHidden).map(\.categoryId)),
-                                      userId: userId, onCreated: created)
-                        .transition(.opacity.combined(with: .move(edge: .trailing)))
-                } else {
-                    CategoryPickerGrid(categories: typeCategories, selectedId: category?.id, color: style.color, popId: popId,
-                                       onNew: { withAnimation(.settle(0.3)) { isQuickCreating = true } }) { cat in
-                        didPickCategory = true
-                        pick(.category) { category = cat }
-                    }
-                    .transition(.opacity)
+                CategoryPickerGrid(categories: typeCategories, selectedId: category?.id, color: style.color) { cat in
+                    didPickCategory = true
+                    pick(.category) { category = cat }
                 }
             case .account, .target:
                 WalletPickerGrid(accounts: kind == .target ? targetAccounts : activeAccounts,
@@ -618,21 +590,6 @@ struct AddTransactionView: View {
             case .installment:
                 installmentChips
             }
-        }
-    }
-
-    /// A category made from the picker: back to the grid where its tile pops in selected,
-    /// then the sheet closes and the Kategori row flashes.
-    private func created(_ cat: Category) {
-        createdCategories.append(cat)
-        category = cat
-        didPickCategory = true
-        popId = cat.id
-        withAnimation(.settle(0.3)) { isQuickCreating = false }
-        Task {
-            try? await Task.sleep(for: .seconds(1))
-            sheet = nil
-            flash([.category])
         }
     }
 

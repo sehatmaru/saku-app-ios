@@ -9,8 +9,10 @@ struct SignInView: View {
     var body: some View {
         ZStack {
             if showsGuest {
-                GuestOnboardingView {
+                SetupOnboardingView(onBack: {
                     withAnimation(.settle(0.5)) { showsGuest = false }
+                }) { setup in
+                    await authViewModel.signInAsGuest(setup)
                 }
                 .transition(.move(edge: .trailing))
             } else {

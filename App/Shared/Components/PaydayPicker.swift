@@ -7,8 +7,8 @@ import SwiftUI
 //   and calls `onDone(day)`; closing without a new day calls `onDone(nil)`. `.settings`
 //   preselects the saved day and shows a note that the change applies right away — the
 //   caller shows the toast.
-// - `PaydayOnboardingView(onFinish:)`: full screen after sign-up. "Lanjut" saves and calls
-//   `onFinish(day)`, "Lewati" calls `onFinish(nil)`.
+// - `PaydayDayPicker` / `PaydayPreview`: the day grid and what it changes, also used by
+//   step 5 of SetupOnboardingView.
 
 enum PaydayContext {
     /// From the one-time card on Budget.
@@ -235,97 +235,6 @@ struct PaydaySheet: View {
                 didFinish = true
                 dismiss()
                 onDone(day)
-            } else {
-                isSaving = false
-                errorMessage = "Gagal menyimpan tanggal gajian. Coba lagi."
-            }
-        }
-    }
-}
-
-// MARK: - Onboarding
-
-struct PaydayOnboardingView: View {
-    /// The saved day, or nil after "Lewati".
-    let onFinish: (Int?) -> Void
-
-    @EnvironmentObject private var authViewModel: AuthViewModel
-    @State private var selection: Int?
-    @State private var isSaving = false
-    @State private var errorMessage: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Spacer()
-                Button("Lewati") { onFinish(nil) }
-                    .font(.app(17))
-                    .foregroundStyle(Color.appTextSecondary)
-            }
-            .frame(height: 44)
-            .padding(.horizontal, 24)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Kapan kamu gajian?")
-                    .font(.app(28, weight: .bold))
-                    .tracking(-0.6)
-                    .foregroundStyle(Color.appText)
-                Text("Kami pakai tanggal ini supaya budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1.")
-                    .font(.app(15))
-                    .lineSpacing(3)
-                    .foregroundStyle(Color.appTextSecondary)
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 6)
-            .padding(.bottom, 18)
-
-            PaydayDayPicker(selection: $selection)
-
-            PaydayPreview(day: selection ?? 1)
-                .opacity(selection == nil ? 0.5 : 1)
-                .animation(.easeInOut(duration: 0.26), value: selection == nil)
-                .padding(.top, 12)
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.app(13))
-                    .foregroundStyle(Color.appError)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
-            }
-
-            Spacer(minLength: 16)
-
-            Button(action: next) {
-                Group {
-                    if isSaving {
-                        ProgressView().tint(.white)
-                    } else {
-                        Text(selection == nil ? "Pilih tanggal" : "Lanjut")
-                    }
-                }
-                .font(.app(17, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(selection == nil ? Color.appTextTertiary : Color.appPrimary, in: Capsule())
-                .animation(.easeInOut(duration: 0.26), value: selection == nil)
-            }
-            .buttonStyle(PressScaleStyle())
-            .disabled(selection == nil || isSaving)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 20)
-        }
-        .background(Color.appBackground)
-    }
-
-    private func next() {
-        guard let day = selection else { return }
-        isSaving = true
-        errorMessage = nil
-        Task {
-            if await savePayday(day, auth: authViewModel) {
-                onFinish(day)
             } else {
                 isSaving = false
                 errorMessage = "Gagal menyimpan tanggal gajian. Coba lagi."

@@ -158,6 +158,15 @@ struct AccountListView: View {
                 if startsAdding { showAddWallet = true }
             }
             .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
+            // The open wallet was deleted or archived (e.g. from Ubah): close its overlay instead of
+            // leaving a blank page on top of the list.
+            .onChange(of: allCards.map(\.id)) { _, ids in
+                guard let open = selectedID ?? (isOverlayOn ? lastSelectedID : nil), !ids.contains(open) else { return }
+                selectedID = nil
+                lastSelectedID = nil
+                isOverlayOn = false
+                playOdometer(after: 0.3)
+            }
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadAccounts(userId: userId)

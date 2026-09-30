@@ -486,12 +486,12 @@ final class SupabaseRepository: @unchecked Sendable {
             .execute()
     }
 
-    /// Saves the order of a list of categories (the ones passed get 0, 1, 2, …).
-    /// Upserting only these columns leaves `is_hidden` as it was.
-    func setCategoryOrder(_ ids: [String]) async throws {
+    /// Hides several categories at once (guest/Google setup, step 4).
+    func hideCategories(ids: [String]) async throws {
         guard !ids.isEmpty else { return }
-        let rows: [[String: AnyJSON]] = ids.enumerated().map { index, id in
-            ["category_id": .string(id), "sort_order": .integer(index), "updated_at": .string(Date().iso8601Formatted)]
+        let now = Date().iso8601Formatted
+        let rows: [[String: AnyJSON]] = ids.map {
+            ["category_id": .string($0), "is_hidden": .bool(true), "updated_at": .string(now)]
         }
         try await client
             .from("category_preferences")

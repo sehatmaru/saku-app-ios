@@ -19,7 +19,6 @@ struct RootView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @AppStorage("appTheme") private var appTheme: ThemeOption = .system
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
-    @State private var isPaydaySavedToastShown = false
 
     enum ThemeOption: String {
         case light = "Terang"
@@ -35,6 +34,12 @@ struct RootView: View {
         }
     }
 
+    /// First name from the Google/Apple account, unless the profile only has an email.
+    private var prefilledName: String {
+        guard let name = authViewModel.currentUser?.displayName, !name.contains("@") else { return "" }
+        return name.split(separator: " ").first.map(String.init) ?? ""
+    }
+
     var body: some View {
         ZStack {
             if authViewModel.showSplash {
@@ -42,15 +47,9 @@ struct RootView: View {
                     Task { await authViewModel.checkSession() }
                 }
                 .transition(.opacity)
-            } else if authViewModel.isAuthenticated, authViewModel.needsPaydayOnboarding {
-                PaydayOnboardingView { day in
-                    authViewModel.needsPaydayOnboarding = false
-                    if day != nil {
-                        Task {
-                            try? await Task.sleep(for: .milliseconds(900))
-                            isPaydaySavedToastShown = true
-                        }
-                    }
+            } else if authViewModel.isAuthenticated, authViewModel.needsSetup {
+                SetupOnboardingView(initialName: prefilledName) { setup in
+                    await authViewModel.completeSetup(setup)
                 }
                 .transition(.opacity)
             } else if authViewModel.isAuthenticated {
@@ -67,8 +66,7 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.4), value: authViewModel.isAuthenticated)
         .animation(.easeInOut(duration: 0.5), value: authViewModel.showSplash)
         .animation(.easeInOut(duration: 0.4), value: hasSeenOnboarding)
-        .animation(.easeInOut(duration: 0.4), value: authViewModel.needsPaydayOnboarding)
-        .toast("Tanggal gajian disimpan", isShown: $isPaydaySavedToastShown)
+        .animation(.easeInOut(duration: 0.4), value: authViewModel.needsSetup)
         .preferredColorScheme(appTheme.colorScheme)
     }
 }

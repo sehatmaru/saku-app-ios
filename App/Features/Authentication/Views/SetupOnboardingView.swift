@@ -1,13 +1,26 @@
 import SwiftUI
 
-/// Guest setup in three steps: name, wallets, rough starting balances.
-struct GuestOnboardingView: View {
-    let onBack: () -> Void
+/// Setup for every new user, in five steps: name, wallets, rough starting balances,
+/// categories, payday. Guests run it before their account exists (`onBack` returns to
+/// sign-in); Google/Apple users run it right after signing up, with the name prefilled.
+struct SetupOnboardingView: View {
+    private static let stepCount = 5
+
+    var initialName = ""
+    /// Nil after sign-in: there's nothing to go back to.
+    var onBack: (() -> Void)?
+    /// Applies the setup; the view shows `authViewModel.errorMessage` if it fails.
+    let onFinish: (OnboardingSetup) async -> Void
 
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var step = 1
     @State private var isForward = true
     @State private var name = ""
+    /// Categories left selected; the built-in ones start all on.
+    @State private var selectedCategories = Set(OnboardingCategory.all.map(\.key))
+    @State private var payday: Int?
+    /// Tiles rise in one after another when step 4 opens.
+    @State private var categoriesEntered = false
     /// Picked wallet ids, oldest first; the last three sit on top of the pocket.
     @State private var picked: [String] = []
     @State private var amounts: [String: Double] = [:]
@@ -18,6 +31,25 @@ struct GuestOnboardingView: View {
     private var pickedWallets: [GuestWallet] { picked.compactMap { id in GuestWallet.all.first { $0.id == id } } }
     private var total: Double { picked.reduce(0) { $0 + (amounts[$1] ?? 0) } }
 
+    private var setup: OnboardingSetup {
+        OnboardingSetup(
+            name: trimmedName,
+            wallets: pickedWallets.map { .init(name: $0.name, type: $0.type, icon: $0.iconId, balance: amounts[$0.id] ?? 0) },
+            hiddenCategoryKeys: Set(OnboardingCategory.all.map(\.key)).subtracting(selectedCategories),
+            paydayDay: payday
+        )
+    }
+
+    private var selectedExpenseCount: Int { OnboardingCategory.expense.filter { selectedCategories.contains($0.key) }.count }
+    private var selectedIncomeCount: Int { OnboardingCategory.income.filter { selectedCategories.contains($0.key) }.count }
+    /// Recording needs at least one category of each kind to pick from.
+    private var categoriesValid: Bool { selectedExpenseCount > 0 && selectedIncomeCount > 0 }
+    private var categoryCTA: String {
+        if selectedExpenseCount == 0 { return "Pilih minimal 1 pengeluaran" }
+        if selectedIncomeCount == 0 { return "Pilih minimal 1 pemasukan" }
+        return "Lanjut · \(selectedExpenseCount + selectedIncomeCount) dipilih"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             topBar
@@ -26,7 +58,9 @@ struct GuestOnboardingView: View {
                 switch step {
                 case 1: nameStep
                 case 2: walletStep
-                default: balanceStep
+                case 3: balanceStep
+                case 4: categoryStep
+                default: paydayStep
                 }
             }
             .id(step)
@@ -40,7 +74,10 @@ struct GuestOnboardingView: View {
             cta
         }
         .background(Color.appBackground)
-        .onAppear { authViewModel.errorMessage = nil }
+        .onAppear {
+            authViewModel.errorMessage = nil
+            if name.isEmpty { name = initialName }
+        }
     }
 
     private func move(to newStep: Int) {
@@ -54,19 +91,21 @@ struct GuestOnboardingView: View {
     private var topBar: some View {
         HStack(spacing: 16) {
             Button {
-                if step == 1 { onBack() } else { move(to: step - 1) }
+                if step > 1 { move(to: step - 1) } else { onBack?() }
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 22))
                     .foregroundStyle(Color.appPrimary)
                     .frame(width: 24, height: 44)
             }
+            .opacity(step == 1 && onBack == nil ? 0 : 1)
+            .disabled(step == 1 && onBack == nil)
             .accessibilityLabel("Kembali")
 
-            SegmentTrack(count: 3, filled: step, gap: 4, duration: 0.3)
+            SegmentTrack(count: Self.stepCount, filled: step, gap: 4, duration: 0.3)
                 .frame(height: 6)
 
-            Text("\(step)/3")
+            Text("\(step)/\(Self.stepCount)")
                 .font(.app(13))
                 .foregroundStyle(Color.appTextSecondary)
                 .monospacedDigit()
@@ -85,6 +124,10 @@ struct GuestOnboardingView: View {
             case 2:
                 PrimaryButton(title: picked.isEmpty ? "Pilih minimal 1" : "Lanjut · \(picked.count) dipilih",
                               isEnabled: !picked.isEmpty) { move(to: 3) }
+            case 3:
+                PrimaryButton(title: "Lanjut") { move(to: 4) }
+            case 4:
+                PrimaryButton(title: categoryCTA, isEnabled: categoriesValid) { move(to: 5) }
             default:
                 VStack(spacing: 10) {
                     if let error = authViewModel.errorMessage {
@@ -94,12 +137,7 @@ struct GuestOnboardingView: View {
                             .multilineTextAlignment(.center)
                     }
                     PrimaryButton(title: "Mulai pakai SakuQ", isLoading: authViewModel.isLoading) {
-                        Task {
-                            await authViewModel.signInAsGuest(
-                                name: trimmedName,
-                                wallets: pickedWallets.map { ($0.name, $0.type, $0.iconId, amounts[$0.id] ?? 0) }
-                            )
-                        }
+                        Task { await onFinish(setup) }
                     }
                 }
             }
@@ -156,21 +194,23 @@ struct GuestOnboardingView: View {
                 .padding(.top, 40)
                 .padding(.horizontal, 24)
 
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "iphone")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.appTextSecondary)
-                Text("Mode tamu terikat ke iPhone ini. Kalau keluar atau aplikasi dihapus, datanya tidak bisa dibuka lagi.")
-                    .font(.app(14))
-                    .lineSpacing(3)
-                    .foregroundStyle(Color.appBody)
-                    .fixedSize(horizontal: false, vertical: true)
+            if onBack != nil {
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: "iphone")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Text("Mode tamu terikat ke iPhone ini. Kalau keluar atau aplikasi dihapus, datanya tidak bisa dibuka lagi.")
+                        .font(.app(14))
+                        .lineSpacing(3)
+                        .foregroundStyle(Color.appBody)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+                .padding(.top, 32)
+                .padding(.horizontal, 24)
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-            .padding(.top, 32)
-            .padding(.horizontal, 24)
         }
         .padding(.top, 40)
         .onAppear { isNameFocused = true }
@@ -439,6 +479,196 @@ struct GuestOnboardingView: View {
         .onTapGesture { focusedCard = isOpen ? nil : w.id }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(w.name), Rp\(amount.formattedAsDigits())")
+    }
+}
+
+// MARK: - 4 · Categories, 5 · Payday
+
+extension SetupOnboardingView {
+    /// Same idea as picking wallets: a pocket the first picks fan out of, then tiles to toggle.
+    /// Everything starts selected; unselect what you won't use.
+    fileprivate var categoryStep: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                heading("Kategori apa yang kamu pakai?", nil, size: 30)
+                    .padding(.top, 20)
+
+                categoryPocket
+                    .padding(.top, 22)
+
+                Text("\(selectedCategories.count) kategori dipilih")
+                    .font(.app(14))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .contentTransition(.numericText())
+                    .animation(.easeInOut(duration: 0.2), value: selectedCategories.count)
+                    .padding(.top, 12)
+                Text("Lepas yang tidak perlu. Bisa diubah lagi di Profil › Kategori.")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextTertiary)
+                    .padding(.top, 2)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    categoryGroup("Pengeluaran", OnboardingCategory.expense, count: selectedExpenseCount, offset: 0)
+                    categoryGroup("Pemasukan", OnboardingCategory.income, count: selectedIncomeCount,
+                                  offset: OnboardingCategory.expense.count)
+                }
+                .padding(.horizontal, 24)
+            }
+            .padding(.bottom, 28)
+        }
+        .scrollIndicators(.hidden)
+        .onAppear { categoriesEntered = true }
+        .onDisappear { categoriesEntered = false }
+    }
+
+    /// The first three selected categories rise out of the pocket; unselecting one drops it in
+    /// and the next takes its place.
+    private var categoryPocket: some View {
+        let top3 = OnboardingCategory.all.filter { selectedCategories.contains($0.key) }.prefix(3).map(\.key)
+        let slots: [(width: CGFloat, top: CGFloat, angle: Double, x: CGFloat)] = [(209, 60, 0, 0), (189, 30, 4, 9), (168, 0, -7, -12)]
+        return ZStack(alignment: .topLeading) {
+            ForEach(OnboardingCategory.all) { c in
+                let rank = top3.firstIndex(of: c.key)
+                let slot = rank.map { slots[$0] } ?? (168, 110, 0, 0)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(c.color)
+                    .overlay(alignment: .topLeading) {
+                        Image(systemName: c.icon)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(10)
+                    }
+                    .overlay(alignment: .topTrailing) {
+                        Text(c.name.uppercased())
+                            .font(.app(10, weight: .heavy))
+                            .tracking(0.5)
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .padding(10)
+                            .padding(.leading, 30)
+                    }
+                    .frame(width: slot.width, height: 115)
+                    .shadow(color: .black.opacity(0.16), radius: 5, y: -3)
+                    .opacity(rank == nil ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.3), value: rank)
+                    .rotationEffect(.degrees(slot.angle))
+                    .offset(x: (230 - slot.width) / 2 + slot.x, y: slot.top)
+                    .zIndex(Double(rank.map { 3 - $0 } ?? 0))
+                    .animation(.settle(0.62), value: rank)
+            }
+
+            PocketShape(curve: 97 / 131)
+                .fill(Color.appBrand)
+                .overlay(alignment: .top) {
+                    DashedLine()
+                        .stroke(.white.opacity(0.55), style: StrokeStyle(lineWidth: 2.5, dash: [6, 4]))
+                        .frame(height: 2.5)
+                        .padding(.horizontal, 26)
+                        .padding(.top, 18)
+                }
+                .frame(width: 230, height: 131)
+                .offset(y: 99)
+                .zIndex(5)
+        }
+        .frame(width: 230, height: 230, alignment: .topLeading)
+        .accessibilityHidden(true)
+    }
+
+    private func categoryGroup(_ title: String, _ items: [OnboardingCategory], count: Int, offset: Int) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(title)
+                    .font(.app(13))
+                    .tracking(0.2)
+                    .foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                Text("\(count) dari \(items.count)")
+                    .font(.app(13))
+                    .foregroundStyle(count == 0 ? Color.appError : Color.appTextSecondary)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .animation(.easeInOut(duration: 0.2), value: count)
+            }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    categoryTile(item)
+                        .opacity(categoriesEntered ? 1 : 0)
+                        .offset(y: categoriesEntered ? 0 : 16)
+                        .animation(.settle(0.5).delay(Double(offset + index) * 0.03), value: categoriesEntered)
+                }
+            }
+        }
+        .padding(.top, 22)
+    }
+
+    /// Wallet-tile style: lifts and fills with its colour when on, with a check that springs in.
+    private func categoryTile(_ c: OnboardingCategory) -> some View {
+        let on = selectedCategories.contains(c.key)
+        return Button {
+            if on { selectedCategories.remove(c.key) } else { selectedCategories.insert(c.key) }
+            UISelectionFeedbackGenerator().selectionChanged()
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                Image(systemName: c.icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(on ? Color.white.opacity(0.9) : c.color)
+                    .frame(height: 20)
+                Spacer(minLength: 0)
+                Text(c.name)
+                    .font(.app(13, weight: .semibold))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .multilineTextAlignment(.leading)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 86)
+            .foregroundStyle(on ? Color.white : Color.appText)
+            .background(on ? c.color : Color.appFill, in: RoundedRectangle(cornerRadius: 14))
+            .overlay(alignment: .topTrailing) {
+                Circle()
+                    .fill(.white)
+                    .frame(width: 20, height: 20)
+                    .overlay {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(c.color)
+                    }
+                    .padding(10)
+                    .opacity(on ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.2), value: on)
+                    .scaleEffect(on ? 1 : 0.3)
+                    .animation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.32), value: on)
+            }
+            .shadow(color: on ? c.color.opacity(0.32) : .clear, radius: 9, y: 8)
+            .animation(.easeInOut(duration: 0.26), value: on)
+            .offset(y: on ? -2 : 0)
+            .animation(.timingCurve(0.3, 1.3, 0.5, 1, duration: 0.32), value: on)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// Optional: skipping leaves the payday unset, and Budget asks again later.
+    fileprivate var paydayStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                heading("Kapan kamu gajian?",
+                        "Budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1. Boleh dilewati, bisa diatur nanti di Profil.",
+                        size: 30)
+                    .padding(.top, 20)
+                    .padding(.bottom, 18)
+
+                PaydayDayPicker(selection: $payday)
+
+                PaydayPreview(day: payday ?? 1)
+                    .opacity(payday == nil ? 0.5 : 1)
+                    .animation(.easeInOut(duration: 0.26), value: payday == nil)
+                    .padding(.top, 12)
+            }
+            .padding(.bottom, 28)
+        }
+        .scrollIndicators(.hidden)
     }
 }
 

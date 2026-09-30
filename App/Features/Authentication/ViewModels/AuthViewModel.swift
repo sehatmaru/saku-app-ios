@@ -23,8 +23,8 @@ final class AuthViewModel: ObservableObject {
     @Published var isAppleLoading = false
     @Published var errorMessage: String?
     @Published var showSplash = true
-    /// Just signed up and no payday yet: RootView shows PaydayOnboardingView once.
-    @Published var needsPaydayOnboarding = false
+    /// Just signed up with Google/Apple and nothing set up yet: RootView shows SetupOnboardingView.
+    @Published var needsSetup = false
 
     private var authListener: Any?
 
@@ -62,7 +62,8 @@ final class AuthViewModel: ObservableObject {
     }
 
     /// `createdAt` of the auth user when this is a fresh sign-in (not a restored session).
-    private func fetchProfileAndSetUser(authUserId: UUID, email: String, displayName: String?, createdAt: Date? = nil) async throws {
+    /// `offersSetup: false` when setup was just done (guests do it before signing in).
+    private func fetchProfileAndSetUser(authUserId: UUID, email: String, displayName: String?, createdAt: Date? = nil, offersSetup: Bool = true) async throws {
         var profile: UserProfile
         if let existing = try? await SupabaseSDK.fetchProfile(authUserId: authUserId) {
             if existing.displayName == nil, let displayName {
@@ -79,9 +80,14 @@ final class AuthViewModel: ObservableObject {
             displayName: profile.displayName ?? displayName,
             defaultCurrencyCode: profile.defaultCurrencyCode
         )
-        // Accounts made in the last 10 minutes count as a sign-up; existing users never see it.
+        // Accounts made in the last 10 minutes count as a sign-up; existing users never see setup.
         let isNewAccount = createdAt.map { Date().timeIntervalSince($0) < 600 } ?? false
-        needsPaydayOnboarding = isNewAccount && profile.paydayDay == nil
+        if offersSetup, isNewAccount {
+            let accounts = try? await SupabaseRepository.shared.fetchAccounts(userId: profile.id.uuidString)
+            needsSetup = accounts?.isEmpty ?? false
+        } else {
+            needsSetup = false
+        }
         withAnimation(.easeInOut(duration: 0.4)) {
             isAuthenticated = true
         }
@@ -152,9 +158,9 @@ final class AuthViewModel: ObservableObject {
 
     // MARK: - Guest
 
-    /// Anonymous Supabase session plus the wallets picked during guest setup.
+    /// Anonymous Supabase session plus everything picked during guest setup.
     /// Needs "Allow anonymous sign-ins" enabled on the Supabase project.
-    func signInAsGuest(name: String, wallets: [(name: String, type: Account.AccountType, icon: String, balance: Double)]) async {
+    func signInAsGuest(_ setup: OnboardingSetup) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -165,28 +171,58 @@ final class AuthViewModel: ObservableObject {
             // The on_auth_user_created trigger already inserts the profile; just name it.
             let profile: UserProfile
             if let created = try? await SupabaseSDK.fetchProfile(authUserId: session.user.id) {
-                try await SupabaseSDK.updateProfile(id: created.id, displayName: name)
+                try await SupabaseSDK.updateProfile(id: created.id, displayName: setup.name)
                 profile = created
             } else {
-                profile = try await SupabaseSDK.upsertProfile(authUserId: session.user.id, displayName: name)
+                profile = try await SupabaseSDK.upsertProfile(authUserId: session.user.id, displayName: setup.name)
             }
-            // A retry after a partial failure must not duplicate wallets.
-            guard try await SupabaseRepository.shared.fetchAccounts(userId: profile.id.uuidString).isEmpty else {
-                try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: name, createdAt: session.user.createdAt)
-                return
-            }
-            // Accounts first, so the dashboard opens with them already there.
-            for (i, w) in wallets.enumerated() {
-                _ = try await SupabaseRepository.shared.createAccount(
-                    name: w.name, type: w.type, openingBalance: w.balance, icon: w.icon,
-                    userId: profile.id.uuidString, isDefault: i == 0
-                )
-            }
-            try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: name, createdAt: session.user.createdAt)
+            try await applySetup(setup, profileId: profile.id)
+            try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: setup.name,
+                                             createdAt: session.user.createdAt, offersSetup: false)
         } catch is CancellationError {
             return
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Google/Apple users set up right after signing up: same steps, applied to the account they have.
+    func completeSetup(_ setup: OnboardingSetup) async {
+        guard let profileId = currentUser.flatMap({ UUID(uuidString: $0.id) }) else { return }
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
+            try await SupabaseSDK.updateProfile(id: profileId, displayName: setup.name)
+            try await applySetup(setup, profileId: profileId)
+            currentUser?.displayName = setup.name
+            withAnimation(.easeInOut(duration: 0.4)) { needsSetup = false }
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Wallets first (the dashboard opens with them there), then the best-effort extras:
+    /// a failed category or payday write is not worth blocking sign-up, both can be set in Profil.
+    private func applySetup(_ setup: OnboardingSetup, profileId: UUID) async throws {
+        let repo = SupabaseRepository.shared
+        // A retry after a partial failure must not duplicate wallets.
+        if try await repo.fetchAccounts(userId: profileId.uuidString).isEmpty {
+            for (i, w) in setup.wallets.enumerated() {
+                _ = try await repo.createAccount(
+                    name: w.name, type: w.type, openingBalance: w.balance, icon: w.icon,
+                    userId: profileId.uuidString, isDefault: i == 0
+                )
+            }
+        }
+        if !setup.hiddenCategoryKeys.isEmpty, let all = try? await repo.fetchCategories() {
+            let ids = all.filter { $0.systemKey.map(setup.hiddenCategoryKeys.contains) ?? false }.map(\.id)
+            try? await repo.hideCategories(ids: ids)
+        }
+        if let day = setup.paydayDay {
+            try? await SupabaseSDK.updatePayday(profileId: profileId, day: day)
         }
     }
 

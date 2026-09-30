@@ -1,14 +1,16 @@
 import SwiftUI
 
-/// Kelola kategori: Pengeluaran/Pemasukan lists in the user's order with usage and budget,
-/// Urutkan to drag rows, a collapsible Disembunyikan section, and Kategori baru.
+/// Kelola kategori in the add form's style: a coloured panel with a Pengeluaran / Pemasukan
+/// carousel you swipe (the panel turns red or green), the list below, a collapsed
+/// Disembunyikan section, and the floating + for a new category.
 struct CategoriesView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var model = CategoriesModel()
-    @State private var segment = 0
-    @State private var isReordering = false
-    @State private var isHiddenOpen = true
-    @State private var drag: RowDrag?
+    /// 0 = Pengeluaran, 1 = Pemasukan.
+    @State private var typeIndex = 0
+    @State private var dragX: CGFloat = 0
+    @State private var rowsShown = false
+    @State private var isHiddenOpen = false
     @State private var flashId: String?
     @State private var form: FormItem?
     @State private var toastText = ""
@@ -17,81 +19,45 @@ struct CategoriesView: View {
     init() {}
 
     private static let rowHeight: CGFloat = 64
-
-    private struct RowDrag {
-        let from: Int
-        var dy: CGFloat
-        var isReleased = false
-
-        func target(_ count: Int) -> Int {
-            min(max(from + Int((dy / CategoriesView.rowHeight).rounded()), 0), count - 1)
-        }
-    }
+    private static let types = [TransactionStyle.expense, TransactionStyle.income]
 
     private struct FormItem: Identifiable {
         let id: String
         let mode: CategoryFormView.Mode
     }
 
-    private var type: CategoryType { segment == 0 ? .expense : .income }
+    private var style: TransactionStyle { Self.types[typeIndex] }
+    private var type: CategoryType { typeIndex == 0 ? .expense : .income }
     private var userId: String { authViewModel.currentUser?.id ?? "" }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Kategori")
-                    .font(.app(34, weight: .bold))
-                    .tracking(0.2)
-                    .foregroundStyle(Color.appText)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 4)
-                SlidingSegment(options: ["Pengeluaran", "Pemasukan"], selection: $segment)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
-                    .padding(.bottom, 8)
-                Text("Seret baris untuk mengubah urutan di pilihan kategori")
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .frame(height: 18)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 4)
-                    .opacity(isReordering ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.2), value: isReordering)
-
-                if model.isLoading {
-                    skeleton
-                } else if let error = model.errorMessage, model.categories.isEmpty {
-                    VStack(spacing: 20) {
-                        EmptyMessage(icon: "wifi.slash", title: "Gagal memuat kategori", message: error)
-                        EmptyStateButton(title: "Coba lagi", icon: "arrow.clockwise") { Task { await model.load(userId: userId) } }
+        VStack(spacing: 0) {
+            panel
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    if model.isLoading {
+                        skeleton
+                    } else if let error = model.errorMessage, model.categories.isEmpty {
+                        VStack(spacing: 20) {
+                            EmptyMessage(icon: "wifi.slash", title: "Gagal memuat kategori", message: error)
+                            EmptyStateButton(title: "Coba lagi", icon: "arrow.clockwise") { Task { await load() } }
+                        }
+                        .padding(.horizontal, 40)
+                        .padding(.top, 60)
+                    } else {
+                        content
                     }
-                    .padding(.horizontal, 40)
-                    .padding(.top, 80)
-                } else {
-                    content
                 }
             }
+            .scrollIndicators(.hidden)
         }
-        .scrollDisabled(drag != nil)
-        .scrollIndicators(.hidden)
+        // Swiping anywhere on the page switches type, not just on the title.
+        .simultaneousGesture(typeSwipe)
         .background(Color.appBackground)
-        .navigationTitle("Kategori")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
-        .toolbar {
-            // The title sits large in the page, as in the design.
-            ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(isReordering ? "Selesai" : "Urutkan") {
-                    withAnimation(.easeInOut(duration: 0.2)) { isReordering.toggle() }
-                }
-                .font(.app(17, weight: isReordering ? .semibold : .regular))
-                .foregroundStyle(Color.appPrimary)
-                .opacity(model.isLoading ? 0.35 : 1)
-                .disabled(model.isLoading)
-            }
-        }
-        .onChange(of: segment) { _, _ in drag = nil }
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toast(toastText, isShown: $showsToast)
         .fullScreenCover(item: $form) { item in
             let id: String? = if case .edit(let c) = item.mode { c.id } else { nil }
@@ -106,7 +72,134 @@ struct CategoriesView: View {
                 onClose: handle
             )
         }
-        .task { await model.load(userId: userId) }
+        .detailPage(addLabel: "Tambah kategori") {
+            form = FormItem(id: "new-\(type.rawValue)", mode: .new(type))
+        }
+        .task { await load() }
+    }
+
+    private func load() async {
+        await model.load(userId: userId)
+        replayRows()
+    }
+
+    // MARK: - Panel
+
+    private var panel: some View {
+        let lists = model.arranged(type)
+        let used = lists.shown.filter { (model.counts[$0.id] ?? 0) > 0 }.count
+        let withBudget = lists.shown.filter { (model.budgets[$0.id]?.amount ?? 0) > 0 }.count
+        return VStack(spacing: 0) {
+            typeCarousel
+                .padding(.top, 4)
+            typeDots
+                .padding(.top, 6)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(model.isLoading ? 0 : lists.shown.count)")
+                    .font(.app(56, weight: .light))
+                    .tracking(-1.5)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                Text("kategori")
+                    .font(.app(20))
+                    .opacity(0.75)
+            }
+            .padding(.top, 14)
+            .animation(.settle(0.5), value: lists.shown.count)
+            Text(model.isLoading ? " " : type == .expense
+                 ? "\(used) dipakai · \(withBudget) punya budget"
+                 : "\(used) dipakai")
+                .font(.app(14))
+                .opacity(0.8)
+                .monospacedDigit()
+                .padding(.top, 2)
+                .animation(.easeInOut(duration: 0.2), value: used)
+        }
+        .padding(.bottom, 26)
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        .background {
+            UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32)
+                .fill(style.color)
+                .animation(.easeInOut(duration: 0.45), value: typeIndex)
+                .ignoresSafeArea(edges: .top)
+        }
+        .contentShape(Rectangle())
+    }
+
+    private var typeCarousel: some View {
+        GeometryReader { geo in
+            let itemWidth: CGFloat = 180
+            HStack(spacing: 0) {
+                ForEach(Self.types.indices, id: \.self) { i in
+                    let isCurrent = i == typeIndex
+                    HStack(spacing: 8) {
+                        Image(systemName: Self.types[i].icon).font(.system(size: 17, weight: .bold))
+                        Text(Self.types[i].label)
+                    }
+                    .font(.app(22, weight: .bold))
+                    .frame(width: itemWidth, height: 44)
+                    .opacity(isCurrent ? 1 : 0.45)
+                    .scaleEffect(isCurrent ? 1 : 0.8)
+                    .animation(.settle(0.38), value: typeIndex)
+                    .contentShape(Rectangle())
+                    .onTapGesture { setType(i) }
+                    .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
+                }
+            }
+            .offset(x: (geo.size.width - itemWidth) / 2 - CGFloat(typeIndex) * itemWidth + dragX)
+        }
+        .frame(height: 44)
+        .clipped()
+    }
+
+    private var typeDots: some View {
+        HStack(spacing: 6) {
+            ForEach(Self.types.indices, id: \.self) { i in
+                Capsule()
+                    .fill(.white)
+                    .frame(width: i == typeIndex ? 18 : 6, height: 6)
+                    .opacity(i == typeIndex ? 1 : 0.5)
+            }
+        }
+        .animation(.settle(0.3), value: typeIndex)
+        .accessibilityHidden(true)
+    }
+
+    /// Horizontal drags only; a mostly vertical drag is the list scrolling.
+    private var typeSwipe: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { value in
+                guard abs(value.translation.width) > abs(value.translation.height) * 1.4 else { return }
+                var dx = value.translation.width
+                if (typeIndex == 0 && dx > 0) || (typeIndex == Self.types.count - 1 && dx < 0) { dx *= 0.3 }
+                dragX = dx
+            }
+            .onEnded { value in
+                let dx = dragX
+                let isHorizontal = abs(value.translation.width) > abs(value.translation.height) * 1.4
+                let next = !isHorizontal ? typeIndex : dx < -40 ? typeIndex + 1 : dx > 40 ? typeIndex - 1 : typeIndex
+                withAnimation(.settle(0.46)) { dragX = 0 }
+                setType(min(max(next, 0), Self.types.count - 1))
+            }
+    }
+
+    private func setType(_ index: Int) {
+        guard index != typeIndex else { return }
+        withAnimation(.settle(0.46)) { typeIndex = index }
+        UISelectionFeedbackGenerator().selectionChanged()
+        replayRows()
+    }
+
+    /// Rows rise in one after another, like the add form's rows.
+    private func replayRows() {
+        var reset = SwiftUI.Transaction()
+        reset.disablesAnimations = true
+        withTransaction(reset) { rowsShown = false }
+        Task {
+            try? await Task.sleep(for: .milliseconds(60))
+            rowsShown = true
+        }
     }
 
     // MARK: - Content
@@ -126,7 +219,7 @@ struct CategoriesView: View {
                 .padding(.horizontal, 24)
             }
         }
-        .padding(.top, 4)
+        .padding(.top, 8)
         .transition(.opacity)
     }
 
@@ -135,9 +228,13 @@ struct CategoriesView: View {
         let lists = model.arranged(type)
         VStack(spacing: 0) {
             ForEach(Array(lists.shown.enumerated()), id: \.element.id) { index, category in
-                row(category, index: index, count: lists.shown.count)
+                row(category)
+                    .opacity(rowsShown ? 1 : 0)
+                    .offset(y: rowsShown ? 0 : 14)
+                    .animation(.settle(0.46).delay(Double(min(index, 10)) * 0.04), value: rowsShown)
             }
         }
+        .padding(.top, 8)
         if lists.shown.isEmpty {
             Text(lists.hidden.isEmpty ? "Belum ada kategori" : "Semua kategori disembunyikan")
                 .font(.app(15))
@@ -147,28 +244,6 @@ struct CategoriesView: View {
                 .padding(.top, 24)
                 .padding(.bottom, 8)
         }
-        Button { form = FormItem(id: "new-\(type.rawValue)", mode: .new(type)) } label: {
-            HStack(spacing: 14) {
-                Circle()
-                    .strokeBorder(Color.appBorder, lineWidth: 1.5)
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        Image(systemName: "plus")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(Color.appPrimary)
-                    }
-                Text("Kategori baru")
-                    .font(.app(16, weight: .medium))
-                    .foregroundStyle(Color.appPrimary)
-                Spacer()
-            }
-            .frame(height: Self.rowHeight)
-            .padding(.horizontal, 24)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(RowPressStyle())
-        .opacity(isReordering ? 0.3 : 1)
-        .disabled(isReordering)
 
         if !lists.hidden.isEmpty {
             hiddenSection(lists.hidden)
@@ -181,7 +256,8 @@ struct CategoriesView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 18)
         }
-        Color.clear.frame(height: 60)
+        // Room for the floating +.
+        Color.clear.frame(height: 100)
     }
 
     private func iconCircle(_ icon: String?, muted: Bool) -> some View {
@@ -204,36 +280,17 @@ struct CategoriesView: View {
         return parts.joined(separator: " · ")
     }
 
-    private func row(_ category: Category, index: Int, count: Int) -> some View {
-        let isMe = drag?.from == index
-        let offset: CGFloat = {
-            guard let drag else { return 0 }
-            if isMe { return drag.dy }
-            let target = drag.target(count)
-            if drag.from < index && index <= target { return -Self.rowHeight }
-            if target <= index && index < drag.from { return Self.rowHeight }
-            return 0
-        }()
-        return Button {
-            if !isReordering { form = FormItem(id: category.id, mode: .edit(category)) }
+    private func row(_ category: Category) -> some View {
+        Button {
+            form = FormItem(id: category.id, mode: .edit(category))
         } label: {
             HStack(spacing: 14) {
                 iconCircle(category.icon, muted: false)
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 8) {
-                        Text(category.name)
-                            .font(.app(16))
-                            .foregroundStyle(Color.appText)
-                            .lineLimit(1)
-                        if category.isBuiltIn {
-                            Text("Bawaan")
-                                .font(.app(11, weight: .semibold))
-                                .foregroundStyle(Color.appTextSecondary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 5))
-                        }
-                    }
+                    Text(category.name)
+                        .font(.app(16))
+                        .foregroundStyle(Color.appText)
+                        .lineLimit(1)
                     Text(subtitle(category))
                         .font(.app(13))
                         .foregroundStyle(Color.appTextSecondary)
@@ -242,18 +299,10 @@ struct CategoriesView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .rowSeparator()
-                ZStack {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color(light: 0xC7C7CC, dark: 0x48484A))
-                        .opacity(isReordering ? 0 : 1)
-                    Image(systemName: "line.3.horizontal")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Color.appTextTertiary)
-                        .opacity(isReordering ? 1 : 0)
-                }
-                .frame(width: 24, height: 24)
-                .animation(.easeInOut(duration: 0.2), value: isReordering)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color(light: 0xC7C7CC, dark: 0x48484A))
+                    .frame(width: 24, height: 24)
             }
             .frame(height: Self.rowHeight)
             .padding(.leading, 24)
@@ -263,42 +312,6 @@ struct CategoriesView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(RowPressStyle())
-        .highPriorityGesture(dragGesture(index: index, count: count), including: isReordering ? .all : .subviews)
-        .scaleEffect(isMe ? 1.02 : 1)
-        .shadow(color: .black.opacity(isMe ? 0.14 : 0), radius: 12, y: 10)
-        .offset(y: offset)
-        .animation(isMe && drag?.isReleased != true ? nil : .settle(0.22), value: offset)
-        .zIndex(isMe ? 5 : 1)
-    }
-
-    private func dragGesture(index: Int, count: Int) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .global)
-            .onChanged { value in
-                if drag == nil {
-                    drag = RowDrag(from: index, dy: 0)
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                }
-                guard drag?.from == index, drag?.isReleased == false else { return }
-                drag?.dy = min(max(value.translation.height, -CGFloat(index) * Self.rowHeight),
-                               CGFloat(count - 1 - index) * Self.rowHeight)
-            }
-            .onEnded { _ in
-                guard let current = drag, current.from == index, !current.isReleased else { return }
-                let target = current.target(count)
-                drag?.isReleased = true
-                drag?.dy = CGFloat(target - current.from) * Self.rowHeight
-                let type = type
-                Task {
-                    try? await Task.sleep(for: .milliseconds(220))
-                    var instant = SwiftUI.Transaction()
-                    instant.disablesAnimations = true
-                    withTransaction(instant) {
-                        model.move(type, from: current.from, to: target)
-                        drag = nil
-                    }
-                    await model.saveOrder(type)
-                }
-            }
     }
 
     private func hiddenSection(_ hidden: [Category]) -> some View {
@@ -358,8 +371,6 @@ struct CategoriesView: View {
             .clipped()
         }
         .padding(.top, 14)
-        .opacity(isReordering ? 0.3 : 1)
-        .disabled(isReordering)
     }
 
     // MARK: - Actions
@@ -385,17 +396,16 @@ struct CategoriesView: View {
         guard let outcome else { return }
         switch outcome {
         case .saved(let category):
-            segment = category.type == .expense ? 0 : 1
-            isReordering = false
+            setType(category.type == .expense ? 0 : 1)
             Task {
-                await model.load(userId: userId)
+                await load()
                 flash(category.id, for: 1.1)
             }
         case .hidden(let category):
-            segment = category.type == .expense ? 0 : 1
+            setType(category.type == .expense ? 0 : 1)
             isHiddenOpen = true
             Task {
-                await model.load(userId: userId)
+                await load()
                 flash(category.id, for: 1.5)
             }
         }
@@ -495,24 +505,6 @@ final class CategoriesModel: ObservableObject {
         withAnimation(.settle(0.3)) { updatePreference(id) { $0.isHidden = hidden } }
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
         return true
-    }
-
-    func move(_ type: CategoryType, from: Int, to: Int) {
-        var shown = arranged(type).shown
-        guard shown.indices.contains(from), shown.indices.contains(to) else { return }
-        shown.insert(shown.remove(at: from), at: to)
-        for (i, category) in shown.enumerated() {
-            updatePreference(category.id) { $0.sortOrder = i }
-        }
-    }
-
-    func saveOrder(_ type: CategoryType) async {
-        do {
-            try await repo.setCategoryOrder(arranged(type).shown.map(\.id))
-            NotificationCenter.default.post(name: .dataDidChange, object: nil)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
     }
 
     private func updatePreference(_ id: String, _ change: (inout CategoryPreference) -> Void) {

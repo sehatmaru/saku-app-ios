@@ -72,11 +72,9 @@ struct EditWalletView: View {
     private enum Field { case balance, limit }
 
     private enum Sheet: Identifiable {
-        case provider, network, due, statement, amount(Field), archive, delete
+        case provider, network, due, statement, amount(Field), archive
         var id: String { "\(self)" }
     }
-
-    private enum End { case archived, deleted }
 
     @State private var orig: Draft
     @State private var cur: Draft
@@ -93,9 +91,11 @@ struct EditWalletView: View {
     @State private var buf = 0
     @State private var fresh = true
     @State private var bump = false
-    // End screen after archive/delete
-    @State private var end: End = .archived
+    // End screen after archive
     @State private var endShown = false
+    // Delete: ask, then a few seconds to undo before it really happens (like a transaction).
+    @State private var isConfirmingDelete = false
+    @State private var pendingDelete: Task<Void, Never>?
     @State private var failMessage: String?
     @FocusState private var nameFocused: Bool
 
@@ -106,6 +106,7 @@ struct EditWalletView: View {
     private var trimmedName: String { cur.name.trimmingCharacters(in: .whitespaces) }
     private var isDirty: Bool { cur != orig }
     private var canSave: Bool { isDirty && !trimmedName.isEmpty && !isSaving }
+    private var isDeleting: Bool { pendingDelete != nil }
 
     /// The account as it would look saved, so the card pieces from the Dompet page resolve colour and logos.
     private var preview: Account {
@@ -172,10 +173,19 @@ struct EditWalletView: View {
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
+        .opacity(isDeleting ? 0.3 : 1)
+        .allowsHitTesting(!isDeleting)
+        .animation(.easeInOut(duration: 0.4), value: isDeleting)
         .background(Color.appBackground.ignoresSafeArea())
         .foregroundStyle(Color.appText)
         .toast(toastText, isShown: $toast)
+        .overlay { deleteDialog }
+        .overlay(alignment: .bottom) { undoToast }
         .overlay { endScreen }
+        .onDisappear {
+            // Leaving during the undo window still deletes.
+            if pendingDelete != nil { finishDelete(dismissAfter: false) }
+        }
         .navigationBarTitleDisplayMode(.inline)
         // ponytail: hiding the back button drops the swipe-back gesture; Batal is the way out.
         .navigationBarBackButtonHidden(true)
@@ -420,7 +430,7 @@ struct EditWalletView: View {
             .buttonStyle(RowHighlightStyle())
             .disabled(isBusy)
 
-            Button { sheet = .delete } label: {
+            Button { nameFocused = false; isConfirmingDelete = true } label: {
                 actionLabel("Hapus dompet", icon: "trash", tint: Color.appError)
             }
             .buttonStyle(RowHighlightStyle(tint: Color.appError.opacity(0.06)))
@@ -529,20 +539,6 @@ struct EditWalletView: View {
             SheetFrame(title: "Arsipkan \(orig.name)?", closeTitle: "Batal", onClose: closeSheet) {
                 confirm(text: "Dompet disembunyikan dari daftar dan total saldo. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja.",
                         button: "Arsipkan", icon: "archivebox", destructive: false) { await archive() }
-            }
-        case .delete:
-            if transactionCount > 0 {
-                SheetFrame(title: "\(orig.name) tidak bisa dihapus", closeTitle: "Batal", onClose: closeSheet) {
-                    confirm(text: "Dompet ini punya \(transactionCount) transaksi, jadi tidak bisa dihapus. "
-                            + (isArchived ? "Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan."
-                               : "Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan."),
-                            button: isArchived ? nil : "Arsipkan saja", icon: "archivebox", destructive: false) { await archive() }
-                }
-            } else {
-                SheetFrame(title: "Hapus \(orig.name)?", closeTitle: "Batal", onClose: closeSheet) {
-                    confirm(text: "Dompet ini akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
-                            button: "Hapus permanen", icon: "trash", destructive: true) { await delete() }
-                }
             }
         }
     }
@@ -749,36 +745,154 @@ struct EditWalletView: View {
         .padding(.bottom, 8)
     }
 
+    // MARK: Delete
+
+    private static let dialogBackground = Color(light: 0xFFFFFF, dark: 0x1C1C1E)
+
+    /// What deleting does, in the same voice as the transaction dialog.
+    private var deleteSubtitle: String {
+        let balance = Double(orig.balance)
+        if isCredit {
+            return balance > 0
+                ? "\(orig.name) dan utang \(Self.rp(orig.balance)) akan dihapus dari daftar dan total."
+                : "\(orig.name) akan dihapus dari daftar dompet."
+        }
+        return balance != 0
+            ? "\(orig.name) dan saldonya (\(Self.rp(orig.balance))) akan keluar dari total saldo."
+            : "\(orig.name) akan dihapus dari daftar dompet."
+    }
+
+    /// Bottom dialog: trash badge, title, what happens, a red Hapus and Batal. A wallet with
+    /// transactions can't be deleted, so it offers Arsipkan saja instead.
+    private var deleteDialog: some View {
+        let blocked = transactionCount > 0
+        return ZStack(alignment: .bottom) {
+            Color.black.opacity(isConfirmingDelete ? 0.3 : 0)
+                .ignoresSafeArea()
+                .onTapGesture { isConfirmingDelete = false }
+                .allowsHitTesting(isConfirmingDelete)
+
+            VStack(spacing: 6) {
+                Circle()
+                    .fill(blocked ? Color.appFill : Color(light: 0xFDECEC, dark: 0x3A1D1F))
+                    .frame(width: 52, height: 52)
+                    .overlay {
+                        Image(systemName: blocked ? "archivebox" : "trash")
+                            .font(.system(size: 22))
+                            .foregroundStyle(blocked ? Color.appText : Color(light: 0xD1343A, dark: 0xFF6B6B))
+                    }
+                Text(blocked ? "Dompet ini tidak bisa dihapus" : "Hapus dompet ini?")
+                    .font(.app(17, weight: .semibold))
+                    .padding(.top, 8)
+                Text(blocked
+                     ? "\(orig.name) punya \(transactionCount) transaksi. "
+                        + (isArchived ? "Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan."
+                           : "Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan.")
+                     : deleteSubtitle)
+                    .font(.app(15))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                VStack(spacing: 8) {
+                    if !blocked {
+                        Button { startDelete() } label: {
+                            Text("Hapus")
+                                .font(.app(16, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color(hex: "D93636"), in: Capsule())
+                        }
+                    } else if !isArchived {
+                        Button {
+                            isConfirmingDelete = false
+                            Task { await archive() }
+                        } label: {
+                            Text("Arsipkan saja")
+                                .font(.app(16, weight: .semibold))
+                                .foregroundStyle(Color.appBackground)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.appText, in: Capsule())
+                        }
+                    }
+                    Button { isConfirmingDelete = false } label: {
+                        Text(blocked && isArchived ? "Tutup" : "Batal")
+                            .font(.app(16, weight: .medium))
+                            .foregroundStyle(Color.appText)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color(light: 0xF2F2F4, dark: 0x2C2C2E), in: Capsule())
+                    }
+                }
+                .buttonStyle(PressScaleStyle())
+                .padding(.top, 14)
+            }
+            .foregroundStyle(Color.appText)
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
+            .background(Self.dialogBackground, in: UnevenRoundedRectangle(topLeadingRadius: 28, bottomLeadingRadius: 38, bottomTrailingRadius: 38, topTrailingRadius: 28))
+            .padding(.horizontal, 8)
+            .offset(y: isConfirmingDelete ? 0 : 420)
+        }
+        .animation(.settle(0.44), value: isConfirmingDelete)
+    }
+
+    /// "Dompet dihapus · Urungkan" for the few seconds before the delete really happens.
+    private var undoToast: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "trash.fill")
+                .font(.system(size: 17))
+                .foregroundStyle(Color(hex: "5CD49A"))
+            Text("Dompet dihapus")
+                .font(.app(15, weight: .medium))
+            Button("Urungkan", action: undoDelete)
+                .font(.app(15, weight: .semibold))
+                .foregroundStyle(Color(hex: "5CD49A"))
+                .padding(.leading, 4)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color(hex: "111111"), in: Capsule())
+        .padding(.bottom, 32)
+        .opacity(isDeleting ? 1 : 0)
+        .offset(y: isDeleting ? 0 : 16)
+        .allowsHitTesting(isDeleting)
+        .animation(.spring(duration: 0.4, bounce: 0.3), value: isDeleting)
+    }
+
     // MARK: End screen
 
     private var endScreen: some View {
-        let deleted = end == .deleted
-        return VStack(spacing: 8) {
+        VStack(spacing: 8) {
             Circle()
-                .fill(deleted ? Color.appError.opacity(0.12) : Color.appFill)
+                .fill(Color.appFill)
                 .frame(width: 72, height: 72)
-                .overlay(Image(systemName: deleted ? "trash" : "archivebox").font(.system(size: 30)))
-                .foregroundStyle(deleted ? Color.appError : Color.appText)
+                .overlay(Image(systemName: "archivebox").font(.system(size: 30)))
+                .foregroundStyle(Color.appText)
                 .scaleEffect(endShown ? 1 : 0.4)
                 .animation(.spring(duration: 0.56, bounce: 0.5).delay(endShown ? 0.12 : 0), value: endShown)
-            Text(orig.name + (deleted ? " dihapus" : " diarsipkan"))
+            Text(orig.name + " diarsipkan")
                 .font(.app(20, weight: .semibold))
                 .tracking(-0.2)
                 .padding(.top, 10)
-            Text(deleted ? "Dompet sudah dihapus." : "Kamu bisa memulihkannya dari Dompet › Diarsipkan.")
+            Text("Kamu bisa memulihkannya dari Dompet › Diarsipkan.")
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
                 .lineSpacing(3)
             Button {
-                if deleted { dismiss() } else { Task { await unarchive(fromEnd: true) } }
+                Task { await unarchive(fromEnd: true) }
             } label: {
                 HStack(spacing: 8) {
                     if isBusy {
                         ProgressView()
                     } else {
-                        Image(systemName: deleted ? "chevron.left" : "arrow.counterclockwise").font(.system(size: 15, weight: .bold))
+                        Image(systemName: "arrow.counterclockwise").font(.system(size: 15, weight: .bold))
                     }
-                    Text(deleted ? "Kembali" : "Urungkan").font(.app(16, weight: .semibold))
+                    Text("Urungkan").font(.app(16, weight: .semibold))
                 }
                 .foregroundStyle(Color.appText)
                 .padding(.horizontal, 24)
@@ -788,13 +902,11 @@ struct EditWalletView: View {
             .buttonStyle(PressScaleStyle())
             .disabled(isBusy)
             .padding(.top, 18)
-            if !deleted {
-                // Not in the design: without it the only way off this screen would be Urungkan.
-                Button("Kembali ke Dompet") { dismiss() }
-                    .font(.app(15))
-                    .foregroundStyle(Color.appPrimary)
-                    .padding(.top, 8)
-            }
+            // Not in the design: without it the only way off this screen would be Urungkan.
+            Button("Kembali ke Dompet") { dismiss() }
+                .font(.app(15))
+                .foregroundStyle(Color.appPrimary)
+                .padding(.top, 8)
         }
         .multilineTextAlignment(.center)
         .padding(.horizontal, 40)
@@ -905,21 +1017,42 @@ struct EditWalletView: View {
         isBusy = false
         guard ok else { failMessage = "Gagal mengarsipkan dompet"; return }
         isArchived = true
-        await showEnd(.archived)
+        await showEnd()
     }
 
-    private func delete() async {
-        isBusy = true
-        let ok = await onDelete()
-        isBusy = false
-        guard ok else { failMessage = "Gagal menghapus dompet"; return }
-        await showEnd(.deleted)
+    /// Hides the wallet's page and offers Urungkan; the real delete runs when the toast ends.
+    private func startDelete() {
+        isConfirmingDelete = false
+        pendingDelete = Task {
+            try? await Task.sleep(for: .seconds(Self.undoSeconds))
+            guard !Task.isCancelled else { return }
+            finishDelete(dismissAfter: true)
+        }
     }
 
-    private func showEnd(_ kind: End) async {
+    private func undoDelete() {
+        pendingDelete?.cancel()
+        pendingDelete = nil
+    }
+
+    private func finishDelete(dismissAfter: Bool) {
+        pendingDelete?.cancel()
+        Task {
+            let ok = await onDelete()
+            pendingDelete = nil
+            if ok {
+                if dismissAfter { dismiss() }
+            } else {
+                failMessage = "Gagal menghapus dompet"
+            }
+        }
+    }
+
+    private static let undoSeconds = 1.0
+
+    private func showEnd() async {
         sheet = nil
         nameFocused = false
-        end = kind
         try? await Task.sleep(for: .seconds(0.28))
         endShown = true
     }

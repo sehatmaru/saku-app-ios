@@ -1,19 +1,23 @@
 import SwiftUI
 
-/// Icons, colours and naming rules shared by Kelola kategori, its form and the quick create
-/// in Tambah transaksi. Icons are SF Symbol names, colours "#RRGGBB", like the seeded ones.
+/// Icons, colours and naming rules shared by Kelola kategori and its form.
+/// Icons are SF Symbol names, colours "#RRGGBB", like the seeded ones.
 enum CategoryCatalog {
-    static let iconGroups: [(name: String, icons: [String])] = [
-        ("Makanan", ["fork.knife", "cup.and.saucer", "takeoutbag.and.cup.and.straw", "wineglass"]),
-        ("Transportasi", ["car", "scooter", "bus", "fuelpump"]),
-        ("Rumah", ["house", "bolt", "drop", "wifi"]),
-        ("Hiburan", ["film", "gamecontroller", "music.note", "airplane"]),
-        ("Kesehatan", ["heart", "pills", "dumbbell", "cross.case"]),
-        ("Pendidikan", ["graduationcap", "book", "backpack", "pencil"]),
-        ("Keuangan", ["briefcase", "storefront", "chart.line.uptrend.xyaxis", "dollarsign.circle"]),
-        ("Lainnya", ["cart", "bag", "hand.raised", "ellipsis"]),
-    ]
-    static var allIcons: [String] { iconGroups.flatMap(\.icons) }
+    /// Every icon on offer in one open pool, no grouping. Names this iOS doesn't know are dropped.
+    static let allIcons: [String] = [
+        "fork.knife", "cup.and.saucer", "takeoutbag.and.cup.and.straw", "wineglass", "mug", "birthday.cake",
+        "carrot", "fish", "leaf", "cart", "basket", "bag", "gift", "tshirt", "scissors", "shippingbox",
+        "car", "bus", "tram", "bicycle", "scooter", "airplane", "ferry", "fuelpump", "parkingsign",
+        "house", "bed.double", "sofa", "lightbulb", "bolt", "drop", "flame", "wifi", "tv", "washer",
+        "key", "hammer", "paintbrush", "phone", "envelope", "printer",
+        "film", "gamecontroller", "music.note", "headphones", "ticket", "camera", "theatermasks",
+        "party.popper", "book", "graduationcap", "pencil", "backpack", "books.vertical",
+        "heart", "pills", "cross.case", "stethoscope", "bandage", "eyeglasses", "dumbbell",
+        "figure.run", "figure.walk", "figure.2.and.child.holdinghands", "pawprint",
+        "briefcase", "banknote", "creditcard", "wallet.bifold", "chart.line.uptrend.xyaxis",
+        "dollarsign.circle", "percent", "storefront", "building.2", "hand.raised", "globe",
+        "sun.max", "moon", "umbrella", "star", "flag", "gearshape", "tag", "ellipsis",
+    ].filter { UIImage(systemName: $0) != nil }
     static let colors = ["#D93636", "#E8772E", "#D9A21B", "#16875A", "#0E8C8C",
                          "#1F6FD1", "#143A73", "#6B4BC8", "#C2417A", "#6E6E73"]
     static let defaultIcon = "cart"
@@ -94,7 +98,6 @@ struct CategoryFormView: View {
     @State private var isEntered = false
     @State private var isDone = false
     @State private var isSaving = false
-    @State private var swipeReset = 0
     @State private var sheet: FormSheet?
     @State private var isHiddenShown = false
     @State private var showsUndoToast = false
@@ -460,38 +463,29 @@ struct CategoryFormView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 6)
                 .padding(.bottom, 4)
-            ForEach(CategoryCatalog.iconGroups, id: \.name) { group in
-                HStack(spacing: 12) {
-                    Text(group.name)
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextTertiary)
-                        .frame(width: 92, alignment: .leading)
-                    HStack(spacing: 10) {
-                        ForEach(group.icons, id: \.self) { symbol in
-                            let isOn = symbol == icon
-                            Button { choose { icon = symbol } } label: {
-                                Circle()
-                                    .fill(isOn ? tint : Color.appFill)
-                                    .frame(width: 46, height: 46)
-                                    .overlay {
-                                        Image(systemName: symbol)
-                                            .font(.system(size: 19))
-                                            .foregroundStyle(isOn ? Color.white : Color.appBody)
-                                    }
-                                    .scaleEffect(isOn ? 1.08 : 1)
-                                    .animation(.easeInOut(duration: 0.22), value: isOn)
-                                    .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.36), value: isOn)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 6), spacing: 10) {
+                ForEach(CategoryCatalog.allIcons, id: \.self) { symbol in
+                    let isOn = symbol == icon
+                    Button { choose { icon = symbol } } label: {
+                        Circle()
+                            .fill(isOn ? tint : Color.appFill)
+                            .frame(width: 46, height: 46)
+                            .overlay {
+                                Image(systemName: symbol)
+                                    .font(.system(size: 19))
+                                    .foregroundStyle(isOn ? Color.white : Color.appBody)
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(symbol)
-                            .accessibilityAddTraits(isOn ? .isSelected : [])
-                        }
+                            .scaleEffect(isOn ? 1.08 : 1)
+                            .animation(.easeInOut(duration: 0.22), value: isOn)
+                            .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.36), value: isOn)
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(symbol)
+                    .accessibilityAddTraits(isOn ? .isSelected : [])
                 }
-                .padding(.vertical, 5)
-                .padding(.leading, 24)
-                .padding(.trailing, 20)
             }
+            .padding(.horizontal, 16)
         }
         .padding(.top, 10)
         .padding(.bottom, 4)
@@ -558,14 +552,27 @@ struct CategoryFormView: View {
     }
 
     private var saveBar: some View {
-        SwipeToConfirm(
-            label: "Geser untuk simpan",
-            color: tint,
-            isEnabled: error == nil && !isSaving,
-            resetToken: swipeReset,
-            onBlocked: blocked,
-            onConfirm: save
-        )
+        // A plain button: tapping it while the form isn't valid shows why (shake + message).
+        let isValid = error == nil && !isSaving
+        return Button {
+            if isValid { save() } else if !isSaving { blocked() }
+        } label: {
+            HStack(spacing: 8) {
+                if isSaving {
+                    ProgressView().tint(.white)
+                } else {
+                    Image(systemName: "checkmark").font(.system(size: 16, weight: .bold))
+                }
+                Text("Simpan").font(.app(17, weight: .semibold))
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(isValid ? tint : Color(light: 0xC7C7CC, dark: 0x48484A), in: Capsule())
+            .animation(.easeInOut(duration: 0.3), value: isValid)
+        }
+        .buttonStyle(PressScaleStyle())
+        .sensoryFeedback(.success, trigger: isDone) { _, done in done }
         .padding(.horizontal, 24)
         .padding(.top, 50)
         .padding(.bottom, 8)
@@ -720,7 +727,6 @@ struct CategoryFormView: View {
                 }
             } catch {
                 isSaving = false
-                swipeReset += 1
                 errorMessage = error.localizedDescription
                 return
             }

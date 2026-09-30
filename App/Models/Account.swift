@@ -5,7 +5,7 @@ struct Account: Identifiable, Codable, Hashable {
     let name: String
     let type: AccountType
     let icon: String?
-    let isArchived: Bool
+    var isArchived: Bool
     let isDefault: Bool
     let openingBalance: Double
     var currentBalance: Double? = nil
