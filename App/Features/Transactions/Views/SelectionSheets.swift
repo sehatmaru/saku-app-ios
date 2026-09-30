@@ -289,55 +289,39 @@ struct CategoryPickerSheet: View {
 
     private func tile(_ category: Category) -> some View {
         let isOn = category.id == selectedId
-        let fill = Color(hex: category.color ?? CategoryCatalog.defaultColor)
-        let ink: Color = Self.isLight(category.color ?? CategoryCatalog.defaultColor) ? Color(hex: "111111") : .white
         return Button { onPick(category) } label: {
             VStack(alignment: .leading, spacing: 0) {
                 Image(systemName: category.icon ?? "tag")
-                    .symbolVariant(.fill)
                     .font(.system(size: 22))
+                    .foregroundStyle(Color.appBody)
                 Spacer(minLength: 0)
                 Text(category.name)
                     .font(.app(13, weight: .semibold))
+                    .foregroundStyle(Color.appText)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .foregroundStyle(ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 11)
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(height: 84)
-            .background(fill, in: RoundedRectangle(cornerRadius: 16))
-            .overlay {
-                if isOn {
-                    RoundedRectangle(cornerRadius: 16).inset(by: -2).stroke(Color.appBackground, lineWidth: 2)
-                    RoundedRectangle(cornerRadius: 18).inset(by: -4).stroke(fill, lineWidth: 2)
-                }
-            }
+            .background(isOn ? Color.appBackground : Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+            .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(Color.appPrimary, lineWidth: isOn ? 2 : 0) }
             .overlay(alignment: .topTrailing) {
                 Image(systemName: "checkmark")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(fill)
+                    .foregroundStyle(.white)
                     .frame(width: 22, height: 22)
-                    .background(.white, in: Circle())
+                    .background(Color.appPrimary, in: Circle())
                     .scaleEffect(isOn ? 1 : 0.001)
                     .animation(.spring(duration: 0.38, bounce: 0.5), value: isOn)
                     .padding(9)
             }
-            .scaleEffect(isOn ? 1.02 : 1)
-            .animation(.spring(duration: 0.38, bounce: 0.45), value: isOn)
             .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityAddTraits(isOn ? .isSelected : [])
-    }
-
-    /// Bright fills (yellow, mint) take dark text; the rest take white.
-    static func isLight(_ hex: String) -> Bool {
-        let value = UInt32(hex.trimmingCharacters(in: CharacterSet(charactersIn: "#")), radix: 16) ?? 0
-        let r = Double((value >> 16) & 0xFF), g = Double((value >> 8) & 0xFF), b = Double(value & 0xFF)
-        return 0.299 * r + 0.587 * g + 0.114 * b > 165
     }
 }

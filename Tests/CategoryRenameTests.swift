@@ -19,9 +19,4 @@ final class CategoryRenameTests: XCTestCase {
         XCTAssertEqual(back.name, "Makan Harian")
         XCTAssertNil(back.defaultName)
     }
-
-    func testPickerSheetTextColourFollowsBrightness() {
-        XCTAssertTrue(CategoryPickerSheet.isLight("#F7DC6F"))
-        XCTAssertFalse(CategoryPickerSheet.isLight("#143A73"))
-    }
 }
