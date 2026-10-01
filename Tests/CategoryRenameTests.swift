@@ -1,5 +1,5 @@
 import XCTest
-@testable import SakuQ
+@testable import Saku
 
 final class CategoryRenameTests: XCTestCase {
     private let base = Category(id: "c", name: "Makan Harian", icon: "fork.knife", color: "#FF6B6B",

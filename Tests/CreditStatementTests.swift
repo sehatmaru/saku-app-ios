@@ -1,5 +1,5 @@
 import XCTest
-@testable import SakuQ
+@testable import Saku
 
 /// Card: statement prints on the 20th, due on the 5th, Jakarta time.
 final class CreditStatementTests: XCTestCase {

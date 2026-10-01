@@ -212,7 +212,7 @@ struct DashboardView: View {
 
     private var homeHeader: some View {
         HStack {
-            Text("SakuQ")
+            Text("Saku")
                 .font(.wordmark(19))
                 .tracking(-0.5)
                 .foregroundStyle(Color.appText)

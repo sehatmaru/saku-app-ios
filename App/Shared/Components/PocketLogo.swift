@@ -115,7 +115,7 @@ struct PocketLogo: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityElement()
-        .accessibilityLabel("SakuQ")
+        .accessibilityLabel("Saku")
     }
 
     private func stitching(_ s: CGFloat) -> some View {

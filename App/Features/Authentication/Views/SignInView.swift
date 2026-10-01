@@ -25,7 +25,7 @@ struct SignInView: View {
     private var login: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("SakuQ")
+                Text("Saku")
                     .font(.wordmark(22))
                     .tracking(-0.5)
                     .foregroundStyle(.white)

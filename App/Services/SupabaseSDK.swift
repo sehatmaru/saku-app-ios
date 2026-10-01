@@ -89,5 +89,5 @@ struct UserProfile: Codable, Identifiable {
 }
 
 extension Notification.Name {
-    static let dataDidChange = Notification.Name("com.sakuq.dataDidChange")
+    static let dataDidChange = Notification.Name("com.saku.dataDidChange")
 }

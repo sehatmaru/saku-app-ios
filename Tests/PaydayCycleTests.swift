@@ -1,5 +1,5 @@
 import XCTest
-@testable import SakuQ
+@testable import Saku
 
 final class PaydayCycleTests: XCTestCase {
     private var calendar: Calendar = {
@@ -49,8 +49,8 @@ final class PaydayCycleTests: XCTestCase {
     }
 
     func testArrangedCategories() {
-        func cat(_ id: String, _ name: String) -> SakuQ.Category {
-            SakuQ.Category(id: id, name: name, icon: nil, color: nil, type: .expense, systemKey: nil)
+        func cat(_ id: String, _ name: String) -> Saku.Category {
+            Saku.Category(id: id, name: name, icon: nil, color: nil, type: .expense, systemKey: nil)
         }
         let cats = [cat("a", "Makan"), cat("b", "Bensin"), cat("c", "Kopi")]
         let prefs = [CategoryPreference(categoryId: "c", isHidden: false, sortOrder: 0),

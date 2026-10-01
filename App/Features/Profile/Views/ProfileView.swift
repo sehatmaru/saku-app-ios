@@ -60,7 +60,7 @@ struct ProfileView: View {
                         notificationSection
                         if DevTools.isAccountResetEnabled { developmentSection }
                         logoutButton
-                        Text("Bergabung sejak \(memberSinceDate) · SakuQ versi \(appVersion)")
+                        Text("Bergabung sejak \(memberSinceDate) · Saku versi \(appVersion)")
                             .font(.app(13))
                             .foregroundStyle(Color.appTextTertiary)
                             .multilineTextAlignment(.center)

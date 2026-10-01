@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Three stacked credit cards (gold, purple, navy) with a green wallet pocket.
-/// Matches the "SakuQ Logo — final" design spec.
-struct SakuQLogoIcon: View {
+/// Matches the "Saku Logo — final" design spec.
+struct SakuLogoIcon: View {
     var walletColor: Color = Color(hex: "16875A")
     var dashColor: Color = .white
 

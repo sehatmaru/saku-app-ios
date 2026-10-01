@@ -19,7 +19,7 @@ struct SplashView: View {
                     .animation(.timingCurve(0.3, 1.4, 0.5, 1, duration: 0.7), value: stage >= 1)
 
                 VStack(spacing: 10) {
-                    Text("SakuQ")
+                    Text("Saku")
                         .font(.wordmark(40))
                         .tracking(-1.4)
                     Text("Semua dompet, satu kantong.")

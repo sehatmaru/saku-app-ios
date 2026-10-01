@@ -1,5 +1,5 @@
 import XCTest
-@testable import SakuQ
+@testable import Saku
 
 final class RecurringTransactionTests: XCTestCase {
     private func txn(ref: String?, note: String?) -> Transaction {

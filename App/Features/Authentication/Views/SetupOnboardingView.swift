@@ -136,7 +136,7 @@ struct SetupOnboardingView: View {
                             .foregroundStyle(Color.appError)
                             .multilineTextAlignment(.center)
                     }
-                    PrimaryButton(title: "Mulai pakai SakuQ", isLoading: authViewModel.isLoading) {
+                    PrimaryButton(title: "Mulai pakai Saku", isLoading: authViewModel.isLoading) {
                         Task { await onFinish(setup) }
                     }
                 }

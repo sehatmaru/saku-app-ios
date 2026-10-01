@@ -1,6 +1,6 @@
-name: SakuQ
+name: Saku
 options:
-  bundleIdPrefix: com.sakuq
+  bundleIdPrefix: id.saku
   deploymentTarget:
     iOS: "18.0"
   xcodeVersion: "16.0"
@@ -21,14 +21,14 @@ settings:
     DEVELOPMENT_TEAM: ""
 
 targets:
-  SakuQ:
+  Saku:
     type: application
     platform: iOS
     sources:
       - App
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.sakuq.app
+        PRODUCT_BUNDLE_IDENTIFIER: id.saku.app
         INFOPLIST_FILE: App/Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     dependencies:
@@ -38,28 +38,28 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
-  SakuQTests:
+  SakuTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - Tests
     dependencies:
-      - target: SakuQ
+      - target: Saku
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.sakuq.tests
+        PRODUCT_BUNDLE_IDENTIFIER: id.saku.tests
 
 schemes:
-  SakuQ:
+  Saku:
     build:
       targets:
-        SakuQ: all
+        Saku: all
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - SakuQTests
+        - SakuTests
     profile:
       config: Release
     analyze:
