@@ -157,7 +157,8 @@ struct DashboardView: View {
     @MainActor
     private var avatarImage: UIImage {
         let renderer = ImageRenderer(content: InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U",
-                                                             size: 28, fontSize: 11))
+                                                             size: 28, fontSize: 11,
+                                                             image: authViewModel.avatarImage))
         renderer.scale = UITraitCollection.current.displayScale
         return renderer.uiImage?.withRenderingMode(.alwaysOriginal) ?? UIImage()
     }

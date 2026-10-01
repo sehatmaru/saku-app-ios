@@ -35,11 +35,25 @@ enum SupabaseSDK {
         PaydaySetting.day = day
     }
 
-    static func updateProfile(id: UUID, displayName: String?) async throws {
+    /// Uploads the JPEG to `avatars/<auth uid>/avatar.jpg` (overwriting) and returns its public URL.
+    /// The `v` query busts the image cache, since the path never changes.
+    static func uploadAvatar(authUserId: UUID, jpeg: Data) async throws -> String {
+        let path = "\(authUserId.uuidString.lowercased())/avatar.jpg"
+        let bucket = client.storage.from("avatars")
+        try await bucket.upload(path, data: jpeg, options: FileOptions(contentType: "image/jpeg", upsert: true))
+        let url = try bucket.getPublicURL(path: path)
+        return "\(url.absoluteString)?v=\(Int(Date().timeIntervalSince1970))"
+    }
+
+    static func updateProfile(id: UUID, displayName: String?, avatarURL: String? = nil) async throws {
         var payload: [String: AnyJSON] = [:]
         if let displayName {
             payload["display_name"] = AnyJSON.string(displayName)
         }
+        if let avatarURL {
+            payload["avatar_url"] = AnyJSON.string(avatarURL)
+        }
+        guard !payload.isEmpty else { return }
         try await client
             .from("user_profiles")
             .update(payload)
@@ -76,6 +90,7 @@ struct UserProfile: Codable, Identifiable {
     let timezone: String
     /// Payday (1–31); nil until the user sets it.
     var paydayDay: Int? = nil
+    var avatarUrl: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -85,6 +100,7 @@ struct UserProfile: Codable, Identifiable {
         case locale
         case timezone
         case paydayDay = "payday_day"
+        case avatarUrl = "avatar_url"
     }
 }
 

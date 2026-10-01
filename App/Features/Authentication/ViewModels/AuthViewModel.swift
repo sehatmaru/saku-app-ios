@@ -18,6 +18,8 @@ enum AuthPresentationError: LocalizedError {
 final class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
     @Published var currentUser: User?
+    /// Decoded profile photo (nil = show initials). Tab items need a bitmap, so it is kept here.
+    @Published var avatarImage: UIImage?
     @Published var isLoading = false
     @Published var isGoogleLoading = false
     @Published var isAppleLoading = false
@@ -78,8 +80,10 @@ final class AuthViewModel: ObservableObject {
             authUserId: authUserId.uuidString,
             email: email,
             displayName: profile.displayName ?? displayName,
-            defaultCurrencyCode: profile.defaultCurrencyCode
+            defaultCurrencyCode: profile.defaultCurrencyCode,
+            avatarURL: profile.avatarUrl
         )
+        await loadAvatar()
         // Accounts made in the last 10 minutes count as a sign-up; existing users never see setup.
         let isNewAccount = createdAt.map { Date().timeIntervalSince($0) < 600 } ?? false
         if offersSetup, isNewAccount {
@@ -265,4 +269,14 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+
+    /// Fetches the photo behind `currentUser.avatarURL`; the URL changes on every upload, so caching is safe.
+    func loadAvatar() async {
+        guard let string = currentUser?.avatarURL, let url = URL(string: string),
+              let (data, _) = try? await URLSession.shared.data(from: url) else {
+            avatarImage = nil
+            return
+        }
+        avatarImage = UIImage(data: data)
+    }
 }

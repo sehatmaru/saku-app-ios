@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 /// Profil tab: account, appearance and notification settings, and sign-out.
 struct ProfileView: View {
@@ -128,7 +129,8 @@ struct ProfileView: View {
     /// Avatar, name and email in one row, with "Ubah" to edit.
     private var profileHeader: some View {
         HStack(spacing: 16) {
-            InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U", size: 64, fontSize: 24)
+            InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U", size: 64, fontSize: 24,
+                           image: authViewModel.avatarImage)
             VStack(alignment: .leading, spacing: 3) {
                 Text(authViewModel.currentUser?.fullName ?? "User")
                     .font(.app(22, weight: .semibold))
@@ -315,15 +317,33 @@ struct ProfileEditView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showToast = false
     @State private var toastMessage = ""
+    @State private var pickerItem: PhotosPickerItem?
+    @State private var newPhoto: UIImage?
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // TODO: Image picker
-                InitialsAvatar(initials: initials, size: 88, fontSize: 32)
-                    .padding(.top, 24)
-                    .padding(.bottom, 32)
-                    .accessibilityHidden(true)
+                PhotosPicker(selection: $pickerItem, matching: .images) {
+                    InitialsAvatar(initials: initials, size: 88, fontSize: 32,
+                                   image: newPhoto ?? authViewModel.avatarImage)
+                        .overlay(alignment: .bottomTrailing) {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.white)
+                                .frame(width: 28, height: 28)
+                                .background(Color.appPrimary, in: Circle())
+                                .overlay(Circle().strokeBorder(Color.appBackground, lineWidth: 2))
+                        }
+                }
+                .accessibilityLabel("Ubah foto profil")
+                .padding(.top, 24)
+                .padding(.bottom, 32)
+                .onChange(of: pickerItem) { _, item in
+                    Task {
+                        guard let data = try? await item?.loadTransferable(type: Data.self) else { return }
+                        newPhoto = UIImage(data: data)
+                    }
+                }
 
                 VStack(spacing: 0) {
                     formRow("Nama") {
@@ -375,9 +395,14 @@ struct ProfileEditView: View {
     private var saveButton: some View {
         Button {
             Task {
-                if let updated = await viewModel.saveDisplayName(user: authViewModel.currentUser) {
+                if let updated = await viewModel.saveProfile(user: authViewModel.currentUser, photo: newPhoto) {
                     authViewModel.currentUser = updated
+                    if let newPhoto { authViewModel.avatarImage = newPhoto }
+                    self.newPhoto = nil
                     toastMessage = "Profil berhasil disimpan"
+                    withAnimation { showToast = true }
+                } else if let error = viewModel.errorMessage {
+                    toastMessage = error
                     withAnimation { showToast = true }
                 }
             }

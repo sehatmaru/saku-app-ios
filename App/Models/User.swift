@@ -6,6 +6,7 @@ struct User: Identifiable, Codable {
     let email: String
     var displayName: String?
     let defaultCurrencyCode: String
+    var avatarURL: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -13,6 +14,7 @@ struct User: Identifiable, Codable {
         case email
         case displayName = "display_name"
         case defaultCurrencyCode = "default_currency_code"
+        case avatarURL = "avatar_url"
     }
 }
 
