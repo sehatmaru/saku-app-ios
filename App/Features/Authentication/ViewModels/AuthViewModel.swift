@@ -8,8 +8,8 @@ enum AuthPresentationError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noWindowScene: return "Gagal memulai sign in"
-        case .noGoogleIdToken: return "Tidak dapat memperoleh token Google"
+        case .noWindowScene: return L("Gagal memulai sign in")
+        case .noGoogleIdToken: return L("Tidak dapat memperoleh token Google")
         }
     }
 }

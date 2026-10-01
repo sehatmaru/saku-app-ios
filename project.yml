@@ -1,5 +1,6 @@
 name: Saku
 options:
+  developmentLanguage: id
   bundleIdPrefix: id.saku
   deploymentTarget:
     iOS: "18.0"
@@ -16,6 +17,9 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    STRING_CATALOG_GENERATE_SYMBOLS: NO
     TARGETED_DEVICE_FAMILY: "1"
     INFOPLIST_FILE: App/Resources/Info.plist
     DEVELOPMENT_TEAM: ""

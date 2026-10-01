@@ -37,11 +37,11 @@ struct TransactionRowView: View {
 
     private var typeLabel: String {
         switch transaction.type {
-        case .income: "Pemasukan"
-        case .expense: "Pengeluaran"
-        case .transfer: isCardPayment ? "Bayar tagihan" : "Transfer"
-        case .adjustment: "Penyesuaian saldo"
-        case .cardPayment: "Bayar tagihan"
+        case .income: L("Pemasukan")
+        case .expense: L("Pengeluaran")
+        case .transfer: isCardPayment ? L("Bayar tagihan") : L("Transfer")
+        case .adjustment: L("Penyesuaian saldo")
+        case .cardPayment: L("Bayar tagihan")
         }
     }
 
@@ -55,7 +55,7 @@ struct TransactionRowView: View {
         if let kind, kind != title { parts.append(kind) }
         if showAccount {
             if transaction.type == .cardPayment {
-                parts.append("Sumber lain")
+                parts.append(L("Sumber lain"))
             } else if transaction.type == .transfer,
                let src = accountName(transaction.accountId),
                let dst = accountName(transaction.counterpartyAccountId) {
@@ -137,10 +137,10 @@ struct TransactionRowView: View {
         .contentShape(Rectangle())
     }
 
-    private static let dateFormatter: DateFormatter = {
+    private static var dateFormatter: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "d MMM yyyy"
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
-    }()
+    }
 }

@@ -34,12 +34,12 @@ struct AddWalletView: View {
     }
 
     // Wallet types, in stack order: key, label, colour, description.
-    private static let types: [(Account.AccountType, String, String, String)] = [
-        (.bank, "Bank", "0066AE", "Rekening tabungan atau giro"),
-        (.ewallet, "E-wallet", "00AA44", "GoPay, OVO, DANA, dan lainnya"),
-        (.cash, "Tunai", "616161", "Uang fisik di dompet atau celengan"),
-        (.credit, "Kartu kredit", "1A1F71", "Lacak limit, tagihan, dan jatuh tempo"),
-    ]
+    private static var types: [(Account.AccountType, String, String, String)] { [
+        (.bank, L("Bank"), "0066AE", L("Rekening tabungan atau giro")),
+        (.ewallet, L("E-wallet"), "00AA44", L("GoPay, OVO, DANA, dan lainnya")),
+        (.cash, L("Tunai"), "616161", L("Uang fisik di dompet atau celengan")),
+        (.credit, L("Kartu kredit"), "1A1F71", L("Lacak limit, tagihan, dan jatuh tempo")),
+    ] }
     static let swatches = ["616161", "16875A", "0066AE", "472B91", "C2410C", "9D174D"]
     /// Card issuers and the card colour each one gets.
     static let issuers: [(id: String, color: String)] = [
@@ -134,8 +134,8 @@ struct AddWalletView: View {
     }
 
     private var cardLabel: String {
-        if step == .limit || (isCredit && step == .provider) { return "Limit kredit" }
-        return isCredit ? "Sisa limit" : "Saldo"
+        if step == .limit || (isCredit && step == .provider) { return L("Limit kredit") }
+        return isCredit ? L("Sisa limit") : L("Saldo")
     }
 
     // MARK: Body
@@ -218,14 +218,14 @@ struct AddWalletView: View {
 
     private func title(for s: Step) -> String {
         switch s {
-        case .type: "Tambah dompet"
-        case .provider: isCash ? "Nama & warna" : isCredit ? "Bank & jenis kartu" : type == .bank ? "Pilih bank" : "Pilih e-wallet"
-        case .balance: "Saldo awal"
-        case .limit: "Limit kredit"
-        case .bill: "Tagihan saat ini"
-        case .statement: "Cetak tagihan"
-        case .due: "Jatuh tempo"
-        case .done: "Selesai"
+        case .type: L("Tambah dompet")
+        case .provider: isCash ? L("Nama & warna") : isCredit ? L("Bank & jenis kartu") : type == .bank ? L("Pilih bank") : L("Pilih e-wallet")
+        case .balance: L("Saldo awal")
+        case .limit: L("Limit kredit")
+        case .bill: L("Tagihan saat ini")
+        case .statement: L("Cetak tagihan")
+        case .due: L("Jatuh tempo")
+        case .done: L("Selesai")
         }
     }
 
@@ -368,7 +368,7 @@ struct AddWalletView: View {
                                 .animation(.spring(duration: 0.46, bounce: 0.5), value: network)
                                 .padding(.bottom, 6)
                             Text("Jatuh tempo").font(.app(12)).foregroundStyle(.white.opacity(0.8))
-                            Text(dueDay.map { "Tgl \($0)" } ?? "—")
+                            Text(dueDay.map { L("Tgl %lld", $0) } ?? "—")
                                 .font(.app(15, weight: .semibold))
                                 .monospacedDigit()
                         }
@@ -390,11 +390,11 @@ struct AddWalletView: View {
             layer(step == .provider && !isCash) { providerPanel }
             layer(step == .provider && isCash) { cashPanel }
             layer([.balance, .limit, .bill].contains(step)) { numberPanel(bottom: bottom) }
-            layer(step == .statement) { dayPanel(caption: "Tanggal cetak tagihan tiap bulan",
-                                                note: "Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya.",
+            layer(step == .statement) { dayPanel(caption: L("Tanggal cetak tagihan tiap bulan"),
+                                                note: L("Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya."),
                                                 selection: $statementDay) }
-            layer(step == .due) { dayPanel(caption: "Tanggal jatuh tempo tiap bulan",
-                                          note: "Tagihan dicatat sebagai utang dan tidak mengurangi total saldo.",
+            layer(step == .due) { dayPanel(caption: L("Tanggal jatuh tempo tiap bulan"),
+                                          note: L("Tagihan dicatat sebagai utang dan tidak mengurangi total saldo."),
                                           selection: $dueDay) }
             doneTexts
                 .padding(.top, 174)
@@ -442,7 +442,7 @@ struct AddWalletView: View {
             }
 
             if provider == -1 {
-                swatchRow(caption: "Warna kartu · ketik nama langsung di kartu")
+                swatchRow(caption: L("Warna kartu · ketik nama langsung di kartu"))
                     .padding(.horizontal, 24)
                     .padding(.top, 22)
                     .transition(.opacity.combined(with: .offset(y: 10)))
@@ -540,7 +540,7 @@ struct AddWalletView: View {
                     .appear(step == .provider && isCash, delay: 0.12 + Double(j) * 0.045)
                 }
             }
-            swatchRow(caption: "Warna kartu").padding(.top, 14)
+            swatchRow(caption: L("Warna kartu")).padding(.top, 14)
         }
         .padding(.horizontal, 24)
     }
@@ -599,8 +599,8 @@ struct AddWalletView: View {
                 .padding(.top, 2)
             }
             if step == .limit || step == .bill {
-                Text(step == .limit ? "Batas total yang diberikan bank untuk kartu ini."
-                     : bill > limit ? "Tagihan melebihi limit kredit." : "Isi 0 jika belum ada tagihan bulan ini.")
+                Text(step == .limit ? L("Batas total yang diberikan bank untuk kartu ini.")
+                     : bill > limit ? L("Tagihan melebihi limit kredit.") : L("Isi 0 jika belum ada tagihan bulan ini."))
                     .font(.app(14))
                     .foregroundStyle(step == .bill && bill > limit ? Color.appError : Color.appTextSecondary)
                     .lineSpacing(3)
@@ -671,9 +671,8 @@ struct AddWalletView: View {
     private var doneTexts: some View {
         VStack(spacing: 6) {
             Text("Dompet ditambahkan").font(.app(22, weight: .semibold)).tracking(-0.3)
-            Text((trimmedName.isEmpty ? "Dompet baru" : trimmedName)
-                 + (isCredit ? " dengan limit Rp\(Self.digits(limit)) siap dipakai."
-                    : " dengan saldo Rp\(Self.digits(balance)) sudah masuk ke total saldo."))
+            Text(isCredit ? L("%@ dengan limit Rp%@ siap dipakai.", trimmedName.isEmpty ? L("Dompet baru") : trimmedName, Self.digits(limit))
+                 : L("%@ dengan saldo Rp%@ sudah masuk ke total saldo.", trimmedName.isEmpty ? L("Dompet baru") : trimmedName, Self.digits(balance)))
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
                 .multilineTextAlignment(.center)
@@ -688,12 +687,12 @@ struct AddWalletView: View {
         VStack {
             Spacer()
             ZStack(alignment: .bottom) {
-                primaryButton("Lanjut", icon: "arrow.right", trailingIcon: true, enabled: isValid, action: next)
+                primaryButton(L("Lanjut"), icon: "arrow.right", trailingIcon: true, enabled: isValid, action: next)
                     .layerShown([.provider, .statement].contains(step))
-                primaryButton("Simpan dompet", icon: "checkmark", trailingIcon: false, enabled: isValid, action: next)
+                primaryButton(L("Simpan dompet"), icon: "checkmark", trailingIcon: false, enabled: isValid, action: next)
                     .layerShown(step == .due)
                 VStack(spacing: 10) {
-                    primaryButton("Lihat dompet", icon: nil, trailingIcon: false, enabled: true) { dismiss() }
+                    primaryButton(L("Lihat dompet"), icon: nil, trailingIcon: false, enabled: true) { dismiss() }
                     Button(action: again) {
                         Label("Tambah dompet lain", systemImage: "plus")
                             .font(.app(17, weight: .semibold))
@@ -717,7 +716,7 @@ struct AddWalletView: View {
     private func primaryButton(_ title: String, icon: String?, trailingIcon: Bool, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                if isSaving && title == "Simpan dompet" {
+                if isSaving && title == L("Simpan dompet") {
                     ProgressView().tint(.white)
                 } else if let icon, !trailingIcon {
                     Image(systemName: icon).font(.system(size: 15, weight: .bold))
@@ -862,7 +861,7 @@ struct AddWalletView: View {
 private extension Int {
     /// "100rb", "1 jt", "50 jt" for the quick amount chips.
     var formattedShort: String {
-        self >= 1_000_000 ? "\(self / 1_000_000) jt" : "\(self / 1000)rb"
+        self >= 1_000_000 ? L("%lld jt", self / 1_000_000) : L("%lldrb", self / 1000)
     }
 }
 

@@ -3,6 +3,10 @@ import XCTest
 
 @MainActor
 final class FinancialHealthTests: XCTestCase {
+    override func setUp() {
+        UserDefaults.standard.set("id", forKey: "appLanguage")
+    }
+
     private func input(
         income: [Double] = [10_000_000, 10_000_000, 10_000_000],
         expense: [Double] = [7_000_000, 7_000_000, 7_000_000],

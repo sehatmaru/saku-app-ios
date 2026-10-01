@@ -50,11 +50,11 @@ struct FinancialHealth {
 
         var title: String {
             switch kind {
-            case .cashflow: "Arus kas"
-            case .emergencyFund: "Dana darurat"
-            case .debt: "Utang kartu kredit"
-            case .budget: "Budget"
-            case .habit: "Kebiasaan mencatat"
+            case .cashflow: L("Arus kas")
+            case .emergencyFund: L("Dana darurat")
+            case .debt: L("Utang kartu kredit")
+            case .budget: L("Budget")
+            case .habit: L("Kebiasaan mencatat")
             }
         }
 
@@ -77,10 +77,10 @@ struct FinancialHealth {
 
     var label: String {
         switch score {
-        case 80...: "Sehat"
-        case 60..<80: "Cukup"
-        case 40..<60: "Kurang"
-        default: "Perlu perbaikan"
+        case 80...: L("Sehat")
+        case 60..<80: L("Cukup")
+        case 40..<60: L("Kurang")
+        default: L("Perlu perbaikan")
         }
     }
 
@@ -121,8 +121,8 @@ struct FinancialHealth {
         let months = input.monthlyIncome.count
         guard income > 0 else {
             return Factor(kind: .cashflow, points: 0, maxPoints: 30,
-                          summary: expense > 0 ? "Belum ada pemasukan tercatat, tapi ada pengeluaran." : "Belum ada pemasukan tercatat.",
-                          tip: "Catat gaji dan pemasukan lain supaya kelihatan berapa yang bisa disisihkan.")
+                          summary: expense > 0 ? L("Belum ada pemasukan tercatat, tapi ada pengeluaran.") : L("Belum ada pemasukan tercatat."),
+                          tip: L("Catat gaji dan pemasukan lain supaya kelihatan berapa yang bisa disisihkan."))
         }
         let rate = (income - expense) / income
         let points = switch rate {
@@ -134,13 +134,13 @@ struct FinancialHealth {
         }
         let percent = Int((abs(rate) * 100).rounded())
         let summary = rate >= 0
-            ? "Kamu menyisihkan \(percent)% dari pemasukan \(months) bulan terakhir."
-            : "Pengeluaranmu \(percent)% lebih besar dari pemasukan \(months) bulan terakhir."
+            ? L("Kamu menyisihkan %lld%% dari pemasukan %lld bulan terakhir.", percent, months)
+            : L("Pengeluaranmu %lld%% lebih besar dari pemasukan %lld bulan terakhir.", percent, months)
         let tip: String? = switch rate {
         case 0.2...: nil
-        case 0..<0.2: "Targetkan menyisihkan 20% pemasukan. Pindahkan ke tabungan begitu gajian, sebelum dipakai belanja."
-        default: "Pengeluaran melebihi pemasukan. Kurangi pos terbesarmu"
-            + (input.topExpenseCategory.map { ", \($0)," } ?? "") + " dan tunda belanja yang tidak mendesak."
+        case 0..<0.2: L("Targetkan menyisihkan 20% pemasukan. Pindahkan ke tabungan begitu gajian, sebelum dipakai belanja.")
+        default: input.topExpenseCategory.map { L("Pengeluaran melebihi pemasukan. Kurangi pos terbesarmu, %@, dan tunda belanja yang tidak mendesak.", $0) }
+            ?? L("Pengeluaran melebihi pemasukan. Kurangi pos terbesarmu dan tunda belanja yang tidak mendesak.")
         }
         return Factor(kind: .cashflow, points: points, maxPoints: 30, summary: summary, tip: tip)
     }
@@ -152,8 +152,8 @@ struct FinancialHealth {
         guard averageExpense > 0 else {
             let hasBalance = input.liquidBalance > 0
             return Factor(kind: .emergencyFund, points: hasBalance ? 25 : 0, maxPoints: 25,
-                          summary: hasBalance ? "Belum ada pengeluaran untuk dibandingkan." : "Belum ada saldo tersimpan.",
-                          tip: hasBalance ? nil : "Mulai sisihkan saldo untuk dana darurat, sekecil apa pun.")
+                          summary: hasBalance ? L("Belum ada pengeluaran untuk dibandingkan.") : L("Belum ada saldo tersimpan."),
+                          tip: hasBalance ? nil : L("Mulai sisihkan saldo untuk dana darurat, sekecil apa pun."))
         }
         let months = max(input.liquidBalance, 0) / averageExpense
         let points = switch months {
@@ -164,13 +164,13 @@ struct FinancialHealth {
         default: 0
         }
         let summary = input.liquidBalance <= 0
-            ? "Saldomu minus, belum ada dana darurat."
-            : "Saldo cukup untuk \(months.formatted(.number.precision(.fractionLength(1)).locale(Locale(identifier: "id_ID")))) bulan pengeluaran."
+            ? L("Saldomu minus, belum ada dana darurat.")
+            : L("Saldo cukup untuk %@ bulan pengeluaran.", months.formatted(.number.precision(.fractionLength(1)).locale(AppLanguage.locale)))
         let target = averageExpense * 3
         let gap = target - max(input.liquidBalance, 0)
         let tip: String? = months >= 3 ? nil
-            : "Kumpulkan dana darurat minimal 3 bulan pengeluaran, sekitar \(target.abbreviatedRupiahText). "
-            + "Sisihkan \((gap / 12).abbreviatedRupiahText) per bulan untuk mencapainya dalam setahun."
+            : L("Kumpulkan dana darurat minimal 3 bulan pengeluaran, sekitar %@. Sisihkan %@ per bulan untuk mencapainya dalam setahun.",
+                target.abbreviatedRupiahText, (gap / 12).abbreviatedRupiahText)
         return Factor(kind: .emergencyFund, points: points, maxPoints: 25, summary: summary, tip: tip)
     }
 
@@ -180,17 +180,17 @@ struct FinancialHealth {
         guard let worst = input.overdueBills.max(by: { $0.daysLate < $1.daysLate }) else { return usage }
         let points = min(usage.points, worst.daysLate > 7 ? 0 : 8)
         let summary = input.overdueBills.count == 1
-            ? "Tagihan \(worst.cardName) \(worst.amount.formattedAsCurrency()) lewat jatuh tempo \(worst.daysLate) hari."
-            : "\(input.overdueBills.count) tagihan kartu kredit lewat jatuh tempo, total \(input.overdueBills.reduce(0) { $0 + $1.amount }.formattedAsCurrency())."
+            ? L("Tagihan %@ %@ lewat jatuh tempo %lld hari.", worst.cardName, worst.amount.formattedAsCurrency(), worst.daysLate)
+            : L("%lld tagihan kartu kredit lewat jatuh tempo, total %@.", input.overdueBills.count, input.overdueBills.reduce(0) { $0 + $1.amount }.formattedAsCurrency())
         return Factor(kind: .debt, points: points, maxPoints: 20, summary: summary,
-                      tip: "Bayar tagihannya, atau catat pembayarannya kalau sudah kamu bayar, supaya skor pulih dan tidak kena bunga.")
+                      tip: L("Bayar tagihannya, atau catat pembayarannya kalau sudah kamu bayar, supaya skor pulih dan tidak kena bunga."))
     }
 
     /// Credit card use against the limit, or against monthly income when no limit is set.
     private static func debtUsage(_ input: Input) -> Factor {
         guard input.hasCreditCard, input.creditDebt > 0 else {
             return Factor(kind: .debt, points: 20, maxPoints: 20,
-                          summary: input.hasCreditCard ? "Tagihan kartu kreditmu sudah lunas." : "Tidak ada utang kartu kredit.",
+                          summary: input.hasCreditCard ? L("Tagihan kartu kreditmu sudah lunas.") : L("Tidak ada utang kartu kredit."),
                           tip: nil)
         }
         let incomes = input.monthlyIncome.filter { $0 > 0 }
@@ -206,10 +206,10 @@ struct FinancialHealth {
         }
         let percent = Int((use * 100).rounded())
         let summary = input.creditLimit > 0
-            ? "Terpakai \(percent)% dari limit kartu kredit."
-            : "Utang kartu kredit setara \(percent)% pemasukan bulanan."
+            ? L("Terpakai %lld%% dari limit kartu kredit.", percent)
+            : L("Utang kartu kredit setara %lld%% pemasukan bulanan.", percent)
         let tip: String? = use < 0.3 ? nil
-            : "Jaga pemakaian di bawah 30% limit dan bayar tagihan penuh tiap jatuh tempo supaya tidak kena bunga."
+            : L("Jaga pemakaian di bawah 30% limit dan bayar tagihan penuh tiap jatuh tempo supaya tidak kena bunga.")
         return Factor(kind: .debt, points: points, maxPoints: 20, summary: summary, tip: tip)
     }
 
@@ -217,10 +217,9 @@ struct FinancialHealth {
     private static func budget(_ input: Input) -> Factor {
         guard input.budgetTotal > 0 else {
             return Factor(kind: .budget, points: 0, maxPoints: 15,
-                          summary: "Belum ada budget bulan ini.",
-                          tip: "Buat budget"
-                            + (input.topExpenseCategory.map { ", mulai dari \($0) yang paling besar pengeluarannya" } ?? " untuk kategori pengeluaran terbesarmu")
-                            + ".")
+                          summary: L("Belum ada budget bulan ini."),
+                          tip: input.topExpenseCategory.map { L("Buat budget, mulai dari %@ yang paling besar pengeluarannya.", $0) }
+                            ?? L("Buat budget untuk kategori pengeluaran terbesarmu."))
         }
         let used = input.budgetSpent / input.budgetTotal
         // The first days carry little signal, so the pace never expects less than a fifth.
@@ -232,11 +231,11 @@ struct FinancialHealth {
         case (false, ..<1.25): 5
         default: 0
         }
-        let summary = "Terpakai \(Int((used * 100).rounded()))% budget, "
-            + "\(Int((input.monthProgress * 100).rounded()))% bulan sudah lewat."
+        let summary = L("Terpakai %lld%% budget, %lld%% bulan sudah lewat.",
+                        Int((used * 100).rounded()), Int((input.monthProgress * 100).rounded()))
         let tip: String? = points == 15 ? nil
-            : used > 1 ? "Budget bulan ini sudah terlewati. Tahan pengeluaran yang tidak wajib sampai bulan depan."
-            : "Belanjamu lebih cepat dari jadwal. Batasi ke \(((input.budgetTotal - input.budgetSpent) / max(1, (1 - input.monthProgress) * 30)).abbreviatedRupiahText) per hari supaya cukup sampai akhir bulan."
+            : used > 1 ? L("Budget bulan ini sudah terlewati. Tahan pengeluaran yang tidak wajib sampai bulan depan.")
+            : L("Belanjamu lebih cepat dari jadwal. Batasi ke %@ per hari supaya cukup sampai akhir bulan.", ((input.budgetTotal - input.budgetSpent) / max(1, (1 - input.monthProgress) * 30)).abbreviatedRupiahText)
         return Factor(kind: .budget, points: points, maxPoints: 15, summary: summary, tip: tip)
     }
 
@@ -250,9 +249,9 @@ struct FinancialHealth {
         default: 0
         }
         let tip: String? = input.activeDays >= 12 ? nil
-            : "Catat transaksi setiap hari, termasuk yang kecil, supaya skor dan saranmu akurat."
+            : L("Catat transaksi setiap hari, termasuk yang kecil, supaya skor dan saranmu akurat.")
         return Factor(kind: .habit, points: points, maxPoints: 10,
-                      summary: "Mencatat di \(input.activeDays) dari 30 hari terakhir.", tip: tip)
+                      summary: L("Mencatat di %lld dari 30 hari terakhir.", input.activeDays), tip: tip)
     }
 }
 

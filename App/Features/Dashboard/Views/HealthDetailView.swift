@@ -65,16 +65,16 @@ struct HealthDetailView: View {
     }
 
     private var verdict: String {
-        if health.isHealthy { return "Keuanganmu sehat. Pertahankan kebiasaan ini." }
+        if health.isHealthy { return L("Keuanganmu sehat. Pertahankan kebiasaan ini.") }
         guard let weakest = health.weakest else { return "" }
-        return "\(weakest.title) paling menahan skormu. Perbaiki itu dulu untuk menambah hingga \(weakest.missing) poin."
+        return L("%@ paling menahan skormu. Perbaiki itu dulu untuk menambah hingga %lld poin.", weakest.title, weakest.missing)
     }
 
     // MARK: Factors
 
     private var factorsSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Yang memengaruhi skor")
+            SectionHeader(title: L("Yang memengaruhi skor"))
             ForEach(health.factors) { factor in
                 factorRow(factor)
             }
@@ -117,7 +117,7 @@ struct HealthDetailView: View {
 
     private var recommendationsSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Rekomendasi")
+            SectionHeader(title: L("Rekomendasi"))
             VStack(spacing: 10) {
                 ForEach(Array(health.recommendations.enumerated()), id: \.element.id) { index, factor in
                     recommendationCard(factor, number: index + 1)

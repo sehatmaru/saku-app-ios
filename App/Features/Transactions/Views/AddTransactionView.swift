@@ -347,12 +347,16 @@ struct AddTransactionView: View {
         .animation(.easeInOut(duration: 0.3), value: typeIndex)
     }
 
-    private var incomeText: String {
+    private var incomeText: String { incomeMessage(done: false) }
+
+    /// "Saldo X jadi Rp…" while typing, "Saldo X sekarang Rp…" once saved.
+    private func incomeMessage(done: Bool) -> String {
         guard let account else { return "" }
         // When editing, the saved amount is already in the balance.
         let saved = editing?.type == .income && editing?.accountId == account.id ? editing?.amount ?? 0 : 0
         let next = account.balance - saved + Double(amount)
-        return "Saldo \(account.name) jadi " + (next < 0 ? "−Rp" : "Rp") + next.formattedAsDigits()
+        let money = (next < 0 ? "−Rp" : "Rp") + next.formattedAsDigits()
+        return done ? L("Saldo %@ sekarang %@", account.name, money) : L("Saldo %@ jadi %@", account.name, money)
     }
 
     private func walletChip(_ account: Account?) -> some View {
@@ -361,7 +365,7 @@ struct AddTransactionView: View {
                 .fill(walletColor(account))
                 .frame(width: 16, height: 11)
                 .overlay(RoundedRectangle(cornerRadius: 2).stroke(.white.opacity(0.5), lineWidth: 1))
-            Text(account?.name ?? "Pilih")
+            Text(account?.name ?? L("Pilih"))
                 .lineLimit(1)
         }
     }
@@ -375,7 +379,7 @@ struct AddTransactionView: View {
         let after = daily > 0 ? Int((min(1, (spent + typed) / daily) * 30).rounded()) : 0
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Sisa budget " + TransactionDates.dayShort(date))
+                Text(L("Sisa budget %@", TransactionDates.dayShort(date)))
                     .font(.app(13))
                     .opacity(0.85)
                 Spacer()
@@ -383,7 +387,7 @@ struct AddTransactionView: View {
                     Image(systemName: "exclamationmark.circle.fill")
                         .font(.system(size: 14))
                         .opacity(left < 0 && daily > 0 ? 1 : 0)
-                    Text(daily <= 0 ? "—" : left < 0 ? "Lewat Rp" + (-left).formattedAsDigits() : "Rp" + left.formattedAsDigits())
+                    Text(daily <= 0 ? "—" : left < 0 ? L("Lewat Rp%@", (-left).formattedAsDigits()) : "Rp" + left.formattedAsDigits())
                         .font(.app(15, weight: .semibold))
                         .contentTransition(.numericText())
                 }
@@ -410,11 +414,11 @@ struct AddTransactionView: View {
     }
 
     private func budgetFootnote(daily: Double, spent: Double, typed: Double) -> String {
-        guard daily > 0 else { return "Belum ada budget bulan ini" }
+        guard daily > 0 else { return L("Belum ada budget bulan ini") }
         let perDay = "Rp" + daily.formattedAsDigits()
         return typed > 0
-            ? "Sebelumnya Rp" + max(0, daily - spent).formattedAsDigits() + " · budget \(perDay)/hari"
-            : "Budget harian \(perDay)"
+            ? L("Sebelumnya Rp%@ · budget %@/hari", max(0, daily - spent).formattedAsDigits(), perDay)
+            : L("Budget harian %@", perDay)
     }
 
     @ViewBuilder
@@ -465,7 +469,7 @@ struct AddTransactionView: View {
             Button {
                 hideRepeatTip()
                 if planMonths > 0 {
-                    flashRepeatBubble("Matikan cicilan dulu")
+                    flashRepeatBubble(L("Matikan cicilan dulu"))
                 } else {
                     showsRepeatMenu = true
                 }
@@ -489,7 +493,7 @@ struct AddTransactionView: View {
                 .opacity(planMonths > 0 ? 0.45 : 1)
             }
             .buttonStyle(PressScaleStyle())
-            .accessibilityLabel(isOn ? "Ulangi, berikutnya \(TransactionDates.dayMonth.string(from: nextRepeatDate))" : "Ulangi")
+            .accessibilityLabel(isOn ? L("Ulangi, berikutnya %@", TransactionDates.dayMonth.string(from: nextRepeatDate)) : L("Ulangi"))
             .overlay(alignment: .topTrailing) { repeatBubbles }
             .onAppear(perform: showRepeatTipOnce)
         }
@@ -498,7 +502,7 @@ struct AddTransactionView: View {
     /// The dark bubble under the icon: the one-time tooltip, or a short reason.
     @ViewBuilder
     private var repeatBubbles: some View {
-        let text = repeatBubble ?? (showsRepeatTip ? "Jadikan tagihan berulang" : nil)
+        let text = repeatBubble ?? (showsRepeatTip ? L("Jadikan tagihan berulang") : nil)
         if let text, !showsRepeatMenu {
             Text(text)
                 .font(.app(14, weight: .semibold))
@@ -542,7 +546,7 @@ struct AddTransactionView: View {
     /// Bottom sheet from the ↻ icon (Pengingat Tagihan 4b): pick Tidak / Tiap bulan / Tiap tahun,
     /// see the next date, then Selesai.
     private var repeatSheet: some View {
-        PickerSheet(title: "Tagihan berulang", onDone: { showsRepeatMenu = false }) {
+        PickerSheet(title: L("Tagihan berulang"), onDone: { showsRepeatMenu = false }) {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(spacing: 0) {
                     ForEach(Self.repeatOptions, id: \.1) { option, title in
@@ -550,7 +554,7 @@ struct AddTransactionView: View {
                             withAnimation(.settle(0.3)) { repeatFrequency = option }
                         } label: {
                             HStack(spacing: 12) {
-                                Text(title).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
+                                Text(L(title)).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
                                 Spacer()
                                 if let option {
                                     Text(repeatMenuDate(option))
@@ -616,12 +620,12 @@ struct AddTransactionView: View {
         }
     }
 
-    private static let longDate: DateFormatter = {
+    private static var longDate: DateFormatter {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         f.dateFormat = "EEEE, d MMM yyyy"
         return f
-    }()
+    }
 
     private func repeatMenuDate(_ frequency: CardSubscription.Frequency) -> String {
         let date = repeatDate(frequency)
@@ -634,20 +638,20 @@ struct AddTransactionView: View {
     private var rows: some View {
         VStack(spacing: 0) {
             if isTransfer {
-                row(.account, label: "Dari", value: account?.name ?? "Pilih", swatch: walletColor(account), index: 0)
-                row(.target, label: "Ke", value: target?.name ?? "Pilih", swatch: walletColor(target), index: 1)
+                row(.account, label: L("Dari"), value: account?.name ?? L("Pilih"), swatch: walletColor(account), index: 0)
+                row(.target, label: L("Ke"), value: target?.name ?? L("Pilih"), swatch: walletColor(target), index: 1)
             } else {
-                row(.category, label: "Kategori", value: category?.name ?? "Belum dipilih",
+                row(.category, label: L("Kategori"), value: category?.name ?? L("Belum dipilih"),
                     icon: category?.icon, iconColor: style.color, isPlaceholder: category == nil, index: 0)
-                row(.account, label: "Dompet", value: account?.name ?? "Pilih", swatch: walletColor(account),
+                row(.account, label: L("Dompet"), value: account?.name ?? L("Pilih"), swatch: walletColor(account),
                     sub: isCardExpense && planMonths == 0 ? account.map(billingText) : nil, index: 1)
                 if isCardExpense, let account, editing == nil {
-                    row(.installment, label: "Cicilan", value: installmentMonths == 0 ? "Tidak" : "\(installmentMonths) bulan",
+                    row(.installment, label: L("Cicilan"), value: installmentMonths == 0 ? L("Tidak") : L("%lld bulan", installmentMonths),
                         icon: "calendar.badge.clock", iconColor: .appTextSecondary,
                         sub: planMonths > 0 ? planText(card: account) : nil, index: 1)
                 }
             }
-            row(.date, label: "Tanggal", value: dateValue, icon: "calendar", iconColor: .appTextSecondary, index: 2)
+            row(.date, label: L("Tanggal"), value: dateValue, icon: "calendar", iconColor: .appTextSecondary, index: 2)
 
             HStack(spacing: 12) {
                 Text("Catatan")
@@ -703,14 +707,13 @@ struct AddTransactionView: View {
 
     private func billingText(card: Account) -> String {
         let billing = CreditStatement.billing(forPurchaseOn: date, card: card)
-        return "Tagihan " + TransactionDates.dayMonth.string(from: billing.statement)
-            + " · bayar " + TransactionDates.dayMonth.string(from: billing.due)
+        return L("Tagihan %@ · bayar %@", TransactionDates.dayMonth.string(from: billing.statement), TransactionDates.dayMonth.string(from: billing.due))
     }
 
     private func planText(card: Account) -> String {
         let monthly = Double(amount) / Double(max(1, planMonths))
         let billing = CreditStatement.billing(forPurchaseOn: date, card: card)
-        return "Rp" + monthly.formattedAsDigits() + "/bulan · mulai tagihan " + TransactionDates.dayMonth.string(from: billing.statement)
+        return L("Rp%@/bulan · mulai tagihan %@", monthly.formattedAsDigits(), TransactionDates.dayMonth.string(from: billing.statement))
     }
 
     private var dateValue: String {
@@ -824,11 +827,11 @@ struct AddTransactionView: View {
 
     private func sheetTitle(_ kind: PickerKind) -> String {
         switch kind {
-        case .category: "Kategori"
-        case .account: isTransfer ? "Dari dompet" : "Dompet"
-        case .target: "Ke dompet"
-        case .date: "Tanggal"
-        case .installment: "Cicilan 0%"
+        case .category: L("Kategori")
+        case .account: isTransfer ? L("Dari dompet") : L("Dompet")
+        case .target: L("Ke dompet")
+        case .date: L("Tanggal")
+        case .installment: L("Cicilan 0%")
         }
     }
 
@@ -840,7 +843,7 @@ struct AddTransactionView: View {
                     Button {
                         pick(.installment) { installmentMonths = months }
                     } label: {
-                        Text(months == 0 ? "Tidak" : "\(months) bulan")
+                        Text(months == 0 ? L("Tidak") : L("%lld bulan", months))
                             .font(.app(15, weight: .medium))
                             .foregroundStyle(isOn ? Color.appBackground : Color.appText)
                             .frame(maxWidth: .infinity)
@@ -893,7 +896,7 @@ struct AddTransactionView: View {
             return
         }
         if isTransfer, target == nil || target?.id == account.id {
-            errorMessage = "Pilih dompet tujuan yang berbeda."
+            errorMessage = L("Pilih dompet tujuan yang berbeda.")
             return
         }
         let value = Double(amount)
@@ -931,7 +934,7 @@ struct AddTransactionView: View {
                             onSave()
                             NotificationCenter.default.post(name: .dataDidChange, object: nil)
                             closesAfterAlert = true
-                            errorMessage = "Pengeluaran tersimpan, tapi cicilan gagal dibuat. " + error.localizedDescription
+                            errorMessage = L("Pengeluaran tersimpan, tapi cicilan gagal dibuat. %@", error.localizedDescription)
                             return
                         }
                     }
@@ -949,7 +952,7 @@ struct AddTransactionView: View {
                             onSave()
                             NotificationCenter.default.post(name: .dataDidChange, object: nil)
                             closesAfterAlert = true
-                            errorMessage = "Pengeluaran tersimpan, tapi tagihan berulangnya gagal dibuat. " + error.localizedDescription
+                            errorMessage = L("Pengeluaran tersimpan, tapi tagihan berulangnya gagal dibuat. %@", error.localizedDescription)
                             return
                         }
                     }
@@ -981,19 +984,19 @@ struct AddTransactionView: View {
         let day = TransactionDates.dayName(date)
         let detail = isTransfer
             ? money + " · " + day
-            : money + " · " + (category?.name ?? "Tanpa kategori") + " · " + day
+            : money + " · " + (category?.name ?? L("Tanpa kategori")) + " · " + day
         let footnote: String
         switch style.type {
         case .expense:
             let left = dailyBudget - spentOnDate - value
             footnote = dailyBudget <= 0 ? ""
-                : (left < 0 ? "Lewat budget " : "Sisa budget ") + TransactionDates.dayShort(date) + " Rp" + abs(left).formattedAsDigits()
+                : (left < 0 ? L("Lewat budget %@: Rp%@", TransactionDates.dayShort(date), abs(left).formattedAsDigits()) : L("Sisa budget %@: Rp%@", TransactionDates.dayShort(date), abs(left).formattedAsDigits()))
         case .income:
-            footnote = incomeText.replacingOccurrences(of: " jadi ", with: " sekarang ")
+            footnote = incomeMessage(done: true)
         default:
             footnote = "\(account.name) → \(target?.name ?? "")"
         }
-        let title = editing == nil ? style.label + " tersimpan" : "Perubahan tersimpan"
+        let title = editing == nil ? L("%@ tersimpan", style.label) : L("Perubahan tersimpan")
         return DoneSummary(title: title, detail: detail, footnote: footnote)
     }
 

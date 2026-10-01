@@ -58,7 +58,7 @@ private struct DetailPageChrome: ViewModifier {
                     .padding(.trailing, 20)
                     .padding(.bottom, 8)
                     .transition(.scale(scale: 0.5).combined(with: .opacity))
-                    .accessibilityLabel(addLabel)
+                    .accessibilityLabel(Text(LocalizedStringKey(addLabel)))
                 }
             }
             // Appears as the tab bar slides away, so the + reads as what's left of it.

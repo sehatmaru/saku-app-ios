@@ -45,9 +45,9 @@ struct SetupOnboardingView: View {
     /// Recording needs at least one category of each kind to pick from.
     private var categoriesValid: Bool { selectedExpenseCount > 0 && selectedIncomeCount > 0 }
     private var categoryCTA: String {
-        if selectedExpenseCount == 0 { return "Pilih minimal 1 pengeluaran" }
-        if selectedIncomeCount == 0 { return "Pilih minimal 1 pemasukan" }
-        return "Lanjut · \(selectedExpenseCount + selectedIncomeCount) dipilih"
+        if selectedExpenseCount == 0 { return L("Pilih minimal 1 pengeluaran") }
+        if selectedIncomeCount == 0 { return L("Pilih minimal 1 pemasukan") }
+        return L("Lanjut · %lld dipilih", selectedExpenseCount + selectedIncomeCount)
     }
 
     var body: some View {
@@ -120,12 +120,12 @@ struct SetupOnboardingView: View {
         Group {
             switch step {
             case 1:
-                PrimaryButton(title: "Lanjut", isEnabled: !trimmedName.isEmpty) { move(to: 2) }
+                PrimaryButton(title: L("Lanjut"), isEnabled: !trimmedName.isEmpty) { move(to: 2) }
             case 2:
-                PrimaryButton(title: picked.isEmpty ? "Pilih minimal 1" : "Lanjut · \(picked.count) dipilih",
+                PrimaryButton(title: picked.isEmpty ? L("Pilih minimal 1") : L("Lanjut · %lld dipilih", picked.count),
                               isEnabled: !picked.isEmpty) { move(to: 3) }
             case 3:
-                PrimaryButton(title: "Lanjut") { move(to: 4) }
+                PrimaryButton(title: L("Lanjut")) { move(to: 4) }
             case 4:
                 PrimaryButton(title: categoryCTA, isEnabled: categoriesValid) { move(to: 5) }
             default:
@@ -136,7 +136,7 @@ struct SetupOnboardingView: View {
                             .foregroundStyle(Color.appError)
                             .multilineTextAlignment(.center)
                     }
-                    PrimaryButton(title: "Mulai pakai Saku", isLoading: authViewModel.isLoading) {
+                    PrimaryButton(title: L("Mulai pakai Saku"), isLoading: authViewModel.isLoading) {
                         Task { await onFinish(setup) }
                     }
                 }
@@ -176,7 +176,7 @@ struct SetupOnboardingView: View {
 
     private var nameStep: some View {
         VStack(alignment: .leading, spacing: 0) {
-            heading("Siapa namamu?", "Dipakai untuk sapaan di Beranda. Bisa diubah kapan saja.", size: 34)
+            heading(L("Siapa namamu?"), L("Dipakai untuk sapaan di Beranda. Bisa diubah kapan saja."), size: 34)
 
             TextField("", text: $name, prompt: Text("Nama").foregroundStyle(Color.appTextTertiary))
                 .font(.app(28, weight: .medium))
@@ -221,13 +221,13 @@ struct SetupOnboardingView: View {
     private var walletStep: some View {
         ScrollView {
             VStack(spacing: 0) {
-                heading("Dompet apa yang kamu pakai?", nil, size: 30)
+                heading(L("Dompet apa yang kamu pakai?"), nil, size: 30)
                     .padding(.top, 20)
 
                 pocketPreview
                     .padding(.top, 22)
 
-                Text(picked.isEmpty ? "Belum ada dompet dipilih" : "\(picked.count) dompet dipilih")
+                Text(picked.isEmpty ? L("Belum ada dompet dipilih") : L("%lld dompet dipilih", picked.count))
                     .font(.app(14))
                     .foregroundStyle(Color.appTextSecondary)
                     .contentTransition(.numericText())
@@ -362,7 +362,7 @@ struct SetupOnboardingView: View {
     private var balanceStep: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                heading("Berapa saldonya sekarang?", "Kira-kira saja, nanti bisa disesuaikan.", size: 30)
+                heading(L("Berapa saldonya sekarang?"), L("Kira-kira saja, nanti bisa disesuaikan."), size: 30)
                     .padding(.top, 20)
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -446,7 +446,7 @@ struct SetupOnboardingView: View {
                                 amounts[w.id] = chip.value == 0 ? 0 : amount + chip.value
                             }
                         } label: {
-                            Text(chip.label)
+                            Text(L(chip.label))
                                 .font(.app(13, weight: .semibold))
                                 .padding(.horizontal, 12)
                                 .frame(height: 32)
@@ -490,7 +490,7 @@ extension SetupOnboardingView {
     fileprivate var categoryStep: some View {
         ScrollView {
             VStack(spacing: 0) {
-                heading("Kategori apa yang kamu pakai?", nil, size: 30)
+                heading(L("Kategori apa yang kamu pakai?"), nil, size: 30)
                     .padding(.top, 20)
 
                 categoryPocket
@@ -508,8 +508,8 @@ extension SetupOnboardingView {
                     .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 0) {
-                    categoryGroup("Pengeluaran", OnboardingCategory.expense, count: selectedExpenseCount, offset: 0)
-                    categoryGroup("Pemasukan", OnboardingCategory.income, count: selectedIncomeCount,
+                    categoryGroup(L("Pengeluaran"), OnboardingCategory.expense, count: selectedExpenseCount, offset: 0)
+                    categoryGroup(L("Pemasukan"), OnboardingCategory.income, count: selectedIncomeCount,
                                   offset: OnboardingCategory.expense.count)
                 }
                 .padding(.horizontal, 24)
@@ -653,8 +653,8 @@ extension SetupOnboardingView {
     fileprivate var paydayStep: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                heading("Kapan kamu gajian?",
-                        "Budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1. Boleh dilewati, bisa diatur nanti di Profil.",
+                heading(L("Kapan kamu gajian?"),
+                        L("Budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1. Boleh dilewati, bisa diatur nanti di Profil."),
                         size: 30)
                     .padding(.top, 20)
                     .padding(.bottom, 18)

@@ -71,12 +71,12 @@ struct WalletSubscriptionsView: View {
         isBalanceVisible ? value.formattedAsCurrency() : "Rp" + hiddenAmount
     }
 
-    private static let monthTitle: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "id_ID"); f.dateFormat = "MMMM yyyy"; return f
-    }()
-    private static let dayTitle: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "id_ID"); f.dateFormat = "EEEE, d MMMM"; return f
-    }()
+    private static var monthTitle: DateFormatter {
+        let f = DateFormatter(); f.locale = AppLanguage.locale; f.dateFormat = "MMMM yyyy"; return f
+    }
+    private static var dayTitle: DateFormatter {
+        let f = DateFormatter(); f.locale = AppLanguage.locale; f.dateFormat = "EEEE, d MMMM"; return f
+    }
 
     // MARK: Body
 
@@ -88,7 +88,7 @@ struct WalletSubscriptionsView: View {
                 monthHeader
                 calendarGrid
                 legend
-                EmptyStateButton(title: "Tambah di tanggal \(selected)", isFullWidth: true) {
+                EmptyStateButton(title: L("Tambah di tanggal %lld", selected), isFullWidth: true) {
                     form = Editing(existing: nil, day: selected)
                 }
                 .padding(.horizontal, 24)
@@ -107,7 +107,7 @@ struct WalletSubscriptionsView: View {
         .fullScreenCover(item: $form) { form in
             AddSubscriptionView(categories: categories, account: account, subscriptions: subscriptions,
                                 existing: form.existing, day: form.day) {
-                toastText = form.existing == nil ? "Tagihan berulang ditambahkan" : "Perubahan disimpan"
+                toastText = form.existing == nil ? L("Tagihan berulang ditambahkan") : L("Perubahan disimpan")
                 if form.existing == nil { selectedDay = form.day }
                 Task {
                     // After the cover has slid away.
@@ -164,8 +164,8 @@ struct WalletSubscriptionsView: View {
                 .contentTransition(.opacity)
             Spacer()
             HStack(spacing: 4) {
-                monthButton("chevron.left", label: "Bulan sebelumnya", step: -1)
-                monthButton("chevron.right", label: "Bulan berikutnya", step: 1)
+                monthButton("chevron.left", label: L("Bulan sebelumnya"), step: -1)
+                monthButton("chevron.right", label: L("Bulan berikutnya"), step: 1)
             }
         }
         .padding(.leading, 24)
@@ -192,7 +192,7 @@ struct WalletSubscriptionsView: View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
         return VStack(spacing: 0) {
             LazyVGrid(columns: columns, spacing: 0) {
-                ForEach(Array(["S", "S", "R", "K", "J", "S", "M"].enumerated()), id: \.offset) { _, label in
+                ForEach(Array([L("Senin"), L("Selasa"), L("Rabu"), L("Kamis"), L("Jumat"), L("Sabtu"), L("Minggu")].map { String($0.prefix(1)) }.enumerated()), id: \.offset) { _, label in
                     Text(label)
                         .font(.app(12, weight: .semibold))
                         .foregroundStyle(Color(light: 0xA1A1A6, dark: 0x8E8E93))
@@ -245,14 +245,14 @@ struct WalletSubscriptionsView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Tanggal \(day)" + (dots.isEmpty ? "" : ", \(dots.count) tagihan"))
+        .accessibilityLabel(dots.isEmpty ? L("Tanggal %lld", day) : L("Tanggal %lld, %lld tagihan", day, dots.count))
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     private var legend: some View {
         HStack(spacing: 16) {
-            legendItem(.appPrimary, "Tagihan berulang")
-            if isCardDueShown { legendItem(Self.dueColor, "Jatuh tempo kartu") }
+            legendItem(.appPrimary, L("Tagihan berulang"))
+            if isCardDueShown { legendItem(Self.dueColor, L("Jatuh tempo kartu")) }
             Spacer(minLength: 0)
         }
         .font(.app(12))
@@ -316,9 +316,9 @@ struct WalletSubscriptionsView: View {
 
     // MARK: Recorded
 
-    private static let recordedDate: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "id_ID"); f.dateFormat = "d MMM yyyy"; return f
-    }()
+    private static var recordedDate: DateFormatter {
+        let f = DateFormatter(); f.locale = AppLanguage.locale; f.dateFormat = "d MMM yyyy"; return f
+    }
 
     /// What the recurring bills already posted, newest first.
     private var recordedList: some View {
@@ -353,7 +353,7 @@ struct WalletSubscriptionsView: View {
                     iconCircle("checkmark", fill: Color.appPrimary.opacity(0.12), tint: .appPrimary)
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(txn.recurringName ?? "Tagihan berulang")
+                            Text(txn.recurringName ?? L("Tagihan berulang"))
                                 .font(.app(16))
                                 .foregroundStyle(Color.appText)
                                 .lineLimit(1)
@@ -435,7 +435,7 @@ struct WalletSubscriptionsView: View {
                             .foregroundStyle(sub.isActive ? Color.appText : Color.appTextSecondary)
                     }
                     HStack(spacing: 6) {
-                        Text(category?.name ?? "Lainnya")
+                        Text(category?.name ?? L("Lainnya"))
                         if sub.frequency == .yearly { Text("· tiap tahun") }
                         if !sub.isActive {
                             Text("Dijeda")

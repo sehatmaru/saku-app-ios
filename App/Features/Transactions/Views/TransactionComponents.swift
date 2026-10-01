@@ -3,17 +3,18 @@ import SwiftUI
 /// Colour, label, icon and sign for each transaction type, shared by the add form and the detail page.
 struct TransactionStyle {
     let type: Transaction.TransactionType
-    let label: String
+    let labelKey: String
+    var label: String { L(labelKey) }
     let icon: String
     let color: Color
     let sign: String
 
-    static let expense = TransactionStyle(type: .expense, label: "Pengeluaran", icon: "arrow.up.right", color: Color(hex: "D93636"), sign: "−")
-    static let income = TransactionStyle(type: .income, label: "Pemasukan", icon: "arrow.down.left", color: Color(hex: "16875A"), sign: "+")
-    static let transfer = TransactionStyle(type: .transfer, label: "Transfer", icon: "arrow.left.arrow.right", color: Color(hex: "143A73"), sign: "")
-    static let adjustment = TransactionStyle(type: .adjustment, label: "Penyesuaian saldo", icon: "arrow.triangle.2.circlepath", color: Color(hex: "616161"), sign: "")
+    static let expense = TransactionStyle(type: .expense, labelKey: "Pengeluaran", icon: "arrow.up.right", color: Color(hex: "D93636"), sign: "−")
+    static let income = TransactionStyle(type: .income, labelKey: "Pemasukan", icon: "arrow.down.left", color: Color(hex: "16875A"), sign: "+")
+    static let transfer = TransactionStyle(type: .transfer, labelKey: "Transfer", icon: "arrow.left.arrow.right", color: Color(hex: "143A73"), sign: "")
+    static let adjustment = TransactionStyle(type: .adjustment, labelKey: "Penyesuaian saldo", icon: "arrow.triangle.2.circlepath", color: Color(hex: "616161"), sign: "")
 
-    static let cardPayment = TransactionStyle(type: .cardPayment, label: "Bayar tagihan", icon: "creditcard", color: Color(hex: "16875A"), sign: "+")
+    static let cardPayment = TransactionStyle(type: .cardPayment, labelKey: "Bayar tagihan", icon: "creditcard", color: Color(hex: "16875A"), sign: "+")
 
     /// The three types the add form's carousel offers, in order.
     static let entryTypes = [expense, income, transfer]
@@ -39,7 +40,7 @@ func walletColor(_ account: Account?) -> Color {
 /// Bottom sheet with a title, a Selesai button and scrolling content.
 struct PickerSheet<Content: View>: View {
     let title: String
-    var actionTitle = "Selesai"
+    var actionTitle = L("Selesai")
     let onDone: () -> Void
     @ViewBuilder var content: Content
 
@@ -91,8 +92,8 @@ struct DayPicker: View {
         let grid = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                quickDay("Hari ini", today)
-                quickDay("Kemarin", yesterday)
+                quickDay(L("Hari ini"), today)
+                quickDay(L("Kemarin"), yesterday)
             }
 
             HStack {
@@ -100,17 +101,17 @@ struct DayPicker: View {
                     .font(.app(15, weight: .semibold))
                 Spacer()
                 Button { moveMonth(-1) } label: { Image(systemName: "chevron.left") }
-                    .accessibilityLabel("Bulan sebelumnya")
+                    .accessibilityLabel(L("Bulan sebelumnya"))
                 Button { moveMonth(1) } label: { Image(systemName: "chevron.right") }
                     .disabled(isCurrentMonth)
-                    .accessibilityLabel("Bulan berikutnya")
+                    .accessibilityLabel(L("Bulan berikutnya"))
             }
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(Color.appText)
             .padding(.top, 16)
 
             LazyVGrid(columns: grid, spacing: 0) {
-                ForEach(["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"], id: \.self) {
+                ForEach([L("Sen"), L("Sel"), L("Rab"), L("Kam"), L("Jum"), L("Sab"), L("Min")], id: \.self) {
                     Text($0).font(.app(12)).foregroundStyle(Color(light: 0x8E8E93, dark: 0x8E8E93))
                 }
             }
@@ -182,12 +183,12 @@ struct DayPicker: View {
         shownMonth = calendar.date(byAdding: .month, value: delta, to: shownMonth) ?? shownMonth
     }
 
-    private static let monthYear: DateFormatter = {
+    private static var monthYear: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "MMMM yyyy"
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
-    }()
+    }
 }
 
 // MARK: - Number pad
@@ -229,7 +230,7 @@ struct NumberPadKeys: View {
                     .frame(height: keyHeight)
                 }
                 .buttonStyle(KeyStyle())
-                .accessibilityLabel(key == "del" ? "Hapus" : key)
+                .accessibilityLabel(key == "del" ? L("Hapus") : key)
             }
         }
     }
@@ -310,15 +311,15 @@ enum TransactionDates {
 
     /// "Hari ini", "Kemarin" or e.g. "Sel, 15 Sep".
     static func dayName(_ date: Date) -> String {
-        if calendar.isDateInToday(date) { return "Hari ini" }
-        if calendar.isDateInYesterday(date) { return "Kemarin" }
+        if calendar.isDateInToday(date) { return L("Hari ini") }
+        if calendar.isDateInYesterday(date) { return L("Kemarin") }
         return weekdayDayMonth.string(from: date)
     }
 
     /// "hari ini", "kemarin" or e.g. "15 Sep".
     static func dayShort(_ date: Date) -> String {
-        if calendar.isDateInToday(date) { return "hari ini" }
-        if calendar.isDateInYesterday(date) { return "kemarin" }
+        if calendar.isDateInToday(date) { return L("hari ini") }
+        if calendar.isDateInYesterday(date) { return L("kemarin") }
         return dayMonth.string(from: date)
     }
 
@@ -333,16 +334,16 @@ enum TransactionDates {
         return parts.hour != 0 || parts.minute != 0
     }
 
-    static let dayMonth = formatter("d MMM")
-    static let weekdayDayMonth = formatter("EEE, d MMM")
-    private static let full = formatter("EEEE, d MMM")
-    private static let fullWithYear = formatter("EEEE, d MMM yyyy")
-    private static let time = formatter("HH.mm")
+    static var dayMonth: DateFormatter { formatter("d MMM") }
+    static var weekdayDayMonth: DateFormatter { formatter("EEE, d MMM") }
+    private static var full: DateFormatter { formatter("EEEE, d MMM") }
+    private static var fullWithYear: DateFormatter { formatter("EEEE, d MMM yyyy") }
+    private static var time: DateFormatter { formatter("HH.mm") }
 
     private static func formatter(_ format: String) -> DateFormatter {
         let f = DateFormatter()
         f.dateFormat = format
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
     }
 }

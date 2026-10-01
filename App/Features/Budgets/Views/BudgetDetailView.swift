@@ -21,6 +21,8 @@ struct BudgetDetailView: View {
     private enum AdjustScope: String, CaseIterable {
         case thisMonth = "Hanya bulan ini"
         case ongoing = "Bulan ini dan seterusnya"
+
+        var title: String { L(rawValue) }
     }
 
     @State private var adjustScope: AdjustScope = .thisMonth
@@ -85,7 +87,7 @@ struct BudgetDetailView: View {
                 SectionDivider()
 
                 VStack(alignment: .leading, spacing: 0) {
-                    SectionHeader(title: "Transaksi bulan ini", trailing: "\(transactions.count) transaksi")
+                    SectionHeader(title: L("Transaksi bulan ini"), trailing: L("%lld transaksi", transactions.count))
                     transactionListContent
                         .padding(.top, 6)
                 }
@@ -122,7 +124,7 @@ struct BudgetDetailView: View {
                 dismiss()
             }
         } message: {
-            Text("Budget \(category.name) akan diubah menjadi \(String(Int(pendingAmount)).formattedWithThousandSeparator) untuk \"\(adjustScope.rawValue)\".")
+            Text("Budget \(category.name) akan diubah menjadi \(String(Int(pendingAmount)).formattedWithThousandSeparator) untuk \"\(adjustScope.title)\".")
         }
         .alert("Hapus Budget?", isPresented: $showUnsetAlert) {
             Button("Batal", role: .cancel) {}
@@ -221,10 +223,10 @@ struct BudgetDetailView: View {
                             .frame(width: 24)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(scope.rawValue)
+                            Text(scope.title)
                                 .font(.app(16, weight: .medium))
                                 .foregroundStyle(Color.appText)
-                            Text(scope == .thisMonth ? "Ubah budget hanya untuk bulan berjalan" : "Terapkan untuk bulan ini dan seterusnya")
+                            Text(scope == .thisMonth ? L("Ubah budget hanya untuk bulan berjalan") : L("Terapkan untuk bulan ini dan seterusnya"))
                                 .font(.app(13))
                                 .foregroundStyle(Color.appTextSecondary)
                                 .lineLimit(2)
@@ -252,7 +254,7 @@ struct BudgetDetailView: View {
     @ViewBuilder
     private var transactionListContent: some View {
         if transactions.isEmpty {
-            EmptyMessage(icon: "tray", title: "Belum ada transaksi", message: "Pengeluaran kategori ini bulan ini muncul di sini.")
+            EmptyMessage(icon: "tray", title: L("Belum ada transaksi"), message: L("Pengeluaran kategori ini bulan ini muncul di sini."))
                 .padding(.vertical, 32)
         } else {
             VStack(spacing: 0) {
@@ -271,7 +273,7 @@ struct BudgetDetailView: View {
                         }
                     } label: {
                         HStack(spacing: 6) {
-                            Text(showAllTransactions ? "Sembunyikan" : "Lihat Semua (\(transactions.count))")
+                            Text(showAllTransactions ? L("Sembunyikan") : L("Lihat Semua (%lld)", transactions.count))
                                 .font(.app(15, weight: .medium))
                             Image(systemName: showAllTransactions ? "chevron.up" : "chevron.down")
                                 .font(.system(size: 12, weight: .semibold))
@@ -330,9 +332,9 @@ fileprivate struct BudgetSummary: View {
                 .padding(.top, 24)
 
             HStack {
-                total("Terpakai", spent)
+                total(L("Terpakai"), spent)
                 Spacer()
-                total("Budget", amount)
+                total(L("Budget"), amount)
             }
             .padding(.top, 12)
 
@@ -342,7 +344,7 @@ fileprivate struct BudgetSummary: View {
                         Text("Budget bulan ini sudah habis.")
                     } else if daysLeft > 0 {
                         Text("Aman dipakai ")
-                            + Text((remaining / Double(daysLeft)).formattedAsCurrency() + "/hari")
+                            + Text(L("%@/hari", (remaining / Double(daysLeft)).formattedAsCurrency()))
                                 .fontWeight(.semibold)
                                 .foregroundStyle(Color.appText)
                             + Text(" untuk \(daysLeft) hari tersisa.")
@@ -369,10 +371,10 @@ fileprivate struct BudgetSummary: View {
             .monospacedDigit()
     }
 
-    private static let monthFormatter: DateFormatter = {
+    private static var monthFormatter: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "MMMM"
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
-    }()
+    }
 }

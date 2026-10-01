@@ -64,11 +64,11 @@ struct AdvancedSearchView: View {
 
     private var typeSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Jenis transaksi")
+            SectionHeader(title: L("Jenis transaksi"))
             HStack(spacing: 8) {
-                typeChip("Pemasukan", .income)
-                typeChip("Pengeluaran", .expense)
-                typeChip("Transfer", .transfer)
+                typeChip(L("Pemasukan"), .income)
+                typeChip(L("Pengeluaran"), .expense)
+                typeChip(L("Transfer"), .transfer)
             }
             .padding(.top, 14)
         }
@@ -100,15 +100,15 @@ struct AdvancedSearchView: View {
     private var expenseCategorySection: some View {
         VStack(alignment: .leading, spacing: 0) {
             SectionHeader(
-                title: "Kategori pengeluaran",
-                trailing: expenseCategories.count > 8 ? (showAllExpense ? "Ringkas" : "Lihat semua") : nil,
+                title: L("Kategori pengeluaran"),
+                trailing: expenseCategories.count > 8 ? (showAllExpense ? L("Ringkas") : L("Lihat semua")) : nil,
                 trailingColor: .appPrimary,
                 action: { withAnimation(.snappy) { showAllExpense.toggle() } }
             )
 
             let items = showAllExpense ? expenseCategories : Array(expenseCategories.prefix(8))
             if items.isEmpty {
-                emptyText("Tidak ada kategori pengeluaran")
+                emptyText(L("Tidak ada kategori pengeluaran"))
             } else {
                 ChipFlow {
                     ForEach(items) { category in
@@ -131,11 +131,11 @@ struct AdvancedSearchView: View {
 
     private var incomeCategorySection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Kategori pemasukan")
+            SectionHeader(title: L("Kategori pemasukan"))
 
             let incomeCategories = categories.filter { $0.type == .income }
             if incomeCategories.isEmpty {
-                emptyText("Tidak ada kategori pemasukan")
+                emptyText(L("Tidak ada kategori pemasukan"))
             } else {
                 ChipFlow {
                     ForEach(incomeCategories) { category in
@@ -169,7 +169,7 @@ struct AdvancedSearchView: View {
 
     private var dateRangeSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Rentang tanggal")
+            SectionHeader(title: L("Rentang tanggal"))
                 .padding(.horizontal, 24)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -202,7 +202,7 @@ struct AdvancedSearchView: View {
             .padding(.top, 14)
             .padding(.bottom, 8)
 
-            dateRow(label: "Dari", date: draft.dateFrom, onTap: {
+            dateRow(label: L("Dari"), date: draft.dateFrom, onTap: {
                 selectedDatePreset = nil
                 showStartPicker = true
             }, onClear: {
@@ -211,7 +211,7 @@ struct AdvancedSearchView: View {
                 draft.dateTo = nil
             })
 
-            dateRow(label: "Sampai", date: draft.dateTo, onTap: {
+            dateRow(label: L("Sampai"), date: draft.dateTo, onTap: {
                 selectedDatePreset = nil
                 guard draft.dateFrom != nil else { return }
                 showEndPicker = true
@@ -225,7 +225,7 @@ struct AdvancedSearchView: View {
         .padding(.top, 28)
         .sheet(isPresented: $showStartPicker) {
             datePickerSheet(
-                title: "Dari Tanggal",
+                title: L("Dari Tanggal"),
                 date: Binding(
                     get: { draft.dateFrom ?? Date() },
                     set: {
@@ -237,7 +237,7 @@ struct AdvancedSearchView: View {
         }
         .sheet(isPresented: $showEndPicker) {
             datePickerSheet(
-                title: "Sampai Tanggal",
+                title: L("Sampai Tanggal"),
                 date: Binding(
                     get: { draft.dateTo ?? draft.dateFrom ?? Date() },
                     set: {
@@ -259,7 +259,7 @@ struct AdvancedSearchView: View {
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
                         .frame(width: 76, alignment: .leading)
-                    Text(date?.formatted(date: .abbreviated, time: .omitted) ?? "Pilih tanggal")
+                    Text(date?.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(AppLanguage.locale)) ?? L("Pilih tanggal"))
                         .font(.app(16, weight: date == nil ? .regular : .medium))
                         .foregroundStyle(date == nil ? Color.appTextTertiary : Color.appText)
                         .monospacedDigit()
@@ -282,7 +282,7 @@ struct AdvancedSearchView: View {
                         .frame(width: 32, height: 44)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Hapus tanggal \(label.lowercased())")
+                .accessibilityLabel(L("Hapus tanggal %@", label.lowercased()))
             }
         }
         .padding(.horizontal, 24)
@@ -290,7 +290,7 @@ struct AdvancedSearchView: View {
     }
 
     private func datePresetChip(preset: DatePreset, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        FilterChip(title: preset.rawValue, isSelected: isSelected, action: action)
+        FilterChip(title: L(preset.rawValue), isSelected: isSelected, action: action)
     }
 
     private func datePickerSheet(title: String, date: Binding<Date>, minimumDate: Date? = nil) -> some View {
@@ -304,7 +304,7 @@ struct AdvancedSearchView: View {
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("Selesai") {
-                            if title == "Dari Tanggal" {
+                            if title == L("Dari Tanggal") {
                                 showStartPicker = false
                             } else {
                                 showEndPicker = false
@@ -349,7 +349,7 @@ struct AdvancedSearchView: View {
     }
 
     private var bottomBar: some View {
-        EmptyStateButton(title: "Terapkan Filter", icon: nil, isFullWidth: true) {
+        EmptyStateButton(title: L("Terapkan Filter"), icon: nil, isFullWidth: true) {
             filter = draft
             dismiss()
         }

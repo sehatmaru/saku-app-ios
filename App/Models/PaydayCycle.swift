@@ -50,7 +50,7 @@ struct PaydayCycle: Equatable {
     func label(for date: Date = Date(), calendar: Calendar = .current) -> String {
         let period = period(containing: date, calendar: calendar)
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = AppLanguage.locale
         formatter.calendar = calendar
         formatter.timeZone = calendar.timeZone
         if day == 1 {

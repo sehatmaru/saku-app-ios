@@ -31,7 +31,7 @@ struct SelectionSheet<Content: View>: View {
                     .autocorrectionDisabled()
                 if !query.isEmpty {
                     Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
-                        .accessibilityLabel("Hapus pencarian")
+                        .accessibilityLabel(L("Hapus pencarian"))
                 }
             }
             .foregroundStyle(Color.appTextSecondary)
@@ -100,16 +100,16 @@ struct WalletPickerSheet: View {
     private var results: [Account] { accounts.filter { $0.name.localizedCaseInsensitiveContains(trimmed) } }
 
     var body: some View {
-        SelectionSheet(title: title, searchPrompt: "Cari dompet", query: $query, onDone: onDone) {
+        SelectionSheet(title: title, searchPrompt: L("Cari dompet"), query: $query, onDone: onDone) {
             if !trimmed.isEmpty {
                 if results.isEmpty {
-                    emptyResult("Tidak ada dompet “\(trimmed)”")
+                    emptyResult(L("Tidak ada dompet “%@”", trimmed))
                 } else {
                     smallGrid(results).padding(.top, 8)
                 }
             } else {
                 if !recent.isEmpty {
-                    sectionTitle("Terakhir dipakai", top: 12)
+                    sectionTitle(L("Terakhir dipakai"), top: 12)
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
                         ForEach(recent) { bigTile($0) }
                     }
@@ -119,7 +119,7 @@ struct WalletPickerSheet: View {
                 ForEach(Self.groups, id: \.0) { type, label in
                     let items = accounts.filter { $0.type == type }
                     if !items.isEmpty {
-                        sectionTitle(label, top: 18)
+                        sectionTitle(L(label), top: 18)
                         smallGrid(items).padding(.top, 8)
                     }
                 }
@@ -152,7 +152,7 @@ struct WalletPickerSheet: View {
     private func balance(_ account: Account) -> String {
         guard isBalanceVisible else { return "Rp" + hiddenAmount }
         return account.isCreditCard
-            ? "Sisa Rp" + (account.availableCredit ?? 0).formattedAsDigits()
+            ? L("Sisa Rp%@", (account.availableCredit ?? 0).formattedAsDigits())
             : "Rp" + account.balance.formattedAsDigits()
     }
 
@@ -193,7 +193,7 @@ struct WalletPickerSheet: View {
             .contentShape(RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(PressScaleStyle())
-        .accessibilityLabel(account.name + (account.id == mainId ? ", utama" : ""))
+        .accessibilityLabel(account.name + (account.id == mainId ? L(", utama") : ""))
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
@@ -220,7 +220,7 @@ struct WalletPickerSheet: View {
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(PressScaleStyle())
-        .accessibilityLabel(account.name + (account.id == mainId ? ", utama" : ""))
+        .accessibilityLabel(account.name + (account.id == mainId ? L(", utama") : ""))
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
@@ -262,19 +262,19 @@ struct CategoryPickerSheet: View {
     }
 
     var body: some View {
-        SelectionSheet(title: title, searchPrompt: "Cari kategori", query: $query, onDone: onDone) {
+        SelectionSheet(title: title, searchPrompt: L("Cari kategori"), query: $query, onDone: onDone) {
             if !trimmed.isEmpty {
                 if results.isEmpty {
-                    emptyResult("Tidak ada kategori “\(trimmed)”")
+                    emptyResult(L("Tidak ada kategori “%@”", trimmed))
                 } else {
                     grid(results).padding(.top, 8)
                 }
             } else {
                 if !frequent.isEmpty {
-                    sectionTitle("Sering dipakai", top: 14)
+                    sectionTitle(L("Sering dipakai"), top: 14)
                     grid(frequent).padding(.top, 8)
                 }
-                sectionTitle(frequent.isEmpty ? "Semua kategori" : "Semua kategori", top: 14)
+                sectionTitle(L("Semua kategori"), top: 14)
                 grid(rest).padding(.top, 8)
             }
         }

@@ -49,7 +49,7 @@ struct BudgetListView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ScreenHeader(title: "Budget") {}
+                    ScreenHeader(title: L("Budget")) {}
 
                     periodHeader
 
@@ -147,7 +147,7 @@ struct BudgetListView: View {
                        isActive: !isPeriodHidden)
                 .id(days.total)
                 .padding(.top, 10)
-            (Text(headerPayday.map { "Gajian tiap tanggal \($0)" } ?? "Mengikuti tanggal 1")
+            (Text(headerPayday.map { L("Gajian tiap tanggal %lld", $0) } ?? L("Mengikuti tanggal 1"))
                 + Text(" · hari ke-\(dayNumber) dari \(days.total)"))
                 .padding(.top, 12)
         }
@@ -212,7 +212,7 @@ struct BudgetListView: View {
             frozenPayday = nil
             isPeriodHidden = false
             try? await Task.sleep(for: .milliseconds(140))
-            showToast("Periode budget diperbarui")
+            showToast(L("Periode budget diperbarui"))
         }
     }
 
@@ -221,7 +221,7 @@ struct BudgetListView: View {
     private var budgetList: some View {
         VStack(alignment: .leading, spacing: 0) {
             if !setItems.isEmpty {
-                SectionHeader(title: "Per kategori", trailing: "\(setItems.count) aktif")
+                SectionHeader(title: L("Per kategori"), trailing: L("%lld aktif", setItems.count))
                     .padding(.horizontal, 24)
                     .padding(.top, 14)
                     .padding(.bottom, 4)
@@ -237,7 +237,7 @@ struct BudgetListView: View {
                 .buttonStyle(RowPressStyle())
             }
             if !unsetItems.isEmpty {
-                SectionHeader(title: "Belum diatur", trailing: "\(unsetItems.count)")
+                SectionHeader(title: L("Belum diatur"), trailing: "\(unsetItems.count)")
                     .padding(.horizontal, 24)
                     .padding(.top, setItems.isEmpty ? 14 : 22)
                     .padding(.bottom, 4)
@@ -274,8 +274,8 @@ struct BudgetListView: View {
                     .foregroundStyle(Color.appText)
                     .lineLimit(1)
                 Text(average > 0
-                     ? "Rata-rata 3 bulan " + (isBalanceVisible ? average.formattedAsCurrency() : "Rp" + hiddenAmount)
-                     : "Belum dipakai")
+                     ? L("Rata-rata 3 bulan %@", isBalanceVisible ? average.formattedAsCurrency() : "Rp" + hiddenAmount)
+                     : L("Belum dipakai"))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
@@ -297,8 +297,8 @@ struct BudgetListView: View {
 
     private var emptyState: some View {
         EmptyMessage(icon: "chart.pie",
-                     title: "Belum ada budget",
-                     message: "Atur batas pengeluaran per kategori. Tiap periode mulai dari nol, sisa tidak terbawa.")
+                     title: L("Belum ada budget"),
+                     message: L("Atur batas pengeluaran per kategori. Tiap periode mulai dari nol, sisa tidak terbawa."))
             .padding(.horizontal, 40)
             .padding(.top, 70)
     }
@@ -307,7 +307,7 @@ struct BudgetListView: View {
         flashId = category.id
         Task {
             try? await Task.sleep(for: .milliseconds(300))
-            showToast("Budget \(category.name) aktif")
+            showToast(L("Budget %@ aktif", category.name))
             try? await Task.sleep(for: .milliseconds(1100))
             flashId = nil
         }
@@ -408,7 +408,7 @@ struct BudgetCardView: View {
                         .lineLimit(1)
                 }
                 SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive)
-                Text("\(money(budget.spent)) dari \(money(budget.amount))")
+                Text(L("%@ dari %@", money(budget.spent), money(budget.amount)))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
@@ -422,11 +422,11 @@ struct BudgetCardView: View {
         if budget.remaining < 0 {
             // Big overruns shortened ("Lewat Rp6 M") so the status fits beside the name.
             let over = -budget.remaining
-            return "Lewat " + (over >= 10_000_000 && isBalanceVisible ? "Rp" + over.abbreviatedRupiah() : money(over))
+            return L("Lewat %@", over >= 10_000_000 && isBalanceVisible ? "Rp" + over.abbreviatedRupiah() : money(over))
         }
-        if budget.remaining == 0 { return "Habis" }
+        if budget.remaining == 0 { return L("Habis") }
         // Today still counts as a day to spend in.
-        return money(budget.remaining / Double(budget.daysRemaining + 1)) + "/hari"
+        return L("%@/hari", money(budget.remaining / Double(budget.daysRemaining + 1)))
     }
 
     private func color(_ budget: Budget) -> Color {

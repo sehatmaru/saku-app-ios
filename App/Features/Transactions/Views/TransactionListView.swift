@@ -34,14 +34,14 @@ struct TransactionListView: View {
                             .frame(height: 0)
                             .id("scrollTop")
 
-                        ScreenHeader(title: "Transaksi") {
+                        ScreenHeader(title: L("Transaksi")) {
                             Button {
                                 withAnimation(.smooth) { isBalanceVisible.toggle() }
                                 isBalanceVisibleStorage = isBalanceVisible
                             } label: {
                                 Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
                             }
-                            .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+                            .accessibilityLabel(isBalanceVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
                         }
 
                         searchField
@@ -112,7 +112,7 @@ struct TransactionListView: View {
                                 .background(.regularMaterial, in: Circle())
                                 .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
                         }
-                        .accessibilityLabel("Kembali ke atas")
+                        .accessibilityLabel(L("Kembali ke atas"))
                         .padding(.trailing, 24)
                         .padding(.bottom, 16)
                         .transition(.scale.combined(with: .opacity))
@@ -193,7 +193,7 @@ struct TransactionListView: View {
             .padding(.horizontal, 24)
             .padding(.top, 24)
         }
-        .accessibilityLabel("Memuat")
+        .accessibilityLabel(L("Memuat"))
     }
 
     /// Widths of the skeleton rows: title and subtitle as shares of the row, amount in points.
@@ -221,7 +221,7 @@ struct TransactionListView: View {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(Color.appTextTertiary)
                 }
-                .accessibilityLabel("Hapus pencarian")
+                .accessibilityLabel(L("Hapus pencarian"))
             }
         }
         .padding(.horizontal, 12)
@@ -259,9 +259,9 @@ struct TransactionListView: View {
                     .padding(.top, 22)
 
                 HStack {
-                    flowTotal("Masuk", viewModel.thisMonthIncome)
+                    flowTotal(Lx("Masuk", en: "In"), viewModel.thisMonthIncome)
                     Spacer()
-                    flowTotal("Keluar", viewModel.thisMonthExpense)
+                    flowTotal(Lx("Keluar", en: "Out"), viewModel.thisMonthExpense)
                 }
                 .padding(.top, 12)
             }
@@ -289,7 +289,7 @@ struct TransactionListView: View {
                 if hasAdvancedFilters {
                     activeFilterChips
                 }
-                FilterChip(title: "Semua", isSelected: filter.transactionTypes.isEmpty) {
+                FilterChip(title: L("Semua"), isSelected: filter.transactionTypes.isEmpty) {
                     filter.transactionTypes = []
                 }
                 ForEach([Transaction.TransactionType.income, .expense, .transfer], id: \.self) { type in
@@ -297,7 +297,7 @@ struct TransactionListView: View {
                         filter.transactionTypes = filter.transactionTypes == [type] ? [] : [type]
                     }
                 }
-                FilterChip(title: "Berulang", isSelected: filter.recurringOnly) {
+                FilterChip(title: L("Berulang"), isSelected: filter.recurringOnly) {
                     filter.recurringOnly.toggle()
                 }
             }
@@ -319,7 +319,7 @@ struct TransactionListView: View {
             if !filter.expenseCategoryIds.isEmpty || !filter.incomeCategoryIds.isEmpty {
                 let count = filter.expenseCategoryIds.count + filter.incomeCategoryIds.count
                 ActiveFilterChip(
-                    title: "Kategori (\(count))",
+                    title: L("Kategori (%lld)", count),
                     onRemove: {
                         filter.expenseCategoryIds = []
                         filter.incomeCategoryIds = []
@@ -329,7 +329,7 @@ struct TransactionListView: View {
 
             if let from = filter.dateFrom, let to = filter.dateTo {
                 ActiveFilterChip(
-                    title: "\(from.formatted(date: .numeric, time: .omitted)) - \(to.formatted(date: .numeric, time: .omitted))",
+                    title: "\(from.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLanguage.locale))) - \(to.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLanguage.locale)))",
                     onRemove: {
                         filter.dateFrom = nil
                         filter.dateTo = nil
@@ -337,12 +337,12 @@ struct TransactionListView: View {
                 )
             } else if let from = filter.dateFrom {
                 ActiveFilterChip(
-                    title: "Dari \(from.formatted(date: .numeric, time: .omitted))",
+                    title: L("Dari %@", from.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLanguage.locale))),
                     onRemove: { filter.dateFrom = nil }
                 )
             } else if let to = filter.dateTo {
                 ActiveFilterChip(
-                    title: "Sampai \(to.formatted(date: .numeric, time: .omitted))",
+                    title: L("Sampai %@", to.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLanguage.locale))),
                     onRemove: { filter.dateTo = nil }
                 )
             }
@@ -371,16 +371,16 @@ struct TransactionListView: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Filter lanjutan")
+        .accessibilityLabel(L("Filter lanjutan"))
     }
 
     private func typeLabel(_ type: Transaction.TransactionType) -> String {
         switch type {
-        case .income: "Pemasukan"
-        case .expense: "Pengeluaran"
-        case .transfer: "Transfer"
-        case .adjustment: "Penyesuaian saldo"
-        case .cardPayment: "Bayar tagihan"
+        case .income: L("Pemasukan")
+        case .expense: L("Pengeluaran")
+        case .transfer: L("Transfer")
+        case .adjustment: L("Penyesuaian saldo")
+        case .cardPayment: L("Bayar tagihan")
         }
     }
 
@@ -563,10 +563,10 @@ struct TransactionListView: View {
             VStack(spacing: 22) {
                 EmptyMessage(
                     icon: "tray",
-                    title: "Belum ada transaksi",
-                    message: "Pemasukan dan pengeluaran yang kamu catat di \(Self.monthFormatter.string(from: Date())) akan muncul di sini."
+                    title: L("Belum ada transaksi"),
+                    message: L("Pemasukan dan pengeluaran yang kamu catat di %@ akan muncul di sini.", Self.monthFormatter.string(from: Date()))
                 )
-                EmptyStateButton(title: "Catat transaksi", action: onAdd)
+                EmptyStateButton(title: L("Catat transaksi"), action: onAdd)
             }
             .padding(.horizontal, 40)
             .padding(.top, 68)
@@ -574,12 +574,12 @@ struct TransactionListView: View {
             VStack(spacing: 22) {
                 EmptyMessage(
                     icon: "magnifyingglass",
-                    title: "Tidak ada hasil",
+                    title: L("Tidak ada hasil"),
                     message: query.isEmpty
-                        ? "Tidak ada transaksi dengan filter ini."
-                        : "Tidak ada transaksi \"\(query)\" dengan filter ini."
+                        ? L("Tidak ada transaksi dengan filter ini.")
+                        : L("Tidak ada transaksi \"%@\" dengan filter ini.", query)
                 )
-                EmptyStateButton(title: "Hapus filter", icon: nil, isSecondary: true) {
+                EmptyStateButton(title: L("Hapus filter"), icon: nil, isSecondary: true) {
                     withAnimation(.smooth) {
                         searchText = ""
                         filter = TransactionFilter()
@@ -591,12 +591,12 @@ struct TransactionListView: View {
         }
     }
 
-    private static let monthFormatter: DateFormatter = {
+    private static var monthFormatter: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "MMMM"
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
-    }()
+    }
 }
 
 struct ActiveFilterChip: View {

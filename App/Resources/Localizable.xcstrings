@@ -1,0 +1,6950 @@
+{
+  "sourceLanguage": "id",
+  "strings": {
+    " bisa dipakai hari ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " safe to spend today."
+          }
+        }
+      }
+    },
+    " dan ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " and "
+          }
+        }
+      }
+    },
+    " untuk %lld hari tersisa.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " for the %lld days left."
+          }
+        }
+      }
+    },
+    " untuk +%lld poin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " for +%lld points"
+          }
+        }
+      }
+    },
+    " · hari ke-%lld dari %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · day %lld of %lld"
+          }
+        }
+      }
+    },
+    " · pilih dompet lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · choose another wallet"
+          }
+        }
+      }
+    },
+    "%@ akan dihapus dari daftar dompet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ will be removed from your wallet list."
+          }
+        }
+      }
+    },
+    "%@ akan kembali ke %@ dan keluar dari %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ will go back to %2$@ and leave %3$@."
+          }
+        }
+      }
+    },
+    "%@ akan kembali ke %@ dan tagihan %@ naik lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ will go back to %2$@ and the %3$@ bill goes up again."
+          }
+        }
+      }
+    },
+    "%@ belum tercatat lunas. Sudah kamu bayar?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ isn't recorded as paid. Did you pay it?"
+          }
+        }
+      }
+    },
+    "%@ dan budget %@ bertambah %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ and the %2$@ budget goes up by %3$@."
+          }
+        }
+      }
+    },
+    "%@ dan saldonya (%@) akan keluar dari total saldo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ and its balance (%@) will leave your total balance."
+          }
+        }
+      }
+    },
+    "%@ dan utang %@ akan dihapus dari daftar dan total.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ and its %@ debt will be removed from the list and totals."
+          }
+        }
+      }
+    },
+    "%@ dari %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of %@"
+          }
+        }
+      }
+    },
+    "%@ dengan limit Rp%@ siap dipakai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ with a Rp%@ limit is ready to use."
+          }
+        }
+      }
+    },
+    "%@ dengan saldo Rp%@ sudah masuk ke total saldo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ with a Rp%@ balance is now part of your total balance."
+          }
+        }
+      }
+    },
+    "%@ diarsipkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ archived"
+          }
+        }
+      }
+    },
+    "%@ diperpanjang 3 hari lagi sebesar %@. Batalkan sebelum itu kalau sudah tidak dipakai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ renews in 3 days for %@. Cancel before then if you no longer use it."
+          }
+        }
+      }
+    },
+    "%@ disembunyikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ hidden"
+          }
+        }
+      }
+    },
+    "%@ ditampilkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ shown"
+          }
+        }
+      }
+    },
+    "%@ ditampilkan lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ shown again"
+          }
+        }
+      }
+    },
+    "%@ lunas · pembayaran tercatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ paid off · payment recorded"
+          }
+        }
+      }
+    },
+    "%@ paling menahan skormu. Perbaiki itu dulu untuk menambah hingga %lld poin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is holding your score back most. Fix that first to gain up to %lld points."
+          }
+        }
+      }
+    },
+    "%@ punya %lld transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ has %lld transactions."
+          }
+        }
+      }
+    },
+    "%@ sekarang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ now"
+          }
+        }
+      }
+    },
+    "%@ sudah lewat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is overdue"
+          }
+        }
+      }
+    },
+    "%@ tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ saved"
+          }
+        }
+      }
+    },
+    "%@ · %@ per periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@ per period"
+          }
+        }
+      }
+    },
+    "%@ · %lld hari lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld days left"
+          }
+        }
+      }
+    },
+    "%@ · titik oranye = jatuh tempo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · orange dot = due date"
+          }
+        }
+      }
+    },
+    "%@, saldo %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, balance %@"
+          }
+        }
+      }
+    },
+    "%@, tagihan %@ lewat jatuh tempo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, bill %@ overdue"
+          }
+        }
+      }
+    },
+    "%@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@."
+          }
+        }
+      }
+    },
+    "%@/hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/day"
+          }
+        }
+      }
+    },
+    "%@: pemasukan %@, pengeluaran %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: income %@, expenses %@"
+          }
+        }
+      }
+    },
+    "%lld aktif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld active"
+          }
+        }
+      }
+    },
+    "%lld akun": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld account"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld accounts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld months"
+          }
+        }
+      }
+    },
+    "%lld bulan · Rp%@/bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld months · Rp%@/month"
+          }
+        }
+      }
+    },
+    "%lld dari %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld"
+          }
+        }
+      }
+    },
+    "%lld dari %lld sudah ditagih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld billed"
+          }
+        }
+      }
+    },
+    "%lld dipakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld used"
+          }
+        }
+      }
+    },
+    "%lld dipakai · %lld punya budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld used · %lld have a budget"
+          }
+        }
+      }
+    },
+    "%lld dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld wallets"
+          }
+        }
+      }
+    },
+    "%lld dompet dipilih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld wallets selected"
+          }
+        }
+      }
+    },
+    "%lld hari lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days left"
+          }
+        }
+      }
+    },
+    "%lld jt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lldM"
+          }
+        }
+      }
+    },
+    "%lld kategori dipilih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld categories selected"
+          }
+        }
+      }
+    },
+    "%lld kategori lain sudah punya budget.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld other categories already have a budget."
+          }
+        }
+      }
+    },
+    "%lld persen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld percent"
+          }
+        }
+      }
+    },
+    "%lld tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld bills"
+          }
+        }
+      }
+    },
+    "%lld tagihan belum dibayar · ingatkan besok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld bills not paid · remind tomorrow"
+          }
+        }
+      }
+    },
+    "%lld tagihan kartu kredit lewat jatuh tempo, total %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld credit card bills are past due, %@ in total."
+          }
+        }
+      }
+    },
+    "%lld tagihan · %@/bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld bills · %@/month"
+          }
+        }
+      }
+    },
+    "%lld transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld transactions"
+          }
+        }
+      }
+    },
+    "%lld transaksi lama tetap memakai namanya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld past transactions keep using its name."
+          }
+        }
+      }
+    },
+    "%lld transaksi lama tetap tercatat sebagai %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld past transactions stay recorded as %@."
+          }
+        }
+      }
+    },
+    "%lld%% dari limit %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% of the %@ limit"
+          }
+        }
+      }
+    },
+    "%lld%% terpakai · %lld hari lagi di %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% used · %lld days left in %@"
+          }
+        }
+      }
+    },
+    "%lldrb": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lldK"
+          }
+        }
+      }
+    },
+    "+%lld poin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld points"
+          }
+        }
+      }
+    },
+    "+1 jt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+1M"
+          }
+        }
+      }
+    },
+    "+100 rb": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+100K"
+          }
+        }
+      }
+    },
+    "+50 rb": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+50K"
+          }
+        }
+      }
+    },
+    ", jatuh tempo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", due date"
+          }
+        }
+      }
+    },
+    ", utama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", main"
+          }
+        }
+      }
+    },
+    "30 Hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 days"
+          }
+        }
+      }
+    },
+    "7 Hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 days"
+          }
+        }
+      }
+    },
+    "Akhir bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End of month"
+          }
+        }
+      }
+    },
+    "Aktifkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable"
+          }
+        }
+      }
+    },
+    "Akun ini beserta dompet, transaksi, budget, kategori, dan pengaturannya dihapus permanen, lalu kamu kembali ke awal. Tidak bisa dibatalkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This account and its wallets, transactions, budgets, categories and settings are deleted permanently, and you start over. This can't be undone."
+          }
+        }
+      }
+    },
+    "Aman dipakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safe to spend"
+          }
+        }
+      }
+    },
+    "Aman dipakai ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safe to spend "
+          }
+        }
+      }
+    },
+    "Analisis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analysis"
+          }
+        }
+      }
+    },
+    "Analitik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analytics"
+          }
+        }
+      }
+    },
+    "Anda akan keluar dari akun. Data tetap tersimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're about to sign out. Your data stays saved."
+          }
+        }
+      }
+    },
+    "Arsipkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive"
+          }
+        }
+      }
+    },
+    "Arsipkan %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive %@?"
+          }
+        }
+      }
+    },
+    "Arsipkan dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive wallet"
+          }
+        }
+      }
+    },
+    "Arsipkan saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just archive"
+          }
+        }
+      }
+    },
+    "Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive it instead: the wallet is hidden from the list and total balance, and its history is kept."
+          }
+        }
+      }
+    },
+    "Arus kas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash flow"
+          }
+        }
+      }
+    },
+    "Atur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set"
+          }
+        }
+      }
+    },
+    "Atur batas pengeluaran per kategori. Tiap periode mulai dari nol, sisa tidak terbawa.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set a spending limit per category. Each period starts from zero; leftovers don't carry over."
+          }
+        }
+      }
+    },
+    "Atur budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set budget"
+          }
+        }
+      }
+    },
+    "Atur uang tanpa ribet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage money without the hassle."
+          }
+        }
+      }
+    },
+    "Awal periode budget & ringkasan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start of the budget & summary period"
+          }
+        }
+      }
+    },
+    "Bahasa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        }
+      }
+    },
+    "Baik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good"
+          }
+        }
+      }
+    },
+    "Bank": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank"
+          }
+        }
+      }
+    },
+    "Bank & jenis kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank & card type"
+          }
+        }
+      }
+    },
+    "Bank penerbit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issuing bank"
+          }
+        }
+      }
+    },
+    "Bank · Utama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank · Main"
+          }
+        }
+      }
+    },
+    "Bank, e-wallet, cash, dan kartu kredit — saldonya terlihat sekaligus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank, e-wallet, cash and credit cards — all balances at a glance."
+          }
+        }
+      }
+    },
+    "Batal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Batas total yang diberikan bank untuk kartu ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The total limit the bank gave for this card."
+          }
+        }
+      }
+    },
+    "Bayar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay"
+          }
+        }
+      }
+    },
+    "Bayar dari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay from"
+          }
+        }
+      }
+    },
+    "Bayar penuh %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay in full %@"
+          }
+        }
+      }
+    },
+    "Bayar sebelum tanggal ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay before this date"
+          }
+        }
+      }
+    },
+    "Bayar sekarang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay now"
+          }
+        }
+      }
+    },
+    "Bayar tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay bill"
+          }
+        }
+      }
+    },
+    "Bayar tagihan kartu kredit bukan pengeluaran, jadi tidak memengaruhi budget.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paying a credit card bill isn't an expense, so it doesn't affect your budget."
+          }
+        }
+      }
+    },
+    "Bayar tagihannya, atau catat pembayarannya kalau sudah kamu bayar, supaya skor pulih dan tidak kena bunga.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay the bill, or record the payment if you already paid, so your score recovers and you avoid interest."
+          }
+        }
+      }
+    },
+    "Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purchases after this date go on next month's bill."
+          }
+        }
+      }
+    },
+    "Belanjamu lebih cepat dari jadwal. Batasi ke %@ per hari supaya cukup sampai akhir bulan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're spending faster than planned. Limit yourself to %@ per day to make it to the end of the month."
+          }
+        }
+      }
+    },
+    "Belum": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not yet"
+          }
+        }
+      }
+    },
+    "Belum ada": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None yet"
+          }
+        }
+      }
+    },
+    "Belum ada budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No budgets yet"
+          }
+        }
+      }
+    },
+    "Belum ada budget bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No budget this month"
+          }
+        }
+      }
+    },
+    "Belum ada budget bulan ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No budget this month yet."
+          }
+        }
+      }
+    },
+    "Belum ada budget untuk transaksi ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No budget for this transaction yet."
+          }
+        }
+      }
+    },
+    "Belum ada dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No wallets yet"
+          }
+        }
+      }
+    },
+    "Belum ada dompet dipilih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No wallets selected"
+          }
+        }
+      }
+    },
+    "Belum ada dompet untuk membayar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No wallet to pay with"
+          }
+        }
+      }
+    },
+    "Belum ada kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No categories yet"
+          }
+        }
+      }
+    },
+    "Belum ada pemasukan tercatat, tapi ada pengeluaran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No income recorded yet, but there are expenses."
+          }
+        }
+      }
+    },
+    "Belum ada pemasukan tercatat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No income recorded yet."
+          }
+        }
+      }
+    },
+    "Belum ada pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No spending yet"
+          }
+        }
+      }
+    },
+    "Belum ada pengeluaran bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No spending this month yet"
+          }
+        }
+      }
+    },
+    "Belum ada pengeluaran untuk dibandingkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No spending yet to compare against."
+          }
+        }
+      }
+    },
+    "Belum ada saldo tersimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No savings balance yet."
+          }
+        }
+      }
+    },
+    "Belum ada tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No bill yet"
+          }
+        }
+      }
+    },
+    "Belum ada transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions yet"
+          }
+        }
+      }
+    },
+    "Belum ada transaksi di kategori ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions in this category yet."
+          }
+        }
+      }
+    },
+    "Belum ada yang diarsipkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing archived yet"
+          }
+        }
+      }
+    },
+    "Belum ada. Tagihan yang jatuh tempo muncul di sini setelah dicatat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None yet. Bills that come due show up here once recorded."
+          }
+        }
+      }
+    },
+    "Belum diatur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not set"
+          }
+        }
+      }
+    },
+    "Belum dibayar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unpaid"
+          }
+        }
+      }
+    },
+    "Belum dibayar · ingatkan besok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not paid · remind tomorrow"
+          }
+        }
+      }
+    },
+    "Belum diisi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not filled in"
+          }
+        }
+      }
+    },
+    "Belum dipakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not used yet"
+          }
+        }
+      }
+    },
+    "Belum dipilih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not chosen"
+          }
+        }
+      }
+    },
+    "Belum punya budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No budget yet"
+          }
+        }
+      }
+    },
+    "Beranda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        }
+      }
+    },
+    "Berapa saldonya sekarang?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What are your balances now?"
+          }
+        }
+      }
+    },
+    "Bergabung sejak %@ · Saku versi %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Joined %@ · Saku version %@"
+          }
+        }
+      }
+    },
+    "Berulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recurring"
+          }
+        }
+      }
+    },
+    "Bisa dipakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can spend"
+          }
+        }
+      }
+    },
+    "Bisa ditampilkan lagi kapan saja dari Kelola kategori.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can show it again any time from Manage categories."
+          }
+        }
+      }
+    },
+    "Buat budget untuk kategori pengeluaran terbesarmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a budget for your biggest spending categories."
+          }
+        }
+      }
+    },
+    "Buat budget, mulai dari %@ yang paling besar pengeluarannya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a budget, starting with %@, your biggest expense."
+          }
+        }
+      }
+    },
+    "Buat dompet terlebih dahulu\nsebelum menambahkan transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a wallet first\nbefore adding transactions."
+          }
+        }
+      }
+    },
+    "Buat kategori sekaligus atur budgetnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a category and set its budget"
+          }
+        }
+      }
+    },
+    "Budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget"
+          }
+        }
+      }
+    },
+    "Budget %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget %@"
+          }
+        }
+      }
+    },
+    "Budget %@ akan diubah menjadi %@ untuk \"%@\".": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The %@ budget will change to %@ for \"%@\"."
+          }
+        }
+      }
+    },
+    "Budget %@ aktif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ budget is active"
+          }
+        }
+      }
+    },
+    "Budget %@ dihentikan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The %@ budget is stopped."
+          }
+        }
+      }
+    },
+    "Budget & ringkasan berjalan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget & summary run"
+          }
+        }
+      }
+    },
+    "Budget Rp%@ berhenti mulai periode ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Rp%@ budget stops from this period."
+          }
+        }
+      }
+    },
+    "Budget Rp%@/periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget Rp%@/period"
+          }
+        }
+      }
+    },
+    "Budget bulan ini sudah habis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month's budget is used up."
+          }
+        }
+      }
+    },
+    "Budget bulan ini sudah terlewati. Tahan pengeluaran yang tidak wajib sampai bulan depan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You've gone over this month's budget. Hold off on non-essential spending until next month."
+          }
+        }
+      }
+    },
+    "Budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1. Boleh dilewati, bisa diatur nanti di Profil.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your budget and monthly summary start when your pay arrives, not on the 1st. You can skip this and set it later in Profile."
+          }
+        }
+      }
+    },
+    "Budget dihitung per kategori. Tiap periode mulai dari nol, sisa tidak terbawa ke periode berikutnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budgets are counted per category. Each period starts from zero; leftovers don't carry over."
+          }
+        }
+      }
+    },
+    "Budget harian %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily budget %@"
+          }
+        }
+      }
+    },
+    "Budget per periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget per period"
+          }
+        }
+      }
+    },
+    "Budget tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget saved"
+          }
+        }
+      }
+    },
+    "Budget untuk %@ akan dihapus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The budget for %@ will be deleted."
+          }
+        }
+      }
+    },
+    "Budget yang kelihatan sisanya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budgets that show what's left."
+          }
+        }
+      }
+    },
+    "Budget, “Aman dipakai” harian, dan ringkasan bulan ini di Beranda dimulai dari tanggal ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budgets, the daily “Safe to spend” and this month's summary on Home start from this date."
+          }
+        }
+      }
+    },
+    "Buka Dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Wallets"
+          }
+        }
+      }
+    },
+    "Buka dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open wallets"
+          }
+        }
+      }
+    },
+    "Buka tumpukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand stack"
+          }
+        }
+      }
+    },
+    "Bulan Ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month"
+          }
+        }
+      }
+    },
+    "Bulan berikutnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next month"
+          }
+        }
+      }
+    },
+    "Bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month"
+          }
+        }
+      }
+    },
+    "Bulan ini dan seterusnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month onwards"
+          }
+        }
+      }
+    },
+    "Bulan sebelumnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous month"
+          }
+        }
+      }
+    },
+    "Cari dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search wallets"
+          }
+        }
+      }
+    },
+    "Cari kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search categories"
+          }
+        }
+      }
+    },
+    "Cari transaksi...": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search transactions..."
+          }
+        }
+      }
+    },
+    "Cash": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash"
+          }
+        }
+      }
+    },
+    "Cashflow 5 bulan terakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cashflow, last 5 months"
+          }
+        }
+      }
+    },
+    "Catat gaji dan pemasukan lain supaya kelihatan berapa yang bisa disisihkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record your salary and other income to see how much you can set aside."
+          }
+        }
+      }
+    },
+    "Catat tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record bill"
+          }
+        }
+      }
+    },
+    "Catat transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a transaction"
+          }
+        }
+      }
+    },
+    "Catat transaksi setiap hari, termasuk yang kecil, supaya skor dan saranmu akurat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record transactions every day, even small ones, so your score and advice stay accurate."
+          }
+        }
+      }
+    },
+    "Catatan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        }
+      }
+    },
+    "Cetak tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statement date"
+          }
+        }
+      }
+    },
+    "Cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installment"
+          }
+        }
+      }
+    },
+    "Cicilan 0%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0% installment"
+          }
+        }
+      }
+    },
+    "Coba Lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "Coba lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again."
+          }
+        }
+      }
+    },
+    "Contoh: Netflix": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e.g. Netflix"
+          }
+        }
+      }
+    },
+    "Cukup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fair"
+          }
+        }
+      }
+    },
+    "Dampak ke budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget impact"
+          }
+        }
+      }
+    },
+    "Dampak ke saldo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance impact"
+          }
+        }
+      }
+    },
+    "Dana darurat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emergency fund"
+          }
+        }
+      }
+    },
+    "Dari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From"
+          }
+        }
+      }
+    },
+    "Dari %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From %@"
+          }
+        }
+      }
+    },
+    "Dari Tanggal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From date"
+          }
+        }
+      }
+    },
+    "Dari dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From wallet"
+          }
+        }
+      }
+    },
+    "Dengan melanjutkan, kamu menyetujui ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By continuing, you agree to the "
+          }
+        }
+      }
+    },
+    "Di bulan yang lebih pendek, dipakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In shorter months, we use"
+          }
+        }
+      }
+    },
+    "Diarsipkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archived"
+          }
+        }
+      }
+    },
+    "Dibayar %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid %@"
+          }
+        }
+      }
+    },
+    "Dibayar bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid this month"
+          }
+        }
+      }
+    },
+    "Dibayar dari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid from"
+          }
+        }
+      }
+    },
+    "Dibayar sebagian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partly paid"
+          }
+        }
+      }
+    },
+    "Dicatat otomatis saat kamu buka Saku di tanggal ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded automatically when you open Saku on this date."
+          }
+        }
+      }
+    },
+    "Dicatat otomatis sebagai pengeluaran saat kamu membuka Saku di tanggal itu. Tidak bisa digabung dengan Cicilan 0%.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded automatically as an expense when you open Saku on that date. Can't be combined with 0% Installments."
+          }
+        }
+      }
+    },
+    "Dihitung dari arus kas, budget, dan sebaran saldo — diperbarui setiap hari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculated from cash flow, budgets and how your balance is spread — updated daily."
+          }
+        }
+      }
+    },
+    "Dihitung dari pemasukan dan pengeluaran 3 bulan terakhir, saldo dompet, kartu kredit, dan budget bulan ini. Skor diperbarui setiap kamu mencatat transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculated from the last 3 months of income and expenses, wallet balances, credit cards and this month's budget. The score updates every time you record a transaction."
+          }
+        }
+      }
+    },
+    "Dijeda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        }
+      }
+    },
+    "Dipakai untuk sapaan di Beranda. Bisa diubah kapan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used for the greeting on Home. You can change it any time."
+          }
+        }
+      }
+    },
+    "Dipilih otomatis saat mencatat transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Picked automatically when recording a transaction"
+          }
+        }
+      }
+    },
+    "Disembunyikan · %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hidden · %lld"
+          }
+        }
+      }
+    },
+    "Ditagih ke %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billed to %@"
+          }
+        }
+      }
+    },
+    "Ditagih tiap bulan di tanggal yang sama, dan dicatat otomatis saat kamu buka Saku di tanggal itu. Titik = sudah ada tagihan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billed every month on the same date, and recorded automatically when you open Saku on that date. A dot = already billed."
+          }
+        }
+      }
+    },
+    "Diversifikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diversification"
+          }
+        }
+      }
+    },
+    "Dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets"
+          }
+        }
+      }
+    },
+    "Dompet apa yang kamu pakai?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which wallets do you use?"
+          }
+        }
+      }
+    },
+    "Dompet baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New wallet"
+          }
+        }
+      }
+    },
+    "Dompet dihapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet deleted"
+          }
+        }
+      }
+    },
+    "Dompet dipulihkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet restored"
+          }
+        }
+      }
+    },
+    "Dompet disembunyikan dari daftar dan total saldo. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The wallet is hidden from the list and total balance. Transaction history is kept and can be restored anytime."
+          }
+        }
+      }
+    },
+    "Dompet disembunyikan dari daftar dan total. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The wallet is hidden from the list and totals. Transaction history stays saved and can be restored any time."
+          }
+        }
+      }
+    },
+    "Dompet ditambahkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet added"
+          }
+        }
+      }
+    },
+    "Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This wallet is already archived; its history is kept."
+          }
+        }
+      }
+    },
+    "Dompet ini tidak bisa dihapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This wallet can't be deleted"
+          }
+        }
+      }
+    },
+    "Dompet utama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Main wallet"
+          }
+        }
+      }
+    },
+    "Dompet yang diarsipkan disimpan di sini, lengkap dengan riwayatnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archived wallets are kept here, with their history."
+          }
+        }
+      }
+    },
+    "E-Wallet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-Wallet"
+          }
+        }
+      }
+    },
+    "E-wallet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-wallet"
+          }
+        }
+      }
+    },
+    "Edit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        }
+      }
+    },
+    "Edit transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit transaction"
+          }
+        }
+      }
+    },
+    "Filter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter"
+          }
+        }
+      }
+    },
+    "Filter lanjutan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced filters"
+          }
+        }
+      }
+    },
+    "Gagal membayar tagihan. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't pay the bill. Try again."
+          }
+        }
+      }
+    },
+    "Gagal memuat data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't load data"
+          }
+        }
+      }
+    },
+    "Gagal memuat kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't load categories"
+          }
+        }
+      }
+    },
+    "Gagal memulai sign in": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't start sign-in"
+          }
+        }
+      }
+    },
+    "Gagal memulihkan dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't restore the wallet"
+          }
+        }
+      }
+    },
+    "Gagal mencatat pembayaran. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't record the payment. Try again."
+          }
+        }
+      }
+    },
+    "Gagal mengarsipkan dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't archive the wallet"
+          }
+        }
+      }
+    },
+    "Gagal menghapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't delete"
+          }
+        }
+      }
+    },
+    "Gagal menghapus akun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't delete account"
+          }
+        }
+      }
+    },
+    "Gagal menghapus dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't delete the wallet"
+          }
+        }
+      }
+    },
+    "Gagal menghapus. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't delete. Try again."
+          }
+        }
+      }
+    },
+    "Gagal menyimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save"
+          }
+        }
+      }
+    },
+    "Gagal menyimpan budget. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save the budget. Try again."
+          }
+        }
+      }
+    },
+    "Gagal menyimpan dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save wallet"
+          }
+        }
+      }
+    },
+    "Gagal menyimpan perubahan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save changes"
+          }
+        }
+      }
+    },
+    "Gagal menyimpan tanggal gajian. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save your payday. Try again."
+          }
+        }
+      }
+    },
+    "Gagal menyimpan. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save. Try again."
+          }
+        }
+      }
+    },
+    "Gajian tiap tanggal %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payday on the %lld"
+          }
+        }
+      }
+    },
+    "Gelap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        }
+      }
+    },
+    "Geser untuk bayar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe to pay"
+          }
+        }
+      }
+    },
+    "Geser untuk catat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe to record"
+          }
+        }
+      }
+    },
+    "Geser untuk lihat tagihan lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe to see other bills"
+          }
+        }
+      }
+    },
+    "GoPay, OVO, DANA, dan lainnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GoPay, OVO, DANA, and more"
+          }
+        }
+      }
+    },
+    "Habis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used up"
+          }
+        }
+      }
+    },
+    "Halaman %lld dari 3": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page %lld of 3"
+          }
+        }
+      }
+    },
+    "Hanya bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month only"
+          }
+        }
+      }
+    },
+    "Hapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "Hapus Budget?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete budget?"
+          }
+        }
+      }
+    },
+    "Hapus akun & data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete account & data"
+          }
+        }
+      }
+    },
+    "Hapus akun dan semua data?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete account and all data?"
+          }
+        }
+      }
+    },
+    "Hapus budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete budget"
+          }
+        }
+      }
+    },
+    "Hapus dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete wallet"
+          }
+        }
+      }
+    },
+    "Hapus dompet ini?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this wallet?"
+          }
+        }
+      }
+    },
+    "Hapus filter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear filters"
+          }
+        }
+      }
+    },
+    "Hapus pencarian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear search"
+          }
+        }
+      }
+    },
+    "Hapus semua": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all"
+          }
+        }
+      }
+    },
+    "Hapus tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete bill"
+          }
+        }
+      }
+    },
+    "Hapus tagihan ini?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this bill?"
+          }
+        }
+      }
+    },
+    "Hapus tanggal %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete date %@"
+          }
+        }
+      }
+    },
+    "Hapus transaksi ini?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this transaction?"
+          }
+        }
+      }
+    },
+    "Hari Ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "Hari ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "Hari terakhir: sisa ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last day: "
+          }
+        }
+      }
+    },
+    "Hijau aman, oranye hati-hati, merah sudah lewat. Tanpa hitung manual.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Green is safe, orange is careful, red is over. No manual math."
+          }
+        }
+      }
+    },
+    "Ikon": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon"
+          }
+        }
+      }
+    },
+    "Ikon custom": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom icon"
+          }
+        }
+      }
+    },
+    "Ikon dan warna kategori bawaan tidak bisa diubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in category icons and colors can't be changed"
+          }
+        }
+      }
+    },
+    "Isi 0 jika belum ada tagihan bulan ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter 0 if there's no bill this month yet."
+          }
+        }
+      }
+    },
+    "Jadikan dompet utama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make main wallet"
+          }
+        }
+      }
+    },
+    "Jadikan tagihan berulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make this a recurring bill"
+          }
+        }
+      }
+    },
+    "Jaga pemakaian di bawah 30% limit dan bayar tagihan penuh tiap jatuh tempo supaya tidak kena bunga.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep usage under 30% of your limit and pay the full bill by each due date to avoid interest."
+          }
+        }
+      }
+    },
+    "Jatuh tempo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due"
+          }
+        }
+      }
+    },
+    "Jatuh tempo %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due %@"
+          }
+        }
+      }
+    },
+    "Jatuh tempo %@. Kalau sudah kamu bayar di luar Saku, catat supaya terpakai dan status kartu tetap akurat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due %@. If you already paid it outside Saku, record it so usage and card status stay accurate."
+          }
+        }
+      }
+    },
+    "Jatuh tempo %@. Sudah kamu bayar?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due %@. Have you paid it?"
+          }
+        }
+      }
+    },
+    "Jatuh tempo kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card due date"
+          }
+        }
+      }
+    },
+    "Jeda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
+    "Jenis kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card type"
+          }
+        }
+      }
+    },
+    "Jenis transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction type"
+          }
+        }
+      }
+    },
+    "Jum": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fri"
+          }
+        }
+      }
+    },
+    "Jumat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Friday"
+          }
+        }
+      }
+    },
+    "Kam": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu"
+          }
+        }
+      }
+    },
+    "Kami pakai tanggal ini supaya budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We use this date so your budget and monthly summary start when your pay arrives, not on the 1st."
+          }
+        }
+      }
+    },
+    "Kamis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thursday"
+          }
+        }
+      }
+    },
+    "Kamu bisa memulihkannya dari Dompet › Diarsipkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can restore it from Wallets › Archived."
+          }
+        }
+      }
+    },
+    "Kamu masuk sebagai tamu. Setelah keluar, data di akun tamu ini tidak bisa dibuka lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're signed in as a guest. After signing out, this guest account's data can't be opened again."
+          }
+        }
+      }
+    },
+    "Kamu menyisihkan %lld%% dari pemasukan %lld bulan terakhir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You saved %lld%% of your income over the last %lld months."
+          }
+        }
+      }
+    },
+    "Kapan kamu gajian?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When do you get paid?"
+          }
+        }
+      }
+    },
+    "Kartu kredit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Credit card"
+          }
+        }
+      }
+    },
+    "Kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Categories"
+          }
+        }
+      }
+    },
+    "Kategori (%lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Categories (%lld)"
+          }
+        }
+      }
+    },
+    "Kategori apa yang kamu pakai?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which categories do you use?"
+          }
+        }
+      }
+    },
+    "Kategori baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New category"
+          }
+        }
+      }
+    },
+    "Kategori bawaan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in category"
+          }
+        }
+      }
+    },
+    "Kategori pemasukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Income categories"
+          }
+        }
+      }
+    },
+    "Kategori pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expense categories"
+          }
+        }
+      }
+    },
+    "Kategori tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category saved"
+          }
+        }
+      }
+    },
+    "Kategori tersimpan, tapi budget gagal disimpan. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category saved, but the budget couldn't be saved. %@"
+          }
+        }
+      }
+    },
+    "Ke": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To"
+          }
+        }
+      }
+    },
+    "Ke dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To wallet"
+          }
+        }
+      }
+    },
+    "Kebiasaan mencatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tracking habit"
+          }
+        }
+      }
+    },
+    "Kebijakan Privasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy Policy"
+          }
+        }
+      }
+    },
+    "Keluar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out"
+          }
+        }
+      }
+    },
+    "Keluar %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Out %@"
+          }
+        }
+      }
+    },
+    "Keluar bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Out this month"
+          }
+        }
+      }
+    },
+    "Kemarin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday"
+          }
+        }
+      }
+    },
+    "Kembali": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        }
+      }
+    },
+    "Kembali ke Dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to Wallets"
+          }
+        }
+      }
+    },
+    "Kembali ke atas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to top"
+          }
+        }
+      }
+    },
+    "Kembali ke kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to categories"
+          }
+        }
+      }
+    },
+    "Kesehatan finansial": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Financial health"
+          }
+        }
+      }
+    },
+    "Ketentuan Layanan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terms of Service"
+          }
+        }
+      }
+    },
+    "Ketik nama di atas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type the name above"
+          }
+        }
+      }
+    },
+    "Ketik nama dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type the wallet name"
+          }
+        }
+      }
+    },
+    "Ketuk dua kali untuk konfirmasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap to confirm"
+          }
+        }
+      }
+    },
+    "Ketuk kartu untuk mengubah saldo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a card to change its balance"
+          }
+        }
+      }
+    },
+    "Keuangan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finance"
+          }
+        }
+      }
+    },
+    "Keuanganmu sehat. Pertahankan kebiasaan ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your finances are healthy. Keep up these habits."
+          }
+        }
+      }
+    },
+    "Kira-kira saja, nanti bisa disesuaikan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A rough guess is fine; you can adjust it later."
+          }
+        }
+      }
+    },
+    "Konfirmasi Perubahan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm changes"
+          }
+        }
+      }
+    },
+    "Kumpulkan dana darurat minimal 3 bulan pengeluaran, sekitar %@. Sisihkan %@ per bulan untuk mencapainya dalam setahun.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build an emergency fund of at least 3 months of spending, about %@. Set aside %@ per month to reach it within a year."
+          }
+        }
+      }
+    },
+    "Kurang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weak"
+          }
+        }
+      }
+    },
+    "Lacak limit, tagihan, dan jatuh tempo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Track limit, bills, and due dates"
+          }
+        }
+      }
+    },
+    "Lainnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        }
+      }
+    },
+    "Langganan sampai akhir bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscriptions until month end"
+          }
+        }
+      }
+    },
+    "Langganan: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription: %@"
+          }
+        }
+      }
+    },
+    "Langkah 1 dari 2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step 1 of 2"
+          }
+        }
+      }
+    },
+    "Langkah 2 dari 2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step 2 of 2"
+          }
+        }
+      }
+    },
+    "Lanjut": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "Lanjut · %lld dipilih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue · %lld selected"
+          }
+        }
+      }
+    },
+    "Lanjutkan dengan Apple": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue with Apple"
+          }
+        }
+      }
+    },
+    "Lanjutkan dengan Google": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue with Google"
+          }
+        }
+      }
+    },
+    "Lepas yang tidak perlu. Bisa diubah lagi di Profil › Kategori.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untick what you don't need. You can change this later in Profile › Categories."
+          }
+        }
+      }
+    },
+    "Lewat %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over by %@"
+          }
+        }
+      }
+    },
+    "Lewat Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over by Rp%@"
+          }
+        }
+      }
+    },
+    "Lewat Rp20.000": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over by Rp20.000"
+          }
+        }
+      }
+    },
+    "Lewat budget %@: Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over budget %@: Rp%@"
+          }
+        }
+      }
+    },
+    "Lewat jatuh tempo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overdue"
+          }
+        }
+      }
+    },
+    "Lewat jatuh tempo → Lunas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overdue → Paid off"
+          }
+        }
+      }
+    },
+    "Lewati": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip"
+          }
+        }
+      }
+    },
+    "Lihat Semua (%lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See all (%lld)"
+          }
+        }
+      }
+    },
+    "Lihat cara menghitungnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See how it's calculated"
+          }
+        }
+      }
+    },
+    "Lihat detail kesehatan finansial": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See financial health details"
+          }
+        }
+      }
+    },
+    "Lihat dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View wallets"
+          }
+        }
+      }
+    },
+    "Lihat semua": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See all"
+          }
+        }
+      }
+    },
+    "Lihat semua (%lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See all (%lld)"
+          }
+        }
+      }
+    },
+    "Limit baru berlaku untuk perhitungan sisa limit.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The new limit applies to the remaining-limit calculation."
+          }
+        }
+      }
+    },
+    "Limit kredit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Credit limit"
+          }
+        }
+      }
+    },
+    "Lunas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid off"
+          }
+        }
+      }
+    },
+    "Lunas penuh %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid in full %@"
+          }
+        }
+      }
+    },
+    "Maks. 4 huruf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max. 4 letters"
+          }
+        }
+      }
+    },
+    "Masuk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In"
+          }
+        }
+      }
+    },
+    "Masuk %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In %@"
+          }
+        }
+      }
+    },
+    "Masuk Rp%@ · keluar Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Rp%@ · out Rp%@"
+          }
+        }
+      }
+    },
+    "Masuk bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In this month"
+          }
+        }
+      }
+    },
+    "Masuk sebagai tamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue as guest"
+          }
+        }
+      }
+    },
+    "Masuk untuk menyimpan data dengan aman dan membukanya di perangkat lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to keep your data safe and open it on other devices."
+          }
+        }
+      }
+    },
+    "Masukkan nama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter your name"
+          }
+        }
+      }
+    },
+    "Masukkan nominal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter amount"
+          }
+        }
+      }
+    },
+    "Masukkan saldo rekening bank, e-wallet, atau uang tunai supaya total saldo bisa dihitung.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the balance of your bank account, e-wallet or cash so your total balance can be calculated."
+          }
+        }
+      }
+    },
+    "Masukkan teks untuk icon.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter text for the icon."
+          }
+        }
+      }
+    },
+    "Matikan cicilan dulu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off installments first"
+          }
+        }
+      }
+    },
+    "Melebihi sisa limit %@ · lebih %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exceeds the remaining limit of %@ · over by %@"
+          }
+        }
+      }
+    },
+    "Melebihi sisa tagihan %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exceeds remaining bill %@"
+          }
+        }
+      }
+    },
+    "Melebihi tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exceeds bill"
+          }
+        }
+      }
+    },
+    "Melebihi utang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exceeds debt"
+          }
+        }
+      }
+    },
+    "Melebihi utang kartu %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exceeds card debt %@"
+          }
+        }
+      }
+    },
+    "Memuat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading"
+          }
+        }
+      }
+    },
+    "Mencatat di %lld dari 30 hari terakhir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded on %lld of the last 30 days."
+          }
+        }
+      }
+    },
+    "Menghapus…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting…"
+          }
+        }
+      }
+    },
+    "Mengikuti tanggal 1": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Following the 1st"
+          }
+        }
+      }
+    },
+    "Min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sun"
+          }
+        }
+      }
+    },
+    "Minggu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sunday"
+          }
+        }
+      }
+    },
+    "Minimum %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minimum %@"
+          }
+        }
+      }
+    },
+    "Mode tamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guest mode"
+          }
+        }
+      }
+    },
+    "Mode tamu terikat ke iPhone ini. Kalau keluar atau aplikasi dihapus, datanya tidak bisa dibuka lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guest mode is tied to this iPhone. If you sign out or delete the app, the data can't be opened again."
+          }
+        }
+      }
+    },
+    "Mulai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        }
+      }
+    },
+    "Mulai pakai Saku": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start using Saku"
+          }
+        }
+      }
+    },
+    "Mulai sisihkan saldo untuk dana darurat, sekecil apa pun.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start setting money aside for an emergency fund, however small."
+          }
+        }
+      }
+    },
+    "Nama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "Nama & warna": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name & color"
+          }
+        }
+      }
+    },
+    "Nama belum diisi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name is empty"
+          }
+        }
+      }
+    },
+    "Nama dipakai sistem": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name is reserved by the system"
+          }
+        }
+      }
+    },
+    "Nama dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet name"
+          }
+        }
+      }
+    },
+    "Nama kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category name"
+          }
+        }
+      }
+    },
+    "Nanti saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maybe later"
+          }
+        }
+      }
+    },
+    "Net cashflow %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net cash flow %@"
+          }
+        }
+      }
+    },
+    "Nominal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount"
+          }
+        }
+      }
+    },
+    "Nominal Rp%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount Rp%lld"
+          }
+        }
+      }
+    },
+    "Nominal lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other amount"
+          }
+        }
+      }
+    },
+    "Nominal per periode · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount per period · %@"
+          }
+        }
+      }
+    },
+    "Notifikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        }
+      }
+    },
+    "Opsional": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional"
+          }
+        }
+      }
+    },
+    "Pemasukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Income"
+          }
+        }
+      }
+    },
+    "Pemasukan dan pengeluaran yang kamu catat di %@ akan muncul di sini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Income and expenses you record in %@ will show up here."
+          }
+        }
+      }
+    },
+    "Pembayaran %@ tercatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payment of %@ recorded"
+          }
+        }
+      }
+    },
+    "Pembayaran berhasil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payment successful"
+          }
+        }
+      }
+    },
+    "Pembayaran tercatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payment recorded"
+          }
+        }
+      }
+    },
+    "Pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expenses"
+          }
+        }
+      }
+    },
+    "Pengeluaran bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending this month"
+          }
+        }
+      }
+    },
+    "Pengeluaran kategori ini bulan ini muncul di sini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending in this category this month shows up here."
+          }
+        }
+      }
+    },
+    "Pengeluaran melebihi pemasukan. Kurangi pos terbesarmu dan tunda belanja yang tidak mendesak.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending exceeds income. Cut your biggest category and put off non-urgent purchases."
+          }
+        }
+      }
+    },
+    "Pengeluaran melebihi pemasukan. Kurangi pos terbesarmu, %@, dan tunda belanja yang tidak mendesak.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending exceeds income. Cut your biggest category, %@, and put off non-urgent purchases."
+          }
+        }
+      }
+    },
+    "Pengeluaran tersimpan, tapi cicilan gagal dibuat. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expense saved, but the installment couldn't be created. %@"
+          }
+        }
+      }
+    },
+    "Pengeluaran tersimpan, tapi tagihan berulangnya gagal dibuat. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expense saved, but the recurring bill couldn't be created. %@"
+          }
+        }
+      }
+    },
+    "Pengeluaranmu %lld%% lebih besar dari pemasukan %lld bulan terakhir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your spending was %lld%% higher than your income over the last %lld months."
+          }
+        }
+      }
+    },
+    "Pengembangan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Development"
+          }
+        }
+      }
+    },
+    "Pengingat menjelang gajian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder before payday"
+          }
+        }
+      }
+    },
+    "Penyesuaian %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjustment %@"
+          }
+        }
+      }
+    },
+    "Penyesuaian Saldo dipakai otomatis saat kamu mengoreksi saldo dompet, jadi tidak tampil di daftar dan pilihan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance Adjustment is used automatically when you correct a wallet balance, so it doesn't appear in lists and pickers."
+          }
+        }
+      }
+    },
+    "Penyesuaian saldo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance adjustment"
+          }
+        }
+      }
+    },
+    "Per kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per category"
+          }
+        }
+      }
+    },
+    "Perbaiki ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fix "
+          }
+        }
+      }
+    },
+    "Perhatian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heads up"
+          }
+        }
+      }
+    },
+    "Periksa koneksi lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your connection and try again."
+          }
+        }
+      }
+    },
+    "Periksa koneksi lalu coba lagi. Nama dompet juga tidak boleh sama dengan dompet lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your connection and try again. The wallet name also can't match another wallet."
+          }
+        }
+      }
+    },
+    "Periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        }
+      }
+    },
+    "Periode %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period %@"
+          }
+        }
+      }
+    },
+    "Periode budget dan ringkasan bulan ini langsung mengikuti tanggal baru.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The budget period and this month's summary follow the new date right away."
+          }
+        }
+      }
+    },
+    "Periode budget diperbarui": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget period updated"
+          }
+        }
+      }
+    },
+    "Perlu perbaikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs work"
+          }
+        }
+      }
+    },
+    "Perubahan disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes saved"
+          }
+        }
+      }
+    },
+    "Perubahan tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes saved"
+          }
+        }
+      }
+    },
+    "Pilih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose"
+          }
+        }
+      }
+    },
+    "Pilih bank": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose bank"
+          }
+        }
+      }
+    },
+    "Pilih dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose wallet"
+          }
+        }
+      }
+    },
+    "Pilih dompet tujuan yang berbeda.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a different destination wallet."
+          }
+        }
+      }
+    },
+    "Pilih e-wallet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose e-wallet"
+          }
+        }
+      }
+    },
+    "Pilih kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose category"
+          }
+        }
+      }
+    },
+    "Pilih minimal 1": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick at least 1"
+          }
+        }
+      }
+    },
+    "Pilih minimal 1 pemasukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick at least 1 income"
+          }
+        }
+      }
+    },
+    "Pilih minimal 1 pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick at least 1 expense"
+          }
+        }
+      }
+    },
+    "Pilih tanggal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a date"
+          }
+        }
+      }
+    },
+    "Profil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile"
+          }
+        }
+      }
+    },
+    "Profil berhasil disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile saved"
+          }
+        }
+      }
+    },
+    "Pulihkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        }
+      }
+    },
+    "Pulihkan dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore wallet"
+          }
+        }
+      }
+    },
+    "Rab": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wed"
+          }
+        }
+      }
+    },
+    "Rabu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wednesday"
+          }
+        }
+      }
+    },
+    "Rata-rata 3 bulan %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3-month average %@"
+          }
+        }
+      }
+    },
+    "Rata-rata 3 bulan terakhir Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 3 months average Rp%@"
+          }
+        }
+      }
+    },
+    "Rekening tabungan atau giro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Savings or checking account"
+          }
+        }
+      }
+    },
+    "Rekomendasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommendations"
+          }
+        }
+      }
+    },
+    "Rentang tanggal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date range"
+          }
+        }
+      }
+    },
+    "Ringkas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show less"
+          }
+        }
+      }
+    },
+    "Riwayat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "Riwayat transaksi tetap tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction history stays saved"
+          }
+        }
+      }
+    },
+    "Rp%@ + Rp%@ ini, dari Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp%@ + Rp%@ this, of Rp%@"
+          }
+        }
+      }
+    },
+    "Rp%@ jt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp%@M"
+          }
+        }
+      }
+    },
+    "Rp%@/bulan · mulai tagihan %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp%@/month · billing starts %@"
+          }
+        }
+      }
+    },
+    "Rp%lld rb": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp%lldK"
+          }
+        }
+      }
+    },
+    "Rp75.000/hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp75.000/day"
+          }
+        }
+      }
+    },
+    "Saat pemakaian mencapai 80%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When usage reaches 80%"
+          }
+        }
+      }
+    },
+    "Sab": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sat"
+          }
+        }
+      }
+    },
+    "Sabtu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saturday"
+          }
+        }
+      }
+    },
+    "Saldo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance"
+          }
+        }
+      }
+    },
+    "Saldo %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance %@"
+          }
+        }
+      }
+    },
+    "Saldo %@ jadi %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ balance becomes %@"
+          }
+        }
+      }
+    },
+    "Saldo %@ kembali jadi %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ balance goes back to %2$@"
+          }
+        }
+      }
+    },
+    "Saldo %@ kurang %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ balance is short by %@"
+          }
+        }
+      }
+    },
+    "Saldo %@ sekarang %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ balance is now %@"
+          }
+        }
+      }
+    },
+    "Saldo awal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Initial balance"
+          }
+        }
+      }
+    },
+    "Saldo cukup untuk %@ bulan pengeluaran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your balance covers %@ months of spending."
+          }
+        }
+      }
+    },
+    "Saldo saat ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current balance"
+          }
+        }
+      }
+    },
+    "Saldo tidak cukup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insufficient balance"
+          }
+        }
+      }
+    },
+    "Saldo yang tersisa setelah tagihan kartu kredit yang belum dibayar, belanja kartu periode berjalan yang akan ditagih, dan langganan yang jatuh tempo bulan ini, supaya kamu tidak memakai uang yang sudah ada peruntukannya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The balance left after unpaid credit card bills, current-period card spending yet to be billed, and subscriptions due this month, so you don't spend money that's already earmarked."
+          }
+        }
+      }
+    },
+    "Saldomu minus, belum ada dana darurat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your balance is negative, so there's no emergency fund."
+          }
+        }
+      }
+    },
+    "Sampai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To"
+          }
+        }
+      }
+    },
+    "Sampai %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To %@"
+          }
+        }
+      }
+    },
+    "Sampai Tanggal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To date"
+          }
+        }
+      }
+    },
+    "Satu angka untuk kondisi keuanganmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One number for your financial health."
+          }
+        }
+      }
+    },
+    "Sebagian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partial"
+          }
+        }
+      }
+    },
+    "Sebelumnya %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previously %@"
+          }
+        }
+      }
+    },
+    "Sebelumnya Rp%@ · budget %@/hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before: Rp%@ · budget %@/day"
+          }
+        }
+      }
+    },
+    "Sehat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Healthy"
+          }
+        }
+      }
+    },
+    "Sel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tue"
+          }
+        }
+      }
+    },
+    "Selasa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuesday"
+          }
+        }
+      }
+    },
+    "Selesai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Selisihnya dicatat sebagai transaksi Penyesuaian saldo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The difference is recorded as a Balance adjustment transaction."
+          }
+        }
+      }
+    },
+    "Seluruh nominal langsung memakai limit kartu, tapi tiap tagihan hanya menagih satu bagian.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The full amount uses up the card limit right away, but each bill only charges one part."
+          }
+        }
+      }
+    },
+    "Sembunyikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide"
+          }
+        }
+      }
+    },
+    "Sembunyikan kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide category"
+          }
+        }
+      }
+    },
+    "Sembunyikan kategori?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide category?"
+          }
+        }
+      }
+    },
+    "Sembunyikan saldo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide balance"
+          }
+        }
+      }
+    },
+    "Semua": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        }
+      }
+    },
+    "Semua dompet dalam satu kantong.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All your wallets in one pocket."
+          }
+        }
+      }
+    },
+    "Semua dompet, satu kantong.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All your wallets, one pocket."
+          }
+        }
+      }
+    },
+    "Semua faktor dalam kondisi baik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All factors look good"
+          }
+        }
+      }
+    },
+    "Semua kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All categories"
+          }
+        }
+      }
+    },
+    "Semua kategori disembunyikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All categories are hidden"
+          }
+        }
+      }
+    },
+    "Semua kategori sudah punya budget.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All categories already have a budget."
+          }
+        }
+      }
+    },
+    "Semua transaksi sudah ditampilkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All transactions are shown"
+          }
+        }
+      }
+    },
+    "Sen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mon"
+          }
+        }
+      }
+    },
+    "Senin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monday"
+          }
+        }
+      }
+    },
+    "September": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "September"
+          }
+        }
+      }
+    },
+    "Sering dipakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frequently used"
+          }
+        }
+      }
+    },
+    "Sesuaikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust"
+          }
+        }
+      }
+    },
+    "Sesuaikan Budget %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust %@ budget"
+          }
+        }
+      }
+    },
+    "Sesuaikan saldo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust balance"
+          }
+        }
+      }
+    },
+    "Sesuaikan tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust bill"
+          }
+        }
+      }
+    },
+    "Setiap ada transaksi baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every time there's a new transaction"
+          }
+        }
+      }
+    },
+    "Siapa namamu?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's your name?"
+          }
+        }
+      }
+    },
+    "Simpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "Simpan dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save wallet"
+          }
+        }
+      }
+    },
+    "Sisa %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ left"
+          }
+        }
+      }
+    },
+    "Sisa %@ kena bunga sekitar %@/bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The remaining %@ incurs about %@/month in interest"
+          }
+        }
+      }
+    },
+    "Sisa Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp%@ left"
+          }
+        }
+      }
+    },
+    "Sisa Rp420.000": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp420.000 left"
+          }
+        }
+      }
+    },
+    "Sisa budget %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ budget left"
+          }
+        }
+      }
+    },
+    "Sisa budget %@: Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget left %@: Rp%@"
+          }
+        }
+      }
+    },
+    "Sisa limit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remaining limit"
+          }
+        }
+      }
+    },
+    "Sisa tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remaining bill"
+          }
+        }
+      }
+    },
+    "Sistem": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        }
+      }
+    },
+    "Skor muncul setelah kamu mencatat pemasukan atau pengeluaran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The score appears once you record income or an expense."
+          }
+        }
+      }
+    },
+    "Status": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        }
+      }
+    },
+    "Sudah ada “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” already exists"
+          }
+        }
+      }
+    },
+    "Sudah ada “%@” (disembunyikan)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” already exists (hidden)"
+          }
+        }
+      }
+    },
+    "Sudah dibayar %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already paid %@"
+          }
+        }
+      }
+    },
+    "Sudah dibayar %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already paid %@."
+          }
+        }
+      }
+    },
+    "Sudah dicatat otomatis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already recorded automatically"
+          }
+        }
+      }
+    },
+    "Sudah, catat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes, record it"
+          }
+        }
+      }
+    },
+    "Sumber": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source"
+          }
+        }
+      }
+    },
+    "Sumber lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other source"
+          }
+        }
+      }
+    },
+    "Tagihan %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bill"
+          }
+        }
+      }
+    },
+    "Tagihan %@ %@ lewat jatuh tempo %lld hari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The %@ bill of %@ is %lld days past due."
+          }
+        }
+      }
+    },
+    "Tagihan %@ jatuh tempo %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bill was due %@"
+          }
+        }
+      }
+    },
+    "Tagihan %@ jatuh tempo 3 hari lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %@ bill is due in 3 days."
+          }
+        }
+      }
+    },
+    "Tagihan %@ jatuh tempo besok. Bayar penuh supaya tidak kena bunga.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %@ bill is due tomorrow. Pay in full to avoid interest."
+          }
+        }
+      }
+    },
+    "Tagihan %@ kembali jadi %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ bill goes back to %2$@"
+          }
+        }
+      }
+    },
+    "Tagihan %@ sudah lewat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bill is overdue"
+          }
+        }
+      }
+    },
+    "Tagihan %@ · bayar %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statement %@ · pay by %@"
+          }
+        }
+      }
+    },
+    "Tagihan berikutnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next bill"
+          }
+        }
+      }
+    },
+    "Tagihan berikutnya tidak akan dicatat lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Future bills won't be recorded anymore."
+          }
+        }
+      }
+    },
+    "Tagihan berulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recurring bills"
+          }
+        }
+      }
+    },
+    "Tagihan berulang ditambahkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recurring bill added"
+          }
+        }
+      }
+    },
+    "Tagihan berulang tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recurring bill saved"
+          }
+        }
+      }
+    },
+    "Tagihan berulang · otomatis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recurring bill · automatic"
+          }
+        }
+      }
+    },
+    "Tagihan cut-off %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statement closing %@"
+          }
+        }
+      }
+    },
+    "Tagihan cut-off %@, jatuh tempo %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statement closes %@, due %@"
+          }
+        }
+      }
+    },
+    "Tagihan dicatat otomatis sebagai pengeluaran saat kamu membuka Saku di tanggal tagih. Kalau baru dibuka setelahnya, tetap dicatat dengan tanggal tagihnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bills are recorded automatically as an expense when you open Saku on the billing date. If you open it later, they're still recorded with the billing date."
+          }
+        }
+      }
+    },
+    "Tagihan dicatat sebagai utang dan tidak mengurangi total saldo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The bill is recorded as debt and doesn't reduce your total balance."
+          }
+        }
+      }
+    },
+    "Tagihan kartu kredit (termasuk periode berjalan)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Credit card bills (including the current period)"
+          }
+        }
+      }
+    },
+    "Tagihan kartu kreditmu sudah lunas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your credit card bill is fully paid."
+          }
+        }
+      }
+    },
+    "Tagihan melebihi limit kredit.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The bill exceeds the credit limit."
+          }
+        }
+      }
+    },
+    "Tagihan naik %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bill up %@"
+          }
+        }
+      }
+    },
+    "Tagihan saat ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current bill"
+          }
+        }
+      }
+    },
+    "Tagihan turun %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bill down %@"
+          }
+        }
+      }
+    },
+    "Tagihan turun Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bill down Rp%@"
+          }
+        }
+      }
+    },
+    "Tambah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
+    "Tambah budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add budget"
+          }
+        }
+      }
+    },
+    "Tambah di tanggal %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add on day %lld"
+          }
+        }
+      }
+    },
+    "Tambah dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add wallet"
+          }
+        }
+      }
+    },
+    "Tambah dompet lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add another wallet"
+          }
+        }
+      }
+    },
+    "Tambah dompet pertamamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add your first wallet"
+          }
+        }
+      }
+    },
+    "Tambah kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add category"
+          }
+        }
+      }
+    },
+    "Tambah transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add transaction"
+          }
+        }
+      }
+    },
+    "Tambah, ubah, sembunyikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add, edit, hide"
+          }
+        }
+      }
+    },
+    "Tambahkan rekening bank, e-wallet, kartu kredit, atau uang tunai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a bank account, e-wallet, credit card or cash."
+          }
+        }
+      }
+    },
+    "Tampilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        }
+      }
+    },
+    "Tampilkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show"
+          }
+        }
+      }
+    },
+    "Tampilkan %lld lainnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show %lld more"
+          }
+        }
+      }
+    },
+    "Tampilkan lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show again"
+          }
+        }
+      }
+    },
+    "Tampilkan lebih sedikit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show less"
+          }
+        }
+      }
+    },
+    "Tampilkan saldo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show balance"
+          }
+        }
+      }
+    },
+    "Tanggal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date"
+          }
+        }
+      }
+    },
+    "Tanggal %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day %lld"
+          }
+        }
+      }
+    },
+    "Tanggal %lld, %lld tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day %lld, %lld bills"
+          }
+        }
+      }
+    },
+    "Tanggal %lld, sudah ada tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day %lld, has a bill"
+          }
+        }
+      }
+    },
+    "Tanggal bayar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payment date"
+          }
+        }
+      }
+    },
+    "Tanggal cetak tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statement date"
+          }
+        }
+      }
+    },
+    "Tanggal cetak tagihan tiap bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statement date each month"
+          }
+        }
+      }
+    },
+    "Tanggal gajian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payday"
+          }
+        }
+      }
+    },
+    "Tanggal gajian disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payday saved"
+          }
+        }
+      }
+    },
+    "Tanggal jatuh tempo tiap bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due date each month"
+          }
+        }
+      }
+    },
+    "Tanggal tagih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billing date"
+          }
+        }
+      }
+    },
+    "Tanpa kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No category"
+          }
+        }
+      }
+    },
+    "Targetkan menyisihkan 20% pemasukan. Pindahkan ke tabungan begitu gajian, sebelum dipakai belanja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aim to save 20% of your income. Move it to savings as soon as you get paid, before it gets spent."
+          }
+        }
+      }
+    },
+    "Teks ikon": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon text"
+          }
+        }
+      }
+    },
+    "Tema": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Theme"
+          }
+        }
+      }
+    },
+    "Terakhir dipakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently used"
+          }
+        }
+      }
+    },
+    "Terang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        }
+      }
+    },
+    "Terapkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply"
+          }
+        }
+      }
+    },
+    "Terapkan Filter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply filters"
+          }
+        }
+      }
+    },
+    "Terapkan untuk bulan ini dan seterusnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply for this month onwards"
+          }
+        }
+      }
+    },
+    "Terbuka": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        }
+      }
+    },
+    "Terima kasih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thank you"
+          }
+        }
+      }
+    },
+    "Terkunci": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locked"
+          }
+        }
+      }
+    },
+    "Terlambat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overdue"
+          }
+        }
+      }
+    },
+    "Terpakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spent"
+          }
+        }
+      }
+    },
+    "Terpakai %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ used"
+          }
+        }
+      }
+    },
+    "Terpakai %lld%% budget, %lld%% bulan sudah lewat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% of budget used, %lld%% of the month has passed."
+          }
+        }
+      }
+    },
+    "Terpakai %lld%% dari limit kartu kredit.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% of your credit card limit is used."
+          }
+        }
+      }
+    },
+    "Terpakai bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used this month"
+          }
+        }
+      }
+    },
+    "Terpakai jadi %@ · status Lunas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used becomes %@ · status Paid off"
+          }
+        }
+      }
+    },
+    "Terpakai · %lld kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used · %lld cards"
+          }
+        }
+      }
+    },
+    "Terpakai · tempo %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used · due %@"
+          }
+        }
+      }
+    },
+    "Tertutup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Closed"
+          }
+        }
+      }
+    },
+    "Tgl %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day %lld"
+          }
+        }
+      }
+    },
+    "Tiap bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every month"
+          }
+        }
+      }
+    },
+    "Tiap tahun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every year"
+          }
+        }
+      }
+    },
+    "Tiap tanggal %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every month on day %lld"
+          }
+        }
+      }
+    },
+    "Tiap tanggal %lld · belum ada tagihan lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every month on day %lld · no other bills yet"
+          }
+        }
+      }
+    },
+    "Tiap tanggal %lld · sudah ada %lld tagihan di tanggal ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every month on day %lld · %lld bills already on this date"
+          }
+        }
+      }
+    },
+    "Tidak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No"
+          }
+        }
+      }
+    },
+    "Tidak ada dompet “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No wallets match “%@”"
+          }
+        }
+      }
+    },
+    "Tidak ada hasil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No results"
+          }
+        }
+      }
+    },
+    "Tidak ada kategori pemasukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No income categories"
+          }
+        }
+      }
+    },
+    "Tidak ada kategori pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No expense categories"
+          }
+        }
+      }
+    },
+    "Tidak ada kategori “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No categories match “%@”"
+          }
+        }
+      }
+    },
+    "Tidak ada tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No bill"
+          }
+        }
+      }
+    },
+    "Tidak ada tagihan di tanggal ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No bills on this date"
+          }
+        }
+      }
+    },
+    "Tidak ada transaksi \"%@\" dengan filter ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions match \"%@\" with these filters."
+          }
+        }
+      }
+    },
+    "Tidak ada transaksi dengan filter ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions match these filters."
+          }
+        }
+      }
+    },
+    "Tidak ada utang kartu kredit.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No credit card debt."
+          }
+        }
+      }
+    },
+    "Tidak bisa diubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't be changed"
+          }
+        }
+      }
+    },
+    "Tidak dapat memperoleh token Google": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't get a Google token"
+          }
+        }
+      }
+    },
+    "Tidak mengurangi saldo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doesn't reduce balance"
+          }
+        }
+      }
+    },
+    "Tidak mengurangi saldo. Pilih ini kalau tagihan dibayar dari rekening di luar Saku atau sebelum mulai pakai Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doesn't reduce your balance. Pick this if the bill was paid from an account outside Saku or before you started using Saku."
+          }
+        }
+      }
+    },
+    "Tidak muncul lagi di pilihan kategori saat mencatat transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No longer appears in the category choices when recording a transaction."
+          }
+        }
+      }
+    },
+    "Tidak muncul lagi saat mencatat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No longer appears when recording."
+          }
+        }
+      }
+    },
+    "Tidak muncul saat mencatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doesn't appear when recording"
+          }
+        }
+      }
+    },
+    "Tidak muncul saat mencatat · %lld transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doesn't appear when recording · %lld transactions"
+          }
+        }
+      }
+    },
+    "Tidak tentu / tanggal 1": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Irregular / the 1st"
+          }
+        }
+      }
+    },
+    "Tipe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type"
+          }
+        }
+      }
+    },
+    "Total jadi %@/bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total becomes %@/month"
+          }
+        }
+      }
+    },
+    "Total per bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total per month"
+          }
+        }
+      }
+    },
+    "Total saldo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total balance"
+          }
+        }
+      }
+    },
+    "Total saldo · %lld akun": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Total balance · %lld account"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Total balance · %lld accounts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Total saldo · 3 akun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total balance · 3 accounts"
+          }
+        }
+      }
+    },
+    "Transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions"
+          }
+        }
+      }
+    },
+    "Transaksi akan dihapus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The transaction will be deleted."
+          }
+        }
+      }
+    },
+    "Transaksi bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month's transactions"
+          }
+        }
+      }
+    },
+    "Transaksi dihapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction deleted"
+          }
+        }
+      }
+    },
+    "Transaksi ini +Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This transaction +Rp%@"
+          }
+        }
+      }
+    },
+    "Transaksi yang kamu catat di %@ akan muncul di sini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions you record in %@ will show up here."
+          }
+        }
+      }
+    },
+    "Transfer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transfer"
+          }
+        }
+      }
+    },
+    "Transfer antar dompet tidak memengaruhi budget.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transfers between wallets don't affect your budget."
+          }
+        }
+      }
+    },
+    "Tunai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash"
+          }
+        }
+      }
+    },
+    "Tutup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "Tutup detail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close details"
+          }
+        }
+      }
+    },
+    "Tutup tumpukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse stack"
+          }
+        }
+      }
+    },
+    "Uang fisik di dompet atau celengan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Physical money in your purse or piggy bank"
+          }
+        }
+      }
+    },
+    "Ubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        }
+      }
+    },
+    "Ubah Profil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Profile"
+          }
+        }
+      }
+    },
+    "Ubah budget hanya untuk bulan berjalan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change the budget for the current month only"
+          }
+        }
+      }
+    },
+    "Ubah dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit wallet"
+          }
+        }
+      }
+    },
+    "Ubah foto profil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change profile photo"
+          }
+        }
+      }
+    },
+    "Ubah kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit category"
+          }
+        }
+      }
+    },
+    "Ubah tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit bill"
+          }
+        }
+      }
+    },
+    "Ulangi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeat"
+          }
+        }
+      }
+    },
+    "Ulangi, berikutnya %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeat, next %@"
+          }
+        }
+      }
+    },
+    "Untuk apa uang tunai ini?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is this cash for?"
+          }
+        }
+      }
+    },
+    "Untuk uji coba: mulai lagi dari nol": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For testing: start over from zero"
+          }
+        }
+      }
+    },
+    "Urungkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        }
+      }
+    },
+    "Utama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Main"
+          }
+        }
+      }
+    },
+    "Utang %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debt %@"
+          }
+        }
+      }
+    },
+    "Utang kartu kredit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Credit card debt"
+          }
+        }
+      }
+    },
+    "Utang kartu kredit setara %lld%% pemasukan bulanan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Credit card debt equals %lld%% of monthly income."
+          }
+        }
+      }
+    },
+    "Warna": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color"
+          }
+        }
+      }
+    },
+    "Warna %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color %@"
+          }
+        }
+      }
+    },
+    "Warna kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card color"
+          }
+        }
+      }
+    },
+    "Warna kartu · ketik nama langsung di kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card color · type the name right on the card"
+          }
+        }
+      }
+    },
+    "Yang memengaruhi skor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What affects your score"
+          }
+        }
+      }
+    },
+    "besok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tomorrow"
+          }
+        }
+      }
+    },
+    "dompet tujuan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "destination wallet"
+          }
+        }
+      }
+    },
+    "hari ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "today"
+          }
+        }
+      }
+    },
+    "kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "card"
+          }
+        }
+      }
+    },
+    "kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "categories"
+          }
+        }
+      }
+    },
+    "kemarin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yesterday"
+          }
+        }
+      }
+    },
+    "lewat %lld hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days overdue"
+          }
+        }
+      }
+    },
+    "rata-rata / hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "average / day"
+          }
+        }
+      }
+    },
+    "tanggal terakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the last day"
+          }
+        }
+      }
+    },
+    "tempo %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "due %@"
+          }
+        }
+      }
+    },
+    "tersembunyi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hidden"
+          }
+        }
+      }
+    },
+    "tiap tgl %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "monthly on day %lld"
+          }
+        }
+      }
+    },
+    "transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "transactions"
+          }
+        }
+      }
+    },
+    "· tiap tahun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· every year"
+          }
+        }
+      }
+    },
+    "→ Sebagian · sisa %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "→ Partial · %@ left"
+          }
+        }
+      }
+    },
+    "≈ %@ per hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ %@ per day"
+          }
+        }
+      }
+    },
+    "≈Rp%@ per hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈Rp%@ per day"
+          }
+        }
+      }
+    },
+    "≈Rp%@/hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈Rp%@/day"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

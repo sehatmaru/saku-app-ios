@@ -72,14 +72,14 @@ struct SignInView: View {
 
             VStack(spacing: 10) {
                 // Apple sign-in stays off until the Apple provider is configured.
-                socialButton("Lanjutkan dengan Apple", isLoading: authViewModel.isAppleLoading,
+                socialButton(L("Lanjutkan dengan Apple"), isLoading: authViewModel.isAppleLoading,
                              foreground: Color.appBackground, background: Color.appText, bordered: false) {} icon: {
                     Image(systemName: "apple.logo").font(.system(size: 20))
                 }
                 .disabled(true)
                 .opacity(0.5)
 
-                socialButton("Lanjutkan dengan Google", isLoading: authViewModel.isGoogleLoading,
+                socialButton(L("Lanjutkan dengan Google"), isLoading: authViewModel.isGoogleLoading,
                              foreground: .appText, background: .clear, bordered: true,
                              action: authViewModel.signInWithGoogle) {
                     Image("GoogleLogo").resizable().scaledToFit().frame(width: 19, height: 19)

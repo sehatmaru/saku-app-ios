@@ -20,6 +20,7 @@ struct RootView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @AppStorage("appTheme") private var appTheme: ThemeOption = .system
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @AppStorage("appLanguage") private var appLanguage = "id"
 
     enum ThemeOption: String {
         case light = "Terang"
@@ -69,5 +70,7 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.4), value: hasSeenOnboarding)
         .animation(.easeInOut(duration: 0.4), value: authViewModel.needsSetup)
         .preferredColorScheme(appTheme.colorScheme)
+        .environment(\.locale, AppLanguage.locale)
+        .id(appLanguage)
     }
 }

@@ -39,8 +39,8 @@ struct CategoriesView: View {
                         skeleton
                     } else if let error = model.errorMessage, model.categories.isEmpty {
                         VStack(spacing: 20) {
-                            EmptyMessage(icon: "wifi.slash", title: "Gagal memuat kategori", message: error)
-                            EmptyStateButton(title: "Coba lagi", icon: "arrow.clockwise") { Task { await load() } }
+                            EmptyMessage(icon: "wifi.slash", title: L("Gagal memuat kategori"), message: error)
+                            EmptyStateButton(title: L("Coba lagi"), icon: "arrow.clockwise") { Task { await load() } }
                         }
                         .padding(.horizontal, 40)
                         .padding(.top, 60)
@@ -72,7 +72,7 @@ struct CategoriesView: View {
                 onClose: handle
             )
         }
-        .detailPage(addLabel: "Tambah kategori") {
+        .detailPage(addLabel: L("Tambah kategori")) {
             form = FormItem(id: "new-\(type.rawValue)", mode: .new(type))
         }
         .task { await load() }
@@ -107,8 +107,8 @@ struct CategoriesView: View {
             .padding(.top, 14)
             .animation(.settle(0.5), value: lists.shown.count)
             Text(model.isLoading ? " " : type == .expense
-                 ? "\(used) dipakai · \(withBudget) punya budget"
-                 : "\(used) dipakai")
+                 ? L("%lld dipakai · %lld punya budget", used, withBudget)
+                 : L("%lld dipakai", used))
                 .font(.app(14))
                 .opacity(0.8)
                 .monospacedDigit()
@@ -135,7 +135,7 @@ struct CategoriesView: View {
                     let isCurrent = i == typeIndex
                     HStack(spacing: 8) {
                         Image(systemName: Self.types[i].icon).font(.system(size: 17, weight: .bold))
-                        Text(Self.types[i].label)
+                        Text(L(Self.types[i].label))
                     }
                     .font(.app(22, weight: .bold))
                     .frame(width: itemWidth, height: 44)
@@ -236,7 +236,7 @@ struct CategoriesView: View {
         }
         .padding(.top, 8)
         if lists.shown.isEmpty {
-            Text(lists.hidden.isEmpty ? "Belum ada kategori" : "Semua kategori disembunyikan")
+            Text(lists.hidden.isEmpty ? L("Belum ada kategori") : L("Semua kategori disembunyikan"))
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
                 .frame(maxWidth: .infinity)
@@ -273,9 +273,9 @@ struct CategoriesView: View {
 
     private func subtitle(_ category: Category) -> String {
         let count = model.counts[category.id] ?? 0
-        var parts = [count > 0 ? "\(count) transaksi" : "Belum dipakai"]
+        var parts = [count > 0 ? L("%lld transaksi", count) : L("Belum dipakai")]
         if let budget = model.budgets[category.id], budget.amount > 0 {
-            parts.append("Budget " + CategoryCatalog.short(budget.amount))
+            parts.append(L("Budget %@", CategoryCatalog.short(budget.amount)))
         }
         return parts.joined(separator: " · ")
     }
@@ -335,7 +335,7 @@ struct CategoriesView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityValue(isHiddenOpen ? "Terbuka" : "Tertutup")
+            .accessibilityValue(isHiddenOpen ? L("Terbuka") : L("Tertutup"))
 
             VStack(spacing: 0) {
                 ForEach(hidden) { category in
@@ -347,7 +347,7 @@ struct CategoriesView: View {
                                 .foregroundStyle(Color.appTextSecondary)
                                 .lineLimit(1)
                             let count = model.counts[category.id] ?? 0
-                            Text("Tidak muncul saat mencatat" + (count > 0 ? " · \(count) transaksi" : ""))
+                            Text(count > 0 ? L("Tidak muncul saat mencatat · %lld transaksi", count) : L("Tidak muncul saat mencatat"))
                                 .font(.app(13))
                                 .foregroundStyle(Color.appTextTertiary)
                                 .lineLimit(1)
@@ -379,7 +379,7 @@ struct CategoriesView: View {
         Task {
             guard await model.setHidden(category.id, hidden: false) else { return }
             flash(category.id, for: 1.2)
-            toastText = category.name + " ditampilkan"
+            toastText = L("%@ ditampilkan", category.name)
             showsToast = true
         }
     }

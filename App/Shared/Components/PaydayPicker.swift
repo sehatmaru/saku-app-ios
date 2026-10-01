@@ -30,12 +30,12 @@ extension PaydayCycle {
         return Self.dayMonth.string(from: Calendar.current.date(byAdding: .day, value: -1, to: end) ?? end)
     }
 
-    private static let dayMonth: DateFormatter = {
+    private static var dayMonth: DateFormatter {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         f.dateFormat = "d MMM"
         return f
-    }()
+    }
 }
 
 /// Saves the payday on the signed-in user's profile and reloads everything period-based.
@@ -60,8 +60,8 @@ struct PaydayDayPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                chip("Akhir bulan", 31)
-                chip("Tidak tentu / tanggal 1", 1)
+                chip(L("Akhir bulan"), 31)
+                chip(L("Tidak tentu / tanggal 1"), 1)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 6)
@@ -120,10 +120,10 @@ struct PaydayPreview: View {
     var body: some View {
         let cycle = PaydayCycle(day: day)
         VStack(alignment: .leading, spacing: 8) {
-            row("chart.pie", "Budget & ringkasan berjalan", cycle.rangeLabel())
-            row("bell", "Pengingat menjelang gajian", cycle.lastDayLabel())
+            row("chart.pie", L("Budget & ringkasan berjalan"), cycle.rangeLabel())
+            row("bell", L("Pengingat menjelang gajian"), cycle.lastDayLabel())
             if day >= 29 {
-                row("info.circle", "Di bulan yang lebih pendek, dipakai", "tanggal terakhir")
+                row("info.circle", L("Di bulan yang lebih pendek, dipakai"), L("tanggal terakhir"))
             }
         }
         .padding(.horizontal, 16)
@@ -237,7 +237,7 @@ struct PaydaySheet: View {
                 onDone(day)
             } else {
                 isSaving = false
-                errorMessage = "Gagal menyimpan tanggal gajian. Coba lagi."
+                errorMessage = L("Gagal menyimpan tanggal gajian. Coba lagi.")
             }
         }
     }

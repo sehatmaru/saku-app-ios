@@ -71,7 +71,7 @@ struct DashboardView: View {
         .fullScreenCover(item: $recordCard) { bill in
             PayCardBillSheet(card: bill.card, statement: bill.statement, wallets: viewModel.accounts, mode: .record,
                              onPaid: { amount, _, isFull in
-                toastText = isFull ? "\(bill.card.name) lunas · pembayaran tercatat" : "Pembayaran \(amount.formattedAsCurrency()) tercatat"
+                toastText = isFull ? L("%@ lunas · pembayaran tercatat", bill.card.name) : L("Pembayaran %@ tercatat", amount.formattedAsCurrency())
                 isToastShown = true
             })
         }
@@ -127,16 +127,16 @@ struct DashboardView: View {
                     }
             }
             .onChange(of: homePath.count) { _, count in if count == 0 { addsWalletOnOpen = false } }
-        } label: { tabLabel("Beranda", "house.fill") }
+        } label: { tabLabel(L("Beranda"), "house.fill") }
         Tab(value: AppTab.transactions) {
             TransactionListView { showAddSheet = true }
-        } label: { tabLabel("Transaksi", "list.bullet") }
+        } label: { tabLabel(L("Transaksi"), "list.bullet") }
         Tab(value: AppTab.add) {
             Color.clear
-        } label: { tabLabel("Tambah transaksi", "plus") }
+        } label: { tabLabel(L("Tambah transaksi"), "plus") }
         Tab(value: AppTab.budget) {
             BudgetListView()
-        } label: { tabLabel("Budget", "chart.pie.fill") }
+        } label: { tabLabel(L("Budget"), "chart.pie.fill") }
         Tab(value: AppTab.profile) {
             ProfileView()
         } label: {
@@ -226,7 +226,7 @@ struct DashboardView: View {
                     .font(.system(size: 20))
                     .foregroundStyle(Color.appText)
             }
-            .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+            .accessibilityLabel(isBalanceVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
         }
         .padding(.horizontal, 24)
         .padding(.top, 8)
@@ -263,7 +263,7 @@ struct DashboardView: View {
             SectionDivider()
 
             VStack(alignment: .leading, spacing: 0) {
-                SectionHeader(title: "Kesehatan finansial")
+                SectionHeader(title: L("Kesehatan finansial"))
                 SkeletonBlock(width: 110, height: 50, radius: 10)
                     .padding(.top, 14)
                 SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
@@ -285,7 +285,7 @@ struct DashboardView: View {
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
                 .lineSpacing(3)
-            EmptyStateButton(title: "Tambah dompet", isFullWidth: true) {
+            EmptyStateButton(title: L("Tambah dompet"), isFullWidth: true) {
                 addsWalletOnOpen = true
                 homePath.append(HomeRoute.wallets)
             }
@@ -300,7 +300,7 @@ struct DashboardView: View {
 
     private var emptyHealthSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Kesehatan finansial")
+            SectionHeader(title: L("Kesehatan finansial"))
             SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
                 .padding(.top, 16)
             Text("Skor muncul setelah kamu mencatat pemasukan atau pengeluaran.")
@@ -351,9 +351,9 @@ struct DashboardView: View {
             .padding(.top, 28)
 
             HStack {
-                flowStat("Masuk", viewModel.totalIncome)
+                flowStat(Lx("Masuk", en: "In"), viewModel.totalIncome)
                 Spacer()
-                flowStat("Keluar", viewModel.totalExpense)
+                flowStat(Lx("Keluar", en: "Out"), viewModel.totalExpense)
                 Spacer()
                 flowStat("Net", viewModel.netCashflow, signed: true)
             }
@@ -407,11 +407,11 @@ struct DashboardView: View {
 
     private var safeToSpendSheet: some View {
         let safe = viewModel.safeToSpend
-        return PickerSheet(title: "Aman dipakai", onDone: { showsSafeInfo = false }) {
+        return PickerSheet(title: L("Aman dipakai"), onDone: { showsSafeInfo = false }) {
             VStack(alignment: .leading, spacing: 0) {
-                safeRow("Total saldo", maskedAmount(viewModel.balance))
-                safeRow("Tagihan kartu kredit (termasuk periode berjalan)", maskedAmount(viewModel.cardDueTotal, negative: true))
-                safeRow("Langganan sampai akhir bulan", maskedAmount(viewModel.upcomingBillsTotal, negative: true))
+                safeRow(L("Total saldo"), maskedAmount(viewModel.balance))
+                safeRow(L("Tagihan kartu kredit (termasuk periode berjalan)"), maskedAmount(viewModel.cardDueTotal, negative: true))
+                safeRow(L("Langganan sampai akhir bulan"), maskedAmount(viewModel.upcomingBillsTotal, negative: true))
                 HStack {
                     Text("Aman dipakai")
                         .font(.app(17, weight: .semibold))
@@ -502,7 +502,7 @@ struct DashboardView: View {
         } else {
             NavigationLink { HealthDetailView(health: health).detailPage() } label: {
                 VStack(alignment: .leading, spacing: 0) {
-                    SectionHeader(title: "Kesehatan finansial", trailing: health.label, trailingColor: health.color)
+                    SectionHeader(title: L("Kesehatan finansial"), trailing: health.label, trailingColor: health.color)
 
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("\(health.score)")
@@ -557,17 +557,17 @@ struct DashboardView: View {
         let peak = max(days.max() ?? 0, average, 1) * 1.05
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                SectionHeader(title: "Bulan ini")
+                SectionHeader(title: L("Bulan ini"))
                 NavigationLink("Analisis") { AnalyticsView(viewModel: viewModel).detailPage() }
                     .font(.app(15))
                     .foregroundStyle(Color.appPrimary)
             }
 
             HStack(alignment: .top, spacing: 32) {
-                countStat(average, label: "rata-rata / hari") { value in
+                countStat(average, label: L("rata-rata / hari")) { value in
                     isBalanceVisible ? value.rounded(.toNearestOrEven).formattedAsCurrency() : "Rp" + hiddenAmount
                 }
-                countStat(Double(viewModel.currentMonthTransactionCount), label: "transaksi") { "\(Int($0.rounded()))" }
+                countStat(Double(viewModel.currentMonthTransactionCount), label: L("transaksi")) { "\(Int($0.rounded()))" }
             }
             .padding(.top, 14)
 
@@ -633,7 +633,7 @@ struct DashboardView: View {
                         .onTapGesture { selectedDay = i }
                         .accessibilityElement()
                         .accessibilityLabel(dayTitle(i, of: days.count))
-                        .accessibilityValue(isBalanceVisible ? "Rp" + days[i].formattedAsDigits() : "tersembunyi")
+                        .accessibilityValue(isBalanceVisible ? "Rp" + days[i].formattedAsDigits() : L("tersembunyi"))
                         .accessibilityAddTraits(i == selected ? [.isButton, .isSelected] : .isButton)
                 }
             }
@@ -683,7 +683,7 @@ struct DashboardView: View {
 
     /// "Hari ini" for the last bar, otherwise e.g. "Sel, 15 Sep".
     private func dayTitle(_ index: Int, of count: Int) -> String {
-        guard index != count - 1 else { return "Hari ini" }
+        guard index != count - 1 else { return L("Hari ini") }
         let calendar = Calendar.current
         let start = PaydayCycle.current.period(containing: Date(), calendar: calendar).start
         let date = calendar.date(byAdding: .day, value: index, to: start) ?? start
@@ -716,7 +716,7 @@ struct DashboardView: View {
         }
         let rest = 1 - slices.map(\.share).reduce(0, +)
         if rest > 0.005 {
-            slices.append(CategorySlice(name: "Lainnya", share: rest, color: Self.slicePalette[4]))
+            slices.append(CategorySlice(name: L("Lainnya"), share: rest, color: Self.slicePalette[4]))
         }
         return slices
     }
@@ -774,8 +774,8 @@ struct DashboardView: View {
         let shown = showAllBudgets ? sorted : Array(sorted.prefix(3))
         return VStack(alignment: .leading, spacing: 0) {
             SectionHeader(
-                title: "Budget",
-                trailing: sorted.isEmpty ? nil : "Sisa " + (isBalanceVisible ? max(0, viewModel.totalRemaining).formattedAsCurrency() : "Rp" + hiddenAmount)
+                title: L("Budget"),
+                trailing: sorted.isEmpty ? nil : L("Sisa %@", isBalanceVisible ? max(0, viewModel.totalRemaining).formattedAsCurrency() : "Rp" + hiddenAmount)
             )
 
             if sorted.isEmpty {
@@ -795,7 +795,7 @@ struct DashboardView: View {
                     withAnimation(.easeInOut(duration: 0.25)) { showAllBudgets.toggle() }
                 } label: {
                     HStack(spacing: 6) {
-                        Text(showAllBudgets ? "Tampilkan lebih sedikit" : "Lihat semua (\(sorted.count))")
+                        Text(showAllBudgets ? L("Tampilkan lebih sedikit") : L("Lihat semua (%lld)", sorted.count))
                         Image(systemName: showAllBudgets ? "chevron.up" : "chevron.down")
                             .font(.system(size: 12, weight: .semibold))
                     }
@@ -854,21 +854,21 @@ struct DashboardView: View {
     /// "Hari ini", "Kemarin", or "Kamis, 24 Sep".
     static func dayHeader(for date: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "Hari ini" }
-        if calendar.isDateInYesterday(date) { return "Kemarin" }
+        if calendar.isDateInToday(date) { return L("Hari ini") }
+        if calendar.isDateInYesterday(date) { return L("Kemarin") }
         return shortDayFormatter.string(from: date)
     }
 
     private static func formatter(_ format: String) -> DateFormatter {
         let f = DateFormatter()
         f.dateFormat = format
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
     }
 
-    private static let shortDayFormatter = formatter("EEEE, d MMM")
-    private static let dayMonthFormatter = formatter("d MMM")
-    private static let weekdayDayFormatter = formatter("EEE, d MMM")
+    private static var shortDayFormatter: DateFormatter { formatter("EEEE, d MMM") }
+    private static var dayMonthFormatter: DateFormatter { formatter("d MMM") }
+    private static var weekdayDayFormatter: DateFormatter { formatter("EEE, d MMM") }
 }
 
 /// The Dompet pill's mark: the pocket pops in, then the cards rise and fan.

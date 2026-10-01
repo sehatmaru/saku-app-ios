@@ -324,7 +324,7 @@ final class DashboardViewModel: ObservableObject {
     private func shortMonthLabel(_ month: Int, _ year: Int) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM"
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = AppLanguage.locale
         guard let date = calendar.date(from: DateComponents(year: year, month: month)) else { return "" }
         return formatter.string(from: date)
     }

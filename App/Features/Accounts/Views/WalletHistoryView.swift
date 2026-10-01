@@ -39,8 +39,8 @@ struct WalletHistoryView: View {
                     .opacity(isEntered ? 1 : 0)
                     .offset(y: isEntered ? 0 : 10)
                 if sorted.isEmpty {
-                    EmptyMessage(icon: "clock.arrow.circlepath", title: "Belum ada transaksi",
-                                 message: "Transaksi yang kamu catat di \(account.name) akan muncul di sini.")
+                    EmptyMessage(icon: "clock.arrow.circlepath", title: L("Belum ada transaksi"),
+                                 message: L("Transaksi yang kamu catat di %@ akan muncul di sini.", account.name))
                         .padding(.top, 80)
                 } else {
                     rows
@@ -68,9 +68,9 @@ struct WalletHistoryView: View {
         let flow = monthFlow
         let card = account.isCreditCard
         return HStack(spacing: 0) {
-            flowLabel(card ? "Terpakai bulan ini" : "Keluar bulan ini", flow.out, color: .appText)
+            flowLabel(card ? L("Terpakai bulan ini") : L("Keluar bulan ini"), flow.out, color: .appText)
             Rectangle().fill(Color(light: 0xE5E5EA, dark: 0x3A3A3C)).frame(width: 1)
-            flowLabel(card ? "Dibayar bulan ini" : "Masuk bulan ini", flow.in, color: .appPrimary)
+            flowLabel(card ? L("Dibayar bulan ini") : L("Masuk bulan ini"), flow.in, color: .appPrimary)
         }
         .fixedSize(horizontal: false, vertical: true)
         .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))

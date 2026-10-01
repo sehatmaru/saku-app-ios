@@ -50,7 +50,7 @@ struct TransactionDetailView: View {
     private var isAdjustment: Bool { txn.type == .adjustment }
     /// A transfer into a card pays its bill: debt goes down, not an expense.
     private var isBillPayment: Bool { isTransfer && counterparty?.isCreditCard == true }
-    private var typeLabel: String { isBillPayment ? "Bayar tagihan" : style.label }
+    private var typeLabel: String { isBillPayment ? L("Bayar tagihan") : style.label }
     private var typeIcon: String { isBillPayment ? "creditcard" : style.icon }
     private var signedAdjustment: Double { txn.delta ?? txn.amount }
     private var isDeleted: Bool { pendingDelete != nil }
@@ -221,22 +221,22 @@ struct TransactionDetailView: View {
     private var rows: some View {
         VStack(spacing: 0) {
             if isTransfer {
-                row(label: "Dari", value: account?.name ?? "—", swatch: walletColor(account), index: 0)
-                row(label: "Ke", value: counterparty?.name ?? "—", swatch: walletColor(counterparty), index: 1)
+                row(label: L("Dari"), value: account?.name ?? "—", swatch: walletColor(account), index: 0)
+                row(label: L("Ke"), value: counterparty?.name ?? "—", swatch: walletColor(counterparty), index: 1)
             } else if isAdjustment {
-                row(label: "Dompet", value: account?.name ?? "—", swatch: walletColor(account), index: 0)
+                row(label: L("Dompet"), value: account?.name ?? "—", swatch: walletColor(account), index: 0)
             } else {
-                row(label: "Kategori", value: category?.name ?? "—", icon: category?.icon ?? "tag", index: 0)
-                row(label: "Dompet", value: account?.name ?? "—", swatch: walletColor(account), index: 1)
+                row(label: L("Kategori"), value: category?.name ?? "—", icon: category?.icon ?? "tag", index: 0)
+                row(label: L("Dompet"), value: account?.name ?? "—", swatch: walletColor(account), index: 1)
                 if let installment, let card = account {
                     installmentRow(installment, card: card)
                 }
             }
-            row(label: "Tanggal", value: TransactionDates.long(txn.date, withYear: false), icon: "calendar", index: 2)
+            row(label: L("Tanggal"), value: TransactionDates.long(txn.date, withYear: false), icon: "calendar", index: 2)
             if txn.isRecurring {
-                row(label: "Sumber", value: "Tagihan berulang · otomatis", icon: "repeat", index: 2)
+                row(label: L("Sumber"), value: L("Tagihan berulang · otomatis"), icon: "repeat", index: 2)
             }
-            row(label: "Catatan", value: txn.description?.isEmpty == false ? txn.description! : "—", icon: "square.and.pencil", index: 3)
+            row(label: L("Catatan"), value: txn.description?.isEmpty == false ? txn.description! : "—", icon: "square.and.pencil", index: 3)
         }
     }
 
@@ -250,7 +250,7 @@ struct TransactionDetailView: View {
         let billed = CreditStatement.billedParts(of: plan, purchaseDate: txn.date, card: card)
         let monthly = txn.amount / Double(max(1, plan.months))
         return VStack(alignment: .leading, spacing: 0) {
-            DetailRow(label: "Cicilan", value: "\(plan.months) bulan · Rp" + monthly.formattedAsDigits() + "/bulan",
+            DetailRow(label: L("Cicilan"), value: L("%lld bulan · Rp%@/bulan", plan.months, monthly.formattedAsDigits()),
                       icon: "calendar.badge.clock", height: 50)
             VStack(alignment: .leading, spacing: 8) {
                 SegmentBar(value: Double(billed) / Double(max(1, plan.months)), count: plan.months, height: 6, spacing: 3)
@@ -280,7 +280,7 @@ struct TransactionDetailView: View {
 
     private var impact: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(txn.type == .expense ? "Dampak ke budget" : "Dampak ke saldo")
+            Text(txn.type == .expense ? L("Dampak ke budget") : L("Dampak ke saldo"))
                 .font(.app(13))
                 .foregroundStyle(Color.appTextSecondary)
             ForEach(impactItems) { item in
@@ -327,16 +327,16 @@ struct TransactionDetailView: View {
         switch txn.type {
         case .expense: return budgetItems
         case .income:
-            var items = account.map { [balanceItem($0, sub: "Transaksi ini +Rp" + txn.amount.formattedAsDigits())] } ?? []
+            var items = account.map { [balanceItem($0, sub: L("Transaksi ini +Rp%@", txn.amount.formattedAsDigits()))] } ?? []
             items.append(cashflowItem)
             return items
         case .transfer:
             return [account, counterparty].compactMap { $0 }.map { balanceItem($0, sub: transferSub(for: $0)) }
         case .adjustment:
             let change = (signedAdjustment < 0 ? "−Rp" : "+Rp") + abs(signedAdjustment).formattedAsDigits()
-            return account.map { [balanceItem($0, sub: "Penyesuaian " + change)] } ?? []
+            return account.map { [balanceItem($0, sub: L("Penyesuaian %@", change))] } ?? []
         case .cardPayment:
-            return account.map { [balanceItem($0, sub: "Tagihan turun Rp" + txn.amount.formattedAsDigits())] } ?? []
+            return account.map { [balanceItem($0, sub: L("Tagihan turun Rp%@", txn.amount.formattedAsDigits()))] } ?? []
         }
     }
 
@@ -347,32 +347,32 @@ struct TransactionDetailView: View {
         let effect = SupabaseRepository.balanceEffects(of: txn, isCredit: isCredit)
             .filter { $0.0 == wallet.id }.reduce(0) { $0 + $1.1 }
         let amount = "Rp" + abs(effect).formattedAsDigits()
-        if wallet.isCreditCard { return (effect < 0 ? "Tagihan turun " : "Tagihan naik ") + amount }
-        return (effect < 0 ? "Keluar " : "Masuk ") + amount
+        if wallet.isCreditCard { return effect < 0 ? L("Tagihan turun %@", amount) : L("Tagihan naik %@", amount) }
+        return effect < 0 ? L("Keluar %@", amount) : L("Masuk %@", amount)
     }
 
     private var impactNote: String? {
         switch txn.type {
-        case .transfer where isBillPayment: "Bayar tagihan kartu kredit bukan pengeluaran, jadi tidak memengaruhi budget."
-        case .transfer: "Transfer antar dompet tidak memengaruhi budget."
-        case .expense where budgetItems.isEmpty: "Belum ada budget untuk transaksi ini."
+        case .transfer where isBillPayment: L("Bayar tagihan kartu kredit bukan pengeluaran, jadi tidak memengaruhi budget.")
+        case .transfer: L("Transfer antar dompet tidak memengaruhi budget.")
+        case .expense where budgetItems.isEmpty: L("Belum ada budget untuk transaksi ini.")
         default: nil
         }
     }
 
     private func balanceItem(_ account: Account, sub: String) -> ImpactItem {
-        ImpactItem(label: (account.isCreditCard ? "Tagihan " : "Saldo ") + account.name,
-                   value: rupiah(account.balance) + " sekarang", sub: sub)
+        ImpactItem(label: account.isCreditCard ? L("Tagihan %@", account.name) : L("Saldo %@", account.name),
+                   value: L("%@ sekarang", rupiah(account.balance)), sub: sub)
     }
 
     private var cashflowItem: ImpactItem {
         let income = monthTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
         let expense = monthTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
         let net = income - expense
-        return ImpactItem(label: "Net cashflow " + Self.monthName.string(from: txn.date),
+        return ImpactItem(label: L("Net cashflow %@", Self.monthName.string(from: txn.date)),
                           value: (net < 0 ? "−Rp" : "+Rp") + abs(net).formattedAsDigits(),
                           valueColor: net < 0 ? .appError : .appPrimary,
-                          sub: "Masuk Rp" + income.abbreviatedRupiah() + " · keluar Rp" + expense.abbreviatedRupiah())
+                          sub: L("Masuk Rp%@ · keluar Rp%@", income.abbreviatedRupiah(), expense.abbreviatedRupiah()))
     }
 
     /// Daily budget (this month's budgets ÷ days) and the category's own budget, each with
@@ -390,11 +390,11 @@ struct TransactionDetailView: View {
             let used = max(0, daySpent - amount)
             let left = daily - daySpent
             items.append(ImpactItem(
-                label: "Budget " + TransactionDates.dayShort(txn.date),
-                value: left < 0 ? "Lewat Rp" + (-left).formattedAsDigits() : "Sisa Rp" + left.formattedAsDigits(),
+                label: L("Budget %@", TransactionDates.dayShort(txn.date)),
+                value: left < 0 ? L("Lewat Rp%@", (-left).formattedAsDigits()) : L("Sisa Rp%@", left.formattedAsDigits()),
                 valueColor: left < 0 ? .appError : .appTextSecondary,
                 ticks: Self.ticks(used: used, amount: amount, cap: daily),
-                sub: "Rp" + used.formattedAsDigits() + " + Rp" + amount.formattedAsDigits() + " ini, dari Rp" + daily.formattedAsDigits()
+                sub: L("Rp%@ + Rp%@ ini, dari Rp%@", used.formattedAsDigits(), amount.formattedAsDigits(), daily.formattedAsDigits())
             ))
         }
         if let budget = categoryBudget, budget.amount > 0 {
@@ -403,10 +403,10 @@ struct TransactionDetailView: View {
             let ratio = budget.spent / budget.amount
             items.append(ImpactItem(
                 label: category?.name ?? budget.name,
-                value: left < 0 ? "Lewat Rp" + (-left).formattedAsDigits() : "Sisa Rp" + left.formattedAsDigits(),
+                value: left < 0 ? L("Lewat Rp%@", (-left).formattedAsDigits()) : L("Sisa Rp%@", left.formattedAsDigits()),
                 valueColor: ratio > 1 ? .appError : ratio >= 0.75 ? .appWarning : .appTextSecondary,
                 ticks: Self.ticks(used: used, amount: amount, cap: budget.amount),
-                sub: "\(Int((ratio * 100).rounded()))% terpakai · \(budget.daysRemaining) hari lagi di " + Self.monthName.string(from: Date())
+                sub: L("%lld%% terpakai · %lld hari lagi di %@", Int((ratio * 100).rounded()), Int(budget.daysRemaining), Self.monthName.string(from: Date()))
             ))
         }
         return items
@@ -445,22 +445,22 @@ struct TransactionDetailView: View {
 
     private var deleteSubtitle: String {
         let amount = "Rp" + txn.amount.formattedAsDigits()
-        guard let account else { return "Transaksi akan dihapus." }
+        guard let account else { return L("Transaksi akan dihapus.") }
         let restored: Double
         switch txn.type {
         case .expense: restored = account.balance + (account.isCreditCard ? -txn.amount : txn.amount)
         case .income: restored = account.balance - (account.isCreditCard ? -txn.amount : txn.amount)
         case .transfer where isBillPayment:
-            return "\(amount) akan kembali ke \(account.name) dan tagihan \(counterparty?.name ?? "kartu") naik lagi."
-        case .transfer: return "\(amount) akan kembali ke \(account.name) dan keluar dari \(counterparty?.name ?? "dompet tujuan")."
+            return L("%@ akan kembali ke %@ dan tagihan %@ naik lagi.", amount, account.name, counterparty?.name ?? L("kartu"))
+        case .transfer: return L("%@ akan kembali ke %@ dan keluar dari %@.", amount, account.name, counterparty?.name ?? L("dompet tujuan"))
         case .adjustment: restored = account.balance - signedAdjustment
         case .cardPayment: restored = account.balance + txn.amount
         }
-        let base = (account.isCreditCard ? "Tagihan " : "Saldo ") + account.name + " kembali jadi " + rupiah(restored)
+        let base = account.isCreditCard ? L("Tagihan %@ kembali jadi %@", account.name, rupiah(restored)) : L("Saldo %@ kembali jadi %@", account.name, rupiah(restored))
         if txn.type == .expense, let name = category?.name, categoryBudget != nil {
-            return base + " dan budget \(name) bertambah \(amount)."
+            return L("%@ dan budget %@ bertambah %@.", base, name, amount)
         }
-        return base + "."
+        return L("%@.", base)
     }
 
     private var confirmDelete: some View {
@@ -525,7 +525,7 @@ struct TransactionDetailView: View {
 
     /// Hides the transaction and offers Urungkan; the real delete runs when the toast ends.
     private func startDelete() {
-        show(Toast(message: "Transaksi dihapus", icon: "trash.fill", canUndo: true), duration: 3.8)
+        show(Toast(message: L("Transaksi dihapus"), icon: "trash.fill", canUndo: true), duration: 3.8)
         pendingDelete = Task {
             try? await Task.sleep(for: .seconds(3.8))
             guard !Task.isCancelled else { return }
@@ -549,7 +549,7 @@ struct TransactionDetailView: View {
                 NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 if !now { dismiss() }
             } catch {
-                show(Toast(message: "Gagal menghapus", icon: "exclamationmark.circle.fill"))
+                show(Toast(message: L("Gagal menghapus"), icon: "exclamationmark.circle.fill"))
             }
         }
     }
@@ -597,12 +597,12 @@ struct TransactionDetailView: View {
         (value < 0 ? "−Rp" : "Rp") + value.formattedAsDigits()
     }
 
-    private static let monthName: DateFormatter = {
+    private static var monthName: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "MMMM"
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
-    }()
+    }
 }
 
 /// Small bold icon then the title, for the type pill.

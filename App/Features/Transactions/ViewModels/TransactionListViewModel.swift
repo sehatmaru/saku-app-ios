@@ -88,7 +88,7 @@ final class TransactionListViewModel: ObservableObject {
         }
 
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = AppLanguage.locale
         formatter.dateFormat = "MMMM yyyy"
 
         return grouped.map { month, items in

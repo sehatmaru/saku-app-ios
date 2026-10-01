@@ -24,8 +24,8 @@ final class NotificationManager: @unchecked Sendable {
     /// Three days before a renewal, so there's still time to cancel it.
     func schedule(for sub: CardSubscription) async {
         guard sub.isActive, let billingDate = sub.nextBillingDateAsDate else { return }
-        let body = "\(sub.name) diperpanjang 3 hari lagi sebesar \(sub.amount.formattedAsCurrency()). Batalkan sebelum itu kalau sudah tidak dipakai."
-        await add(id: identifier(for: sub), title: "Langganan: \(sub.name)", body: body, daysBefore: 3, date: billingDate)
+        let body = L("%@ diperpanjang 3 hari lagi sebesar %@. Batalkan sebelum itu kalau sudah tidak dipakai.", sub.name, sub.amount.formattedAsCurrency())
+        await add(id: identifier(for: sub), title: L("Langganan: %@", sub.name), body: body, daysBefore: 3, date: billingDate)
     }
 
     /// Card bills still owed: a reminder three days and one day before the due date.
@@ -38,10 +38,10 @@ final class NotificationManager: @unchecked Sendable {
         for (card, statement) in zip(cards, statements) where statement.remaining >= 1 {
             await scheduleLateReminder(card: card, statement: statement, store: store)
             let amount = statement.remaining.formattedAsCurrency()
-            await add(id: "card-due-\(card.id)-3", title: "Tagihan \(card.name)",
-                      body: "Tagihan \(amount) jatuh tempo 3 hari lagi.", daysBefore: 3, date: statement.dueDate)
-            await add(id: "card-due-\(card.id)-1", title: "Tagihan \(card.name)",
-                      body: "Tagihan \(amount) jatuh tempo besok. Bayar penuh supaya tidak kena bunga.", daysBefore: 1, date: statement.dueDate)
+            await add(id: "card-due-\(card.id)-3", title: L("Tagihan %@", card.name),
+                      body: L("Tagihan %@ jatuh tempo 3 hari lagi.", amount), daysBefore: 3, date: statement.dueDate)
+            await add(id: "card-due-\(card.id)-1", title: L("Tagihan %@", card.name),
+                      body: L("Tagihan %@ jatuh tempo besok. Bayar penuh supaya tidak kena bunga.", amount), daysBefore: 1, date: statement.dueDate)
         }
     }
 
@@ -70,8 +70,8 @@ final class NotificationManager: @unchecked Sendable {
     }
 
     static func lateText(card: Account, statement: CreditStatement) -> (title: String, body: String) {
-        ("Tagihan \(card.name) jatuh tempo \(TransactionDates.dayMonth.string(from: statement.dueDate))",
-         "\(statement.remaining.formattedAsCurrency()) belum tercatat lunas. Sudah kamu bayar?")
+        (L("Tagihan %@ jatuh tempo %@", card.name, TransactionDates.dayMonth.string(from: statement.dueDate)),
+         L("%@ belum tercatat lunas. Sudah kamu bayar?", statement.remaining.formattedAsCurrency()))
     }
 
     private static func lateInfo(cardId: String, statementDate: Date) -> [String: Any] {
@@ -90,8 +90,8 @@ final class NotificationManager: @unchecked Sendable {
 
     /// Registers the "Sudah, catat" / "Belum" buttons on the overdue-bill notification.
     func registerCategories() {
-        let record = UNNotificationAction(identifier: Self.recordAction, title: "Sudah, catat", options: [.foreground])
-        let notYet = UNNotificationAction(identifier: Self.notYetAction, title: "Belum", options: [])
+        let record = UNNotificationAction(identifier: Self.recordAction, title: L("Sudah, catat"), options: [.foreground])
+        let notYet = UNNotificationAction(identifier: Self.notYetAction, title: L("Belum"), options: [])
         let category = UNNotificationCategory(identifier: Self.lateCategory, actions: [record, notYet],
                                               intentIdentifiers: [], options: [])
         UNUserNotificationCenter.current().setNotificationCategories([category])

@@ -40,7 +40,7 @@ struct ProfileView: View {
         let date = Date(timeIntervalSince1970: memberSince)
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = AppLanguage.locale
         return formatter.string(from: date)
     }
 
@@ -52,7 +52,7 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ScreenHeader(title: "Profil") {}
+                    ScreenHeader(title: L("Profil")) {}
                     profileHeader
                     SectionDivider()
                     VStack(alignment: .leading, spacing: 0) {
@@ -84,7 +84,7 @@ struct ProfileView: View {
                     }
                 }
             }
-            .toast("Tanggal gajian disimpan", isShown: $isPaydayToastShown)
+            .toast(L("Tanggal gajian disimpan"), isShown: $isPaydayToastShown)
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
@@ -118,8 +118,8 @@ struct ProfileView: View {
                 }
             } message: {
                 Text(authViewModel.currentUser?.isGuest == true
-                     ? "Kamu masuk sebagai tamu. Setelah keluar, data di akun tamu ini tidak bisa dibuka lagi."
-                     : "Anda akan keluar dari akun. Data tetap tersimpan.")
+                     ? L("Kamu masuk sebagai tamu. Setelah keluar, data di akun tamu ini tidak bisa dibuka lagi.")
+                     : L("Anda akan keluar dari akun. Data tetap tersimpan."))
             }
         }
     }
@@ -136,7 +136,7 @@ struct ProfileView: View {
                     .font(.app(22, weight: .semibold))
                     .tracking(-0.2)
                     .foregroundStyle(Color.appText)
-                Text(authViewModel.currentUser?.isGuest == true ? "Mode tamu" : authViewModel.currentUser?.email ?? "")
+                Text(authViewModel.currentUser?.isGuest == true ? L("Mode tamu") : authViewModel.currentUser?.email ?? "")
                     .font(.app(15))
                     .foregroundStyle(Color.appTextSecondary)
             }
@@ -156,10 +156,10 @@ struct ProfileView: View {
     /// Kategori and the payday that budgets and "bulan ini" run from.
     private var financeSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionCaption("Keuangan")
+            sectionCaption(L("Keuangan"))
 
             NavigationLink(destination: CategoriesView()) {
-                row(icon: "square.grid.2x2", title: "Kategori", subtitle: "Tambah, ubah, sembunyikan") {
+                row(icon: "square.grid.2x2", title: L("Kategori"), subtitle: L("Tambah, ubah, sembunyikan")) {
                     chevron
                 }
                 .contentShape(Rectangle())
@@ -167,8 +167,8 @@ struct ProfileView: View {
             .buttonStyle(RowPressStyle())
 
             Button { showsPayday = true } label: {
-                row(icon: "calendar", title: "Tanggal gajian", subtitle: "Awal periode budget & ringkasan") {
-                    Text(paydayDay == 0 ? "Belum diatur" : "Tgl \(paydayDay)")
+                row(icon: "calendar", title: L("Tanggal gajian"), subtitle: L("Awal periode budget & ringkasan")) {
+                    Text(paydayDay == 0 ? L("Belum diatur") : L("Tgl %lld", paydayDay))
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
                         .contentTransition(.numericText())
@@ -190,12 +190,12 @@ struct ProfileView: View {
 
     private var appearanceSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionCaption("Tampilan")
+            sectionCaption(L("Tampilan"))
 
-            row(icon: "moon", title: "Tema") {
+            row(icon: "moon", title: L("Tema")) {
                 Picker("Tema", selection: $appTheme) {
                     ForEach(ThemeOption.allCases, id: \.self) { option in
-                        Text(option.rawValue).tag(option)
+                        Text(LocalizedStringKey(option.rawValue)).tag(option)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -204,7 +204,7 @@ struct ProfileView: View {
             }
 
             NavigationLink(destination: LanguageView(appLanguage: $appLanguage).detailPage()) {
-                row(icon: "globe", title: "Bahasa") {
+                row(icon: "globe", title: L("Bahasa")) {
                     Text(languageLabel)
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
@@ -220,13 +220,13 @@ struct ProfileView: View {
 
     private var notificationSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionCaption("Notifikasi")
-            row(icon: "arrow.left.arrow.right", title: "Transaksi", subtitle: "Setiap ada transaksi baru") {
+            sectionCaption(L("Notifikasi"))
+            row(icon: "arrow.left.arrow.right", title: L("Transaksi"), subtitle: L("Setiap ada transaksi baru")) {
                 Toggle("Transaksi", isOn: $notifTransactions)
                     .labelsHidden()
                     .tint(.appPrimary)
             }
-            row(icon: "chart.pie", title: "Budget", subtitle: "Saat pemakaian mencapai 80%") {
+            row(icon: "chart.pie", title: L("Budget"), subtitle: L("Saat pemakaian mencapai 80%")) {
                 Toggle("Budget", isOn: $notifBudget)
                     .labelsHidden()
                     .tint(.appPrimary)
@@ -271,9 +271,9 @@ struct ProfileView: View {
     /// Only while the app is in development and testing (see `DevTools`).
     private var developmentSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionCaption("Pengembangan")
+            sectionCaption(L("Pengembangan"))
             Button { showResetAlert = true } label: {
-                row(icon: "trash", title: "Hapus akun & data", subtitle: "Untuk uji coba: mulai lagi dari nol", isDestructive: true) {
+                row(icon: "trash", title: L("Hapus akun & data"), subtitle: L("Untuk uji coba: mulai lagi dari nol"), isDestructive: true) {
                     chevron
                 }
                 .contentShape(Rectangle())
@@ -288,7 +288,7 @@ struct ProfileView: View {
         Task {
             let ok = await authViewModel.deleteAccountAndData()
             isResetting = false
-            if !ok { resetError = authViewModel.errorMessage ?? "Coba lagi." }
+            if !ok { resetError = authViewModel.errorMessage ?? L("Coba lagi.") }
         }
     }
 
@@ -346,7 +346,7 @@ struct ProfileEditView: View {
                 }
 
                 VStack(spacing: 0) {
-                    formRow("Nama") {
+                    formRow(L("Nama")) {
                         TextField("Masukkan nama", text: $viewModel.displayName)
                             .font(.app(16))
                             .foregroundStyle(Color.appText)
@@ -354,7 +354,7 @@ struct ProfileEditView: View {
                             .submitLabel(.done)
                     }
                     formRow("Email") {
-                        Text(authViewModel.currentUser?.isGuest == true ? "Mode tamu" : authViewModel.currentUser?.email ?? "")
+                        Text(authViewModel.currentUser?.isGuest == true ? L("Mode tamu") : authViewModel.currentUser?.email ?? "")
                             .font(.app(16))
                             .foregroundStyle(Color.appTextSecondary)
                             .lineLimit(1)
@@ -399,7 +399,7 @@ struct ProfileEditView: View {
                     authViewModel.currentUser = updated
                     if let newPhoto { authViewModel.avatarImage = newPhoto }
                     self.newPhoto = nil
-                    toastMessage = "Profil berhasil disimpan"
+                    toastMessage = L("Profil berhasil disimpan")
                     withAnimation { showToast = true }
                 } else if let error = viewModel.errorMessage {
                     toastMessage = error
