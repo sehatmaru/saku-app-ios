@@ -1010,7 +1010,7 @@ struct AccountListView: View {
             }
         }
         for key in grouped.keys {
-            grouped[key] = grouped[key]?.sorted { $0.date > $1.date }
+            grouped[key] = grouped[key]?.newestFirst()
         }
         return grouped
     }

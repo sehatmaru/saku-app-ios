@@ -212,7 +212,7 @@ struct TransactionListView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 16))
                 .foregroundStyle(Color.appTextSecondary)
-            TextField("Cari transaksi...", text: $searchText)
+            TextField("Cari catatan atau kategori", text: $searchText)
                 .font(.app(16))
                 .submitLabel(.search)
                 .autocorrectionDisabled()
@@ -421,9 +421,10 @@ struct TransactionListView: View {
 
         let trimmedSearchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedSearchText.isEmpty {
+            // Search matches what the row shows: the note or the category name.
+            let categoryNames = Dictionary(uniqueKeysWithValues: viewModel.categories.map { ($0.id, $0.name) })
             result = result.filter { transaction in
-                let note = transaction.note ?? ""
-                return note.localizedCaseInsensitiveContains(trimmedSearchText)
+                transaction.matches(search: trimmedSearchText, categoryName: transaction.categoryId.flatMap { categoryNames[$0] })
             }
         }
 

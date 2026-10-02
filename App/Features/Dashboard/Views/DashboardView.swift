@@ -401,7 +401,7 @@ struct DashboardView: View {
         }
         .buttonStyle(.plain)
         .padding(.top, 14)
-        .accessibilityHint("Lihat cara menghitungnya")
+        .accessibilityHint("Lihat rincian")
         .sheet(isPresented: $showsSafeInfo) { safeToSpendSheet }
     }
 
@@ -410,8 +410,8 @@ struct DashboardView: View {
         return PickerSheet(title: L("Aman dipakai"), onDone: { showsSafeInfo = false }) {
             VStack(alignment: .leading, spacing: 0) {
                 safeRow(L("Total saldo"), maskedAmount(viewModel.balance))
-                safeRow(L("Tagihan kartu kredit (termasuk periode berjalan)"), maskedAmount(viewModel.cardDueTotal, negative: true))
-                safeRow(L("Langganan sampai akhir bulan"), maskedAmount(viewModel.upcomingBillsTotal, negative: true))
+                safeRow(L("Tagihan kartu kredit"), maskedAmount(viewModel.cardDueTotal, negative: true))
+                safeRow(L("Langganan bulan ini"), maskedAmount(viewModel.upcomingBillsTotal, negative: true))
                 HStack {
                     Text("Aman dipakai")
                         .font(.app(17, weight: .semibold))
@@ -422,7 +422,7 @@ struct DashboardView: View {
                         .monospacedDigit()
                 }
                 .padding(.vertical, 14)
-                Text("Saldo yang tersisa setelah tagihan kartu kredit yang belum dibayar, belanja kartu periode berjalan yang akan ditagih, dan langganan yang jatuh tempo bulan ini, supaya kamu tidak memakai uang yang sudah ada peruntukannya.")
+                Text("Saldo dikurangi tagihan kartu kredit (termasuk belanja yang belum ditagih) dan langganan bulan ini.")
                     .font(.app(15))
                     .foregroundStyle(Color.appBody)
                     .padding(.top, 12)
@@ -502,7 +502,8 @@ struct DashboardView: View {
         } else {
             NavigationLink { HealthDetailView(health: health).detailPage() } label: {
                 VStack(alignment: .leading, spacing: 0) {
-                    SectionHeader(title: L("Kesehatan finansial"), trailing: health.label, trailingColor: health.color)
+                    SectionHeader(title: L("Kesehatan finansial"), trailing: health.label ?? L("Sementara"),
+                                  trailingColor: health.isProvisional ? .appTextSecondary : health.color)
 
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("\(health.score)")
@@ -517,6 +518,13 @@ struct DashboardView: View {
 
                     SegmentBar(value: Double(health.score) / 100, color: health.color, count: 40, height: 22, spacing: 3)
                         .padding(.top, 16)
+
+                    if health.isPartial {
+                        Text("Skor sementara, belum termasuk arus kas dan dana darurat.")
+                            .font(.app(13))
+                            .foregroundStyle(Color.appTextTertiary)
+                            .padding(.top, 10)
+                    }
 
                     HStack(spacing: 10) {
                         if let weakest = health.weakest, !health.isHealthy {

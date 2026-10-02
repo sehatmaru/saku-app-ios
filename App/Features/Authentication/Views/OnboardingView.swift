@@ -96,7 +96,7 @@ struct OnboardingView: View {
     private var walletsSlide: some View {
         let on = isVisible(0)
         return slidePage(title: L("Semua dompet dalam satu kantong."),
-                         subtitle: L("Bank, e-wallet, cash, dan kartu kredit — saldonya terlihat sekaligus."),
+                         subtitle: L("Bank, e-wallet, tunai, dan kartu kredit. Semua saldo dalam satu layar."),
                          isShown: on) {
             ZStack(alignment: .topLeading) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -177,8 +177,8 @@ struct OnboardingView: View {
 
     private var budgetSlide: some View {
         let on = isVisible(1)
-        return slidePage(title: L("Budget yang kelihatan sisanya."),
-                         subtitle: L("Hijau aman, oranye hati-hati, merah sudah lewat. Tanpa hitung manual."),
+        return slidePage(title: L("Sisa budget terlihat jelas."),
+                         subtitle: L("Hijau aman, oranye hampir habis, merah lewat batas."),
                          isShown: on) {
             VStack(alignment: .leading, spacing: 0) {
                 SectionHeader(title: L("Budget"), trailing: L("September"))
@@ -219,7 +219,7 @@ struct OnboardingView: View {
         let on = isVisible(2)
         let q = slide == 2 ? progress : 0
         return slidePage(title: L("Satu angka untuk kondisi keuanganmu."),
-                         subtitle: L("Dihitung dari arus kas, budget, dan sebaran saldo — diperbarui setiap hari."),
+                         subtitle: L("Dari arus kas, budget, dana darurat, dan kebiasaan mencatat. Diperbarui tiap kamu mencatat."),
                          isShown: on) {
             VStack(alignment: .leading, spacing: 0) {
                 SectionHeader(title: L("Kesehatan finansial"), trailing: L("Baik"), trailingColor: .appPrimary)
@@ -241,7 +241,7 @@ struct OnboardingView: View {
                 HStack(spacing: 0) {
                     stat(L("Arus kas"), 32 * q, of: 40)
                     stat(L("Budget"), 26 * q, of: 35)
-                    stat(L("Diversifikasi"), 20 * q, of: 25)
+                    stat(L("Dana darurat"), 20 * q, of: 25)
                 }
                 .padding(.top, 22)
             }

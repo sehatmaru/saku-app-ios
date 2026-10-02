@@ -264,29 +264,31 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
-    /// Scores the last three months (including this one) and today's balances.
+    /// Scores the last three finished payday cycles and today's balances.
     private func computeHealth(transactions: [Transaction]) -> FinancialHealth {
         let now = Date()
-        let recent = monthlyCashflow.suffix(3)
+        let cycle = PaydayCycle.current
+        let cashflow = FinancialHealth.cashflowCycles(transactions, cycle: cycle, now: now, calendar: calendar)
         let cards = accounts.filter { $0.isActive && $0.isCreditCard }
-        let dayCount = Double(calendar.range(of: .day, in: .month, for: now)?.count ?? 30)
         let startOfToday = calendar.startOfDay(for: now)
         let since = calendar.date(byAdding: .day, value: -29, to: startOfToday) ?? startOfToday
         let activeDays = Set(transactions.filter { $0.date >= since && $0.type != .adjustment }
             .map { calendar.startOfDay(for: $0.date) }).count
         return FinancialHealth(.init(
-            monthlyIncome: recent.map(\.income),
-            monthlyExpense: recent.map(\.expense),
+            monthlyIncome: cashflow.income,
+            monthlyExpense: cashflow.expense,
             liquidBalance: balance,
             creditDebt: max(cards.reduce(0) { $0 + $1.balance }, 0),
             creditLimit: cards.reduce(0) { $0 + ($1.creditLimit ?? 0) },
             hasCreditCard: !cards.isEmpty,
             budgetTotal: totalBudget,
             budgetSpent: totalSpent,
-            monthProgress: Double(calendar.component(.day, from: now)) / dayCount,
+            monthProgress: FinancialHealth.cycleProgress(cycle, on: now, calendar: calendar),
             activeDays: activeDays,
             topExpenseCategory: categorySpending.first?.0.name,
             hasTransactions: transactions.contains { $0.type == .income || $0.type == .expense },
+            daysOfData: transactions.filter { $0.type != .adjustment }.map(\.date).min()
+                .map { calendar.dateComponents([.day], from: calendar.startOfDay(for: $0), to: startOfToday).day ?? 0 } ?? 0,
             overdueBills: overdueBills.map {
                 .init(cardName: $0.card.name, amount: $0.statement.remaining, daysLate: $0.statement.daysOverdue)
             }

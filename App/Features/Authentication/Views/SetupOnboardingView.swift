@@ -176,7 +176,7 @@ struct SetupOnboardingView: View {
 
     private var nameStep: some View {
         VStack(alignment: .leading, spacing: 0) {
-            heading(L("Siapa namamu?"), L("Dipakai untuk sapaan di Beranda. Bisa diubah kapan saja."), size: 34)
+            heading(L("Siapa namamu?"), L("Tampil di Profil. Bisa diubah kapan saja."), size: 34)
 
             TextField("", text: $name, prompt: Text("Nama").foregroundStyle(Color.appTextTertiary))
                 .font(.app(28, weight: .medium))
@@ -199,7 +199,7 @@ struct SetupOnboardingView: View {
                     Image(systemName: "iphone")
                         .font(.system(size: 20))
                         .foregroundStyle(Color.appTextSecondary)
-                    Text("Mode tamu terikat ke iPhone ini. Kalau keluar atau aplikasi dihapus, datanya tidak bisa dibuka lagi.")
+                    Text("Akun tamu hanya ada di iPhone ini. Jika keluar atau app dihapus, datanya tidak bisa dibuka lagi.")
                         .font(.app(14))
                         .lineSpacing(3)
                         .foregroundStyle(Color.appBody)

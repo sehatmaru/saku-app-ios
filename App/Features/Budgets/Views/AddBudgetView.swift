@@ -16,11 +16,14 @@ struct AddBudgetView: View {
         self.onAdded = onAdded
         _category = State(initialValue: category)
         _step = State(initialValue: category == nil ? 1 : 2)
+        _opensOnAmount = State(initialValue: category != nil)
     }
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var step = 1
+    /// Opened from a category row (Atur): there is no category step behind it, so back means cancel.
+    @State private var opensOnAmount: Bool
     @State private var category: Category?
     @State private var amount = 0
     @State private var bump = false
@@ -238,14 +241,18 @@ struct AddBudgetView: View {
             HStack {
                 Button {
                     guard !isSaving, !isDone else { return }
-                    step = 1
+                    if opensOnAmount { dismiss() } else { step = 1 }
                 } label: {
-                    HStack(spacing: 2) {
-                        Image(systemName: "chevron.left").font(.system(size: 18, weight: .bold))
-                        Text("Kategori").font(.app(17))
+                    if opensOnAmount {
+                        Text("Batal").font(.app(17))
+                    } else {
+                        HStack(spacing: 2) {
+                            Image(systemName: "chevron.left").font(.system(size: 18, weight: .bold))
+                            Text("Kategori").font(.app(17))
+                        }
                     }
                 }
-                .accessibilityLabel("Kembali ke kategori")
+                .accessibilityLabel(opensOnAmount ? "Batal" : "Kembali ke kategori")
                 Spacer()
             }
             .overlay {

@@ -98,7 +98,7 @@ final class TransactionListViewModel: ObservableObject {
                 id: "\(calendar.component(.year, from: month))-\(calendar.component(.month, from: month))",
                 month: month,
                 label: label,
-                transactions: items.sorted { $0.date > $1.date }
+                transactions: items.newestFirst()
             )
         }
         .sorted { $0.month > $1.month }

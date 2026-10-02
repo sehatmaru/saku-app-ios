@@ -791,7 +791,7 @@ struct AddTransactionView: View {
     private func recentWalletIds(among list: [Account]) -> [String] {
         let allowed = Set(list.map(\.id))
         var seen: [String] = []
-        for txn in history.sorted(by: { $0.date > $1.date }) {
+        for txn in history.newestFirst() {
             for id in [txn.accountId] + [txn.counterpartyAccountId].compactMap({ $0 }) where allowed.contains(id) && !seen.contains(id) {
                 seen.append(id)
             }

@@ -120,7 +120,7 @@ struct PaydayPreview: View {
     var body: some View {
         let cycle = PaydayCycle(day: day)
         VStack(alignment: .leading, spacing: 8) {
-            row("chart.pie", L("Budget & ringkasan berjalan"), cycle.rangeLabel())
+            row("chart.pie", L("Periode budget & ringkasan"), cycle.rangeLabel())
             row("bell", L("Pengingat menjelang gajian"), cycle.lastDayLabel())
             if day >= 29 {
                 row("info.circle", L("Di bulan yang lebih pendek, dipakai"), L("tanggal terakhir"))
@@ -190,7 +190,7 @@ struct PaydaySheet: View {
             .padding(.horizontal, 24)
             .padding(.top, 13)
 
-            Text("Budget, “Aman dipakai” harian, dan ringkasan bulan ini di Beranda dimulai dari tanggal ini.")
+            Text("Budget dan ringkasan bulan ini di Beranda mulai dari tanggal ini.")
                 .font(.app(14))
                 .lineSpacing(2)
                 .foregroundStyle(Color.appTextSecondary)

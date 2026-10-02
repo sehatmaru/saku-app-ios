@@ -46,7 +46,7 @@ struct TransactionRowView: View {
     }
 
     private var title: String {
-        transaction.recurringName ?? transaction.note ?? category?.name ?? typeLabel
+        transaction.recurringName ?? transaction.displayNote ?? category?.name ?? typeLabel
     }
 
     private var subtitle: String {

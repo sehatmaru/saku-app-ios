@@ -94,6 +94,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .eq("user_id", value: userId)
             .is("deleted_at", value: nil)
             .order("occurred_at", ascending: false)
+            .order("created_at", ascending: false)
             .execute()
             .value
     }
@@ -106,6 +107,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .or("primary_account_id.eq.\(accountId),counterparty_account_id.eq.\(accountId)")
             .is("deleted_at", value: nil)
             .order("occurred_at", ascending: false)
+            .order("created_at", ascending: false)
             .execute()
             .value
     }

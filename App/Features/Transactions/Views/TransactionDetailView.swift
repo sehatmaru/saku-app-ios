@@ -206,7 +206,7 @@ struct TransactionDetailView: View {
     }
 
     private var title: String {
-        if let note = txn.note, !note.isEmpty { return note }
+        if let note = txn.recurringName ?? txn.displayNote { return note }
         if isTransfer { return "\(account?.name ?? "?") → \(counterparty?.name ?? "?")" }
         return category?.name ?? style.label
     }

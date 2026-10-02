@@ -713,12 +713,22 @@
         }
       }
     },
-    "Akun ini beserta dompet, transaksi, budget, kategori, dan pengaturannya dihapus permanen, lalu kamu kembali ke awal. Tidak bisa dibatalkan.": {
+    "Akun dan semua datamu dihapus permanen, lalu kamu kembali ke awal. Tidak bisa dibatalkan.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This account and its wallets, transactions, budgets, categories and settings are deleted permanently, and you start over. This can't be undone."
+            "value": "Your account and all data are deleted permanently, and you start over. This can't be undone."
+          }
+        }
+      }
+    },
+    "Akun tamu hanya ada di iPhone ini. Jika keluar atau app dihapus, datanya tidak bisa dibuka lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A guest account lives only on this iPhone. If you sign out or delete the app, its data can't be opened again."
           }
         }
       }
@@ -729,16 +739,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Safe to spend"
-          }
-        }
-      }
-    },
-    "Aman dipakai ": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Safe to spend "
           }
         }
       }
@@ -759,16 +759,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Analytics"
-          }
-        }
-      }
-    },
-    "Anda akan keluar dari akun. Data tetap tersimpan.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You're about to sign out. Your data stays saved."
           }
         }
       }
@@ -873,12 +863,12 @@
         }
       }
     },
-    "Awal periode budget & ringkasan": {
+    "Awal periode budget": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Start of the budget & summary period"
+            "value": "Budget period start"
           }
         }
       }
@@ -943,12 +933,12 @@
         }
       }
     },
-    "Bank, e-wallet, cash, dan kartu kredit — saldonya terlihat sekaligus.": {
+    "Bank, e-wallet, tunai, dan kartu kredit. Semua saldo dalam satu layar.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bank, e-wallet, cash and credit cards — all balances at a glance."
+            "value": "Banks, e-wallets, cash and cards. All balances in one view."
           }
         }
       }
@@ -1503,16 +1493,6 @@
         }
       }
     },
-    "Budget & ringkasan berjalan": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Budget & summary run"
-          }
-        }
-      }
-    },
     "Budget Rp%@ berhenti mulai periode ini.": {
       "localizations": {
         "en": {
@@ -1553,6 +1533,16 @@
         }
       }
     },
+    "Budget dan ringkasan bulan ini di Beranda mulai dari tanggal ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budgets and this month's summary on Home start from this date."
+          }
+        }
+      }
+    },
     "Budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1. Boleh dilewati, bisa diatur nanti di Profil.": {
       "localizations": {
         "en": {
@@ -1569,6 +1559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Budgets are counted per category. Each period starts from zero; leftovers don't carry over."
+          }
+        }
+      }
+    },
+    "Budget hampir habis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget nearly used up"
           }
         }
       }
@@ -1609,26 +1609,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "The budget for %@ will be deleted."
-          }
-        }
-      }
-    },
-    "Budget yang kelihatan sisanya.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Budgets that show what's left."
-          }
-        }
-      }
-    },
-    "Budget, “Aman dipakai” harian, dan ringkasan bulan ini di Beranda dimulai dari tanggal ini.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Budgets, the daily “Safe to spend” and this month's summary on Home start from this date."
           }
         }
       }
@@ -1713,6 +1693,26 @@
         }
       }
     },
+    "Butuh 3 bulan data supaya bisa dinilai. Tinggal %lld hari lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs 3 months of data to be rated. %lld days to go."
+          }
+        }
+      }
+    },
+    "Cari catatan atau kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search notes or categories"
+          }
+        }
+      }
+    },
     "Cari dompet": {
       "localizations": {
         "en": {
@@ -1729,16 +1729,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Search categories"
-          }
-        }
-      }
-    },
-    "Cari transaksi...": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search transactions..."
           }
         }
       }
@@ -1953,6 +1943,16 @@
         }
       }
     },
+    "Dari arus kas, budget, dana darurat, dan kebiasaan mencatat. Diperbarui tiap kamu mencatat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From cash flow, budget, emergency fund and logging habits. Updated as you log."
+          }
+        }
+      }
+    },
     "Dari dompet": {
       "localizations": {
         "en": {
@@ -2053,16 +2053,6 @@
         }
       }
     },
-    "Dihitung dari arus kas, budget, dan sebaran saldo — diperbarui setiap hari.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Calculated from cash flow, budgets and how your balance is spread — updated daily."
-          }
-        }
-      }
-    },
     "Dihitung dari pemasukan dan pengeluaran 3 bulan terakhir, saldo dompet, kartu kredit, dan budget bulan ini. Skor diperbarui setiap kamu mencatat transaksi.": {
       "localizations": {
         "en": {
@@ -2079,16 +2069,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Paused"
-          }
-        }
-      }
-    },
-    "Dipakai untuk sapaan di Beranda. Bisa diubah kapan saja.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Used for the greeting on Home. You can change it any time."
           }
         }
       }
@@ -2583,6 +2563,16 @@
         }
       }
     },
+    "Hanya uji coba: hapus akun dan data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testing only: deletes account and data"
+          }
+        }
+      }
+    },
     "Hapus": {
       "localizations": {
         "en": {
@@ -2753,12 +2743,12 @@
         }
       }
     },
-    "Hijau aman, oranye hati-hati, merah sudah lewat. Tanpa hitung manual.": {
+    "Hijau aman, oranye hampir habis, merah lewat batas.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Green is safe, orange is careful, red is over. No manual math."
+            "value": "Green is safe, orange is close, red is over."
           }
         }
       }
@@ -2823,12 +2813,12 @@
         }
       }
     },
-    "Jaga pemakaian di bawah 30% limit dan bayar tagihan penuh tiap jatuh tempo supaya tidak kena bunga.": {
+    "Jatah ": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keep usage under 30% of your limit and pay the full bill by each due date to avoid interest."
+            "value": "Allowance "
           }
         }
       }
@@ -2959,6 +2949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Thursday"
+          }
+        }
+      }
+    },
+    "Kamu akan keluar. Datamu tetap tersimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You'll be signed out. Your data is kept."
           }
         }
       }
@@ -3363,12 +3363,12 @@
         }
       }
     },
-    "Langganan sampai akhir bulan": {
+    "Langganan bulan ini": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Subscriptions until month end"
+            "value": "Subscriptions this month"
           }
         }
       }
@@ -3533,16 +3533,6 @@
         }
       }
     },
-    "Lihat cara menghitungnya": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "See how it's calculated"
-          }
-        }
-      }
-    },
     "Lihat detail kesehatan finansial": {
       "localizations": {
         "en": {
@@ -3559,6 +3549,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "View wallets"
+          }
+        }
+      }
+    },
+    "Lihat rincian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See breakdown"
           }
         }
       }
@@ -3873,16 +3873,6 @@
         }
       }
     },
-    "Mode tamu terikat ke iPhone ini. Kalau keluar atau aplikasi dihapus, datanya tidak bisa dibuka lagi.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guest mode is tied to this iPhone. If you sign out or delete the app, the data can't be opened again."
-          }
-        }
-      }
-    },
     "Mulai": {
       "localizations": {
         "en": {
@@ -4049,6 +4039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Optional"
+          }
+        }
+      }
+    },
+    "Pemakaian kartu tinggi. Pastikan kas cukup untuk melunasi sebelum jatuh tempo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High card usage. Make sure you have enough cash to pay it off before the due date."
           }
         }
       }
@@ -4299,6 +4299,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Period %@"
+          }
+        }
+      }
+    },
+    "Periode budget & ringkasan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget & summary period"
           }
         }
       }
@@ -4643,12 +4653,12 @@
         }
       }
     },
-    "Saat pemakaian mencapai 80%": {
+    "Saat mencapai 80%": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "When usage reaches 80%"
+            "value": "At 80% used"
           }
         }
       }
@@ -4753,6 +4763,16 @@
         }
       }
     },
+    "Saldo dikurangi tagihan kartu kredit (termasuk belanja yang belum ditagih) dan langganan bulan ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance minus credit card bills (including purchases not yet billed) and this month's subscriptions."
+          }
+        }
+      }
+    },
     "Saldo saat ini": {
       "localizations": {
         "en": {
@@ -4769,16 +4789,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Insufficient balance"
-          }
-        }
-      }
-    },
-    "Saldo yang tersisa setelah tagihan kartu kredit yang belum dibayar, belanja kartu periode berjalan yang akan ditagih, dan langganan yang jatuh tempo bulan ini, supaya kamu tidak memakai uang yang sudah ada peruntukannya.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The balance left after unpaid credit card bills, current-period card spending yet to be billed, and subscriptions due this month, so you don't spend money that's already earmarked."
           }
         }
       }
@@ -4963,6 +4973,16 @@
         }
       }
     },
+    "Sementara": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Provisional"
+          }
+        }
+      }
+    },
     "Semua": {
       "localizations": {
         "en": {
@@ -5123,16 +5143,6 @@
         }
       }
     },
-    "Setiap ada transaksi baru": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Every time there's a new transaction"
-          }
-        }
-      }
-    },
     "Siapa namamu?": {
       "localizations": {
         "en": {
@@ -5223,6 +5233,16 @@
         }
       }
     },
+    "Sisa budget terlihat jelas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See what's left in every budget."
+          }
+        }
+      }
+    },
     "Sisa limit": {
       "localizations": {
         "en": {
@@ -5259,6 +5279,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "The score appears once you record income or an expense."
+          }
+        }
+      }
+    },
+    "Skor sementara, belum termasuk arus kas dan dana darurat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Provisional score, not counting cash flow and emergency fund yet."
+          }
+        }
+      }
+    },
+    "Skor sementara. Skor lengkap muncul setelah 3 bulan pemakaian.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Provisional score. The full score appears after 3 months of use."
           }
         }
       }
@@ -5533,12 +5573,12 @@
         }
       }
     },
-    "Tagihan kartu kredit (termasuk periode berjalan)": {
+    "Tagihan kartu kredit": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Credit card bills (including the current period)"
+            "value": "Credit card bills"
           }
         }
       }
@@ -5699,6 +5739,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add a bank account, e-wallet, credit card or cash."
+          }
+        }
+      }
+    },
+    "Tampil di Profil. Bisa diubah kapan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shown on your Profile. Change it any time."
           }
         }
       }
@@ -6033,12 +6083,12 @@
         }
       }
     },
-    "Terpakai %lld%% dari limit kartu kredit.": {
+    "Terpakai %lld%% dari limit, %@.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld%% of your credit card limit is used."
+            "value": "%lld%% of the limit used, %@."
           }
         }
       }
@@ -6099,6 +6149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Day %lld"
+          }
+        }
+      }
+    },
+    "Tiap ada transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On every transaction"
           }
         }
       }
@@ -6445,6 +6505,16 @@
         }
       }
     },
+    "Transaksi baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New transactions"
+          }
+        }
+      }
+    },
     "Transaksi bulan ini": {
       "localizations": {
         "en": {
@@ -6655,16 +6725,6 @@
         }
       }
     },
-    "Untuk uji coba: mulai lagi dari nol": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "For testing: start over from zero"
-          }
-        }
-      }
-    },
     "Urungkan": {
       "localizations": {
         "en": {
@@ -6705,12 +6765,12 @@
         }
       }
     },
-    "Utang kartu kredit setara %lld%% pemasukan bulanan.": {
+    "Utang kartu kredit setara %lld%% pemasukan bulanan, %@.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Credit card debt equals %lld%% of monthly income."
+            "value": "Card debt equals %lld%% of monthly income, %@."
           }
         }
       }
@@ -6801,6 +6861,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "card"
+          }
+        }
+      }
+    },
+    "kas baru cukup melunasi sebagian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cash covers part of the bill"
+          }
+        }
+      }
+    },
+    "kas belum cukup untuk melunasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cash can't cover the bill yet"
+          }
+        }
+      }
+    },
+    "kas cukup untuk melunasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cash covers the bill"
           }
         }
       }

@@ -343,7 +343,7 @@ fileprivate struct BudgetSummary: View {
                     if remaining <= 0 {
                         Text("Budget bulan ini sudah habis.")
                     } else if daysLeft > 0 {
-                        Text("Aman dipakai ")
+                        Text("Jatah ")
                             + Text(L("%@/hari", (remaining / Double(daysLeft)).formattedAsCurrency()))
                                 .fontWeight(.semibold)
                                 .foregroundStyle(Color.appText)

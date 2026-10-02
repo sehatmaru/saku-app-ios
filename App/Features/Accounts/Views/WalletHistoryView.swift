@@ -15,7 +15,7 @@ struct WalletHistoryView: View {
 
     @State private var isEntered = false
 
-    private var sorted: [Transaction] { transactions.sorted { $0.date > $1.date } }
+    private var sorted: [Transaction] { transactions.newestFirst() }
 
     /// What went in and out of this wallet this month; a card's charges count as out.
     private var monthFlow: (in: Double, out: Double) {

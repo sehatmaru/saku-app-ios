@@ -92,7 +92,7 @@ struct ProfileView: View {
                 Button("Batal", role: .cancel) {}
                 Button("Hapus semua", role: .destructive) { resetAccount() }
             } message: {
-                Text("Akun ini beserta dompet, transaksi, budget, kategori, dan pengaturannya dihapus permanen, lalu kamu kembali ke awal. Tidak bisa dibatalkan.")
+                Text("Akun dan semua datamu dihapus permanen, lalu kamu kembali ke awal. Tidak bisa dibatalkan.")
             }
             .alert("Gagal menghapus akun", isPresented: Binding(get: { resetError != nil }, set: { if !$0 { resetError = nil } })) {
                 Button("OK", role: .cancel) {}
@@ -119,7 +119,7 @@ struct ProfileView: View {
             } message: {
                 Text(authViewModel.currentUser?.isGuest == true
                      ? L("Kamu masuk sebagai tamu. Setelah keluar, data di akun tamu ini tidak bisa dibuka lagi.")
-                     : L("Anda akan keluar dari akun. Data tetap tersimpan."))
+                     : L("Kamu akan keluar. Datamu tetap tersimpan."))
             }
         }
     }
@@ -167,7 +167,7 @@ struct ProfileView: View {
             .buttonStyle(RowPressStyle())
 
             Button { showsPayday = true } label: {
-                row(icon: "calendar", title: L("Tanggal gajian"), subtitle: L("Awal periode budget & ringkasan")) {
+                row(icon: "calendar", title: L("Tanggal gajian"), subtitle: L("Awal periode budget")) {
                     Text(paydayDay == 0 ? L("Belum diatur") : L("Tgl %lld", paydayDay))
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
@@ -221,13 +221,13 @@ struct ProfileView: View {
     private var notificationSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionCaption(L("Notifikasi"))
-            row(icon: "arrow.left.arrow.right", title: L("Transaksi"), subtitle: L("Setiap ada transaksi baru")) {
-                Toggle("Transaksi", isOn: $notifTransactions)
+            row(icon: "arrow.left.arrow.right", title: L("Transaksi baru"), subtitle: L("Tiap ada transaksi")) {
+                Toggle("Transaksi baru", isOn: $notifTransactions)
                     .labelsHidden()
                     .tint(.appPrimary)
             }
-            row(icon: "chart.pie", title: L("Budget"), subtitle: L("Saat pemakaian mencapai 80%")) {
-                Toggle("Budget", isOn: $notifBudget)
+            row(icon: "chart.pie", title: L("Budget hampir habis"), subtitle: L("Saat mencapai 80%")) {
+                Toggle("Budget hampir habis", isOn: $notifBudget)
                     .labelsHidden()
                     .tint(.appPrimary)
             }
@@ -273,7 +273,7 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 0) {
             sectionCaption(L("Pengembangan"))
             Button { showResetAlert = true } label: {
-                row(icon: "trash", title: L("Hapus akun & data"), subtitle: L("Untuk uji coba: mulai lagi dari nol"), isDestructive: true) {
+                row(icon: "trash", title: L("Hapus akun & data"), subtitle: L("Hanya uji coba: hapus akun dan data"), isDestructive: true) {
                     chevron
                 }
                 .contentShape(Rectangle())
@@ -446,6 +446,8 @@ struct LanguageView: View {
             VStack(spacing: 0) {
                 ForEach(options, id: \.code) { option in
                     Button {
+                        // Cached dashboard state holds pre-rendered text (health tips, month labels).
+                        AppDataCache.shared.clearAll()
                         appLanguage = option.code
                     } label: {
                         HStack(spacing: 14) {
