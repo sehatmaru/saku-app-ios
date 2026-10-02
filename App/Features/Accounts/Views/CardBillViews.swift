@@ -356,8 +356,13 @@ struct PayCardBillSheet: View {
                     } else {
                         infoRow(L("Saldo %@", source?.name ?? ""),
                                 "\(money(sourceBalance)) → \(money(max(sourceBalance - amount, 0)))")
-                        infoRow(L("Sisa tagihan"),
-                                "\(money(statement.remaining)) → \(money(remainingAfter))")
+                        if statement.remaining > 0 {
+                            infoRow(L("Sisa tagihan"),
+                                    "\(money(statement.remaining)) → \(money(remainingAfter))")
+                        } else {
+                            infoRow(L("Utang kartu"),
+                                    "\(money(card.balance)) → \(money(max(card.balance - amount, 0)))")
+                        }
                     }
                 }
                 .opacity(isBlocked ? 0 : 1)

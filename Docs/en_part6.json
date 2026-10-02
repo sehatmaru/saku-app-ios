@@ -31,5 +31,16 @@
 "kas belum cukup untuk melunasi": "cash can't cover the bill yet",
 "Terpakai %lld%% dari limit, %@.": "%lld%% of the limit used, %@.",
 "Utang kartu kredit setara %lld%% pemasukan bulanan, %@.": "Card debt equals %lld%% of monthly income, %@.",
-"Pemakaian kartu tinggi. Pastikan kas cukup untuk melunasi sebelum jatuh tempo.": "High card usage. Make sure you have enough cash to pay it off before the due date."
+"Pemakaian kartu tinggi. Pastikan kas cukup untuk melunasi sebelum jatuh tempo.": "High card usage. Make sure you have enough cash to pay it off before the due date.",
+"Sudah dicetak bank": "Already printed",
+"Belum dicetak": "Not printed yet",
+"Tagihan ini perlu dibayar sebelum jatuh tempo.": "This bill must be paid before the due date.",
+"Pemakaian sejak cut-off terakhir. Baru ditagih di cut-off berikutnya.": "Spending since the last cut-off. It's billed at the next cut-off.",
+"Melebihi limit": "Over the limit",
+"Ubah nominal dulu": "Change the amount first",
+"Geser untuk terapkan": "Swipe to apply",
+"Tagihan": "Bill",
+"Sisa limit": "Remaining limit",
+"Cetak %@": "Printed %@",
+"Utang kartu": "Card debt"
 }

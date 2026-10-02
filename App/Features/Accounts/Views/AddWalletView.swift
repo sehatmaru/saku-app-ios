@@ -13,6 +13,8 @@ struct NewWallet {
     var dueDate: String?
     var statementDay: Int?
     var cardNetwork: String?
+    /// Cards: the starting bill wasn't printed yet; set to the next cut-off ("yyyy-MM-dd").
+    var openingUnbilledUntil: String?
     var isDefault: Bool
 }
 
@@ -60,6 +62,8 @@ struct AddWalletView: View {
     @State private var balance = 0
     @State private var limit = 0
     @State private var bill = 0
+    /// The starting bill was already printed by the bank (false: spending since the last cut-off).
+    @State private var billPrinted = true
     @State private var statementDay: Int?
     @State private var dueDay: Int?
     @State private var isDefault = false
@@ -605,6 +609,16 @@ struct AddWalletView: View {
                     .foregroundStyle(step == .bill && bill > limit ? Color.appError : Color.appTextSecondary)
                     .lineSpacing(3)
             }
+            if step == .bill && bill > 0 {
+                HStack(spacing: 8) {
+                    billChip(L("Sudah dicetak bank"), selected: billPrinted) { billPrinted = true }
+                    billChip(L("Belum dicetak"), selected: !billPrinted) { billPrinted = false }
+                }
+                Text(billPrinted ? L("Tagihan ini perlu dibayar sebelum jatuh tempo.")
+                     : L("Pemakaian sejak cut-off terakhir. Baru ditagih di cut-off berikutnya."))
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+            }
             Spacer(minLength: 0)
             GeometryReader { geo in
                 let side = (geo.size.width - 6) / 4
@@ -743,7 +757,7 @@ struct AddWalletView: View {
         name = kind == .cash ? "Dompet tunai" : ""
         color = kind == .cash ? "616161" : nil
         network = nil
-        balance = 0; limit = 0; bill = 0
+        balance = 0; limit = 0; bill = 0; billPrinted = true
         statementDay = nil; dueDay = nil; isDefault = false
         step = .provider
     }
@@ -832,6 +846,8 @@ struct AddWalletView: View {
             dueDate: isCredit ? dueDay.map(String.init) : nil,
             statementDay: isCredit ? statementDay : nil,
             cardNetwork: isCredit ? network : nil,
+            openingUnbilledUntil: isCredit && bill > 0 && !billPrinted
+                ? statementDay.map { CreditStatement.nextCutoffString(statementDay: $0) } : nil,
             isDefault: !isCredit && isDefault
         )
         Task {
@@ -844,6 +860,18 @@ struct AddWalletView: View {
                 saveFailed = true
             }
         }
+    }
+
+    private func billChip(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.app(14, weight: .medium))
+                .foregroundStyle(selected ? Color.white : Color.appText)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
+                .background(selected ? Color.appPrimary : Color.appCardBackground, in: Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
     }
 
     private func again() {

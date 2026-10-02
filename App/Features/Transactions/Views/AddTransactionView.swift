@@ -30,6 +30,7 @@ struct AddTransactionView: View {
     @State private var target: Account?
     @State private var date = Calendar.current.startOfDay(for: Date())
     @State private var note = ""
+    @FocusState private var noteFocused: Bool
     @State private var sheet: PickerKind?
     @State private var flashed: Set<PickerKind> = []
     @State private var isEntered = false
@@ -132,12 +133,15 @@ struct AddTransactionView: View {
             rows
                 .padding(.top, isCompact ? 4 : 10)
             Spacer(minLength: isCompact ? 4 : 12)
-            AmountPad(color: style.color, isEnabled: amount > 0 && (isTransfer || category != nil), isSaving: isSaving, onPress: press, onSave: save,
-                      keyHeight: isCompact ? 46 : 52)
-                .animation(.easeInOut(duration: 0.4), value: typeIndex)
-                .disabled(isSaving || done != nil)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 4)
+            // The system keyboard replaces the number pad while typing a note.
+            if !noteFocused {
+                AmountPad(color: style.color, isEnabled: amount > 0 && (isTransfer || category != nil), isSaving: isSaving, onPress: press, onSave: save,
+                          keyHeight: isCompact ? 46 : 52)
+                    .animation(.easeInOut(duration: 0.4), value: typeIndex)
+                    .disabled(isSaving || done != nil)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 4)
+            }
         }
         .onGeometryChange(for: Bool.self, of: { $0.size.height < 720 }) { isCompact = $0 }
         .simultaneousGesture(TapGesture().onEnded { hideRepeatTip() })
@@ -662,6 +666,8 @@ struct AddTransactionView: View {
                     .font(.app(16, weight: .medium))
                     .foregroundStyle(Color.appText)
                     .submitLabel(.done)
+                    .focused($noteFocused)
+                    .onSubmit { noteFocused = false }
             }
             .frame(height: rowHeight)
             .padding(.leading, 24)

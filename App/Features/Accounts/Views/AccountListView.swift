@@ -218,6 +218,7 @@ struct AccountListView: View {
                             name: wallet.name, type: wallet.type, openingBalance: wallet.balance, icon: wallet.icon,
                             userId: userId, creditLimit: wallet.creditLimit, dueDate: wallet.dueDate,
                             statementDay: wallet.statementDay, color: wallet.color, cardNetwork: wallet.cardNetwork,
+                            openingUnbilledUntil: wallet.openingUnbilledUntil,
                             makeDefault: wallet.isDefault)
                         if success {
                             await syncAccountTransactions(userId: userId)
@@ -788,13 +789,16 @@ struct AccountListView: View {
 
     /// What's owed on the last statement; tap to pay it.
     private func standardBillBox(_ statement: CreditStatement, card: Account) -> some View {
-        let owes = statement.remaining >= 1
-        let month = Self.monthName.string(from: statement.statementDate)
+        // Nothing printed yet but the card has debt: show what the next statement will bill.
+        let upcoming = statement.status == .none && statement.unbilled >= 1
+        let owes = statement.remaining >= 1 || upcoming
+        // Named for the month it falls due: a 30 Sep cut-off due 20 Okt is the October bill.
+        let month = Self.monthName.string(from: upcoming ? CreditStatement.billing(forPurchaseOn: Date(), card: card).due : statement.dueDate)
         let (status, color): (String, Color) = switch statement.status {
         case .overdue: (L("Lewat jatuh tempo"), .appError)
         case .unpaid, .partial: (L("Jatuh tempo %@", Self.dayMonth.string(from: statement.dueDate)), Color(hex: "C2410C"))
         case .paid: (L("Terima kasih"), .appPrimary)
-        case .none: (L("Belum ada tagihan"), .appTextSecondary)
+        case .none: (upcoming ? L("Cetak %@", Self.dayMonth.string(from: statement.nextStatementDate)) : L("Belum ada tagihan"), .appTextSecondary)
         }
         return Button { payCard = card } label: {
             HStack(spacing: 12) {
@@ -802,7 +806,7 @@ struct AccountListView: View {
                     Text(L("Tagihan %@", month))
                         .font(.app(13))
                         .foregroundStyle(Color.appTextSecondary)
-                    Text(owes ? masked(statement.remaining) : statement.status == .paid ? L("Lunas") : "Rp0")
+                    Text(owes ? masked(upcoming ? statement.unbilled : statement.remaining) : statement.status == .paid ? L("Lunas") : "Rp0")
                         .font(.app(20, weight: .semibold))
                         .tracking(-0.3)
                         .foregroundStyle(Color.appText)
@@ -824,7 +828,7 @@ struct AccountListView: View {
             .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(PressScaleStyle())
-        .animation(.settle(0.4), value: statement.remaining)
+        .animation(.settle(0.4), value: statement.remaining + statement.unbilled)
     }
 
     /// The system switch: on makes this the main wallet; there's always one, so it can't
@@ -954,7 +958,7 @@ struct AccountListView: View {
             id: account.id, name: edit.name, type: account.type, icon: edit.icon, isArchived: account.isArchived,
             newBalance: edit.balance, oldBalance: account.balance, userId: userId,
             creditLimit: edit.creditLimit, dueDate: edit.dueDay.map(String.init), statementDay: edit.statementDay,
-            color: edit.color, cardNetwork: edit.cardNetwork)
+            color: edit.color, cardNetwork: edit.cardNetwork, billPrinted: edit.billPrinted)
         if saved, edit.isDefault, !account.isDefault {
             await viewModel.setDefaultAccount(id: account.id, userId: userId)
         }

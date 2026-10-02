@@ -124,6 +124,37 @@ final class CreditStatementTests: XCTestCase {
         XCTAssertEqual(s.nextStatementDate, calendar.startOfDay(for: date(2027, 3, 31)))
     }
 
+    /// A card added on 2 Oct with a starting bill of 1 jt that the bank hasn't printed yet.
+    private func newCard(unbilledUntil: String?) -> Account {
+        Account(id: "card", name: "Baru", type: .credit, icon: nil, isArchived: false, isDefault: false,
+                openingBalance: 1_000_000, currentBalance: 1_000_000, creditLimit: 10_000_000, dueDate: "5",
+                statementDay: 20, openingUnbilledUntil: unbilledUntil)
+    }
+
+    func testStartingBillNotPrintedYetIsNotDue() {
+        let s = statement(newCard(unbilledUntil: "2026-10-20"), [], today: date(2026, 10, 2))
+        XCTAssertEqual(s.statementAmount, 0)
+        XCTAssertEqual(s.status, .none)
+        XCTAssertEqual(s.unbilled, 1_000_000)
+    }
+
+    func testStartingBillJoinsTheStatementAfterThatCutoff() {
+        let s = statement(newCard(unbilledUntil: "2026-10-20"), [], today: date(2026, 10, 21))
+        XCTAssertEqual(s.statementAmount, 1_000_000)
+        XCTAssertEqual(s.status, .unpaid)
+    }
+
+    func testStartingBillPrintedIsDueRightAway() {
+        let s = statement(newCard(unbilledUntil: nil), [], today: date(2026, 10, 2))
+        XCTAssertEqual(s.statementAmount, 1_000_000)
+        XCTAssertEqual(s.status, .unpaid)
+    }
+
+    func testNextCutoffString() {
+        XCTAssertEqual(CreditStatement.nextCutoffString(statementDay: 20, today: date(2026, 10, 2), calendar: calendar), "2026-10-20")
+        XCTAssertEqual(CreditStatement.nextCutoffString(statementDay: 1, today: date(2026, 10, 2), calendar: calendar), "2026-11-01")
+    }
+
     func testNotACreditCard() {
         let bank = Account(id: "bank", name: "BCA", type: .bank, icon: nil, isArchived: false, isDefault: false,
                            openingBalance: 0, creditLimit: nil, dueDate: nil)

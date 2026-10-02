@@ -100,12 +100,15 @@ struct AddSubscriptionView: View {
             }
             Spacer(minLength: 12)
             // v4: Simpan sits beside the keys again; tapping it while invalid shows why.
-            AmountPad(color: color, isEnabled: isValid, isSaving: isSaving, onPress: press) {
-                isValid ? save() : blocked()
+            // The system keyboard replaces the number pad while typing the name.
+            if !isNameFocused {
+                AmountPad(color: color, isEnabled: isValid, isSaving: isSaving, onPress: press) {
+                    isValid ? save() : blocked()
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+                .sensoryFeedback(.success, trigger: isDone) { _, done in done }
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
-            .sensoryFeedback(.success, trigger: isDone) { _, done in done }
         }
         .background(Color.appBackground)
         .ignoresSafeArea(.keyboard)

@@ -78,7 +78,13 @@ struct CreditStatement {
             unbilledParts += purchase.amount / Double(installment.months) * Double(installment.months - billed)
         }
 
-        let billedAmount = max(0, balanceAtCutoff - unbilledParts)
+        // A starting bill entered as "not printed yet" joins the statement at the cut-off it waited for.
+        var unbilledOpening = 0.0
+        if let until = card.openingUnbilledUntil.flatMap(Self.dateOnly.date(from:)), last < until {
+            unbilledOpening = card.openingBalance
+        }
+
+        let billedAmount = max(0, balanceAtCutoff - unbilledParts - unbilledOpening)
         statementAmount = billedAmount
         paid = paidSince
         remaining = max(0, billedAmount - paidSince)
@@ -121,6 +127,19 @@ struct CreditStatement {
         }
     }
 
+    private static let dateOnly: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    /// The next cut-off after today for a card cutting off on `statementDay`, as "yyyy-MM-dd".
+    static func nextCutoffString(statementDay: Int, today: Date = Date(), calendar: Calendar = .current) -> String {
+        let cycle = Cycle(statementDay: statementDay, dueDay: statementDay, calendar: calendar)
+        return dateOnly.string(from: cycle.cutoff(monthAfter: cycle.lastCutoff(before: calendar.startOfDay(for: today))))
+    }
+
     /// The statement a purchase made on `date` lands on, and when that's due.
     static func billing(forPurchaseOn date: Date, card: Account, calendar: Calendar = .current) -> (statement: Date, due: Date) {
         let cycle = Cycle(card: card, calendar: calendar)
@@ -144,6 +163,12 @@ struct CreditStatement {
         let statementDay: Int
         let dueDay: Int
         let calendar: Calendar
+
+        init(statementDay: Int, dueDay: Int, calendar: Calendar) {
+            self.statementDay = statementDay
+            self.dueDay = dueDay
+            self.calendar = calendar
+        }
 
         init(card: Account, calendar: Calendar) {
             // Cards saved before cut-off existed: assume the statement prints 15 days before the due day.

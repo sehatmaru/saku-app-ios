@@ -20,7 +20,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, isDefault: Bool = false, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil) async throws -> Account {
+    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, isDefault: Bool = false, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, openingUnbilledUntil: String? = nil) async throws -> Account {
         var payload: [String: AnyJSON] = [
             "user_id": AnyJSON.string(userId),
             "name": AnyJSON.string(name),
@@ -35,6 +35,7 @@ final class SupabaseRepository: @unchecked Sendable {
         if let statementDay { payload["statement_day"] = AnyJSON.integer(statementDay) }
         if let color { payload["color"] = AnyJSON.string(color) }
         if let cardNetwork { payload["card_network"] = AnyJSON.string(cardNetwork) }
+        if let openingUnbilledUntil { payload["opening_unbilled_until"] = AnyJSON.string(openingUnbilledUntil) }
         return try await client
             .from("accounts")
             .insert(payload)
@@ -44,7 +45,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool, isDefault: Bool? = nil, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil) async throws -> Account {
+    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool, isDefault: Bool? = nil, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, openingUnbilledUntil: String? = nil, clearOpeningUnbilled: Bool = false) async throws -> Account {
         var payload: [String: AnyJSON] = [
             "name": AnyJSON.string(name),
             "account_type": AnyJSON.string(type.rawValue),
@@ -59,6 +60,8 @@ final class SupabaseRepository: @unchecked Sendable {
         if let statementDay { payload["statement_day"] = AnyJSON.integer(statementDay) }
         if let color { payload["color"] = AnyJSON.string(color) }
         if let cardNetwork { payload["card_network"] = AnyJSON.string(cardNetwork) }
+        if let openingUnbilledUntil { payload["opening_unbilled_until"] = AnyJSON.string(openingUnbilledUntil) }
+        else if clearOpeningUnbilled { payload["opening_unbilled_until"] = AnyJSON.null }
         return try await client
             .from("accounts")
             .update(payload)

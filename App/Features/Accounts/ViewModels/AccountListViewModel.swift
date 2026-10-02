@@ -65,14 +65,14 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, makeDefault: Bool = false) async -> Bool {
+    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, openingUnbilledUntil: String? = nil, makeDefault: Bool = false) async -> Bool {
         if accounts.contains(where: { $0.name == name && $0.type == type && $0.isActive }) {
             print("⚠️ Nama '\(name)' sudah digunakan untuk kategori \(type.rawValue)")
             return false
         }
         do {
             let isDefault = accounts.isEmpty
-            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork)
+            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, openingUnbilledUntil: openingUnbilledUntil)
             accounts.append(account)
             if makeDefault && !isDefault {
                 await setDefaultAccount(id: account.id, userId: userId)
@@ -94,7 +94,7 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil) async -> Bool {
+    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, billPrinted: Bool? = nil) async -> Bool {
         do {
             if abs(newBalance - oldBalance) > 0.001 {
                 let delta = newBalance - oldBalance
@@ -109,7 +109,12 @@ final class AccountListViewModel: ObservableObject {
                 }
             }
 
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork)
+            // A card bill adjusted to "not printed yet" waits for the next cut-off before it is due.
+            var unbilledUntil: String?
+            if let billPrinted, !billPrinted, newBalance > 0, let day = statementDay {
+                unbilledUntil = CreditStatement.nextCutoffString(statementDay: day)
+            }
+            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, openingUnbilledUntil: unbilledUntil, clearOpeningUnbilled: billPrinted != nil && unbilledUntil == nil)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
                 var updatedAccount = updated
                 if abs(newBalance - oldBalance) > 0.001 {

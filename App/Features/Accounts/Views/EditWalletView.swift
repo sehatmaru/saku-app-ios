@@ -11,6 +11,8 @@ struct WalletEdit {
     var dueDay: Int?
     var statementDay: Int?     // cut-off, credit only
     var isDefault: Bool
+    /// Card whose bill was adjusted: was the new amount already printed by the bank? nil when not adjusted.
+    var billPrinted: Bool? = nil
 }
 
 /// Ubah dompet (design "Edit Dompet" 1a–1c): the same card-as-form as Tambah dompet, every change
@@ -90,6 +92,8 @@ struct EditWalletView: View {
     // Number pad
     @State private var buf = 0
     @State private var fresh = true
+    /// Adjusting a card's bill: already printed by the bank, or spending since the last cut-off.
+    @State private var billPrinted = false
     @State private var bump = false
     // End screen after archive
     @State private var endShown = false
@@ -532,6 +536,11 @@ struct EditWalletView: View {
             SheetFrame(title: L("Tanggal cetak tagihan"), closeTitle: L("Selesai"), onClose: closeSheet) {
                 dayGrid(\.statementDay, note: L("Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya."))
             }
+        case .amount(let field) where isCredit && field == .balance:
+            AdjustBillView(card: account, current: cur.balance, limit: cur.limit, initialPrinted: billPrinted) { value, printed in
+                billPrinted = printed
+                withAnimation(.settle(0.42)) { cur.balance = value }
+            }
         case .amount(let field):
             SheetFrame(title: field == .limit ? L("Limit kredit") : isCredit ? L("Sesuaikan tagihan") : L("Sesuaikan saldo"),
                        closeTitle: L("Batal"), onClose: closeSheet) { numpad(field) }
@@ -638,6 +647,18 @@ struct EditWalletView: View {
         .padding(.bottom, 8)
     }
 
+    private func billChip(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.app(14, weight: .medium))
+                .foregroundStyle(selected ? Color.white : Color.appText)
+                .padding(.horizontal, 14)
+                .frame(height: 34)
+                .background(selected ? Color.appPrimary : Color.appFill, in: Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+    }
+
     private func numpad(_ field: Field) -> some View {
         let prev = field == .limit ? cur.limit : cur.balance
         let delta = buf - prev
@@ -678,7 +699,17 @@ struct EditWalletView: View {
                 .foregroundStyle(Color.appTextSecondary)
                 .monospacedDigit()
 
+                if isCredit && field == .balance && delta != 0 {
+                    HStack(spacing: 8) {
+                        billChip(L("Sudah dicetak bank"), selected: billPrinted) { billPrinted = true }
+                        billChip(L("Belum dicetak"), selected: !billPrinted) { billPrinted = false }
+                    }
+                    .padding(.top, 4)
+                }
                 Text(field == .limit ? L("Limit baru berlaku untuk perhitungan sisa limit.")
+                     : isCredit && field == .balance
+                        ? (billPrinted ? L("Tagihan ini perlu dibayar sebelum jatuh tempo.")
+                           : L("Pemakaian sejak cut-off terakhir. Baru ditagih di cut-off berikutnya."))
                      : L("Selisihnya dicatat sebagai transaksi Penyesuaian saldo."))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextTertiary)
@@ -994,7 +1025,8 @@ struct EditWalletView: View {
             creditLimit: isCredit ? Double(cur.limit) : nil,
             dueDay: isCredit ? cur.dueDay : nil,
             statementDay: isCredit ? cur.statementDay : nil,
-            isDefault: cur.isDefault
+            isDefault: cur.isDefault,
+            billPrinted: isCredit && cur.balance != orig.balance ? billPrinted : nil
         )
         Task {
             let ok = await onSave(edit)
