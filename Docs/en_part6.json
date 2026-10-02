@@ -42,5 +42,6 @@
 "Tagihan": "Bill",
 "Sisa limit": "Remaining limit",
 "Cetak %@": "Printed %@",
-"Utang kartu": "Card debt"
+"Utang kartu": "Card debt",
+"Melebihi limit kredit %@": "Over the credit limit %@"
 }

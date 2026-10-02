@@ -3783,6 +3783,16 @@
         }
       }
     },
+    "Melebihi limit kredit %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over the credit limit %@"
+          }
+        }
+      }
+    },
     "Melebihi sisa limit %@ · lebih %@": {
       "localizations": {
         "en": {

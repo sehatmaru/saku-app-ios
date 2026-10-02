@@ -90,11 +90,8 @@ struct EditWalletView: View {
     @State private var toastText = L("Perubahan disimpan")
     @State private var pop = false
     // Number pad
-    @State private var buf = 0
-    @State private var fresh = true
     /// Adjusting a card's bill: already printed by the bank, or spending since the last cut-off.
     @State private var billPrinted = false
-    @State private var bump = false
     // End screen after archive
     @State private var endShown = false
     // Delete: ask, then a few seconds to undo before it really happens (like a transaction).
@@ -536,14 +533,13 @@ struct EditWalletView: View {
             SheetFrame(title: L("Tanggal cetak tagihan"), closeTitle: L("Selesai"), onClose: closeSheet) {
                 dayGrid(\.statementDay, note: L("Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya."))
             }
-        case .amount(let field) where isCredit && field == .balance:
-            AdjustBillView(card: account, current: cur.balance, limit: cur.limit, initialPrinted: billPrinted) { value, printed in
-                billPrinted = printed
-                withAnimation(.settle(0.42)) { cur.balance = value }
-            }
         case .amount(let field):
-            SheetFrame(title: field == .limit ? L("Limit kredit") : isCredit ? L("Sesuaikan tagihan") : L("Sesuaikan saldo"),
-                       closeTitle: L("Batal"), onClose: closeSheet) { numpad(field) }
+            AdjustAmountView(account: account, kind: field == .limit ? .limit : (isCredit ? .bill : .balance),
+                             current: field == .limit ? cur.limit : cur.balance, limit: cur.limit,
+                             initialPrinted: billPrinted) { value, printed in
+                if field == .balance { billPrinted = printed }
+                withAnimation(.settle(0.42)) { if field == .limit { cur.limit = value } else { cur.balance = value } }
+            }
         case .archive:
             SheetFrame(title: L("Arsipkan %@?", orig.name), closeTitle: L("Batal"), onClose: closeSheet) {
                 confirm(text: L("Dompet disembunyikan dari daftar dan total saldo. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja."),
@@ -647,103 +643,7 @@ struct EditWalletView: View {
         .padding(.bottom, 8)
     }
 
-    private func billChip(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.app(14, weight: .medium))
-                .foregroundStyle(selected ? Color.white : Color.appText)
-                .padding(.horizontal, 14)
-                .frame(height: 34)
-                .background(selected ? Color.appPrimary : Color.appFill, in: Capsule())
-        }
-        .buttonStyle(PressScaleStyle())
-    }
 
-    private func numpad(_ field: Field) -> some View {
-        let prev = field == .limit ? cur.limit : cur.balance
-        let delta = buf - prev
-        let isSaldo = field == .balance && !isCredit
-        let chipBg = isSaldo ? (delta > 0 ? Color.appPrimary.opacity(0.12) : Color.appError.opacity(0.12)) : Color.appFill
-        let chipFg = isSaldo ? (delta > 0 ? Color.appPrimary : Color.appError) : Color.appBody
-        return VStack(spacing: 0) {
-            VStack(spacing: 8) {
-                HStack(alignment: .top, spacing: 4) {
-                    Text("Rp").font(.app(20)).foregroundStyle(Color.appTextSecondary).padding(.top, 7)
-                    Text(Double(buf).formattedAsDigits())
-                        .font(.app(48, weight: .light))
-                        .tracking(-1.8)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .opacity(fresh ? 0.4 : 1)
-                        .animation(.easeInOut(duration: 0.2), value: fresh)
-                        .contentTransition(.numericText())
-                }
-                .monospacedDigit()
-                .scaleEffect(bump ? 1.04 : 1)
-                .animation(.easeOut(duration: 0.14), value: bump)
-
-                HStack(spacing: 8) {
-                    Text("Sebelumnya \(Self.rp(prev))")
-                    Text((delta > 0 ? "+" : delta < 0 ? "−" : "") + Self.rp(abs(delta)))
-                        .font(.app(13, weight: .semibold))
-                        .foregroundStyle(chipFg)
-                        .padding(.horizontal, 9)
-                        .frame(height: 24)
-                        .background(chipBg, in: Capsule())
-                        .opacity(delta != 0 ? 1 : 0)
-                        .scaleEffect(delta != 0 ? 1 : 0.6)
-                        .animation(.spring(duration: 0.38, bounce: 0.5), value: delta != 0)
-                        .animation(.easeInOut(duration: 0.22), value: delta > 0)
-                }
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-                .monospacedDigit()
-
-                if isCredit && field == .balance && delta != 0 {
-                    HStack(spacing: 8) {
-                        billChip(L("Sudah dicetak bank"), selected: billPrinted) { billPrinted = true }
-                        billChip(L("Belum dicetak"), selected: !billPrinted) { billPrinted = false }
-                    }
-                    .padding(.top, 4)
-                }
-                Text(field == .limit ? L("Limit baru berlaku untuk perhitungan sisa limit.")
-                     : isCredit && field == .balance
-                        ? (billPrinted ? L("Tagihan ini perlu dibayar sebelum jatuh tempo.")
-                           : L("Pemakaian sejak cut-off terakhir. Baru ditagih di cut-off berikutnya."))
-                     : L("Selisihnya dicatat sebagai transaksi Penyesuaian saldo."))
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextTertiary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-            .padding(.bottom, 18)
-
-            GeometryReader { geo in
-                let side = (geo.size.width - 6) / 4
-                HStack(spacing: 6) {
-                    NumberPadKeys(onPress: press)
-                        .frame(width: geo.size.width - side - 6)
-                    Button { apply(field) } label: {
-                        VStack(spacing: 6) {
-                            Image(systemName: "checkmark").font(.system(size: 24, weight: .bold))
-                            Text("Terapkan").font(.app(14, weight: .semibold))
-                        }
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.appPrimary, in: RoundedRectangle(cornerRadius: 14))
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .frame(width: side)
-                }
-            }
-            .frame(height: 52 * 4 + 6 * 3)
-            .padding(.horizontal, 12)
-        }
-    }
-
-    /// Sheet copy plus one full-width capsule; `button` nil shows the explanation only.
     private func confirm(text: String, button: String?, icon: String, destructive: Bool,
                          action: @escaping () async -> Void) -> some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -988,28 +888,7 @@ struct EditWalletView: View {
     }
 
     private func openNumpad(_ field: Field) {
-        buf = field == .limit ? cur.limit : cur.balance
-        fresh = true
         sheet = .amount(field)
-    }
-
-    /// The first key replaces the old amount; after that keys append.
-    private func press(_ key: String) {
-        if fresh && key == "del" {
-            buf = 0
-        } else if let next = NumberPad.apply(key, to: fresh ? 0 : buf) {
-            withAnimation(.settle(0.2)) { buf = next }
-        }
-        fresh = false
-        bump = true
-        Task { try? await Task.sleep(for: .seconds(0.11)); bump = false }
-    }
-
-    private func apply(_ field: Field) {
-        withAnimation(.settle(0.42)) {
-            if field == .limit { cur.limit = buf } else { cur.balance = buf }
-        }
-        sheet = nil
     }
 
     private func save() {

@@ -241,6 +241,7 @@ struct SaveKey: View {
     let color: Color
     let isEnabled: Bool
     var isSaving = false
+    var title: LocalizedStringKey = "Simpan"
     let action: () -> Void
 
     var body: some View {
@@ -251,7 +252,7 @@ struct SaveKey: View {
                 } else {
                     Image(systemName: "checkmark").font(.system(size: 24, weight: .bold))
                 }
-                Text("Simpan").font(.app(14, weight: .semibold))
+                Text(title).font(.app(14, weight: .semibold))
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -270,6 +271,7 @@ struct AmountPad: View {
     let onPress: (String) -> Void
     let onSave: () -> Void
     var keyHeight: CGFloat = 52
+    var title: LocalizedStringKey = "Simpan"
 
     var body: some View {
         GeometryReader { geo in
@@ -277,7 +279,7 @@ struct AmountPad: View {
             HStack(spacing: 6) {
                 NumberPadKeys(onPress: onPress, keyHeight: keyHeight)
                     .frame(width: geo.size.width - saveWidth - 6)
-                SaveKey(color: color, isEnabled: isEnabled, isSaving: isSaving, action: onSave)
+                SaveKey(color: color, isEnabled: isEnabled, isSaving: isSaving, title: title, action: onSave)
                     .frame(width: saveWidth)
             }
             .frame(width: geo.size.width, height: geo.size.height)
