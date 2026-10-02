@@ -70,13 +70,10 @@ final class TransactionListViewModel: ObservableObject {
         }
     }
 
+    /// "Bulan ini" runs from payday, the same period the Beranda summary uses.
     private func calculateThisMonthSummary() {
-        let calendar = Calendar.current
-        let now = Date()
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
-              let nextMonth = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return }
-
-        let thisMonth = allTransactions.filter { $0.date >= monthStart && $0.date < nextMonth }
+        let cycle = PaydayCycle.current
+        let thisMonth = allTransactions.filter { cycle.contains($0.date) }
         thisMonthIncome = thisMonth.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
         thisMonthExpense = thisMonth.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
     }

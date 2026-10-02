@@ -192,9 +192,8 @@ struct AdvancedSearchView: View {
                     }
                     datePresetChip(preset: .thisMonth, isSelected: selectedDatePreset == .thisMonth) {
                         selectedDatePreset = .thisMonth
-                        let now = Date()
-                        draft.dateTo = now
-                        draft.dateFrom = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: now))
+                        draft.dateTo = Date()
+                        draft.dateFrom = PaydayCycle.current.period(containing: Date()).start
                     }
                 }
                 .padding(.horizontal, 24)

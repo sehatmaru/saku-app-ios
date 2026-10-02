@@ -18,6 +18,7 @@ struct TransactionListView: View {
     /// Months where the user tapped "Tampilkan N lainnya".
     @State private var fullyShownMonths: Set<String> = []
     @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
     @State private var showAdvancedSearch = false
     @State private var showBackToTop = false
     @State private var hasInitialExpanded = false
@@ -57,7 +58,11 @@ struct TransactionListView: View {
                             if let error = viewModel.errorMessage {
                                 ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                             }
-                            summary
+                            // The month hero gives way while searching, so results start higher.
+                            if !isSearching {
+                                summary
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
 
                             Color.clear
                                 .frame(height: 1)
@@ -66,6 +71,7 @@ struct TransactionListView: View {
 
                             if !hasNoTransactions {
                                 filterChips
+                                    .padding(.top, isSearching ? 16 : 0)
                             }
 
                             if filteredTransactions.isEmpty {
@@ -76,6 +82,7 @@ struct TransactionListView: View {
                         }
                     }
                     .padding(.bottom, 24)
+                    .animation(.smooth(duration: 0.4), value: isSearching)
                 }
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
                 .background(Color.appBackground)
@@ -148,7 +155,7 @@ struct TransactionListView: View {
     private var transactionSkeleton: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Net cashflow \(Self.monthFormatter.string(from: Date()))")
+                Text("Net cashflow \(PaydayCycle.current.label())")
                     .font(.app(15))
                     .foregroundStyle(Color.appTextSecondary)
                 SkeletonBlock(width: 230, height: 48, radius: 10)
@@ -207,6 +214,11 @@ struct TransactionListView: View {
 
     // MARK: Search
 
+    /// The field has focus or a query: the month summary steps aside.
+    private var isSearching: Bool {
+        searchFocused || !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
@@ -216,6 +228,7 @@ struct TransactionListView: View {
                 .font(.app(16))
                 .submitLabel(.search)
                 .autocorrectionDisabled()
+                .focused($searchFocused)
             if !searchText.isEmpty {
                 Button { searchText = "" } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -236,7 +249,7 @@ struct TransactionListView: View {
         let net = viewModel.thisMonthBalance
         let tone: Color = net > 0 ? .appIncome : net < 0 ? .appError : .appText
         return VStack(alignment: .leading, spacing: 0) {
-            Text("Net cashflow \(Self.monthFormatter.string(from: Date()))")
+            Text("Net cashflow \(PaydayCycle.current.label())")
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
 
@@ -565,7 +578,7 @@ struct TransactionListView: View {
                 EmptyMessage(
                     icon: "tray",
                     title: L("Belum ada transaksi"),
-                    message: L("Pemasukan dan pengeluaran yang kamu catat di %@ akan muncul di sini.", Self.monthFormatter.string(from: Date()))
+                    message: L("Pemasukan dan pengeluaran yang kamu catat di %@ akan muncul di sini.", PaydayCycle.current.label())
                 )
                 EmptyStateButton(title: L("Catat transaksi"), action: onAdd)
             }
@@ -590,13 +603,6 @@ struct TransactionListView: View {
             .padding(.horizontal, 40)
             .padding(.top, 96)
         }
-    }
-
-    private static var monthFormatter: DateFormatter {
-        let f = DateFormatter()
-        f.dateFormat = "MMMM"
-        f.locale = AppLanguage.locale
-        return f
     }
 }
 
