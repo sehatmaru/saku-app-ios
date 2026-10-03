@@ -159,9 +159,6 @@ struct EditWalletView: View {
                 formRows
                     .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
                     .padding(.top, 24)
-                actionRows
-                    .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-                    .padding(.top, 28)
                 Text("\(transactionCount) transaksi")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextTertiary)
@@ -169,11 +166,14 @@ struct EditWalletView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
                     .padding(.top, 14)
-                    .padding(.bottom, 60)
+                    .padding(.bottom, 24)
             }
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !nameFocused { actionBar }
+        }
         .opacity(isDeleting ? 0.3 : 1)
         .allowsHitTesting(!isDeleting)
         .animation(.easeInOut(duration: 0.4), value: isDeleting)
@@ -420,35 +420,37 @@ struct EditWalletView: View {
         }
     }
 
-    private var actionRows: some View {
-        VStack(spacing: 0) {
+    /// Arsipkan and Hapus: two pills pinned over a white fade, so they stay reachable while the form scrolls.
+    private var actionBar: some View {
+        HStack(spacing: 12) {
             Button {
                 if isArchived { Task { await unarchive(fromEnd: false) } } else { sheet = .archive }
             } label: {
-                actionLabel(isArchived ? L("Pulihkan dompet") : L("Arsipkan dompet"),
-                            icon: isArchived ? "arrow.uturn.backward" : "archivebox", tint: Color.appText)
+                Label(isArchived ? L("Pulihkan") : L("Arsipkan"), systemImage: isArchived ? "arrow.uturn.backward" : "archivebox")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(Color.appBackground, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
             }
-            .buttonStyle(RowHighlightStyle())
+            .buttonStyle(PressScaleStyle())
             .disabled(isBusy)
 
             Button { nameFocused = false; isConfirmingDelete = true } label: {
-                actionLabel(L("Hapus dompet"), icon: "trash", tint: Color.appError)
+                Label(L("Hapus"), systemImage: "trash")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appError)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(Color.appError.opacity(0.1), in: Capsule())
             }
-            .buttonStyle(RowHighlightStyle(tint: Color.appError.opacity(0.06)))
+            .buttonStyle(PressScaleStyle())
         }
-    }
-
-    private func actionLabel(_ title: String, icon: String, tint: Color) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon).font(.system(size: 19)).frame(width: 24)
-            Text(title).font(.app(16))
-            Spacer(minLength: 0)
-        }
-        .foregroundStyle(tint)
         .padding(.horizontal, 24)
-        .frame(height: 52)
-        .contentShape(Rectangle())
-        .rowSeparator()
+        .padding(.top, 40)
+        .padding(.bottom, 8)
+        .background {
+            LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .init(x: 0.5, y: 0.4))
+        }
     }
 
     private func rowContent<V: View, T: View>(_ label: String, height: CGFloat = 52,
