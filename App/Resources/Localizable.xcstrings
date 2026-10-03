@@ -1818,7 +1818,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Printed %@"
+            "value": "Statement %@"
           }
         }
       }
