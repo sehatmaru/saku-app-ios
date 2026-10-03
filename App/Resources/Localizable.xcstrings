@@ -693,6 +693,16 @@
         }
       }
     },
+    "Akan datang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upcoming"
+          }
+        }
+      }
+    },
     "Akhir bulan": {
       "localizations": {
         "en": {
@@ -1343,6 +1353,26 @@
         }
       }
     },
+    "Belum ditagih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not billed yet"
+          }
+        }
+      }
+    },
+    "Belum ditagih (%@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not billed yet (%@)"
+          }
+        }
+      }
+    },
     "Belum punya budget": {
       "localizations": {
         "en": {
@@ -1743,6 +1773,16 @@
         }
       }
     },
+    "Cari transaksi atau kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search transactions or categories"
+          }
+        }
+      }
+    },
     "Cash": {
       "localizations": {
         "en": {
@@ -2109,6 +2149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hidden · %lld"
+          }
+        }
+      }
+    },
+    "Ditagih %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billed %@"
           }
         }
       }
@@ -4653,6 +4703,16 @@
         }
       }
     },
+    "Riwayat transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction history"
+          }
+        }
+      }
+    },
     "Riwayat transaksi tetap tersimpan": {
       "localizations": {
         "en": {
@@ -5389,6 +5449,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "“%@” already exists (hidden)"
+          }
+        }
+      }
+    },
+    "Sudah dibayar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already paid"
           }
         }
       }
@@ -6143,6 +6213,16 @@
         }
       }
     },
+    "Terlambat %lld hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days late"
+          }
+        }
+      }
+    },
     "Terpakai": {
       "localizations": {
         "en": {
@@ -6369,6 +6449,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No bill"
+          }
+        }
+      }
+    },
+    "Tidak ada tagihan dalam waktu dekat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No upcoming bills"
           }
         }
       }
@@ -6931,6 +7021,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What affects your score"
+          }
+        }
+      }
+    },
+    "berulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "recurring"
           }
         }
       }

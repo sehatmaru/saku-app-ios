@@ -133,9 +133,17 @@ struct AccountListView: View {
                 walletDetail(account).detailPage()
             }
             .navigationDestination(for: WalletHistoryRoute.self) { route in
+                if route.account.isCreditCard {
+                    CardHistoryView(account: route.account,
+                                    statement: viewModel.statement(for: route.account, transactions: accountTransactions[route.account.id] ?? []),
+                                    transactions: accountTransactions[route.account.id] ?? [], categories: categories,
+                                    accounts: viewModel.accounts, isBalanceVisible: isBalanceVisible)
+                        .detailPage()
+                } else {
                 WalletHistoryView(account: route.account, transactions: accountTransactions[route.account.id] ?? [],
                                   categories: categories, accounts: viewModel.accounts, isBalanceVisible: isBalanceVisible)
                     .detailPage()
+                }
             }
             .navigationDestination(for: WalletSubscriptionsRoute.self) { route in
                 WalletSubscriptionsView(account: route.account,
@@ -235,6 +243,12 @@ struct AccountListView: View {
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         if selectedID != nil {
+            if let open = allCards.first(where: { $0.id == selectedID }), open.isCreditCard {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Ubah") { path.append(open) }
+                        .fontWeight(.semibold)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Selesai", action: closeDetail)
                     .fontWeight(.semibold)
@@ -651,7 +665,16 @@ struct AccountListView: View {
     /// wallet's recurring bills.
     private func detailContent(_ account: Account, isOpen: Bool) -> some View {
         let statement = viewModel.statement(for: account, transactions: accountTransactions[account.id] ?? [])
-        return VStack(alignment: .leading, spacing: 0) {
+        if account.isCreditCard {
+            return AnyView(CardDetailContent(
+                card: account, statement: statement,
+                subscriptions: viewModel.subscriptions.filter { $0.accountId == account.id },
+                isBalanceVisible: isBalanceVisible,
+                onPay: { payCard = account }, onRecord: { recordCard = account },
+                onSubscriptions: { path.append(WalletSubscriptionsRoute(account: account)) },
+                onHistory: { path.append(WalletHistoryRoute(account: account)) }))
+        }
+        return AnyView(VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 if account.isCreditCard {
                     detailAction(L("Bayar"), icon: "creditcard", isPrimary: true) { payCard = account }
@@ -676,7 +699,7 @@ struct AccountListView: View {
                 subscriptionsLink(account)
                     .padding(.top, 6)
             }
-        }
+        })
     }
 
     /// The last statement: a warm question once it is overdue (Pengingat Tagihan 2f), a quiet

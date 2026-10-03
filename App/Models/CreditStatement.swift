@@ -156,6 +156,53 @@ struct CreditStatement {
         return cycle.cutoffsReached(from: purchaseDate, through: last, cap: installment.months)
     }
 
+    // MARK: Billing cycles
+
+    /// One billing period of a card: the charges between two cut-offs and the payments made toward them.
+    struct BillingCycle: Identifiable {
+        let start: Date
+        /// The cut-off the period ends on; for the open period, the one it is waiting for.
+        let end: Date
+        let dueDate: Date
+        /// Not billed yet: after the last cut-off.
+        let isOpen: Bool
+        var transactions: [Transaction]
+        var charged: Double
+        var paid: Double
+        var id: Date { end }
+    }
+
+    /// The card's periods, newest first: the open one, then each billed one back to its first transaction.
+    /// A payment counts toward the statement printed before the day it was made.
+    static func cycles(card: Account, transactions: [Transaction], today: Date = Date(),
+                       calendar: Calendar = .current, maxCycles: Int = 24) -> [BillingCycle] {
+        guard card.isCreditCard else { return [] }
+        let cycle = Cycle(card: card, calendar: calendar)
+        let todayStart = calendar.startOfDay(for: today)
+        let earliest = transactions.map { calendar.startOfDay(for: $0.date) }.min() ?? todayStart
+
+        let last = cycle.lastCutoff(before: todayStart)
+        var ends = [cycle.cutoff(monthAfter: last), last]
+        func start(of end: Date) -> Date { cycle.dayAfter(cycle.lastCutoff(before: end)) }
+        while ends.count < maxCycles, let tail = ends.last, start(of: tail) > earliest {
+            ends.append(cycle.lastCutoff(before: tail))
+        }
+        var result = ends.enumerated().map { index, end in
+            BillingCycle(start: start(of: end), end: end, dueDate: cycle.dueDate(after: end),
+                         isOpen: index == 0, transactions: [], charged: 0, paid: 0)
+        }
+        func index(of day: Date) -> Int? { result.firstIndex { day >= $0.start && day <= $0.end } }
+
+        for txn in transactions.sorted(by: { $0.date > $1.date }) {
+            guard let own = index(of: calendar.startOfDay(for: txn.date)) else { continue }
+            let effect = debtEffect(of: txn, on: card.id)
+            let target = effect < 0 && own + 1 < result.count ? own + 1 : own
+            result[target].transactions.append(txn)
+            if effect > 0 { result[target].charged += effect } else if effect < 0 { result[target].paid -= effect }
+        }
+        return result
+    }
+
     // MARK: Cycle dates
 
     /// Cut-off and due days of one card, clamped to each month's length.

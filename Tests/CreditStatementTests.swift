@@ -161,3 +161,34 @@ final class CreditStatementTests: XCTestCase {
         XCTAssertNil(CreditStatement(card: bank, transactions: [], installments: []))
     }
 }
+
+extension CreditStatementTests {
+    private func cycleCard() -> Account {
+        Account(id: "card", name: "BCA Visa", type: .credit, icon: nil, isArchived: false, isDefault: false,
+                openingBalance: 0, currentBalance: 0, creditLimit: 10_000_000, dueDate: "5", statementDay: 20)
+    }
+
+    func testCyclesSplitChargesAtTheCutoffAndAttachPaymentsToTheBilledOne() {
+        let day = { (m: Int, d: Int) in Calendar.current.date(from: DateComponents(year: 2026, month: m, day: d, hour: 12))! }
+        let t = { (id: String, type: Transaction.TransactionType, amount: Double, on: Date) in
+            Transaction(id: id, accountId: "card", counterpartyAccountId: nil, categoryId: nil, amount: amount,
+                        type: type, description: nil, note: nil, date: on, delta: nil)
+        }
+        let txns = [t("a", .expense, 1_000_000, day(9, 10)), t("b", .expense, 300_000, day(9, 25)),
+                    t("p", .cardPayment, 100_000, day(9, 28))]
+        let cycles = CreditStatement.cycles(card: cycleCard(), transactions: txns, today: day(9, 29))
+
+        XCTAssertTrue(cycles[0].isOpen)
+        XCTAssertEqual(cycles[0].charged, 300_000)                 // 21 Sep – 20 Okt, not billed yet
+        XCTAssertEqual(cycles[1].charged, 1_000_000)               // 21 Agu – 20 Sep
+        XCTAssertEqual(cycles[1].paid, 100_000)                    // the payment counts toward it
+        XCTAssertEqual(cycles[1].transactions.map(\.id).sorted(), ["a", "p"])
+    }
+
+    func testCyclesAlwaysIncludeTheOpenAndLastBilledPeriod() {
+        let cycles = CreditStatement.cycles(card: cycleCard(), transactions: [], today: Date())
+        XCTAssertGreaterThanOrEqual(cycles.count, 2)
+        XCTAssertTrue(cycles[0].isOpen)
+        XCTAssertFalse(cycles[1].isOpen)
+    }
+}

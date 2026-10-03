@@ -43,5 +43,16 @@
 "Sisa limit": "Remaining limit",
 "Cetak %@": "Statement %@",
 "Utang kartu": "Card debt",
-"Melebihi limit kredit %@": "Over the credit limit %@"
+"Melebihi limit kredit %@": "Over the credit limit %@",
+"Belum ditagih (%@)": "Not billed yet (%@)",
+"Terlambat %lld hari": "%lld days late",
+"Sudah dibayar": "Already paid",
+"Riwayat transaksi": "Transaction history",
+"berulang": "recurring",
+"Tidak ada tagihan dalam waktu dekat": "No upcoming bills",
+"Akan datang": "Upcoming",
+"Cari transaksi atau kategori": "Search transactions or categories",
+"Belum ditagih": "Not billed yet",
+"Ditagih %@": "Billed %@",
+"Sisa %@": "%@ left"
 }
