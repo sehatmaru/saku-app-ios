@@ -27,6 +27,8 @@ struct ProfileView: View {
     @AppStorage("paydayDay") private var paydayDay = 0
 
     @State private var showsHomeBalance = false
+    @State private var showsTheme = false
+    @State private var showsLanguage = false
     @State private var homeBalanceFailed = false
     @AppStorage(HomeBalanceSetting.key) private var homeBalanceMode = HomeBalanceMode.cash.rawValue
 
@@ -98,6 +100,19 @@ struct ProfileView: View {
                 HomeBalanceSheet(selection: homeBalanceMode, cash: cash, assets: assets) { mode in
                     showsHomeBalance = false
                     saveHomeBalance(mode)
+                }
+            }
+            .sheet(isPresented: $showsTheme) {
+                OptionSheet(title: L("Tema"), selection: appTheme,
+                            options: ThemeOption.allCases.map { ($0, L($0.rawValue), nil) }) { appTheme = $0 }
+            }
+            .sheet(isPresented: $showsLanguage) {
+                OptionSheet(title: L("Bahasa"), selection: appLanguage,
+                            options: [("id", "Bahasa Indonesia", "Indonesian"), ("en", "English", "English")]) { code in
+                    guard code != appLanguage else { return }
+                    // Cached dashboard state holds pre-rendered text (health tips, month labels).
+                    AppDataCache.shared.clearAll()
+                    appLanguage = code
                 }
             }
             .alert("Gagal menyimpan", isPresented: $homeBalanceFailed) {
@@ -213,25 +228,23 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 0) {
             sectionCaption(L("Tampilan"))
 
-            row(icon: "moon", title: L("Tema")) {
-                Picker("Tema", selection: $appTheme) {
-                    ForEach(ThemeOption.allCases, id: \.self) { option in
-                        Text(LocalizedStringKey(option.rawValue)).tag(option)
-                    }
+            Button { showsTheme = true } label: {
+                row(icon: "moon", title: L("Tema")) {
+                    Text(LocalizedStringKey(appTheme.rawValue))
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                    chevron
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
+                .contentShape(Rectangle())
             }
+            .buttonStyle(RowPressStyle())
 
-            NavigationLink(destination: LanguageView(appLanguage: $appLanguage).detailPage()) {
+            Button { showsLanguage = true } label: {
                 row(icon: "globe", title: L("Bahasa")) {
                     Text(languageLabel)
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.appTextTertiary)
+                    chevron
                 }
                 .contentShape(Rectangle())
             }
@@ -478,64 +491,6 @@ struct ProfileEditView: View {
     }
 }
 
-// MARK: - Language
-
-struct LanguageView: View {
-    @Binding var appLanguage: String
-    @Environment(\.dismiss) private var dismiss
-
-    private let options: [(code: String, name: String, native: String, flag: String)] = [
-        ("id", "Indonesian", "Bahasa Indonesia", "🇮🇩"),
-        ("en", "English", "English", "🇺🇸"),
-    ]
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                ForEach(options, id: \.code) { option in
-                    Button {
-                        // Cached dashboard state holds pre-rendered text (health tips, month labels).
-                        AppDataCache.shared.clearAll()
-                        appLanguage = option.code
-                    } label: {
-                        HStack(spacing: 14) {
-                            Text(option.flag)
-                                .font(.system(size: 22))
-                                .frame(width: 24)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(option.native)
-                                    .font(.app(16))
-                                    .foregroundStyle(Color.appText)
-                                Text(option.name)
-                                    .font(.app(13))
-                                    .foregroundStyle(Color.appTextSecondary)
-                            }
-                            Spacer()
-                            if appLanguage == option.code {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(Color.appPrimary)
-                            }
-                        }
-                        .frame(minHeight: 60)
-                        .padding(.horizontal, 24)
-                        .rowSeparator()
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(RowPressStyle())
-                    .accessibilityAddTraits(appLanguage == option.code ? .isSelected : [])
-                }
-            }
-            .padding(.top, 8)
-        }
-        .background(Color.appBackground)
-        .navigationTitle("Bahasa")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
-    }
-}
-
-
 // MARK: - Total saldo di Beranda
 
 /// Two options, each with a one-line explanation and a small preview of the Beranda number.
@@ -618,5 +573,73 @@ private struct HomeBalanceSheet: View {
             .contentShape(RoundedRectangle(cornerRadius: 18))
         }
         .buttonStyle(.plain)
+    }
+}
+
+
+// MARK: - Option sheet
+
+/// Theme and language: a short list, tap a row to pick it and close.
+private struct OptionSheet<Value: Equatable>: View {
+    let title: String
+    let selection: Value
+    let options: [(value: Value, title: String, subtitle: String?)]
+    let onPick: (Value) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ZStack {
+                Text(title).font(.app(17, weight: .semibold))
+                HStack {
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .frame(width: 30, height: 30)
+                            .background(Color.appFill, in: Circle())
+                    }
+                    .accessibilityLabel(L("Tutup"))
+                }
+            }
+            .padding(.top, 14)
+
+            VStack(spacing: 0) {
+                ForEach(options.indices, id: \.self) { i in
+                    let option = options[i]
+                    let on = option.value == selection
+                    Button { onPick(option.value); dismiss() } label: {
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(option.title).font(.app(16))
+                                if let subtitle = option.subtitle {
+                                    Text(subtitle).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                                }
+                            }
+                            Spacer()
+                            if on {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(Color.appPrimary)
+                            }
+                        }
+                        .frame(minHeight: 56)
+                        .rowSeparator()
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(RowPressStyle())
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            .padding(.top, 12)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 20)
+        .foregroundStyle(Color.appText)
+        .presentationDetents([.height(CGFloat(options.count) * 56 + 110)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .presentationBackground(Color.appBackground)
     }
 }
