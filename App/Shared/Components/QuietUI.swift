@@ -27,13 +27,18 @@ struct HeroAmount: View {
                 .font(.app(symbol))
                 .foregroundStyle(prefixColor)
                 .padding(.top, top)
-            Text(isVisible ? value.formattedAsDigits() : hiddenAmount)
-                .font(.app(number, weight: weight))
-                .tracking(tracking)
-                .foregroundStyle(color)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .contentTransition(.numericText())
+            // The mask's bullets have a different line height than digits; a hidden "0" keeps the
+            // row the same height so the layout below doesn't jump when the eye is toggled.
+            ZStack(alignment: .leading) {
+                Text("0").font(.app(number, weight: weight)).hidden()
+                Text(isVisible ? value.formattedAsDigits() : hiddenAmount)
+                    .font(.app(number, weight: weight))
+                    .tracking(tracking)
+                    .foregroundStyle(color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .contentTransition(.numericText())
+            }
         }
         .monospacedDigit()
     }

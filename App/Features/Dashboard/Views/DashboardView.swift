@@ -225,9 +225,11 @@ struct DashboardView: View {
                 withAnimation(.smooth) { isBalanceVisible.toggle() }
                 isBalanceVisibleStorage = isBalanceVisible
             } label: {
+                // eye.slash is taller than eye; a fixed frame keeps the header (and everything below) still.
                 Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
                     .font(.system(size: 20))
                     .foregroundStyle(Color.appText)
+                    .frame(width: 28, height: 25)
             }
             .accessibilityLabel(isBalanceVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
         }
@@ -392,14 +394,19 @@ struct DashboardView: View {
     /// "Aman dipakai Rp45.000/hari untuk 4 hari tersisa.": the total spread over the days left in the period.
     private var safeToSpendCard: some View {
         let safe = viewModel.safeToSpend
-        let line: Text
-        if let perDay = viewModel.safePerDay {
-            line = Text(L("Aman dipakai") + " ").foregroundStyle(Color.appText)
-                + Text(isBalanceVisible ? "Rp" + perDay.formattedAsDigits() + "/" + L("hari") : hiddenAmount).fontWeight(.semibold).foregroundStyle(Color.appText)
-                + Text(" " + L("untuk %lld hari tersisa.", viewModel.daysLeftInPeriod)).foregroundStyle(Color.appText)
-        } else {
-            line = Text(L("Aman dipakai") + " ").foregroundStyle(Color.appText)
-                + Text(maskedAmount(safe, negative: safe < 0)).fontWeight(.semibold).foregroundStyle(safe < 0 ? Color.appError : Color.appText)
+        func line(visible: Bool) -> Text {
+            if let perDay = viewModel.safePerDay {
+                return Text(L("Aman dipakai") + " ").foregroundStyle(Color.appText)
+                    + Text(visible ? "Rp" + perDay.formattedAsDigits() + "/" + L("hari") : hiddenAmount).fontWeight(.semibold).foregroundStyle(Color.appText)
+                    + Text(" " + L("untuk %lld hari tersisa.", viewModel.daysLeftInPeriod)).foregroundStyle(Color.appText)
+            }
+            return Text(L("Aman dipakai") + " ").foregroundStyle(Color.appText)
+                + Text(visible ? maskedAmount(safe, negative: safe < 0) : hiddenAmount).fontWeight(.semibold).foregroundStyle(safe < 0 ? Color.appError : Color.appText)
+        }
+        // The visible text is laid out (hidden) in both states so the card keeps its height when masked.
+        let sizedLine = ZStack(alignment: .topLeading) {
+            line(visible: true).hidden()
+            line(visible: isBalanceVisible)
         }
         return Button { showsSafeInfo = true } label: {
             HStack(alignment: .top, spacing: 12) {
@@ -408,7 +415,7 @@ struct DashboardView: View {
                     .foregroundStyle(Color.appPrimary)
                     .padding(.top, 1)
                 VStack(alignment: .leading, spacing: 2) {
-                    line
+                    sizedLine
                         .font(.app(15))
                         .monospacedDigit()
                         .multilineTextAlignment(.leading)
@@ -507,13 +514,18 @@ struct DashboardView: View {
     private func flowStat(_ label: String, _ amount: Double, signed: Bool = false) -> some View {
         let sign = signed ? (amount > 0 ? "+" : amount < 0 ? "−" : "") : ""
         let color: Color = signed ? (amount > 0 ? .appPrimary : amount < 0 ? .appError : .appText) : .appText
-        return (Text(label + " ").foregroundStyle(Color.appTextSecondary)
-                + Text(hasNoWallets ? "–" : isBalanceVisible ? sign + amount.abbreviatedRupiah() : hiddenAmount)
-                    .fontWeight(.medium)
-                    .foregroundStyle(hasNoWallets ? Color.appTextTertiary : color))
-            .font(.app(15))
-            .monospacedDigit()
-            .lineLimit(1)
+        let text = Text(label + " ").foregroundStyle(Color.appTextSecondary)
+            + Text(hasNoWallets ? "–" : isBalanceVisible ? sign + amount.abbreviatedRupiah() : hiddenAmount)
+                .fontWeight(.medium)
+                .foregroundStyle(hasNoWallets ? Color.appTextTertiary : color)
+        // A hidden digit keeps the line height the same whether the value or the mask shows.
+        return ZStack(alignment: .leading) {
+            Text("0").hidden()
+            text
+        }
+        .font(.app(15))
+        .monospacedDigit()
+        .lineLimit(1)
     }
 
     // MARK: Health score
