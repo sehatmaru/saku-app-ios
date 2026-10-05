@@ -243,15 +243,21 @@ struct AccountListView: View {
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         if selectedID != nil {
+            // Same top bar as the transaction detail: back on the left, Ubah on the right.
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: closeDetail) { Image(systemName: "chevron.left") }
+                    .accessibilityLabel("Kembali")
+            }
             if let open = allCards.first(where: { $0.id == selectedID }), open.isCreditCard {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Ubah") { path.append(open) }
+                        .font(.app(17, weight: .semibold))
+                }
+            } else {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Selesai", action: closeDetail)
                         .fontWeight(.semibold)
                 }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Selesai", action: closeDetail)
-                    .fontWeight(.semibold)
             }
         } else {
             ToolbarItemGroup(placement: .topBarTrailing) {

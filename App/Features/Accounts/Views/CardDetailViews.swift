@@ -81,7 +81,7 @@ struct CardDetailContent: View {
         case .paid:
             return Shown(title: title, amount: s.statementAmount, chip: L("Lunas"),
                          chipFill: Color.appPrimary.opacity(0.12), chipInk: .appPrimary,
-                         extra: s.unbilled >= 1 ? (unbilledLabel, s.unbilled) : nil, canPay: s.unbilled >= 1)
+                         extra: s.unbilled >= 1 ? (unbilledLabel, s.unbilled) : nil, canPay: false)
         case .partial, .unpaid:
             return Shown(title: title, amount: s.remaining, chip: dueChip, chipFill: CardUI.warmFill, chipInk: CardUI.warmInk,
                          extra: s.unbilled >= 1 ? (unbilledLabel, s.unbilled) : nil, canPay: true)
@@ -89,7 +89,7 @@ struct CardDetailContent: View {
             let upcoming = s.unbilled >= 1
             return Shown(title: L("Tagihan %@", CardUI.month(upcomingDue)), amount: upcoming ? s.unbilled : 0,
                          chip: upcoming ? L("Cetak %@", TransactionDates.dayMonth.string(from: s.nextStatementDate)) : L("Belum ada tagihan"),
-                         chipFill: Color.appFill, chipInk: .appTextSecondary, extra: nil, canPay: upcoming)
+                         chipFill: Color.appFill, chipInk: .appTextSecondary, extra: nil, canPay: false)
         }
     }
 
@@ -143,6 +143,11 @@ struct CardDetailContent: View {
         }
         .padding(16)
         .background(CardUI.box, in: RoundedRectangle(cornerRadius: 18))
+        // No Bayar button when nothing is printed or it is paid: the box itself pays (upcoming bill) or opens Riwayat (paid).
+        .contentShape(RoundedRectangle(cornerRadius: 18))
+        .onTapGesture {
+            if s.status == .none, v.amount >= 1 { onPay() } else if s.status == .paid { onHistory() }
+        }
         .animation(.settle(0.4), value: s.remaining + s.unbilled)
     }
 
