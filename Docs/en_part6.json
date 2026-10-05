@@ -134,5 +134,13 @@
 "pemasukan": "income",
 "pengeluaran": "expense",
 "saat dompet dibuat": "when the wallet was created",
-"untuk %lld hari tersisa.": "for the %lld days left."
+"untuk %lld hari tersisa.": "for the %lld days left.",
+"Dompet · %lld akun": "Wallets · %lld accounts",
+"Total saldo di Beranda": "Total balance on Home",
+"Kas saja": "Cash only",
+"Kas + aset": "Cash + assets",
+"Rekening, e-wallet, dan tunai.": "Bank accounts, e-wallets and cash.",
+"Nilai dompet investasi ikut dijumlahkan.": "Investment wallet values are added in.",
+"Hanya mengubah angka di Beranda. Dompet tetap menampilkan kas dan aset terpisah.": "Only changes the number on Home. Wallets still show cash and assets separately.",
+"Dihitung dari kas, tanpa aset.": "Based on cash only, excluding assets."
 }

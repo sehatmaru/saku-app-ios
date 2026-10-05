@@ -6,7 +6,13 @@ struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: ProfileViewModel
 
-    init(viewModel: ProfileViewModel = ProfileViewModel()) {
+    /// Today's cash and assets, for the previews in the "Total saldo di Beranda" sheet.
+    var cash: Double = 0
+    var assets: Double = 0
+
+    init(viewModel: ProfileViewModel = ProfileViewModel(), cash: Double = 0, assets: Double = 0) {
+        self.cash = cash
+        self.assets = assets
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
@@ -19,6 +25,10 @@ struct ProfileView: View {
     @State private var isPaydayFlashing = false
     /// Mirrors PaydaySetting.day (0 = not set) so the row updates when the payday changes.
     @AppStorage("paydayDay") private var paydayDay = 0
+
+    @State private var showsHomeBalance = false
+    @State private var homeBalanceFailed = false
+    @AppStorage(HomeBalanceSetting.key) private var homeBalanceMode = HomeBalanceMode.cash.rawValue
 
     @AppStorage("appLanguage") private var appLanguage = "id"
     @AppStorage("appTheme") private var appTheme: ThemeOption = .system
@@ -83,6 +93,17 @@ struct ProfileView: View {
                         withAnimation(.easeOut(duration: 0.6)) { isPaydayFlashing = false }
                     }
                 }
+            }
+            .sheet(isPresented: $showsHomeBalance) {
+                HomeBalanceSheet(selection: homeBalanceMode, cash: cash, assets: assets) { mode in
+                    showsHomeBalance = false
+                    saveHomeBalance(mode)
+                }
+            }
+            .alert("Gagal menyimpan", isPresented: $homeBalanceFailed) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Gagal menyimpan. Coba lagi.")
             }
             .toast(L("Tanggal gajian disimpan"), isShown: $isPaydayToastShown)
             .onAppear {
@@ -215,6 +236,33 @@ struct ProfileView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(RowPressStyle())
+
+            Button { showsHomeBalance = true } label: {
+                row(icon: "house", title: L("Total saldo di Beranda")) {
+                    Text(homeBalanceMode == HomeBalanceMode.all.rawValue ? L("Kas + aset") : L("Kas saja"))
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                    chevron
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+        }
+    }
+
+    /// Optimistic: the mirror flips at once so Beranda follows; the profile row is rolled back if the save fails.
+    private func saveHomeBalance(_ mode: HomeBalanceMode) {
+        guard mode.rawValue != homeBalanceMode,
+              let id = authViewModel.currentUser.flatMap({ UUID(uuidString: $0.id) }) else { return }
+        let previous = homeBalanceMode
+        homeBalanceMode = mode.rawValue
+        Task {
+            do {
+                try await SupabaseSDK.updateHomeBalanceMode(profileId: id, mode: mode)
+            } catch {
+                homeBalanceMode = previous
+                homeBalanceFailed = true
+            }
         }
     }
 
@@ -484,5 +532,90 @@ struct LanguageView: View {
         .navigationTitle("Bahasa")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
+    }
+}
+
+
+// MARK: - Total saldo di Beranda
+
+/// Two options, each with a one-line explanation and a small preview of the Beranda number.
+private struct HomeBalanceSheet: View {
+    let selection: String
+    let cash: Double
+    let assets: Double
+    let onPick: (HomeBalanceMode) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ZStack {
+                Text("Total saldo di Beranda").font(.app(17, weight: .semibold))
+                HStack {
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .frame(width: 30, height: 30)
+                            .background(Color.appFill, in: Circle())
+                    }
+                    .accessibilityLabel(L("Tutup"))
+                }
+            }
+            .padding(.top, 14)
+
+            VStack(spacing: 12) {
+                option(.cash, title: L("Kas saja"), detail: L("Rekening, e-wallet, dan tunai."),
+                       big: cash, sub: L("Belum termasuk aset %@", assets.formattedAsCurrency()))
+                option(.all, title: L("Kas + aset"), detail: L("Nilai dompet investasi ikut dijumlahkan."),
+                       big: cash + assets, sub: L("Kas %@ + aset %@", cash.formattedAsCurrency(), assets.formattedAsCurrency()))
+            }
+            .padding(.top, 22)
+
+            Text("Hanya mengubah angka di Beranda. Dompet tetap menampilkan kas dan aset terpisah.")
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
+                .padding(.top, 16)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 20)
+        .foregroundStyle(Color.appText)
+        .presentationDetents([.height(520)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+    }
+
+    private func option(_ mode: HomeBalanceMode, title: String, detail: String, big: Double, sub: String) -> some View {
+        let on = selection == mode.rawValue
+        return Button { onPick(mode); dismiss() } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 22))
+                        .foregroundStyle(on ? Color.appPrimary : Color.appTextTertiary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.app(16, weight: .medium))
+                        Text(detail).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Total saldo").font(.app(11)).foregroundStyle(Color.appTextSecondary)
+                    Text(big.formattedAsCurrency()).font(.app(26, weight: .ultraLight)).monospacedDigit()
+                    Text(sub).font(.app(11)).foregroundStyle(Color.appTextSecondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.leading, 34)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 16)
+            .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(on ? Color.appPrimary : Color.appBorder, lineWidth: on ? 1.5 : 1))
+            .contentShape(RoundedRectangle(cornerRadius: 18))
+        }
+        .buttonStyle(.plain)
     }
 }

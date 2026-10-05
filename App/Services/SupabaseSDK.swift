@@ -16,6 +16,7 @@ enum SupabaseSDK {
             .execute()
             .value
         PaydaySetting.day = profile.paydayDay
+        HomeBalanceSetting.mode = profile.homeBalanceMode
         return profile
     }
 
@@ -33,6 +34,16 @@ enum SupabaseSDK {
             .eq("id", value: profileId)
             .execute()
         PaydaySetting.day = day
+    }
+
+    /// Saves what Beranda's "Total saldo" adds up and mirrors it on the device.
+    static func updateHomeBalanceMode(profileId: UUID, mode: HomeBalanceMode) async throws {
+        try await client
+            .from("user_profiles")
+            .update(["home_balance_mode": AnyJSON.string(mode.rawValue)] as [String: AnyJSON])
+            .eq("id", value: profileId)
+            .execute()
+        HomeBalanceSetting.mode = mode.rawValue
     }
 
     /// Uploads the JPEG to `avatars/<auth uid>/avatar.jpg` (overwriting) and returns its public URL.
@@ -77,6 +88,7 @@ enum SupabaseSDK {
             .execute()
             .value
         PaydaySetting.day = profile.paydayDay
+        HomeBalanceSetting.mode = profile.homeBalanceMode
         return profile
     }
 }
@@ -91,6 +103,8 @@ struct UserProfile: Codable, Identifiable {
     /// Payday (1–31); nil until the user sets it.
     var paydayDay: Int? = nil
     var avatarUrl: String? = nil
+    /// "cash" or "all"; nil reads as cash.
+    var homeBalanceMode: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -101,6 +115,7 @@ struct UserProfile: Codable, Identifiable {
         case timezone
         case paydayDay = "payday_day"
         case avatarUrl = "avatar_url"
+        case homeBalanceMode = "home_balance_mode"
     }
 }
 

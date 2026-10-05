@@ -83,3 +83,18 @@ enum PaydaySetting {
         set { UserDefaults.standard.set(newValue ?? 0, forKey: key) }
     }
 }
+
+/// What Beranda's "Total saldo" adds up. The profile row is the source of truth (so it follows
+/// the user across devices); `SupabaseSDK` mirrors it here and views read it with `@AppStorage`.
+enum HomeBalanceMode: String, CaseIterable {
+    case cash, all
+}
+
+enum HomeBalanceSetting {
+    static let key = "homeBalanceMode"
+
+    static var mode: String? {
+        get { UserDefaults.standard.string(forKey: key) }
+        set { UserDefaults.standard.set(newValue ?? HomeBalanceMode.cash.rawValue, forKey: key) }
+    }
+}

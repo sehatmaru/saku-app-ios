@@ -2263,6 +2263,16 @@
         }
       }
     },
+    "Dihitung dari kas, tanpa aset.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Based on cash only, excluding assets."
+          }
+        }
+      }
+    },
     "Dihitung dari pemasukan dan pengeluaran 3 bulan terakhir, saldo dompet, kartu kredit, dan budget bulan ini. Skor diperbarui setiap kamu mencatat transaksi.": {
       "localizations": {
         "en": {
@@ -2489,6 +2499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Archived wallets are kept here, with their history."
+          }
+        }
+      }
+    },
+    "Dompet · %lld akun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets · %lld accounts"
           }
         }
       }
@@ -2839,6 +2859,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This month only"
+          }
+        }
+      }
+    },
+    "Hanya mengubah angka di Beranda. Dompet tetap menampilkan kas dan aset terpisah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only changes the number on Home. Wallets still show cash and assets separately."
           }
         }
       }
@@ -3319,6 +3349,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cash %@ + assets %@"
+          }
+        }
+      }
+    },
+    "Kas + aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash + assets"
+          }
+        }
+      }
+    },
+    "Kas saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash only"
           }
         }
       }
@@ -4463,6 +4513,16 @@
         }
       }
     },
+    "Nilai dompet investasi ikut dijumlahkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Investment wallet values are added in."
+          }
+        }
+      }
+    },
     "Nilai saat ini": {
       "localizations": {
         "en": {
@@ -5119,6 +5179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Savings or checking account"
+          }
+        }
+      }
+    },
+    "Rekening, e-wallet, dan tunai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank accounts, e-wallets and cash."
           }
         }
       }
@@ -7329,6 +7399,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Total balance"
+          }
+        }
+      }
+    },
+    "Total saldo di Beranda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total balance on Home"
           }
         }
       }
