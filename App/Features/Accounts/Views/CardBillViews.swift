@@ -137,7 +137,7 @@ struct PayCardBillSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     private var isRecord: Bool { mode == .record }
-    private var sources: [Account] { wallets.filter { $0.isActive && !$0.isCreditCard } }
+    private var sources: [Account] { wallets.filter { $0.isActive && !$0.isCreditCard && !$0.isInvestment } }
     private var source: Account? { isOtherSource ? nil : sources.first { $0.id == sourceId } }
     private var color: Color { isOtherSource ? Color(hex: "48484A") : source?.walletColor ?? .appPrimary }
     /// Nothing billed yet but the card has debt: offer paying all of it.

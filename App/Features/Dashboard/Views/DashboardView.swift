@@ -21,6 +21,7 @@ struct DashboardView: View {
     @State private var didWelcome = false
     /// "Tambah dompet" on the empty Beranda opens Dompet straight into the add sheet.
     @State private var addsWalletOnOpen = false
+    @State private var heroMode: HeroMode = .wealth
     @State private var showsSafeInfo = false
     /// Catat tagihan for an overdue card bill, from the banner or a notification.
     /// Kept as the bill it was opened with, so the sheet survives the reload after paying.
@@ -191,6 +192,8 @@ struct DashboardView: View {
                             .padding(.bottom, 90)
                     } else {
                         SectionDivider()
+                        cashFlowSection
+                        SectionDivider()
                         healthSection
                         SectionDivider()
                         monthSection
@@ -325,30 +328,101 @@ struct DashboardView: View {
 
     // MARK: Summary
 
-    /// Big total, a green/red bar for money in vs out, then Masuk · Keluar · Net.
+    /// Big total. With an investment wallet a switch picks which total is big: Kekayaan (cash + assets) or Saldo kas.
     private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let showsWealth = viewModel.hasInvestments && heroMode == .wealth
+        return VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Total saldo")
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
+                if viewModel.hasInvestments {
+                    heroToggle
+                } else {
+                    Text("Total saldo")
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
                 Spacer()
                 walletsButton
             }
-            HeroAmount(value: viewModel.balance, size: .hero,
+            HeroAmount(value: showsWealth ? viewModel.wealth : viewModel.balance, size: .hero,
                        color: hasNoWallets ? .appTextTertiary : .appText,
                        prefixColor: hasNoWallets ? .appTextTertiary : .appTextSecondary,
                        isVisible: isBalanceVisible, weight: .ultraLight)
-                .padding(.top, 2)
+                .padding(.top, viewModel.hasInvestments ? 14 : 2)
 
-            Group {
-                if hasNoWallets {
-                    RoundedRectangle(cornerRadius: 3).fill(Color.appDivider).frame(height: 6)
-                } else {
-                    FlowSplitBar(income: viewModel.totalIncome, expense: viewModel.totalExpense)
-                }
+            if viewModel.hasInvestments {
+                heroSubline(showsWealth: showsWealth)
+                    .padding(.top, 14)
             }
-            .padding(.top, 28)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 36)
+        .padding(.bottom, hasNoWallets ? 32 : 36)
+    }
+
+    private enum HeroMode { case wealth, cash }
+
+    private var heroToggle: some View {
+        HStack(spacing: 0) {
+            ForEach([(HeroMode.wealth, L("Kekayaan")), (HeroMode.cash, L("Saldo kas"))], id: \.0) { mode, title in
+                Button { withAnimation(.smooth(duration: 0.25)) { heroMode = mode } } label: {
+                    Text(title)
+                        .font(.app(13, weight: heroMode == mode ? .semibold : .medium))
+                        .foregroundStyle(Color.appText)
+                        .padding(.horizontal, 14)
+                        .frame(height: 28)
+                        .background(heroMode == mode ? Color.appBackground : .clear, in: Capsule())
+                        .shadow(color: .black.opacity(heroMode == mode ? 0.12 : 0), radius: 2, y: 1)
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(heroMode == mode ? .isSelected : [])
+            }
+        }
+        .padding(2)
+        .background(Color.appFill, in: Capsule())
+    }
+
+    private func heroSubline(showsWealth: Bool) -> some View {
+        let text: String
+        if !isBalanceVisible {
+            text = showsWealth ? L("Kas •••• + aset ••••") : L("Belum termasuk aset")
+        } else if showsWealth {
+            let gain = viewModel.assetsGainPercent.map { " (" + Self.signedPercent($0) + ")" } ?? ""
+            text = L("Kas %@ + aset %@", viewModel.balance.formattedAsCurrency(), viewModel.assetsTotal.formattedAsCurrency()) + gain
+        } else {
+            text = L("Belum termasuk aset %@", viewModel.assetsTotal.formattedAsCurrency())
+        }
+        return HStack(spacing: 6) {
+            Image(systemName: showsWealth ? "chart.line.uptrend.xyaxis" : "wallet.bifold")
+                .font(.system(size: 14))
+                .foregroundStyle(showsWealth ? Color.appInvestment : Color.appPrimary)
+            Text(text)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+    }
+
+    static func signedPercent(_ fraction: Double) -> String {
+        let value = (fraction * 100).rounded(.toNearestOrEven)
+        return (value > 0 ? "+" : value < 0 ? "−" : "") + Int(abs(value)).formatted() + "%"
+    }
+
+    // MARK: Cash flow
+
+    /// "Arus kas 25 Sep – 24 Okt": a green/red bar for money in vs out, Masuk · Keluar · Net and Aman dipakai.
+    private var cashFlowSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                SectionHeader(title: L("Arus kas %@", PaydayCycle.current.label()))
+                NavigationLink("Analisis") { AnalyticsView(viewModel: viewModel).detailPage() }
+                    .font(.app(15))
+                    .foregroundStyle(Color.appPrimary)
+            }
+
+            FlowSplitBar(income: viewModel.totalIncome, expense: viewModel.totalExpense)
+                .padding(.top, 14)
 
             HStack {
                 flowStat(Lx("Masuk", en: "In"), viewModel.totalIncome)
@@ -359,13 +433,25 @@ struct DashboardView: View {
             }
             .padding(.top, 12)
 
-            if !hasNoWallets, viewModel.cardDueTotal + viewModel.upcomingBillsTotal > 0 {
-                safeToSpendRow
+            if viewModel.hasInvestments {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.appInvestment)
+                    Text("Setor/tarik aset tidak dihitung di Masuk/Keluar.")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .padding(.top, 10)
             }
+
+            safeToSpendCard
+                .padding(.top, 14)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 36)
-        .padding(.bottom, hasNoWallets ? 32 : 36)
+        .padding(.vertical, 20)
     }
 
     // MARK: Safe to spend
@@ -376,31 +462,44 @@ struct DashboardView: View {
         return (negative ? "−" : "") + "Rp" + amount.formattedAsDigits()
     }
 
-    /// "Aman dipakai Rp…" under the flow stats: balance minus card bills and subscriptions due.
-    private var safeToSpendRow: some View {
+    /// "Aman dipakai Rp45.000/hari untuk 4 hari tersisa.": the total spread over the days left in the period.
+    private var safeToSpendCard: some View {
         let safe = viewModel.safeToSpend
+        let line: Text
+        if let perDay = viewModel.safePerDay {
+            line = Text(L("Aman dipakai") + " ").foregroundStyle(Color.appText)
+                + Text(isBalanceVisible ? "Rp" + perDay.formattedAsDigits() + "/" + L("hari") : hiddenAmount).fontWeight(.semibold).foregroundStyle(Color.appText)
+                + Text(" " + L("untuk %lld hari tersisa.", viewModel.daysLeftInPeriod)).foregroundStyle(Color.appText)
+        } else {
+            line = Text(L("Aman dipakai") + " ").foregroundStyle(Color.appText)
+                + Text(maskedAmount(safe, negative: safe < 0)).fontWeight(.semibold).foregroundStyle(safe < 0 ? Color.appError : Color.appText)
+        }
         return Button { showsSafeInfo = true } label: {
-            HStack(spacing: 6) {
-                Text("Aman dipakai")
-                    .foregroundStyle(Color.appTextSecondary)
-                Text(maskedAmount(safe, negative: safe < 0))
-                    .fontWeight(.medium)
-                    .foregroundStyle(safe < 0 ? Color.appError : Color.appText)
-                    .monospacedDigit()
-                Image(systemName: "info.circle")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.appTextTertiary)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.appTextTertiary)
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "checkmark.shield")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.appPrimary)
+                    .padding(.top, 1)
+                VStack(alignment: .leading, spacing: 2) {
+                    line
+                        .font(.app(15))
+                        .monospacedDigit()
+                        .multilineTextAlignment(.leading)
+                    if viewModel.hasInvestments {
+                        Text("Dihitung dari Saldo kas, bukan Total aset.")
+                            .font(.app(13))
+                            .foregroundStyle(Color.appTextSecondary)
+                    }
+                }
+                Spacer(minLength: 0)
             }
-            .font(.app(15))
-            .lineLimit(1)
-            .contentShape(Rectangle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.appCardBackground.opacity(0), in: RoundedRectangle(cornerRadius: 16))
+            .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
-        .padding(.top, 14)
         .accessibilityHint("Lihat rincian")
         .sheet(isPresented: $showsSafeInfo) { safeToSpendSheet }
     }
@@ -409,7 +508,7 @@ struct DashboardView: View {
         let safe = viewModel.safeToSpend
         return PickerSheet(title: L("Aman dipakai"), onDone: { showsSafeInfo = false }) {
             VStack(alignment: .leading, spacing: 0) {
-                safeRow(L("Total saldo"), maskedAmount(viewModel.balance))
+                safeRow(viewModel.hasInvestments ? L("Saldo kas") : L("Total saldo"), maskedAmount(viewModel.balance))
                 safeRow(L("Tagihan kartu kredit"), maskedAmount(viewModel.cardDueTotal, negative: true))
                 safeRow(L("Langganan bulan ini"), maskedAmount(viewModel.upcomingBillsTotal, negative: true))
                 HStack {

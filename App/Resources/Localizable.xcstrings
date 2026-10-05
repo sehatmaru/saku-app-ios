@@ -251,6 +251,26 @@
         }
       }
     },
+    "%@ senilai Rp%@ masuk ke Total aset, bukan pengeluaran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ worth Rp%@ is in Total assets, not an expense."
+          }
+        }
+      }
+    },
+    "%@ siap. Isi nilainya kapan saja lewat Perbarui nilai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is ready. Set its value anytime with Update value."
+          }
+        }
+      }
+    },
     "%@ sudah lewat": {
       "localizations": {
         "en": {
@@ -287,6 +307,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ · %lld days left"
+          }
+        }
+      }
+    },
+    "%@ · Investasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Investment"
           }
         }
       }
@@ -469,6 +499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld days left"
+          }
+        }
+      }
+    },
+    "%lld hari lalu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days ago"
           }
         }
       }
@@ -693,6 +733,16 @@
         }
       }
     },
+    "ASET": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ASSET"
+          }
+        }
+      }
+    },
     "Akan datang": {
       "localizations": {
         "en": {
@@ -773,6 +823,16 @@
         }
       }
     },
+    "Antar dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Between wallets"
+          }
+        }
+      }
+    },
     "Arsipkan": {
       "localizations": {
         "en": {
@@ -829,6 +889,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cash flow"
+          }
+        }
+      }
+    },
+    "Arus kas %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash flow %@"
+          }
+        }
+      }
+    },
+    "Aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asset"
           }
         }
       }
@@ -949,6 +1029,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Banks, e-wallets, cash and cards. All balances in one view."
+          }
+        }
+      }
+    },
+    "Baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New"
           }
         }
       }
@@ -1383,6 +1473,26 @@
         }
       }
     },
+    "Belum termasuk aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excludes assets"
+          }
+        }
+      }
+    },
+    "Belum termasuk aset %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excludes assets %@"
+          }
+        }
+      }
+    },
     "Beranda": {
       "localizations": {
         "en": {
@@ -1773,6 +1883,16 @@
         }
       }
     },
+    "Cari setor, tarik, atau perbarui nilai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search deposits, withdrawals, or value updates"
+          }
+        }
+      }
+    },
     "Cari transaksi atau kategori": {
       "localizations": {
         "en": {
@@ -1899,6 +2019,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Try again"
+          }
+        }
+      }
+    },
+    "Coba kata lain seperti “setor”, “tarik”, atau nama dompet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try another word like “deposit”, “withdraw”, or a wallet name."
           }
         }
       }
@@ -2113,6 +2243,26 @@
         }
       }
     },
+    "Dicatat sebagai penyesuaian nilai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded as a value adjustment"
+          }
+        }
+      }
+    },
+    "Dihitung dari Saldo kas, bukan Total aset.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Based on Cash balance, not Total assets."
+          }
+        }
+      }
+    },
     "Dihitung dari pemasukan dan pengeluaran 3 bulan terakhir, saldo dompet, kartu kredit, dan budget bulan ini. Skor diperbarui setiap kamu mencatat transaksi.": {
       "localizations": {
         "en": {
@@ -2199,6 +2349,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallets"
+          }
+        }
+      }
+    },
+    "Dompet Investasi hanya bisa jadi sumber untuk Tarik dari aset.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Investment wallets can only be the source for Withdraw from asset."
+          }
+        }
+      }
+    },
+    "Dompet Investasi tidak muncul di sini karena tidak bisa dipakai untuk %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Investment wallets aren’t shown here because they can’t be used for %@."
           }
         }
       }
@@ -2293,6 +2463,16 @@
         }
       }
     },
+    "Dompet sumber": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source wallet"
+          }
+        }
+      }
+    },
     "Dompet utama": {
       "localizations": {
         "en": {
@@ -2379,6 +2559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't pay the bill. Try again."
+          }
+        }
+      }
+    },
+    "Gagal memperbarui nilai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t update the value"
           }
         }
       }
@@ -2609,6 +2799,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "GoPay, OVO, DANA, and more"
+          }
+        }
+      }
+    },
+    "Grafik naik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trend up"
           }
         }
       }
@@ -2863,6 +3063,16 @@
         }
       }
     },
+    "Investasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Investment"
+          }
+        }
+      }
+    },
     "Isi 0 jika belum ada tagihan bulan ini.": {
       "localizations": {
         "en": {
@@ -3093,6 +3303,36 @@
         }
       }
     },
+    "Kas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash"
+          }
+        }
+      }
+    },
+    "Kas %@ + aset %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash %@ + assets %@"
+          }
+        }
+      }
+    },
+    "Kas •••• + aset ••••": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash •••• + assets ••••"
+          }
+        }
+      }
+    },
     "Kategori": {
       "localizations": {
         "en": {
@@ -3223,6 +3463,16 @@
         }
       }
     },
+    "Kekayaan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net worth"
+          }
+        }
+      }
+    },
     "Keluar": {
       "localizations": {
         "en": {
@@ -3343,6 +3593,16 @@
         }
       }
     },
+    "Ketik nilai terbaru dari aplikasi investasimu. Selisih bukan pemasukan atau pengeluaran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the latest value from your investment app. The difference isn’t income or an expense."
+          }
+        }
+      }
+    },
     "Ketuk dua kali untuk konfirmasi": {
       "localizations": {
         "en": {
@@ -3389,6 +3649,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "A rough guess is fine; you can adjust it later."
+          }
+        }
+      }
+    },
+    "Koin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coin"
           }
         }
       }
@@ -3843,6 +4113,26 @@
         }
       }
     },
+    "Melebihi nilai %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exceeds %@ value %@"
+          }
+        }
+      }
+    },
+    "Melebihi saldo %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exceeds %@ balance %@"
+          }
+        }
+      }
+    },
     "Melebihi sisa limit %@ · lebih %@": {
       "localizations": {
         "en": {
@@ -3889,6 +4179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Exceeds card debt %@"
+          }
+        }
+      }
+    },
+    "Memilih dompet Investasi mengubah transfer ini jadi Setor ke aset.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choosing an investment wallet turns this transfer into Deposit to asset."
           }
         }
       }
@@ -3959,6 +4259,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Minimum %@"
+          }
+        }
+      }
+    },
+    "Modal %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capital %@"
+          }
+        }
+      }
+    },
+    "Modal Rp0, jadi persen untung/rugi tidak ditampilkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capital is Rp0, so gain/loss % isn’t shown."
+          }
+        }
+      }
+    },
+    "Modal disetor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capital invested"
           }
         }
       }
@@ -4083,6 +4413,86 @@
         }
       }
     },
+    "Nilai Rp0 berarti rugi 100% dari modal. Perbarui nilai jika ini keliru.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A value of Rp0 means a 100% loss of capital. Update the value if this is wrong."
+          }
+        }
+      }
+    },
+    "Nilai Rp0 diterima. Ini berarti rugi 100%% dari modal %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A value of Rp0 is accepted. It means a 100%% loss of the %@ capital."
+          }
+        }
+      }
+    },
+    "Nilai awal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting value"
+          }
+        }
+      }
+    },
+    "Nilai baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New value"
+          }
+        }
+      }
+    },
+    "Nilai diperbarui": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Value updated"
+          }
+        }
+      }
+    },
+    "Nilai saat ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current value"
+          }
+        }
+      }
+    },
+    "Nilai sebelumnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous value"
+          }
+        }
+      }
+    },
+    "Nilai tidak bisa negatif. Isi 0 jika asetmu sudah habis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Value can’t be negative. Enter 0 if the asset is gone."
+          }
+        }
+      }
+    },
     "Nominal": {
       "localizations": {
         "en": {
@@ -4139,6 +4549,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Optional"
+          }
+        }
+      }
+    },
+    "Opsional. Isi modal yang sudah kamu investasikan. Nilai awal masuk ke Total aset dan tidak dicatat sebagai pengeluaran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional. Enter the capital you’ve already invested. The starting value goes into Total assets and isn’t recorded as an expense."
+          }
+        }
+      }
+    },
+    "Pakai uang aset? Catat Tarik dari aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Using asset money? Record a withdrawal first"
           }
         }
       }
@@ -4363,6 +4793,16 @@
         }
       }
     },
+    "Perbarui nilai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update value"
+          }
+        }
+      }
+    },
     "Perhatian": {
       "localizations": {
         "en": {
@@ -4563,12 +5003,32 @@
         }
       }
     },
+    "Pilih platform": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose platform"
+          }
+        }
+      }
+    },
     "Pilih tanggal": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Pick a date"
+          }
+        }
+      }
+    },
+    "Platform": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platform"
           }
         }
       }
@@ -4673,6 +5133,16 @@
         }
       }
     },
+    "Reksadana, saham, crypto, emas · nilai manual": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mutual funds, stocks, crypto, gold · value entered manually"
+          }
+        }
+      }
+    },
     "Rentang tanggal": {
       "localizations": {
         "en": {
@@ -4769,6 +5239,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rp75.000/day"
+          }
+        }
+      }
+    },
+    "Rugi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loss"
           }
         }
       }
@@ -4889,6 +5369,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Balance minus credit card bills (including purchases not yet billed) and this month's subscriptions."
+          }
+        }
+      }
+    },
+    "Saldo kas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash balance"
+          }
+        }
+      }
+    },
+    "Saldo kas jadi Rp%@ · bukan pemasukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash balance now Rp%@ · not income"
           }
         }
       }
@@ -5029,6 +5529,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Done"
+          }
+        }
+      }
+    },
+    "Selisih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Difference"
           }
         }
       }
@@ -5259,6 +5769,76 @@
           "stringUnit": {
             "state": "translated",
             "value": "Adjust bill"
+          }
+        }
+      }
+    },
+    "Setor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deposit"
+          }
+        }
+      }
+    },
+    "Setor ke aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deposit to asset"
+          }
+        }
+      }
+    },
+    "Setor ke aset tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deposit to asset saved"
+          }
+        }
+      }
+    },
+    "Setor ke aset: sumber selalu dompet kas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deposit to asset: the source is always a cash wallet."
+          }
+        }
+      }
+    },
+    "Setor ke aset: tujuan dikunci ke dompet Investasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deposit to asset: the destination is locked to an investment wallet."
+          }
+        }
+      }
+    },
+    "Setor, tarik, dan perbarui nilai tidak dihitung sebagai pemasukan atau pengeluaran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deposits, withdrawals, and value updates aren’t counted as income or expenses."
+          }
+        }
+      }
+    },
+    "Setor/tarik aset tidak dihitung di Masuk/Keluar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asset deposits/withdrawals aren’t counted in In/Out."
           }
         }
       }
@@ -6103,6 +6683,46 @@
         }
       }
     },
+    "Tarik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Withdraw"
+          }
+        }
+      }
+    },
+    "Tarik dari aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Withdraw from asset"
+          }
+        }
+      }
+    },
+    "Tarik dari aset tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Withdraw from asset saved"
+          }
+        }
+      }
+    },
+    "Tarik dari aset: sumber dikunci ke dompet Investasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Withdraw from asset: the source is locked to an investment wallet."
+          }
+        }
+      }
+    },
     "Teks ikon": {
       "localizations": {
         "en": {
@@ -6129,6 +6749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recently used"
+          }
+        }
+      }
+    },
+    "Terakhir diperbarui": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last updated"
           }
         }
       }
@@ -6503,6 +7133,16 @@
         }
       }
     },
+    "Tidak bisa antar Investasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can’t go between investments"
+          }
+        }
+      }
+    },
     "Tidak bisa diubah": {
       "localizations": {
         "en": {
@@ -6603,12 +7243,72 @@
         }
       }
     },
+    "Total aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total assets"
+          }
+        }
+      }
+    },
+    "Total aset %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total assets %@"
+          }
+        }
+      }
+    },
+    "Total aset akan berkurang %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total assets will drop by %@"
+          }
+        }
+      }
+    },
+    "Total aset jadi Rp%@ · bukan pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total assets now Rp%@ · not an expense"
+          }
+        }
+      }
+    },
+    "Total aset sekarang %@. Pulihkan dari Dompet › Diarsipkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total assets are now %@. Restore from Wallets › Archived."
+          }
+        }
+      }
+    },
     "Total jadi %@/bulan": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Total becomes %@/month"
+          }
+        }
+      }
+    },
+    "Total kekayaan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net worth"
           }
         }
       }
@@ -6915,6 +7615,26 @@
         }
       }
     },
+    "Untung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gain"
+          }
+        }
+      }
+    },
+    "Untung/rugi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gain/loss"
+          }
+        }
+      }
+    },
     "Urungkan": {
       "localizations": {
         "en": {
@@ -7015,6 +7735,16 @@
         }
       }
     },
+    "Warna kartu · nama diketik di kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card color · type the name on the card"
+          }
+        }
+      }
+    },
     "Yang memengaruhi skor": {
       "localizations": {
         "en": {
@@ -7045,12 +7775,32 @@
         }
       }
     },
+    "dari %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from %@"
+          }
+        }
+      }
+    },
     "dompet tujuan": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "destination wallet"
+          }
+        }
+      }
+    },
+    "hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "day"
           }
         }
       }
@@ -7115,6 +7865,16 @@
         }
       }
     },
+    "ke %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "to %@"
+          }
+        }
+      }
+    },
     "kemarin": {
       "localizations": {
         "en": {
@@ -7135,12 +7895,42 @@
         }
       }
     },
+    "pemasukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "income"
+          }
+        }
+      }
+    },
+    "pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "expense"
+          }
+        }
+      }
+    },
     "rata-rata / hari": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "average / day"
+          }
+        }
+      }
+    },
+    "saat dompet dibuat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "when the wallet was created"
           }
         }
       }
@@ -7191,6 +7981,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "transactions"
+          }
+        }
+      }
+    },
+    "untuk %lld hari tersisa.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "for the %lld days left."
           }
         }
       }

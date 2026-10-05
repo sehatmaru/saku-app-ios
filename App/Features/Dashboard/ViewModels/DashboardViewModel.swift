@@ -5,6 +5,8 @@ import SwiftUI
 final class DashboardViewModel: ObservableObject {
     @Published var balance: Double = 0
     @Published var creditDebt: Double = 0
+    /// Capital put into the active investment wallets (see `InvestmentSummary`).
+    @Published var investmentCapital: Double = 0
     @Published var openingBalance: Double = 0
     @Published var totalIncome: Double = 0
     @Published var totalExpense: Double = 0
@@ -35,6 +37,17 @@ final class DashboardViewModel: ObservableObject {
     private var loadedUserId: String?
 
     var totalRemaining: Double { totalBudget - totalSpent }
+    /// Investment wallets, kept apart from the cash `balance`.
+    var assetsTotal: Double { WealthSummary(accounts: accounts).assets }
+    var wealth: Double { balance + assetsTotal }
+    var hasInvestments: Bool { accounts.contains { $0.isActive && $0.isInvestment } }
+    /// Gain over capital across all active investment wallets; nil while nothing was put in.
+    var assetsGainPercent: Double? { investmentCapital > 0 ? (assetsTotal - investmentCapital) / investmentCapital : nil }
+
+    /// Days left in the payday period, today counted.
+    var daysLeftInPeriod: Int { PaydayCycle.current.days().left + 1 }
+    /// What can be spent per day until the period ends; nil when nothing is safe to spend.
+    var safePerDay: Double? { safeToSpend > 0 ? (safeToSpend / Double(daysLeftInPeriod)).rounded(.down) : nil }
 
     /// Balance minus what already has to leave it this month: printed card bills and
     /// subscriptions paid from a wallet.
@@ -101,6 +114,7 @@ final class DashboardViewModel: ObservableObject {
             errorMessage = nil
             balance = cached.balance
             creditDebt = cached.creditDebt
+            investmentCapital = cached.investmentCapital
             openingBalance = cached.openingBalance
             totalIncome = cached.totalIncome
             totalExpense = cached.totalExpense
@@ -175,8 +189,12 @@ final class DashboardViewModel: ObservableObject {
             await NotificationManager.shared.resyncCardDue(cards: cards, statements: statements)
 
             // Archived wallets leave the totals, same as on Dompet.
-            balance = activeAccounts.filter { !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
+            balance = WealthSummary(accounts: activeAccounts).cash
             creditDebt = cards.reduce(0) { $0 + $1.balance }
+            investmentCapital = activeAccounts.filter(\.isInvestment).reduce(0) { sum, account in
+                sum + InvestmentSummary(account: account, transactions: transactions.filter {
+                    $0.accountId == account.id || $0.counterpartyAccountId == account.id }).capital
+            }
 
             let thisMonthTransactions = transactions.filter { isCurrentMonth($0.date) }
             currentMonthTransactionCount = thisMonthTransactions.count
@@ -235,6 +253,7 @@ final class DashboardViewModel: ObservableObject {
             AppDataCache.shared.setDashboardState(.init(
                 balance: balance,
                 creditDebt: creditDebt,
+                investmentCapital: investmentCapital,
                 openingBalance: openingBalance,
                 totalIncome: totalIncome,
                 totalExpense: totalExpense,

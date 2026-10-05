@@ -34,6 +34,16 @@ struct AccountListView: View {
     @State private var lastSelectedID: String?
     @State private var cardTops = CardTops()
     @State private var transferFrom: Account?
+    /// Perbarui nilai for an investment wallet.
+    @State private var updatingValue: Account?
+    /// Setor ke aset / Tarik dari aset, started from an investment wallet.
+    @State private var assetTransfer: AssetTransferRoute?
+
+    struct AssetTransferRoute: Identifiable {
+        let account: Account
+        let mode: AddTransactionView.AssetMode
+        var id: String { account.id + (mode == .deposit ? "-in" : "-out") }
+    }
     @State private var payCard: Account?
     /// Catat tagihan: a bill that was already paid, opened from the overdue block.
     @State private var recordCard: Account?
@@ -71,7 +81,7 @@ struct AccountListView: View {
 
     private var groups: [WalletGroup] {
         let active = viewModel.accounts.filter(\.isActive)
-        let titled: [(Account.AccountType, String)] = [(.bank, L("Bank")), (.ewallet, L("E-Wallet")), (.cash, L("Cash")), (.credit, L("Kartu kredit"))]
+        let titled: [(Account.AccountType, String)] = [(.bank, L("Bank")), (.ewallet, L("E-Wallet")), (.cash, L("Cash")), (.investment, L("Investasi")), (.credit, L("Kartu kredit"))]
         return titled.compactMap { type, title in
             let accounts = active.filter { $0.type == type }.sorted { $0.isDefault && !$1.isDefault }
             return accounts.isEmpty ? nil : WalletGroup(type: type, title: title, accounts: accounts)
@@ -139,6 +149,10 @@ struct AccountListView: View {
                                     transactions: accountTransactions[route.account.id] ?? [], categories: categories,
                                     accounts: viewModel.accounts, isBalanceVisible: isBalanceVisible)
                         .detailPage()
+                } else if route.account.isInvestment {
+                    InvestmentHistoryView(account: route.account, transactions: accountTransactions[route.account.id] ?? [],
+                                          accounts: viewModel.accounts, isBalanceVisible: isBalanceVisible)
+                        .detailPage()
                 } else {
                 WalletHistoryView(account: route.account, transactions: accountTransactions[route.account.id] ?? [],
                                   categories: categories, accounts: viewModel.accounts, isBalanceVisible: isBalanceVisible)
@@ -205,6 +219,20 @@ struct AccountListView: View {
                     })
                 }
             }
+            .fullScreenCover(item: $updatingValue) { account in
+                UpdateValueView(account: account,
+                                capital: InvestmentSummary(account: account, transactions: accountTransactions[account.id] ?? []).capital) { value, date, note in
+                    let ok = await viewModel.updateInvestmentValue(account: account, newValue: value, date: date, note: note)
+                    if ok, let userId = authViewModel.currentUser?.id { await syncAccountTransactions(userId: userId, forceRefresh: true) }
+                    return ok
+                }
+            }
+            .fullScreenCover(item: $assetTransfer) { route in
+                if let userId = authViewModel.currentUser?.id {
+                    AddTransactionView(categories: categories, accounts: viewModel.accounts, userId: userId, onSave: {},
+                                       initialType: .transfer, locksType: true, initialAccount: route.account, initialAssetMode: route.mode)
+                }
+            }
             .fullScreenCover(item: $transferFrom) { account in
                 if let userId = authViewModel.currentUser?.id {
                     AddTransactionView(
@@ -248,7 +276,7 @@ struct AccountListView: View {
                 Button(action: closeDetail) { Image(systemName: "chevron.left") }
                     .accessibilityLabel("Kembali")
             }
-            if let open = allCards.first(where: { $0.id == selectedID }), open.isCreditCard {
+            if let open = allCards.first(where: { $0.id == selectedID }), open.isCreditCard || open.isInvestment {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Ubah") { path.append(open) }
                         .font(.app(17, weight: .semibold))
@@ -372,10 +400,12 @@ struct AccountListView: View {
     /// Total saldo rolling in, plus one box summing every credit card (design 3a, v14).
     private var hero: some View {
         let count = viewModel.accounts.filter(\.isActive).count
-        let total = viewModel.totalBalance
+        let hasAssets = viewModel.accounts.contains { $0.isActive && $0.isInvestment }
+        // With an investment wallet the big number is Total kekayaan; without one nothing changes.
+        let total = hasAssets ? viewModel.totalBalance + viewModel.assetsTotal : viewModel.totalBalance
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Total saldo").font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                Text(hasAssets ? "Total kekayaan" : "Total saldo").font(.app(15)).foregroundStyle(Color.appTextSecondary)
                 Spacer()
                 Text("\(count) dompet").font(.app(13)).foregroundStyle(Color.appTextTertiary)
             }
@@ -395,6 +425,14 @@ struct AccountListView: View {
             .foregroundStyle(Color.appText)
             .padding(.top, 4)
 
+            if hasAssets {
+                HStack(alignment: .top, spacing: 12) {
+                    heroPart(icon: "wallet.bifold", tint: .appTextSecondary, title: L("Saldo kas"), value: viewModel.totalBalance)
+                    heroPart(icon: "chart.line.uptrend.xyaxis", tint: .appInvestment, title: L("Total aset"), value: viewModel.assetsTotal)
+                }
+                .padding(.top, 12)
+            }
+
             if !activeCards.isEmpty {
                 creditSummary.padding(.top, 18)
             }
@@ -403,6 +441,29 @@ struct AccountListView: View {
         .padding(.top, 6)
         .padding(.bottom, 14)
         .onAppear { playOdometer(after: 0.3) }
+    }
+
+    /// "+4%" with a trend arrow, or the rupiah gain/loss when there is no capital to take a percentage of.
+    private func investmentPill(for account: Account) -> (symbol: String, text: String)? {
+        guard account.isInvestment else { return nil }
+        let summary = InvestmentSummary(account: account, transactions: accountTransactions[account.id] ?? [])
+        let symbol = summary.gain > 0 ? "chart.line.uptrend.xyaxis" : summary.gain < 0 ? "chart.line.downtrend.xyaxis" : "minus"
+        let sign = summary.gain > 0 ? "+" : summary.gain < 0 ? "−" : ""
+        let text = isBalanceVisible
+            ? (summary.percent.map { sign + Int(abs(($0 * 1000).rounded() / 10)).formatted() + "%" } ?? sign + abs(summary.gain).formattedAsCurrency())
+            : "••••"
+        return (symbol, text)
+    }
+
+    private func heroPart(icon: String, tint: Color, title: String, value: Double) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 13)).foregroundStyle(tint)
+                Text(title).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+            }
+            Text(masked(value)).font(.app(16, weight: .medium)).monospacedDigit().foregroundStyle(Color.appText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var creditSummary: some View {
@@ -524,7 +585,8 @@ struct AccountListView: View {
                             .foregroundStyle(Color.appTextTertiary)
                     }
                     Spacer()
-                    Text(group.type == .credit ? L("Utang %@", masked(total)) : masked(total))
+                    Text(group.type == .credit ? L("Utang %@", masked(total))
+                         : group.type == .investment ? L("Total aset %@", masked(total)) : masked(total))
                         .font(.app(13))
                         .foregroundStyle(Color.appTextSecondary)
                         .monospacedDigit()
@@ -542,7 +604,8 @@ struct AccountListView: View {
                         account: account,
                         showsStripAmount: !isOpen && index != group.accounts.count - 1,
                         isBalanceVisible: isBalanceVisible,
-                        isMain: account.id == mainWalletID
+                        isMain: account.id == mainWalletID,
+                        investmentPill: investmentPill(for: account)
                     )
                     .frame(height: cardHeight)
                     .opacity(isOverlayOn ? 0 : 1)
@@ -648,7 +711,8 @@ struct AccountListView: View {
                         isBalanceVisible: isBalanceVisible,
                         // An open card keeps its usage bar; the pile doesn't need it.
                         showsUsage: !shown || account.id == selectedID,
-                        isMain: account.id == mainWalletID
+                        isMain: account.id == mainWalletID,
+                        investmentPill: investmentPill(for: account)
                     )
                     .frame(height: cardHeight)
                     .scaleEffect(layout.scale, anchor: .top)
@@ -671,6 +735,14 @@ struct AccountListView: View {
     /// wallet's recurring bills.
     private func detailContent(_ account: Account, isOpen: Bool) -> some View {
         let statement = viewModel.statement(for: account, transactions: accountTransactions[account.id] ?? [])
+        if account.isInvestment {
+            return AnyView(InvestmentDetailContent(
+                account: account, transactions: accountTransactions[account.id] ?? [], isBalanceVisible: isBalanceVisible,
+                onDeposit: { assetTransfer = AssetTransferRoute(account: account, mode: .deposit) },
+                onWithdraw: { assetTransfer = AssetTransferRoute(account: account, mode: .withdraw) },
+                onUpdateValue: { updatingValue = account },
+                onHistory: { path.append(WalletHistoryRoute(account: account)) }))
+        }
         if account.isCreditCard {
             return AnyView(CardDetailContent(
                 card: account, statement: statement,
@@ -701,7 +773,7 @@ struct AccountListView: View {
             defaultToggle(account)
                 .padding(.top, 14)
 
-            if account.type != .cash {
+            if account.type != .cash && !account.isInvestment {
                 subscriptionsLink(account)
                     .padding(.top, 6)
             }
@@ -972,6 +1044,9 @@ struct AccountListView: View {
         return EditWalletView(
             account: fresh,
             transactionCount: accountTransactions[account.id]?.count ?? 0,
+            capital: InvestmentSummary(account: fresh, transactions: accountTransactions[account.id] ?? []).capital,
+            wealth: WealthSummary(accounts: viewModel.accounts),
+            onUpdateValue: { updatingValue = fresh },
             onSave: { edit in await save(edit, on: fresh) },
             onArchive: { await viewModel.toggleAccountArchive(id: account.id) },
             onUnarchive: { await viewModel.toggleAccountArchive(id: account.id) },
@@ -1062,9 +1137,13 @@ extension Account {
 
     /// Asset name of the bank or e-wallet logo shown in the card's white box.
     var brandLogo: String? {
-        guard let icon, let brand = WalletIcon.allIcons.first(where: { $0.id == icon }),
-              brand.category == .bank || brand.category == .ewallet else { return nil }
-        return brand.id
+        guard let icon, let brand = WalletIcon.allIcons.first(where: { $0.id == icon }) else { return nil }
+        switch brand.category {
+        case .bank, .ewallet: return brand.id
+        // Investment platforms use their logo once it is in the assets; until then the symbol shows.
+        case .investment: return UIImage(named: brand.id) != nil ? brand.id : nil
+        default: return nil
+        }
     }
 
     /// Card network; cards saved before the network had its own field kept it as the icon.
@@ -1074,7 +1153,7 @@ extension Account {
         return WalletIcon.icons(for: .credit).contains { $0.id == icon } ? icon : nil
     }
 
-    var typeSymbol: String { type.cardSymbol }
+    var typeSymbol: String { isInvestment && icon == "emas" ? "dollarsign.circle" : type.cardSymbol }
 
     var typeLabel: String {
         switch type {
@@ -1082,6 +1161,7 @@ extension Account {
         case .bank: L("Bank")
         case .ewallet: L("E-Wallet")
         case .credit: L("Kartu kredit")
+        case .investment: L("Investasi")
         }
     }
 }
@@ -1094,6 +1174,7 @@ extension Account.AccountType {
         case .ewallet: "wallet.bifold"
         case .cash: "banknote"
         case .credit: "creditcard"
+        case .investment: "chart.line.uptrend.xyaxis"
         }
     }
 }
@@ -1209,6 +1290,8 @@ struct WalletCard: View {
     var showsUsage = true
     /// Marks the main wallet on the top strip, so it shows even inside a stack.
     var isMain = false
+    /// Investment wallets: the gain pill on the card ("+4%", or the rupiah gain while nothing was put in).
+    var investmentPill: (symbol: String, text: String)?
 
     private var amountText: String {
         let value = account.isCreditCard ? (account.availableCredit ?? 0) : account.balance
@@ -1263,7 +1346,7 @@ struct WalletCard: View {
                     }
                     HStack(alignment: .bottom, spacing: 10) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(account.isCreditCard ? L("Sisa limit") : L("Saldo"))
+                            Text(account.isCreditCard ? L("Sisa limit") : account.isInvestment ? L("Nilai saat ini") : L("Saldo"))
                                 .font(.app(12))
                                 .foregroundStyle(.white.opacity(0.8))
                             Text(amountText)
@@ -1287,6 +1370,15 @@ struct WalletCard: View {
                                     .monospacedDigit()
                             }
                             .padding(.bottom, 3)
+                        } else if let pill = investmentPill {
+                            Label(pill.text, systemImage: pill.symbol)
+                                .font(.app(13, weight: .semibold))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .padding(.horizontal, 11)
+                                .frame(height: 28)
+                                .background(.white.opacity(0.2), in: Capsule())
+                                .padding(.bottom, 4)
                         } else {
                             Text(account.typeLabel)
                                 .font(.app(12))

@@ -87,13 +87,33 @@ struct WalletPickerSheet: View {
     let recentIds: [String]
     let onDone: () -> Void
     let onPick: (Account) -> Void
+    /// Wallets shown but not pickable, with the reason shown where the balance would be.
+    var disabled: [String: String] = [:]
+    /// A line under the Kas or Investasi group, e.g. why a wallet is locked.
+    var kasNote: String?
+    var investmentNote: String?
+    /// A card under the list that points to another action.
+    var footer: Footer?
+
+    struct Footer {
+        let text: String
+        let actionTitle: String
+        let action: () -> Void
+    }
 
     @State private var query = ""
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
 
-    private static let groups: [(Account.AccountType, String)] = [
-        (.bank, "Bank"), (.ewallet, "E-wallet"), (.cash, "Tunai"), (.credit, "Kartu kredit"),
-    ]
+    /// With an investment wallet in the list, bank, e-wallet and cash fold into "Kas" next to "Investasi".
+    private var groups: [(title: String, items: [Account], note: String?)] {
+        if accounts.contains(where: \.isInvestment) {
+            return [(L("Kas"), accounts.filter { [.bank, .ewallet, .cash].contains($0.type) }, kasNote),
+                    (L("Investasi"), accounts.filter(\.isInvestment), investmentNote),
+                    (L("Kartu kredit"), accounts.filter(\.isCreditCard), nil)]
+        }
+        let all: [(Account.AccountType, String)] = [(.bank, L("Bank")), (.ewallet, L("E-wallet")), (.cash, L("Tunai")), (.credit, L("Kartu kredit"))]
+        return all.map { type, title in (title, accounts.filter { $0.type == type }, nil) }
+    }
 
     private var trimmed: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var recent: [Account] { recentIds.prefix(3).compactMap { id in accounts.first { $0.id == id } } }
@@ -116,15 +136,49 @@ struct WalletPickerSheet: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
                 }
-                ForEach(Self.groups, id: \.0) { type, label in
-                    let items = accounts.filter { $0.type == type }
-                    if !items.isEmpty {
-                        sectionTitle(L(label), top: 18)
-                        smallGrid(items).padding(.top, 8)
+                ForEach(groups, id: \.title) { group in
+                    if !group.items.isEmpty {
+                        sectionTitle(group.title, top: 18)
+                        smallGrid(group.items).padding(.top, 8)
+                        if let note = group.note {
+                            Text(note)
+                                .font(.app(13))
+                                .foregroundStyle(Color.appTextSecondary)
+                                .lineSpacing(2)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 24)
+                                .padding(.top, 8)
+                        }
                     }
                 }
+                if let footer { footerCard(footer) }
             }
         }
+    }
+
+    private func footerCard(_ footer: Footer) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.appInvestment)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(footer.text).font(.app(14)).lineSpacing(2)
+                Button(action: footer.action) {
+                    HStack(spacing: 4) {
+                        Text(footer.actionTitle).font(.app(14, weight: .semibold))
+                        Image(systemName: "arrow.right").font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundStyle(Color.appPrimary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 20)
+        .padding(.top, 18)
     }
 
     private func smallGrid(_ items: [Account]) -> some View {
@@ -150,6 +204,7 @@ struct WalletPickerSheet: View {
     }
 
     private func balance(_ account: Account) -> String {
+        if let reason = disabled[account.id] { return reason }
         guard isBalanceVisible else { return "Rp" + hiddenAmount }
         return account.isCreditCard
             ? L("Sisa Rp%@", (account.availableCredit ?? 0).formattedAsDigits())
@@ -197,9 +252,20 @@ struct WalletPickerSheet: View {
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
+    private func assetTag() -> some View {
+        Text("ASET")
+            .font(.app(9, weight: .heavy))
+            .tracking(0.3)
+            .foregroundStyle(Color.appInvestment)
+            .padding(.horizontal, 5)
+            .frame(height: 16)
+            .background(Color.appInvestmentTint, in: Capsule())
+    }
+
     private func smallTile(_ account: Account) -> some View {
         let isOn = account.id == selectedId
-        return Button { onPick(account) } label: {
+        let isDisabled = disabled[account.id] != nil
+        return Button { if !isDisabled { onPick(account) } } label: {
             VStack(alignment: .leading, spacing: 0) {
                 logo(account, width: 44, height: 16).frame(height: 18, alignment: .leading)
                 Spacer(minLength: 0)
@@ -216,7 +282,14 @@ struct WalletPickerSheet: View {
             .frame(height: 72)
             .background(isOn ? Color.appBackground : Color.appFill, in: RoundedRectangle(cornerRadius: 12))
             .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(Color.appPrimary, lineWidth: isOn ? 2 : 0) }
-            .overlay(alignment: .topTrailing) { check(isOn, size: 18).padding(7) }
+            .overlay(alignment: .topTrailing) {
+                HStack(spacing: 4) {
+                    if account.isInvestment { assetTag() }
+                    check(isOn, size: 18)
+                }
+                .padding(7)
+            }
+            .opacity(isDisabled ? 0.45 : 1)
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(PressScaleStyle())

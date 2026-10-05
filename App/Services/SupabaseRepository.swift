@@ -72,6 +72,18 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
+    /// Sets the stored balance directly, leaving the starting balance alone.
+    func setCurrentBalance(id: String, to value: Double) async throws -> Account {
+        try await client
+            .from("accounts")
+            .update(["current_balance": AnyJSON.double(value)])
+            .eq("id", value: id)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
     func softDeleteAccount(id: String) async throws {
         try await client
             .from("accounts")
