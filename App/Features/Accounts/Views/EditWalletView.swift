@@ -89,6 +89,8 @@ struct EditWalletView: View {
     @State private var orig: Draft
     @State private var cur: Draft
     @State private var isArchived: Bool
+    /// Total aset just before archiving, since `wealth` is recomputed once the wallet is out of it.
+    @State private var assetsBeforeArchive: Double?
     @State private var sheet: Sheet?
     @State private var isSaving = false
     @State private var isBusy = false
@@ -882,7 +884,7 @@ struct EditWalletView: View {
                 .tracking(-0.2)
                 .padding(.top, 10)
             Text(isInvestment && wealth != nil
-                 ? L("Total aset sekarang %@. Pulihkan dari Dompet › Diarsipkan.", Self.rp(Int(max((wealth?.assets ?? 0) - Double(orig.balance), 0))))
+                 ? L("Total aset sekarang %@. Pulihkan dari Dompet › Diarsipkan.", Self.rp(Int(max((assetsBeforeArchive ?? wealth?.assets ?? 0) - Double(orig.balance), 0))))
                  : L("Kamu bisa memulihkannya dari Dompet › Diarsipkan."))
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
@@ -997,6 +999,7 @@ struct EditWalletView: View {
 
     private func archive() async {
         isBusy = true
+        assetsBeforeArchive = wealth?.assets
         let ok = await onArchive()
         isBusy = false
         guard ok else { failMessage = L("Gagal mengarsipkan dompet"); return }
