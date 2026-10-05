@@ -109,6 +109,8 @@ struct SegmentBar: View {
     var delay: Double = 0
     /// For bars that stay mounted while hidden: fills only while true.
     var isActive = true
+    /// False for bars that fill once and then stay full when the screen is left and re-entered.
+    var replays = true
     @State private var isShown = false
 
     var body: some View {
@@ -124,6 +126,7 @@ struct SegmentBar: View {
         // Fill on the next frame so the first render is empty and the change animates.
         .task { isShown = true }
         .onDisappear {
+            guard replays else { return }
             var reset = SwiftUI.Transaction()
             reset.disablesAnimations = true
             withTransaction(reset) { isShown = false }

@@ -553,7 +553,7 @@ struct DashboardView: View {
                     }
                     .padding(.top, 14)
 
-                    SegmentBar(value: Double(health.score) / 100, color: health.color, count: 40, height: 22, spacing: 3)
+                    SegmentBar(value: Double(health.score) / 100, color: health.color, count: 40, height: 22, spacing: 3, replays: false)
                         .padding(.top, 16)
 
                     if health.isPartial {
@@ -735,7 +735,9 @@ struct DashboardView: View {
         return Self.weekdayDayFormatter.string(from: date)
     }
 
+    /// Plays the first time Beranda shows the chart; coming back from another tab or page keeps it as is.
     private func replayChart() {
+        guard !isChartShown else { return }
         var reset = SwiftUI.Transaction()
         reset.disablesAnimations = true
         withTransaction(reset) {
@@ -888,7 +890,7 @@ struct DashboardView: View {
                     .lineLimit(1)
                 }
                 SegmentBar(value: ratio, color: ratio >= 1 ? .appError : ratio >= 0.8 ? .appWarning : .appPrimary,
-                           delay: 0.3 + Double(index) * 0.08)
+                           delay: 0.3 + Double(index) * 0.08, replays: false)
             }
         }
         .padding(.vertical, 12)
