@@ -583,6 +583,7 @@ private struct HomeBalanceSheet: View {
         .presentationDetents([.height(520)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
+        .presentationBackground(Color.appBackground)
     }
 
     private func option(_ mode: HomeBalanceMode, title: String, detail: String, big: Double, sub: String) -> some View {

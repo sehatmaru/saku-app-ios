@@ -328,7 +328,7 @@ struct DashboardView: View {
 
     // MARK: Summary
 
-    /// Big total: kas by default, kas + aset when Profil says so. Wallets row stays on the right of the label.
+    /// Big total: kas by default, kas + aset when Profil says so.
     private var summarySection: some View {
         let showsWealth = viewModel.hasInvestments && homeBalanceMode == HomeBalanceMode.all.rawValue
         return VStack(alignment: .leading, spacing: 0) {
@@ -343,51 +343,11 @@ struct DashboardView: View {
                        color: hasNoWallets ? .appTextTertiary : .appText,
                        prefixColor: hasNoWallets ? .appTextTertiary : .appTextSecondary,
                        isVisible: isBalanceVisible, weight: .ultraLight)
-                .padding(.top, 8)
-
-            if viewModel.hasInvestments {
-                heroSubline(showsWealth: showsWealth)
-                    .padding(.top, 14)
-            }
+                .padding(.top, 2)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.bottom, hasNoWallets ? 32 : 22)
-    }
-
-    /// Cash mode: "Belum termasuk aset Y". Kas + aset mode: "Kas X + aset Y" with the gain next to it.
-    private func heroSubline(showsWealth: Bool) -> some View {
-        let text: String
-        if !isBalanceVisible {
-            text = showsWealth ? L("Kas •••• + aset ••••") : L("Belum termasuk aset")
-        } else if showsWealth {
-            text = L("Kas %@ + aset %@", viewModel.balance.formattedAsCurrency(), viewModel.assetsTotal.formattedAsCurrency())
-        } else {
-            text = L("Belum termasuk aset %@", viewModel.assetsTotal.formattedAsCurrency())
-        }
-        return HStack(spacing: 6) {
-            Image(systemName: showsWealth ? "chart.line.uptrend.xyaxis" : "wallet.bifold")
-                .font(.system(size: 16))
-                .foregroundStyle(showsWealth ? Color.appInvestment : Color.appPrimary)
-            Text(text)
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            if showsWealth, isBalanceVisible, let gain = viewModel.assetsGainPercent {
-                Text(Self.signedPercent(gain, decimals: 1))
-                    .font(.app(13, weight: .semibold))
-                    .foregroundStyle(gain < 0 ? Color.appError : Color.appPrimary)
-            }
-        }
-    }
-
-    static func signedPercent(_ fraction: Double, decimals: Int = 0) -> String {
-        let scale = pow(10.0, Double(decimals))
-        let value = (fraction * 100 * scale).rounded(.toNearestOrEven) / scale
-        let number = abs(value).formatted(.number.precision(.fractionLength(decimals)).locale(AppLanguage.locale))
-        return (value > 0 ? "+" : value < 0 ? "−" : "") + number + "%"
+        .padding(.top, 36)
+        .padding(.bottom, hasNoWallets ? 32 : 36)
     }
 
     // MARK: Cash flow
@@ -452,11 +412,6 @@ struct DashboardView: View {
                         .font(.app(15))
                         .monospacedDigit()
                         .multilineTextAlignment(.leading)
-                    if viewModel.hasInvestments && homeBalanceMode == HomeBalanceMode.all.rawValue {
-                        Text("Dihitung dari kas, tanpa aset.")
-                            .font(.app(13))
-                            .foregroundStyle(Color.appTextSecondary)
-                    }
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
@@ -520,23 +475,28 @@ struct DashboardView: View {
 
     private var hasNoWallets: Bool { !viewModel.accounts.contains(where: \.isActive) }
 
-    /// One-line pill "Dompet · N akun" beside the label; opens the Dompet page.
+    /// Animated pocket mark with "Dompet · N akun"; opens the Dompet page.
     private var walletsButton: some View {
         Button {
             homePath.append(HomeRoute.wallets)
         } label: {
-            HStack(spacing: 4) {
-                Text("Dompet · \(viewModel.accounts.filter(\.isActive).count) akun")
-                    .font(.app(13, weight: .medium))
-                    .foregroundStyle(Color.appText)
-                    .lineLimit(1)
+            HStack(spacing: 8) {
+                WalletsMark()
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Dompet")
+                        .font(.app(14, weight: .semibold))
+                        .foregroundStyle(Color.appText)
+                    Text("\(viewModel.accounts.filter(\.isActive).count) akun")
+                        .font(.app(11))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(Color(light: 0x8E8E93, dark: 0x8E8E93))
             }
-            .padding(.leading, 12)
-            .padding(.trailing, 8)
-            .frame(height: 30)
+            .padding(.leading, 8)
+            .padding(.trailing, 12)
+            .frame(height: 48)
             .background(Color.appFill, in: Capsule())
         }
         .buttonStyle(PressScaleStyle())
@@ -942,4 +902,56 @@ struct DashboardView: View {
     private static var shortDayFormatter: DateFormatter { formatter("EEEE, d MMM") }
     private static var dayMonthFormatter: DateFormatter { formatter("d MMM") }
     private static var weekdayDayFormatter: DateFormatter { formatter("EEE, d MMM") }
+}
+
+/// The Dompet pill's mark: the pocket pops in, then the cards rise and fan.
+/// Every 5 s the cards drop back in and rise again.
+private struct WalletsMark: View {
+    @State private var showsPocket = false
+    @State private var isOpen = false
+    @State private var isFanned = false
+
+    var body: some View {
+        PocketLogo(isOpen: isOpen, isFanned: isFanned, stagger: 0.12, duration: 0.9,
+                   pocketColor: .appBrand, isPlain: true)
+            .frame(width: 29, height: 29)
+            .opacity(showsPocket ? 1 : 0)
+            .animation(.easeInOut(duration: 0.3), value: showsPocket)
+            .scaleEffect(showsPocket ? 1 : 0.6, anchor: .bottom)
+            .animation(.timingCurve(0.3, 1.4, 0.5, 1, duration: 0.7), value: showsPocket)
+            .frame(width: 34, height: 34)
+            .accessibilityHidden(true)
+            .task { await play() }
+    }
+
+    private func play() async {
+        var reset = SwiftUI.Transaction()
+        reset.disablesAnimations = true
+        withTransaction(reset) {
+            showsPocket = false
+            isOpen = false
+            isFanned = false
+        }
+        let start = ContinuousClock.now
+        for (t, step) in [(0.15, 1), (0.65, 2), (1.25, 3)] {
+            try? await Task.sleep(until: start + .seconds(t), clock: .continuous)
+            guard !Task.isCancelled else { return }
+            switch step {
+            case 1: showsPocket = true
+            case 2: isOpen = true
+            default: isFanned = true
+            }
+        }
+        // Loops until the view goes away.
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            isOpen = false
+            isFanned = false
+            try? await Task.sleep(for: .seconds(1))
+            isOpen = true
+            try? await Task.sleep(for: .seconds(0.6))
+            isFanned = true
+        }
+    }
 }
