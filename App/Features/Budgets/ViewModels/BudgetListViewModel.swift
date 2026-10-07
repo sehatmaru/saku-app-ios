@@ -40,6 +40,9 @@ final class BudgetListViewModel: ObservableObject {
         return setItems + unsetItems
     }
 
+    /// Shown expense categories (hidden and system ones left out), the ones Budget lists.
+    var shownExpenseCategories: [Category] { expenseCategories }
+
     private var expenseCategories: [Category] {
         // Penyesuaian Saldo is used by balance corrections on its own and never gets a budget.
         categories.filter { $0.type == .expense && !CategoryCatalog.isSystem($0) }.arranged(by: preferences).shown

@@ -423,6 +423,16 @@
         }
       }
     },
+    "%lld budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld budgets"
+          }
+        }
+      }
+    },
     "%lld bulan": {
       "localizations": {
         "en": {
@@ -809,6 +819,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "A guest account lives only on this iPhone. If you sign out or delete the app, its data can't be opened again."
+          }
+        }
+      }
+    },
+    "Aman": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safe"
           }
         }
       }
@@ -1359,6 +1379,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No spending yet to compare against."
+          }
+        }
+      }
+    },
+    "Belum ada riwayat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No history yet"
           }
         }
       }
@@ -4003,6 +4033,16 @@
         }
       }
     },
+    "Lewat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over"
+          }
+        }
+      }
+    },
     "Lewat %@": {
       "localizations": {
         "en": {
@@ -4083,6 +4123,16 @@
         }
       }
     },
+    "Lihat bagaimana budgetmu di periode sebelumnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See how your budget did in earlier periods."
+          }
+        }
+      }
+    },
     "Lihat detail kesehatan finansial": {
       "localizations": {
         "en": {
@@ -4099,6 +4149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "View wallets"
+          }
+        }
+      }
+    },
+    "Lihat lebih lama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See older"
           }
         }
       }
@@ -4413,6 +4473,16 @@
         }
       }
     },
+    "Mendekati": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
     "Menghapus…": {
       "localizations": {
         "en": {
@@ -4619,6 +4689,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Maybe later"
+          }
+        }
+      }
+    },
+    "Net": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net"
+          }
+        }
+      }
+    },
+    "Net = pemasukan - pengeluaran. Transfer antar dompet dan pembayaran kartu tidak dihitung.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net = income - expenses. Transfers between wallets and card payments aren't counted."
           }
         }
       }
@@ -5143,6 +5233,26 @@
         }
       }
     },
+    "Perkiraan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimate"
+          }
+        }
+      }
+    },
+    "Perkiraan: fitur riwayat belum ada saat periode ini berjalan, jadi dipakai nominal budget terakhirmu. Angkanya bisa sedikit berbeda dari yang kamu atur saat itu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimate: history didn't exist while this period ran, so your latest budget amount is used. The figure may differ slightly from what you set then."
+          }
+        }
+      }
+    },
     "Perlu perbaikan": {
       "localizations": {
         "en": {
@@ -5469,6 +5579,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "History"
+          }
+        }
+      }
+    },
+    "Riwayat belum bisa dimuat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't load the history."
+          }
+        }
+      }
+    },
+    "Riwayat budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget history"
+          }
+        }
+      }
+    },
+    "Riwayat muncul setelah periode budget pertamamu selesai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History appears once your first budget period has ended."
           }
         }
       }
@@ -5929,6 +6069,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Temporary %@ until %@, then back to %@"
+          }
+        }
+      }
+    },
+    "Sementara: periode ini memakai budget sementara, bukan budget awal.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporary: this period used a temporary budget, not the original one."
           }
         }
       }
@@ -6399,6 +6549,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Already printed"
+          }
+        }
+      }
+    },
+    "Sudah dihapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted"
+          }
+        }
+      }
+    },
+    "Sudah dihapus: budget ini sudah kamu hapus, tapi tetap ditampilkan karena aktif di periode ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted: you deleted this budget, but it is shown because it was active in this period."
           }
         }
       }
@@ -7389,6 +7559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No categories match “%@”"
+          }
+        }
+      }
+    },
+    "Tidak ada pengeluaran kategori ini di periode itu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No expenses in this category in that period."
           }
         }
       }

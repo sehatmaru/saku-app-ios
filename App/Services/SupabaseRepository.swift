@@ -706,3 +706,10 @@ private extension Date {
         ISO8601DateFormatter().string(from: self)
     }
 }
+
+extension SupabaseRepository {
+    /// Every budget the user ever had, deleted ones included, for the history.
+    func fetchBudgetsForHistory() async throws -> [BudgetHistoryBudget] {
+        try await client.from("budgets").select().order("created_at").execute().value
+    }
+}
