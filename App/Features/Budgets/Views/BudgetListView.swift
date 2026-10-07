@@ -143,8 +143,9 @@ struct BudgetListView: View {
                     .foregroundStyle(Color.appPrimary)
             }
             .monospacedDigit()
+            // Fills like the category bars below (same tick-by-tick sweep, just ahead of the first row) and only on first open.
             SegmentBar(value: Double(dayNumber) / Double(max(days.total, 1)), count: days.total,
-                       isActive: !isPeriodHidden)
+                       delay: 0.3, isActive: !isPeriodHidden, replays: false)
                 .id(days.total)
                 .padding(.top, 10)
             (Text(headerPayday.map { L("Gajian tiap tanggal %lld", $0) } ?? L("Mengikuti tanggal 1"))
@@ -229,7 +230,7 @@ struct BudgetListView: View {
             ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
                 NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
                     BudgetCardView(budget: item.budget, category: item.category,
-                                   fillDelay: 0.3 + Double(i) * 0.07, isFillActive: !isPeriodHidden)
+                                   fillDelay: 0.37 + Double(i) * 0.07, isFillActive: !isPeriodHidden)
                         .padding(.horizontal, 24)
                         .background(flashId == item.category.id ? Color.appPrimary.opacity(0.1) : .clear)
                         .animation(.easeInOut(duration: 0.7), value: flashId)
