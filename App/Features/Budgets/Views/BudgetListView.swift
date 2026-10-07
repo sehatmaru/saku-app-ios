@@ -408,7 +408,7 @@ struct BudgetCardView: View {
                         .monospacedDigit()
                         .lineLimit(1)
                 }
-                SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive)
+                SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive, replays: false)
                 Text(L("%@ dari %@", money(budget.spent), money(budget.amount)))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
