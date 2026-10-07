@@ -63,6 +63,15 @@ struct BudgetHistoryPeriod: Identifiable {
 }
 
 enum BudgetHistory {
+    /// When a budget starts to count. A budget that existed before history was tracked (its first
+    /// amount row is an estimate) is taken to apply from the user's first transaction, so earlier
+    /// periods show up as "Perkiraan"; any other budget counts from the day it was created.
+    static func aliveFrom(_ budget: BudgetHistoryBudget, changes: [BudgetAmountChange], firstTransaction: Date?) -> Date {
+        let predates = changes.contains { $0.budgetId == budget.id && $0.isEstimate }
+        guard predates, let firstTransaction else { return budget.createdAt }
+        return min(budget.createdAt, firstTransaction)
+    }
+
     /// One finished period, or nil when no budget was alive in it. A budget is alive in a period when
     /// it was created before the period ended and was not deleted (or switched off) before it began.
     /// Spent and Masuk/Keluar are computed from transactions, so edits to old ones show up here.
@@ -70,9 +79,11 @@ enum BudgetHistory {
                        transactions: [Transaction], shownCategoryIds: Set<String>,
                        calendar: Calendar = .current) -> BudgetHistoryPeriod? {
         func inPeriod(_ tx: Transaction) -> Bool { tx.date >= interval.start && tx.date < interval.end }
+        let firstTransaction = transactions.map(\.date).min()
         let rows: [BudgetHistoryRow] = budgets
             .filter { shownCategoryIds.contains($0.categoryId) }
-            .filter { $0.createdAt < interval.end && ($0.endedAt.map { $0 > interval.start } ?? true) }
+            .filter { aliveFrom($0, changes: changes, firstTransaction: firstTransaction) < interval.end
+                && ($0.endedAt.map { $0 > interval.start } ?? true) }
             .map { budget in
                 let resolved = ResolvedBudgetAmount.resolve(
                     base: budget.amount, changes: changes.filter { $0.budgetId == budget.id },
@@ -99,7 +110,9 @@ enum BudgetHistory {
     static func page(from offset: Int = -1, count: Int = 3, budgets: [BudgetHistoryBudget], changes: [BudgetAmountChange],
                      transactions: [Transaction], shownCategoryIds: Set<String>, cycle: PaydayCycle = .current,
                      now: Date = Date(), calendar: Calendar = .current) -> (periods: [BudgetHistoryPeriod], next: Int?) {
-        guard let oldest = budgets.map(\.createdAt).min() else { return ([], nil) }
+        let firstTransaction = transactions.map(\.date).min()
+        guard let oldest = budgets.map({ aliveFrom($0, changes: changes, firstTransaction: firstTransaction) }).min()
+        else { return ([], nil) }
         var result: [BudgetHistoryPeriod] = []
         var index = offset
         // 120 periods is ten years of months: a stop for odd data, not a feature limit.

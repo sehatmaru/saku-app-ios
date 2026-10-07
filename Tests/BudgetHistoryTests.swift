@@ -54,4 +54,17 @@ final class BudgetHistoryTests: XCTestCase {
                                           budgets: [budget("1", created: day(2026, 1, 1))], changes: [], transactions: [],
                                           shownCategoryIds: ["c1"], calendar: calendar))
     }
+
+    /// A budget made after the user's first transaction, from before history existed, still shows earlier periods as estimates.
+    func testBudgetBornBeforeHistoryShowsEarlierPeriods() {
+        let b = budget("1", created: day(2026, 10, 1))
+        let changes = [BudgetAmountChange(budgetId: "1", kind: "base", amount: 1_000_000, effectiveFrom: day(1970, 1, 1),
+                                          isEstimate: true, createdAt: day(2026, 10, 7))]
+        let txs = [tx(.expense, 50_000, on: day(2026, 8, 20), category: "c1")]
+        let page = BudgetHistory.page(budgets: [b], changes: changes, transactions: txs, shownCategoryIds: ["c1"],
+                                      cycle: PaydayCycle(day: 1), now: day(2026, 10, 7), calendar: calendar)
+        XCTAssertEqual(page.periods.map { $0.interval.start }, [day(2026, 9, 1), day(2026, 8, 1)])
+        XCTAssertTrue(page.periods.allSatisfy { $0.hasEstimate })
+        XCTAssertEqual(page.periods[1].totalSpent, 50_000)
+    }
 }
