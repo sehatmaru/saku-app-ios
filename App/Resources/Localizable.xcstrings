@@ -1053,6 +1053,16 @@
         }
       }
     },
+    "Batalkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
     "Batas total yang diberikan bank untuk kartu ini.": {
       "localizations": {
         "en": {
@@ -2749,6 +2759,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't save. Try again."
+          }
+        }
+      }
+    },
+    "Gajian pindah ke tanggal %lld mulai %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payday moves to day %lld starting %@."
           }
         }
       }
@@ -4959,6 +4979,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Changes saved"
+          }
+        }
+      }
+    },
+    "Perubahan ini berlaku mulai %@. Periode berjalan (%@ - %@) tetap memakai tanggal gajian lama supaya angka bulan ini dan bulan-bulan lalu tidak berubah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This change takes effect on %@. The current period (%@ - %@) keeps the old payday so this month's and past months' numbers don't change."
           }
         }
       }

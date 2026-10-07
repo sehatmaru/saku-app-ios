@@ -17,7 +17,26 @@ enum SupabaseSDK {
             .value
         PaydaySetting.day = profile.paydayDay
         HomeBalanceSetting.mode = profile.homeBalanceMode
+        await refreshPaydaySchedule()
         return profile
+    }
+
+    private struct PaydayChangeRow: Decodable {
+        let paydayDay: Int
+        let effectiveFrom: String
+        enum CodingKeys: String, CodingKey { case paydayDay = "payday_day", effectiveFrom = "effective_from" }
+    }
+
+    /// Mirrors `payday_changes` on the device. Keeps the old schedule when offline.
+    static func refreshPaydaySchedule() async {
+        guard let rows: [PaydayChangeRow] = try? await client
+            .from("payday_changes").select().order("effective_from").execute().value else { return }
+        let format = DateFormatter()
+        format.dateFormat = "yyyy-MM-dd"
+        format.locale = Locale(identifier: "en_US_POSIX")
+        PaydaySetting.schedule = rows.compactMap { row in
+            format.date(from: row.effectiveFrom).map { PaydayEntry(day: row.paydayDay, from: $0) }
+        }
     }
 
     /// Development tool: deletes the signed-in account and all its data on the server.
@@ -25,15 +44,25 @@ enum SupabaseSDK {
         try await client.rpc("delete_my_account").execute()
     }
 
-    /// Saves the payday (1–31) on the profile and mirrors it on the device.
-    static func updatePayday(profileId: UUID, day: Int) async throws {
+    /// Saves the payday (1–31). The server decides when it takes effect (now for early corrections,
+    /// else the end of the running period) and returns that date.
+    @discardableResult
+    static func updatePayday(day: Int) async throws -> Date {
         let day = min(max(day, 1), 31)
-        try await client
-            .from("user_profiles")
-            .update(["payday_day": AnyJSON.integer(day)] as [String: AnyJSON])
-            .eq("id", value: profileId)
-            .execute()
+        let effective: String = try await client.rpc("set_payday", params: ["p_day": day]).execute().value
         PaydaySetting.day = day
+        await refreshPaydaySchedule()
+        let format = DateFormatter()
+        format.dateFormat = "yyyy-MM-dd"
+        format.locale = Locale(identifier: "en_US_POSIX")
+        return format.date(from: effective) ?? Date()
+    }
+
+    /// Drops a payday change that has not taken effect yet.
+    static func cancelPendingPayday() async throws {
+        try await client.rpc("cancel_pending_payday").execute()
+        await refreshPaydaySchedule()
+        PaydaySetting.day = PaydayCycle.current.day
     }
 
     /// Saves what Beranda's "Total saldo" adds up and mirrors it on the device.

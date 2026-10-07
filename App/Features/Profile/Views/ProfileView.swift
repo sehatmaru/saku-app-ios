@@ -25,6 +25,8 @@ struct ProfileView: View {
     @State private var isPaydayFlashing = false
     /// Mirrors PaydaySetting.day (0 = not set) so the row updates when the payday changes.
     @AppStorage("paydayDay") private var paydayDay = 0
+    /// Mirrors PaydaySetting.schedule so the pending-change banner follows it.
+    @AppStorage("paydaySchedule") private var paydaySchedule = Data()
 
     @State private var showsHomeBalance = false
     @State private var showsTheme = false
@@ -215,6 +217,31 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
             .animation(.settle(0.4), value: paydayDay)
+
+            if let pending = pendingPayday {
+                HStack(spacing: 8) {
+                    Text(L("Gajian pindah ke tanggal %lld mulai %@.", pending.day, PaydayCycle.dayMonth.string(from: pending.from)))
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                    Spacer(minLength: 8)
+                    Button(L("Batalkan")) { cancelPendingPayday() }
+                        .font(.app(13, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
+                }
+                .padding(.vertical, 8)
+            }
+        }
+    }
+
+    private var pendingPayday: PaydayEntry? {
+        _ = paydaySchedule
+        return PaydayCycle.current.pending
+    }
+
+    private func cancelPendingPayday() {
+        Task {
+            try? await SupabaseSDK.cancelPendingPayday()
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
         }
     }
 

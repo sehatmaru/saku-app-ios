@@ -226,7 +226,7 @@ final class AuthViewModel: ObservableObject {
             try? await repo.hideCategories(ids: ids)
         }
         if let day = setup.paydayDay {
-            try? await SupabaseSDK.updatePayday(profileId: profileId, day: day)
+            try? await SupabaseSDK.updatePayday(day: day)
         }
     }
 
@@ -247,6 +247,7 @@ final class AuthViewModel: ObservableObject {
         NotificationManager.shared.cancelAll()
         AppDataCache.shared.clearAll()
         PaydaySetting.day = nil
+        PaydaySetting.schedule = []
         HomeBalanceSetting.mode = nil
         for key in ["paydayCardDismissed", "hasSeenOnboarding", "memberSince", "billReminderSnoozedUntil"] {
             UserDefaults.standard.removeObject(forKey: key)

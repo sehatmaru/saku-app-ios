@@ -30,7 +30,7 @@ extension PaydayCycle {
         return Self.dayMonth.string(from: Calendar.current.date(byAdding: .day, value: -1, to: end) ?? end)
     }
 
-    private static var dayMonth: DateFormatter {
+    static var dayMonth: DateFormatter {
         let f = DateFormatter()
         f.locale = AppLanguage.locale
         f.dateFormat = "d MMM"
@@ -40,10 +40,9 @@ extension PaydayCycle {
 
 /// Saves the payday on the signed-in user's profile and reloads everything period-based.
 @MainActor
-private func savePayday(_ day: Int, auth: AuthViewModel) async -> Bool {
-    guard let id = auth.currentUser.flatMap({ UUID(uuidString: $0.id) }) else { return false }
+private func savePayday(_ day: Int) async -> Bool {
     do {
-        try await SupabaseSDK.updatePayday(profileId: id, day: day)
+        try await SupabaseSDK.updatePayday(day: day)
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
         return true
     } catch {
@@ -158,12 +157,12 @@ struct PaydaySheet: View {
     /// The saved day, or nil when closed without a change.
     let onDone: (Int?) -> Void
 
-    @EnvironmentObject private var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var selection: Int?
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var didFinish = false
+    @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
 
     init(context: PaydayContext, onDone: @escaping (Int?) -> Void) {
         self.context = context
@@ -209,7 +208,7 @@ struct PaydaySheet: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 12)
             } else if context == .settings {
-                Label("Periode budget dan ringkasan bulan ini langsung mengikuti tanggal baru.", systemImage: "info.circle")
+                Label(changeNote, systemImage: "info.circle")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .padding(.horizontal, 24)
@@ -226,12 +225,26 @@ struct PaydaySheet: View {
         .onDisappear { if !didFinish { onDone(nil) } }
     }
 
+    /// What saving does. The server decides the real date; this mirrors its rule for the copy
+    /// (a correction applies now for a new account, else at the end of the running period).
+    private var changeNote: String {
+        let cycle = PaydayCycle.current
+        guard let day = selection, day != PaydaySetting.day, !cycle.schedule.isEmpty,
+              Date().timeIntervalSince1970 - memberSince > 7 * 86_400 else {
+            return L("Periode budget dan ringkasan bulan ini langsung mengikuti tanggal baru.")
+        }
+        let period = cycle.period(containing: Date())
+        return L("Perubahan ini berlaku mulai %@. Periode berjalan (%@ - %@) tetap memakai tanggal gajian lama supaya angka bulan ini dan bulan-bulan lalu tidak berubah.",
+                 PaydayCycle.dayMonth.string(from: period.end), PaydayCycle.dayMonth.string(from: period.start),
+                 cycle.lastDayLabel())
+    }
+
     private func done() {
         guard let day = selection, day != PaydaySetting.day else { dismiss(); return }
         isSaving = true
         errorMessage = nil
         Task {
-            if await savePayday(day, auth: authViewModel) {
+            if await savePayday(day) {
                 didFinish = true
                 dismiss()
                 onDone(day)

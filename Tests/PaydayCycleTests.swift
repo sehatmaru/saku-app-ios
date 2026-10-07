@@ -59,4 +59,20 @@ final class PaydayCycleTests: XCTestCase {
         XCTAssertEqual(result.shown.map { $0.id }, ["c", "b"])
         XCTAssertEqual(result.hidden.map { $0.id }, ["a"])
     }
+
+    /// Old payday 25, new payday 1 from 25 Nov: the running period finishes under 25 and the next is a short stub.
+    func testScheduledChangeKeepsRunningAndPastPeriods() {
+        let cycle = PaydayCycle(day: 25, schedule: [
+            PaydayEntry(day: 25, from: day(1970, 1, 1)),
+            PaydayEntry(day: 1, from: day(2026, 11, 25)),
+        ])
+        let running = cycle.period(containing: date(2026, 10, 30), calendar: calendar)
+        XCTAssertEqual(running.start, day(2026, 10, 25))
+        XCTAssertEqual(running.end, day(2026, 11, 25))
+        let stub = cycle.period(containing: date(2026, 11, 27), calendar: calendar)
+        XCTAssertEqual(stub.start, day(2026, 11, 25))
+        XCTAssertEqual(stub.end, day(2026, 12, 1))
+        XCTAssertEqual(cycle.period(containing: date(2026, 12, 1), calendar: calendar).start, day(2026, 12, 1))
+        XCTAssertEqual(cycle.period(offset: -1, from: date(2026, 11, 27), calendar: calendar), running)
+    }
 }
