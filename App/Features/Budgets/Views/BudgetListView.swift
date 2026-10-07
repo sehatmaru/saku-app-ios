@@ -26,7 +26,9 @@ struct BudgetListView: View {
     @State private var flashId: String?
     @State private var toastText = ""
     @State private var isToastShown = false
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
+    /// Local copy so the toggle animates (an @AppStorage change ignores withAnimation); same as Transaksi.
+    @State private var isBalanceVisible = true
 
     private var setItems: [BudgetListItem] {
         viewModel.budgetItems.filter { $0.budget != nil }
@@ -56,6 +58,7 @@ struct BudgetListView: View {
                         .accessibilityLabel(L("Riwayat budget"))
                         Button {
                             withAnimation(.smooth) { isBalanceVisible.toggle() }
+                            isBalanceVisibleStorage = isBalanceVisible
                         } label: {
                             Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
                         }
@@ -104,6 +107,8 @@ struct BudgetListView: View {
                 PaydaySheet(context: .card) { day in paydayPicked(day) }
             }
             .toast(toastText, isShown: $isToastShown)
+            .onAppear { isBalanceVisible = isBalanceVisibleStorage }
+            .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadBudgets(userId: userId)
@@ -242,7 +247,8 @@ struct BudgetListView: View {
             ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
                 NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
                     BudgetCardView(budget: item.budget, category: item.category,
-                                   fillDelay: 0.3 + Double(i) * 0.07, isFillActive: !isPeriodHidden)
+                                   fillDelay: 0.3 + Double(i) * 0.07, isFillActive: !isPeriodHidden,
+                                   isBalanceVisible: isBalanceVisible)
                         .padding(.horizontal, 24)
                         .background(flashId == item.category.id ? Color.appPrimary.opacity(0.1) : .clear)
                         .animation(.easeInOut(duration: 0.7), value: flashId)
@@ -381,7 +387,7 @@ struct BudgetCardView: View {
     /// Empties the bar while false, e.g. while the period changes.
     var isFillActive = true
 
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    var isBalanceVisible = true
 
     var body: some View {
         if let budget {
