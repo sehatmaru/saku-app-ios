@@ -171,6 +171,16 @@
         }
       }
     },
+    "%@ dipakai dari %@ sampai %@ (%lld periode). Mulai %@ kembali ke %@. Budget awalmu tidak berubah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is used from %@ to %@ (%lld periods). From %@ it goes back to %@. Your original budget doesn't change."
+          }
+        }
+      }
+    },
     "%@ diperpanjang 3 hari lagi sebesar %@. Batalkan sebelum itu kalau sudah tidak dipakai.": {
       "localizations": {
         "en": {
@@ -539,6 +549,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld other categories already have a budget."
+          }
+        }
+      }
+    },
+    "%lld periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld periods"
           }
         }
       }
@@ -1063,6 +1083,16 @@
         }
       }
     },
+    "Batalkan perubahan sementara": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel temporary change"
+          }
+        }
+      }
+    },
     "Batas total yang diberikan bank untuk kartu ini.": {
       "localizations": {
         "en": {
@@ -1149,6 +1179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pay the bill, or record the payment if you already paid, so your score recovers and you avoid interest."
+          }
+        }
+      }
+    },
+    "Beberapa periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several periods"
           }
         }
       }
@@ -1533,6 +1573,16 @@
         }
       }
     },
+    "Berlaku untuk berapa lama?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How long does it apply?"
+          }
+        }
+      }
+    },
     "Berulang": {
       "localizations": {
         "en": {
@@ -1739,6 +1789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Daily budget %@"
+          }
+        }
+      }
+    },
+    "Budget langsung lewat batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget will be over the limit"
           }
         }
       }
@@ -2783,6 +2843,26 @@
         }
       }
     },
+    "Ganti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace"
+          }
+        }
+      }
+    },
+    "Ganti perubahan sementara?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace the temporary change?"
+          }
+        }
+      }
+    },
     "Gelap": {
       "localizations": {
         "en": {
@@ -2899,6 +2979,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Testing only: deletes account and data"
+          }
+        }
+      }
+    },
+    "Hanya untuk %@ - %@. Setelah itu kembali ke %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only for %@ - %@. After that it goes back to %@."
           }
         }
       }
@@ -3333,6 +3423,16 @@
         }
       }
     },
+    "Kamu sudah punya budget sementara %@ sampai %@. Yang baru akan menggantikannya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You already have a temporary budget of %@ until %@. The new one will replace it."
+          }
+        }
+      }
+    },
     "Kapan kamu gajian?": {
       "localizations": {
         "en": {
@@ -3613,6 +3713,26 @@
         }
       }
     },
+    "Kembali ke budget awal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to original budget"
+          }
+        }
+      }
+    },
+    "Kembali ke budget awal?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to the original budget?"
+          }
+        }
+      }
+    },
     "Kembali ke kategori": {
       "localizations": {
         "en": {
@@ -3839,6 +3959,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Continue · %lld selected"
+          }
+        }
+      }
+    },
+    "Lanjutkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
           }
         }
       }
@@ -4383,12 +4513,32 @@
         }
       }
     },
+    "Mulai %@, budget %@ jadi %@ setiap periode. Periode sebelumnya tetap seperti dulu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From %@, the %@ budget becomes %@ every period. Earlier periods stay as they were."
+          }
+        }
+      }
+    },
     "Mulai pakai Saku": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Start using Saku"
+          }
+        }
+      }
+    },
+    "Mulai periode ini, budget %@ kembali ke %@. Periode yang sudah lewat tidak berubah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From this period, the %@ budget goes back to %@. Past periods don't change."
           }
         }
       }
@@ -4589,6 +4739,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Amount Rp%lld"
+          }
+        }
+      }
+    },
+    "Nominal baru dipakai terus mulai periode ini. Periode lama tidak berubah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The new amount is used from this period on. Past periods don't change."
           }
         }
       }
@@ -4803,6 +4963,16 @@
         }
       }
     },
+    "Pengeluaranmu periode ini sudah %@, lebih besar dari %@. Budget akan langsung berstatus lewat batas. Lanjutkan?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You've already spent %@ this period, more than %@. The budget will be over the limit right away. Continue?"
+          }
+        }
+      }
+    },
     "Pengembangan": {
       "localizations": {
         "en": {
@@ -4963,12 +5133,32 @@
         }
       }
     },
+    "Periode ini saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This period only"
+          }
+        }
+      }
+    },
     "Perlu perbaikan": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Needs work"
+          }
+        }
+      }
+    },
+    "Perubahan budget belum tersimpan. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The budget change wasn't saved. Try again."
           }
         }
       }
@@ -5019,6 +5209,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose bank"
+          }
+        }
+      }
+    },
+    "Pilih berapa periode. Setelah selesai, otomatis kembali ke %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose how many periods. When done, it automatically goes back to %@."
           }
         }
       }
@@ -5613,6 +5813,16 @@
         }
       }
     },
+    "Selamanya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forever"
+          }
+        }
+      }
+    },
     "Selasa": {
       "localizations": {
         "en": {
@@ -5708,7 +5918,17 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Provisional"
+            "value": "Temporary"
+          }
+        }
+      }
+    },
+    "Sementara %@ sampai %@, lalu kembali %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporary %@ until %@, then back to %@"
           }
         }
       }
@@ -7259,6 +7479,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't get a Google token"
+          }
+        }
+      }
+    },
+    "Tidak jadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never mind"
           }
         }
       }

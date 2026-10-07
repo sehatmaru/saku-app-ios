@@ -5,7 +5,9 @@ struct BudgetDetailView: View {
     let category: Category
     let allTransactions: [Transaction]
     let accounts: [Account]
-    var onAdjustBudget: ((Budget) -> Void)?
+    /// Saves a new amount; false when it could not be saved.
+    var onSaveAmount: ((Double, BudgetAmountDuration) async -> Bool)?
+    var onCancelTemporary: (() async -> Bool)?
     var onUnsetBudget: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
@@ -15,17 +17,19 @@ struct BudgetDetailView: View {
     @State private var showUnsetAlert = false
     @State private var adjustAmountText = ""
     @State private var adjustAmountDigits = ""
-    @State private var showAdjustConfirm = false
+    @State private var showOverspendAlert = false
+    @State private var showReplaceAlert = false
+    @State private var showCancelTemporaryAlert = false
+    @State private var isSavingAmount = false
+    @State private var saveFailed = false
     @State private var pendingAmount: Double = 0
 
-    private enum AdjustScope: String, CaseIterable {
-        case thisMonth = "Hanya bulan ini"
-        case ongoing = "Bulan ini dan seterusnya"
-
-        var title: String { L(rawValue) }
+    private enum AdjustScope: CaseIterable {
+        case forever, thisOnly, several
     }
 
-    @State private var adjustScope: AdjustScope = .thisMonth
+    @State private var adjustScope: AdjustScope = .forever
+    @State private var periodCount = 3
     @State private var detailTransaction: Transaction?
 
     private var transactions: [Transaction] {
@@ -44,9 +48,13 @@ struct BudgetDetailView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     BudgetSummary(amount: budget.amount, spent: budget.spent, month: Date(), showPace: true)
 
-                    if onAdjustBudget != nil || onUnsetBudget != nil {
+                    if let temporary = budget.temporary {
+                        temporaryNote(temporary)
+                    }
+
+                    if onSaveAmount != nil || onUnsetBudget != nil {
                         HStack(spacing: 12) {
-                            if onAdjustBudget != nil {
+                            if onSaveAmount != nil {
                                 Button {
                                     adjustAmountText = ""
                                     adjustAmountDigits = ""
@@ -101,30 +109,36 @@ struct BudgetDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showAdjustBudget) {
             adjustBudgetSheet
-                .presentationDetents([.medium])
+                .presentationDetents([.large])
                 .presentationBackground(Color.appBackground)
         }
-        .alert("Konfirmasi Perubahan", isPresented: $showAdjustConfirm) {
-            Button("Batal", role: .cancel) {}
-            Button("Simpan") {
-                let updated = Budget(
-                    id: budget.id,
-                    categoryId: budget.categoryId,
-                    name: budget.name,
-                    amount: pendingAmount,
-                    periodUnit: budget.periodUnit,
-                    periodInterval: budget.periodInterval,
-                    startDate: budget.startDate,
-                    endDate: budget.endDate,
-                    isActive: budget.isActive,
-                    spent: budget.spent
-                )
-                onAdjustBudget?(updated)
-                showAdjustBudget = false
-                dismiss()
-            }
+        .alert(L("Budget langsung lewat batas"), isPresented: $showOverspendAlert) {
+            Button(L("Batal"), role: .cancel) {}
+            Button(L("Lanjutkan")) { proceedAfterOverspend() }
         } message: {
-            Text("Budget \(category.name) akan diubah menjadi \(String(Int(pendingAmount)).formattedWithThousandSeparator) untuk \"\(adjustScope.title)\".")
+            Text(L("Pengeluaranmu periode ini sudah %@, lebih besar dari %@. Budget akan langsung berstatus lewat batas. Lanjutkan?",
+                   budget.spent.formattedAsCurrency(), pendingAmount.formattedAsCurrency()))
+        }
+        .alert(L("Ganti perubahan sementara?"), isPresented: $showReplaceAlert) {
+            Button(L("Tidak jadi"), role: .cancel) {}
+            Button(L("Ganti")) { saveAmount() }
+        } message: {
+            if let temporary = budget.temporary {
+                Text(L("Kamu sudah punya budget sementara %@ sampai %@. Yang baru akan menggantikannya.",
+                       temporary.amount.formattedAsCurrency(), lastDay(of: temporary)))
+            }
+        }
+        .alert(L("Kembali ke budget awal?"), isPresented: $showCancelTemporaryAlert) {
+            Button(L("Tidak jadi"), role: .cancel) {}
+            Button(L("Kembali ke budget awal")) { cancelTemporary() }
+        } message: {
+            Text(L("Mulai periode ini, budget %@ kembali ke %@. Periode yang sudah lewat tidak berubah.",
+                   category.name, (budget.baseAmount ?? budget.amount).formattedAsCurrency()))
+        }
+        .alert(L("Gagal menyimpan"), isPresented: $saveFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(L("Perubahan budget belum tersimpan. Coba lagi."))
         }
         .alert("Hapus Budget?", isPresented: $showUnsetAlert) {
             Button("Batal", role: .cancel) {}
@@ -165,11 +179,15 @@ struct BudgetDetailView: View {
                 Button("Simpan") {
                     guard let amount = Double(adjustAmountDigits), amount > 0 else { return }
                     pendingAmount = amount
-                    showAdjustConfirm = true
+                    if amount < budget.spent {
+                        showOverspendAlert = true
+                    } else {
+                        proceedAfterOverspend()
+                    }
                 }
                 .font(.app(17, weight: .semibold))
                 .foregroundStyle(adjustAmountDigits.isEmpty ? Color.appTextTertiary : Color.appPrimary)
-                .disabled(adjustAmountDigits.isEmpty)
+                .disabled(adjustAmountDigits.isEmpty || isSavingAmount)
                 .frame(width: 70, alignment: .trailing)
             }
             .frame(height: 44)
@@ -208,45 +226,156 @@ struct BudgetDetailView: View {
         }
     }
 
+    private var cycle: PaydayCycle { .current }
+    private var currentPeriod: DateInterval { cycle.period(containing: Date()) }
+    private var baseAmount: Double { budget.baseAmount ?? budget.amount }
+
+    private var count: Int {
+        switch adjustScope {
+        case .forever: return 0
+        case .thisOnly: return 1
+        case .several: return periodCount
+        }
+    }
+
+    /// Last day of the Nth period from now, N included the running one.
+    private func lastDay(ofPeriods n: Int) -> String {
+        let end = cycle.period(offset: n - 1).end
+        return PaydayCycle.dayMonth.string(from: Calendar.current.date(byAdding: .day, value: -1, to: end) ?? end)
+    }
+
+    private func lastDay(of change: BudgetAmountChange) -> String {
+        let end = change.effectiveTo ?? Date()
+        return PaydayCycle.dayMonth.string(from: Calendar.current.date(byAdding: .day, value: -1, to: end) ?? end)
+    }
+
+    private func subtitle(_ scope: AdjustScope) -> String {
+        switch scope {
+        case .forever:
+            return L("Nominal baru dipakai terus mulai periode ini. Periode lama tidak berubah.")
+        case .thisOnly:
+            return L("Hanya untuk %@ - %@. Setelah itu kembali ke %@.", PaydayCycle.dayMonth.string(from: currentPeriod.start),
+                     lastDay(ofPeriods: 1), baseAmount.formattedAsCurrency())
+        case .several:
+            return L("Pilih berapa periode. Setelah selesai, otomatis kembali ke %@.", baseAmount.formattedAsCurrency())
+        }
+    }
+
+    private func title(_ scope: AdjustScope) -> String {
+        switch scope {
+        case .forever: return L("Selamanya")
+        case .thisOnly: return L("Periode ini saja")
+        case .several: return L("Beberapa periode")
+        }
+    }
+
+    /// What saving will do, in the user's own amounts and dates.
+    private var summary: String? {
+        guard let amount = Double(adjustAmountDigits), amount > 0 else { return nil }
+        let start = PaydayCycle.dayMonth.string(from: currentPeriod.start)
+        if adjustScope == .forever {
+            return L("Mulai %@, budget %@ jadi %@ setiap periode. Periode sebelumnya tetap seperti dulu.",
+                     start, category.name, amount.formattedAsCurrency())
+        }
+        let end = cycle.period(offset: count - 1).end
+        return L("%@ dipakai dari %@ sampai %@ (%lld periode). Mulai %@ kembali ke %@. Budget awalmu tidak berubah.",
+                 amount.formattedAsCurrency(), start, lastDay(ofPeriods: count), count,
+                 PaydayCycle.dayMonth.string(from: end), baseAmount.formattedAsCurrency())
+    }
+
+    private func proceedAfterOverspend() {
+        if budget.temporary != nil && adjustScope != .forever {
+            showReplaceAlert = true
+        } else {
+            saveAmount()
+        }
+    }
+
+    private func saveAmount() {
+        guard let onSaveAmount else { return }
+        isSavingAmount = true
+        let duration: BudgetAmountDuration = adjustScope == .forever ? .forever : .periods(count)
+        Task {
+            let ok = await onSaveAmount(pendingAmount, duration)
+            isSavingAmount = false
+            if ok {
+                showAdjustBudget = false
+                dismiss()
+            } else {
+                saveFailed = true
+            }
+        }
+    }
+
+    private func cancelTemporary() {
+        guard let onCancelTemporary else { return }
+        Task {
+            if await onCancelTemporary() { dismiss() } else { saveFailed = true }
+        }
+    }
+
+    private func temporaryNote(_ temporary: BudgetAmountChange) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L("Sementara %@ sampai %@, lalu kembali %@", temporary.amount.formattedAsCurrency(),
+                   lastDay(of: temporary), baseAmount.formattedAsCurrency()))
+                .font(.app(14))
+                .foregroundStyle(Color.appTextSecondary)
+            if onCancelTemporary != nil {
+                Button(L("Batalkan perubahan sementara")) { showCancelTemporaryAlert = true }
+                    .font(.app(14, weight: .semibold))
+                    .foregroundStyle(Color.appPrimary)
+            }
+        }
+        .padding(.top, 14)
+    }
+
     private var scopePicker: some View {
         VStack(spacing: 0) {
-            ForEach(Array(AdjustScope.allCases), id: \.self) { scope in
+            Text(L("Berlaku untuk berapa lama?"))
+                .font(.app(14, weight: .semibold))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 4)
+            ForEach(AdjustScope.allCases, id: \.self) { scope in
                 Button {
-                    withAnimation(.spring(duration: 0.25)) {
-                        adjustScope = scope
-                    }
+                    withAnimation(.spring(duration: 0.25)) { adjustScope = scope }
                 } label: {
                     HStack(spacing: 14) {
-                        Image(systemName: scope == .thisMonth ? "calendar.badge.clock" : "calendar.badge.plus")
-                            .font(.system(size: 19))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .frame(width: 24)
-
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(scope.title)
+                            Text(title(scope))
                                 .font(.app(16, weight: .medium))
                                 .foregroundStyle(Color.appText)
-                            Text(scope == .thisMonth ? L("Ubah budget hanya untuk bulan berjalan") : L("Terapkan untuk bulan ini dan seterusnya"))
+                            Text(subtitle(scope))
                                 .font(.app(13))
                                 .foregroundStyle(Color.appTextSecondary)
-                                .lineLimit(2)
+                                .lineLimit(3)
                         }
-
                         Spacer()
-
                         if adjustScope == scope {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(Color.appPrimary)
                         }
                     }
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 12)
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
                     .rowSeparator()
                 }
                 .buttonStyle(RowPressStyle())
                 .accessibilityAddTraits(adjustScope == scope ? .isSelected : [])
+            }
+            if adjustScope == .several {
+                Stepper(L("%lld periode", periodCount), value: $periodCount, in: 2...12)
+                    .font(.app(15))
+                    .padding(.top, 8)
+            }
+            if let summary {
+                Text(summary)
+                    .font(.app(13))
+                    .foregroundStyle(Color.appBody)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 10)
             }
         }
     }

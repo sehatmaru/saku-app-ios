@@ -10,13 +10,17 @@ struct Budget: Identifiable, Codable {
     let id: String
     let categoryId: String
     let name: String
-    let amount: Double
+    var amount: Double
     let periodUnit: String
     let periodInterval: Int
     let startDate: String
     let endDate: String?
     let isActive: Bool
     var spent: Double = 0
+    /// The temporary change in force this period, if any; `amount` is then its amount.
+    var temporary: BudgetAmountChange?
+    /// The budget's own amount, which the temporary change will hand back to.
+    var baseAmount: Double?
 
     var remaining: Double { amount - spent }
     var progress: Double { amount > 0 ? spent / amount : 0 }

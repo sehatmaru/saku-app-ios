@@ -561,8 +561,9 @@ final class SupabaseRepository: @unchecked Sendable {
 
     // MARK: - Budgets
 
+    /// Budgets with this period's amount: a temporary change if one covers it, else the base amount.
     func fetchBudgets(userId: String) async throws -> [Budget] {
-        try await client
+        var budgets: [Budget] = try await client
             .from("budgets")
             .select()
             .eq("user_id", value: userId)
@@ -570,6 +571,45 @@ final class SupabaseRepository: @unchecked Sendable {
             .order("created_at", ascending: true)
             .execute()
             .value
+        let changes = (try? await fetchBudgetAmountChanges()) ?? []
+        let periodStart = PaydayCycle.current.period(containing: Date()).start
+        for index in budgets.indices {
+            let resolved = ResolvedBudgetAmount.resolve(
+                base: budgets[index].amount, changes: changes.filter { $0.budgetId == budgets[index].id },
+                periodStart: periodStart)
+            guard resolved.source == .temporary else { continue }
+            budgets[index].baseAmount = budgets[index].amount
+            budgets[index].amount = resolved.amount
+            budgets[index].temporary = resolved.temporary
+        }
+        return budgets
+    }
+
+    /// Every amount change that still counts (canceled ones are left out), oldest first.
+    func fetchBudgetAmountChanges() async throws -> [BudgetAmountChange] {
+        try await client
+            .from("budget_amount_changes")
+            .select()
+            .is("canceled_at", value: nil)
+            .order("effective_from")
+            .execute()
+            .value
+    }
+
+    /// `kind` "base": new amount from `from` on. "temporary": the amount for `from`..<`to`.
+    func setBudgetAmount(budgetId: String, amount: Double, kind: String, from: Date, to: Date?) async throws {
+        var params: [String: AnyJSON] = [
+            "p_budget_id": .string(budgetId), "p_amount": .double(amount), "p_kind": .string(kind),
+            "p_from": .string(BudgetAmountChange.dayString(from)),
+        ]
+        if let to { params["p_to"] = .string(BudgetAmountChange.dayString(to)) }
+        try await client.rpc("set_budget_amount", params: params).execute()
+    }
+
+    func cancelBudgetTemporary(budgetId: String, periodStart: Date) async throws {
+        try await client.rpc("cancel_budget_temporary", params: [
+            "p_budget_id": budgetId, "p_period_start": BudgetAmountChange.dayString(periodStart),
+        ]).execute()
     }
 
     func fetchBudgetSpent(categoryId: String, userId: String, startDate: String, endDate: String?) async throws -> Double {

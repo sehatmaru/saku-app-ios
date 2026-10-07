@@ -348,17 +348,11 @@ struct BudgetListView: View {
             category: item.category,
             allTransactions: viewModel.allExpenseTransactions.filter { $0.categoryId == item.category.id },
             accounts: viewModel.accounts,
-            onAdjustBudget: { updated in
-                Task {
-                    let name = updated.name
-                    let amount = updated.amount
-                    let periodUnit = updated.periodUnit
-                    let periodInterval = updated.periodInterval
-                    let startDate = updated.startDate
-                    let endDate = updated.endDate
-                    let isActive = updated.isActive
-                    await viewModel.updateBudget(id: updated.id, name: name, amount: amount, periodUnit: periodUnit, periodInterval: periodInterval, startDate: startDate, endDate: endDate, isActive: isActive)
-                }
+            onSaveAmount: { amount, duration in
+                await viewModel.saveAmount(budget: item.budget!, amount: amount, duration: duration)
+            },
+            onCancelTemporary: {
+                await viewModel.cancelTemporary(budget: item.budget!)
             },
             onUnsetBudget: {
                 Task {
@@ -414,6 +408,11 @@ struct BudgetCardView: View {
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
+                if budget.temporary != nil {
+                    Text(L("Sementara"))
+                        .font(.app(12, weight: .medium))
+                        .foregroundStyle(Color.appPrimary)
+                }
             }
         }
         .padding(.vertical, 13)
