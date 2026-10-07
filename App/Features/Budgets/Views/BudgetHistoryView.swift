@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Riwayat budget: finished periods, three at a time, each opening its categories and transactions.
+/// Riwayat budget (design 2a): finished periods, three at a time, each opening its categories (2b)
+/// and their transactions (2c).
 struct BudgetHistoryView: View {
     @ObservedObject var viewModel: BudgetListViewModel
 
@@ -17,13 +18,6 @@ struct BudgetHistoryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text(L("Lihat bagaimana budgetmu di periode sebelumnya."))
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 8)
-                    .padding(.bottom, 12)
-
                 if failed {
                     ErrorStateView(message: L("Riwayat belum bisa dimuat.")) { Task { await load() } }
                         .padding(24)
@@ -36,7 +30,7 @@ struct BudgetHistoryView: View {
                 } else {
                     ForEach(periods) { period in
                         NavigationLink(destination: BudgetHistoryPeriodView(period: period, viewModel: viewModel).detailPage()) {
-                            periodRow(period).padding(.horizontal, 24)
+                            periodRow(period)
                         }
                         .buttonStyle(RowPressStyle())
                     }
@@ -49,10 +43,19 @@ struct BudgetHistoryView: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .padding(.top, 8)
+                        .padding(.top, 4)
+                    }
+                    if periods.contains(where: \.hasEstimate) {
+                        Text(L("Perkiraan: dihitung dari budget yang aktif sekarang, karena budget belum diatur di periode tersebut."))
+                            .font(.app(13))
+                            .lineSpacing(2)
+                            .foregroundStyle(Color.appTextTertiary)
+                            .padding(.horizontal, 24)
+                            .padding(.top, 14)
                     }
                 }
             }
+            .padding(.top, 8)
             .padding(.bottom, 32)
         }
         .background(Color.appBackground)
@@ -66,33 +69,30 @@ struct BudgetHistoryView: View {
     }
 
     private func periodRow(_ period: BudgetHistoryPeriod) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(spacing: 8) {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(PaydayCycle.current.rangeLabel(for: period.interval.start))
                         .font(.app(16, weight: .medium))
                         .foregroundStyle(Color.appText)
-                    if period.hasEstimate { Chip(text: L("Perkiraan")) }
+                    Spacer(minLength: 0)
+                    Text(period.status.title)
+                        .font(.app(14))
+                        .foregroundStyle(period.status == .over ? Color.appError : Color.appTextSecondary)
                 }
-                Text(L("%@ dari %@", money(period.totalSpent), money(period.totalBudget)))
+                SegmentBar(value: period.progress, color: period.status.color, replays: false)
+                Text(L("%@ dari %@", money(period.totalSpent), money(period.totalBudget)) + " · \(Int((period.progress * 100).rounded()))%")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
             }
-            Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 3) {
-                Text("\(Int((period.progress * 100).rounded()))%")
-                    .font(.app(15, weight: .medium))
-                    .monospacedDigit()
-                    .foregroundStyle(period.status.color)
-                Text(period.status.title)
-                    .font(.app(12))
-                    .foregroundStyle(Color.appTextSecondary)
-            }
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.appTextTertiary)
+                .padding(.top, 4)
         }
+        .padding(.leading, 24)
+        .padding(.trailing, 20)
         .padding(.vertical, 14)
         .contentShape(Rectangle())
     }
@@ -124,6 +124,7 @@ struct BudgetHistoryView: View {
     }
 }
 
+/// Detail periode (design 2b): what was spent against the budget, Masuk/Keluar/Net, then each category.
 struct BudgetHistoryPeriodView: View {
     let period: BudgetHistoryPeriod
     @ObservedObject var viewModel: BudgetListViewModel
@@ -131,6 +132,11 @@ struct BudgetHistoryPeriodView: View {
 
     private func money(_ amount: Double) -> String {
         isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
+    }
+
+    private func short(_ amount: Double) -> String {
+        guard isBalanceVisible else { return hiddenAmount }
+        return (amount < 0 ? "−" : "") + (abs(amount) < 1 ? "0" : abs(amount).abbreviatedRupiah())
     }
 
     private func category(_ id: String) -> Category? { viewModel.categories.first { $0.id == id } }
@@ -142,6 +148,8 @@ struct BudgetHistoryPeriodView: View {
                 SectionDivider()
                 VStack(alignment: .leading, spacing: 0) {
                     SectionHeader(title: L("Per kategori"), trailing: L("%lld budget", period.rows.count))
+                        .padding(.horizontal, 24)
+                        .padding(.top, 22)
                         .padding(.bottom, 4)
                     ForEach(period.rows) { row in
                         NavigationLink(destination: BudgetHistoryTransactionsView(
@@ -150,17 +158,8 @@ struct BudgetHistoryPeriodView: View {
                         }
                         .buttonStyle(RowPressStyle())
                     }
-                    if period.hasEstimate || period.rows.contains(where: { $0.source == .temporary || $0.isDeleted }) {
-                        Text(legend)
-                            .font(.app(12))
-                            .lineSpacing(2)
-                            .foregroundStyle(Color.appTextTertiary)
-                            .padding(.top, 14)
-                    }
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 28)
-                .padding(.bottom, 32)
+                .padding(.bottom, 40)
             }
         }
         .background(Color.appBackground)
@@ -168,101 +167,78 @@ struct BudgetHistoryPeriodView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var legend: String {
-        var lines: [String] = []
-        if period.rows.contains(where: { $0.source == .temporary }) {
-            lines.append(L("Sementara: periode ini memakai budget sementara, bukan budget awal."))
-        }
-        if period.hasEstimate {
-            lines.append(L("Perkiraan: fitur riwayat belum ada saat periode ini berjalan, jadi dipakai nominal budget terakhirmu. Angkanya bisa sedikit berbeda dari yang kamu atur saat itu."))
-        }
-        if period.rows.contains(where: { $0.isDeleted }) {
-            lines.append(L("Sudah dihapus: budget ini sudah kamu hapus, tapi tetap ditampilkan karena aktif di periode ini."))
-        }
-        return lines.joined(separator: "\n")
-    }
-
     private var summary: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text(L("Terpakai"))
+                Text(L("Terpakai")).font(.app(15))
                 Spacer()
-                Text("\(Int((period.progress * 100).rounded()))%").monospacedDigit()
+                if period.hasEstimate { Text(L("Perkiraan")).font(.app(13)) }
             }
-            .font(.app(15))
-            .foregroundStyle(period.status == .over ? Color.appError : Color.appTextSecondary)
+            .foregroundStyle(Color.appTextSecondary)
 
-            Text(money(period.totalSpent))
-                .font(.app(34, weight: .light))
-                .monospacedDigit()
-                .foregroundStyle(Color.appText)
-                .padding(.top, 6)
+            HeroAmount(value: period.totalSpent, size: .hero, isVisible: isBalanceVisible, weight: .ultraLight)
+                .padding(.top, 8)
 
-            SegmentBar(value: period.progress, color: period.status.color, height: 12)
+            SegmentBar(value: period.progress, color: period.status.color, replays: false)
                 .padding(.top, 20)
 
             HStack {
-                stat(L("Terpakai"), money(period.totalSpent))
+                Text(L("%lld%% terpakai", Int((period.progress * 100).rounded())))
                 Spacer()
-                stat(L("Budget"), money(period.totalBudget))
+                (Text(L("dari") + " ") + Text(money(period.totalBudget)).fontWeight(.medium).foregroundStyle(Color.appText))
             }
-            .padding(.top, 12)
+            .font(.app(15))
+            .foregroundStyle(Color.appTextSecondary)
+            .monospacedDigit()
+            .padding(.top, 10)
 
-            VStack(spacing: 10) {
-                flow(L("Masuk"), period.income, Color.appText)
-                flow(L("Keluar"), period.expense, Color.appText)
-                flow(L("Net"), period.net, period.net < 0 ? Color.appError : Color.appPrimary)
+            HStack {
+                flow(L("Masuk"), short(period.income), Color.appText)
+                Spacer()
+                flow(L("Keluar"), short(period.expense), Color.appText)
+                Spacer()
+                flow(L("Net"), short(period.net), period.net < 0 ? Color.appError : Color.appText)
             }
-            .padding(.top, 22)
+            .padding(.top, 20)
 
-            Text(L("Net = pemasukan - pengeluaran. Transfer antar dompet dan pembayaran kartu tidak dihitung."))
-                .font(.app(12))
+            Text(L("Transfer antar dompet dan bayar kartu tidak dihitung."))
+                .font(.app(13))
                 .foregroundStyle(Color.appTextTertiary)
                 .padding(.top, 8)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 24)
-        .padding(.bottom, 28)
+        .padding(.top, 16)
+        .padding(.bottom, 24)
     }
 
-    private func stat(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-            Text(value).font(.app(15, weight: .medium)).monospacedDigit().foregroundStyle(Color.appText)
-        }
-    }
-
-    private func flow(_ title: String, _ value: Double, _ color: Color) -> some View {
-        HStack {
-            Text(title).font(.app(15)).foregroundStyle(Color.appTextSecondary)
-            Spacer()
-            Text(isBalanceVisible ? (value < 0 ? "-" : "") + abs(value).formattedAsCurrency() : "Rp" + hiddenAmount)
-                .font(.app(15, weight: .medium)).monospacedDigit().foregroundStyle(color)
-        }
+    private func flow(_ title: String, _ value: String, _ color: Color) -> some View {
+        (Text(title + " ").foregroundStyle(Color.appTextSecondary) + Text(value).fontWeight(.medium).foregroundStyle(color))
+            .font(.app(15))
+            .monospacedDigit()
     }
 
     private func rowView(_ row: BudgetHistoryRow) -> some View {
-        HStack(alignment: .top, spacing: 14) {
+        let over = row.spent > row.amount
+        return HStack(alignment: .top, spacing: 14) {
             Image(systemName: category(row.categoryId)?.icon ?? "tag")
                 .font(.system(size: 20))
                 .foregroundStyle(Color.appTextSecondary)
                 .frame(width: 24)
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(category(row.categoryId)?.name ?? L("Kategori"))
                         .font(.app(16, weight: .medium))
                         .foregroundStyle(Color.appText)
                         .lineLimit(1)
-                    if row.source == .temporary { Chip(text: L("Sementara")) }
-                    if row.source == .estimate { Chip(text: L("Perkiraan")) }
-                    if row.isDeleted { Chip(text: L("Sudah dihapus")) }
                     Spacer(minLength: 0)
-                    Text(row.status.title)
+                    Text(over ? L("Lewat %@", money(row.spent - row.amount)) : L("Sisa %@", money(row.amount - row.spent)))
                         .font(.app(14))
-                        .foregroundStyle(row.status.color)
+                        .foregroundStyle(over ? Color.appError : Color.appTextSecondary)
+                        .monospacedDigit()
+                        .lineLimit(1)
                 }
-                SegmentBar(value: row.progress, color: row.status.color)
-                Text(L("%@ dari %@", money(row.spent), money(row.amount)))
+                SegmentBar(value: row.progress, color: row.status.color, replays: false)
+                Text(L("%@ dari %@", money(row.spent), money(row.amount)) + marker(row))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
@@ -272,34 +248,91 @@ struct BudgetHistoryPeriodView: View {
                 .foregroundStyle(Color.appTextTertiary)
                 .padding(.top, 4)
         }
+        .padding(.leading, 24)
+        .padding(.trailing, 20)
         .padding(.vertical, 13)
         .contentShape(Rectangle())
     }
+
+    /// Temporary and deleted budgets say so on their last line; estimates are flagged once, above.
+    private func marker(_ row: BudgetHistoryRow) -> String {
+        var parts: [String] = []
+        if row.source == .temporary { parts.append(L("Sementara")) }
+        if row.isDeleted { parts.append(L("Sudah dihapus")) }
+        return parts.isEmpty ? "" : " · " + parts.joined(separator: " · ")
+    }
 }
 
-/// The expenses behind one category row of a past period; the total matches the row.
+/// Transaksi kategori (design 2c): the category's budget for that period, then its expenses by day.
 struct BudgetHistoryTransactionsView: View {
     let row: BudgetHistoryRow
     let category: Category?
     let period: BudgetHistoryPeriod
     @ObservedObject var viewModel: BudgetListViewModel
+    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+
+    private func money(_ amount: Double) -> String {
+        isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
+    }
+
+    private var days: [(day: Date, transactions: [Transaction])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: row.transactions) { calendar.startOfDay(for: $0.date) }
+        return grouped.keys.sorted(by: >).map { ($0, grouped[$0] ?? []) }
+    }
+
+    private static let dayFormat: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM"
+        f.locale = AppLanguage.locale
+        return f
+    }()
 
     var body: some View {
+        let over = row.spent > row.amount
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        Text(L("%@ dari %@", money(row.spent), money(row.amount)))
+                            .font(.app(15))
+                            .foregroundStyle(Color.appTextSecondary)
+                        Spacer(minLength: 0)
+                        Text(over ? L("Lewat %@", money(row.spent - row.amount)) : L("Sisa %@", money(row.amount - row.spent)))
+                            .font(.app(14))
+                            .foregroundStyle(over ? Color.appError : Color.appTextSecondary)
+                    }
+                    .monospacedDigit()
+                    SegmentBar(value: row.progress, color: row.status.color, replays: false)
+                        .padding(.top, 10)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+
+                SectionDivider().padding(.top, 22)
+
                 SectionHeader(title: L("Transaksi"), trailing: L("%lld transaksi", row.transactions.count))
                     .padding(.horizontal, 24)
-                    .padding(.top, 20)
+                    .padding(.top, 22)
                     .padding(.bottom, 6)
+
                 if row.transactions.isEmpty {
                     EmptyMessage(icon: "tray", title: L("Belum ada transaksi"),
                                  message: L("Tidak ada pengeluaran kategori ini di periode itu."))
                         .padding(.vertical, 32)
                 } else {
-                    ForEach(row.transactions) { tx in
-                        TransactionRowView(transaction: tx, categories: category.map { [$0] } ?? viewModel.categories,
-                                           accounts: viewModel.accounts, showAccount: true)
+                    ForEach(days, id: \.day) { group in
+                        Text(Self.dayFormat.string(from: group.day))
+                            .font(.app(13, weight: .semibold))
+                            .foregroundStyle(Color.appTextSecondary)
                             .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                            .padding(.bottom, 2)
+                        ForEach(group.transactions) { tx in
+                            TransactionRowView(transaction: tx, categories: category.map { [$0] } ?? viewModel.categories,
+                                               accounts: viewModel.accounts, showAccount: true, showDate: false)
+                                .padding(.horizontal, 24)
+                        }
                     }
                 }
             }
@@ -311,20 +344,7 @@ struct BudgetHistoryTransactionsView: View {
     }
 }
 
-private struct Chip: View {
-    let text: String
-    var body: some View {
-        Text(text)
-            .font(.app(11, weight: .medium))
-            .foregroundStyle(Color.appTextSecondary)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 2)
-            .background(Color.appFill, in: Capsule())
-            .lineLimit(1)
-    }
-}
-
-private extension BudgetHistoryStatus {
+extension BudgetHistoryStatus {
     var title: String {
         switch self {
         case .safe: return L("Aman")

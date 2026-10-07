@@ -663,6 +663,16 @@
         }
       }
     },
+    "%lld%% terpakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% used"
+          }
+        }
+      }
+    },
     "%lld%% terpakai · %lld hari lagi di %@": {
       "localizations": {
         "en": {
@@ -1203,6 +1213,16 @@
         }
       }
     },
+    "Beberapa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several"
+          }
+        }
+      }
+    },
     "Beberapa periode": {
       "localizations": {
         "en": {
@@ -1603,6 +1623,16 @@
         }
       }
     },
+    "Berlaku untuk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies to"
+          }
+        }
+      }
+    },
     "Berlaku untuk berapa lama?": {
       "localizations": {
         "en": {
@@ -1629,6 +1659,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Can spend"
+          }
+        }
+      }
+    },
+    "Bisa dipakai · %lld hari lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usable · %lld days left"
           }
         }
       }
@@ -1803,6 +1843,16 @@
         }
       }
     },
+    "Budget disesuaikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget adjusted"
+          }
+        }
+      }
+    },
     "Budget hampir habis": {
       "localizations": {
         "en": {
@@ -1839,6 +1889,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Budget per period"
+          }
+        }
+      }
+    },
+    "Budget periode ini sudah habis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This period's budget is used up."
           }
         }
       }
@@ -2983,6 +3043,16 @@
         }
       }
     },
+    "Hanya %@ – %@. Setelah itu kembali ke %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only %@ – %@. After that it goes back to %@."
+          }
+        }
+      }
+    },
     "Hanya bulan ini": {
       "localizations": {
         "en": {
@@ -3069,6 +3139,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete budget"
+          }
+        }
+      }
+    },
+    "Hapus budget ini?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this budget?"
           }
         }
       }
@@ -3269,6 +3349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Make this a recurring bill"
+          }
+        }
+      }
+    },
+    "Jatah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowance"
           }
         }
       }
@@ -5223,6 +5313,16 @@
         }
       }
     },
+    "Periode ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This period"
+          }
+        }
+      }
+    },
     "Periode ini saja": {
       "localizations": {
         "en": {
@@ -5239,6 +5339,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Estimate"
+          }
+        }
+      }
+    },
+    "Perkiraan: dihitung dari budget yang aktif sekarang, karena budget belum diatur di periode tersebut.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimate: calculated from the budget that is active now, because no budget was set in that period."
           }
         }
       }
@@ -5883,6 +5993,26 @@
         }
       }
     },
+    "Sampai %@, lalu kembali ke %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until %@, then back to %@"
+          }
+        }
+      }
+    },
+    "Sampai %@, lalu otomatis kembali ke %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until %@, then it automatically goes back to %@."
+          }
+        }
+      }
+    },
     "Sampai Tanggal": {
       "localizations": {
         "en": {
@@ -6223,6 +6353,16 @@
         }
       }
     },
+    "Sesuaikan budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust budget"
+          }
+        }
+      }
+    },
     "Sesuaikan saldo": {
       "localizations": {
         "en": {
@@ -6379,6 +6519,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rp420.000 left"
+          }
+        }
+      }
+    },
+    "Sisa budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget left"
           }
         }
       }
@@ -7945,6 +8095,16 @@
         }
       }
     },
+    "Transaksi tidak ikut terhapus. Riwayat periode sebelumnya tetap tersimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions aren't deleted. Earlier periods' history is kept."
+          }
+        }
+      }
+    },
     "Transaksi yang kamu catat di %@ akan muncul di sini.": {
       "localizations": {
         "en": {
@@ -7961,6 +8121,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transfer"
+          }
+        }
+      }
+    },
+    "Transfer antar dompet dan bayar kartu tidak dihitung.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transfers between wallets and card payments aren't counted."
           }
         }
       }
@@ -8295,12 +8465,32 @@
         }
       }
     },
+    "dari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of"
+          }
+        }
+      }
+    },
     "dari %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "from %@"
+          }
+        }
+      }
+    },
+    "dari budget periode ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "over this period's budget."
           }
         }
       }
@@ -8510,7 +8700,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "for the %lld days left."
+            "value": "for %lld days left."
           }
         }
       }

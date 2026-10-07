@@ -365,15 +365,7 @@ struct BudgetListView: View {
             category: item.category,
             allTransactions: viewModel.allExpenseTransactions.filter { $0.categoryId == item.category.id },
             accounts: viewModel.accounts,
-            onSaveAmount: { amount, duration in
-                await viewModel.saveAmount(budget: item.budget!, amount: amount, duration: duration)
-            },
-            onCancelTemporary: {
-                await viewModel.cancelTemporary(budget: item.budget!)
-            },
-            onUnsetBudget: {
-                await viewModel.removeBudget(id: item.budget!.id)
-            }
+            viewModel: viewModel
         )
     }
 }
