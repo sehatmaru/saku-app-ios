@@ -49,7 +49,18 @@ struct BudgetListView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ScreenHeader(title: L("Budget")) {}
+                    ScreenHeader(title: L("Budget")) {
+                        NavigationLink(destination: BudgetHistoryView(viewModel: viewModel).detailPage()) {
+                            Image(systemName: "clock.arrow.circlepath")
+                        }
+                        .accessibilityLabel(L("Riwayat budget"))
+                        Button {
+                            withAnimation(.smooth) { isBalanceVisible.toggle() }
+                        } label: {
+                            Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+                        }
+                        .accessibilityLabel(isBalanceVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
+                    }
 
                     periodHeader
 
@@ -251,27 +262,6 @@ struct BudgetListView: View {
                     .buttonStyle(RowPressStyle())
                 }
             }
-            NavigationLink(destination: BudgetHistoryView(viewModel: viewModel).detailPage()) {
-                HStack {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.appTextSecondary)
-                        .frame(width: 24)
-                    Text(L("Riwayat budget"))
-                        .font(.app(16, weight: .medium))
-                        .foregroundStyle(Color.appText)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.appTextTertiary)
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(RowPressStyle())
-            .padding(.top, 14)
-
             Text("Budget dihitung per kategori. Tiap periode mulai dari nol, sisa tidak terbawa ke periode berikutnya.")
                 .font(.app(13))
                 .lineSpacing(2)
@@ -376,9 +366,7 @@ struct BudgetListView: View {
                 await viewModel.cancelTemporary(budget: item.budget!)
             },
             onUnsetBudget: {
-                Task {
-                    await viewModel.removeBudget(id: item.budget!.id)
-                }
+                await viewModel.removeBudget(id: item.budget!.id)
             }
         )
     }

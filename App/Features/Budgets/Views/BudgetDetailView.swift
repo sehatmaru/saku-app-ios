@@ -8,7 +8,7 @@ struct BudgetDetailView: View {
     /// Saves a new amount; false when it could not be saved.
     var onSaveAmount: ((Double, BudgetAmountDuration) async -> Bool)?
     var onCancelTemporary: (() async -> Bool)?
-    var onUnsetBudget: (() -> Void)?
+    var onUnsetBudget: (() async -> Bool)?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -22,6 +22,9 @@ struct BudgetDetailView: View {
     @State private var showCancelTemporaryAlert = false
     @State private var isSavingAmount = false
     @State private var saveFailed = false
+    @State private var isCancellingTemporary = false
+    @State private var isDeleting = false
+    @State private var deleteFailed = false
     @State private var pendingAmount: Double = 0
 
     private enum AdjustScope: CaseIterable {
@@ -109,46 +112,41 @@ struct BudgetDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showAdjustBudget) {
             adjustBudgetSheet
+                .confirmDialog(isPresented: $showOverspendAlert, icon: "exclamationmark.triangle",
+                               title: L("Budget langsung lewat batas"),
+                               message: L("Pengeluaranmu periode ini sudah %@, lebih besar dari %@. Budget akan langsung berstatus lewat batas. Lanjutkan?",
+                                          budget.spent.formattedAsCurrency(), pendingAmount.formattedAsCurrency()),
+                               confirmTitle: L("Lanjutkan")) {
+                    showOverspendAlert = false
+                    proceedAfterOverspend()
+                }
+                .confirmDialog(isPresented: $showReplaceAlert, icon: "arrow.triangle.2.circlepath",
+                               title: L("Ganti perubahan sementara?"),
+                               message: budget.temporary.map {
+                                   L("Kamu sudah punya budget sementara %@ sampai %@. Yang baru akan menggantikannya.",
+                                     $0.amount.formattedAsCurrency(), lastDay(of: $0))
+                               } ?? "",
+                               confirmTitle: L("Ganti"), cancelTitle: L("Tidak jadi")) {
+                    showReplaceAlert = false
+                    saveAmount()
+                }
+                .confirmDialog(isPresented: $saveFailed, icon: "exclamationmark.triangle", title: L("Gagal menyimpan"),
+                               message: L("Perubahan budget belum tersimpan. Coba lagi."), confirmTitle: nil,
+                               cancelTitle: L("Tutup"))
                 .presentationDetents([.large])
                 .presentationBackground(Color.appBackground)
         }
-        .alert(L("Budget langsung lewat batas"), isPresented: $showOverspendAlert) {
-            Button(L("Batal"), role: .cancel) {}
-            Button(L("Lanjutkan")) { proceedAfterOverspend() }
-        } message: {
-            Text(L("Pengeluaranmu periode ini sudah %@, lebih besar dari %@. Budget akan langsung berstatus lewat batas. Lanjutkan?",
-                   budget.spent.formattedAsCurrency(), pendingAmount.formattedAsCurrency()))
-        }
-        .alert(L("Ganti perubahan sementara?"), isPresented: $showReplaceAlert) {
-            Button(L("Tidak jadi"), role: .cancel) {}
-            Button(L("Ganti")) { saveAmount() }
-        } message: {
-            if let temporary = budget.temporary {
-                Text(L("Kamu sudah punya budget sementara %@ sampai %@. Yang baru akan menggantikannya.",
-                       temporary.amount.formattedAsCurrency(), lastDay(of: temporary)))
-            }
-        }
-        .alert(L("Kembali ke budget awal?"), isPresented: $showCancelTemporaryAlert) {
-            Button(L("Tidak jadi"), role: .cancel) {}
-            Button(L("Kembali ke budget awal")) { cancelTemporary() }
-        } message: {
-            Text(L("Mulai periode ini, budget %@ kembali ke %@. Periode yang sudah lewat tidak berubah.",
-                   category.name, (budget.baseAmount ?? budget.amount).formattedAsCurrency()))
-        }
-        .alert(L("Gagal menyimpan"), isPresented: $saveFailed) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(L("Perubahan budget belum tersimpan. Coba lagi."))
-        }
-        .alert("Hapus Budget?", isPresented: $showUnsetAlert) {
-            Button("Batal", role: .cancel) {}
-            Button("Hapus", role: .destructive) {
-                onUnsetBudget?()
-                dismiss()
-            }
-        } message: {
-            Text("Budget untuk \(category.name) akan dihapus.")
-        }
+        .confirmDialog(isPresented: $showCancelTemporaryAlert, icon: "arrow.uturn.backward",
+                       title: L("Kembali ke budget awal?"),
+                       message: L("Mulai periode ini, budget %@ kembali ke %@. Periode yang sudah lewat tidak berubah.",
+                                  category.name, (budget.baseAmount ?? budget.amount).formattedAsCurrency()),
+                       confirmTitle: L("Kembali ke budget awal"), cancelTitle: L("Tidak jadi"),
+                       isBusy: isCancellingTemporary) { cancelTemporary() }
+        .confirmDialog(isPresented: $showUnsetAlert, icon: "trash", destructive: true, title: L("Hapus Budget?"),
+                       message: L("Budget untuk %@ akan dihapus.", category.name),
+                       confirmTitle: L("Hapus"), isBusy: isDeleting) { deleteBudget() }
+        .confirmDialog(isPresented: $deleteFailed, icon: "exclamationmark.triangle", title: L("Gagal menyimpan"),
+                       message: L("Perubahan budget belum tersimpan. Coba lagi."), confirmTitle: nil, cancelTitle: L("Tutup"))
         .sheet(item: $detailTransaction) { txn in
             TransactionDetailView(
                 transaction: txn,
@@ -176,7 +174,7 @@ struct BudgetDetailView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Spacer()
-                Button("Simpan") {
+                Button {
                     guard let amount = Double(adjustAmountDigits), amount > 0 else { return }
                     pendingAmount = amount
                     if amount < budget.spent {
@@ -184,6 +182,8 @@ struct BudgetDetailView: View {
                     } else {
                         proceedAfterOverspend()
                     }
+                } label: {
+                    if isSavingAmount { ProgressView() } else { Text("Simpan") }
                 }
                 .font(.app(17, weight: .semibold))
                 .foregroundStyle(adjustAmountDigits.isEmpty ? Color.appTextTertiary : Color.appPrimary)
@@ -309,8 +309,23 @@ struct BudgetDetailView: View {
 
     private func cancelTemporary() {
         guard let onCancelTemporary else { return }
+        isCancellingTemporary = true
         Task {
-            if await onCancelTemporary() { dismiss() } else { saveFailed = true }
+            let ok = await onCancelTemporary()
+            isCancellingTemporary = false
+            showCancelTemporaryAlert = false
+            if ok { dismiss() } else { deleteFailed = true }
+        }
+    }
+
+    private func deleteBudget() {
+        guard let onUnsetBudget else { return }
+        isDeleting = true
+        Task {
+            let ok = await onUnsetBudget()
+            isDeleting = false
+            showUnsetAlert = false
+            if ok { dismiss() } else { deleteFailed = true }
         }
     }
 

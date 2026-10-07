@@ -21,6 +21,7 @@ struct ProfileView: View {
     @State private var isResetting = false
     @State private var resetError: String?
     @State private var showsPayday = false
+    @State private var isCancellingPayday = false
     @State private var isPaydayToastShown = false
     @State private var isPaydayFlashing = false
     /// Mirrors PaydaySetting.day (0 = not set) so the row updates when the payday changes.
@@ -224,9 +225,13 @@ struct ProfileView: View {
                         .font(.app(13))
                         .foregroundStyle(Color.appTextSecondary)
                     Spacer(minLength: 8)
-                    Button(L("Batalkan")) { cancelPendingPayday() }
-                        .font(.app(13, weight: .semibold))
-                        .foregroundStyle(Color.appPrimary)
+                    if isCancellingPayday {
+                        ProgressView()
+                    } else {
+                        Button(L("Batalkan")) { cancelPendingPayday() }
+                            .font(.app(13, weight: .semibold))
+                            .foregroundStyle(Color.appPrimary)
+                    }
                 }
                 .padding(.vertical, 8)
             }
@@ -239,8 +244,10 @@ struct ProfileView: View {
     }
 
     private func cancelPendingPayday() {
+        isCancellingPayday = true
         Task {
             try? await SupabaseSDK.cancelPendingPayday()
+            isCancellingPayday = false
             NotificationCenter.default.post(name: .dataDidChange, object: nil)
         }
     }
