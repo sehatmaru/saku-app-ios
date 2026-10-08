@@ -33,7 +33,11 @@ struct RecordFromNotificationIntent: AppIntent {
             return store.add(drafts).count
         }
         if count > 0 { await DraftNotifier.announce(count: count) }
-        return .result(dialog: count > 0 ? "Draf dari notifikasi masuk ke Perlu dicek." : "Tidak ada nominal, notifikasi diabaikan.")
+        // an empty body usually means the Shortcut's Body variable is not filled, which is worth saying
+        let nothing = body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && subtitle.isEmpty
+            ? "Isi notifikasi kosong. Cek variabel Isi di Shortcuts."
+            : "Tidak ada nominal, notifikasi diabaikan."
+        return .result(dialog: count > 0 ? "Draf dari notifikasi masuk ke Perlu dicek." : IntentDialog(stringLiteral: nothing))
     }
 }
 

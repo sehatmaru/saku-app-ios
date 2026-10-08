@@ -39,4 +39,14 @@ final class NotificationParserTests: XCTestCase {
         let amount = NotificationParser.firstAmount(in: NotificationParser.sanitize("Saldo Rp9.999.999. Bayar Rp12.500"))
         XCTAssertEqual(amount, 12_500)
     }
+
+    /// The real myBCA notification (English, IDR with a dot decimal, masked sender).
+    func testMyBCAEnglishIncoming() {
+        let body = "You received IDR 10,000.00 from **HAT ***ULI *UA S at Account Transfer category."
+        let drafts = NotificationParser.parse(app: "BCA", title: "Financial Diary", subtitle: "", body: body, context: context)
+        XCTAssertEqual(drafts.count, 1)
+        XCTAssertEqual(drafts.first?.amount, 10_000)
+        XCTAssertEqual(drafts.first?.kind, .income)
+        XCTAssertEqual(drafts.first?.accountId, "bca")
+    }
 }

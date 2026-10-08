@@ -17,11 +17,15 @@ enum NotificationParser {
         else { kindWord = "bayar" }
 
         let merchant = merchantName(in: text) ?? ""
-        // A short sentence the normal parser understands: wallet comes from the app, the rest from the text.
-        let sentence = [kindWord == "bayar" ? "" : kindWord, merchant, String(Int(amount)), app].filter { !$0.isEmpty }.joined(separator: " ")
+        // The sentence only carries the kind, amount and app (the wallet). Free text such as "Account Transfer
+        // category" must not steer the kind, so the merchant is read separately for a title and category.
+        let sentence = [kindWord == "bayar" ? "" : kindWord, String(Int(amount)), app].filter { !$0.isEmpty }.joined(separator: " ")
         var drafts = SmartParser.parse(sentence, source: .notification, context: context)
+        let hint = merchant.isEmpty ? [] : SmartParser.parse("\(merchant) \(Int(amount))", source: .notification, context: context)
         for index in drafts.indices where drafts[index].amount != nil {
-            drafts[index].title = merchant.isEmpty ? drafts[index].title : merchant.capitalized
+            if !merchant.isEmpty { drafts[index].title = merchant.capitalized }
+            if drafts[index].kind == .expense || drafts[index].kind == .income, drafts[index].categoryId == nil,
+               let id = hint.first?.categoryId { drafts[index].categoryId = id }
         }
         return drafts.filter { $0.amount != nil }
     }
