@@ -131,8 +131,8 @@ final class DraftStore: ObservableObject {
         let texts = ShareInbox.drain()
         guard !texts.isEmpty else { return }
         let added = texts.flatMap { SmartParser.parse($0, source: .share, context: context) }
+        // the share extension already told the user; no second notification here
         add(added)
-        Task { await DraftNotifier.announce(count: added.count) }
     }
 
     // MARK: Duplicates

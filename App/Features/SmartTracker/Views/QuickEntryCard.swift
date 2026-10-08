@@ -81,7 +81,10 @@ struct QuickEntryCard: View {
         .onChange(of: voice.transcript) { _, spoken in if !spoken.isEmpty { text = spoken } }
         .sheet(isPresented: $showsConsent) { SmartTrackerConsentSheet { hasConsented = true; showsConsent = false; submit() } }
         .sheet(isPresented: $showsQueue) { DraftQueueView(userId: userId) }
-        .task { await store.refreshReferenceData(userId: userId) }
+        .task {
+            await NotificationManager.shared.requestPermissionIfNeeded()
+            await store.refreshReferenceData(userId: userId)
+        }
     }
 
     private func toggleVoice() {

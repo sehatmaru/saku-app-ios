@@ -9,6 +9,8 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
 
     /// The card whose bill the user wants to record; Beranda clears it once the sheet is open.
     @Published var pendingCardId: String?
+    /// Set when the user taps the "new drafts" notification; Beranda opens Perlu dicek and clears it.
+    @Published var opensDrafts = false
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
@@ -18,6 +20,10 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse) async {
         let content = response.notification.request.content
+        if content.userInfo["route"] as? String == DraftNotifier.route {
+            await MainActor.run { NotificationRouter.shared.opensDrafts = true }
+            return
+        }
         guard content.categoryIdentifier == NotificationManager.lateCategory,
               let cardId = content.userInfo["cardId"] as? String else { return }
         let statementTime = content.userInfo["statementDate"] as? Double ?? 0

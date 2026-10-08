@@ -10,6 +10,7 @@ struct DashboardView: View {
     }
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
+@State private var showsDrafts = false
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
     @State private var isChartShown = false
     /// Day index picked in the "Bulan ini" chart; nil means today.
@@ -77,6 +78,11 @@ struct DashboardView: View {
             })
         }
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
+        .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
+        .onAppear { openDraftsIfRequested() }
+        .sheet(isPresented: $showsDrafts) {
+            if let userId = authViewModel.currentUser?.id { DraftQueueView(userId: userId) }
+        }
         .onChange(of: viewModel.overdueBills.map(\.id)) { _, _ in openPendingRecord() }
         .toast(toastText, isShown: $isToastShown)
         .fullScreenCover(isPresented: $showAddSheet) {
@@ -93,6 +99,14 @@ struct DashboardView: View {
                 )
             }
         }
+    }
+
+    /// Tapping the "new drafts" notification: read what was shared, then show Perlu dicek.
+    private func openDraftsIfRequested() {
+        guard notificationRouter.opensDrafts else { return }
+        notificationRouter.opensDrafts = false
+        DraftStore.shared.ingestSharedText()
+        showsDrafts = true
     }
 
     /// "Sudah, catat" on the notification: open its card once the bills have loaded.
