@@ -101,7 +101,8 @@ final class DraftStore: ObservableObject {
     /// when the user agreed to it and there is a network; offline it stays as the user's own words.
     func addRefined(text: String, source: Draft.Source) async -> [Draft] {
         let parsed = SmartParser.parse(text, source: source, context: context)
-        guard parsed.count == 1, parsed[0].isUnreadable || parsed[0].amount == nil,
+        // the language model (server) is only used with the user's agreement
+        guard SmartTrackerConsent.isGranted, parsed.count == 1, parsed[0].isUnreadable || parsed[0].amount == nil,
               let remote = await RemoteSmartParser.parse(text, source: source, context: context) else { return add(parsed) }
         return add(remote)
     }
@@ -128,6 +129,8 @@ final class DraftStore: ObservableObject {
     /// Text shared from other apps becomes drafts; the inbox is emptied so the raw text is not kept.
     func ingestSharedText() {
         purgeExpired()
+        // not agreed yet: the shared text waits in the inbox until the user is asked
+        guard SmartTrackerConsent.isGranted else { return }
         let texts = ShareInbox.drain()
         guard !texts.isEmpty else { return }
         let added = texts.flatMap { SmartParser.parse($0, source: .share, context: context) }
@@ -226,6 +229,16 @@ final class DraftStore: ObservableObject {
     func forgetEverything() {
         memory = []
         drafts = []
+        persist()
+    }
+
+    /// Signing out: nothing of this account stays on the device for the next one.
+    func reset() {
+        memory = []
+        drafts = []
+        accounts = []
+        categories = []
+        recent = []
         persist()
     }
 }

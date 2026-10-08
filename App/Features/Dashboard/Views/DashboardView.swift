@@ -11,6 +11,7 @@ struct DashboardView: View {
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
 @State private var showsDrafts = false
+@State private var showsConsent = false
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
     @State private var isChartShown = false
     /// Day index picked in the "Bulan ini" chart; nil means today.
@@ -79,7 +80,15 @@ struct DashboardView: View {
         }
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
-        .onAppear { openDraftsIfRequested() }
+        .onAppear { openDraftsIfRequested(); askConsentForSharedText() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in askConsentForSharedText() }
+        .sheet(isPresented: $showsConsent) {
+            SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) {
+                showsConsent = false
+                DraftStore.shared.ingestSharedText()
+                showsDrafts = true
+            }
+        }
         .sheet(isPresented: $showsDrafts) {
             if let userId = authViewModel.currentUser?.id { DraftQueueView(userId: userId) }
         }
@@ -99,6 +108,12 @@ struct DashboardView: View {
                 )
             }
         }
+    }
+
+    /// Text was shared to Saku before the user agreed to Smart Tracker: ask now, then read it.
+    private func askConsentForSharedText() {
+        guard !SmartTrackerConsent.isGranted, ShareInbox.hasItems, authViewModel.isAuthenticated else { return }
+        showsConsent = true
     }
 
     /// Tapping the "new drafts" notification: read what was shared, then show Perlu dicek.

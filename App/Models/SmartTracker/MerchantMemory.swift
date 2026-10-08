@@ -23,3 +23,15 @@ enum MerchantMemory {
         return word.count >= 2 && !draft.isUnreadable ? word : nil
     }
 }
+
+/// Whether this account agreed to Smart Tracker reading sentences, notifications and shared text.
+/// The profile row is the source of truth (per account, every device); `SupabaseSDK` mirrors it here so
+/// Siri, Shortcuts and the share extension can check it without a network call. Cleared on sign-out.
+enum SmartTrackerConsent {
+    static let key = "smartTrackerConsent"
+
+    static var isGranted: Bool {
+        get { UserDefaults.standard.bool(forKey: key) }
+        set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+}

@@ -17,8 +17,28 @@ enum SupabaseSDK {
             .value
         PaydaySetting.day = profile.paydayDay
         HomeBalanceSetting.mode = profile.homeBalanceMode
+        await syncSmartTrackerConsent(profile)
         await refreshPaydaySchedule()
         return profile
+    }
+
+    /// The profile decides. If this device agreed but saving failed earlier, the agreement is saved now.
+    static func syncSmartTrackerConsent(_ profile: UserProfile) async {
+        if profile.smartTrackerConsentAt != nil {
+            SmartTrackerConsent.isGranted = true
+        } else if SmartTrackerConsent.isGranted {
+            try? await recordSmartTrackerConsent(profileId: profile.id)
+        }
+    }
+
+    /// Saves that the user agreed (now) and mirrors it on the device.
+    static func recordSmartTrackerConsent(profileId: UUID) async throws {
+        try await client
+            .from("user_profiles")
+            .update(["smart_tracker_consent_at": AnyJSON.string(ISO8601DateFormatter().string(from: Date()))] as [String: AnyJSON])
+            .eq("id", value: profileId)
+            .execute()
+        SmartTrackerConsent.isGranted = true
     }
 
     private struct PaydayChangeRow: Decodable {
@@ -134,6 +154,8 @@ struct UserProfile: Codable, Identifiable {
     var avatarUrl: String? = nil
     /// "cash" or "all"; nil reads as cash.
     var homeBalanceMode: String? = nil
+    /// When the user agreed to Smart Tracker; nil until then.
+    var smartTrackerConsentAt: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -145,6 +167,7 @@ struct UserProfile: Codable, Identifiable {
         case paydayDay = "payday_day"
         case avatarUrl = "avatar_url"
         case homeBalanceMode = "home_balance_mode"
+        case smartTrackerConsentAt = "smart_tracker_consent_at"
     }
 }
 

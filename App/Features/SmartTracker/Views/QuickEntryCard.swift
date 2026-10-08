@@ -5,7 +5,7 @@ struct QuickEntryCard: View {
     let userId: String
     @ObservedObject private var store = DraftStore.shared
     @StateObject private var voice = SpeechDictation()
-    @AppStorage("smartTrackerConsent") private var hasConsented = false
+    @AppStorage(SmartTrackerConsent.key) private var hasConsented = false
     @State private var text = ""
     @State private var showsConsent = false
     @State private var showsQueue = false
@@ -79,7 +79,7 @@ struct QuickEntryCard: View {
         .padding(.vertical, 14)
         .animation(.easeInOut(duration: 0.2), value: lastAdded)
         .onChange(of: voice.transcript) { _, spoken in if !spoken.isEmpty { text = spoken } }
-        .sheet(isPresented: $showsConsent) { SmartTrackerConsentSheet { hasConsented = true; showsConsent = false; submit() } }
+        .sheet(isPresented: $showsConsent) { SmartTrackerConsentSheet(profileId: UUID(uuidString: userId)) { showsConsent = false; submit() } }
         .sheet(isPresented: $showsQueue) { DraftQueueView(userId: userId) }
         .task {
             await NotificationManager.shared.requestPermissionIfNeeded()
@@ -114,6 +114,8 @@ struct QuickEntryCard: View {
 
 /// What Smart Tracker reads and where it goes, shown before first use.
 struct SmartTrackerConsentSheet: View {
+    /// Whose agreement this is; it is saved on the profile so it follows the account to every device.
+    let profileId: UUID?
     var onAgree: () -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -126,7 +128,12 @@ struct SmartTrackerConsentSheet: View {
             Text(L("Teks asli dihapus setelah draf dibuat. Draf yang tidak diproses dihapus otomatis setelah 30 hari. Kamu bisa menghapus semuanya di Profil."))
                 .foregroundStyle(Color.appTextSecondary)
             Spacer()
-            Button(action: onAgree) {
+            Button {
+                // agree now (works offline); the profile is updated in the background and retried at next launch
+                SmartTrackerConsent.isGranted = true
+                if let profileId { Task { try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId) } }
+                onAgree()
+            } label: {
                 Text(L("Mengerti, lanjutkan"))
                     .font(.app(16, weight: .semibold))
                     .foregroundStyle(Color.appBackground)

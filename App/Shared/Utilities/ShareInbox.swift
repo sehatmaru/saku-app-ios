@@ -16,6 +16,11 @@ enum ShareInbox {
         try? JSONEncoder().encode(items).write(to: url, options: .atomic)
     }
 
+    static var hasItems: Bool {
+        guard let url, let data = try? Data(contentsOf: url), let items = try? JSONDecoder().decode([String].self, from: data) else { return false }
+        return !items.isEmpty
+    }
+
     /// Returns everything waiting and clears the file, so the raw text is not kept.
     static func drain() -> [String] {
         guard let url, let data = try? Data(contentsOf: url), let items = try? JSONDecoder().decode([String].self, from: data) else { return [] }
