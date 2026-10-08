@@ -41,6 +41,16 @@ enum SupabaseSDK {
         SmartTrackerConsent.isGranted = true
     }
 
+    /// Withdraws the agreement: saved on the profile first, then mirrored on the device.
+    static func revokeSmartTrackerConsent(profileId: UUID) async throws {
+        try await client
+            .from("user_profiles")
+            .update(["smart_tracker_consent_at": AnyJSON.null] as [String: AnyJSON])
+            .eq("id", value: profileId)
+            .execute()
+        SmartTrackerConsent.isGranted = false
+    }
+
     private struct PaydayChangeRow: Decodable {
         let paydayDay: Int
         let effectiveFrom: String

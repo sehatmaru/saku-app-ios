@@ -257,5 +257,10 @@
   "Apa yang dibaca dan ke mana dikirim": "What is read and where it goes",
   "Kamu sudah menyetujui": "You've agreed",
   "Belum disetujui": "Not agreed yet",
-  "Baca dan setujui": "Read and agree"
+  "Baca dan setujui": "Read and agree",
+  "Cabut persetujuan": "Withdraw agreement",
+  "Cabut persetujuan?": "Withdraw agreement?",
+  "Catat cepat, Siri/Shortcuts, notifikasi, dan Bagikan berhenti membuat draf. Draf yang belum disimpan dan semua yang diingat Saku dihapus dari perangkat ini. Transaksi yang sudah tersimpan tidak berubah. Kamu bisa menyetujui lagi kapan saja.": "Quick add, Siri/Shortcuts, notifications and Share stop making drafts. Unsaved drafts and everything Saku remembered are deleted from this device. Transactions already saved don't change. You can agree again any time.",
+  "Gagal mencabut persetujuan": "Couldn't withdraw agreement",
+  "Periksa koneksi internetmu lalu coba lagi. Persetujuanmu belum berubah.": "Check your internet connection and try again. Your agreement hasn't changed."
 }

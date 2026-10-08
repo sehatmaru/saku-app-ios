@@ -129,6 +129,9 @@ struct SmartTrackerPrivacyView: View {
     @AppStorage(SmartTrackerConsent.key) private var isGranted = false
     @EnvironmentObject private var authViewModel: AuthViewModel
     @State private var showsConsent = false
+    @State private var showsRevoke = false
+    @State private var isRevoking = false
+    @State private var revokeFailed = false
 
     var body: some View {
         ScrollView {
@@ -145,15 +148,49 @@ struct SmartTrackerPrivacyView: View {
                             .frame(maxWidth: .infinity).frame(height: 50).background(Color.appText, in: Capsule())
                     }
                     .buttonStyle(PressScaleStyle())
+                } else {
+                    Button { showsRevoke = true } label: {
+                        Text(L("Cabut persetujuan"))
+                            .font(.app(16, weight: .semibold))
+                            .foregroundStyle(Color(light: 0xD1343A, dark: 0xFF6B6B))
+                            .frame(maxWidth: .infinity).frame(height: 48)
+                            .background(Color(light: 0xFDECEC, dark: 0x3A1D1F), in: Capsule())
+                    }
+                    .buttonStyle(PressScaleStyle())
                 }
             }
             .padding(24)
         }
         .background(Color.appBackground)
+        .confirmDialog(isPresented: $showsRevoke, icon: "hand.raised", destructive: true,
+                       title: L("Cabut persetujuan?"),
+                       message: L("Catat cepat, Siri/Shortcuts, notifikasi, dan Bagikan berhenti membuat draf. Draf yang belum disimpan dan semua yang diingat Saku dihapus dari perangkat ini. Transaksi yang sudah tersimpan tidak berubah. Kamu bisa menyetujui lagi kapan saja."),
+                       confirmTitle: L("Cabut persetujuan"), isBusy: isRevoking) { revoke() }
+        .confirmDialog(isPresented: $revokeFailed, icon: "exclamationmark.triangle", title: L("Gagal mencabut persetujuan"),
+                       message: L("Periksa koneksi internetmu lalu coba lagi. Persetujuanmu belum berubah."),
+                       confirmTitle: nil, cancelTitle: L("Tutup"))
         .navigationTitle(L("Data yang diproses"))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showsConsent) {
             SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) { showsConsent = false }
+        }
+    }
+
+    private func revoke() {
+        guard let profileId = authViewModel.currentUser.flatMap({ UUID(uuidString: $0.id) }) else { return }
+        isRevoking = true
+        Task {
+            do {
+                try await SupabaseSDK.revokeSmartTrackerConsent(profileId: profileId)
+                // nothing read under the old agreement stays: drafts, what was learned, text waiting from Bagikan
+                DraftStore.shared.forgetEverything()
+                _ = ShareInbox.drain()
+                showsRevoke = false
+            } catch {
+                showsRevoke = false
+                revokeFailed = true
+            }
+            isRevoking = false
         }
     }
 }
