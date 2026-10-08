@@ -10,6 +10,11 @@ struct SmartTrackerSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                NavigationLink(destination: SmartTrackerPrivacyView().detailPage()) {
+                    row(icon: "lock.shield", title: L("Data yang diproses"), subtitle: L("Apa yang dibaca dan ke mana dikirim"))
+                }
+                .buttonStyle(RowPressStyle())
+
                 NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
                     row(icon: "bell.badge", title: L("Catat dari notifikasi"), subtitle: L("Panduan memasang di Shortcuts"))
                 }
@@ -116,5 +121,39 @@ struct NotificationSetupGuideView: View {
          L("Ketuk Berikutnya, tambahkan aksi \"Catat dari notifikasi\" dari Saku."),
          L("Isi Aplikasi sumber dengan nama aplikasinya, lalu Judul, Subjudul, dan Isi dengan variabel dari notifikasi."),
          L("Matikan \"Tanya Sebelum Menjalankan\" jika iOS menawarkannya, lalu ketuk Selesai.")]
+    }
+}
+
+/// What Smart Tracker reads and where it goes, any time, with the state of the user's agreement.
+struct SmartTrackerPrivacyView: View {
+    @AppStorage(SmartTrackerConsent.key) private var isGranted = false
+    @EnvironmentObject private var authViewModel: AuthViewModel
+    @State private var showsConsent = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Label(isGranted ? L("Kamu sudah menyetujui") : L("Belum disetujui"),
+                      systemImage: isGranted ? "checkmark.seal.fill" : "exclamationmark.circle")
+                    .font(.app(15, weight: .semibold))
+                    .foregroundStyle(isGranted ? Color.appPrimary : Color.appWarning)
+                SmartTrackerPrivacyText()
+                if !isGranted {
+                    Button { showsConsent = true } label: {
+                        Text(L("Baca dan setujui"))
+                            .font(.app(16, weight: .semibold)).foregroundStyle(Color.appBackground)
+                            .frame(maxWidth: .infinity).frame(height: 50).background(Color.appText, in: Capsule())
+                    }
+                    .buttonStyle(PressScaleStyle())
+                }
+            }
+            .padding(24)
+        }
+        .background(Color.appBackground)
+        .navigationTitle(L("Data yang diproses"))
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showsConsent) {
+            SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) { showsConsent = false }
+        }
     }
 }

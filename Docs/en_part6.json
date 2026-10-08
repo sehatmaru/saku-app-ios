@@ -252,5 +252,10 @@
   "Ketuk Berikutnya, tambahkan aksi \"Catat dari notifikasi\" dari Saku.": "Tap Next and add the \"Record from notification\" action from Saku.",
   "Isi Aplikasi sumber dengan nama aplikasinya, lalu Judul, Subjudul, dan Isi dengan variabel dari notifikasi.": "Fill Source app with the app's name, then Title, Subtitle and Body with the notification variables.",
   "Matikan \"Tanya Sebelum Menjalankan\" jika iOS menawarkannya, lalu ketuk Selesai.": "Turn off \"Ask Before Running\" if iOS offers it, then tap Done.",
-  "Buka Saku dan setujui Catat cepat dulu, lalu coba lagi.": "Open Saku and agree to Quick add first, then try again."
+  "Buka Saku dan setujui Catat cepat dulu, lalu coba lagi.": "Open Saku and agree to Quick add first, then try again.",
+  "Data yang diproses": "Data processed",
+  "Apa yang dibaca dan ke mana dikirim": "What is read and where it goes",
+  "Kamu sudah menyetujui": "You've agreed",
+  "Belum disetujui": "Not agreed yet",
+  "Baca dan setujui": "Read and agree"
 }

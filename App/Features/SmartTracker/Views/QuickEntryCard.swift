@@ -123,10 +123,7 @@ struct SmartTrackerConsentSheet: View {
         VStack(alignment: .leading, spacing: 14) {
             Image(systemName: "sparkles").font(.system(size: 28)).foregroundStyle(Color.appPrimary)
             Text(L("Catat cepat")).font(.app(24, weight: .bold))
-            Text(L("Saku membaca kalimat yang kamu ketik atau ucapkan, lalu membuat draf transaksi. Draf disimpan di perangkat ini dan baru jadi transaksi setelah kamu menyetujuinya."))
-            Text(L("Kalimatnya diproses di perangkatmu. Hanya jika kalimat sulit dipahami, teksnya (tanpa saldo atau nomor rekening) dikirim ke server Saku untuk dibantu model bahasa. Penyedia model tidak menyimpan dan tidak melatih model dari teks itu."))
-            Text(L("Teks asli dihapus setelah draf dibuat. Draf yang tidak diproses dihapus otomatis setelah 30 hari. Kamu bisa menghapus semuanya di Profil."))
-                .foregroundStyle(Color.appTextSecondary)
+            SmartTrackerPrivacyText()
             Spacer()
             Button {
                 // agree now (works offline); the profile is updated in the background and retried at next launch
@@ -151,5 +148,20 @@ struct SmartTrackerConsentSheet: View {
         .padding(24)
         .presentationDetents([.large])
         .presentationBackground(Color.appBackground)
+    }
+}
+
+/// The three paragraphs of the agreement: what is read, where it goes, how long it is kept.
+/// Shown in the consent sheet and, any time, from Profil › Catat cepat › Data yang diproses.
+struct SmartTrackerPrivacyText: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(L("Saku membaca kalimat yang kamu ketik atau ucapkan, lalu membuat draf transaksi. Draf disimpan di perangkat ini dan baru jadi transaksi setelah kamu menyetujuinya."))
+            Text(L("Kalimatnya diproses di perangkatmu. Hanya jika kalimat sulit dipahami, teksnya (tanpa saldo atau nomor rekening) dikirim ke server Saku untuk dibantu model bahasa. Penyedia model tidak menyimpan dan tidak melatih model dari teks itu."))
+            Text(L("Teks asli dihapus setelah draf dibuat. Draf yang tidak diproses dihapus otomatis setelah 30 hari. Kamu bisa menghapus semuanya di Profil."))
+                .foregroundStyle(Color.appTextSecondary)
+        }
+        .font(.app(15))
+        .lineSpacing(3)
     }
 }
