@@ -10,7 +10,6 @@ struct DashboardView: View {
     }
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
-@State private var showsDrafts = false
 @AppStorage(SmartTrackerWays.quickKey) private var smartQuickOn = true
 @State private var showsConsent = false
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
@@ -42,6 +41,7 @@ struct DashboardView: View {
     /// Pages pushed on Beranda by value.
     enum HomeRoute: Hashable {
         case wallets
+        case drafts
     }
 
     var body: some View {
@@ -82,8 +82,8 @@ struct DashboardView: View {
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
         .overlay {
-            if selectedTab == .home, !hasNoWallets, smartQuickOn, let userId = authViewModel.currentUser?.id {
-                SmartTrackerHomeOverlay(userId: userId) { text in
+            if selectedTab == .home, homePath.isEmpty, !hasNoWallets, smartQuickOn, let userId = authViewModel.currentUser?.id {
+                SmartTrackerHomeOverlay(userId: userId, onOpenQueue: { openDraftsPage() }) { text in
                     toastText = text
                     isToastShown = true
                 }
@@ -95,11 +95,8 @@ struct DashboardView: View {
             SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) {
                 showsConsent = false
                 DraftStore.shared.ingestSharedText()
-                showsDrafts = true
+                openDraftsPage()
             }
-        }
-        .sheet(isPresented: $showsDrafts) {
-            if let userId = authViewModel.currentUser?.id { DraftQueueView(userId: userId) }
         }
         .onChange(of: viewModel.overdueBills.map(\.id)) { _, _ in openPendingRecord() }
         .toast(toastText, isShown: $isToastShown)
@@ -130,7 +127,14 @@ struct DashboardView: View {
         guard notificationRouter.opensDrafts else { return }
         notificationRouter.opensDrafts = false
         DraftStore.shared.ingestSharedText()
-        showsDrafts = true
+        openDraftsPage()
+    }
+
+    /// Perlu dicek is a page on the Beranda stack, not a sheet.
+    private func openDraftsPage() {
+        selectedTab = .home
+        homePath = NavigationPath()
+        homePath.append(HomeRoute.drafts)
     }
 
     /// "Sudah, catat" on the notification: open its card once the bills have loaded.
@@ -161,8 +165,13 @@ struct DashboardView: View {
         Tab(value: AppTab.home) {
             NavigationStack(path: $homePath) {
                 mainContent
-                    .navigationDestination(for: HomeRoute.self) { _ in
-                        AccountListView(startsAdding: addsWalletOnOpen, path: $homePath)
+                    .navigationDestination(for: HomeRoute.self) { route in
+                        switch route {
+                        case .wallets:
+                            AccountListView(startsAdding: addsWalletOnOpen, path: $homePath)
+                        case .drafts:
+                            if let userId = authViewModel.currentUser?.id { DraftQueueView(userId: userId).detailPage() }
+                        }
                     }
             }
             .onChange(of: homePath.count) { _, count in if count == 0 { addsWalletOnOpen = false } }

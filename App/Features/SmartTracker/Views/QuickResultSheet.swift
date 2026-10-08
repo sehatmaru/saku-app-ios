@@ -15,6 +15,7 @@ struct QuickResultSheet: View {
     @State private var pickedWallet = false
     @State private var pickedDate = false
     @State private var showsDatePicker = false
+    @State private var contentHeight: CGFloat = 400
 
     private var sentenceNote: String { draft.source == .voice ? L("Dari suaramu") : L("Dari ketikanmu") }
     private var wallet: Account? { store.accounts.first { $0.id == draft.accountId } }
@@ -125,8 +126,11 @@ struct QuickResultSheet: View {
             .padding(.horizontal, 20).padding(.top, 22)
         }
         .padding(.top, 22).padding(.bottom, 12)
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { contentHeight = $0 }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(Color.appBackground)
-        .presentationDetents([.height(480)])
+        .presentationDetents([.height(contentHeight + 28)])
         .presentationBackground(Color.appBackground)
         .presentationCornerRadius(30)
         .presentationDragIndicator(.visible)

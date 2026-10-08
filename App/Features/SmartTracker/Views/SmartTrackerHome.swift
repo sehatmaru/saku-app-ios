@@ -4,6 +4,7 @@ import SwiftUI
 /// bar over the tab bar: one sentence, microphone, and the "Perlu dicek" tray.
 struct SmartTrackerHomeOverlay: View {
     let userId: String
+    var onOpenQueue: () -> Void
     var onToast: (String) -> Void
     @ObservedObject private var store = DraftStore.shared
     @AppStorage(SmartTrackerConsent.key) private var consented = false
@@ -11,7 +12,6 @@ struct SmartTrackerHomeOverlay: View {
     @State private var text = ""
     @State private var showsConsent = false
     @State private var showsVoice = false
-    @State private var showsQueue = false
     @State private var result: Draft?
     @State private var isThinking = false
     @FocusState private var focused: Bool
@@ -36,7 +36,6 @@ struct SmartTrackerHomeOverlay: View {
             VoiceCaptureView(onFinish: { spoken in submit(spoken, source: .voice) },
                              onKeyboard: { showsVoice = false; isOpen = true; focused = true })
         }
-        .sheet(isPresented: $showsQueue) { DraftQueueView(userId: userId) }
         .sheet(item: $result) { draft in
             QuickResultSheet(draft: draft, userId: userId, onSaved: { onToast($0) },
                              onSaveLater: { saved in store.add([saved]); onToast(L("Masuk ke Perlu dicek")) },
@@ -75,7 +74,7 @@ struct SmartTrackerHomeOverlay: View {
         .accessibilityLabel(L("Catat cepat"))
         .frame(maxWidth: .infinity, alignment: .trailing)
         .padding(.trailing, 20)
-        .padding(.bottom, 96)
+        .padding(.bottom, 62)
         .opacity(isOpen ? 0 : 1)
         .scaleEffect(isOpen ? 0.6 : 1)
         .allowsHitTesting(!isOpen)
@@ -117,7 +116,7 @@ struct SmartTrackerHomeOverlay: View {
             }
             .padding(.leading, 14).padding(.trailing, 5).frame(height: 50)
             .background(Color.appFill, in: Capsule())
-            Button { showsQueue = true } label: {
+            Button { close(); onOpenQueue() } label: {
                 Image(systemName: "tray").font(.system(size: 22)).foregroundStyle(Color.appText)
                     .frame(width: 50, height: 50)
                     .overlay(alignment: .topTrailing) {
@@ -138,8 +137,8 @@ struct SmartTrackerHomeOverlay: View {
         .overlay(Capsule().strokeBorder(Color.black.opacity(0.04)))
         .shadow(color: .black.opacity(0.1), radius: 14, y: 4)
         .padding(.horizontal, 20)
-        .padding(.bottom, 8)
-        .offset(y: isOpen ? 0 : 90)
+        // sits exactly over the system tab bar, which it replaces while open
+        .offset(y: isOpen ? 12 : 90)
         .opacity(isOpen ? 1 : 0)
         .allowsHitTesting(isOpen)
     }
@@ -186,7 +185,7 @@ struct SmartTrackerHomeOverlay: View {
             } else {
                 store.add(final)
                 close()
-                showsQueue = true
+                onOpenQueue()
             }
         }
     }

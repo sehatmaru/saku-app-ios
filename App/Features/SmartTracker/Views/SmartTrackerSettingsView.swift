@@ -11,7 +11,6 @@ struct SmartTrackerSettingsView: View {
     @State private var siri = SmartTrackerWays.siri
     @State private var showsOff = false
     @State private var showsConsent = false
-    @State private var showsQueue = false
     @State private var isTurningOff = false
     @State private var failed = false
 
@@ -47,7 +46,7 @@ struct SmartTrackerSettingsView: View {
 
                 caption(L("Yang tersimpan di HP ini"))
                 VStack(spacing: 0) {
-                    Button { showsQueue = true } label: {
+                    NavigationLink(destination: DraftQueueView(userId: authViewModel.currentUser?.id ?? "").detailPage()) {
                         storedRow("tray", L("Draf menunggu"), L("Terhapus sendiri setelah 30 hari"), trailing: "\(store.drafts.count)", link: true)
                     }
                     .buttonStyle(.plain)
@@ -88,7 +87,6 @@ struct SmartTrackerSettingsView: View {
         .background(Color.appBackground)
         .navigationTitle("Smart Tracker")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showsQueue) { if let id = authViewModel.currentUser?.id { DraftQueueView(userId: id) } }
         .sheet(isPresented: $showsConsent) { SmartTrackerConsentSheet(profileId: profileId) { showsConsent = false } }
         .confirmDialog(isPresented: $showsOff, icon: "power", destructive: true, title: L("Matikan Smart Tracker?"),
                        message: L("Semua cara mencatat berhenti. %lld draf dan %lld ingatan dihapus dari HP ini. Transaksi yang sudah tersimpan tetap aman.",

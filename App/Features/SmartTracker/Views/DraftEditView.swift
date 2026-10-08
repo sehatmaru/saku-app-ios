@@ -1,215 +1,290 @@
 import SwiftUI
 
-/// Ubah draf (design 1e): the Tambah transaksi pattern. A coloured header with the kind and the amount,
-/// the fields as rows, and the keypad. Simpan keeps the changes on the draft (it is not saved as a transaction).
+/// Ubah draf: the same form as Tambah transaksi (swipeable type panel, rows, wallet / category / date sheets,
+/// keypad), but it edits the draft; Simpan keeps the changes on it and the transaction is saved from Perlu dicek.
+/// A bill paid on a credit card is shown under Transfer, with the card as the destination.
 struct DraftEditView: View {
     @State var draft: Draft
     @ObservedObject var store: DraftStore
     @Environment(\.dismiss) private var dismiss
+
+    @State private var typeIndex: Int
+    @State private var dragX: CGFloat = 0
     @State private var amount: Int
-    @State private var bump = false
+    @State private var isBumped = false
+    @State private var sheet: PickerKind?
     @State private var showsDelete = false
-    @State private var showsDate = false
-    @State private var showsNote = false
+    @FocusState private var noteFocused: Bool
+    @State private var isCompact = false
+
+    enum PickerKind: String, Identifiable {
+        case category, account, target, date
+        var id: String { rawValue }
+    }
+
+    private static let types = TransactionStyle.entryTypes
 
     init(draft: Draft, store: DraftStore) {
         _draft = State(initialValue: draft)
         self.store = store
         _amount = State(initialValue: Int(draft.amount ?? 0))
+        let type: Transaction.TransactionType = draft.kind == .income ? .income : (draft.kind == .expense ? .expense : .transfer)
+        _typeIndex = State(initialValue: Self.types.firstIndex { $0.type == type } ?? 0)
     }
 
-    private var wallets: [Account] { store.accounts.filter(\.isActive) }
-    private var categories: [Category] {
-        store.categories.filter { $0.type == (draft.kind == .income ? .income : .expense) && !CategoryCatalog.isSystem($0) }
+    private var style: TransactionStyle { Self.types[typeIndex] }
+    private var isTransfer: Bool { style.type == .transfer }
+    private var isCard: Bool { draft.kind == .cardPayment }
+    private var activeAccounts: [Account] { store.accounts.filter(\.isActive).sorted { $0.isDefault && !$1.isDefault } }
+    private var account: Account? { store.accounts.first { $0.id == draft.accountId } }
+    private var target: Account? { store.accounts.first { $0.id == draft.counterpartyAccountId } }
+    private var category: Category? { store.categories.first { $0.id == draft.categoryId } }
+    private var typeCategories: [Category] {
+        store.categories.filter { $0.type == (style.type == .income ? .income : .expense) && !CategoryCatalog.isSystem($0) }
     }
-    private func name(_ id: String?) -> String? { store.accounts.first { $0.id == id }?.name }
+    private var rowHeight: CGFloat { isCompact ? 46 : 48 }
+    private var calendar: Calendar { .current }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            VStack(spacing: 0) {
-                header
-                rows.padding(.top, 10)
-                Spacer(minLength: 8)
-                AmountPad(color: draft.kindColor, isEnabled: amount > 0, onPress: press, onSave: save)
-                    .padding(.horizontal, 12).padding(.bottom, 4)
+        VStack(spacing: 0) {
+            panel
+            rows.padding(.top, isCompact ? 4 : 10)
+            Spacer(minLength: isCompact ? 4 : 12)
+            if !noteFocused {
+                AmountPad(color: style.color, isEnabled: amount > 0, onPress: press, onSave: save, keyHeight: isCompact ? 46 : 52)
+                    .animation(.easeInOut(duration: 0.4), value: typeIndex)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 4)
             }
         }
+        .onGeometryChange(for: Bool.self, of: { $0.size.height < 720 }) { isCompact = $0 }
         .background(Color.appBackground)
-        .presentationDetents([.large])
-        .presentationBackground(Color.appBackground)
+        .toolbar(.hidden, for: .navigationBar)
+        .sheet(item: $sheet) { pickerSheet($0) }
         .confirmDialog(isPresented: $showsDelete, icon: "trash", destructive: true, title: L("Hapus draf ini?"),
                        message: L("Draf hilang dan tidak ada yang tercatat sebagai transaksi."), confirmTitle: L("Hapus")) {
             store.discard(draft.id)
             dismiss()
         }
-        .sheet(isPresented: $showsDate) {
-            DatePicker("", selection: $draft.date, in: ...Date(), displayedComponents: .date)
-                .datePickerStyle(.graphical).padding()
-                .presentationDetents([.medium]).presentationBackground(Color.appBackground)
-        }
-        .sheet(isPresented: $showsNote) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L("Catatan")).font(.app(17, weight: .semibold))
-                TextField(L("Kopi"), text: $draft.title)
-                    .padding(.horizontal, 14).frame(height: 48).background(Color.appFill, in: RoundedRectangle(cornerRadius: 12))
-                Button(L("Selesai")) { showsNote = false }
-                    .font(.app(16, weight: .semibold)).foregroundStyle(Color.appBackground)
-                    .frame(maxWidth: .infinity).frame(height: 50).background(Color.appText, in: Capsule())
-                Spacer()
-            }
-            .padding(24).presentationDetents([.height(240)]).presentationBackground(Color.appBackground)
-        }
     }
 
-    // MARK: Header
+    // MARK: Panel
 
-    private var header: some View {
+    private var panel: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button(L("Batal")) { dismiss() }.font(.app(17)).foregroundStyle(.white)
-                Spacer()
-                Button { showsDelete = true } label: {
-                    Image(systemName: "trash").font(.system(size: 17)).foregroundStyle(.white)
-                        .frame(width: 36, height: 36).background(.white.opacity(0.16), in: Circle())
-                }
-                .accessibilityLabel(L("Hapus draf"))
-            }
-            .overlay { Text(L("Ubah draf")).font(.app(17, weight: .semibold)).foregroundStyle(.white) }
-            .frame(height: 44).padding(.horizontal, 20).padding(.top, 8)
-
-            HStack(spacing: 18) {
-                ForEach(Draft.Kind.allCases, id: \.self) { kind in
-                    let on = draft.kind == kind
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.26)) { draft.kind = kind }
-                        draft.categoryId = nil
-                    } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: Self.icon(kind)).font(.system(size: 13, weight: .bold))
-                            Text(Self.title(kind)).font(.app(on ? 19 : 14, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
-                        }
-                        .foregroundStyle(.white).opacity(on ? 1 : 0.5)
+            ZStack {
+                HStack {
+                    Button(L("Batal")) { dismiss() }.font(.app(17))
+                    Spacer()
+                    Button { showsDelete = true } label: {
+                        Image(systemName: "trash").font(.system(size: 16)).frame(width: 34, height: 34)
+                            .background(.white.opacity(0.16), in: Circle())
                     }
+                    .accessibilityLabel(L("Hapus draf"))
                 }
+                typeDots
             }
-            .padding(.top, 8)
+            .frame(height: isCompact ? 40 : 44)
+            .padding(.horizontal, 20)
 
-            HStack(spacing: 6) {
-                ForEach(Draft.Kind.allCases, id: \.self) { kind in
-                    Capsule().fill(.white).frame(width: draft.kind == kind ? 18 : 6, height: 6).opacity(draft.kind == kind ? 1 : 0.5)
-                }
+            VStack(spacing: 0) {
+                typeCarousel.padding(.top, 4)
+                amountText.padding(.top, isCompact ? 4 : 12)
+                Label(draft.sourceLabel, systemImage: draft.sourceIcon)
+                    .font(.app(13, weight: .medium))
+                    .padding(.leading, 10).padding(.trailing, 14).frame(height: 32)
+                    .background(.white.opacity(0.16), in: Capsule())
+                    .padding(.top, isCompact ? 8 : 16)
             }
-            .padding(.top, 10)
-
-            HStack(alignment: .top, spacing: 4) {
-                Text((draft.kind == .expense && amount > 0 ? "−" : "") + "Rp").font(.app(22)).opacity(0.75).padding(.top, 8)
-                Text(Double(amount).formattedAsDigits()).font(.app(56, weight: .light)).tracking(-2).contentTransition(.numericText())
-            }
-            .monospacedDigit().foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
-            .scaleEffect(bump ? 1.04 : 1).animation(.easeOut(duration: 0.12), value: bump)
-            .padding(.horizontal, 24).padding(.top, 16)
-
-            Label(draft.sourceLabel, systemImage: draft.sourceIcon)
-                .font(.app(13, weight: .medium)).foregroundStyle(.white)
-                .padding(.leading, 10).padding(.trailing, 14).frame(height: 32)
-                .background(.white.opacity(0.16), in: Capsule())
-                .padding(.top, 14).padding(.bottom, 20)
         }
+        .padding(.bottom, isCompact ? 12 : 18)
+        .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
-        .background(draft.kindColor.animation(.easeInOut(duration: 0.45)))
-        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32))
-        .ignoresSafeArea(edges: .top)
+        .background {
+            UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32)
+                .fill(style.color)
+                .animation(.easeInOut(duration: 0.45), value: typeIndex)
+                .ignoresSafeArea(edges: .top)
+        }
+        .contentShape(Rectangle())
+        .gesture(typeSwipe)
+    }
+
+    private var typeCarousel: some View {
+        GeometryReader { geo in
+            let itemWidth: CGFloat = 180
+            HStack(spacing: 0) {
+                ForEach(Self.types.indices, id: \.self) { i in
+                    let isCurrent = i == typeIndex
+                    HStack(spacing: 8) {
+                        Image(systemName: Self.types[i].icon).font(.system(size: 17, weight: .bold))
+                        Text(isCard && i == 2 ? L("Bayar kartu") : Self.types[i].label)
+                    }
+                    .font(.app(22, weight: .bold))
+                    .frame(width: itemWidth, height: 44)
+                    .opacity(isCurrent ? 1 : 0.45)
+                    .scaleEffect(isCurrent ? 1 : 0.8)
+                    .animation(.settle(0.38), value: typeIndex)
+                    .contentShape(Rectangle())
+                    .onTapGesture { setType(i) }
+                    .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
+                }
+            }
+            .offset(x: (geo.size.width - itemWidth) / 2 - CGFloat(typeIndex) * itemWidth + dragX)
+        }
+        .frame(height: isCompact ? 38 : 44)
+        .clipped()
+    }
+
+    /// Swiping anywhere on the coloured panel switches type, as in Tambah transaksi.
+    private var typeSwipe: some Gesture {
+        DragGesture(minimumDistance: 6)
+            .onChanged { value in
+                var dx = value.translation.width
+                if (typeIndex == 0 && dx > 0) || (typeIndex == Self.types.count - 1 && dx < 0) { dx *= 0.3 }
+                dragX = dx
+            }
+            .onEnded { _ in
+                let dx = dragX
+                let next = dx < -40 ? typeIndex + 1 : dx > 40 ? typeIndex - 1 : typeIndex
+                withAnimation(.settle(0.46)) { dragX = 0 }
+                setType(min(max(next, 0), Self.types.count - 1))
+            }
+    }
+
+    private var typeDots: some View {
+        HStack(spacing: 6) {
+            ForEach(Self.types.indices, id: \.self) { i in
+                Capsule().fill(.white).frame(width: i == typeIndex ? 18 : 6, height: 6).opacity(i == typeIndex ? 1 : 0.5)
+            }
+        }
+        .animation(.settle(0.3), value: typeIndex)
+        .accessibilityHidden(true)
+    }
+
+    private var amountText: some View {
+        HStack(alignment: .top, spacing: 4) {
+            Text((amount > 0 ? style.sign : "") + "Rp").font(.app(22)).opacity(0.75).padding(.top, 8)
+            Text(amount > 0 ? Double(amount).formattedAsDigits() : "0")
+                .font(.app(isCompact ? 44 : 56, weight: .light)).tracking(-2).lineLimit(1).minimumScaleFactor(0.5)
+                .contentTransition(.numericText())
+        }
+        .monospacedDigit()
+        .padding(.horizontal, 24)
+        .opacity(amount > 0 ? 1 : 0.55)
+        .scaleEffect(isBumped ? 1.04 : 1)
+        .animation(.easeOut(duration: 0.12), value: isBumped)
     }
 
     // MARK: Rows
 
-    @ViewBuilder
     private var rows: some View {
         VStack(spacing: 0) {
-            switch draft.kind {
-            case .expense, .income:
-                menuRow(L("Kategori"), value: store.categories.first { $0.id == draft.categoryId }?.name, memory: draft.fromMemory && draft.categoryId != nil,
-                        options: categories.map { ($0.id, $0.name) }) { draft.categoryId = $0; draft.fromMemory = false }
-                menuRow(L("Dompet"), value: name(draft.accountId), memory: false,
-                        options: wallets.filter { $0.type != .investment }.map { ($0.id, $0.name) }) { draft.accountId = $0 }
-            case .transfer:
-                menuRow(L("Dari"), value: name(draft.accountId), memory: false,
-                        options: wallets.filter { $0.type != .investment }.map { ($0.id, $0.name) }) { draft.accountId = $0 }
-                menuRow(L("Ke"), value: name(draft.counterpartyAccountId), memory: false,
-                        options: wallets.filter { $0.id != draft.accountId }.map { ($0.id, $0.name) }) { draft.counterpartyAccountId = $0 }
-            case .cardPayment:
-                menuRow(L("Dari"), value: name(draft.accountId) ?? L("Luar Saku"), memory: false,
-                        options: wallets.filter { $0.type != .investment && !$0.isCreditCard }.map { ($0.id, $0.name) },
-                        clear: { draft.accountId = nil }) { draft.accountId = $0 }
-                menuRow(L("Kartu"), value: name(draft.counterpartyAccountId), memory: false,
-                        options: wallets.filter(\.isCreditCard).map { ($0.id, $0.name) }) { draft.counterpartyAccountId = $0 }
+            if isTransfer {
+                row(.account, label: isCard ? L("Dari") : L("Dari"), value: account?.name ?? (isCard ? L("Luar Saku") : L("Pilih")),
+                    swatch: walletColor(account), isAsset: account?.isInvestment == true)
+                row(.target, label: isCard ? L("Kartu") : L("Ke"), value: target?.name ?? L("Pilih"), swatch: walletColor(target),
+                    isAsset: target?.isInvestment == true)
+            } else {
+                row(.category, label: L("Kategori"), value: category?.name ?? L("Belum dipilih"), icon: category?.icon,
+                    iconColor: style.color, isPlaceholder: category == nil, memory: draft.fromMemory && category != nil)
+                row(.account, label: L("Dompet"), value: account?.name ?? L("Pilih"), swatch: walletColor(account))
             }
-            plainRow(L("Tanggal"), DateFormatter.shortDay.string(from: draft.date), icon: "calendar") { showsDate = true }
-            plainRow(L("Catatan"), draft.title.isEmpty ? L("Tambah catatan") : draft.title, icon: nil) { showsNote = true }
+            row(.date, label: L("Tanggal"), value: dateValue, icon: "calendar", iconColor: .appTextSecondary)
+
+            HStack(spacing: 12) {
+                Text("Catatan").font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
+                TextField("Opsional", text: $draft.title)
+                    .font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
+                    .submitLabel(.done).focused($noteFocused).onSubmit { noteFocused = false }
+            }
+            .frame(height: rowHeight).padding(.leading, 24).padding(.trailing, 20)
         }
     }
 
-    private func menuRow(_ title: String, value: String?, memory: Bool, options: [(String, String)], clear: (() -> Void)? = nil,
-                         select: @escaping (String) -> Void) -> some View {
-        Menu {
-            ForEach(options, id: \.0) { id, label in Button(label) { select(id) } }
-            if let clear { Button(L("Luar Saku"), action: clear) }
-        } label: {
-            rowLabel(title, value ?? L("Pilih"), warn: value == nil, memory: memory, icon: nil)
+    private func row(_ kind: PickerKind, label: String, value: String, swatch: Color? = nil, icon: String? = nil,
+                     iconColor: Color = .appTextSecondary, isPlaceholder: Bool = false, isAsset: Bool = false,
+                     memory: Bool = false) -> some View {
+        Button { sheet = kind } label: {
+            DetailRow(label: label, value: value, swatch: swatch, icon: icon, iconColor: iconColor, sub: memory ? L("Dari ingatan Saku") : nil,
+                      showsChevron: true, isAsset: isAsset, height: rowHeight, isPlaceholder: isPlaceholder)
         }
+        .buttonStyle(.plain)
     }
 
-    private func plainRow(_ title: String, _ value: String, icon: String?, action: @escaping () -> Void) -> some View {
-        Button(action: action) { rowLabel(title, value, warn: false, memory: false, icon: icon) }
+    private var dateValue: String {
+        let name = TransactionDates.dayName(draft.date)
+        return calendar.isDateInToday(draft.date) || calendar.isDateInYesterday(draft.date)
+            ? name + " · " + TransactionDates.dayMonth.string(from: draft.date) : name
     }
 
-    private func rowLabel(_ title: String, _ value: String, warn: Bool, memory: Bool, icon: String?) -> some View {
-        HStack(spacing: 12) {
-            Text(title).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
-            HStack(spacing: 8) {
-                if let icon { Image(systemName: icon).font(.system(size: 16)).foregroundStyle(Color.appTextSecondary) }
-                Text(value).font(.app(16, weight: .medium)).foregroundStyle(warn ? Color.appWarning : Color.appText).lineLimit(1)
-                if memory {
-                    Label(L("Ingatan"), systemImage: "brain")
-                        .font(.app(11, weight: .semibold)).foregroundStyle(Color(light: 0x0E5E41, dark: 0x5CD49A))
-                        .padding(.horizontal, 8).frame(height: 22)
-                        .background(Color(light: 0xE6F3EC, dark: 0x1E3A2C), in: Capsule())
+    // MARK: Sheets
+
+    @ViewBuilder
+    private func pickerSheet(_ kind: PickerKind) -> some View {
+        switch kind {
+        case .category:
+            CategoryPickerSheet(title: L("Kategori"), categories: typeCategories, selectedId: draft.categoryId,
+                                frequentIds: [], onDone: { sheet = nil }) { picked in
+                draft.categoryId = picked.id
+                draft.fromMemory = false
+                sheet = nil
+            }
+        case .account:
+            let list = isTransfer ? (isCard ? activeAccounts.filter { !$0.isCreditCard && !$0.isInvestment } : activeAccounts)
+                                  : WalletRules.spendingSources(activeAccounts)
+            WalletPickerSheet(title: isTransfer ? L("Dari dompet") : L("Dompet"), accounts: list, selectedId: draft.accountId,
+                              mainId: activeAccounts.first(where: \.isDefault)?.id, recentIds: [], onDone: { sheet = nil },
+                              onPick: { picked in
+                draft.accountId = picked.id
+                if draft.counterpartyAccountId == picked.id { draft.counterpartyAccountId = nil }
+                sheet = nil
+            }, footer: isCard ? .init(text: L("Tanpa dompet sumber, ini dicatat sebagai tagihan kartu yang dibayar dari luar Saku."),
+                                      actionTitle: L("Dibayar dari luar Saku")) { draft.accountId = nil; sheet = nil } : nil)
+        case .target:
+            let list = isCard ? activeAccounts.filter(\.isCreditCard) : WalletRules.transferTargets(from: account, in: activeAccounts)
+            WalletPickerSheet(title: isCard ? L("Kartu") : L("Ke dompet"), accounts: list, selectedId: draft.counterpartyAccountId,
+                              mainId: activeAccounts.first(where: \.isDefault)?.id, recentIds: [], onDone: { sheet = nil },
+                              onPick: { picked in draft.counterpartyAccountId = picked.id; sheet = nil })
+        case .date:
+            PickerSheet(title: L("Tanggal"), onDone: { sheet = nil }) {
+                DayPicker(selected: draft.date, color: style.color) { day in
+                    draft.date = keepingTime(of: draft.date, on: day)
+                    sheet = nil
                 }
             }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
         }
-        .padding(.leading, 24).padding(.trailing, 20).frame(height: 52)
-        .overlay(alignment: .bottom) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-        .contentShape(Rectangle())
+    }
+
+    private func keepingTime(of date: Date, on day: Date) -> Date {
+        let time = calendar.dateComponents([.hour, .minute, .second], from: date)
+        return calendar.date(bySettingHour: time.hour ?? 0, minute: time.minute ?? 0, second: time.second ?? 0, of: day) ?? day
     }
 
     // MARK: Logic
 
-    private static func title(_ kind: Draft.Kind) -> String {
-        switch kind {
-        case .expense: return L("Pengeluaran")
-        case .income: return L("Pemasukan")
-        case .transfer: return L("Transfer")
-        case .cardPayment: return L("Bayar kartu")
+    private func setType(_ index: Int) {
+        guard index != typeIndex, Self.types.indices.contains(index) else { return }
+        withAnimation(.settle(0.46)) { typeIndex = index }
+        switch Self.types[index].type {
+        case .expense: draft.kind = .expense; draft.categoryId = nil; draft.counterpartyAccountId = nil
+        case .income: draft.kind = .income; draft.categoryId = nil; draft.counterpartyAccountId = nil
+        default:
+            draft.kind = .transfer
+            draft.categoryId = nil
+            if draft.counterpartyAccountId == nil || draft.counterpartyAccountId == draft.accountId {
+                draft.counterpartyAccountId = WalletRules.transferTargets(from: account, in: activeAccounts).first { $0.id != draft.accountId }?.id
+            }
         }
-    }
-
-    private static func icon(_ kind: Draft.Kind) -> String {
-        switch kind {
-        case .expense: return "arrow.up.right"
-        case .income: return "arrow.down.left"
-        case .transfer: return "arrow.left.arrow.right"
-        case .cardPayment: return "creditcard"
-        }
+        draft.fromMemory = false
     }
 
     private func press(_ key: String) {
         guard let next = NumberPad.apply(key, to: amount) else { return }
         withAnimation(.easeOut(duration: 0.14)) { amount = next }
         draft.amount = Double(next)
-        bump = true
-        Task { try? await Task.sleep(for: .milliseconds(100)); bump = false }
+        isBumped = true
+        Task { try? await Task.sleep(for: .milliseconds(120)); isBumped = false }
     }
 
     private func save() {
