@@ -191,6 +191,7 @@ struct DashboardView: View {
                         emptyHealthSection
                             .padding(.bottom, 90)
                     } else {
+                        if let userId = authViewModel.currentUser?.id { QuickEntryCard(userId: userId) }
                         SectionDivider()
                         cashFlowSection
                         SectionDivider()

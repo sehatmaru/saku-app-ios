@@ -52,5 +52,9 @@
 	</array>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.finance</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Saku memakai mikrofon agar kamu bisa mencatat transaksi dengan suara.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Saku mengubah ucapanmu menjadi teks untuk dibuat draf transaksi.</string>
 </dict>
 </plist>

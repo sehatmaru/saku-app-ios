@@ -1,0 +1,45 @@
+import AppIntents
+
+/// Siri and Shortcuts: "Catat di Saku ...". The result joins "Perlu dicek"; nothing is saved without a look.
+struct RecordTransactionIntent: AppIntent {
+    static let title: LocalizedStringResource = "Catat transaksi"
+    static let description = IntentDescription("Catat transaksi dari satu kalimat, misalnya \"kopi 25rb gopay\". Hasilnya masuk ke Perlu dicek.")
+
+    @Parameter(title: "Teks", requestValueDialog: "Apa yang mau dicatat?")
+    var text: String
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let count = await MainActor.run { DraftStore.shared.add(text: text, source: .siri).count }
+        await DraftNotifier.announce(count: count)
+        return .result(dialog: "\(count) draf masuk ke Perlu dicek di Saku.")
+    }
+}
+
+/// Shortcuts automation with the "Notifikasi" trigger: pass the notification's title, subtitle and body.
+struct RecordFromNotificationIntent: AppIntent {
+    static let title: LocalizedStringResource = "Catat dari notifikasi"
+    static let description = IntentDescription("Membaca notifikasi bank atau e-wallet dan membuat draf. Notifikasi tanpa nominal diabaikan.")
+
+    @Parameter(title: "Aplikasi sumber") var appName: String
+    @Parameter(title: "Judul") var notificationTitle: String
+    @Parameter(title: "Subjudul", default: "") var subtitle: String
+    @Parameter(title: "Isi") var body: String
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let count = await MainActor.run { () -> Int in
+            let store = DraftStore.shared
+            let drafts = NotificationParser.parse(app: appName, title: notificationTitle, subtitle: subtitle, body: body,
+                                                  context: store.context)
+            return store.add(drafts).count
+        }
+        if count > 0 { await DraftNotifier.announce(count: count) }
+        return .result(dialog: count > 0 ? "Draf dari notifikasi masuk ke Perlu dicek." : "Tidak ada nominal, notifikasi diabaikan.")
+    }
+}
+
+struct SakuShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(intent: RecordTransactionIntent(), phrases: ["Catat di \(.applicationName)", "Catat transaksi di \(.applicationName)"],
+                    shortTitle: "Catat transaksi", systemImageName: "plus.circle")
+    }
+}

@@ -45,9 +45,9 @@ struct Draft: Identifiable, Codable, Equatable {
     var missing: [Missing] {
         var result: [Missing] = []
         if (amount ?? 0) <= 0 { result.append(.amount) }
-        if accountId == nil { result.append(.account) }
-        if (kind == .transfer || kind == .cardPayment) && counterpartyAccountId == nil && kind == .transfer { result.append(.counterparty) }
-        if kind == .cardPayment && counterpartyAccountId == nil { result.append(.counterparty) }
+        // a card bill with no source wallet was paid outside Saku; it only lowers the card's debt
+        if accountId == nil && kind != .cardPayment { result.append(.account) }
+        if (kind == .transfer || kind == .cardPayment) && counterpartyAccountId == nil { result.append(.counterparty) }
         if (kind == .expense || kind == .income) && categoryId == nil { result.append(.category) }
         return result
     }

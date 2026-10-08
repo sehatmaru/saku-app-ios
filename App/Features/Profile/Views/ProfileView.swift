@@ -205,6 +205,14 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
 
+            NavigationLink(destination: SmartTrackerSettingsView()) {
+                row(icon: "sparkles", title: L("Catat cepat"), subtitle: L("Ingatan, notifikasi, dan data")) {
+                    chevron
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+
             Button { showsPayday = true } label: {
                 row(icon: "calendar", title: L("Tanggal gajian"), subtitle: L("Awal periode budget")) {
                     Text(paydayDay == 0 ? L("Belum diatur") : L("Tgl %lld", paydayDay))

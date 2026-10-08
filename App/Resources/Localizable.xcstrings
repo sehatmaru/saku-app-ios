@@ -513,6 +513,36 @@
         }
       }
     },
+    "%lld draf akan dihapus dalam 3 hari jika tidak diproses.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld drafts will be deleted in 3 days if not handled."
+          }
+        }
+      }
+    },
+    "%lld draf ditambahkan. Cek dulu sebelum disimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld drafts added. Check them before saving."
+          }
+        }
+      }
+    },
+    "%lld draf transaksi menunggu dicek di Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld draft transactions are waiting in Saku."
+          }
+        }
+      }
+    },
     "%lld hari lagi": {
       "localizations": {
         "en": {
@@ -883,6 +913,16 @@
         }
       }
     },
+    "Aplikasi yang didukung: %@. Draf dari notifikasi selalu masuk ke Perlu dicek; teks notifikasi tidak disimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supported apps: %@. Drafts from notifications always go to Needs review; the notification text isn't stored."
+          }
+        }
+      }
+    },
     "Arsipkan": {
       "localizations": {
         "en": {
@@ -1149,6 +1189,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pay from"
+          }
+        }
+      }
+    },
+    "Bayar kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card payment"
           }
         }
       }
@@ -1463,6 +1513,16 @@
         }
       }
     },
+    "Belum ada. Setelah kamu menyimpan draf, Saku mengingat kategori dan dompet pilihanmu untuk kata yang sama.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing yet. After you save a draft, Saku remembers your category and wallet for the same word."
+          }
+        }
+      }
+    },
     "Belum ada. Tagihan yang jatuh tempo muncul di sini setelah dicatat.": {
       "localizations": {
         "en": {
@@ -1623,6 +1683,16 @@
         }
       }
     },
+    "Berhenti merekam": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop recording"
+          }
+        }
+      }
+    },
     "Berlaku untuk": {
       "localizations": {
         "en": {
@@ -1709,6 +1779,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Create a wallet first\nbefore adding transactions."
+          }
+        }
+      }
+    },
+    "Buat draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create draft"
           }
         }
       }
@@ -1933,6 +2013,16 @@
         }
       }
     },
+    "Buka Shortcuts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Shortcuts"
+          }
+        }
+      }
+    },
     "Buka dompet": {
       "localizations": {
         "en": {
@@ -2079,6 +2169,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cashflow, last 5 months"
+          }
+        }
+      }
+    },
+    "Catat cepat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick add"
+          }
+        }
+      }
+    },
+    "Catat cepat: kopi 25rb gopay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick add: coffee 25k gopay"
+          }
+        }
+      }
+    },
+    "Catat dari notifikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record from notification"
+          }
+        }
+      }
+    },
+    "Catat dengan suara": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record by voice"
           }
         }
       }
@@ -2319,6 +2449,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "By continuing, you agree to the "
+          }
+        }
+      }
+    },
+    "Di Shortcuts, buka tab Otomatisasi lalu ketuk + dan pilih Notifikasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Shortcuts, open the Automation tab, tap + and choose Notification."
           }
         }
       }
@@ -2669,6 +2809,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallets · %lld accounts"
+          }
+        }
+      }
+    },
+    "Draf dari Catat cepat, Siri, Bagikan, dan notifikasi muncul di sini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drafts from Quick add, Siri, Share and notifications show up here."
+          }
+        }
+      }
+    },
+    "Draf yang belum disimpan dan semua pilihan yang diingat dihapus dari perangkat ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsaved drafts and everything remembered are deleted from this device."
           }
         }
       }
@@ -3203,6 +3363,26 @@
         }
       }
     },
+    "Hapus semua draf dan ingatan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all drafts and memory"
+          }
+        }
+      }
+    },
+    "Hapus semua draf dan ingatan?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all drafts and memory?"
+          }
+        }
+      }
+    },
     "Hapus tagihan": {
       "localizations": {
         "en": {
@@ -3313,6 +3493,16 @@
         }
       }
     },
+    "Ingatan, notifikasi, dan data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory, notifications, and data"
+          }
+        }
+      }
+    },
     "Investasi": {
       "localizations": {
         "en": {
@@ -3329,6 +3519,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enter 0 if there's no bill this month yet."
+          }
+        }
+      }
+    },
+    "Isi Aplikasi sumber dengan nama aplikasinya, lalu Judul, Subjudul, dan Isi dengan variabel dari notifikasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill Source app with the app's name, then Title, Subtitle and Body with the notification variables."
+          }
+        }
+      }
+    },
+    "Isi nominal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter amount"
+          }
+        }
+      }
+    },
+    "Izin mikrofon atau pengenalan suara belum diberikan. Aktifkan di Pengaturan, atau ketik saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone or speech recognition permission isn't granted. Enable it in Settings, or just type."
           }
         }
       }
@@ -3473,6 +3693,16 @@
         }
       }
     },
+    "Kalimatnya diproses di perangkatmu. Hanya jika kalimat sulit dipahami, teksnya (tanpa saldo atau nomor rekening) dikirim ke server Saku untuk dibantu model bahasa. Penyedia model tidak menyimpan dan tidak melatih model dari teks itu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sentences are processed on your device. Only if one is hard to understand, its text (without balances or account numbers) is sent to Saku's server for a language model to help. The model provider does not store it or train on it."
+          }
+        }
+      }
+    },
     "Kam": {
       "localizations": {
         "en": {
@@ -3559,6 +3789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "When do you get paid?"
+          }
+        }
+      }
+    },
+    "Kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card"
           }
         }
       }
@@ -3909,6 +4149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enter the latest value from your investment app. The difference isn’t income or an expense."
+          }
+        }
+      }
+    },
+    "Ketuk Berikutnya, tambahkan aksi \"Catat dari notifikasi\" dari Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap Next and add the \"Record from notification\" action from Saku."
           }
         }
       }
@@ -4373,6 +4623,16 @@
         }
       }
     },
+    "Masuk ke": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Into"
+          }
+        }
+      }
+    },
     "Masuk sebagai tamu": {
       "localizations": {
         "en": {
@@ -4429,6 +4689,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enter text for the icon."
+          }
+        }
+      }
+    },
+    "Matikan \"Tanya Sebelum Menjalankan\" jika iOS menawarkannya, lalu ketuk Selesai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off \"Ask Before Running\" if iOS offers it, then tap Done."
           }
         }
       }
@@ -4573,6 +4843,16 @@
         }
       }
     },
+    "Mengerti, lanjutkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it, continue"
+          }
+        }
+      }
+    },
     "Menghapus…": {
       "localizations": {
         "en": {
@@ -4589,6 +4869,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Following the 1st"
+          }
+        }
+      }
+    },
+    "Mikrofon tidak bisa dipakai sekarang. Ketik saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The microphone can't be used right now. Just type."
           }
         }
       }
@@ -4619,6 +4909,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Minimum %@"
+          }
+        }
+      }
+    },
+    "Mirip dengan draf lain di daftar ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Similar to another draft in this list"
+          }
+        }
+      }
+    },
+    "Mirip dengan transaksi %@ %@ (%@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Similar to transaction %@ %@ (%@)"
           }
         }
       }
@@ -4993,6 +5303,16 @@
         }
       }
     },
+    "Panduan memasang di Shortcuts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setup guide for Shortcuts"
+          }
+        }
+      }
+    },
     "Pemakaian kartu tinggi. Pastikan kas cukup untuk melunasi sebelum jatuh tempo.": {
       "localizations": {
         "en": {
@@ -5159,6 +5479,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Development"
+          }
+        }
+      }
+    },
+    "Pengenalan suara untuk bahasa ini belum tersedia di perangkat. Ketik saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech recognition for this language isn't available on this device. Just type."
           }
         }
       }
@@ -5363,6 +5693,16 @@
         }
       }
     },
+    "Perlu dicek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs review"
+          }
+        }
+      }
+    },
     "Perlu perbaikan": {
       "localizations": {
         "en": {
@@ -5423,6 +5763,16 @@
         }
       }
     },
+    "Pilih aplikasinya (misalnya GoPay atau BCA), lalu pilih Jalankan Segera.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the app (for example GoPay or BCA), then choose Run Immediately."
+          }
+        }
+      }
+    },
     "Pilih bank": {
       "localizations": {
         "en": {
@@ -5449,6 +5799,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose wallet"
+          }
+        }
+      }
+    },
+    "Pilih dompet aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose asset wallet"
+          }
+        }
+      }
+    },
+    "Pilih dompet tujuan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose destination wallet"
           }
         }
       }
@@ -5829,6 +6199,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saturday"
+          }
+        }
+      }
+    },
+    "Saku membaca kalimat yang kamu ketik atau ucapkan, lalu membuat draf transaksi. Draf disimpan di perangkat ini dan baru jadi transaksi setelah kamu menyetujuinya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku reads the sentence you type or say and makes a draft transaction. Drafts stay on this device and only become transactions once you approve them."
+          }
+        }
+      }
+    },
+    "Saku tidak bisa membaca notifikasi aplikasi lain. Tapi iOS punya otomatisasi di Shortcuts yang bisa meneruskan notifikasi ke Saku. Pasang satu kali untuk tiap aplikasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku can't read other apps' notifications. But iOS has an automation in Shortcuts that can forward a notification to Saku. Set it up once per app."
           }
         }
       }
@@ -6283,6 +6673,16 @@
         }
       }
     },
+    "Semua sudah dicek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All checked"
+          }
+        }
+      }
+    },
     "Semua transaksi sudah ditampilkan": {
       "localizations": {
         "en": {
@@ -6479,6 +6879,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save wallet"
+          }
+        }
+      }
+    },
+    "Simpan semua (%lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save all (%lld)"
           }
         }
       }
@@ -7303,6 +7713,26 @@
         }
       }
     },
+    "Tanpa dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No wallet"
+          }
+        }
+      }
+    },
+    "Tanpa dompet sumber, ini dicatat sebagai tagihan kartu yang dibayar dari luar Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With no source wallet, this is recorded as a card bill paid from outside Saku."
+          }
+        }
+      }
+    },
     "Tanpa kategori": {
       "localizations": {
         "en": {
@@ -7359,6 +7789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Withdraw from asset: the source is locked to an investment wallet."
+          }
+        }
+      }
+    },
+    "Teks asli dihapus setelah draf dibuat. Draf yang tidak diproses dihapus otomatis setelah 30 hari. Kamu bisa menghapus semuanya di Profil.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original text is deleted once the draft is made. Drafts you don't process are deleted automatically after 30 days. You can delete everything in Profile."
           }
         }
       }
@@ -7893,6 +8333,16 @@
         }
       }
     },
+    "Tidak terbaca. Isi nominalnya dulu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read it. Enter the amount first."
+          }
+        }
+      }
+    },
     "Tipe": {
       "localizations": {
         "en": {
@@ -8235,6 +8685,16 @@
         }
       }
     },
+    "Ubah draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit draft"
+          }
+        }
+      }
+    },
     "Ubah foto profil": {
       "localizations": {
         "en": {
@@ -8431,6 +8891,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Card color · type the name on the card"
+          }
+        }
+      }
+    },
+    "Yang diingat Saku": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What Saku remembers"
           }
         }
       }
@@ -8651,6 +9121,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "the last day"
+          }
+        }
+      }
+    },
+    "tanpa catatan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no note"
           }
         }
       }

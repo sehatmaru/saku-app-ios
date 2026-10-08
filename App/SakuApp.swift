@@ -4,6 +4,7 @@ import SwiftUI
 struct SakuApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var authViewModel = AuthViewModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         // Keep this closure free of state reads: SwiftUI may re-run it on its async
@@ -11,6 +12,10 @@ struct SakuApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(authViewModel)
+                .onChange(of: scenePhase) { _, phase in
+                    guard phase == .active else { return }
+                    DraftStore.shared.ingestSharedText()
+                }
         }
     }
 }
