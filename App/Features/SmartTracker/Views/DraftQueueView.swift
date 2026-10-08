@@ -198,7 +198,6 @@ struct DraftQueueView: View {
         .padding(20)
         .frame(maxWidth: .infinity, minHeight: 392, alignment: .topLeading)
         .background(Color.appFill, in: RoundedRectangle(cornerRadius: 26))
-        }
     }
 
     private func cardRow(_ title: String, _ value: String, warn: Bool, last: Bool = false) -> some View {
