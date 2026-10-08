@@ -30,6 +30,10 @@ struct Draft: Identifiable, Codable, Equatable {
     var createdAt = Date()
     /// Learned from this keyword/merchant, shown so the user can see why a field is filled.
     var merchant: String?
+    /// Category or wallet came from what Saku remembered (shown as "Ingatan").
+    var fromMemory = false
+    /// Where it came from in words, e.g. the bank app of a notification ("BCA").
+    var sourceName: String?
     /// "Mirip dengan transaksi …" warning from the duplicate check.
     var duplicateNote: String?
     /// The sentence could not be understood; `title` holds the original text.

@@ -12,6 +12,7 @@ struct RecordTransactionIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard SmartTrackerConsent.isGranted else { return .result(dialog: Self.needsConsent) }
+        guard SmartTrackerWays.siri else { return .result(dialog: "Siri belum diaktifkan. Nyalakan di Profil > Smart Tracker.") }
         let count = await MainActor.run { DraftStore.shared.add(text: text, source: .siri).count }
         await DraftNotifier.announce(count: count)
         return .result(dialog: "\(count) draf masuk ke Perlu dicek di Saku.")
@@ -34,7 +35,8 @@ struct RecordFromNotificationIntent: AppIntent {
             let store = DraftStore.shared
             let drafts = NotificationParser.parse(app: appName, title: notificationTitle, subtitle: subtitle, body: body,
                                                   context: store.context)
-            return store.add(drafts).count
+            if !drafts.isEmpty { store.noteConnected(app: appName) }
+            return store.add(drafts.map { var d = $0; d.sourceName = appName; return d }).count
         }
         if count > 0 { await DraftNotifier.announce(count: count) }
         // an empty body usually means the Shortcut's Body variable is not filled, which is worth saying

@@ -347,8 +347,11 @@ enum SmartParser {
         // 1. what the user chose before for this merchant
         if let hit = MerchantMemory.match(in: lower, entries: context.memory, kind: draft.kind) {
             draft.merchant = hit.keyword
-            if let id = hit.categoryId, pool.contains(where: { $0.id == id }) { draft.categoryId = id }
-            if draft.accountId == nil, let id = hit.accountId, context.accounts.contains(where: { $0.id == id && $0.isActive }) { draft.accountId = id }
+            if let id = hit.categoryId, pool.contains(where: { $0.id == id }) { draft.categoryId = id; draft.fromMemory = true }
+            if draft.accountId == nil, let id = hit.accountId, context.accounts.contains(where: { $0.id == id && $0.isActive }) {
+                draft.accountId = id
+                draft.fromMemory = true
+            }
             if draft.categoryId != nil { return }
         }
         // 2. the category's own name in the sentence

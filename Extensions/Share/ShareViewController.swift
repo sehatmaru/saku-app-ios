@@ -31,6 +31,10 @@ final class ShareViewController: UIViewController {
     }
 
     private func receive() async {
+        guard ShareInbox.isEnabled else {
+            extensionContext?.completeRequest(returningItems: nil)
+            return
+        }
         let items = (extensionContext?.inputItems as? [NSExtensionItem]) ?? []
         for provider in items.flatMap({ $0.attachments ?? [] }) {
             if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier),

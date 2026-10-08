@@ -1,196 +1,389 @@
 import SwiftUI
 
-/// Profil › Catat cepat: what Saku remembered, deleting it, and the guide for noticing bank notifications.
+/// Profil › Smart Tracker (design 2b): status, the ways of recording (each with its own switch), what is
+/// kept on this phone, privacy, and one button to turn the whole thing on or off.
 struct SmartTrackerSettingsView: View {
     @ObservedObject private var store = DraftStore.shared
-    @State private var confirmsDeleteAll = false
+    @EnvironmentObject private var authViewModel: AuthViewModel
+    @AppStorage(SmartTrackerConsent.key) private var isOn = false
+    @State private var quick = SmartTrackerWays.quick
+    @State private var share = SmartTrackerWays.share
+    @State private var siri = SmartTrackerWays.siri
+    @State private var showsOff = false
+    @State private var showsConsent = false
+    @State private var showsQueue = false
+    @State private var isTurningOff = false
+    @State private var failed = false
 
-    private func name(_ id: String?, in list: [(String, String)]) -> String? { list.first { $0.0 == id }?.1 }
+    private var profileId: UUID? { authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) } }
+    private var memoryCount: Int { store.memory.reduce(0) { $0 + ($1.categoryId != nil ? 1 : 0) + ($1.accountId != nil ? 1 : 0) } }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                NavigationLink(destination: SmartTrackerPrivacyView().detailPage()) {
-                    row(icon: "lock.shield", title: L("Data yang diproses"), subtitle: L("Apa yang dibaca dan ke mana dikirim"))
-                }
-                .buttonStyle(RowPressStyle())
+                statusCard.padding(.horizontal, 24).padding(.top, 12)
 
-                NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
-                    row(icon: "bell.badge", title: L("Catat dari notifikasi"), subtitle: L("Panduan memasang di Shortcuts"))
-                }
-                .buttonStyle(RowPressStyle())
-
-                Text(L("Yang diingat Saku"))
-                    .font(.app(20, weight: .semibold))
-                    .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 4)
-                if store.memory.isEmpty {
-                    Text(L("Belum ada. Setelah kamu menyimpan draf, Saku mengingat kategori dan dompet pilihanmu untuk kata yang sama."))
-                        .font(.app(14)).foregroundStyle(Color.appTextSecondary).padding(.horizontal, 24).padding(.top, 4)
-                } else {
-                    ForEach(store.memory) { entry in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(entry.keyword.capitalized).font(.app(16, weight: .medium))
-                                Text([store.categories.first { $0.id == entry.categoryId }?.name,
-                                      store.accounts.first { $0.id == entry.accountId }?.name].compactMap { $0 }.joined(separator: " · "))
-                                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                caption(L("Cara mencatat"))
+                VStack(spacing: 0) {
+                    toggleRow(.quick, L("Ketik atau ucapkan dari Beranda"), $quick) { SmartTrackerWays.quick = $0 }
+                    separator
+                    NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
+                        wayRow(.notification, L("Diteruskan lewat Shortcuts")) {
+                            HStack(spacing: 6) {
+                                Text(isOn ? (store.connectedApps.isEmpty ? L("Atur") : L("%lld aplikasi", store.connectedApps.count)) : L("Mati"))
+                                    .font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                                chevron
                             }
-                            Spacer()
-                            Button { store.forget(entry) } label: {
-                                Image(systemName: "xmark.circle.fill").foregroundStyle(Color.appTextTertiary)
-                            }
-                            .accessibilityLabel(L("Hapus"))
                         }
-                        .padding(.horizontal, 24).padding(.vertical, 12).rowSeparator()
                     }
+                    .buttonStyle(.plain)
+                    separator
+                    toggleRow(.share, L("Dari menu Bagikan di aplikasi lain"), $share) { SmartTrackerWays.share = $0 }
+                    separator
+                    toggleRow(.siri, L("“Hai Siri, catat di Saku”"), $siri) { SmartTrackerWays.siri = $0 }
                 }
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 24).opacity(isOn ? 1 : 0.5).disabled(!isOn)
 
-                Button(role: .destructive) { confirmsDeleteAll = true } label: {
-                    Text(L("Hapus semua draf dan ingatan"))
-                        .font(.app(16, weight: .semibold))
-                        .foregroundStyle(Color(light: 0xD1343A, dark: 0xFF6B6B))
-                        .frame(maxWidth: .infinity).frame(height: 48)
-                        .background(Color(light: 0xFDECEC, dark: 0x3A1D1F), in: Capsule())
+                caption(L("Yang tersimpan di HP ini"))
+                VStack(spacing: 0) {
+                    Button { showsQueue = true } label: {
+                        storedRow("tray", L("Draf menunggu"), L("Terhapus sendiri setelah 30 hari"), trailing: "\(store.drafts.count)", link: true)
+                    }
+                    .buttonStyle(.plain)
+                    separator
+                    NavigationLink(destination: SmartTrackerMemoryView().detailPage()) {
+                        storedRow("brain", L("Ingatan Saku"), L("Kategori dan dompet favoritmu"), trailing: "\(memoryCount)", link: true)
+                    }
+                    .buttonStyle(.plain)
+                    separator
+                    storedRow("textformat", L("Kalimat asli"), L("Dihapus begitu draf jadi"), trailing: L("Tidak disimpan"), link: false)
                 }
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 24)
+
+                caption(L("Privasi"))
+                NavigationLink(destination: SmartTrackerPrivacyView().detailPage()) {
+                    storedRow("checkmark.shield", L("Cara data diproses"), L("Di HP, di server, dan berapa lama"), trailing: "", link: true)
+                        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 24)
+
+                Button { isOn ? (showsOff = true) : (showsConsent = true) } label: {
+                    ZStack {
+                        if isTurningOff { ProgressView() } else {
+                            Text(isOn ? L("Matikan Smart Tracker") : L("Nyalakan Smart Tracker"))
+                        }
+                    }
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(isOn ? Color(light: 0xD1343A, dark: 0xFF6B6B) : Color.appBackground)
+                    .frame(maxWidth: .infinity).frame(height: 52)
+                    .background(isOn ? Color(light: 0xFDECEC, dark: 0x3A1D1F) : Color.appText, in: Capsule())
+                }
+                .buttonStyle(PressScaleStyle())
                 .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 40)
             }
         }
         .background(Color.appBackground)
-        .navigationTitle(L("Catat cepat"))
+        .navigationTitle("Smart Tracker")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmDialog(isPresented: $confirmsDeleteAll, icon: "trash", destructive: true,
-                       title: L("Hapus semua draf dan ingatan?"),
-                       message: L("Draf yang belum disimpan dan semua pilihan yang diingat dihapus dari perangkat ini."),
-                       confirmTitle: L("Hapus")) {
-            store.forgetEverything()
-            confirmsDeleteAll = false
-        }
+        .sheet(isPresented: $showsQueue) { if let id = authViewModel.currentUser?.id { DraftQueueView(userId: id) } }
+        .sheet(isPresented: $showsConsent) { SmartTrackerConsentSheet(profileId: profileId) { showsConsent = false } }
+        .confirmDialog(isPresented: $showsOff, icon: "power", destructive: true, title: L("Matikan Smart Tracker?"),
+                       message: L("Semua cara mencatat berhenti. %lld draf dan %lld ingatan dihapus dari HP ini. Transaksi yang sudah tersimpan tetap aman.",
+                                  store.drafts.count, memoryCount),
+                       confirmTitle: L("Matikan dan hapus"), isBusy: isTurningOff) { turnOff() }
+        .confirmDialog(isPresented: $failed, icon: "exclamationmark.triangle", title: L("Gagal mematikan Smart Tracker"),
+                       message: L("Periksa koneksi internetmu lalu coba lagi. Pengaturanmu belum berubah."), confirmTitle: nil, cancelTitle: L("Tutup"))
     }
 
-    private func row(icon: String, title: String, subtitle: String) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+    // MARK: Pieces
+
+    private var statusCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "sparkles").font(.system(size: 21))
+                .foregroundStyle(isOn ? Color.appPrimary : Color.appTextTertiary)
+                .frame(width: 44, height: 44).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
-                Text(subtitle).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Text(isOn ? L("Smart Tracker aktif") : L("Smart Tracker mati")).font(.app(16, weight: .semibold))
+                Text(isOn ? (SmartTrackerConsent.since.map { L("Aktif sejak %@", Self.sinceFormat.string(from: $0)) } ?? L("Aktif"))
+                          : L("Draf dan ingatan sudah dihapus"))
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
             }
             Spacer()
-            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
         }
-        .padding(.horizontal, 24).padding(.vertical, 14).contentShape(Rectangle())
+        .padding(16)
+        .background(isOn ? Color(light: 0xE6F3EC, dark: 0x1E3A2C) : Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        .animation(.easeInOut(duration: 0.3), value: isOn)
     }
-}
 
-/// Step by step: an iOS personal automation with the "Notification" trigger that sends the text to Saku.
-/// Automations cannot be shared as a link, so each user builds one per app.
-struct NotificationSetupGuideView: View {
-    @Environment(\.openURL) private var openURL
+    private static let sinceFormat: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM yyyy"
+        f.locale = AppLanguage.locale
+        return f
+    }()
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(L("Saku tidak bisa membaca notifikasi aplikasi lain. Tapi iOS punya otomatisasi di Shortcuts yang bisa meneruskan notifikasi ke Saku. Pasang satu kali untuk tiap aplikasi."))
-                    .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary)
-                Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
-                    Label(L("Buka Shortcuts"), systemImage: "arrow.up.forward.app")
-                        .font(.app(16, weight: .semibold)).foregroundStyle(Color.appBackground)
-                        .frame(maxWidth: .infinity).frame(height: 50).background(Color.appText, in: Capsule())
-                }
-                .buttonStyle(PressScaleStyle())
-                ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
-                    HStack(alignment: .top, spacing: 12) {
-                        Text("\(index + 1)").font(.app(13, weight: .bold)).foregroundStyle(.white)
-                            .frame(width: 24, height: 24).background(Color.appPrimary, in: Circle())
-                        Text(step).font(.app(15)).lineSpacing(3)
-                    }
-                }
-                Text(L("Aplikasi yang didukung: %@. Draf dari notifikasi selalu masuk ke Perlu dicek; teks notifikasi tidak disimpan.",
-                       NotificationParser.supportedApps.joined(separator: ", ")))
-                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.top, 8)
+    private func caption(_ text: String) -> some View {
+        Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+            .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 8)
+    }
+
+    private var separator: some View { Rectangle().fill(Color.appSeparator).frame(height: 1).padding(.leading, 58) }
+    private var chevron: some View {
+        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+    }
+
+    private func wayRow<Trailing: View>(_ way: SmartWay, _ detail: String, @ViewBuilder trailing: () -> Trailing) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: way.icon).font(.system(size: 17)).foregroundStyle(Color.appPrimary)
+                .frame(width: 32, height: 32).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 10))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(way.title).font(.app(16)).foregroundStyle(Color.appText)
+                Text(detail).font(.app(12)).foregroundStyle(Color.appTextTertiary)
             }
-            .padding(24)
+            Spacer(minLength: 8)
+            trailing()
         }
-        .background(Color.appBackground)
-        .navigationTitle(L("Catat dari notifikasi"))
-        .navigationBarTitleDisplayMode(.inline)
+        .padding(.horizontal, 14).padding(.vertical, 10).frame(minHeight: 62).contentShape(Rectangle())
     }
 
-    private var steps: [String] {
-        [L("Di Shortcuts, buka tab Otomatisasi lalu ketuk + dan pilih Notifikasi."),
-         L("Pilih aplikasinya (misalnya GoPay atau BCA), lalu pilih Jalankan Segera."),
-         L("Ketuk Berikutnya, tambahkan aksi \"Catat dari notifikasi\" dari Saku."),
-         L("Isi Aplikasi sumber dengan nama aplikasinya, lalu Judul, Subjudul, dan Isi dengan variabel dari notifikasi."),
-         L("Matikan \"Tanya Sebelum Menjalankan\" jika iOS menawarkannya, lalu ketuk Selesai.")]
+    private func toggleRow(_ way: SmartWay, _ detail: String, _ value: Binding<Bool>, set: @escaping (Bool) -> Void) -> some View {
+        wayRow(way, detail) {
+            Toggle("", isOn: Binding(get: { value.wrappedValue }, set: { value.wrappedValue = $0; set($0) }))
+                .labelsHidden().tint(Color.appPrimary)
+        }
     }
-}
 
-/// What Smart Tracker reads and where it goes, any time, with the state of the user's agreement.
-struct SmartTrackerPrivacyView: View {
-    @AppStorage(SmartTrackerConsent.key) private var isGranted = false
-    @EnvironmentObject private var authViewModel: AuthViewModel
-    @State private var showsConsent = false
-    @State private var showsRevoke = false
-    @State private var isRevoking = false
-    @State private var revokeFailed = false
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Label(isGranted ? L("Kamu sudah menyetujui") : L("Belum disetujui"),
-                      systemImage: isGranted ? "checkmark.seal.fill" : "exclamationmark.circle")
-                    .font(.app(15, weight: .semibold))
-                    .foregroundStyle(isGranted ? Color.appPrimary : Color.appWarning)
-                SmartTrackerPrivacyText()
-                if !isGranted {
-                    Button { showsConsent = true } label: {
-                        Text(L("Baca dan setujui"))
-                            .font(.app(16, weight: .semibold)).foregroundStyle(Color.appBackground)
-                            .frame(maxWidth: .infinity).frame(height: 50).background(Color.appText, in: Capsule())
-                    }
-                    .buttonStyle(PressScaleStyle())
-                } else {
-                    Button { showsRevoke = true } label: {
-                        Text(L("Cabut persetujuan"))
-                            .font(.app(16, weight: .semibold))
-                            .foregroundStyle(Color(light: 0xD1343A, dark: 0xFF6B6B))
-                            .frame(maxWidth: .infinity).frame(height: 48)
-                            .background(Color(light: 0xFDECEC, dark: 0x3A1D1F), in: Capsule())
-                    }
-                    .buttonStyle(PressScaleStyle())
-                }
+    private func storedRow(_ icon: String, _ title: String, _ detail: String, trailing: String, link: Bool) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon).font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 32)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.app(16)).foregroundStyle(Color.appText)
+                Text(detail).font(.app(12)).foregroundStyle(Color.appTextTertiary)
             }
-            .padding(24)
+            Spacer(minLength: 8)
+            if !trailing.isEmpty { Text(trailing).font(.app(15)).foregroundStyle(Color.appTextSecondary) }
+            if link { chevron }
         }
-        .background(Color.appBackground)
-        .confirmDialog(isPresented: $showsRevoke, icon: "hand.raised", destructive: true,
-                       title: L("Cabut persetujuan?"),
-                       message: L("Catat cepat, Siri/Shortcuts, notifikasi, dan Bagikan berhenti membuat draf. Draf yang belum disimpan dan semua yang diingat Saku dihapus dari perangkat ini. Transaksi yang sudah tersimpan tidak berubah. Kamu bisa menyetujui lagi kapan saja."),
-                       confirmTitle: L("Cabut persetujuan"), isBusy: isRevoking) { revoke() }
-        .confirmDialog(isPresented: $revokeFailed, icon: "exclamationmark.triangle", title: L("Gagal mencabut persetujuan"),
-                       message: L("Periksa koneksi internetmu lalu coba lagi. Persetujuanmu belum berubah."),
-                       confirmTitle: nil, cancelTitle: L("Tutup"))
-        .navigationTitle(L("Data yang diproses"))
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showsConsent) {
-            SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) { showsConsent = false }
-        }
+        .padding(.horizontal, 14).frame(minHeight: 56).contentShape(Rectangle())
     }
 
-    private func revoke() {
-        guard let profileId = authViewModel.currentUser.flatMap({ UUID(uuidString: $0.id) }) else { return }
-        isRevoking = true
+    private func turnOff() {
+        guard let profileId else { return }
+        isTurningOff = true
         Task {
             do {
                 try await SupabaseSDK.revokeSmartTrackerConsent(profileId: profileId)
-                // nothing read under the old agreement stays: drafts, what was learned, text waiting from Bagikan
                 DraftStore.shared.forgetEverything()
                 _ = ShareInbox.drain()
-                showsRevoke = false
+                showsOff = false
             } catch {
-                showsRevoke = false
-                revokeFailed = true
+                showsOff = false
+                failed = true
             }
-            isRevoking = false
+            isTurningOff = false
         }
+    }
+}
+
+/// Cara data diproses: the same words as the agreement, any time, with the state of the agreement.
+struct SmartTrackerPrivacyView: View {
+    var body: some View {
+        ScrollView {
+            SmartTrackerPrivacyContent().padding(24)
+        }
+        .background(Color.appBackground)
+        .navigationTitle(L("Cara data diproses"))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Ingatan Saku (design 2c): what Saku learned from corrections, grouped by what it fills in.
+struct SmartTrackerMemoryView: View {
+    @ObservedObject private var store = DraftStore.shared
+    @State private var showsForgetAll = false
+
+    private var categoryEntries: [MerchantMemory.Entry] { store.memory.filter { $0.categoryId != nil } }
+    private var walletEntries: [MerchantMemory.Entry] { store.memory.filter { $0.accountId != nil } }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(L("Tiap kali kamu mengoreksi draf, Saku ingat pilihanmu. Jadi lain kali kamu tulis “kopi”, kategorinya langsung Jajan & Kopi."))
+                    .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.horizontal, 24).padding(.top, 12)
+                if store.memory.isEmpty {
+                    EmptyMessage(icon: "brain", title: L("Belum ada ingatan"),
+                                 message: L("Setelah kamu menyimpan draf, Saku mengingat kategori dan dompet pilihanmu untuk kata yang sama."))
+                        .padding(.top, 40)
+                } else {
+                    group(L("Kata → kategori"), L("Mengisi kategori"), categoryEntries, .category)
+                    group(L("Kata → dompet"), L("Mengisi dompet"), walletEntries, .account)
+                    Text(L("Melupakan ingatan tidak mengubah transaksi yang sudah tersimpan."))
+                        .font(.app(13)).foregroundStyle(Color.appTextTertiary).padding(.horizontal, 24).padding(.top, 18)
+                    Button { showsForgetAll = true } label: {
+                        Text(L("Lupakan semua")).font(.app(16, weight: .semibold)).foregroundStyle(Color(light: 0xD1343A, dark: 0xFF6B6B))
+                            .frame(maxWidth: .infinity).frame(height: 44)
+                    }
+                    .padding(.top, 16).padding(.bottom, 60)
+                }
+            }
+        }
+        .background(Color.appBackground)
+        .navigationTitle(L("Ingatan"))
+        .navigationBarTitleDisplayMode(.inline)
+        .confirmDialog(isPresented: $showsForgetAll, icon: "brain", destructive: true, title: L("Lupakan semua?"),
+                       message: L("Semua pilihan yang diingat dihapus. Transaksi yang sudah tersimpan tidak berubah."),
+                       confirmTitle: L("Lupakan semua")) {
+            store.forgetMemory()
+            showsForgetAll = false
+        }
+    }
+
+    @ViewBuilder
+    private func group(_ title: String, _ detail: String, _ entries: [MerchantMemory.Entry], _ field: MerchantMemory.Field) -> some View {
+        if !entries.isEmpty {
+            HStack {
+                Text(title).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                Text(detail).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+            }
+            .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 6)
+            ForEach(entries) { entry in
+                let category = store.categories.first { $0.id == entry.categoryId }
+                let wallet = store.accounts.first { $0.id == entry.accountId }
+                HStack(spacing: 10) {
+                    Text(entry.keyword).font(.app(15)).lineLimit(1)
+                        .padding(.horizontal, 10).frame(height: 30).background(Color.appFill, in: RoundedRectangle(cornerRadius: 8))
+                    Image(systemName: "arrow.right").font(.system(size: 13)).foregroundStyle(Color.appTextTertiary)
+                    VStack(alignment: .leading, spacing: 1) {
+                        HStack(spacing: 6) {
+                            Image(systemName: field == .category ? (category?.icon ?? "tag") : "wallet.bifold")
+                                .font(.system(size: 15)).foregroundStyle(Color.appTextSecondary)
+                            Text(field == .category ? (category?.name ?? "—") : (wallet?.name ?? "—"))
+                                .font(.app(15, weight: .medium)).lineLimit(1)
+                        }
+                        Text(L("%lld kali dipakai", entry.uses)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                    }
+                    Spacer(minLength: 0)
+                    Button { withAnimation(.easeInOut(duration: 0.3)) { store.forget(entry, field: field) } } label: {
+                        Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                            .frame(width: 36, height: 36)
+                    }
+                    .accessibilityLabel(L("Lupakan"))
+                }
+                .padding(.leading, 24).padding(.trailing, 14).padding(.vertical, 8)
+                .overlay(alignment: .bottom) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+                .transition(.opacity)
+            }
+        }
+    }
+}
+
+/// Notifikasi bank (design 2d): how to connect each bank or e-wallet app through a Shortcuts automation.
+struct NotificationSetupGuideView: View {
+    @ObservedObject private var store = DraftStore.shared
+    @Environment(\.openURL) private var openURL
+
+    private var steps: [Text] {
+        [Text(L("Buka Shortcuts, pilih tab ")) + Text(L("Otomatisasi")).bold() + Text(L(", ketuk +, lalu pilih ")) + Text(L("Notifikasi")).bold() + Text("."),
+         Text(L("Pilih aplikasi bank atau e-wallet-mu, lalu aktifkan ")) + Text(L("Jalankan Segera")).bold() + Text("."),
+         Text(L("Ketuk Berikutnya, cari Saku, lalu pilih aksi ")) + Text(L("Catat dari notifikasi")).bold() + Text("."),
+         Text(L("Di aksi itu, isi Aplikasi dengan nama bank-nya. Untuk Judul, Subjudul, dan Isi, pilih variabel ")) + Text(L("Notifikasi")).bold() + Text("."),
+         Text(L("Ketuk ")) + Text(L("Selesai")).bold() + Text(L(". Kalau muncul ")) + Text(L("Tanya Sebelum Menjalankan")).bold() + Text(L(", matikan."))]
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(spacing: 10) {
+                        HStack(spacing: 10) {
+                            Text("BCA").font(.system(size: 10, weight: .heavy)).foregroundStyle(.white)
+                                .frame(width: 30, height: 30).background(Color(hex: "0066AE"), in: RoundedRectangle(cornerRadius: 8))
+                            VStack(alignment: .leading) {
+                                Text("BCA mobile").font(.app(13, weight: .semibold))
+                                Text(L("Transfer Rp500.000 ke BIBIT berhasil")).font(.app(13)).foregroundStyle(Color.appBody).lineLimit(1)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 10).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 14))
+                        Image(systemName: "arrow.down").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                        HStack(spacing: 10) {
+                            Image(systemName: "tray").font(.system(size: 15)).foregroundStyle(Color.appPrimary)
+                                .frame(width: 30, height: 30).background(Color(light: 0xE6F3EC, dark: 0x1E3A2C), in: Circle())
+                            Text(L("Draf menunggu di Perlu dicek")).font(.app(14, weight: .medium))
+                            Spacer(minLength: 0)
+                            Text("Rp500.000").font(.app(14)).monospacedDigit()
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 10).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .padding(14).background(Color.appFill, in: RoundedRectangle(cornerRadius: 18)).padding(.horizontal, 24).padding(.top, 12)
+
+                    Text(L("Setiap ada notifikasi transaksi, Shortcuts di iPhone meneruskannya ke Saku. Atur sekali saja untuk tiap aplikasi."))
+                        .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.horizontal, 24).padding(.top, 16)
+
+                    if !store.connectedApps.isEmpty {
+                        Text(L("Sudah terhubung")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                            .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 8)
+                        FlowLayout(spacing: 6) {
+                            ForEach(store.connectedApps, id: \.self) { app in
+                                Label(app, systemImage: "checkmark.circle.fill")
+                                    .font(.app(14, weight: .semibold)).foregroundStyle(Color(light: 0x0E5E41, dark: 0x5CD49A))
+                                    .padding(.horizontal, 12).frame(height: 32)
+                                    .background(Color(light: 0xE6F3EC, dark: 0x1E3A2C), in: Capsule())
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                    }
+
+                    Text(L("Cara menghubungkan")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 8)
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                            HStack(alignment: .top, spacing: 14) {
+                                VStack(spacing: 4) {
+                                    Text("\(index + 1)").font(.app(14, weight: .bold)).foregroundStyle(.white)
+                                        .frame(width: 28, height: 28).background(Color.appPrimary, in: Circle())
+                                    if index < steps.count - 1 {
+                                        Rectangle().fill(Color(light: 0xD9EDE2, dark: 0x2A4A3A)).frame(width: 2).frame(maxHeight: .infinity)
+                                    }
+                                }
+                                step.font(.app(15)).lineSpacing(3).padding(.top, 3).padding(.bottom, 18)
+                                Spacer(minLength: 0)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+
+                    Text(L("Bisa dipakai untuk")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                        .padding(.horizontal, 24).padding(.top, 4).padding(.bottom, 8)
+                    FlowLayout(spacing: 6) {
+                        ForEach(NotificationParser.supportedApps, id: \.self) { app in
+                            Text(app).font(.app(14)).padding(.horizontal, 12).frame(height: 30).background(Color.appFill, in: Capsule())
+                        }
+                    }
+                    .padding(.horizontal, 24)
+
+                    Label(L("Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek."),
+                          systemImage: "lock")
+                        .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextTertiary).padding(.horizontal, 24).padding(.top, 16)
+                    Color.clear.frame(height: 130)
+                }
+            }
+            LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .center)
+                .frame(height: 120).allowsHitTesting(false)
+            Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
+                Label(L("Buka Shortcuts"), systemImage: "arrow.up.forward.app")
+                    .font(.app(17, weight: .semibold)).foregroundStyle(Color.appBackground)
+                    .frame(maxWidth: .infinity).frame(height: 52).background(Color.appText, in: Capsule())
+            }
+            .buttonStyle(PressScaleStyle())
+            .padding(.horizontal, 24).padding(.bottom, 12)
+        }
+        .background(Color.appBackground)
+        .navigationTitle(L("Notifikasi bank"))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -11,6 +11,7 @@ struct DashboardView: View {
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
 @State private var showsDrafts = false
+@AppStorage(SmartTrackerWays.quickKey) private var smartQuickOn = true
 @State private var showsConsent = false
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
     @State private var isChartShown = false
@@ -80,6 +81,14 @@ struct DashboardView: View {
         }
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
+        .overlay {
+            if selectedTab == .home, !hasNoWallets, smartQuickOn, let userId = authViewModel.currentUser?.id {
+                SmartTrackerHomeOverlay(userId: userId) { text in
+                    toastText = text
+                    isToastShown = true
+                }
+            }
+        }
         .onAppear { openDraftsIfRequested(); askConsentForSharedText() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in askConsentForSharedText() }
         .sheet(isPresented: $showsConsent) {
@@ -220,7 +229,6 @@ struct DashboardView: View {
                         emptyHealthSection
                             .padding(.bottom, 90)
                     } else {
-                        if let userId = authViewModel.currentUser?.id { QuickEntryCard(userId: userId) }
                         SectionDivider()
                         cashFlowSection
                         SectionDivider()

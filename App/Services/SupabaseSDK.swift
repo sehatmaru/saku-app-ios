@@ -24,8 +24,11 @@ enum SupabaseSDK {
 
     /// The profile decides. If this device agreed but saving failed earlier, the agreement is saved now.
     static func syncSmartTrackerConsent(_ profile: UserProfile) async {
-        if profile.smartTrackerConsentAt != nil {
+        if let stamp = profile.smartTrackerConsentAt {
             SmartTrackerConsent.isGranted = true
+            let fractional = ISO8601DateFormatter()
+            fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            SmartTrackerConsent.since = fractional.date(from: stamp) ?? ISO8601DateFormatter().date(from: stamp)
         } else if SmartTrackerConsent.isGranted {
             try? await recordSmartTrackerConsent(profileId: profile.id)
         }
@@ -39,6 +42,7 @@ enum SupabaseSDK {
             .eq("id", value: profileId)
             .execute()
         SmartTrackerConsent.isGranted = true
+        SmartTrackerConsent.since = Date()
     }
 
     /// Withdraws the agreement: saved on the profile first, then mirrored on the device.

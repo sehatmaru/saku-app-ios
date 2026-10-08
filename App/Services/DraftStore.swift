@@ -14,6 +14,8 @@ final class DraftStore: ObservableObject {
     /// Wallets, categories and recent transactions, kept for parsing offline and the duplicate check.
     @Published private(set) var accounts: [Account] = []
     @Published private(set) var categories: [Category] = []
+    /// Bank and e-wallet apps whose notifications have reached Saku (shown as "Sudah terhubung").
+    @Published private(set) var connectedApps: [String] = []
     private var recent: [Transaction] = []
 
     private struct Snapshot: Codable {
@@ -21,6 +23,7 @@ final class DraftStore: ObservableObject {
         var memory: [MerchantMemory.Entry] = []
         var accounts: [Account] = []
         var categories: [Category] = []
+        var connectedApps: [String] = []
     }
 
     private let fileURL: URL
@@ -46,11 +49,12 @@ final class DraftStore: ObservableObject {
         memory = snapshot.memory
         accounts = snapshot.accounts
         categories = snapshot.categories
+        connectedApps = snapshot.connectedApps
         purgeExpired()
     }
 
     private func persist() {
-        let snapshot = Snapshot(drafts: drafts, memory: memory, accounts: accounts, categories: categories)
+        let snapshot = Snapshot(drafts: drafts, memory: memory, accounts: accounts, categories: categories, connectedApps: connectedApps)
         if let data = try? JSONEncoder().encode(snapshot) { try? data.write(to: fileURL, options: .atomic) }
         updateBadge()
     }
@@ -107,6 +111,12 @@ final class DraftStore: ObservableObject {
         return add(remote)
     }
 
+    /// The language model's reading of a sentence the rules could not read; nil when not agreed, offline or no answer.
+    func refined(_ text: String, source: Draft.Source) async -> [Draft]? {
+        guard SmartTrackerConsent.isGranted else { return nil }
+        return await RemoteSmartParser.parse(text, source: source, context: context)
+    }
+
     @discardableResult
     func add(_ new: [Draft]) -> [Draft] {
         let marked = new.map { withDuplicateNote($0) }
@@ -131,6 +141,7 @@ final class DraftStore: ObservableObject {
         purgeExpired()
         // not agreed yet: the shared text waits in the inbox until the user is asked
         guard SmartTrackerConsent.isGranted else { return }
+        guard SmartTrackerWays.share else { _ = ShareInbox.drain(); return }
         let texts = ShareInbox.drain()
         guard !texts.isEmpty else { return }
         let added = texts.flatMap { SmartParser.parse($0, source: .share, context: context) }
@@ -203,6 +214,11 @@ final class DraftStore: ObservableObject {
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
     }
 
+    /// Saves a draft that was never queued (the quick result sheet): same as `save`, nothing to remove from the queue.
+    func saveImmediately(_ draft: Draft, userId: String) async throws {
+        try await save(draft, userId: userId)
+    }
+
     /// A card bill paid from outside Saku (no source wallet named): lowers the card's debt only.
     func saveOutsideCardPayment(_ draft: Draft) async throws {
         guard let amount = draft.amount, let card = draft.counterpartyAccountId else { throw SaveError.incomplete }
@@ -215,9 +231,30 @@ final class DraftStore: ObservableObject {
 
     private func learn(from draft: Draft) {
         guard let keyword = MerchantMemory.keyword(for: draft), draft.kind == .expense || draft.kind == .income else { return }
-        let entry = MerchantMemory.Entry(keyword: keyword, kind: draft.kind, categoryId: draft.categoryId, accountId: draft.accountId)
+        var entry = MerchantMemory.Entry(keyword: keyword, kind: draft.kind, categoryId: draft.categoryId, accountId: draft.accountId)
+        if let old = memory.first(where: { $0.id == entry.id }) {
+            // the same choice again counts up; a new choice starts over
+            entry.uses = (old.categoryId == entry.categoryId && old.accountId == entry.accountId) ? old.uses + 1 : 1
+        }
         memory.removeAll { $0.id == entry.id }
         memory.insert(entry, at: 0)
+        persist()
+    }
+
+    /// Forgets one remembered choice: the category part or the wallet part of a keyword.
+    func forget(_ entry: MerchantMemory.Entry, field: MerchantMemory.Field) {
+        guard let index = memory.firstIndex(where: { $0.id == entry.id }) else { return }
+        switch field {
+        case .category: memory[index].categoryId = nil
+        case .account: memory[index].accountId = nil
+        }
+        if memory[index].categoryId == nil && memory[index].accountId == nil { memory.remove(at: index) }
+        persist()
+    }
+
+    func noteConnected(app: String) {
+        guard !app.isEmpty, !connectedApps.contains(app) else { return }
+        connectedApps.append(app)
         persist()
     }
 
@@ -229,6 +266,13 @@ final class DraftStore: ObservableObject {
     func forgetEverything() {
         memory = []
         drafts = []
+        connectedApps = []
+        persist()
+    }
+
+    /// Forgets every remembered choice but keeps the drafts.
+    func forgetMemory() {
+        memory = []
         persist()
     }
 
@@ -238,6 +282,7 @@ final class DraftStore: ObservableObject {
         drafts = []
         accounts = []
         categories = []
+        connectedApps = []
         recent = []
         persist()
     }

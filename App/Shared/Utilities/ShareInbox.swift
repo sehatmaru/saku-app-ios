@@ -9,6 +9,15 @@ enum ShareInbox {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup)?.appendingPathComponent("share-inbox.json")
     }
 
+    /// The "Bagikan teks" switch in Profil, kept in the App Group so the extension can read it.
+    static var isEnabled: Bool {
+        UserDefaults(suiteName: appGroup)?.object(forKey: "shareEnabled") as? Bool ?? true
+    }
+
+    static func setEnabled(_ on: Bool) {
+        UserDefaults(suiteName: appGroup)?.set(on, forKey: "shareEnabled")
+    }
+
     static func append(_ text: String) {
         guard let url else { return }
         var items = (try? JSONDecoder().decode([String].self, from: Data(contentsOf: url))) ?? []
