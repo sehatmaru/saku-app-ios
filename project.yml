@@ -35,6 +35,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: id.saku.app
         INFOPLIST_FILE: App/Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: App/Resources/Saku.entitlements
     dependencies:
       - package: Supabase
         product: Supabase
@@ -42,6 +43,7 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
+      - target: SakuShare
   SakuTests:
     type: bundle.unit-test
     platform: iOS
@@ -52,6 +54,18 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: id.saku.tests
+  SakuShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Extensions/Share
+      - path: App/Shared/Utilities/ShareInbox.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: id.saku.app.share
+        INFOPLIST_FILE: Extensions/Share/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensions/Share/SakuShare.entitlements
+        SKIP_INSTALL: YES
 
 schemes:
   Saku:
