@@ -33,6 +33,14 @@ struct DraftEditView: View {
     }
 
     private var style: TransactionStyle { Self.types[typeIndex] }
+    /// The panel colour, with the dark-mode values of the design.
+    private var panelColor: Color {
+        switch style.type {
+        case .expense: return .stExpense
+        case .income: return .stGreen
+        default: return .stTransfer
+        }
+    }
     private var isTransfer: Bool { style.type == .transfer }
     private var isCard: Bool { draft.kind == .cardPayment }
     private var activeAccounts: [Account] { store.accounts.filter(\.isActive).sorted { $0.isDefault && !$1.isDefault } }
@@ -51,7 +59,7 @@ struct DraftEditView: View {
             rows.padding(.top, isCompact ? 4 : 10)
             Spacer(minLength: isCompact ? 4 : 12)
             if !noteFocused {
-                AmountPad(color: style.color, isEnabled: amount > 0, onPress: press, onSave: save, keyHeight: isCompact ? 46 : 52)
+                AmountPad(color: panelColor, isEnabled: amount > 0, onPress: press, onSave: save, keyHeight: isCompact ? 46 : 52)
                     .animation(.easeInOut(duration: 0.4), value: typeIndex)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 4)
@@ -102,7 +110,7 @@ struct DraftEditView: View {
         .frame(maxWidth: .infinity)
         .background {
             UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32)
-                .fill(style.color)
+                .fill(panelColor)
                 .animation(.easeInOut(duration: 0.45), value: typeIndex)
                 .ignoresSafeArea(edges: .top)
         }
@@ -187,7 +195,7 @@ struct DraftEditView: View {
                     isAsset: target?.isInvestment == true)
             } else {
                 row(.category, label: L("Kategori"), value: category?.name ?? L("Belum dipilih"), icon: category?.icon,
-                    iconColor: style.color, isPlaceholder: category == nil, memory: draft.fromMemory && category != nil)
+                    iconColor: panelColor, isPlaceholder: category == nil, memory: draft.fromMemory && category != nil)
                 row(.account, label: L("Dompet"), value: account?.name ?? L("Pilih"), swatch: walletColor(account))
             }
             row(.date, label: L("Tanggal"), value: dateValue, icon: "calendar", iconColor: .appTextSecondary)
@@ -248,7 +256,7 @@ struct DraftEditView: View {
                               onPick: { picked in draft.counterpartyAccountId = picked.id; sheet = nil })
         case .date:
             PickerSheet(title: L("Tanggal"), onDone: { sheet = nil }) {
-                DayPicker(selected: draft.date, color: style.color) { day in
+                DayPicker(selected: draft.date, color: panelColor) { day in
                     draft.date = keepingTime(of: draft.date, on: day)
                     sheet = nil
                 }

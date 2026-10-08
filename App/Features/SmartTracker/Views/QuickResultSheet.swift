@@ -54,7 +54,7 @@ struct QuickResultSheet: View {
                 } label: {
                     Label(L("Simpan nanti"), systemImage: "tray")
                         .font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
-                        .padding(.horizontal, 12).frame(height: 30).background(Color.appFill, in: Capsule())
+                        .padding(.horizontal, 12).frame(height: 30).background(Color.stChip, in: Capsule())
                 }
             }
             .padding(.horizontal, 20)
@@ -63,7 +63,7 @@ struct QuickResultSheet: View {
                 Circle().fill(Color(light: isIncome ? 0xE6F3EC : 0xFDECEC, dark: isIncome ? 0x1E3A2C : 0x3A1D1F)).frame(width: 44, height: 44)
                     .overlay {
                         Image(systemName: category?.icon ?? "tag").font(.system(size: 20))
-                            .foregroundStyle(isIncome ? Color.appPrimary : Color(light: 0xD1343A, dark: 0xFF6B6B))
+                            .foregroundStyle(isIncome ? Color.stGreen : Color.stDangerText)
                     }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(draft.title).font(.app(17, weight: .semibold)).lineLimit(1)
@@ -107,7 +107,7 @@ struct QuickResultSheet: View {
             HStack(spacing: 10) {
                 Button { dismiss(); onRedo() } label: {
                     Image(systemName: "arrow.counterclockwise").font(.system(size: 20, weight: .bold)).foregroundStyle(Color.appText)
-                        .frame(width: 54, height: 54).background(Color.appFill, in: Circle())
+                        .frame(width: 54, height: 54).background(Color.stChip, in: Circle())
                 }
                 .accessibilityLabel(L("Ulang"))
                 Button(action: save) {
@@ -152,7 +152,7 @@ struct QuickResultSheet: View {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title).font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                    if let note { Text(note).font(.app(12)).foregroundStyle(Color.appPrimary) }
+                    if let note { Text(note).font(.app(12)).foregroundStyle(Color.stGreen) }
                 }
                 Spacer()
                 HStack(spacing: 7) {

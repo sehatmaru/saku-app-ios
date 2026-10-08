@@ -24,10 +24,10 @@ extension Draft {
 
     var kindColor: Color {
         switch kind {
-        case .expense: return Color(hex: "D93636")
-        case .income: return Color(hex: "16875A")
-        case .transfer: return Color(hex: "143A73")
-        case .cardPayment: return Color(hex: "6B3FA0")
+        case .expense: return Color.stExpense
+        case .income: return Color.stGreen
+        case .transfer: return Color.stTransfer
+        case .cardPayment: return Color.stCardPayment
         }
     }
 
@@ -62,14 +62,15 @@ struct DraftQueueView: View {
     @State private var session: [UUID] = []
     @State private var outcomes: [UUID: Outcome] = [:]
     @State private var editing: Draft?
-    @State private var dragX: CGFloat = 0
+    /// The card on screen; swiping the cards sideways moves between them.
+    @State private var selectedId: UUID?
     @State private var isSaving = false
     @State private var isLeaving = false
     @State private var showsDeleteAll = false
     @State private var errorMessage: String?
 
     private var pending: [Draft] { session.compactMap { id in outcomes[id] == nil ? store.drafts.first { $0.id == id } : nil } }
-    private var current: Draft? { pending.first }
+    private var current: Draft? { pending.first { $0.id == selectedId } ?? pending.first }
     private var savedCount: Int { outcomes.values.filter { $0 == .saved }.count }
     private var ignoredCount: Int { outcomes.values.filter { $0 == .ignored }.count }
     private var ready: [Draft] { pending.filter(\.isComplete) }
@@ -78,7 +79,7 @@ struct DraftQueueView: View {
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Button { dismiss() } label: {
-                    Image(systemName: "chevron.left").font(.system(size: 20, weight: .medium)).foregroundStyle(Color.appPrimary)
+                    Image(systemName: "chevron.left").font(.system(size: 20, weight: .medium)).foregroundStyle(Color.stGreen)
                         .frame(width: 32, height: 32)
                 }
                 .padding(.leading, -8)
@@ -106,23 +107,24 @@ struct DraftQueueView: View {
             }
 
             if let current {
-                card(current)
-                    .overlay { swipeStamp(current) }
-                    .padding(.horizontal, 24).padding(.top, 20)
-                    .id(current.id)
-                    .rotationEffect(.degrees(Double(dragX) / 22), anchor: .bottom)
-                    .offset(x: dragX)
-                    .opacity(isLeaving ? 0 : 1)
-                    .offset(y: isLeaving ? -16 : 0)
-                    .scaleEffect(isLeaving ? 0.97 : 1)
-                    .gesture(swipe(current))
+                TabView(selection: Binding(get: { current.id }, set: { selectedId = $0 })) {
+                    ForEach(pending) { draft in
+                        card(draft)
+                            .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 4)
+                            .opacity(isLeaving && draft.id == current.id ? 0 : 1)
+                            .offset(y: isLeaving && draft.id == current.id ? -16 : 0)
+                            .tag(draft.id)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .frame(height: 440)
                 actions(current).padding(.top, 28)
                 Spacer(minLength: 12)
                 bulkBar.padding(.horizontal, 24).padding(.bottom, 24)
             } else {
                 VStack(spacing: 8) {
-                    Image(systemName: "checkmark").font(.system(size: 24, weight: .bold)).foregroundStyle(Color.appPrimary)
-                        .frame(width: 56, height: 56).background(Color(light: 0xE6F3EC, dark: 0x1E3A2C), in: Circle())
+                    Image(systemName: "checkmark").font(.system(size: 24, weight: .bold)).foregroundStyle(Color.stGreen)
+                        .frame(width: 56, height: 56).background(Color.stSuccessBg, in: Circle())
                     Text(L("Semua sudah dicek")).font(.app(17, weight: .semibold)).padding(.top, 6)
                     if !session.isEmpty {
                         Text(L("%lld disimpan · %lld diabaikan", savedCount, ignoredCount))
@@ -153,9 +155,9 @@ struct DraftQueueView: View {
 
     private func segment(_ id: UUID) -> Color {
         switch outcomes[id] {
-        case .saved: return Color.appPrimary
+        case .saved: return Color.stGreen
         case .ignored: return Color.appTextTertiary.opacity(0.5)
-        case nil: return id == current?.id ? Color.appText : Color.appFill
+        case nil: return id == current?.id ? Color.appText : Color.stChip
         }
     }
 
@@ -169,7 +171,7 @@ struct DraftQueueView: View {
             Label(draft.sourceLabel, systemImage: draft.sourceIcon)
                 .font(.app(13)).foregroundStyle(Color.appTextSecondary)
             Image(systemName: category?.icon ?? draft.kindIcon).font(.system(size: 24)).foregroundStyle(Color.appText)
-                .frame(width: 52, height: 52).background(Color.appBackground, in: Circle()).padding(.top, 18)
+                .frame(width: 52, height: 52).background(Color.stRaised, in: Circle()).padding(.top, 18)
             Text(draft.title.isEmpty ? draft.kindTitle : draft.title).font(.app(20, weight: .semibold)).lineLimit(2).padding(.top, 12)
             Text(draft.amount.map { (draft.kind == .expense ? "−" : "") + (isBalanceVisible ? $0.formattedAsCurrency() : "Rp" + hiddenAmount) } ?? "—")
                 .font(.app(44, weight: .ultraLight)).tracking(-1.8).monospacedDigit()
@@ -196,10 +198,6 @@ struct DraftQueueView: View {
         .padding(20)
         .frame(maxWidth: .infinity, minHeight: 392, alignment: .topLeading)
         .background(Color.appFill, in: RoundedRectangle(cornerRadius: 26))
-        .background(alignment: .bottom) {
-            if pending.count > 1 {
-                RoundedRectangle(cornerRadius: 26).fill(Color.appFill.opacity(0.6)).padding(.horizontal, 12).offset(y: 10)
-            }
         }
     }
 
@@ -221,57 +219,14 @@ struct DraftQueueView: View {
         return day
     }
 
-    // MARK: Swipe
-
-    /// "SIMPAN" fades in while dragging right, "ABAIKAN" while dragging left.
-    private func swipeStamp(_ draft: Draft) -> some View {
-        let progress = min(abs(dragX) / 110, 1)
-        let right = dragX > 0
-        return Text(right ? L("SIMPAN") : L("ABAIKAN"))
-            .font(.app(22, weight: .heavy)).tracking(1)
-            .foregroundStyle(right ? Color.appPrimary : Color.appError)
-            .padding(.horizontal, 14).padding(.vertical, 6)
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(right ? Color.appPrimary : Color.appError, lineWidth: 3))
-            .rotationEffect(.degrees(right ? -10 : 10))
-            .opacity(progress)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: right ? .topLeading : .topTrailing)
-            .padding(28)
-            .padding(.horizontal, 24).padding(.top, 20)
-            .allowsHitTesting(false)
-    }
-
-    /// Drag the card like any card stack: right saves it (when complete), left ignores it.
-    private func swipe(_ draft: Draft) -> some Gesture {
-        DragGesture(minimumDistance: 12)
-            .onChanged { dragX = $0.translation.width }
-            .onEnded { value in
-                let dx = value.translation.width
-                let flick = value.predictedEndTranslation.width
-                if dx > 110 || flick > 260 {
-                    if draft.isComplete {
-                        withAnimation(.easeIn(duration: 0.2)) { dragX = 700 }
-                        resolve(draft, .saved, animated: false)
-                    } else {
-                        withAnimation(.settle(0.4)) { dragX = 0 }
-                        editing = draft
-                    }
-                } else if dx < -110 || flick < -260 {
-                    withAnimation(.easeIn(duration: 0.2)) { dragX = -700 }
-                    resolve(draft, .ignored, animated: false)
-                } else {
-                    withAnimation(.settle(0.4)) { dragX = 0 }
-                }
-            }
-    }
-
     // MARK: Actions
 
     private func actions(_ draft: Draft) -> some View {
         HStack(alignment: .top, spacing: 28) {
-            circle(L("Abaikan"), "xmark", size: 60, fill: Color.appFill, fg: Color.appText) { resolve(draft, .ignored) }
-            circle(L("Ubah"), "pencil", size: 48, fill: Color.appFill, fg: Color.appText) { editing = draft }.padding(.top, 6)
+            circle(L("Abaikan"), "xmark", size: 60, fill: Color.stChip, fg: Color.appText) { resolve(draft, .ignored) }
+            circle(L("Ubah"), "pencil", size: 48, fill: Color.stChip, fg: Color.appText) { editing = draft }.padding(.top, 6)
             ZStack {
-                circle(L("Simpan"), "checkmark", size: 60, fill: draft.isComplete ? Color.appPrimary : Color.appTextTertiary, fg: .white) {
+                circle(L("Simpan"), "checkmark", size: 60, fill: draft.isComplete ? Color.stGreen : Color.appTextTertiary, fg: .white) {
                     if draft.isComplete { resolve(draft, .saved) } else { editing = draft }
                 }
                 .opacity(isSaving ? 0.5 : 1)
@@ -296,7 +251,7 @@ struct DraftQueueView: View {
         HStack {
             Button { showsDeleteAll = true } label: {
                 Label(L("Hapus semua"), systemImage: "trash")
-                    .font(.app(15, weight: .semibold)).foregroundStyle(Color(light: 0xD1343A, dark: 0xFF6B6B)).frame(height: 44)
+                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.stDangerText).frame(height: 44)
             }
             Spacer()
             Button(action: saveAll) {
@@ -322,7 +277,6 @@ struct DraftQueueView: View {
                 finish(draft, .saved, animated: animated) {}
             } catch {
                 isSaving = false
-                withAnimation(.settle(0.4)) { dragX = 0 }
                 errorMessage = error.localizedDescription
             }
         }
@@ -330,12 +284,18 @@ struct DraftQueueView: View {
 
     /// Slides the card away, then moves on to the next one.
     private func finish(_ draft: Draft, _ outcome: Outcome, animated: Bool = true, _ work: @escaping () -> Void) {
+        // after this one goes, show the next card (or the previous when it was the last)
+        let list = pending
+        let index = list.firstIndex { $0.id == draft.id } ?? 0
+        let neighbour = list.indices.contains(index + 1) ? list[index + 1].id : (index > 0 ? list[index - 1].id : nil)
         if animated { withAnimation(.easeOut(duration: 0.2)) { isLeaving = true } }
         Task {
             try? await Task.sleep(for: .milliseconds(200))
             work()
-            outcomes[draft.id] = outcome
-            dragX = 0
+            withAnimation(.settle(0.4)) {
+                outcomes[draft.id] = outcome
+                selectedId = neighbour
+            }
             if animated { withAnimation(.easeOut(duration: 0.2)) { isLeaving = false } }
         }
     }

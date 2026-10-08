@@ -50,7 +50,7 @@ struct SmartTrackerPrivacyContent: View {
                             .font(.system(size: 17))
                             .foregroundStyle(Color.appText)
                             .frame(width: 36, height: 36)
-                            .background(Color.appFill, in: Circle())
+                            .background(Color.stChip, in: Circle())
                         VStack(alignment: .leading, spacing: 2) {
                             Text(point.1).font(.app(15, weight: .semibold))
                             Text(point.2).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
@@ -71,11 +71,11 @@ struct SmartWayChips: View {
         FlowLayout(spacing: 6) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(spacing: 6) {
-                    Image(systemName: item.icon).font(.system(size: 13)).foregroundStyle(Color.appPrimary)
+                    Image(systemName: item.icon).font(.system(size: 13)).foregroundStyle(Color.stGreen)
                     Text(item.text).font(.app(13, weight: .medium))
                 }
                 .padding(.leading, 9).padding(.trailing, 12).frame(height: 30)
-                .background(Color.appFill, in: Capsule())
+                .background(Color.stChip, in: Capsule())
             }
         }
     }
@@ -122,9 +122,9 @@ struct SmartTrackerConsentSheet: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 26))
-                        .foregroundStyle(Color.appPrimary)
+                        .foregroundStyle(Color.stGreen)
                         .frame(width: 52, height: 52)
-                        .background(Color(light: 0xE6F3EC, dark: 0x1E3A2C), in: RoundedRectangle(cornerRadius: 16))
+                        .background(Color.stSuccessBg, in: RoundedRectangle(cornerRadius: 16))
                         .padding(.top, 20)
                     Text("Smart Tracker").font(.app(28, weight: .bold)).tracking(-0.5).padding(.top, 14)
                     SmartTrackerPrivacyContent().padding(.top, 6)

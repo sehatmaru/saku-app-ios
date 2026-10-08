@@ -27,7 +27,7 @@ struct VoiceCaptureView: View {
             HStack {
                 Button { voice.stop(); dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 15, weight: .bold)).foregroundStyle(Color.appText)
-                        .frame(width: 38, height: 38).background(Color.appFill, in: Circle())
+                        .frame(width: 38, height: 38).background(Color.stChip, in: Circle())
                 }
                 Spacer()
                 HStack(spacing: 7) {
@@ -62,9 +62,9 @@ struct VoiceCaptureView: View {
                         Image(systemName: chip.0).font(.system(size: 13, weight: .bold))
                         Text(chip.1).font(.app(14, weight: .semibold))
                     }
-                    .foregroundStyle(Color(light: 0x0E5E41, dark: 0x5CD49A))
+                    .foregroundStyle(Color.stSuccessText)
                     .padding(.leading, 9).padding(.trailing, 12).frame(height: 30)
-                    .background(Color(light: 0xE6F3EC, dark: 0x1E3A2C), in: Capsule())
+                    .background(Color.stSuccessBg, in: Capsule())
                 }
             }
             .padding(.horizontal, 28).padding(.top, 24).frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
@@ -84,14 +84,14 @@ struct VoiceCaptureView: View {
             HStack(spacing: 44) {
                 Button { voice.stop(); onKeyboard() } label: {
                     Image(systemName: "keyboard").font(.system(size: 21)).foregroundStyle(Color.appText)
-                        .frame(width: 52, height: 52).background(Color.appFill, in: Circle())
+                        .frame(width: 52, height: 52).background(Color.stChip, in: Circle())
                 }
                 .accessibilityLabel(L("Ketik saja"))
                 Button { finish() } label: {
                     RoundedRectangle(cornerRadius: 7).fill(.white).frame(width: 26, height: 26)
                         .frame(width: 76, height: 76)
                         .background(Color.appError, in: Circle())
-                        .overlay(Circle().strokeBorder(Color(light: 0xFDECEC, dark: 0x3A1D1F), lineWidth: 6).padding(-6))
+                        .overlay(Circle().strokeBorder(Color.stDangerBg, lineWidth: 6).padding(-6))
                 }
                 .accessibilityLabel(L("Berhenti merekam"))
                 Color.clear.frame(width: 52, height: 52)
@@ -124,7 +124,7 @@ private struct WaveformView: View {
                 ForEach(0..<30, id: \.self) { i in
                     let base = 0.35 + 0.65 * sin(Double(i) / 29 * .pi)
                     let wobble = isActive ? 0.5 + 0.5 * sin(t * (2 + Double(i * 37 % 7) / 3) + Double(i)) : 0.4
-                    Capsule().fill(Color.appPrimary).frame(width: 4, height: max(6, 72 * base * wobble))
+                    Capsule().fill(Color.stGreen).frame(width: 4, height: max(6, 72 * base * wobble))
                 }
             }
         }

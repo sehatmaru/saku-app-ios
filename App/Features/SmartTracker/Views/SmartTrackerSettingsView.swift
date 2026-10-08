@@ -76,9 +76,9 @@ struct SmartTrackerSettingsView: View {
                         }
                     }
                     .font(.app(17, weight: .semibold))
-                    .foregroundStyle(isOn ? Color(light: 0xD1343A, dark: 0xFF6B6B) : Color.appBackground)
+                    .foregroundStyle(isOn ? Color.stDangerText : Color.appBackground)
                     .frame(maxWidth: .infinity).frame(height: 52)
-                    .background(isOn ? Color(light: 0xFDECEC, dark: 0x3A1D1F) : Color.appText, in: Capsule())
+                    .background(isOn ? Color.stDangerBg : Color.appText, in: Capsule())
                 }
                 .buttonStyle(PressScaleStyle())
                 .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 40)
@@ -101,8 +101,8 @@ struct SmartTrackerSettingsView: View {
     private var statusCard: some View {
         HStack(spacing: 12) {
             Image(systemName: "sparkles").font(.system(size: 21))
-                .foregroundStyle(isOn ? Color.appPrimary : Color.appTextTertiary)
-                .frame(width: 44, height: 44).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 14))
+                .foregroundStyle(isOn ? Color.stGreen : Color.appTextTertiary)
+                .frame(width: 44, height: 44).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 2) {
                 Text(isOn ? L("Smart Tracker aktif") : L("Smart Tracker mati")).font(.app(16, weight: .semibold))
                 Text(isOn ? (SmartTrackerConsent.since.map { L("Aktif sejak %@", Self.sinceFormat.string(from: $0)) } ?? L("Aktif"))
@@ -112,7 +112,7 @@ struct SmartTrackerSettingsView: View {
             Spacer()
         }
         .padding(16)
-        .background(isOn ? Color(light: 0xE6F3EC, dark: 0x1E3A2C) : Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        .background(isOn ? Color.stSuccessBg : Color.appFill, in: RoundedRectangle(cornerRadius: 16))
         .animation(.easeInOut(duration: 0.3), value: isOn)
     }
 
@@ -135,8 +135,8 @@ struct SmartTrackerSettingsView: View {
 
     private func wayRow<Trailing: View>(_ way: SmartWay, _ detail: String, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: way.icon).font(.system(size: 17)).foregroundStyle(Color.appPrimary)
-                .frame(width: 32, height: 32).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 10))
+            Image(systemName: way.icon).font(.system(size: 17)).foregroundStyle(Color.stGreen)
+                .frame(width: 32, height: 32).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 1) {
                 Text(way.title).font(.app(16)).foregroundStyle(Color.appText)
                 Text(detail).font(.app(12)).foregroundStyle(Color.appTextTertiary)
@@ -150,7 +150,7 @@ struct SmartTrackerSettingsView: View {
     private func toggleRow(_ way: SmartWay, _ detail: String, _ value: Binding<Bool>, set: @escaping (Bool) -> Void) -> some View {
         wayRow(way, detail) {
             Toggle("", isOn: Binding(get: { value.wrappedValue }, set: { value.wrappedValue = $0; set($0) }))
-                .labelsHidden().tint(Color.appPrimary)
+                .labelsHidden().tint(Color.stGreen)
         }
     }
 
@@ -221,7 +221,7 @@ struct SmartTrackerMemoryView: View {
                     Text(L("Melupakan ingatan tidak mengubah transaksi yang sudah tersimpan."))
                         .font(.app(13)).foregroundStyle(Color.appTextTertiary).padding(.horizontal, 24).padding(.top, 18)
                     Button { showsForgetAll = true } label: {
-                        Text(L("Lupakan semua")).font(.app(16, weight: .semibold)).foregroundStyle(Color(light: 0xD1343A, dark: 0xFF6B6B))
+                        Text(L("Lupakan semua")).font(.app(16, weight: .semibold)).foregroundStyle(Color.stDangerText)
                             .frame(maxWidth: .infinity).frame(height: 44)
                     }
                     .padding(.top, 16).padding(.bottom, 60)
@@ -253,7 +253,7 @@ struct SmartTrackerMemoryView: View {
                 let wallet = store.accounts.first { $0.id == entry.accountId }
                 HStack(spacing: 10) {
                     Text(entry.keyword).font(.app(15)).lineLimit(1)
-                        .padding(.horizontal, 10).frame(height: 30).background(Color.appFill, in: RoundedRectangle(cornerRadius: 8))
+                        .padding(.horizontal, 10).frame(height: 30).background(Color.stChip, in: RoundedRectangle(cornerRadius: 8))
                     Image(systemName: "arrow.right").font(.system(size: 13)).foregroundStyle(Color.appTextTertiary)
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 6) {
@@ -306,16 +306,16 @@ struct NotificationSetupGuideView: View {
                             }
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 12).padding(.vertical, 10).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 14))
+                        .padding(.horizontal, 12).padding(.vertical, 10).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 14))
                         Image(systemName: "arrow.down").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.appTextTertiary)
                         HStack(spacing: 10) {
-                            Image(systemName: "tray").font(.system(size: 15)).foregroundStyle(Color.appPrimary)
-                                .frame(width: 30, height: 30).background(Color(light: 0xE6F3EC, dark: 0x1E3A2C), in: Circle())
+                            Image(systemName: "tray").font(.system(size: 15)).foregroundStyle(Color.stGreen)
+                                .frame(width: 30, height: 30).background(Color.stSuccessBg, in: Circle())
                             Text(L("Draf menunggu di Perlu dicek")).font(.app(14, weight: .medium))
                             Spacer(minLength: 0)
                             Text("Rp500.000").font(.app(14)).monospacedDigit()
                         }
-                        .padding(.horizontal, 12).padding(.vertical, 10).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 14))
+                        .padding(.horizontal, 12).padding(.vertical, 10).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 14))
                     }
                     .padding(14).background(Color.appFill, in: RoundedRectangle(cornerRadius: 18)).padding(.horizontal, 24).padding(.top, 12)
 
@@ -328,9 +328,9 @@ struct NotificationSetupGuideView: View {
                         FlowLayout(spacing: 6) {
                             ForEach(store.connectedApps, id: \.self) { app in
                                 Label(app, systemImage: "checkmark.circle.fill")
-                                    .font(.app(14, weight: .semibold)).foregroundStyle(Color(light: 0x0E5E41, dark: 0x5CD49A))
+                                    .font(.app(14, weight: .semibold)).foregroundStyle(Color.stSuccessText)
                                     .padding(.horizontal, 12).frame(height: 32)
-                                    .background(Color(light: 0xE6F3EC, dark: 0x1E3A2C), in: Capsule())
+                                    .background(Color.stSuccessBg, in: Capsule())
                             }
                         }
                         .padding(.horizontal, 24)
@@ -343,9 +343,9 @@ struct NotificationSetupGuideView: View {
                             HStack(alignment: .top, spacing: 14) {
                                 VStack(spacing: 4) {
                                     Text("\(index + 1)").font(.app(14, weight: .bold)).foregroundStyle(.white)
-                                        .frame(width: 28, height: 28).background(Color.appPrimary, in: Circle())
+                                        .frame(width: 28, height: 28).background(Color.stGreen, in: Circle())
                                     if index < steps.count - 1 {
-                                        Rectangle().fill(Color(light: 0xD9EDE2, dark: 0x2A4A3A)).frame(width: 2).frame(maxHeight: .infinity)
+                                        Rectangle().fill(Color.stLine).frame(width: 2).frame(maxHeight: .infinity)
                                     }
                                 }
                                 step.font(.app(15)).lineSpacing(3).padding(.top, 3).padding(.bottom, 18)
@@ -359,7 +359,7 @@ struct NotificationSetupGuideView: View {
                         .padding(.horizontal, 24).padding(.top, 4).padding(.bottom, 8)
                     FlowLayout(spacing: 6) {
                         ForEach(NotificationParser.supportedApps, id: \.self) { app in
-                            Text(app).font(.app(14)).padding(.horizontal, 12).frame(height: 30).background(Color.appFill, in: Capsule())
+                            Text(app).font(.app(14)).padding(.horizontal, 12).frame(height: 30).background(Color.stChip, in: Capsule())
                         }
                     }
                     .padding(.horizontal, 24)

@@ -24,6 +24,8 @@ struct SmartTrackerHomeOverlay: View {
             fab
             bar
         }
+        // fill the screen so the button and bar sit at the bottom; empty areas let touches through
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .animation(.settle(0.42), value: isOpen)
         .sheet(isPresented: $showsConsent) {
             SmartTrackerConsentSheet(profileId: UUID(uuidString: userId)) {
@@ -55,13 +57,13 @@ struct SmartTrackerHomeOverlay: View {
                 .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 56, height: 56)
-                .background(Color.appPrimary, in: Circle())
-                .shadow(color: Color.appPrimary.opacity(0.35), radius: 10, y: 8)
+                .background(Color.stGreen, in: Circle())
+                .shadow(color: Color.stGreen.opacity(0.35), radius: 10, y: 8)
                 .overlay(alignment: .topTrailing) {
                     if !store.drafts.isEmpty {
                         Text("\(store.drafts.count)")
                             .font(.app(11, weight: .heavy))
-                            .foregroundStyle(Color.appPrimary)
+                            .foregroundStyle(Color.stGreen)
                             .frame(minWidth: 20, minHeight: 20)
                             .padding(.horizontal, 2)
                             .background(.white, in: Capsule())
@@ -88,7 +90,7 @@ struct SmartTrackerHomeOverlay: View {
             }
             .accessibilityLabel(L("Tutup"))
             HStack(spacing: 8) {
-                Image(systemName: "sparkles").font(.system(size: 16)).foregroundStyle(Color.appPrimary)
+                Image(systemName: "sparkles").font(.system(size: 16)).foregroundStyle(Color.stGreen)
                 TextField(L("kopi 25rb gopay"), text: $text)
                     .font(.app(16))
                     .focused($focused)
@@ -102,20 +104,20 @@ struct SmartTrackerHomeOverlay: View {
                     Button { startVoice() } label: {
                         Image(systemName: "mic").font(.system(size: 19)).foregroundStyle(Color.appText)
                             .frame(width: 40, height: 40)
-                            .background(Color.appBackground, in: Circle())
+                            .background(Color.stRaised, in: Circle())
                             .shadow(color: .black.opacity(0.08), radius: 1.5, y: 1)
                     }
                     .accessibilityLabel(L("Catat dengan suara"))
                 } else {
                     Button { submit(text, source: .typed) } label: {
                         Image(systemName: "arrow.up").font(.system(size: 17, weight: .bold)).foregroundStyle(.white)
-                            .frame(width: 40, height: 40).background(Color.appPrimary, in: Circle())
+                            .frame(width: 40, height: 40).background(Color.stGreen, in: Circle())
                     }
                     .accessibilityLabel(L("Buat draf"))
                 }
             }
             .padding(.leading, 14).padding(.trailing, 5).frame(height: 50)
-            .background(Color.appFill, in: Capsule())
+            .background(Color.stChip, in: Capsule())
             Button { close(); onOpenQueue() } label: {
                 Image(systemName: "tray").font(.system(size: 22)).foregroundStyle(Color.appText)
                     .frame(width: 50, height: 50)
@@ -124,7 +126,7 @@ struct SmartTrackerHomeOverlay: View {
                             Text("\(store.drafts.count)")
                                 .font(.app(11, weight: .bold)).foregroundStyle(.white)
                                 .frame(minWidth: 18, minHeight: 18).padding(.horizontal, 2)
-                                .background(Color.appPrimary, in: Capsule())
+                                .background(Color.stGreen, in: Capsule())
                                 .overlay(Capsule().strokeBorder(Color.appBackground, lineWidth: 2))
                                 .offset(x: -2, y: 2)
                         }
@@ -133,12 +135,13 @@ struct SmartTrackerHomeOverlay: View {
             .accessibilityLabel(L("Perlu dicek"))
         }
         .padding(.horizontal, 7).frame(height: 64)
-        .background(Color.appBackground.opacity(0.97), in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.black.opacity(0.04)))
+        .background(Color.stBar.opacity(0.97), in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.06)))
         .shadow(color: .black.opacity(0.1), radius: 14, y: 4)
         .padding(.horizontal, 20)
         // sits exactly over the system tab bar, which it replaces while open
-        .offset(y: isOpen ? 12 : 90)
+        // over the tab bar while it rests; a little above the keyboard while typing
+        .offset(y: isOpen ? (focused ? -10 : 12) : 90)
         .opacity(isOpen ? 1 : 0)
         .allowsHitTesting(isOpen)
     }
