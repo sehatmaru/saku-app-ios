@@ -375,5 +375,6 @@
   "Dibayar dari luar Saku": "Paid from outside Saku",
   "Tagihan terbit": "Statement issued",
   "Total utang": "Total debt",
-  "Isi sesuai tagihan dari bank. Belanja yang belum ditagih ditambahkan otomatis.": "Enter the bank's statement amount. Spending not billed yet is added automatically."
+  "Tagihan berjalan": "Running bill",
+  "Nominal tagihan yang sudah dicetak bank. Jatuh tempo tetap sama.": "The amount the bank already printed. The due date stays the same."
 }

@@ -4103,16 +4103,6 @@
         }
       }
     },
-    "Isi sesuai tagihan dari bank. Belanja yang belum ditagih ditambahkan otomatis.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enter the bank's statement amount. Spending not billed yet is added automatically."
-          }
-        }
-      }
-    },
     "Izin mikrofon atau pengenalan suara belum diberikan. Aktifkan di Pengaturan, atau ketik saja.": {
       "localizations": {
         "en": {
@@ -6119,6 +6109,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Amount per period · %@"
+          }
+        }
+      }
+    },
+    "Nominal tagihan yang sudah dicetak bank. Jatuh tempo tetap sama.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The amount the bank already printed. The due date stays the same."
           }
         }
       }
@@ -8359,6 +8359,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Future bills won't be recorded anymore."
+          }
+        }
+      }
+    },
+    "Tagihan berjalan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running bill"
           }
         }
       }

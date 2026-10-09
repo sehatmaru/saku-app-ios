@@ -1041,10 +1041,11 @@ struct AccountListView: View {
 
     private func walletDetail(_ account: Account) -> some View {
         let fresh = viewModel.accounts.first { $0.id == account.id } ?? account
+        let statement = viewModel.statement(for: fresh, transactions: accountTransactions[account.id] ?? [])
         return EditWalletView(
             account: fresh,
             transactionCount: accountTransactions[account.id]?.count ?? 0,
-            unbilled: viewModel.statement(for: fresh, transactions: accountTransactions[account.id] ?? [])?.unbilled,
+            billed: statement?.remaining, running: statement?.unbilled,
             capital: InvestmentSummary(account: fresh, transactions: accountTransactions[account.id] ?? []).capital,
             wealth: WealthSummary(accounts: viewModel.accounts),
             onUpdateValue: { updatingValue = fresh },
@@ -1062,7 +1063,7 @@ struct AccountListView: View {
             id: account.id, name: edit.name, type: account.type, icon: edit.icon, isArchived: account.isArchived,
             newBalance: edit.balance, oldBalance: account.balance, userId: userId,
             creditLimit: edit.creditLimit, dueDate: edit.dueDay.map(String.init), statementDay: edit.statementDay,
-            color: edit.color, cardNetwork: edit.cardNetwork, billPrinted: edit.billPrinted)
+            color: edit.color, cardNetwork: edit.cardNetwork, billedDelta: edit.billedDelta, runningDelta: edit.runningDelta)
         if saved, edit.isDefault, !account.isDefault {
             await viewModel.setDefaultAccount(id: account.id, userId: userId)
         }

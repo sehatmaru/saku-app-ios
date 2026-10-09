@@ -11,8 +11,9 @@ struct WalletEdit {
     var dueDay: Int?
     var statementDay: Int?     // cut-off, credit only
     var isDefault: Bool
-    /// Card whose bill was adjusted: was the new amount already printed by the bank? nil when not adjusted.
-    var billPrinted: Bool? = nil
+    /// Card only: how much the printed bill and the running bill each changed (0 = untouched).
+    var billedDelta: Double = 0
+    var runningDelta: Double = 0
 }
 
 /// Ubah dompet (design "Edit Dompet" 1a–1c): the same card-as-form as Tambah dompet, every change
@@ -23,8 +24,9 @@ struct EditWalletView: View {
 
     private let account: Account
     private let transactionCount: Int
-    /// Credit cards: debt the current statement hasn't billed yet; nil when there is no statement.
-    private let unbilled: Int?
+    /// Credit cards: the printed bill still owed, and the running bill after it.
+    private let statementBilled: Int
+    private let statementRunning: Int
     private let onSave: (WalletEdit) async -> Bool
     private let onArchive: () async -> Bool
     private let onUnarchive: () async -> Bool
@@ -34,7 +36,7 @@ struct EditWalletView: View {
     private let wealth: WealthSummary?
     private let onUpdateValue: (() -> Void)?
 
-    init(account: Account, transactionCount: Int, unbilled: Double? = nil,
+    init(account: Account, transactionCount: Int, billed: Double? = nil, running: Double? = nil,
          capital: Double = 0, wealth: WealthSummary? = nil, onUpdateValue: (() -> Void)? = nil,
          onSave: @escaping (WalletEdit) async -> Bool,
          onArchive: @escaping () async -> Bool,
@@ -42,7 +44,6 @@ struct EditWalletView: View {
          onDelete: @escaping () async -> Bool) {
         self.account = account
         self.transactionCount = transactionCount
-        self.unbilled = unbilled.map { Int($0.rounded()) }
         self.capital = capital
         self.wealth = wealth
         self.onUpdateValue = onUpdateValue
@@ -50,7 +51,12 @@ struct EditWalletView: View {
         self.onArchive = onArchive
         self.onUnarchive = onUnarchive
         self.onDelete = onDelete
-        let draft = Draft(account)
+        var draft = Draft(account)
+        // Without a statement the whole debt counts as the printed bill.
+        draft.billed = Int((billed ?? account.balance).rounded())
+        draft.running = Int((running ?? 0).rounded())
+        statementBilled = draft.billed
+        statementRunning = draft.running
         _orig = State(initialValue: draft)
         _cur = State(initialValue: draft)
         _isArchived = State(initialValue: account.isArchived)
@@ -64,6 +70,9 @@ struct EditWalletView: View {
         var network: String?
         /// Saldo, or the current bill for a card.
         var balance: Int
+        /// Card: the two parts of `balance`, edited separately.
+        var billed = 0
+        var running = 0
         var limit: Int
         var dueDay: Int?
         var statementDay: Int?
@@ -82,7 +91,7 @@ struct EditWalletView: View {
         }
     }
 
-    private enum Field { case balance, limit }
+    private enum Field { case balance, limit, billed, running }
 
     private enum Sheet: Identifiable {
         case provider, network, due, statement, amount(Field), archive
@@ -103,8 +112,6 @@ struct EditWalletView: View {
     @State private var toastText = L("Perubahan disimpan")
     @State private var pop = false
     // Number pad
-    /// Adjusting a card's bill: already printed by the bank, or spending since the last cut-off.
-    @State private var billPrinted = true
     // End screen after archive
     @State private var endShown = false
     // Delete: ask, then a few seconds to undo before it really happens (like a transaction).
@@ -419,7 +426,8 @@ struct EditWalletView: View {
 
             if isCredit {
                 amountRow(L("Limit kredit"), value: cur.limit, action: L("Ubah"), field: .limit)
-                amountRow(L("Tagihan saat ini"), value: cur.balance, action: L("Sesuaikan"), field: .balance)
+                amountRow(L("Tagihan terbit"), value: cur.billed, action: L("Sesuaikan"), field: .billed)
+                amountRow(L("Tagihan berjalan"), value: cur.running, action: L("Sesuaikan"), field: .running)
                 tapRow(L("Jatuh tempo"), open: .due) {
                     Text(cur.dueDay.map { L("Tanggal %lld", $0) } ?? "—").font(.app(16, weight: .medium)).monospacedDigit()
                 } trailing: { chevron }
@@ -573,11 +581,16 @@ struct EditWalletView: View {
                 dayGrid(\.statementDay, note: L("Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya."))
             }
         case .amount(let field):
-            AdjustAmountView(account: account, kind: field == .limit ? .limit : (isCredit ? .bill : .balance),
-                             current: field == .limit ? cur.limit : cur.balance, limit: cur.limit,
-                             initialPrinted: billPrinted, unbilled: unbilled) { value, printed in
-                if field == .balance { billPrinted = printed }
-                withAnimation(.settle(0.42)) { if field == .limit { cur.limit = value } else { cur.balance = value } }
+            AdjustAmountView(account: account, kind: adjustKind(field), current: adjustValue(field),
+                             limit: cur.limit, total: cur.balance) { value in
+                withAnimation(.settle(0.42)) {
+                    switch field {
+                    case .limit: cur.limit = value
+                    case .balance: cur.balance = value
+                    case .billed: cur.billed = value; cur.balance = cur.billed + cur.running
+                    case .running: cur.running = value; cur.balance = cur.billed + cur.running
+                    }
+                }
             }
         case .archive:
             SheetFrame(title: L("Arsipkan %@?", orig.name), closeTitle: L("Batal"), onClose: closeSheet) {
@@ -965,6 +978,24 @@ struct EditWalletView: View {
         closeSoon()
     }
 
+    private func adjustKind(_ field: Field) -> AdjustAmountView.Kind {
+        switch field {
+        case .limit: .limit
+        case .balance: .balance
+        case .billed: .billed
+        case .running: .running
+        }
+    }
+
+    private func adjustValue(_ field: Field) -> Int {
+        switch field {
+        case .limit: cur.limit
+        case .balance: cur.balance
+        case .billed: cur.billed
+        case .running: cur.running
+        }
+    }
+
     private func openNumpad(_ field: Field) {
         sheet = .amount(field)
     }
@@ -983,7 +1014,8 @@ struct EditWalletView: View {
             dueDay: isCredit ? cur.dueDay : nil,
             statementDay: isCredit ? cur.statementDay : nil,
             isDefault: cur.isDefault,
-            billPrinted: isCredit && cur.balance != orig.balance ? billPrinted : nil
+            billedDelta: isCredit ? Double(cur.billed - orig.billed) : 0,
+            runningDelta: isCredit ? Double(cur.running - orig.running) : 0
         )
         Task {
             let ok = await onSave(edit)

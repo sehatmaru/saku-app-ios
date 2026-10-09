@@ -124,30 +124,33 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, billPrinted: Bool? = nil) async -> Bool {
+    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, billedDelta: Double = 0, runningDelta: Double = 0) async -> Bool {
         // An investment can be worth 0 but never less.
         if type == .investment && newBalance < 0 { return false }
         do {
-            // A card bill the bank already printed is dated on the last cut-off, so the difference lands
-            // in this statement; otherwise it is dated now and waits for the next one.
-            var adjustmentDate = Date()
-            if let billPrinted, billPrinted, let day = statementDay {
-                adjustmentDate = CreditStatement.lastCutoffNoon(statementDay: day)
-            }
-            if abs(newBalance - oldBalance) > 0.001 {
+            // A card has two bills: a change to the printed one is dated on the last cut-off, so it lands
+            // in this statement; a change to the running one is dated now and waits for the next cut-off.
+            if type == .credit, abs(billedDelta) > 0.001 || abs(runningDelta) > 0.001 {
+                let cutoff = statementDay.map { CreditStatement.lastCutoffNoon(statementDay: $0) } ?? Date()
+                for (delta, date, label) in [(billedDelta, cutoff, "tagihan terbit"), (runningDelta, Date(), "tagihan berjalan")] where abs(delta) > 0.001 {
+                    let note = "Penyesuaian \(label): \(delta > 0 ? "+" : "-")Rp \(String(Int(abs(delta))).formattedWithThousandSeparator)"
+                    do {
+                        try await SupabaseRepository.shared.createAdjustmentLog(accountId: id, amount: delta, note: note, date: date)
+                    } catch {
+                        print("⚠️ adjustment log failed (balance already updated): \(error)")
+                    }
+                }
+            } else if abs(newBalance - oldBalance) > 0.001 {
                 let delta = newBalance - oldBalance
                 let note = "Penyesuaian Saldo: Rp \(String(Int(oldBalance)).formattedWithThousandSeparator) → Rp \(String(Int(newBalance)).formattedWithThousandSeparator) (perubahan \(delta > 0 ? "+" : "")\(String(Int(delta)).formattedWithThousandSeparator))"
-
                 do {
-                    try await SupabaseRepository.shared.createAdjustmentLog(
-                        accountId: id, amount: delta, note: note, date: adjustmentDate
-                    )
+                    try await SupabaseRepository.shared.createAdjustmentLog(accountId: id, amount: delta, note: note, date: Date())
                 } catch {
                     print("⚠️ adjustment log failed (balance already updated): \(error)")
                 }
             }
 
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: type == .investment ? (accounts.first { $0.id == id }?.openingBalance ?? newBalance) : newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, clearOpeningUnbilled: billPrinted == true)
+            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: type == .investment ? (accounts.first { $0.id == id }?.openingBalance ?? newBalance) : newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, clearOpeningUnbilled: abs(billedDelta) > 0.001)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
                 var updatedAccount = updated
                 if abs(newBalance - oldBalance) > 0.001 {
