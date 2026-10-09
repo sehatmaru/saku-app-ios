@@ -64,6 +64,9 @@ struct CreditStatement {
         for txn in transactions where txn.date >= boundary {
             let effect = Self.debtEffect(of: txn, on: card.id)
             changeSince += effect
+            // A balance adjustment made after the cut-off is debt the next statement bills; one dated
+            // on the cut-off day or before (see `lastCutoffNoon`) is part of the statement itself.
+            if txn.type == .adjustment, txn.accountId == card.id { changeSince += txn.delta ?? 0 }
             if txn.type == .transfer, txn.counterpartyAccountId == card.id { paidSince += txn.amount }
             if txn.type == .cardPayment, txn.accountId == card.id { paidSince += txn.amount }
         }
@@ -138,6 +141,13 @@ struct CreditStatement {
     static func nextCutoffString(statementDay: Int, today: Date = Date(), calendar: Calendar = .current) -> String {
         let cycle = Cycle(statementDay: statementDay, dueDay: statementDay, calendar: calendar)
         return dateOnly.string(from: cycle.cutoff(monthAfter: cycle.lastCutoff(before: calendar.startOfDay(for: today))))
+    }
+
+    /// Noon on the last cut-off day: a balance adjustment dated here lands in the printed statement.
+    static func lastCutoffNoon(statementDay: Int, today: Date = Date(), calendar: Calendar = .current) -> Date {
+        let cycle = Cycle(statementDay: statementDay, dueDay: statementDay, calendar: calendar)
+        let day = cycle.lastCutoff(before: calendar.startOfDay(for: today))
+        return calendar.date(byAdding: .hour, value: 12, to: day) ?? day
     }
 
     /// The statement a purchase made on `date` lands on, and when that's due.

@@ -128,25 +128,26 @@ final class AccountListViewModel: ObservableObject {
         // An investment can be worth 0 but never less.
         if type == .investment && newBalance < 0 { return false }
         do {
+            // A card bill the bank already printed is dated on the last cut-off, so the difference lands
+            // in this statement; otherwise it is dated now and waits for the next one.
+            var adjustmentDate = Date()
+            if let billPrinted, billPrinted, let day = statementDay {
+                adjustmentDate = CreditStatement.lastCutoffNoon(statementDay: day)
+            }
             if abs(newBalance - oldBalance) > 0.001 {
                 let delta = newBalance - oldBalance
                 let note = "Penyesuaian Saldo: Rp \(String(Int(oldBalance)).formattedWithThousandSeparator) → Rp \(String(Int(newBalance)).formattedWithThousandSeparator) (perubahan \(delta > 0 ? "+" : "")\(String(Int(delta)).formattedWithThousandSeparator))"
 
                 do {
                     try await SupabaseRepository.shared.createAdjustmentLog(
-                        accountId: id, amount: delta, note: note, date: Date()
+                        accountId: id, amount: delta, note: note, date: adjustmentDate
                     )
                 } catch {
                     print("⚠️ adjustment log failed (balance already updated): \(error)")
                 }
             }
 
-            // A card bill adjusted to "not printed yet" waits for the next cut-off before it is due.
-            var unbilledUntil: String?
-            if let billPrinted, !billPrinted, newBalance > 0, let day = statementDay {
-                unbilledUntil = CreditStatement.nextCutoffString(statementDay: day)
-            }
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: type == .investment ? (accounts.first { $0.id == id }?.openingBalance ?? newBalance) : newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, openingUnbilledUntil: unbilledUntil, clearOpeningUnbilled: billPrinted != nil && unbilledUntil == nil)
+            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: type == .investment ? (accounts.first { $0.id == id }?.openingBalance ?? newBalance) : newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, clearOpeningUnbilled: billPrinted == true)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
                 var updatedAccount = updated
                 if abs(newBalance - oldBalance) > 0.001 {

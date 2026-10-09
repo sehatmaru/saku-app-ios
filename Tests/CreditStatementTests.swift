@@ -45,6 +45,19 @@ final class CreditStatementTests: XCTestCase {
         XCTAssertEqual(s.interestIfMinimum, 900_000 * 0.0175, accuracy: 0.01)
     }
 
+    func testAdjustmentOnCutoffDayRaisesTheBillButLaterOneWaits() {
+        func adjust(_ delta: Double, _ on: Date) -> Transaction {
+            Transaction(id: "adj", accountId: "card", counterpartyAccountId: nil, categoryId: nil, amount: abs(delta),
+                        type: .adjustment, description: nil, note: nil, date: on, delta: delta)
+        }
+        let base = [txn("a", .expense, 3_000_000, date(2026, 9, 10))]
+        let printed = statement(card(balance: 3_500_000), base + [adjust(500_000, date(2026, 9, 20))], today: date(2026, 9, 29))
+        XCTAssertEqual(printed.remaining, 3_500_000)
+        let waiting = statement(card(balance: 3_500_000), base + [adjust(500_000, date(2026, 9, 29))], today: date(2026, 9, 29))
+        XCTAssertEqual(waiting.remaining, 3_000_000)
+        XCTAssertEqual(waiting.unbilled, 500_000)
+    }
+
     func testChargeOnTheCutoffDayIsBilled() {
         let txns = [txn("a", .expense, 500_000, date(2026, 9, 20, hour: 23))]
         let s = statement(card(balance: 500_000), txns, today: date(2026, 9, 21))
