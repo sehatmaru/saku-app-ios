@@ -298,6 +298,7 @@ struct DraftEditView: View {
     private func save() {
         draft.amount = Double(amount)
         store.update(draft)
+        store.learnCorrection(from: draft)
         dismiss()
     }
 }

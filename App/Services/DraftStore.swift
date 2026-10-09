@@ -229,12 +229,19 @@ final class DraftStore: ObservableObject {
 
     // MARK: Memory
 
-    private func learn(from draft: Draft) {
+    /// Editing a draft is a correction: remember the choice now, without counting a use (saving counts it).
+    func learnCorrection(from draft: Draft) {
+        guard draft.categoryId != nil || draft.accountId != nil else { return }
+        learn(from: draft, countsUse: false)
+    }
+
+    private func learn(from draft: Draft, countsUse: Bool = true) {
         guard let keyword = MerchantMemory.keyword(for: draft), draft.kind == .expense || draft.kind == .income else { return }
         var entry = MerchantMemory.Entry(keyword: keyword, kind: draft.kind, categoryId: draft.categoryId, accountId: draft.accountId)
         if let old = memory.first(where: { $0.id == entry.id }) {
             // the same choice again counts up; a new choice starts over
-            entry.uses = (old.categoryId == entry.categoryId && old.accountId == entry.accountId) ? old.uses + 1 : 1
+            let same = old.categoryId == entry.categoryId && old.accountId == entry.accountId
+            entry.uses = same ? old.uses + (countsUse ? 1 : 0) : 1
         }
         memory.removeAll { $0.id == entry.id }
         memory.insert(entry, at: 0)
