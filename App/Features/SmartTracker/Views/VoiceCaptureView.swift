@@ -60,7 +60,7 @@ struct VoiceCaptureView: View {
                 ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
                     HStack(spacing: 6) {
                         Image(systemName: chip.0).font(.system(size: 13, weight: .bold))
-                        Text(chip.1).font(.app(14, weight: .semibold))
+                        Text(L(chip.1)).font(.app(14, weight: .semibold))
                     }
                     .foregroundStyle(Color.stSuccessText)
                     .padding(.leading, 9).padding(.trailing, 12).frame(height: 30)
@@ -71,7 +71,7 @@ struct VoiceCaptureView: View {
             .animation(.easeInOut(duration: 0.2), value: chips.count)
 
             if let message = voice.message {
-                Text(message).font(.app(14)).foregroundStyle(Color.appError).padding(.horizontal, 28).padding(.top, 12)
+                Text(L(message)).font(.app(14)).foregroundStyle(Color.appError).padding(.horizontal, 28).padding(.top, 12)
             }
             Spacer()
 

@@ -202,7 +202,7 @@ struct DraftQueueView: View {
 
     private func cardRow(_ title: String, _ value: String, warn: Bool, last: Bool = false) -> some View {
         HStack {
-            Text(title).foregroundStyle(Color.appTextSecondary)
+            Text(L(title)).foregroundStyle(Color.appTextSecondary)
             Spacer()
             Text(value).foregroundStyle(warn ? Color.appWarning : Color.appText).fontWeight(warn ? .semibold : .regular)
         }
@@ -239,7 +239,7 @@ struct DraftQueueView: View {
             VStack(spacing: 6) {
                 Image(systemName: icon).font(.system(size: size == 60 ? 22 : 19, weight: .bold)).foregroundStyle(fg)
                     .frame(width: size, height: size).background(fill, in: Circle())
-                Text(label).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Text(L(label)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
             }
         }
         .buttonStyle(PressScaleStyle())

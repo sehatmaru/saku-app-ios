@@ -52,8 +52,8 @@ struct SmartTrackerPrivacyContent: View {
                             .frame(width: 36, height: 36)
                             .background(Color.stChip, in: Circle())
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(point.1).font(.app(15, weight: .semibold))
-                            Text(point.2).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                            Text(L(point.1)).font(.app(15, weight: .semibold))
+                            Text(L(point.2)).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
                         }
                     }
                 }
@@ -72,7 +72,7 @@ struct SmartWayChips: View {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(spacing: 6) {
                     Image(systemName: item.icon).font(.system(size: 13)).foregroundStyle(Color.stGreen)
-                    Text(item.text).font(.app(13, weight: .medium))
+                    Text(L(item.text)).font(.app(13, weight: .medium))
                 }
                 .padding(.leading, 9).padding(.trailing, 12).frame(height: 30)
                 .background(Color.stChip, in: Capsule())

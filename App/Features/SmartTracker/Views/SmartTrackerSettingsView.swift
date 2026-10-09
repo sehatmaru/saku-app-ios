@@ -124,7 +124,7 @@ struct SmartTrackerSettingsView: View {
     }()
 
     private func caption(_ text: String) -> some View {
-        Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+        Text(L(text)).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
             .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 8)
     }
 
@@ -138,8 +138,8 @@ struct SmartTrackerSettingsView: View {
             Image(systemName: way.icon).font(.system(size: 17)).foregroundStyle(Color.stGreen)
                 .frame(width: 32, height: 32).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 1) {
-                Text(way.title).font(.app(16)).foregroundStyle(Color.appText)
-                Text(detail).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                Text(L(way.title)).font(.app(16)).foregroundStyle(Color.appText)
+                Text(L(detail)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
             }
             Spacer(minLength: 8)
             trailing()
@@ -158,8 +158,8 @@ struct SmartTrackerSettingsView: View {
         HStack(spacing: 12) {
             Image(systemName: icon).font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 32)
             VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(.app(16)).foregroundStyle(Color.appText)
-                Text(detail).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                Text(L(title)).font(.app(16)).foregroundStyle(Color.appText)
+                Text(L(detail)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
             }
             Spacer(minLength: 8)
             if !trailing.isEmpty { Text(trailing).font(.app(15)).foregroundStyle(Color.appTextSecondary) }
@@ -243,9 +243,9 @@ struct SmartTrackerMemoryView: View {
     private func group(_ title: String, _ detail: String, _ entries: [MerchantMemory.Entry], _ field: MerchantMemory.Field) -> some View {
         if !entries.isEmpty {
             HStack {
-                Text(title).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                Text(L(title)).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
                 Spacer()
-                Text(detail).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                Text(L(detail)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
             }
             .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 6)
             ForEach(entries) { entry in

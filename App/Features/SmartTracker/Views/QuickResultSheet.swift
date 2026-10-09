@@ -151,8 +151,8 @@ struct QuickResultSheet: View {
         Menu { items() } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                    if let note { Text(note).font(.app(12)).foregroundStyle(Color.stGreen) }
+                    Text(L(title)).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    if let note { Text(L(note)).font(.app(12)).foregroundStyle(Color.stGreen) }
                 }
                 Spacer()
                 HStack(spacing: 7) {
