@@ -36,17 +36,23 @@ final class ShareViewController: UIViewController {
             return
         }
         let items = (extensionContext?.inputItems as? [NSExtensionItem]) ?? []
+        var received = Set<String>()
+        func take(_ text: String) {
+            let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            // WhatsApp and others hand over the same text as an attachment and as contentText
+            if !text.isEmpty, received.insert(text).inserted { ShareInbox.append(text) }
+        }
         for provider in items.flatMap({ $0.attachments ?? [] }) {
             if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier),
                let text = try? await provider.loadItem(forTypeIdentifier: UTType.plainText.identifier) as? String {
-                ShareInbox.append(text)
+                take(text)
             } else if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier),
                       let url = try? await provider.loadItem(forTypeIdentifier: UTType.url.identifier) as? URL {
-                ShareInbox.append(url.absoluteString)
+                take(url.absoluteString)
             }
         }
         for item in items {
-            if let text = item.attributedContentText?.string, !text.isEmpty { ShareInbox.append(text) }
+            if let text = item.attributedContentText?.string { take(text) }
         }
         await announce()
         extensionContext?.completeRequest(returningItems: nil)
