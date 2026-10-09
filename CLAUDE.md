@@ -47,7 +47,7 @@ Tool: `mcp__...notion-*` (fetch, create-pages, update-page, update-data-source, 
 - Satu dokumen per hari kerja di bawah "Changes Summary", judul `Saku <tgl> Okt: QA <topik>`.
 - Isi: daftar langkah uji bernomor per fitur (aksi → hasil yang diharapkan), termasuk dark mode dan bahasa English bila relevan.
 - Perbarui di dokumen yang sama setiap ada perubahan perilaku; jangan buat dokumen baru per revisi.
-- Dokumen aktif: "Saku 7 Okt: QA ringkas", "Saku 8 Okt: QA Smart Tracker".
+- Dokumen aktif: "Saku 7 Okt: QA ringkas", "Saku 8 Okt: QA Smart Tracker", "Saku 9 Okt: QA Kartu kredit".
 
 ## Pitfall Swift 6 / SwiftUI yang sudah pernah kena
 
