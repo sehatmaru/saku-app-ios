@@ -23,6 +23,8 @@ struct EditWalletView: View {
 
     private let account: Account
     private let transactionCount: Int
+    /// Credit cards: debt the current statement hasn't billed yet; nil when there is no statement.
+    private let unbilled: Int?
     private let onSave: (WalletEdit) async -> Bool
     private let onArchive: () async -> Bool
     private let onUnarchive: () async -> Bool
@@ -32,7 +34,7 @@ struct EditWalletView: View {
     private let wealth: WealthSummary?
     private let onUpdateValue: (() -> Void)?
 
-    init(account: Account, transactionCount: Int,
+    init(account: Account, transactionCount: Int, unbilled: Double? = nil,
          capital: Double = 0, wealth: WealthSummary? = nil, onUpdateValue: (() -> Void)? = nil,
          onSave: @escaping (WalletEdit) async -> Bool,
          onArchive: @escaping () async -> Bool,
@@ -40,6 +42,7 @@ struct EditWalletView: View {
          onDelete: @escaping () async -> Bool) {
         self.account = account
         self.transactionCount = transactionCount
+        self.unbilled = unbilled.map { Int($0.rounded()) }
         self.capital = capital
         self.wealth = wealth
         self.onUpdateValue = onUpdateValue
@@ -101,7 +104,7 @@ struct EditWalletView: View {
     @State private var pop = false
     // Number pad
     /// Adjusting a card's bill: already printed by the bank, or spending since the last cut-off.
-    @State private var billPrinted = false
+    @State private var billPrinted = true
     // End screen after archive
     @State private var endShown = false
     // Delete: ask, then a few seconds to undo before it really happens (like a transaction).
@@ -572,7 +575,7 @@ struct EditWalletView: View {
         case .amount(let field):
             AdjustAmountView(account: account, kind: field == .limit ? .limit : (isCredit ? .bill : .balance),
                              current: field == .limit ? cur.limit : cur.balance, limit: cur.limit,
-                             initialPrinted: billPrinted) { value, printed in
+                             initialPrinted: billPrinted, unbilled: unbilled) { value, printed in
                 if field == .balance { billPrinted = printed }
                 withAnimation(.settle(0.42)) { if field == .limit { cur.limit = value } else { cur.balance = value } }
             }

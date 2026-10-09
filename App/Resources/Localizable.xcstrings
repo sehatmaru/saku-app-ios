@@ -4103,6 +4103,16 @@
         }
       }
     },
+    "Isi sesuai tagihan dari bank. Belanja yang belum ditagih ditambahkan otomatis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the bank's statement amount. Spending not billed yet is added automatically."
+          }
+        }
+      }
+    },
     "Izin mikrofon atau pengenalan suara belum diberikan. Aktifkan di Pengaturan, atau ketik saja.": {
       "localizations": {
         "en": {
@@ -8493,6 +8503,16 @@
         }
       }
     },
+    "Tagihan terbit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statement issued"
+          }
+        }
+      }
+    },
     "Tagihan turun %@": {
       "localizations": {
         "en": {
@@ -9631,6 +9651,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Total balance · 3 accounts"
+          }
+        }
+      }
+    },
+    "Total utang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total debt"
           }
         }
       }

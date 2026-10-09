@@ -13,6 +13,9 @@ struct AdjustAmountView: View {
     /// The card's limit in the form (for the bill's remaining-limit row).
     var limit: Int = 0
     var initialPrinted = false
+    /// Card with a statement: what is not billed yet (installment parts, spending since the cut-off).
+    /// With it, "already printed" asks for the bank's bill and Saku adds this on top for the total debt.
+    var unbilled: Int? = nil
     let onApply: (Int, Bool) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -22,21 +25,28 @@ struct AdjustAmountView: View {
     @State private var bump = false
     @State private var shake: CGFloat = 0
 
-    init(account: Account, kind: Kind, current: Int, limit: Int = 0, initialPrinted: Bool = false,
+    init(account: Account, kind: Kind, current: Int, limit: Int = 0, initialPrinted: Bool = false, unbilled: Int? = nil,
          onApply: @escaping (Int, Bool) -> Void) {
         self.account = account
         self.kind = kind
         self.current = current
         self.limit = limit
         self.initialPrinted = initialPrinted
+        self.unbilled = unbilled
         self.onApply = onApply
-        _amount = State(initialValue: current)
+        let asBill = kind == .bill && initialPrinted && unbilled != nil
+        _amount = State(initialValue: asBill ? max(current - (unbilled ?? 0), 0) : current)
         _printed = State(initialValue: initialPrinted)
     }
 
     private var color: Color { account.walletColor }
-    private var changed: Bool { amount != current }
-    private var overLimit: Bool { kind == .bill && limit > 0 && amount > limit }
+    /// "Already printed" on a card with a statement: the number typed is the bank's bill.
+    private var asBill: Bool { kind == .bill && printed && unbilled != nil }
+    private var reference: Int { asBill ? max(current - (unbilled ?? 0), 0) : current }
+    /// Total debt the typed number leads to.
+    private var total: Int { asBill ? amount + (unbilled ?? 0) : amount }
+    private var changed: Bool { amount != reference }
+    private var overLimit: Bool { kind == .bill && limit > 0 && total > limit }
     private var canApply: Bool { changed && !overLimit }
 
     private var title: String {
@@ -51,7 +61,8 @@ struct AdjustAmountView: View {
         switch kind {
         case .balance: L("Selisihnya dicatat sebagai transaksi Penyesuaian saldo.")
         case .limit: L("Limit baru berlaku untuk perhitungan sisa limit.")
-        case .bill: printed ? L("Tagihan ini perlu dibayar sebelum jatuh tempo.")
+        case .bill: asBill ? L("Isi sesuai tagihan dari bank. Belanja yang belum ditagih ditambahkan otomatis.")
+            : printed ? L("Tagihan ini perlu dibayar sebelum jatuh tempo.")
             : L("Pemakaian sejak cut-off terakhir. Baru ditagih di cut-off berikutnya.")
         }
     }
@@ -122,8 +133,8 @@ struct AdjustAmountView: View {
 
             if kind == .bill {
                 HStack(spacing: 8) {
-                    chip(L("Sudah dicetak bank"), on: printed) { printed = true }
-                    chip(L("Belum dicetak"), on: !printed) { printed = false }
+                    chip(L("Sudah dicetak bank"), on: printed) { setPrinted(true) }
+                    chip(L("Belum dicetak"), on: !printed) { setPrinted(false) }
                 }
                 .padding(.top, 14)
             }
@@ -135,9 +146,13 @@ struct AdjustAmountView: View {
                 case .limit:
                     row(L("Limit kredit"), "\(rp(current)) → \(rp(amount))")
                 case .bill:
-                    row(L("Tagihan"), "\(rp(current)) → \(rp(amount))")
+                    row(asBill ? L("Tagihan terbit") : L("Tagihan"), "\(rp(reference)) → \(rp(amount))")
+                    if asBill, let unbilled {
+                        row(L("Belum ditagih"), rp(unbilled))
+                        row(L("Total utang"), "\(rp(current)) → \(rp(total))")
+                    }
                     if limit > 0 {
-                        row(L("Sisa limit"), "\(rp(max(limit - current, 0))) → \(rp(max(limit - amount, 0)))")
+                        row(L("Sisa limit"), "\(rp(max(limit - current, 0))) → \(rp(max(limit - total, 0)))")
                     }
                 }
             }
@@ -178,6 +193,15 @@ struct AdjustAmountView: View {
         .monospacedDigit()
     }
 
+    private func setPrinted(_ value: Bool) {
+        guard printed != value else { return }
+        let was = total
+        printed = value
+        // Switching the meaning of the number: start from what the other mode would show for the same debt.
+        amount = value && unbilled != nil ? max(was - (unbilled ?? 0), 0) : was
+        isFresh = true
+    }
+
     private func press(_ key: String) {
         if isFresh && key == "del" {
             amount = 0
@@ -198,7 +222,7 @@ struct AdjustAmountView: View {
             }
             return
         }
-        onApply(amount, printed)
+        onApply(total, printed)
         dismiss()
     }
 }

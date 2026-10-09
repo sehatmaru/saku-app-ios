@@ -1044,6 +1044,7 @@ struct AccountListView: View {
         return EditWalletView(
             account: fresh,
             transactionCount: accountTransactions[account.id]?.count ?? 0,
+            unbilled: viewModel.statement(for: fresh, transactions: accountTransactions[account.id] ?? [])?.unbilled,
             capital: InvestmentSummary(account: fresh, transactions: accountTransactions[account.id] ?? []).capital,
             wealth: WealthSummary(accounts: viewModel.accounts),
             onUpdateValue: { updatingValue = fresh },

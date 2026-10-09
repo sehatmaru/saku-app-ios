@@ -372,5 +372,8 @@
   "SIMPAN": "SAVE",
   "ABAIKAN": "IGNORE",
   "Dari ingatan Saku": "From Saku's memory",
-  "Dibayar dari luar Saku": "Paid from outside Saku"
+  "Dibayar dari luar Saku": "Paid from outside Saku",
+  "Tagihan terbit": "Statement issued",
+  "Total utang": "Total debt",
+  "Isi sesuai tagihan dari bank. Belanja yang belum ditagih ditambahkan otomatis.": "Enter the bank's statement amount. Spending not billed yet is added automatically."
 }
