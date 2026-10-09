@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Ubah draf: the same form as Tambah transaksi (swipeable type panel, rows, wallet / category / date sheets,
-/// keypad), but it edits the draft; Simpan keeps the changes on it and the transaction is saved from Perlu dicek.
+/// keypad), but it edits the draft; Simpan keeps the changes on it and the transaction is saved from Konfirmasi catatan.
 /// A bill paid on a credit card is shown under Transfer, with the card as the destination.
 struct DraftEditView: View {
     @State var draft: Draft

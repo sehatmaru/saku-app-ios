@@ -1,6 +1,6 @@
 import Foundation
 
-/// A transaction waiting to be checked ("Perlu dicek"). Nothing is saved until the user agrees.
+/// A transaction waiting to be checked ("Konfirmasi catatan"). Nothing is saved until the user agrees.
 /// Drafts live on the device (JSON file); the raw sentence is never stored, only what was understood.
 struct Draft: Identifiable, Codable, Hashable {
     enum Kind: String, Codable, CaseIterable {

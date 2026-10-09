@@ -50,7 +50,7 @@ extension Draft {
     }
 }
 
-/// "Perlu dicek" (design 1d): drafts as a deck of cards, one on top at a time. Simpan, Ubah or Abaikan; or deal with all at once.
+/// "Konfirmasi catatan" (design 1d): drafts as a deck of cards, one on top at a time. Simpan, Ubah or Abaikan; or deal with all at once.
 struct DraftQueueView: View {
     let userId: String
     @ObservedObject private var store = DraftStore.shared
@@ -85,7 +85,7 @@ struct DraftQueueView: View {
                 }
                 .padding(.leading, -8)
                 .accessibilityLabel(L("Kembali"))
-                Text(L("Perlu dicek")).font(.app(24, weight: .bold)).tracking(-0.4)
+                Text(L("Konfirmasi catatan")).font(.app(24, weight: .bold)).tracking(-0.4).lineLimit(1).minimumScaleFactor(0.8)
                 if let current, let index = session.firstIndex(of: current.id) {
                     Text(L("%lld dari %lld", index + 1, session.count)).font(.app(15)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
                 }
@@ -149,7 +149,7 @@ struct DraftQueueView: View {
         .task { await store.refreshReferenceData(userId: userId) }
     }
 
-    /// Perlu dicek with nothing in it (design 3d): what lands here, and a way to start.
+    /// Konfirmasi catatan with nothing in it (design 3d): what lands here, and a way to start.
     private var emptyQueue: some View {
         VStack(spacing: 0) {
             STEmptyHero(icon: "tray", title: "Belum ada draf",

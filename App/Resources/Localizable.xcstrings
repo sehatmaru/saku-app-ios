@@ -1053,12 +1053,12 @@
         }
       }
     },
-    "Aplikasi yang didukung: %@. Draf dari notifikasi selalu masuk ke Perlu dicek; teks notifikasi tidak disimpan.": {
+    "Aplikasi yang didukung: %@. Draf dari notifikasi selalu masuk ke Konfirmasi catatan; teks notifikasi tidak disimpan.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Supported apps: %@. Drafts from notifications always go to Needs review; the notification text isn't stored."
+            "value": "Supported apps: %@. Drafts from notifications always go to Confirm entries; the notification text isn't stored."
           }
         }
       }
@@ -3443,12 +3443,12 @@
         }
       }
     },
-    "Draf menunggu di Perlu dicek": {
+    "Draf menunggu di Konfirmasi catatan": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Draft waiting in Needs review"
+            "value": "Draft waiting in Confirm entries"
           }
         }
       }
@@ -5143,6 +5143,16 @@
         }
       }
     },
+    "Konfirmasi catatan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm entries"
+          }
+        }
+      }
+    },
     "Kopi": {
       "localizations": {
         "en": {
@@ -5603,12 +5613,12 @@
         }
       }
     },
-    "Masuk ke Perlu dicek": {
+    "Masuk ke Konfirmasi catatan": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Added to Needs review"
+            "value": "Added to Confirm entries"
           }
         }
       }
@@ -6819,16 +6829,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Estimate: history didn't exist while this period ran, so your latest budget amount is used. The figure may differ slightly from what you set then."
-          }
-        }
-      }
-    },
-    "Perlu dicek": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Needs review"
           }
         }
       }

@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import UserNotifications
 
-/// The "Perlu dicek" queue and what Saku learned from corrections. Everything lives on the device
+/// The "Konfirmasi catatan" queue and what Saku learned from corrections. Everything lives on the device
 /// (one JSON file); the raw sentence is never kept, only the draft that came out of it. Drafts expire
 /// after 30 days. Siri, Shortcuts and the share extension add to the same file.
 @MainActor

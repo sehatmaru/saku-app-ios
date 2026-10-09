@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The result of one sentence (design 1c): what Saku understood, with the wallet and the date still
-/// changeable, and Simpan right here or "Simpan nanti" to Perlu dicek.
+/// changeable, and Simpan right here or "Simpan nanti" to Konfirmasi catatan.
 struct QuickResultSheet: View {
     @State var draft: Draft
     let userId: String
@@ -221,7 +221,7 @@ struct QuickResultSheet: View {
 
     private func save() {
         guard draft.isComplete else {
-            // not complete (no wallet or category): it can be finished in Perlu dicek
+            // not complete (no wallet or category): it can be finished in Konfirmasi catatan
             dismiss()
             onSaveLater(draft)
             return

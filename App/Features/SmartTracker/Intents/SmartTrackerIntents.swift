@@ -1,9 +1,9 @@
 import AppIntents
 
-/// Siri and Shortcuts: "Catat di Saku ...". The result joins "Perlu dicek"; nothing is saved without a look.
+/// Siri and Shortcuts: "Catat di Saku ...". The result joins "Konfirmasi catatan"; nothing is saved without a look.
 struct RecordTransactionIntent: AppIntent {
     static let title: LocalizedStringResource = "Catat transaksi"
-    static let description = IntentDescription("Catat transaksi dari satu kalimat, misalnya \"kopi 25rb gopay\". Hasilnya masuk ke Perlu dicek.")
+    static let description = IntentDescription("Catat transaksi dari satu kalimat, misalnya \"kopi 25rb gopay\". Hasilnya masuk ke Konfirmasi catatan.")
 
     @Parameter(title: "Teks", requestValueDialog: "Apa yang mau dicatat?")
     var text: String
@@ -15,7 +15,7 @@ struct RecordTransactionIntent: AppIntent {
         guard SmartTrackerWays.siri else { return .result(dialog: "Siri belum diaktifkan. Nyalakan di Profil > Smart Tracker.") }
         let count = await MainActor.run { DraftStore.shared.add(text: text, source: .siri).count }
         await DraftNotifier.announce(count: count)
-        return .result(dialog: "\(count) draf masuk ke Perlu dicek di Saku.")
+        return .result(dialog: "\(count) draf masuk ke Konfirmasi catatan di Saku.")
     }
 }
 
@@ -43,7 +43,7 @@ struct RecordFromNotificationIntent: AppIntent {
         let nothing = body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && subtitle.isEmpty
             ? "Isi notifikasi kosong. Cek variabel Isi di Shortcuts."
             : "Tidak ada nominal, notifikasi diabaikan."
-        return .result(dialog: count > 0 ? "Draf dari notifikasi masuk ke Perlu dicek." : IntentDialog(stringLiteral: nothing))
+        return .result(dialog: count > 0 ? "Draf dari notifikasi masuk ke Konfirmasi catatan." : IntentDialog(stringLiteral: nothing))
     }
 }
 

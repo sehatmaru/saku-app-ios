@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Smart Tracker on Beranda (design 1a): a sparkle button with the number of drafts that opens a floating
-/// bar over the tab bar: one sentence, microphone, and the "Perlu dicek" tray.
+/// bar over the tab bar: one sentence, microphone, and the "Konfirmasi catatan" tray.
 struct SmartTrackerHomeOverlay: View {
     let userId: String
     /// Nothing recorded yet (design 3a): the button pulses and a tip points at it.
@@ -44,7 +44,7 @@ struct SmartTrackerHomeOverlay: View {
         }
         .sheet(item: $result) { draft in
             QuickResultSheet(draft: draft, userId: userId, onSaved: { onToast($0) },
-                             onSaveLater: { saved in store.add([saved]); onToast(L("Masuk ke Perlu dicek")) },
+                             onSaveLater: { saved in store.add([saved]); onToast(L("Masuk ke Konfirmasi catatan")) },
                              onFillManually: { saved in
                                  store.add([saved])
                                  store.editRequest = saved.id
@@ -165,7 +165,7 @@ struct SmartTrackerHomeOverlay: View {
                         }
                     }
             }
-            .accessibilityLabel(L("Perlu dicek"))
+            .accessibilityLabel(L("Konfirmasi catatan"))
         }
         .padding(.horizontal, 7).frame(height: 64)
         .background(Color.stBar.opacity(0.97), in: Capsule())
@@ -199,7 +199,7 @@ struct SmartTrackerHomeOverlay: View {
     }
 
     /// One complete expense or income goes to the quick result sheet; anything else (several transactions,
-    /// a transfer, something unreadable) goes to Perlu dicek where it can be completed.
+    /// a transfer, something unreadable) goes to Konfirmasi catatan where it can be completed.
     private func submit(_ raw: String, source: Draft.Source) {
         let sentence = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sentence.isEmpty else { return }
@@ -232,6 +232,6 @@ struct SmartTrackerHomeOverlay: View {
 }
 
 extension Notification.Name {
-    /// Asks the Beranda button to open the Catat cepat bar ("Catat sekarang" in an empty Perlu dicek).
+    /// Asks the Beranda button to open the Catat cepat bar ("Catat sekarang" in an empty Konfirmasi catatan).
     static let openSmartTrackerBar = Notification.Name("openSmartTrackerBar")
 }
