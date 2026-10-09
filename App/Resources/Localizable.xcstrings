@@ -3033,6 +3033,16 @@
         }
       }
     },
+    "Dicatat otomatis oleh Smart Tracker. Periksa dulu sebelum disimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded automatically by Smart Tracker. Check before saving."
+          }
+        }
+      }
+    },
     "Dicatat otomatis saat kamu buka Saku di tanggal ini.": {
       "localizations": {
         "en": {
@@ -8309,6 +8319,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Smart Tracker is off"
+          }
+        }
+      }
+    },
+    "Smart Tracker · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Tracker · %@"
           }
         }
       }

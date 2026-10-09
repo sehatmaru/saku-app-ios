@@ -399,5 +399,7 @@
   "Berhenti mendengarkan": "Stopped listening",
   "Belum terdengar apa-apa": "Haven't heard anything yet",
   "Coba bicara lebih dekat ke mikrofon, atau ketik saja kalimatnya.": "Try speaking closer to the microphone, or just type the sentence.",
-  "Ketuk mikrofon untuk coba lagi": "Tap the microphone to try again"
+  "Ketuk mikrofon untuk coba lagi": "Tap the microphone to try again",
+  "Dicatat otomatis oleh Smart Tracker. Periksa dulu sebelum disimpan.": "Recorded automatically by Smart Tracker. Check before saving.",
+  "Smart Tracker · %@": "Smart Tracker · %@"
 }

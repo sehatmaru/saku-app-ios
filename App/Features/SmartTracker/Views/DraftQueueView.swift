@@ -50,7 +50,7 @@ extension Draft {
     }
 }
 
-/// "Perlu dicek" (design 1d): one draft at a time. Simpan, Ubah or Abaikan; or deal with all at once.
+/// "Perlu dicek" (design 1d): drafts as a deck of cards, one on top at a time. Simpan, Ubah or Abaikan; or deal with all at once.
 struct DraftQueueView: View {
     let userId: String
     @ObservedObject private var store = DraftStore.shared
@@ -66,6 +66,7 @@ struct DraftQueueView: View {
     @State private var selectedId: UUID?
     @State private var isSaving = false
     @State private var isLeaving = false
+    @State private var drag: CGFloat = 0
     @State private var showsDeleteAll = false
     @State private var errorMessage: String?
 
@@ -92,13 +93,11 @@ struct DraftQueueView: View {
             }
             .padding(.horizontal, 24).padding(.top, 10)
 
-            HStack(spacing: 4) {
-                ForEach(session, id: \.self) { id in
-                    Capsule().fill(segment(id)).frame(height: 4)
-                }
+            if current != nil {
+                Label(L("Dicatat otomatis oleh Smart Tracker. Periksa dulu sebelum disimpan."), systemImage: "sparkles")
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 10)
             }
-            .padding(.horizontal, 24).padding(.top, 14)
-            .animation(.easeInOut(duration: 0.3), value: outcomes.count)
 
             if store.expiringSoon > 0 && current != nil {
                 Label(L("%lld draf akan dihapus dalam 3 hari jika tidak diproses.", store.expiringSoon), systemImage: "clock")
@@ -107,17 +106,9 @@ struct DraftQueueView: View {
             }
 
             if let current {
-                TabView(selection: Binding(get: { current.id }, set: { selectedId = $0 })) {
-                    ForEach(pending) { draft in
-                        card(draft)
-                            .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 4)
-                            .opacity(isLeaving && draft.id == current.id ? 0 : 1)
-                            .offset(y: isLeaving && draft.id == current.id ? -16 : 0)
-                            .tag(draft.id)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .frame(height: 440)
+                cardStack(current)
+                    .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 4)
+                    .frame(height: 440 + 28)
                 actions(current).padding(.top, 28)
                 Spacer(minLength: 12)
                 bulkBar.padding(.horizontal, 24).padding(.bottom, 24)
@@ -198,22 +189,53 @@ struct DraftQueueView: View {
         ("bell.badge", "Notifikasi bank", "Dari aplikasi bank yang terhubung"),
         ("square.and.arrow.up", "Bagikan teks", "Dari menu Bagikan di aplikasi lain")]
 
-    private func segment(_ id: UUID) -> Color {
-        switch outcomes[id] {
-        case .saved: return Color.stGreen
-        case .ignored: return Color.appTextTertiary.opacity(0.5)
-        case nil: return id == current?.id ? Color.appText : Color.stChip
+    // MARK: Card
+
+    /// The pending drafts as a deck: the first on top, the next two peeking out below. Drag the top card
+    /// sideways to send it to the back of the deck.
+    private func cardStack(_ top: Draft) -> some View {
+        let deck = pending
+        let start = deck.firstIndex { $0.id == top.id } ?? 0
+        let ordered = (0..<min(deck.count, 3)).map { deck[(start + $0) % deck.count] }
+        return ZStack(alignment: .top) {
+            ForEach(Array(ordered.enumerated()).reversed(), id: \.element.id) { depth, draft in
+                card(draft)
+                    .scaleEffect(1 - CGFloat(depth) * 0.05, anchor: .top)
+                    .offset(y: CGFloat(depth) * 16)
+                    .opacity(depth == 2 ? 0.55 : 1)
+                    .offset(x: depth == 0 ? drag : 0)
+                    .rotationEffect(.degrees(depth == 0 ? Double(drag) / 28 : 0), anchor: .bottom)
+                    .opacity(isLeaving && depth == 0 ? 0 : 1)
+                    .allowsHitTesting(depth == 0)
+                    .gesture(depth == 0 && deck.count > 1 ? swipe(deck: deck, from: start) : nil)
+                    .zIndex(Double(3 - depth))
+            }
         }
+        .animation(.settle(0.4), value: top.id)
+        .animation(.settle(0.4), value: deck.count)
     }
 
-    // MARK: Card
+    private func swipe(deck: [Draft], from index: Int) -> some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { drag = $0.translation.width }
+            .onEnded { value in
+                let thrown = abs(value.predictedEndTranslation.width) > 260 || abs(value.translation.width) > 90
+                guard thrown else { withAnimation(.settle(0.35)) { drag = 0 }; return }
+                let direction: CGFloat = value.translation.width < 0 ? -1 : 1
+                withAnimation(.easeIn(duration: 0.18)) { drag = direction * 420 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                    selectedId = deck[(index + 1) % deck.count].id
+                    drag = 0
+                }
+            }
+    }
 
     private func card(_ draft: Draft) -> some View {
         let wallet = store.accounts.first { $0.id == draft.accountId }
         let counter = store.accounts.first { $0.id == draft.counterpartyAccountId }
         let category = store.categories.first { $0.id == draft.categoryId }
         return VStack(alignment: .leading, spacing: 0) {
-            Label(draft.sourceLabel, systemImage: draft.sourceIcon)
+            Label(L("Smart Tracker · %@", draft.sourceLabel), systemImage: draft.sourceIcon)
                 .font(.app(13)).foregroundStyle(Color.appTextSecondary)
             Image(systemName: category?.icon ?? draft.kindIcon).font(.system(size: 24)).foregroundStyle(Color.appText)
                 .frame(width: 52, height: 52).background(Color.stRaised, in: Circle()).padding(.top, 18)
