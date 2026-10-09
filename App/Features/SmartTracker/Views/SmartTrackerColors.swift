@@ -18,4 +18,12 @@ extension Color {
     static let stLine = Color(light: 0xD9EDE2, dark: 0x1E4632)
     /// The floating bar over the tab bar.
     static let stBar = Color(light: 0xFFFFFF, dark: 0x1C1C1E)
+    /// The dark pill buttons of the empty states ("Catat sekarang", "Aktifkan Smart Tracker"): black on light, near-white on dark.
+    static let stInk = Color(light: 0x111111, dark: 0xF5F5F7)
+    static let stInkText = Color(light: 0xFFFFFF, dark: 0x000000)
+    /// Dashed outline of "Contohnya nanti" and "Belum ada aplikasi terhubung".
+    static let stDash = Color(light: 0xC7C7CC, dark: 0x545458)
+    /// "Belum ada" warning card and orange placeholder values.
+    static let stWarnBg = Color(light: 0xFFF4E5, dark: 0x3A2A12)
+    static let stWarn = Color(light: 0xC4610A, dark: 0xFF9F0A)
 }

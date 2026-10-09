@@ -121,18 +121,16 @@ struct DraftQueueView: View {
                 actions(current).padding(.top, 28)
                 Spacer(minLength: 12)
                 bulkBar.padding(.horizontal, 24).padding(.bottom, 24)
+            } else if session.isEmpty {
+                emptyQueue
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "checkmark").font(.system(size: 24, weight: .bold)).foregroundStyle(Color.stGreen)
                         .frame(width: 56, height: 56).background(Color.stSuccessBg, in: Circle())
-                    Text(L("Semua sudah dicek")).font(.app(17, weight: .semibold)).padding(.top, 6)
-                    if !session.isEmpty {
-                        Text(L("%lld disimpan · %lld diabaikan", savedCount, ignoredCount))
-                            .font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                    } else {
-                        Text(L("Draf dari Catat cepat, Siri, Bagikan, dan notifikasi muncul di sini."))
-                            .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
-                    }
+                        .stEnter(0)
+                    Text(L("Semua sudah dicek")).font(.app(17, weight: .semibold)).padding(.top, 6).stEnter(1)
+                    Text(L("%lld disimpan · %lld diabaikan", savedCount, ignoredCount))
+                        .font(.app(15)).foregroundStyle(Color.appTextSecondary).stEnter(2)
                 }
                 .padding(.horizontal, 40).padding(.top, 110)
                 Spacer()
@@ -149,9 +147,56 @@ struct DraftQueueView: View {
         .confirmDialog(isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }),
                        icon: "exclamationmark.triangle", title: L("Gagal menyimpan"),
                        message: errorMessage ?? "", confirmTitle: nil, cancelTitle: L("Tutup"))
-        .onAppear { if session.isEmpty { session = store.drafts.map(\.id) } }
+        .onAppear {
+            if session.isEmpty { session = store.drafts.map(\.id) }
+            if let id = store.editRequest, let draft = store.drafts.first(where: { $0.id == id }) {
+                store.editRequest = nil
+                selectedId = id
+                editing = draft
+            }
+        }
         .task { await store.refreshReferenceData(userId: userId) }
     }
+
+    /// Perlu dicek with nothing in it (design 3d): what lands here, and a way to start.
+    private var emptyQueue: some View {
+        VStack(spacing: 0) {
+            STEmptyHero(icon: "tray", title: "Belum ada draf",
+                        message: "Transaksi yang ditangkap Smart Tracker menunggu di sini sampai kamu cek dan simpan.")
+                .padding(.top, 48)
+            Text(L("Draf datang dari")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 36).padding(.bottom, 8)
+                .stEnter(3)
+            VStack(spacing: 0) {
+                ForEach(Array(Self.sources.enumerated()), id: \.offset) { index, source in
+                    HStack(spacing: 12) {
+                        Image(systemName: source.icon).font(.system(size: 16)).foregroundStyle(Color.stGreen)
+                            .frame(width: 32, height: 32).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 10))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(L(source.title)).font(.app(16))
+                            Text(L(source.detail)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 10).frame(minHeight: 62)
+                    .stEnter(4 + index)
+                }
+            }
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal, 24)
+            Spacer(minLength: 12)
+            STInkButton(title: "Catat sekarang", icon: "sparkles") {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { NotificationCenter.default.post(name: .openSmartTrackerBar, object: nil) }
+            }
+            .padding(.horizontal, 24).padding(.bottom, 30).stEnter(7)
+        }
+    }
+
+    private static let sources: [(icon: String, title: String, detail: String)] = [
+        ("sparkles", "Catat cepat", "Ketik atau ucapkan dari Beranda"),
+        ("bell.badge", "Notifikasi bank", "Dari aplikasi bank yang terhubung"),
+        ("square.and.arrow.up", "Bagikan teks", "Dari menu Bagikan di aplikasi lain")]
 
     private func segment(_ id: UUID) -> Color {
         switch outcomes[id] {

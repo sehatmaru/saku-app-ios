@@ -4,6 +4,8 @@ import SwiftUI
 /// bar over the tab bar: one sentence, microphone, and the "Perlu dicek" tray.
 struct SmartTrackerHomeOverlay: View {
     let userId: String
+    /// Nothing recorded yet (design 3a): the button pulses and a tip points at it.
+    var isFresh = false
     var onOpenQueue: () -> Void
     var onToast: (String) -> Void
     @ObservedObject private var store = DraftStore.shared
@@ -21,12 +23,14 @@ struct SmartTrackerHomeOverlay: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             if isOpen { Color.black.opacity(0.001).ignoresSafeArea().onTapGesture { close() } }
+            if isFresh { tip }
             fab
             bar
         }
         // fill the screen so the button and bar sit at the bottom; empty areas let touches through
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .animation(.settle(0.42), value: isOpen)
+        .onReceive(NotificationCenter.default.publisher(for: .openSmartTrackerBar)) { _ in open() }
         .sheet(isPresented: $showsConsent) {
             SmartTrackerConsentSheet(profileId: UUID(uuidString: userId)) {
                 showsConsent = false
@@ -41,6 +45,11 @@ struct SmartTrackerHomeOverlay: View {
         .sheet(item: $result) { draft in
             QuickResultSheet(draft: draft, userId: userId, onSaved: { onToast($0) },
                              onSaveLater: { saved in store.add([saved]); onToast(L("Masuk ke Perlu dicek")) },
+                             onFillManually: { saved in
+                                 store.add([saved])
+                                 store.editRequest = saved.id
+                                 onOpenQueue()
+                             },
                              onRedo: { isOpen = true; focused = true })
         }
         .task {
@@ -59,6 +68,7 @@ struct SmartTrackerHomeOverlay: View {
                 .frame(width: 56, height: 56)
                 .background(Color.stGreen, in: Circle())
                 .shadow(color: Color.stGreen.opacity(0.35), radius: 10, y: 8)
+                .background { if isFresh && !isOpen { STPulse(color: .stGreen) } }
                 .overlay(alignment: .topTrailing) {
                     if !store.drafts.isEmpty {
                         Text("\(store.drafts.count)")
@@ -80,6 +90,29 @@ struct SmartTrackerHomeOverlay: View {
         .opacity(isOpen ? 0 : 1)
         .scaleEffect(isOpen ? 0.6 : 1)
         .allowsHitTesting(!isOpen)
+    }
+
+    /// The speech bubble over the button in the empty Beranda (design 3a).
+    private var tip: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(L("Catat pakai satu kalimat")).font(.app(15, weight: .semibold))
+            Text(L("Ketuk ✦ lalu tulis “kopi 25rb gopay”. Saku yang menyusun transaksinya."))
+                .font(.app(13)).lineSpacing(2).opacity(0.75)
+        }
+        .foregroundStyle(Color.stInkText)
+        .padding(.horizontal, 16).padding(.vertical, 14).frame(width: 240, alignment: .leading)
+        .background(Color.stInk, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(alignment: .bottomTrailing) {
+            RoundedRectangle(cornerRadius: 2).fill(Color.stInk).frame(width: 12, height: 12)
+                .rotationEffect(.degrees(45)).offset(x: -22, y: 5)
+        }
+        .stFloat()
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.trailing, 20).padding(.bottom, 62 + 56 + 14)
+        .opacity(isOpen ? 0 : 1)
+        .scaleEffect(isOpen ? 0.94 : 1, anchor: .bottomTrailing)
+        .allowsHitTesting(false)
+        .stEnter(2)
     }
 
     private var bar: some View {
@@ -181,8 +214,8 @@ struct SmartTrackerHomeOverlay: View {
                 ? await store.refined(sentence, source: source) : nil
             isThinking = false
             let final = refined ?? drafts
-            if final.count == 1, let one = final.first, one.amount != nil, !one.isUnreadable,
-               one.kind == .expense || one.kind == .income {
+            if final.count == 1, let one = final.first,
+               one.isUnreadable || one.amount == nil || one.kind == .expense || one.kind == .income {
                 close()
                 result = one
             } else {
@@ -196,4 +229,9 @@ struct SmartTrackerHomeOverlay: View {
     private static func parse(_ text: String, source: Draft.Source, store: DraftStore) -> [Draft] {
         SmartParser.parse(text, source: source, context: store.context)
     }
+}
+
+extension Notification.Name {
+    /// Asks the Beranda button to open the Catat cepat bar ("Catat sekarang" in an empty Perlu dicek).
+    static let openSmartTrackerBar = Notification.Name("openSmartTrackerBar")
 }

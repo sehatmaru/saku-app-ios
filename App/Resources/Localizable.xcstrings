@@ -963,6 +963,16 @@
         }
       }
     },
+    "Aktifkan untuk mencatat dengan satu kalimat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on to record with one sentence"
+          }
+        }
+      }
+    },
     "Akun dan semua datamu dihapus permanen, lalu kamu kembali ke awal. Tidak bisa dibatalkan.": {
       "localizations": {
         "en": {
@@ -1273,6 +1283,16 @@
         }
       }
     },
+    "Barang dan nominalnya belum ketemu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't find the item and amount"
+          }
+        }
+      }
+    },
     "Baru": {
       "localizations": {
         "en": {
@@ -1433,6 +1453,16 @@
         }
       }
     },
+    "Begitu notifikasi pertama masuk, aplikasinya muncul di sini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once the first notification arrives, its app shows up here."
+          }
+        }
+      }
+    },
     "Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya.": {
       "localizations": {
         "en": {
@@ -1469,6 +1499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "None yet"
+          }
+        }
+      }
+    },
+    "Belum ada aplikasi terhubung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No apps connected yet"
           }
         }
       }
@@ -1539,6 +1579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No wallet to pay with"
+          }
+        }
+      }
+    },
+    "Belum ada draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No drafts yet"
           }
         }
       }
@@ -1803,6 +1853,16 @@
         }
       }
     },
+    "Belum terdengar apa-apa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haven't heard anything yet"
+          }
+        }
+      }
+    },
     "Belum termasuk aset": {
       "localizations": {
         "en": {
@@ -1849,6 +1909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Joined %@ · Saku version %@"
+          }
+        }
+      }
+    },
+    "Berhenti mendengarkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped listening"
           }
         }
       }
@@ -2493,6 +2563,26 @@
         }
       }
     },
+    "Catat pakai satu kalimat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record with one sentence"
+          }
+        }
+      }
+    },
+    "Catat sekarang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record now"
+          }
+        }
+      }
+    },
     "Catat tagihan": {
       "localizations": {
         "en": {
@@ -2583,6 +2673,16 @@
         }
       }
     },
+    "Coba bicara lebih dekat ke mikrofon, atau ketik saja kalimatnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try speaking closer to the microphone, or just type the sentence."
+          }
+        }
+      }
+    },
     "Coba kata lain seperti “setor”, “tarik”, atau nama dompet.": {
       "localizations": {
         "en": {
@@ -2629,6 +2729,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Example: “lunch 45k with BCA”"
+          }
+        }
+      }
+    },
+    "Contohnya nanti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What it will look like"
           }
         }
       }
@@ -2709,6 +2819,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "From date"
+          }
+        }
+      }
+    },
+    "Dari aplikasi bank yang terhubung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From connected bank apps"
           }
         }
       }
@@ -3269,6 +3389,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Drafts from Quick add, Siri, Share and notifications show up here."
+          }
+        }
+      }
+    },
+    "Draf datang dari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drafts come from"
           }
         }
       }
@@ -4053,6 +4183,16 @@
         }
       }
     },
+    "Ingatan hanya disimpan di HP ini dan bisa dilupakan kapan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory stays on this phone and can be forgotten any time."
+          }
+        }
+      }
+    },
     "Ingatan, notifikasi, dan data": {
       "localizations": {
         "en": {
@@ -4089,6 +4229,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fill Source app with the app's name, then Title, Subtitle and Body with the notification variables."
+          }
+        }
+      }
+    },
+    "Isi jumlah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter amount"
+          }
+        }
+      }
+    },
+    "Isi manual": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill in manually"
           }
         }
       }
@@ -4259,6 +4419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Friday"
+          }
+        }
+      }
+    },
+    "Jumlah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount"
           }
         }
       }
@@ -4893,6 +5063,26 @@
         }
       }
     },
+    "Ketuk mikrofon untuk coba lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the microphone to try again"
+          }
+        }
+      }
+    },
+    "Ketuk ✦ lalu tulis “kopi 25rb gopay”. Saku yang menyusun transaksinya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap ✦ and write “coffee 25k gopay”. Saku builds the transaction."
+          }
+        }
+      }
+    },
     "Keuangan": {
       "localizations": {
         "en": {
@@ -4949,6 +5139,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Coffee"
+          }
+        }
+      }
+    },
+    "Koreksi kategori atau dompet di draf, dan Saku akan mengingatnya untuk lain kali.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Correct the category or wallet on a draft and Saku will remember it for next time."
           }
         }
       }
@@ -7423,6 +7623,16 @@
         }
       }
     },
+    "Sebutkan apa dan berapa, misalnya “sabun 18rb”.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Say what and how much, for example “soap 18k”."
+          }
+        }
+      }
+    },
     "Sebutkan apa, berapa, dan pakai apa": {
       "localizations": {
         "en": {
@@ -8079,6 +8289,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Smart Tracker is on"
+          }
+        }
+      }
+    },
+    "Smart Tracker belum aktif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Tracker is not on yet"
           }
         }
       }
@@ -9741,6 +9961,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transactions aren't deleted. Earlier periods' history is kept."
+          }
+        }
+      }
+    },
+    "Transaksi yang ditangkap Smart Tracker menunggu di sini sampai kamu cek dan simpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions Smart Tracker catches wait here until you check and save them."
           }
         }
       }

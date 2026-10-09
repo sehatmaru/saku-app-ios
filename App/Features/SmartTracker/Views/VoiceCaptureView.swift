@@ -8,6 +8,8 @@ struct VoiceCaptureView: View {
     @StateObject private var voice = SpeechDictation()
     @ObservedObject private var store = DraftStore.shared
     @Environment(\.dismiss) private var dismiss
+    /// Nothing was heard for a few seconds (design 3b): listening stopped and the mic button offers another try.
+    @State private var heardNothing = false
 
     private var chips: [(String, String)] {
         let text = voice.transcript.lowercased()
@@ -31,10 +33,10 @@ struct VoiceCaptureView: View {
                 }
                 Spacer()
                 HStack(spacing: 7) {
-                    Circle().fill(Color.appError).frame(width: 8, height: 8)
+                    Circle().fill(heardNothing ? Color.appTextTertiary.opacity(0.6) : Color.appError).frame(width: 8, height: 8)
                         .scaleEffect(voice.isListening ? 1.25 : 1)
                         .animation(.easeInOut(duration: 0.7).repeatForever(), value: voice.isListening)
-                    Text(L("Mendengarkan")).font(.app(15, weight: .semibold))
+                    Text(heardNothing ? L("Berhenti mendengarkan") : L("Mendengarkan")).font(.app(15, weight: .semibold))
                 }
                 Spacer()
                 Color.clear.frame(width: 38, height: 38)
@@ -42,7 +44,11 @@ struct VoiceCaptureView: View {
             .padding(.horizontal, 20).padding(.top, 8)
 
             VStack(alignment: .leading, spacing: 6) {
-                if voice.transcript.isEmpty {
+                if heardNothing {
+                    Text(L("Belum terdengar apa-apa")).foregroundStyle(Color.appTextTertiary)
+                    Text(L("Coba bicara lebih dekat ke mikrofon, atau ketik saja kalimatnya."))
+                        .font(.app(16, weight: .regular)).tracking(0).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
+                } else if voice.transcript.isEmpty {
                     Text(L("Sebutkan apa, berapa, dan pakai apa"))
                         .foregroundStyle(Color.appTextTertiary)
                 } else {
@@ -65,6 +71,7 @@ struct VoiceCaptureView: View {
                     .foregroundStyle(Color.stSuccessText)
                     .padding(.leading, 9).padding(.trailing, 12).frame(height: 30)
                     .background(Color.stSuccessBg, in: Capsule())
+                    .transition(.scale(scale: 0.97).combined(with: .opacity))
                 }
             }
             .padding(.horizontal, 28).padding(.top, 24).frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
@@ -75,10 +82,10 @@ struct VoiceCaptureView: View {
             }
             Spacer()
 
-            WaveformView(isActive: voice.isListening)
+            WaveformView(isActive: voice.isListening, isFlat: heardNothing)
                 .frame(height: 72)
                 .padding(.bottom, 24)
-            Text(L("Contoh: “makan siang 45rb pakai BCA”"))
+            Text(heardNothing ? L("Ketuk mikrofon untuk coba lagi") : L("Contoh: “makan siang 45rb pakai BCA”"))
                 .font(.app(14)).foregroundStyle(Color.appTextTertiary).padding(.bottom, 40)
 
             HStack(spacing: 44) {
@@ -87,20 +94,42 @@ struct VoiceCaptureView: View {
                         .frame(width: 52, height: 52).background(Color.stChip, in: Circle())
                 }
                 .accessibilityLabel(L("Ketik saja"))
-                Button { finish() } label: {
-                    RoundedRectangle(cornerRadius: 7).fill(.white).frame(width: 26, height: 26)
-                        .frame(width: 76, height: 76)
-                        .background(Color.appError, in: Circle())
-                        .overlay(Circle().strokeBorder(Color.stDangerBg, lineWidth: 6).padding(-6))
+                if heardNothing {
+                    Button { Task { await listen() } } label: {
+                        Image(systemName: "mic.fill").font(.system(size: 30)).foregroundStyle(.white)
+                            .frame(width: 76, height: 76)
+                            .background(Color.stGreen, in: Circle())
+                            .overlay(Circle().strokeBorder(Color.stSuccessBg, lineWidth: 6).padding(-6))
+                    }
+                    .accessibilityLabel(L("Coba lagi"))
+                } else {
+                    Button { finish() } label: {
+                        RoundedRectangle(cornerRadius: 7).fill(.white).frame(width: 26, height: 26)
+                            .frame(width: 76, height: 76)
+                            .background(Color.appError, in: Circle())
+                            .overlay(Circle().strokeBorder(Color.stDangerBg, lineWidth: 6).padding(-6))
+                    }
+                    .accessibilityLabel(L("Berhenti merekam"))
                 }
-                .accessibilityLabel(L("Berhenti merekam"))
                 Color.clear.frame(width: 52, height: 52)
             }
             .padding(.bottom, 44)
         }
         .background(Color.appBackground)
-        .task { await voice.start() }
+        .animation(.settle(0.4), value: heardNothing)
+        .task { await listen() }
         .onDisappear { voice.stop() }
+    }
+
+    /// Starts the microphone; after 6 seconds without a word it stops and shows the "nothing heard" state.
+    private func listen() async {
+        heardNothing = false
+        await voice.start()
+        try? await Task.sleep(for: .seconds(6))
+        if voice.isListening, voice.transcript.isEmpty, !Task.isCancelled {
+            voice.stop()
+            heardNothing = true
+        }
     }
 
     private func finish() {
@@ -116,6 +145,7 @@ struct VoiceCaptureView: View {
 /// Thirty bars that breathe while listening.
 private struct WaveformView: View {
     let isActive: Bool
+    var isFlat = false
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 24, paused: !isActive)) { context in
@@ -124,7 +154,7 @@ private struct WaveformView: View {
                 ForEach(0..<30, id: \.self) { i in
                     let base = 0.35 + 0.65 * sin(Double(i) / 29 * .pi)
                     let wobble = isActive ? 0.5 + 0.5 * sin(t * (2 + Double(i * 37 % 7) / 3) + Double(i)) : 0.4
-                    Capsule().fill(Color.stGreen).frame(width: 4, height: max(6, 72 * base * wobble))
+                    Capsule().fill(isFlat ? Color.stChip : Color.stGreen).frame(width: 4, height: isFlat ? 6 : max(6, 72 * base * wobble))
                 }
             }
         }

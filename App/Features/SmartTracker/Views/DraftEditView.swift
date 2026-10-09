@@ -59,7 +59,8 @@ struct DraftEditView: View {
             rows.padding(.top, isCompact ? 4 : 10)
             Spacer(minLength: isCompact ? 4 : 12)
             if !noteFocused {
-                AmountPad(color: panelColor, isEnabled: amount > 0, onPress: press, onSave: save, keyHeight: isCompact ? 46 : 52)
+                AmountPad(color: panelColor, isEnabled: amount > 0, onPress: press, onSave: save, keyHeight: isCompact ? 46 : 52,
+                          title: amount > 0 ? "Simpan" : "Isi jumlah")
                     .animation(.easeInOut(duration: 0.4), value: typeIndex)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 4)

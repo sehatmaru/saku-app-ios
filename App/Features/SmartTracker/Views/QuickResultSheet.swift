@@ -7,6 +7,7 @@ struct QuickResultSheet: View {
     let userId: String
     var onSaved: (String) -> Void
     var onSaveLater: (Draft) -> Void
+    var onFillManually: (Draft) -> Void = { _ in }
     var onRedo: () -> Void
     @ObservedObject private var store = DraftStore.shared
     @Environment(\.dismiss) private var dismiss
@@ -21,6 +22,8 @@ struct QuickResultSheet: View {
     private var wallet: Account? { store.accounts.first { $0.id == draft.accountId } }
     private var category: Category? { store.categories.first { $0.id == draft.categoryId } }
     private var isIncome: Bool { draft.kind == .income }
+    /// The sentence had no amount to read (design 3c): explain, and offer to fill it in by hand.
+    private var isUnclear: Bool { draft.isUnreadable || draft.amount == nil }
 
     private var wallets: [Account] { store.accounts.filter { $0.isActive && $0.type != .investment } }
     private var categories: [Category] {
@@ -59,6 +62,7 @@ struct QuickResultSheet: View {
             }
             .padding(.horizontal, 20)
 
+            if isUnclear { unclearBody } else {
             HStack(spacing: 12) {
                 Circle().fill(Color(light: isIncome ? 0xE6F3EC : 0xFDECEC, dark: isIncome ? 0x1E3A2C : 0x3A1D1F)).frame(width: 44, height: 44)
                     .overlay {
@@ -84,7 +88,9 @@ struct QuickResultSheet: View {
                     .lineLimit(1).minimumScaleFactor(0.6)
             }
             .padding(.horizontal, 20).padding(.top, 16)
+            }
 
+            if !isUnclear {
             VStack(spacing: 0) {
                 row(title: L("Dompet"), note: pickedWallet ? L("Diganti") : (draft.accountId == nil ? nil : L("Dari kalimatmu")),
                     value: wallet?.name ?? L("Belum dipilih"), warn: wallet == nil) {
@@ -98,8 +104,9 @@ struct QuickResultSheet: View {
             }
             .background(Color.appFill, in: RoundedRectangle(cornerRadius: 18))
             .padding(.horizontal, 20).padding(.top, 18)
+            }
 
-            if duplicate != nil {
+            if duplicate != nil, !isUnclear {
                 Label(duplicate ?? "", systemImage: "doc.on.doc")
                     .font(.app(12)).foregroundStyle(Color.appWarning).padding(.horizontal, 22).padding(.top, 10)
             }
@@ -110,6 +117,14 @@ struct QuickResultSheet: View {
                         .frame(width: 54, height: 54).background(Color.stChip, in: Circle())
                 }
                 .accessibilityLabel(L("Ulang"))
+                if isUnclear {
+                    Button { dismiss(); onFillManually(draft) } label: {
+                        Label(L("Isi manual"), systemImage: "pencil").font(.app(17, weight: .semibold))
+                            .foregroundStyle(Color.stInkText)
+                            .frame(maxWidth: .infinity).frame(height: 54).background(Color.stInk, in: Capsule())
+                    }
+                    .buttonStyle(PressScaleStyle())
+                } else {
                 Button(action: save) {
                     ZStack {
                         if isSaving { ProgressView().tint(Color.appBackground) } else {
@@ -122,6 +137,7 @@ struct QuickResultSheet: View {
                 }
                 .buttonStyle(PressScaleStyle())
                 .disabled(isSaving)
+                }
             }
             .padding(.horizontal, 20).padding(.top, 22)
         }
@@ -142,6 +158,44 @@ struct QuickResultSheet: View {
         }
         .confirmDialog(isPresented: $failed, icon: "exclamationmark.triangle", title: L("Gagal menyimpan"),
                        message: L("Draf belum tersimpan. Coba lagi, atau pilih Simpan nanti."), confirmTitle: nil, cancelTitle: L("Tutup"))
+    }
+
+    /// What the sentence said, why it was not enough, and the three things still missing.
+    private var unclearBody: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("“\(draft.title)”")
+                .font(.app(20)).tracking(-0.2).lineSpacing(3).foregroundStyle(Color.appBody)
+                .padding(.horizontal, 20).padding(.top, 10)
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "exclamationmark.circle.fill").font(.system(size: 22)).foregroundStyle(Color.stWarn)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("Barang dan nominalnya belum ketemu")).font(.app(15, weight: .semibold))
+                    Text(L("Sebutkan apa dan berapa, misalnya “sabun 18rb”.")).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .background(Color.stWarnBg, in: RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal, 20).padding(.top, 16)
+            VStack(spacing: 0) {
+                missingRow(L("Jumlah"), L("Belum ada"), note: nil, warn: true)
+                Divider().padding(.horizontal, 14)
+                missingRow(L("Dompet"), wallet?.name ?? L("Belum dipilih"), note: nil, warn: wallet == nil)
+                Divider().padding(.horizontal, 14)
+                missingRow(L("Tanggal"), dateLabel, note: nil, warn: false)
+            }
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 18))
+            .padding(.horizontal, 20).padding(.top, 14)
+        }
+    }
+
+    private func missingRow(_ title: String, _ value: String, note: String?, warn: Bool) -> some View {
+        HStack {
+            Text(title).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+            Spacer()
+            Text(value).font(.app(16, weight: warn ? .semibold : .medium)).foregroundStyle(warn ? Color.stWarn : Color.appText)
+        }
+        .padding(.horizontal, 14).frame(minHeight: 54)
     }
 
     private var duplicate: String? { store.duplicateNote(for: draft) }

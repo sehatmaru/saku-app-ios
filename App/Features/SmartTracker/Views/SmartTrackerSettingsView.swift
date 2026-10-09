@@ -20,9 +20,9 @@ struct SmartTrackerSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                statusCard.padding(.horizontal, 24).padding(.top, 12)
+                statusCard.padding(.horizontal, 24).padding(.top, 12).stEnter(0)
 
-                caption(L("Cara mencatat"))
+                caption(L("Cara mencatat")).stEnter(1)
                 VStack(spacing: 0) {
                     toggleRow(.quick, L("Ketik atau ucapkan dari Beranda"), $quick) { SmartTrackerWays.quick = $0 }
                     separator
@@ -42,26 +42,26 @@ struct SmartTrackerSettingsView: View {
                     toggleRow(.siri, L("“Hai Siri, catat di Saku”"), $siri) { SmartTrackerWays.siri = $0 }
                 }
                 .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal, 24).opacity(isOn ? 1 : 0.5).disabled(!isOn)
+                .padding(.horizontal, 24).opacity(isOn ? 1 : 0.5).disabled(!isOn).stEnter(2)
 
-                caption(L("Yang tersimpan di HP ini"))
+                caption(L("Yang tersimpan di HP ini")).stEnter(3)
                 VStack(spacing: 0) {
                     NavigationLink(destination: DraftQueueView(userId: authViewModel.currentUser?.id ?? "").detailPage()) {
-                        storedRow("tray", L("Draf menunggu"), L("Terhapus sendiri setelah 30 hari"), trailing: "\(store.drafts.count)", link: true)
+                        storedRow("tray", L("Draf menunggu"), L("Terhapus sendiri setelah 30 hari"), trailing: store.drafts.isEmpty ? L("Belum ada") : "\(store.drafts.count)", link: true)
                     }
                     .buttonStyle(.plain)
                     separator
                     NavigationLink(destination: SmartTrackerMemoryView().detailPage()) {
-                        storedRow("brain", L("Ingatan Saku"), L("Kategori dan dompet favoritmu"), trailing: "\(memoryCount)", link: true)
+                        storedRow("brain", L("Ingatan Saku"), L("Kategori dan dompet favoritmu"), trailing: memoryCount == 0 ? L("Belum ada") : "\(memoryCount)", link: true)
                     }
                     .buttonStyle(.plain)
                     separator
                     storedRow("textformat", L("Kalimat asli"), L("Dihapus begitu draf jadi"), trailing: L("Tidak disimpan"), link: false)
                 }
                 .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 24).stEnter(4)
 
-                caption(L("Privasi"))
+                caption(L("Privasi")).stEnter(5)
                 NavigationLink(destination: SmartTrackerPrivacyView().detailPage()) {
                     storedRow("checkmark.shield", L("Cara data diproses"), L("Di HP, di server, dan berapa lama"), trailing: "", link: true)
                         .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
@@ -71,17 +71,19 @@ struct SmartTrackerSettingsView: View {
 
                 Button { isOn ? (showsOff = true) : (showsConsent = true) } label: {
                     ZStack {
-                        if isTurningOff { ProgressView() } else {
-                            Text(isOn ? L("Matikan Smart Tracker") : L("Nyalakan Smart Tracker"))
+                        if isTurningOff { ProgressView() } else if isOn {
+                            Text(L("Matikan Smart Tracker"))
+                        } else {
+                            Label(L("Aktifkan Smart Tracker"), systemImage: "sparkles")
                         }
                     }
                     .font(.app(17, weight: .semibold))
-                    .foregroundStyle(isOn ? Color.stDangerText : Color.appBackground)
+                    .foregroundStyle(isOn ? Color.stDangerText : Color.stInkText)
                     .frame(maxWidth: .infinity).frame(height: 52)
-                    .background(isOn ? Color.stDangerBg : Color.appText, in: Capsule())
+                    .background(isOn ? Color.stDangerBg : Color.stInk, in: Capsule())
                 }
                 .buttonStyle(PressScaleStyle())
-                .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 40)
+                .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 40).stEnter(6)
             }
         }
         .background(Color.appBackground)
@@ -104,9 +106,9 @@ struct SmartTrackerSettingsView: View {
                 .foregroundStyle(isOn ? Color.stGreen : Color.appTextTertiary)
                 .frame(width: 44, height: 44).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 2) {
-                Text(isOn ? L("Smart Tracker aktif") : L("Smart Tracker mati")).font(.app(16, weight: .semibold))
+                Text(isOn ? L("Smart Tracker aktif") : L("Smart Tracker belum aktif")).font(.app(16, weight: .semibold))
                 Text(isOn ? (SmartTrackerConsent.since.map { L("Aktif sejak %@", Self.sinceFormat.string(from: $0)) } ?? L("Aktif"))
-                          : L("Draf dan ingatan sudah dihapus"))
+                          : L("Aktifkan untuk mencatat dengan satu kalimat"))
                     .font(.app(13)).foregroundStyle(Color.appTextSecondary)
             }
             Spacer()
@@ -212,9 +214,20 @@ struct SmartTrackerMemoryView: View {
                 Text(L("Tiap kali kamu mengoreksi draf, Saku ingat pilihanmu. Jadi lain kali kamu tulis “kopi”, kategorinya langsung Jajan & Kopi."))
                     .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.horizontal, 24).padding(.top, 12)
                 if store.memory.isEmpty {
-                    EmptyMessage(icon: "brain", title: L("Belum ada ingatan"),
-                                 message: L("Setelah kamu menyimpan draf, Saku mengingat kategori dan dompet pilihanmu untuk kata yang sama."))
-                        .padding(.top, 40)
+                    STEmptyHero(icon: "brain", tint: .stGreen, fill: .stSuccessBg, title: "Belum ada ingatan",
+                                message: "Koreksi kategori atau dompet di draf, dan Saku akan mengingatnya untuk lain kali.")
+                        .padding(.top, 56)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L("Contohnya nanti")).font(.app(12, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+                        exampleRow("kopi", icon: "cup.and.saucer", result: "Jajan & Kopi")
+                        exampleRow("gopay", icon: "wallet.bifold", result: "GoPay")
+                    }
+                    .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                    .padding(.horizontal, 24).padding(.top, 32).stEnter(3)
+                    Text(L("Ingatan hanya disimpan di HP ini dan bisa dilupakan kapan saja."))
+                        .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextTertiary)
+                        .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 60).stEnter(4)
                 } else {
                     group(L("Kata → kategori"), L("Mengisi kategori"), categoryEntries, .category)
                     group(L("Kata → dompet"), L("Mengisi dompet"), walletEntries, .account)
@@ -236,6 +249,14 @@ struct SmartTrackerMemoryView: View {
                        confirmTitle: L("Lupakan semua")) {
             store.forgetMemory()
             showsForgetAll = false
+        }
+    }
+
+    private func exampleRow(_ word: String, icon: String, result: String) -> some View {
+        HStack(spacing: 10) {
+            Text(word).font(.app(15)).padding(.horizontal, 10).frame(height: 30).background(Color.stChip, in: RoundedRectangle(cornerRadius: 8))
+            Image(systemName: "arrow.right").font(.system(size: 13)).foregroundStyle(Color.appTextTertiary)
+            Label(L(result), systemImage: icon).font(.app(15, weight: .medium)).labelStyle(ExampleLabelStyle())
         }
     }
 
@@ -322,9 +343,23 @@ struct NotificationSetupGuideView: View {
                     Text(L("Setiap ada notifikasi transaksi, Shortcuts di iPhone meneruskannya ke Saku. Atur sekali saja untuk tiap aplikasi."))
                         .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.horizontal, 24).padding(.top, 16)
 
-                    if !store.connectedApps.isEmpty {
-                        Text(L("Sudah terhubung")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                            .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 8)
+                    Text(L("Sudah terhubung")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                        .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 8)
+                    if store.connectedApps.isEmpty {
+                        HStack(spacing: 12) {
+                            Image(systemName: "powerplug").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary)
+                                .frame(width: 40, height: 40).background(Color.stChip, in: Circle()).stFloat()
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(L("Belum ada aplikasi terhubung")).font(.app(15, weight: .semibold))
+                                Text(L("Begitu notifikasi pertama masuk, aplikasinya muncul di sini."))
+                                    .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(14)
+                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                        .padding(.horizontal, 24)
+                    } else {
                         FlowLayout(spacing: 6) {
                             ForEach(store.connectedApps, id: \.self) { app in
                                 Label(app, systemImage: "checkmark.circle.fill")
@@ -383,5 +418,14 @@ struct NotificationSetupGuideView: View {
         .background(Color.appBackground)
         .navigationTitle(L("Notifikasi bank"))
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct ExampleLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 6) {
+            configuration.icon.font(.system(size: 15)).foregroundStyle(Color.appTextSecondary)
+            configuration.title
+        }
     }
 }

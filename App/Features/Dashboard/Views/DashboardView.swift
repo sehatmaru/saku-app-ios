@@ -82,8 +82,8 @@ struct DashboardView: View {
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
         .overlay {
-            if selectedTab != .home || homePath.isEmpty, !hasNoWallets, smartQuickOn, let userId = authViewModel.currentUser?.id {
-                SmartTrackerHomeOverlay(userId: userId, onOpenQueue: { openDraftsPage() }) { text in
+            if selectedTab != .home || homePath.isEmpty, viewModel.hasLoadedOnce, smartQuickOn, let userId = authViewModel.currentUser?.id {
+                SmartTrackerHomeOverlay(userId: userId, isFresh: viewModel.recentTransactions.isEmpty, onOpenQueue: { openDraftsPage() }) { text in
                     toastText = text
                     isToastShown = true
                 }

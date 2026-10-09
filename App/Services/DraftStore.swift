@@ -10,6 +10,8 @@ final class DraftStore: ObservableObject {
     static let shared = DraftStore()
 
     @Published private(set) var drafts: [Draft] = []
+    /// A draft the queue should open in the editor as soon as it appears ("Isi manual" in the quick result).
+    @Published var editRequest: UUID?
     @Published private(set) var memory: [MerchantMemory.Entry] = []
     /// Wallets, categories and recent transactions, kept for parsing offline and the duplicate check.
     @Published private(set) var accounts: [Account] = []
