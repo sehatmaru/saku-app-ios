@@ -13,7 +13,7 @@ Branch kerja: `feature-saku.2.0.0`.
    - `xcodebuild -scheme Saku -destination id=<UDID> -allowProvisioningUpdates DEVELOPMENT_TEAM=6474C8P8BL build`, lalu install dan launch dengan `xcrun devicectl`.
    - Simulator: iPhone 18 Pro `A3D21890-1936-4B1A-BAD2-780A81C837CF`.
    - Ruth kadang gagal launch (profil terkunci atau belum dipercaya, error 10002): laporkan, jangan diulang terus.
-4. Perbarui dokumen QA dan Notion (bagian di bawah).
+4. Perbarui dokumen QA dan Notion (bagian di bawah). Untuk epic yang sudah dimigrasi ke ClickUp, perbarui status dan assignee di ClickUp sesuai alurnya (bagian ClickUp).
 
 ## Lokalisasi
 
@@ -41,6 +41,37 @@ Tool: `mcp__...notion-*` (fetch, create-pages, update-page, update-data-source, 
 - **Ticket Tracker:** satu tiket per butir kebutuhan (BR/SM...), Phase/Platform/Priority diisi, relasi `PRD` ke baris PRD Tracker (dua arah dengan `Tickets`). Alur status: Backlog → In progress → In review → Done. Setelah build terpasang, set In review + Ruth. Jangan set Done sebelum pemilik memverifikasi.
 - **PRD Tracker:** ubah status baris tracker (bukan halaman dokumen PRD) mengikuti tiketnya.
 - **Bug Tracker:** properti Judul, Kategori, Priority (P0–P3), Status, Assignee, Pelapor, Platform, Tanggal lapor, ID `BUG-n`. Bug dari pemilik dicatat saat dilaporkan; setelah fix terpasang → In review + Ruth.
+
+## ClickUp
+
+Pencatatan fitur, user story, dan test case sedang dimigrasi dari Notion ke ClickUp. Untuk epic yang sudah ada di ClickUp, ClickUp adalah sumber utama; aturan Notion di atas berlaku untuk yang belum dimigrasi. Tool: `mcp__...clickup_*`.
+
+| Tempat | ID |
+|---|---|
+| Workspace | `1100340000021799` |
+| Space "Saku" | `1100340000085078` |
+| List "Epic 3 - Dompet & Aset" (contoh/template) | `1100340000113305` |
+| sehatmaru | `312863633` |
+| Ruth Cinta | `119403650` |
+
+**Hierarki:** Epic = List, lalu Fitur **atau** Enhancement = task, lalu User Story = subtask, lalu Test Case = subtask dari story.
+- Judul: `Fitur N - ...`, `Enhancement N - ...` (perubahan pada fitur yang sudah ada), `User Story N - ...`, `TC N - ...`. Penomoran Fitur, Enhancement, dan TC per epic; User Story per Fitur/Enhancement. Contoh: Epic 6 - Kategori = Fitur 1, Fitur 2, Enhancement 1.
+- Isi PRD (masalah, keputusan, scope, peta jalan) ada di deskripsi Fitur; tidak ada ClickUp Doc terpisah. Deskripsi User Story: "Sebagai user..." + acceptance criteria. Deskripsi TC: Skenario, Hasil yang diharapkan, Hasil pengujian.
+- Epic: 1 Akun & Masuk, 2 Profil & Pengaturan, 3 Dompet & Aset, 4 Kartu Kredit & Tagihan, 5 Transaksi, 6 Kategori, 7 Budget, 8 Beranda & Insight, 9 Smart Tracker, 10 Fondasi Teknis, 11 Saku Plus (termasuk Referral). PRD yang belum dikembangkan masuk ke epic domainnya (Analisis Periode dan Ekspor ke Epic 8, Perampingan Kategori sebagai Enhancement di Epic 6).
+
+**Status (6):** backlog (belum dikerjakan), in development (sedang dikerjakan), in review (sedang di-test), need fixing (butuh di-fix), need retest (butuh di-retest), done. Status hanya bisa diubah di pengaturan Space, tidak lewat tool.
+
+**Assignee hanya di User Story dan Test Case** (Fitur, Enhancement, dan Epic kosong):
+- Story backlog / in development: sehatmaru; test case kosong.
+- Story in review: Ruth Cinta; semua test case-nya juga Ruth Cinta.
+- Test case gagal: TC jadi need fixing dan assignee sehatmaru; story ikut need fixing dan sehatmaru.
+- Setelah diperbaiki: story dan TC jadi need retest, assignee kembali Ruth Cinta.
+- Hanya Ruth yang boleh set done (story dan TC). Jangan set done sendiri.
+- Status Fitur mengikuti story di bawahnya; Epic tidak punya status.
+
+**Batas API:** tool ClickUp dibatasi 100 panggilan per hari. Jangan boros: satu task per panggilan, hindari baca ulang. Untuk volume besar pakai impor CSV (bawah) atau minta pemilik upgrade paket.
+
+**Impor CSV:** satu file per epic, `Epic-NN-Nama.csv`, diimpor ke list epic-nya (list baru dibuat dulu oleh pemilik bila belum ada). Kolom: `Task ID, Subtask IDs, Task Name, Description content, Task assignee, Status, Priority, Tags`. Hierarki dibentuk dari kolom `Subtask IDs` di baris induk (ID sumber seperti `F1`, `F1.US1`, `F1.US1.TC1`, dipisah koma); pemetaan kolom harus manual di layar impor. **Deskripsi di CSV harus teks polos** (tanpa tabel, `**`, atau poin berbintang) karena impor tidak membaca markdown; deskripsi lewat tool (`markdown_description`) boleh markdown. Impor ulang epic yang sudah diimpor menggandakan task: hapus dulu hasil impor lama.
 
 ## Dokumen QA
 
