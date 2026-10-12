@@ -89,6 +89,7 @@ struct SmartTrackerSettingsView: View {
         .background(Color.appBackground)
         .navigationTitle("Smart Tracker")
         .navigationBarTitleDisplayMode(.inline)
+        .hidesSmartButton()
         .sheet(isPresented: $showsConsent) { SmartTrackerConsentSheet(profileId: profileId) { showsConsent = false } }
         .confirmDialog(isPresented: $showsOff, icon: "power", destructive: true, title: L("Matikan Smart Tracker?"),
                        message: L("Semua cara mencatat berhenti. %lld draf dan %lld ingatan dihapus dari HP ini. Transaksi yang sudah tersimpan tetap aman.",
@@ -197,6 +198,7 @@ struct SmartTrackerPrivacyView: View {
         .background(Color.appBackground)
         .navigationTitle(L("Cara data diproses"))
         .navigationBarTitleDisplayMode(.inline)
+        .hidesSmartButton()
     }
 }
 
@@ -244,6 +246,7 @@ struct SmartTrackerMemoryView: View {
         .background(Color.appBackground)
         .navigationTitle(L("Ingatan"))
         .navigationBarTitleDisplayMode(.inline)
+        .hidesSmartButton()
         .confirmDialog(isPresented: $showsForgetAll, icon: "brain", destructive: true, title: L("Lupakan semua?"),
                        message: L("Semua pilihan yang diingat dihapus. Transaksi yang sudah tersimpan tidak berubah."),
                        confirmTitle: L("Lupakan semua")) {
@@ -418,6 +421,7 @@ struct NotificationSetupGuideView: View {
         .background(Color.appBackground)
         .navigationTitle(L("Notifikasi bank"))
         .navigationBarTitleDisplayMode(.inline)
+        .hidesSmartButton()
     }
 }
 

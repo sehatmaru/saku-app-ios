@@ -239,3 +239,19 @@ extension Notification.Name {
     /// Asks the Beranda button to open the Catat cepat bar ("Catat sekarang" in an empty Konfirmasi catatan).
     static let openSmartTrackerBar = Notification.Name("openSmartTrackerBar")
 }
+
+/// Pages that cover the bottom of the screen (Konfirmasi catatan, its sheets, Smart Tracker settings) hide the
+/// floating sparkle button while they are open, so it never sits on top of their buttons.
+@MainActor
+final class SmartButtonGate: ObservableObject {
+    static let shared = SmartButtonGate()
+    @Published private(set) var hiders = 0
+    func hide() { hiders += 1 }
+    func show() { hiders = max(0, hiders - 1) }
+}
+
+extension View {
+    func hidesSmartButton() -> some View {
+        onAppear { SmartButtonGate.shared.hide() }.onDisappear { SmartButtonGate.shared.show() }
+    }
+}

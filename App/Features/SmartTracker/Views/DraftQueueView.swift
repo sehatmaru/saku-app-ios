@@ -98,12 +98,23 @@ struct DraftQueueView: View {
             VStack(spacing: 0) {
                 topBar
                 if let current {
-                    header(current)
-                    deck(current)
-                    dots(current)
-                    actions(current)
-                    Spacer(minLength: 8)
-                    bulk
+                    // A scroll view that does not scroll: when the keyboard of a sheet squeezes the screen, the
+                    // page stays pinned to the top instead of sliding up under the status bar.
+                    GeometryReader { geo in
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                header(current)
+                                deck(current)
+                                dots(current)
+                                actions(current)
+                                Spacer(minLength: 8)
+                                bulk
+                            }
+                            .frame(minHeight: geo.size.height)
+                        }
+                        .scrollDisabled(true)
+                        .scrollClipDisabled()
+                    }
                 } else if session.isEmpty {
                     emptyQueue
                 } else {
@@ -112,11 +123,14 @@ struct DraftQueueView: View {
             }
             if showsMenu { menu }
             toastView
-            sheetPanel
         }
+        .sheet(item: $sheet) { kind in sheetPanel(kind) }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBackground)
+        // outermost, after the frame: the keyboard (it opens in the sheet) must not squeeze this page
+        .ignoresSafeArea(.keyboard)
         .toolbar(.hidden, for: .navigationBar)
+        .hidesSmartButton()
         .navigationDestination(item: $editing) { draft in DraftEditView(draft: draft, store: store).detailPage() }
         .confirmDialog(isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }),
                        icon: "exclamationmark.triangle", title: L("Gagal menyimpan"),
@@ -253,8 +267,8 @@ struct DraftQueueView: View {
                         Label(draft.kindTitle, systemImage: draft.kindIcon).labelStyle(CompactLabelStyle())
                             .foregroundStyle(isIncome ? Color.stGreen : Color.appText)
                     }
-                    detail(L("Kategori"), field: .category, draft) { Text(category?.name ?? L("Belum dipilih")).foregroundStyle(category == nil ? Color.stWarn : Color.appText) }
-                    detail(L("Dompet"), field: .wallet, draft, warn: wallet == nil) {
+                    detail(Lx("Kategori", en: "Category"), field: .category, draft) { Text(category?.name ?? L("Belum dipilih")).foregroundStyle(category == nil ? Color.stWarn : Color.appText) }
+                    detail(Lx("Dompet", en: "Wallet"), field: .wallet, draft, warn: wallet == nil) {
                         if wallet == nil { Image(systemName: "exclamationmark.circle.fill").font(.system(size: 15)) }
                         Text(wallet?.name ?? L("Belum dipilih")).fontWeight(wallet == nil ? .semibold : .regular)
                             .foregroundStyle(wallet == nil ? Color.stWarn : Color.appText)
@@ -340,22 +354,29 @@ struct DraftQueueView: View {
 
     private func actions(_ draft: Draft) -> some View {
         let ok = draft.isComplete
-        return HStack(spacing: 10) {
-            Button { act(.ignored) } label: {
-                Label(L("Abaikan"), systemImage: "xmark").font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
-                    .frame(maxWidth: .infinity).frame(height: 54).background(Color.stChip, in: Capsule())
+        let walletMissing = (draft.kind == .expense || draft.kind == .income) && draft.amount != nil && draft.accountId == nil
+        return GeometryReader { geo in
+            let total = geo.size.width - 10
+            HStack(spacing: 10) {
+                Button { act(.ignored) } label: {
+                    Label(L("Abaikan"), systemImage: "xmark").font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
+                        .frame(maxWidth: .infinity).frame(height: 54).background(Color.stChip, in: Capsule())
+                }
+                .buttonStyle(PressScaleStyle())
+                .frame(width: total / 2.4)
+                Button { act(.saved) } label: {
+                    Label(ok ? L("Simpan") : (walletMissing ? L("Pilih dompet") : L("Lengkapi")),
+                          systemImage: ok ? "checkmark" : (walletMissing ? "wallet.bifold" : "pencil"))
+                        .font(.app(16, weight: .semibold)).foregroundStyle(ok ? Color.white : Color.stWarn)
+                        .frame(maxWidth: .infinity).frame(height: 54)
+                        .background(ok ? Color.stGreen : Color.stWarnBg, in: Capsule())
+                        .animation(.easeOut(duration: 0.25), value: ok)
+                }
+                .buttonStyle(PressScaleStyle())
+                .frame(width: total / 2.4 * 1.4)
             }
-            .buttonStyle(PressScaleStyle())
-            Button { act(.saved) } label: {
-                Label(ok ? L("Simpan") : L("Lengkapi"), systemImage: ok ? "checkmark" : "pencil")
-                    .font(.app(16, weight: .semibold)).foregroundStyle(ok ? Color.white : Color.stWarn)
-                    .frame(maxWidth: .infinity).frame(height: 54)
-                    .background(ok ? Color.stGreen : Color.stWarnBg, in: Capsule())
-                    .animation(.easeOut(duration: 0.25), value: ok)
-            }
-            .buttonStyle(PressScaleStyle())
-            .layoutPriority(1)
         }
+        .frame(height: 54)
         .padding(.horizontal, 24).padding(.top, 18)
     }
 
@@ -469,10 +490,10 @@ struct DraftQueueView: View {
 
     // MARK: Sheets
 
-    private var sheetPanel: some View {
+    private func sheetPanel(_ kind: Sheet) -> some View {
         let draft = current
-        return ConfirmSheetPanel(isOpen: sheet != nil, title: sheetTitle, onClose: { sheet = nil }) {
-            switch sheet {
+        return ConfirmSheetBody(title: sheetTitle(kind), onClose: { sheet = nil }) {
+            switch kind {
             case .category: ConfirmCategoryList(categories: categoriesFor(draft), selectedId: draft?.categoryId,
                                                 onPick: { c in pick(.category) { $0.categoryId = c.id; $0.fromMemory = false } }, onCreate: createCategory)
             case .type:
@@ -510,11 +531,8 @@ struct DraftQueueView: View {
                 }
             case .all:
                 allSheet
-            case nil:
-                Color.clear.frame(height: 1)
             }
         }
-        .zIndex(30)
     }
 
     private static func walletSymbol(_ type: Account.AccountType) -> String {
@@ -527,8 +545,8 @@ struct DraftQueueView: View {
         }
     }
 
-    private var sheetTitle: String {
-        switch sheet {
+    private func sheetTitle(_ kind: Sheet) -> String {
+        switch kind {
         case .category: return "Pilih kategori"
         case .type: return "Tipe transaksi"
         case .wallet: return "Pilih dompet"
@@ -536,12 +554,11 @@ struct DraftQueueView: View {
         case .amount: return "Ubah nominal"
         case .name: return "Ubah nama"
         case .all: return "Simpan semua?"
-        case nil: return ""
         }
     }
 
     private var allSheet: some View {
-        let outflow = ready.filter { $0.kind != .income }.compactMap(\.amount).reduce(0, +)
+        let outflow = ready.filter { $0.kind == .expense }.compactMap(\.amount).reduce(0, +)
         let inflow = ready.filter { $0.kind == .income }.compactMap(\.amount).reduce(0, +)
         let skipped = pending.filter { !$0.isComplete }
         return VStack(spacing: 0) {
@@ -551,7 +568,7 @@ struct DraftQueueView: View {
                         .frame(width: 34, height: 34).background(Color.stChip, in: Circle())
                     Text(d.title.isEmpty ? d.kindTitle : d.title).font(.app(15)).lineLimit(1)
                     Spacer()
-                    Text(((d.kind == .income) ? "+" : "−") + (d.amount ?? 0).formattedAsCurrency()).font(.app(15)).monospacedDigit()
+                    Text((d.kind == .income ? "+" : (d.kind == .expense ? "−" : "")) + (d.amount ?? 0).formattedAsCurrency()).font(.app(15)).monospacedDigit()
                         .foregroundStyle(d.kind == .income ? Color.stGreen : Color.appText)
                 }
                 .frame(height: 52).padding(.horizontal, 6)
@@ -880,10 +897,11 @@ private struct CompactLabelStyle: LabelStyle {
 }
 
 extension DateFormatter {
-    static let shortDay: DateFormatter = {
+    /// "12 Okt" / "12 Oct", in the app's language at the moment it is asked for (it can change while the app runs).
+    static var shortDay: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "d MMM"
         f.locale = AppLanguage.locale
         return f
-    }()
+    }
 }

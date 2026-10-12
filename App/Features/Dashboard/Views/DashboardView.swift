@@ -11,6 +11,7 @@ struct DashboardView: View {
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
 @AppStorage(SmartTrackerWays.quickKey) private var smartQuickOn = true
+@ObservedObject private var smartGate = SmartButtonGate.shared
 @State private var showsConsent = false
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
     @State private var isChartShown = false
@@ -82,7 +83,7 @@ struct DashboardView: View {
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
         .overlay {
-            if selectedTab != .home || homePath.isEmpty, viewModel.hasLoadedOnce, smartQuickOn, let userId = authViewModel.currentUser?.id {
+            if selectedTab != .home || homePath.isEmpty, smartGate.hiders == 0, viewModel.hasLoadedOnce, smartQuickOn, let userId = authViewModel.currentUser?.id {
                 SmartTrackerHomeOverlay(userId: userId, isFresh: viewModel.recentTransactions.isEmpty, onOpenQueue: { openDraftsPage() }) { text in
                     toastText = text
                     isToastShown = true

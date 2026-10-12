@@ -1,42 +1,36 @@
 import SwiftUI
 
-/// The bottom sheets of Konfirmasi catatan (design 4a): one panel that slides up over a dimmed page, with
-/// a search list for categories, a short list for type and wallet, the day picker, a number pad and a name field.
-struct ConfirmSheetPanel<Content: View>: View {
-    let isOpen: Bool
+/// The bottom sheets of Konfirmasi catatan (design 4a): a title with a close button over a search list for
+/// categories, a short list for type and wallet, the day picker, a number pad or a name field. It is a system
+/// sheet (so the keyboard lifts it and leaves the page alone) that is as tall as its content.
+struct ConfirmSheetBody<Content: View>: View {
     let title: String
     let onClose: () -> Void
     @ViewBuilder var content: Content
+    @State private var height: CGFloat = 360
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            Color.black.opacity(isOpen ? 0.32 : 0).ignoresSafeArea()
-                .allowsHitTesting(isOpen)
-                .onTapGesture(perform: onClose)
-                .animation(.easeOut(duration: 0.3), value: isOpen)
-            VStack(spacing: 0) {
-                Capsule().fill(Color.appSeparator).frame(width: 36, height: 5).padding(.top, 8)
-                HStack {
-                    Text(L(title)).font(.app(19, weight: .bold))
-                    Spacer()
-                    Button(action: onClose) {
-                        Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.appText)
-                            .frame(width: 34, height: 34).background(Color.stChip, in: Circle())
-                    }
-                    .accessibilityLabel(L("Tutup"))
+        VStack(spacing: 0) {
+            HStack {
+                Text(L(title)).font(.app(19, weight: .bold))
+                Spacer()
+                Button(action: onClose) {
+                    Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.appText)
+                        .frame(width: 34, height: 34).background(Color.stChip, in: Circle())
                 }
-                .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 10)
-                content.padding(.horizontal, 20).padding(.bottom, 18)
+                .accessibilityLabel(L("Tutup"))
             }
-            .frame(maxWidth: .infinity)
-            .background(Color.appBackground, in: UnevenRoundedRectangle(topLeadingRadius: 28, bottomLeadingRadius: 38,
-                                                                        bottomTrailingRadius: 38, topTrailingRadius: 28))
-            .shadow(color: .black.opacity(0.12), radius: 20, y: -4)
-            .padding(.horizontal, 8).padding(.bottom, 8)
-            .offset(y: isOpen ? 0 : 900)
-            .animation(.settle(0.44), value: isOpen)
+            .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 10)
+            content.padding(.horizontal, 20).padding(.bottom, 12)
         }
-        .allowsHitTesting(isOpen)
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { height = $0 }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Color.appBackground)
+        .presentationDetents([.height(height + 20)])
+        .presentationBackground(Color.appBackground)
+        .presentationCornerRadius(30)
+        .presentationDragIndicator(.visible)
     }
 }
 
@@ -79,6 +73,7 @@ struct ConfirmCategoryList: View {
     let onPick: (Category) -> Void
     let onCreate: (String) -> Void
     @State private var query = ""
+    @State private var keyboardUp = false
 
     private var shown: [Category] {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
@@ -112,8 +107,11 @@ struct ConfirmCategoryList: View {
                     }
                 }
             }
-            .frame(height: 360)
+            // as tall as its rows (the panel sits on the keyboard, so a long list would push it off the top)
+            .frame(height: shown.isEmpty ? 150 : min(keyboardUp ? 170 : 360, CGFloat(shown.count) * 58))
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardUp = true }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardUp = false }
     }
 }
 

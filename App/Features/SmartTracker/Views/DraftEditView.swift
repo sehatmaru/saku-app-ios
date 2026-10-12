@@ -69,6 +69,7 @@ struct DraftEditView: View {
         .onGeometryChange(for: Bool.self, of: { $0.size.height < 720 }) { isCompact = $0 }
         .background(Color.appBackground)
         .toolbar(.hidden, for: .navigationBar)
+        .hidesSmartButton()
         .sheet(item: $sheet) { pickerSheet($0) }
         .confirmDialog(isPresented: $showsDelete, icon: "trash", destructive: true, title: L("Hapus draf ini?"),
                        message: L("Draf hilang dan tidak ada yang tercatat sebagai transaksi."), confirmTitle: L("Hapus")) {
