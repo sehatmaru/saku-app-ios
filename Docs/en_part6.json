@@ -401,5 +401,10 @@
   "Coba bicara lebih dekat ke mikrofon, atau ketik saja kalimatnya.": "Try speaking closer to the microphone, or just type the sentence.",
   "Ketuk mikrofon untuk coba lagi": "Tap the microphone to try again",
   "Dicatat otomatis oleh Smart Tracker. Periksa dulu sebelum disimpan.": "Recorded automatically by Smart Tracker. Check before saving.",
-  "Smart Tracker · %@": "Smart Tracker · %@"
+  "Smart Tracker · %@": "Smart Tracker · %@",
+  "Batas kategori tercapai": "Category limit reached",
+  "Batas budget tercapai": "Budget limit reached",
+  "Mengerti": "Got it",
+  "Paket gratis maksimal %lld kategori %@ aktif. Sembunyikan kategori yang tidak kamu pakai untuk memberi ruang. Saku Plus tanpa batas segera hadir.": "The free plan allows up to %lld active %@ categories. Hide categories you don't use to make room. Saku Plus with no limits is coming soon.",
+  "Paket gratis maksimal %lld budget. Budget yang sudah ada tetap aman. Saku Plus tanpa batas segera hadir.": "The free plan allows up to %lld budgets. Your existing budgets are safe. Saku Plus with no limits is coming soon."
 }

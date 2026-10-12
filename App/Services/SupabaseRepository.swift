@@ -471,6 +471,11 @@ final class SupabaseRepository: @unchecked Sendable {
     }
 
     func createCategory(name: String, type: CategoryType, icon: String?, color: String?, userId: String) async throws -> Category {
+        do { return try await insertCategory(name: name, type: type, icon: icon, color: color, userId: userId) }
+        catch { throw FreeLimits.friendly(error) }
+    }
+
+    private func insertCategory(name: String, type: CategoryType, icon: String?, color: String?, userId: String) async throws -> Category {
         try await client
             .from("categories")
             .insert([
@@ -516,14 +521,18 @@ final class SupabaseRepository: @unchecked Sendable {
     /// Hides or shows a category for this user. Hidden ones leave the pickers (and budgets);
     /// transactions and the budget row are kept, so showing it again brings everything back.
     func setCategoryHidden(id: String, hidden: Bool) async throws {
-        try await client
-            .from("category_preferences")
-            .upsert([
-                "category_id": AnyJSON.string(id),
-                "is_hidden": AnyJSON.bool(hidden),
-                "updated_at": AnyJSON.string(Date().iso8601Formatted),
-            ] as [String: AnyJSON], onConflict: "user_id,category_id")
-            .execute()
+        do {
+            try await client
+                .from("category_preferences")
+                .upsert([
+                    "category_id": AnyJSON.string(id),
+                    "is_hidden": AnyJSON.bool(hidden),
+                    "updated_at": AnyJSON.string(Date().iso8601Formatted),
+                ] as [String: AnyJSON], onConflict: "user_id,category_id")
+                .execute()
+        } catch {
+            throw FreeLimits.friendly(error)
+        }
     }
 
     /// Gives a category (built-in ones too) the user's own name; nil brings the shared name back.
@@ -633,6 +642,15 @@ final class SupabaseRepository: @unchecked Sendable {
     }
 
     func createBudget(categoryId: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, userId: String) async throws -> Budget {
+        do {
+            return try await insertBudget(categoryId: categoryId, name: name, amount: amount, periodUnit: periodUnit,
+                                          periodInterval: periodInterval, startDate: startDate, endDate: endDate, userId: userId)
+        } catch {
+            throw FreeLimits.friendly(error)
+        }
+    }
+
+    private func insertBudget(categoryId: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, userId: String) async throws -> Budget {
         try await client
             .from("budgets")
             .insert([

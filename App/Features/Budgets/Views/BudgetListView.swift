@@ -13,6 +13,7 @@ struct BudgetListView: View {
     @AppStorage("paydayCardDismissed") private var isPaydayCardDismissed = false
     /// Tambah budget is showing: for `category` when a row was tapped, else from the pick step.
     @State private var addTarget: AddTarget?
+    @State private var showsBudgetLimit = false
 
     private struct AddTarget: Identifiable {
         let id = UUID()
@@ -103,6 +104,8 @@ struct BudgetListView: View {
                     }
                 }
             }
+            .confirmDialog(isPresented: $showsBudgetLimit, icon: "lock", title: L("Batas budget tercapai"),
+                           message: FreeLimits.budgetMessage(), confirmTitle: nil, cancelTitle: L("Mengerti"))
             .sheet(isPresented: $showPaydaySheet) {
                 PaydaySheet(context: .card) { day in paydayPicked(day) }
             }
@@ -261,7 +264,7 @@ struct BudgetListView: View {
                     .padding(.top, setItems.isEmpty ? 14 : 22)
                     .padding(.bottom, 4)
                 ForEach(unsetItems) { item in
-                    Button { addTarget = AddTarget(category: item.category) } label: {
+                    Button { requestAdd(item.category) } label: {
                         unsetRow(item.category)
                             .padding(.horizontal, 24)
                     }
@@ -320,6 +323,11 @@ struct BudgetListView: View {
                      message: L("Atur batas pengeluaran per kategori. Tiap periode mulai dari nol, sisa tidak terbawa."))
             .padding(.horizontal, 40)
             .padding(.top, 70)
+    }
+
+    /// Free accounts hold at most 7 budgets; existing ones are never removed.
+    private func requestAdd(_ category: Category) {
+        if viewModel.budgets.count >= FreeLimits.budgets { showsBudgetLimit = true } else { addTarget = AddTarget(category: category) }
     }
 
     private func budgetAdded(_ category: Category) {
