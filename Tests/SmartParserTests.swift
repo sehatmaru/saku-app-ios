@@ -125,4 +125,33 @@ final class SmartParserTests: XCTestCase {
         XCTAssertEqual(d.categoryId, "makan")
         XCTAssertEqual(d.accountId, "cash")
     }
+
+    // MARK: Category lists (Perampingan Kategori)
+
+    private func categoryName(_ text: String, in names: [String]) -> String? {
+        let categories = names.map { category($0, $0) }
+        let ctx = SmartParser.Context(accounts: context.accounts, categories: categories, now: now, calendar: calendar)
+        return SmartParser.parse(text, context: ctx).first.flatMap { d in categories.first { $0.id == d.categoryId }?.name }
+    }
+
+    func testSlimListSendsSubscriptionsToBillsAndOwnPurchasesToHousehold() {
+        let slim = ["Transportasi", "Jajan & Kopi", "Makan Harian", "Belanja & Rumah Tangga", "Tagihan & Langganan",
+                    "Kesehatan & Olahraga", "Lain-lain"]
+        XCTAssertEqual(categoryName("netflix 54rb gopay", in: slim), "Tagihan & Langganan")
+        XCTAssertEqual(categoryName("beli pagar 350rb", in: slim), "Belanja & Rumah Tangga")
+        XCTAssertEqual(categoryName("makan di restoran 150rb", in: slim), "Makan Harian")
+        XCTAssertEqual(categoryName("arisan 250rb", in: slim), "Lain-lain")
+        XCTAssertEqual(categoryName("dokter 200rb", in: slim), "Kesehatan & Olahraga")
+        XCTAssertEqual(categoryName("futsal 80rb", in: slim), "Kesehatan & Olahraga")
+        XCTAssertEqual(categoryName("nonton bioskop 100rb", in: slim), "Lain-lain")
+    }
+
+    func testOldListKeepsItsCategories() {
+        let old = ["Belanja & Rumah Tangga", "Hiburan", "Perawatan & Kesehatan", "Olahraga & Kebugaran", "Sosial & Donasi", "Restoran & Mall"]
+        XCTAssertEqual(categoryName("netflix 54rb", in: old), "Hiburan")
+        XCTAssertEqual(categoryName("pulsa 50rb", in: old), "Belanja & Rumah Tangga")
+        XCTAssertEqual(categoryName("dokter 200rb", in: old), "Perawatan & Kesehatan")
+        XCTAssertEqual(categoryName("futsal 80rb", in: old), "Olahraga & Kebugaran")
+        XCTAssertEqual(categoryName("arisan 250rb", in: old), "Sosial & Donasi")
+    }
 }

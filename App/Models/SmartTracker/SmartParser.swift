@@ -326,18 +326,26 @@ enum SmartParser {
         }
     }
 
-    private static let categoryWords: [(name: String, words: [String])] = [
-        ("jajan", ["kopi", "ngopi", "coffee", "jajan", "snack", "boba", "kafe", "cafe", "teh", "minum"]),
-        ("makan", ["makan", "lunch", "dinner", "sarapan", "nasi", "warteg", "breakfast", "meal", "bakso", "ayam", "soto", "mie"]),
-        ("restoran", ["resto", "restoran", "restaurant", "mall"]),
-        ("transportasi", ["parkir", "bensin", "grab", "gojek", "ojek", "tol", "taksi", "kereta", "mrt", "bus", "fuel", "parking", "toll", "uber", "krl"]),
-        ("belanja", ["belanja", "indomaret", "alfamart", "supermarket", "sabun", "groceries", "listrik", "pulsa", "galon", "shopping"]),
-        ("hiburan", ["nonton", "bioskop", "netflix", "spotify", "game", "movie", "konser"]),
-        ("perawatan", ["dokter", "obat", "apotek", "salon", "doctor", "medicine", "klinik", "potong rambut"]),
-        ("olahraga", ["gym", "futsal", "olahraga", "badminton", "renang"]),
-        ("sosial", ["donasi", "sedekah", "zakat", "hadiah", "kado", "gift", "donation"]),
-        ("gaji", ["gaji", "gajian", "salary", "thr"]),
-        ("bisnis", ["bisnis", "usaha", "jualan", "omzet"]),
+    /// Keyword groups, tried in order. `names` are fragments of category names, in order of preference; a group
+    /// that finds no category the user has falls through to the next one. That is how one table serves both
+    /// built-in lists: accounts on the old list have "Hiburan" and "Perawatan & Kesehatan", accounts on the
+    /// slimmer list have "Tagihan & Langganan", "Kesehatan & Olahraga" and "Lain-lain" instead.
+    private static let categoryWords: [(names: [String], words: [String])] = [
+        (["jajan"], ["kopi", "ngopi", "coffee", "jajan", "snack", "boba", "kafe", "cafe", "teh", "minum"]),
+        (["makan"], ["makan", "lunch", "dinner", "sarapan", "nasi", "warteg", "breakfast", "meal", "bakso", "ayam", "soto", "mie"]),
+        (["restoran", "makan"], ["resto", "restoran", "restaurant", "mall"]),
+        (["transportasi"], ["parkir", "bensin", "grab", "gojek", "ojek", "tol", "taksi", "kereta", "mrt", "bus", "fuel", "parking", "toll", "uber", "krl"]),
+        (["tagihan"], ["netflix", "spotify", "youtube", "icloud", "disney", "langganan", "subscription", "listrik", "pln", "token listrik",
+                       "indihome", "telkom", "wifi", "internet", "pulsa", "paket data", "xl", "telkomsel", "axis", "tri", "bpjs",
+                       "sewa", "kost", "kontrakan", "air pdam", "pdam"]),
+        (["belanja"], ["belanja", "indomaret", "alfamart", "supermarket", "sabun", "groceries", "listrik", "pulsa", "galon", "shopping",
+                       "pagar", "perabot", "perangkat", "charger", "kabel"]),
+        (["hiburan", "lain"], ["nonton", "bioskop", "netflix", "spotify", "game", "movie", "konser"]),
+        (["perawatan", "kesehatan"], ["dokter", "obat", "apotek", "salon", "doctor", "medicine", "klinik", "potong rambut"]),
+        (["olahraga", "kesehatan"], ["gym", "futsal", "olahraga", "badminton", "renang"]),
+        (["sosial", "lain"], ["donasi", "sedekah", "zakat", "hadiah", "kado", "gift", "donation", "arisan"]),
+        (["gaji"], ["gaji", "gajian", "salary", "thr"]),
+        (["bisnis"], ["bisnis", "usaha", "jualan", "omzet"]),
     ]
 
     private static func applyCategory(_ draft: inout Draft, text: String, context: Context) {
@@ -361,9 +369,11 @@ enum SmartParser {
         }
         // 3. keywords
         for entry in categoryWords where contains(lower, entry.words) {
-            if let category = pool.first(where: { $0.name.lowercased().contains(entry.name) }) {
-                draft.categoryId = category.id
-                return
+            for name in entry.names {
+                if let category = pool.first(where: { $0.name.lowercased().contains(name) }) {
+                    draft.categoryId = category.id
+                    return
+                }
             }
         }
     }
