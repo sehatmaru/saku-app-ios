@@ -194,7 +194,7 @@ final class DraftStore: ObservableObject {
     enum SaveError: Error { case incomplete, noUser }
 
     /// Writes the draft as a real transaction, then remembers the user's choices for next time.
-    func save(_ draft: Draft, userId: String) async throws {
+    func save(_ draft: Draft, userId: String, remember: Bool = true) async throws {
         guard draft.isComplete, let amount = draft.amount else { throw SaveError.incomplete }
         if draft.kind == .cardPayment && draft.accountId == nil { return try await saveOutsideCardPayment(draft) }
         guard let accountId = draft.accountId else { throw SaveError.incomplete }
@@ -211,7 +211,7 @@ final class DraftStore: ObservableObject {
             _ = try await repo.createTransfer(primaryAccountId: accountId, counterpartyAccountId: counterparty, amount: amount,
                                               description: draft.title, note: nil, date: draft.date)
         }
-        learn(from: draft)
+        if remember { learn(from: draft) }
         discard(draft.id)
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
     }

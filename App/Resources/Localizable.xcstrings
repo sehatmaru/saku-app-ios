@@ -171,6 +171,16 @@
         }
       }
     },
+    "%@ dilewati karena belum lengkap. Tetap ada di sini untuk dicek.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ skipped because incomplete. They stay here to check."
+          }
+        }
+      }
+    },
     "%@ dipakai dari %@ sampai %@ (%lld periode). Mulai %@ kembali ke %@. Budget awalmu tidak berubah.": {
       "localizations": {
         "en": {
@@ -463,6 +473,16 @@
         }
       }
     },
+    "%lld catatan disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld entries saved"
+          }
+        }
+      }
+    },
     "%lld dari %lld": {
       "localizations": {
         "en": {
@@ -539,6 +559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld drafts will be deleted in 3 days if not handled."
+          }
+        }
+      }
+    },
+    "%lld draf dihapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld drafts deleted"
           }
         }
       }
@@ -2083,6 +2113,16 @@
         }
       }
     },
+    "Buat kategori “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create category “%@”"
+          }
+        }
+      }
+    },
     "Budget": {
       "localizations": {
         "en": {
@@ -2478,7 +2518,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Search categories"
+            "value": "Search category"
           }
         }
       }
@@ -3049,6 +3089,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Partly paid"
+          }
+        }
+      }
+    },
+    "Dicatat Smart Tracker · periksa dulu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded by Smart Tracker · check first"
           }
         }
       }
@@ -4063,6 +4113,16 @@
         }
       }
     },
+    "Hapus semua (%lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all (%lld)"
+          }
+        }
+      }
+    },
     "Hapus semua draf dan ingatan": {
       "localizations": {
         "en": {
@@ -4189,6 +4249,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Built-in category icons and colors can't be changed"
+          }
+        }
+      }
+    },
+    "Ingat pilihan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remember this choice"
           }
         }
       }
@@ -4409,6 +4479,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pause"
+          }
+        }
+      }
+    },
+    "Jenis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kind"
           }
         }
       }
@@ -4913,6 +4993,16 @@
         }
       }
     },
+    "Kembali ke Beranda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to Beranda"
+          }
+        }
+      }
+    },
     "Kembali ke Dompet": {
       "localizations": {
         "en": {
@@ -5223,12 +5313,22 @@
         }
       }
     },
+    "Lain kali “%@” langsung jadi %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next time “%@” becomes %@ right away"
+          }
+        }
+      }
+    },
     "Lainnya": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Other"
+            "value": "More"
           }
         }
       }
@@ -5319,6 +5419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Continue with Google"
+          }
+        }
+      }
+    },
+    "Lengkapi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete"
           }
         }
       }
@@ -6149,6 +6259,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Name is empty"
+          }
+        }
+      }
+    },
+    "Nama catatan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entry name"
           }
         }
       }
@@ -7088,7 +7208,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pick a date"
+            "value": "Choose date"
           }
         }
       }
@@ -8173,6 +8293,16 @@
         }
       }
     },
+    "Simpan %lld catatan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save %lld entries"
+          }
+        }
+      }
+    },
     "Simpan dompet": {
       "localizations": {
         "en": {
@@ -8199,6 +8329,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save all (%lld)"
+          }
+        }
+      }
+    },
+    "Simpan semua?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save all?"
           }
         }
       }
@@ -9588,7 +9728,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No categories match “%@”"
+            "value": "No category “%@”"
           }
         }
       }
@@ -9823,6 +9963,16 @@
         }
       }
     },
+    "Tipe transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction type"
+          }
+        }
+      }
+    },
     "Total aset": {
       "localizations": {
         "en": {
@@ -9889,6 +10039,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Net worth"
+          }
+        }
+      }
+    },
+    "Total pemasukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total income"
+          }
+        }
+      }
+    },
+    "Total pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total expenses"
           }
         }
       }
@@ -10145,6 +10315,26 @@
         }
       }
     },
+    "Uang keluar dari dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Money leaves the wallet"
+          }
+        }
+      }
+    },
+    "Uang masuk ke dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Money arrives in the wallet"
+          }
+        }
+      }
+    },
     "Ubah": {
       "localizations": {
         "en": {
@@ -10211,6 +10401,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Edit category"
+          }
+        }
+      }
+    },
+    "Ubah nama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change name"
+          }
+        }
+      }
+    },
+    "Ubah nominal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change amount"
           }
         }
       }
@@ -10481,6 +10691,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "over this period's budget."
+          }
+        }
+      }
+    },
+    "diabaikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ignored"
+          }
+        }
+      }
+    },
+    "disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "saved"
           }
         }
       }
