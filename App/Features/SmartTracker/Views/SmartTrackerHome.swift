@@ -10,6 +10,8 @@ struct SmartTrackerHomeOverlay: View {
     var onToast: (String) -> Void
     @ObservedObject private var store = DraftStore.shared
     @AppStorage(SmartTrackerConsent.key) private var consented = false
+    /// The tip over the button is shown until the button is first tapped, then never again.
+    @AppStorage("smartTrackerTipSeen") private var tipSeen = false
     @State private var isOpen = false
     @State private var text = ""
     @State private var showsConsent = false
@@ -23,7 +25,7 @@ struct SmartTrackerHomeOverlay: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             if isOpen { Color.black.opacity(0.001).ignoresSafeArea().onTapGesture { close() } }
-            if isFresh { tip }
+            if isFresh && !tipSeen { tip }
             fab
             bar
         }
@@ -182,6 +184,7 @@ struct SmartTrackerHomeOverlay: View {
     // MARK: Actions
 
     private func open() {
+        tipSeen = true
         guard consented else { afterConsent = { isOpen = true; focused = true }; showsConsent = true; return }
         isOpen = true
         focused = true
@@ -193,6 +196,7 @@ struct SmartTrackerHomeOverlay: View {
     }
 
     private func startVoice() {
+        tipSeen = true
         guard consented else { afterConsent = { showsVoice = true }; showsConsent = true; return }
         focused = false
         showsVoice = true
