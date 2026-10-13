@@ -9,6 +9,7 @@ struct SmartTrackerSettingsView: View {
     @State private var quick = SmartTrackerWays.quick
     @State private var share = SmartTrackerWays.share
     @State private var siri = SmartTrackerWays.siri
+    @State private var memorySync = SmartTrackerMemorySync.isGranted
     @State private var showsOff = false
     @State private var showsConsent = false
     @State private var isTurningOff = false
@@ -55,6 +56,8 @@ struct SmartTrackerSettingsView: View {
                         storedRow("brain", L("Ingatan Saku"), L("Kategori dan dompet favoritmu"), trailing: memoryCount == 0 ? L("Belum ada") : "\(memoryCount)", link: true)
                     }
                     .buttonStyle(.plain)
+                    separator
+                    memorySyncRow
                     separator
                     storedRow("textformat", L("Kalimat asli"), L("Dihapus begitu draf jadi"), trailing: L("Tidak disimpan"), link: false)
                 }
@@ -171,11 +174,52 @@ struct SmartTrackerSettingsView: View {
         .padding(.horizontal, 14).frame(minHeight: 56).contentShape(Rectangle())
     }
 
+    /// Ingatan on the server follows the account to every device; guests keep it on this phone only.
+    private var memorySyncRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 32)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Ingatan di semua perangkat").font(.app(16)).foregroundStyle(Color.appText)
+                Text(authViewModel.currentUser?.isGuest == true ? L("Mode tamu: hanya di HP ini") : L("Disimpan di server, ikut ke perangkat lain"))
+                    .font(.app(12)).foregroundStyle(Color.appTextTertiary)
+            }
+            Spacer(minLength: 8)
+            if authViewModel.currentUser?.isGuest != true {
+                Toggle("", isOn: Binding(get: { memorySync }, set: { setMemorySync($0) })).labelsHidden().tint(Color.stGreen)
+            }
+        }
+        .padding(.horizontal, 14).frame(minHeight: 56)
+        .opacity(isOn ? 1 : 0.5).disabled(!isOn)
+    }
+
+    private func setMemorySync(_ on: Bool) {
+        guard let profileId else { return }
+        memorySync = on
+        Task {
+            do {
+                if on {
+                    try await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
+                    await DraftStore.shared.syncMemory()
+                } else {
+                    try await SupabaseSDK.revokeMemorySyncConsent(profileId: profileId)
+                }
+            } catch {
+                memorySync = !on
+            }
+        }
+    }
+
     private func turnOff() {
         guard let profileId else { return }
         isTurningOff = true
         Task {
             do {
+                // forget Ingatan on the server too, then withdraw both agreements
+                if SmartTrackerMemorySync.isGranted && !DraftStore.shared.isGuest {
+                    try await SupabaseSDK.forgetAllMemory(before: Date())
+                    try await SupabaseSDK.revokeMemorySyncConsent(profileId: profileId)
+                    memorySync = false
+                }
                 try await SupabaseSDK.revokeSmartTrackerConsent(profileId: profileId)
                 DraftStore.shared.forgetEverything()
                 _ = ShareInbox.drain()

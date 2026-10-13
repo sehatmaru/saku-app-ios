@@ -15,6 +15,7 @@ struct SmartTrackerHomeOverlay: View {
     @State private var isOpen = false
     @State private var text = ""
     @State private var showsConsent = false
+    @State private var showsMemoryConsent = false
     @State private var showsVoice = false
     @State private var result: QuickInput?
     /// "Ulang": the sentence is back in the bar, waiting to be retyped.
@@ -48,6 +49,7 @@ struct SmartTrackerHomeOverlay: View {
                 afterConsent = nil
             }
         }
+        .sheet(isPresented: $showsMemoryConsent) { MemorySyncConsentSheet(profileId: UUID(uuidString: userId)) }
         .fullScreenCover(isPresented: $showsVoice) {
             VoiceCaptureView(onFinish: { spoken in submit(spoken, source: .voice) },
                              onKeyboard: { showsVoice = false; isOpen = true; focused = true })
@@ -211,6 +213,8 @@ struct SmartTrackerHomeOverlay: View {
         guard consented else { afterConsent = { isOpen = true; focused = true }; showsConsent = true; return }
         isOpen = true
         focused = true
+        // agreed to Smart Tracker before Ingatan could live on the server: ask about that once
+        if SmartTrackerMemorySync.shouldAsk, !store.isGuest { showsMemoryConsent = true }
     }
 
     private func close() {

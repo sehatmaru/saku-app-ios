@@ -32,6 +32,8 @@ struct SmartTrackerPrivacyContent: View {
           L("Kalau kalimatnya sulit dipahami, Saku mengirim teksnya saja, tanpa saldo atau nomor rekening. Teks itu tidak disimpan dan tidak dipakai melatih AI.")),
          ("clock.badge.checkmark", L("Tidak disimpan lama"),
           L("Kalimat asli langsung dihapus begitu draf jadi. Draf yang tidak kamu proses hilang sendiri setelah 30 hari.")),
+         ("arrow.triangle.2.circlepath", L("Ingatan ikut ke semua perangkatmu"),
+          L("Pilihan yang diingat Saku (kata kunci, kategori, dompet, dan berapa kali dipakai) disimpan di server supaya ikut ke perangkat lain. Bukan kalimat aslinya, bukan nominalnya. Mode tamu hanya di perangkat ini.")),
          ("hand.tap", L("Kamu yang menentukan"), L("Tidak ada yang tercatat sebelum kamu ketuk Simpan."))]
     }
 
@@ -139,7 +141,16 @@ struct SmartTrackerConsentSheet: View {
                     // agree now (works offline); the profile is updated in the background and retried at next launch
                     SmartTrackerConsent.isGranted = true
                     SmartTrackerConsent.since = Date()
-                    if let profileId { Task { try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId) } }
+                    if let profileId {
+                        Task {
+                            try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
+                            // the agreement above also covers Ingatan on the server; guests stay on the device
+                            if !DraftStore.shared.isGuest {
+                                try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
+                                await DraftStore.shared.syncMemory()
+                            }
+                        }
+                    }
                     onAgree()
                 } label: {
                     Text(L("Aktifkan Smart Tracker"))
@@ -158,6 +169,61 @@ struct SmartTrackerConsentSheet: View {
         .presentationDetents([.large])
         .presentationBackground(Color.appBackground)
         .presentationCornerRadius(38)
+        .presentationDragIndicator(.visible)
+    }
+}
+
+/// Asked once to people who agreed to Smart Tracker before Ingatan could live on the server (and again after a week
+/// if they choose "Nanti saja"). Until they agree, Ingatan stays on the device.
+struct MemorySyncConsentSheet: View {
+    let profileId: UUID?
+    @Environment(\.dismiss) private var dismiss
+    @State private var isSaving = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.system(size: 24)).foregroundStyle(Color.stGreen)
+                .frame(width: 52, height: 52).background(Color.stSuccessBg, in: RoundedRectangle(cornerRadius: 16))
+                .padding(.top, 28)
+            Text("Ingatan ikut ke semua perangkatmu").font(.app(24, weight: .bold)).tracking(-0.4).padding(.top, 14)
+            Text(L("Saku akan menyimpan pilihan yang diingatnya di server, supaya kategori dan dompet favoritmu tetap terisi saat ganti HP atau memakai Saku di perangkat lain."))
+                .font(.app(16)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.top, 8)
+            VStack(alignment: .leading, spacing: 8) {
+                Label(L("Yang disimpan: kata kunci, kategori, dompet, dan berapa kali dipakai."), systemImage: "checkmark")
+                Label(L("Tidak disimpan: kalimat aslinya dan nominalnya."), systemImage: "xmark")
+                Label(L("Bisa dimatikan kapan saja di Profil › Smart Tracker."), systemImage: "gearshape")
+            }
+            .font(.app(14)).foregroundStyle(Color.appTextSecondary).padding(.top, 16)
+            Spacer(minLength: 20)
+            Button {
+                guard let profileId else { dismiss(); return }
+                isSaving = true
+                Task {
+                    try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
+                    await DraftStore.shared.syncMemory()
+                    isSaving = false
+                    dismiss()
+                }
+            } label: {
+                ZStack {
+                    if isSaving { ProgressView().tint(Color.appBackground) } else { Text(L("Aktifkan")) }
+                }
+                .font(.app(17, weight: .semibold)).foregroundStyle(Color.appBackground)
+                .frame(maxWidth: .infinity).frame(height: 52).background(Color.appText, in: Capsule())
+            }
+            .buttonStyle(PressScaleStyle())
+            Button(L("Nanti saja")) {
+                SmartTrackerMemorySync.declinedAt = Date()
+                dismiss()
+            }
+            .font(.app(16)).foregroundStyle(Color.appTextSecondary)
+            .frame(maxWidth: .infinity).frame(height: 44)
+        }
+        .padding(.horizontal, 24).padding(.bottom, 12)
+        .presentationDetents([.height(520)])
+        .presentationBackground(Color.appBackground)
+        .presentationCornerRadius(30)
         .presentationDragIndicator(.visible)
     }
 }

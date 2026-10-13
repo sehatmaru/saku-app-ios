@@ -32,6 +32,7 @@ struct DashboardView: View {
     @State private var toastText = ""
     @State private var isToastShown = false
     @ObservedObject private var notificationRouter = NotificationRouter.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     enum AppTab: Hashable {
         case home, transactions, budget, profile
@@ -55,6 +56,7 @@ struct DashboardView: View {
                 Haptics.welcome()
             }
             isBalanceVisible = isBalanceVisibleStorage
+            DraftStore.shared.isGuest = authViewModel.currentUser?.isGuest == true
             if let userId = authViewModel.currentUser?.id {
                 Task {
                     await SubscriptionBillingService.processDueBills(userId: userId)
@@ -62,6 +64,10 @@ struct DashboardView: View {
                     await viewModel.loadDashboard(userId: userId)
                 }
             }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Ingatan follows the account: pick up what other devices learned while this one was away
+            if phase == .active { Task { await DraftStore.shared.syncMemory() } }
         }
         .onChange(of: isBalanceVisibleStorage) { _, newValue in
             isBalanceVisible = newValue

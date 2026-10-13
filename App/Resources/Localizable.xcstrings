@@ -2143,6 +2143,16 @@
         }
       }
     },
+    "Bisa dimatikan kapan saja di Profil › Smart Tracker.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can turn this off any time in Profile › Smart Tracker."
+          }
+        }
+      }
+    },
     "Bisa dipakai": {
       "localizations": {
         "en": {
@@ -3373,6 +3383,16 @@
         }
       }
     },
+    "Disimpan di server, ikut ke perangkat lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kept on the server, follows you to other devices"
+          }
+        }
+      }
+    },
     "Ditagih %@": {
       "localizations": {
         "en": {
@@ -4473,12 +4493,32 @@
         }
       }
     },
+    "Ingatan di semua perangkat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory on all devices"
+          }
+        }
+      }
+    },
     "Ingatan hanya disimpan di HP ini dan bisa dilupakan kapan saja.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Memory stays on this phone and can be forgotten any time."
+          }
+        }
+      }
+    },
+    "Ingatan ikut ke semua perangkatmu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory follows you to every device"
           }
         }
       }
@@ -6503,6 +6543,16 @@
         }
       }
     },
+    "Mode tamu: hanya di HP ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guest mode: this phone only"
+          }
+        }
+      }
+    },
     "Mulai": {
       "localizations": {
         "en": {
@@ -7593,6 +7643,16 @@
         }
       }
     },
+    "Pilihan yang diingat Saku (kata kunci, kategori, dompet, dan berapa kali dipakai) disimpan di server supaya ikut ke perangkat lain. Bukan kalimat aslinya, bukan nominalnya. Mode tamu hanya di perangkat ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What Saku remembers (keywords, categories, wallets and how often they were used) is kept on the server so it follows you to other devices. Not your original sentence, not the amount. Guest mode stays on this device only."
+          }
+        }
+      }
+    },
     "Pindah uang antar dompet": {
       "localizations": {
         "en": {
@@ -7919,6 +7979,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saturday"
+          }
+        }
+      }
+    },
+    "Saku akan menyimpan pilihan yang diingatnya di server, supaya kategori dan dompet favoritmu tetap terisi saat ganti HP atau memakai Saku di perangkat lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku will keep what it remembers on the server, so your favourite categories and wallets stay filled in when you switch phones or use Saku on another device."
           }
         }
       }
@@ -10353,6 +10423,16 @@
         }
       }
     },
+    "Tidak disimpan: kalimat aslinya dan nominalnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not kept: the original sentence and the amount."
+          }
+        }
+      }
+    },
     "Tidak jadi": {
       "localizations": {
         "en": {
@@ -11151,6 +11231,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What Saku remembers"
+          }
+        }
+      }
+    },
+    "Yang disimpan: kata kunci, kategori, dompet, dan berapa kali dipakai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kept: keywords, categories, wallets and how often they were used."
           }
         }
       }

@@ -18,6 +18,7 @@ enum SupabaseSDK {
         PaydaySetting.day = profile.paydayDay
         HomeBalanceSetting.mode = profile.homeBalanceMode
         await syncSmartTrackerConsent(profile)
+        SmartTrackerMemorySync.isGranted = profile.smartTrackerMemoryConsentAt != nil
         await refreshPaydaySchedule()
         return profile
     }
@@ -53,6 +54,92 @@ enum SupabaseSDK {
             .eq("id", value: profileId)
             .execute()
         SmartTrackerConsent.isGranted = false
+    }
+
+    // MARK: Ingatan sync
+
+    /// Saves that the user agreed to keeping Ingatan on the server, and mirrors it on the device.
+    static func recordMemorySyncConsent(profileId: UUID) async throws {
+        try await client
+            .from("user_profiles")
+            .update(["smart_tracker_memory_consent_at": AnyJSON.string(ISO8601DateFormatter().string(from: Date()))] as [String: AnyJSON])
+            .eq("id", value: profileId)
+            .execute()
+        SmartTrackerMemorySync.isGranted = true
+    }
+
+    static func revokeMemorySyncConsent(profileId: UUID) async throws {
+        try await client
+            .from("user_profiles")
+            .update(["smart_tracker_memory_consent_at": AnyJSON.null] as [String: AnyJSON])
+            .eq("id", value: profileId)
+            .execute()
+        SmartTrackerMemorySync.isGranted = false
+    }
+
+    private struct MemoryRow: Codable {
+        let keyword: String
+        let kind: String
+        let categoryId: String?
+        let accountId: String?
+        let uses: Int
+        let updatedAt: String
+        let deletedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case keyword, kind, uses
+            case categoryId = "category_id"
+            case accountId = "account_id"
+            case updatedAt = "updated_at"
+            case deletedAt = "deleted_at"
+        }
+    }
+
+    private static func memoryDate(_ text: String) -> Date? {
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return fractional.date(from: text) ?? ISO8601DateFormatter().date(from: text)
+    }
+
+    private static func memoryString(_ date: Date) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: date)
+    }
+
+    /// Every Ingatan row of the signed-in user, tombstones included.
+    static func fetchMemory() async throws -> [MerchantMemory.Entry] {
+        let rows: [MemoryRow] = try await client.from("merchant_memory").select().execute().value
+        return rows.compactMap { row in
+            guard let kind = Draft.Kind(rawValue: row.kind), let updated = memoryDate(row.updatedAt) else { return nil }
+            var entry = MerchantMemory.Entry(keyword: row.keyword, kind: kind, categoryId: row.categoryId, accountId: row.accountId,
+                                             uses: row.uses, updatedAt: updated)
+            entry.deletedAt = row.deletedAt.flatMap(memoryDate)
+            return entry
+        }
+    }
+
+    /// Sends entries to the server; it keeps whichever version is newer.
+    static func pushMemory(_ entries: [MerchantMemory.Entry]) async throws {
+        guard !entries.isEmpty else { return }
+        let rows: [AnyJSON] = entries.map { entry in
+            var object: [String: AnyJSON] = [
+                "keyword": .string(entry.keyword),
+                "kind": .string(entry.kind.rawValue),
+                "uses": .integer(entry.uses),
+                "updated_at": .string(memoryString(entry.updatedAt)),
+            ]
+            if let id = entry.categoryId { object["category_id"] = .string(id) }
+            if let id = entry.accountId { object["account_id"] = .string(id) }
+            if let deleted = entry.deletedAt { object["deleted_at"] = .string(memoryString(deleted)) }
+            return .object(object)
+        }
+        try await client.rpc("upsert_merchant_memory", params: ["p_rows": AnyJSON.array(rows)]).execute()
+    }
+
+    /// "Lupakan semua" on the server: everything changed up to `before`.
+    static func forgetAllMemory(before: Date) async throws {
+        try await client.rpc("forget_all_merchant_memory", params: ["p_before": AnyJSON.string(memoryString(before))]).execute()
     }
 
     private struct PaydayChangeRow: Decodable {
@@ -170,6 +257,8 @@ struct UserProfile: Codable, Identifiable {
     var homeBalanceMode: String? = nil
     /// When the user agreed to Smart Tracker; nil until then.
     var smartTrackerConsentAt: String? = nil
+    /// When the user agreed to keeping Ingatan on the server; nil until then.
+    var smartTrackerMemoryConsentAt: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -182,6 +271,7 @@ struct UserProfile: Codable, Identifiable {
         case avatarUrl = "avatar_url"
         case homeBalanceMode = "home_balance_mode"
         case smartTrackerConsentAt = "smart_tracker_consent_at"
+        case smartTrackerMemoryConsentAt = "smart_tracker_memory_consent_at"
     }
 }
 

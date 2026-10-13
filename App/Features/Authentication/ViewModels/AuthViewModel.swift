@@ -250,6 +250,8 @@ final class AuthViewModel: ObservableObject {
         PaydaySetting.schedule = []
         HomeBalanceSetting.mode = nil
         SmartTrackerConsent.isGranted = false
+        SmartTrackerMemorySync.isGranted = false
+        SmartTrackerMemorySync.declinedAt = nil
         DraftStore.shared.reset()
         for key in ["paydayCardDismissed", "hasSeenOnboarding", "memberSince", "billReminderSnoozedUntil"] {
             UserDefaults.standard.removeObject(forKey: key)
@@ -268,6 +270,8 @@ final class AuthViewModel: ObservableObject {
             try? await SupabaseSDK.client.auth.signOut()
             // drafts and what Saku learned belong to this account, and so does the agreement
             SmartTrackerConsent.isGranted = false
+            SmartTrackerMemorySync.isGranted = false
+            SmartTrackerMemorySync.declinedAt = nil
             DraftStore.shared.reset()
             currentUser = nil
             withAnimation(.easeInOut(duration: 0.4)) {

@@ -14,6 +14,46 @@ enum MerchantMemory {
         /// How many times a saved draft confirmed this choice.
         var uses = 1
         var updatedAt = Date()
+        /// Set when the user forgot it: kept as a tombstone so the other devices drop it too.
+        var deletedAt: Date?
+    }
+
+    /// How many entries one user keeps; past that the least used go first.
+    static let limit = 500
+
+    struct SyncResult: Equatable {
+        var live: [Entry]
+        var tombstones: [Entry]
+        /// What the server does not have yet, or has an older version of.
+        var toPush: [Entry]
+    }
+
+    /// Merges this device's entries with the server's: per keyword the latest change wins, a newer tombstone
+    /// removes the entry, and more than `limit` live entries drop the least used (then the oldest).
+    static func merge(local: [Entry], tombstones: [Entry], remote: [Entry], now: Date = Date()) -> SyncResult {
+        let remoteById = Dictionary(remote.map { ($0.id, $0) }, uniquingKeysWith: { a, b in a.updatedAt >= b.updatedAt ? a : b })
+        var chosen: [String: Entry] = remoteById
+        for entry in local + tombstones where entry.updatedAt > (chosen[entry.id]?.updatedAt ?? .distantPast) {
+            chosen[entry.id] = entry
+        }
+        var live = chosen.values.filter { $0.deletedAt == nil }
+        var dead = chosen.values.filter { $0.deletedAt != nil }
+        if live.count > limit {
+            live.sort { ($0.uses, $0.updatedAt) > ($1.uses, $1.updatedAt) }
+            for var extra in live[limit...] {
+                extra.deletedAt = now
+                extra.updatedAt = now
+                dead.append(extra)
+                chosen[extra.id] = extra
+            }
+            live = Array(live[..<limit])
+        }
+        let toPush = chosen.values.filter { entry in
+            guard let server = remoteById[entry.id] else { return true }
+            return entry.updatedAt > server.updatedAt
+        }
+        let order: (Entry, Entry) -> Bool = { $0.updatedAt > $1.updatedAt }
+        return SyncResult(live: live.sorted(by: order), tombstones: dead.sorted(by: order), toPush: toPush)
     }
 
     /// The remembered entry whose keyword appears in the text (longest keyword wins).
@@ -69,5 +109,30 @@ enum SmartTrackerConsent {
     static var isGranted: Bool {
         get { UserDefaults.standard.bool(forKey: key) }
         set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+}
+
+/// Whether this account agreed to keeping Ingatan on the server so it follows the user to every device.
+/// The profile row is the source of truth (`smart_tracker_memory_consent_at`); mirrored here like `SmartTrackerConsent`.
+/// Guests never sync, whatever this says.
+enum SmartTrackerMemorySync {
+    static let key = "smartTrackerMemorySync"
+    static let declinedKey = "smartTrackerMemorySyncDeclinedAt"
+
+    static var isGranted: Bool {
+        get { UserDefaults.standard.bool(forKey: key) }
+        set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+
+    /// "Nanti saja" was chosen at this moment; asked again after a week.
+    static var declinedAt: Date? {
+        get { UserDefaults.standard.object(forKey: declinedKey) as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: declinedKey) }
+    }
+
+    static var shouldAsk: Bool {
+        guard !isGranted else { return false }
+        guard let declinedAt else { return true }
+        return Date().timeIntervalSince(declinedAt) > 7 * 86_400
     }
 }
