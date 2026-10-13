@@ -123,7 +123,7 @@ struct DashboardView: View {
         showsConsent = true
     }
 
-    /// Tapping the "new drafts" notification: read what was shared, then show Konfirmasi catatan.
+    /// Tapping the "new drafts" notification: read what was shared, then show Konfirmasi transaksi.
     private func openDraftsIfRequested() {
         guard notificationRouter.opensDrafts else { return }
         notificationRouter.opensDrafts = false
@@ -131,7 +131,7 @@ struct DashboardView: View {
         openDraftsPage()
     }
 
-    /// Konfirmasi catatan is a page on the Beranda stack, not a sheet.
+    /// Konfirmasi transaksi is a page on the Beranda stack, not a sheet.
     private func openDraftsPage() {
         selectedTab = .home
         homePath = NavigationPath()

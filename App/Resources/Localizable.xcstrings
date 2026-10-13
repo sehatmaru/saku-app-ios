@@ -1133,12 +1133,12 @@
         }
       }
     },
-    "Aplikasi yang didukung: %@. Draf dari notifikasi selalu masuk ke Konfirmasi catatan; teks notifikasi tidak disimpan.": {
+    "Aplikasi yang didukung: %@. Draf dari notifikasi selalu masuk ke Konfirmasi transaksi; teks notifikasi tidak disimpan.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Supported apps: %@. Drafts from notifications always go to Confirm entries; the notification text isn't stored."
+            "value": "Supported apps: %@. Drafts from notifications always go to Confirm transactions; the notification text isn't stored."
           }
         }
       }
@@ -3603,12 +3603,12 @@
         }
       }
     },
-    "Draf menunggu di Konfirmasi catatan": {
+    "Draf menunggu di Konfirmasi transaksi": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Draft waiting in Confirm entries"
+            "value": "Draft waiting in Confirm transactions"
           }
         }
       }
@@ -5423,12 +5423,12 @@
         }
       }
     },
-    "Konfirmasi catatan": {
+    "Konfirmasi transaksi": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Confirm entries"
+            "value": "Confirm transactions"
           }
         }
       }
@@ -5943,12 +5943,12 @@
         }
       }
     },
-    "Masuk ke Konfirmasi catatan": {
+    "Masuk ke Konfirmasi transaksi": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Added to Confirm entries"
+            "value": "Added to Confirm transactions"
           }
         }
       }

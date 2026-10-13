@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Smart Tracker on Beranda (design 1a): a sparkle button with the number of drafts that opens a floating
-/// bar over the tab bar: one sentence, microphone, and the "Konfirmasi catatan" tray.
+/// bar over the tab bar: one sentence, microphone, and the "Konfirmasi transaksi" tray.
 struct SmartTrackerHomeOverlay: View {
     let userId: String
     /// Nothing recorded yet (design 3a): the button pulses and a tip points at it.
@@ -33,6 +33,12 @@ struct SmartTrackerHomeOverlay: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .animation(.settle(0.42), value: isOpen)
         .onReceive(NotificationCenter.default.publisher(for: .openSmartTrackerBar)) { _ in open() }
+        .onAppear {
+            if SmartButtonGate.shared.opensBarOnShow {
+                SmartButtonGate.shared.opensBarOnShow = false
+                open()
+            }
+        }
         .sheet(isPresented: $showsConsent) {
             SmartTrackerConsentSheet(profileId: UUID(uuidString: userId)) {
                 showsConsent = false
@@ -46,7 +52,7 @@ struct SmartTrackerHomeOverlay: View {
         }
         .sheet(item: $result) { draft in
             QuickResultSheet(draft: draft, userId: userId, onSaved: { onToast($0) },
-                             onSaveLater: { saved in store.add([saved]); onToast(L("Masuk ke Konfirmasi catatan")) },
+                             onSaveLater: { saved in store.add([saved]); onToast(L("Masuk ke Konfirmasi transaksi")) },
                              onFillManually: { saved in
                                  store.add([saved])
                                  store.editRequest = saved.id
@@ -167,7 +173,7 @@ struct SmartTrackerHomeOverlay: View {
                         }
                     }
             }
-            .accessibilityLabel(L("Konfirmasi catatan"))
+            .accessibilityLabel(L("Konfirmasi transaksi"))
         }
         .padding(.horizontal, 7).frame(height: 64)
         .background(Color.stBar.opacity(0.97), in: Capsule())
@@ -203,7 +209,7 @@ struct SmartTrackerHomeOverlay: View {
     }
 
     /// One complete expense or income goes to the quick result sheet; anything else (several transactions,
-    /// a transfer, something unreadable) goes to Konfirmasi catatan where it can be completed.
+    /// a transfer, something unreadable) goes to Konfirmasi transaksi where it can be completed.
     private func submit(_ raw: String, source: Draft.Source) {
         let sentence = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sentence.isEmpty else { return }
@@ -236,16 +242,18 @@ struct SmartTrackerHomeOverlay: View {
 }
 
 extension Notification.Name {
-    /// Asks the Beranda button to open the Catat cepat bar ("Catat sekarang" in an empty Konfirmasi catatan).
+    /// Asks the Beranda button to open the Catat cepat bar ("Catat sekarang" in an empty Konfirmasi transaksi).
     static let openSmartTrackerBar = Notification.Name("openSmartTrackerBar")
 }
 
-/// Pages that cover the bottom of the screen (Konfirmasi catatan, its sheets, Smart Tracker settings) hide the
+/// Pages that cover the bottom of the screen (Konfirmasi transaksi, its sheets, Smart Tracker settings) hide the
 /// floating sparkle button while they are open, so it never sits on top of their buttons.
 @MainActor
 final class SmartButtonGate: ObservableObject {
     static let shared = SmartButtonGate()
     @Published private(set) var hiders = 0
+    /// Set by "Buka Smart Tracker" on an empty queue: the bar opens as soon as the button is back on Beranda.
+    var opensBarOnShow = false
     func hide() { hiders += 1 }
     func show() { hiders = max(0, hiders - 1) }
 }

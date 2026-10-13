@@ -335,7 +335,7 @@ struct NotificationSetupGuideView: View {
                         HStack(spacing: 10) {
                             Image(systemName: "tray").font(.system(size: 15)).foregroundStyle(Color.stGreen)
                                 .frame(width: 30, height: 30).background(Color.stSuccessBg, in: Circle())
-                            Text(L("Draf menunggu di Konfirmasi catatan")).font(.app(14, weight: .medium))
+                            Text(L("Draf menunggu di Konfirmasi transaksi")).font(.app(14, weight: .medium))
                             Spacer(minLength: 0)
                             Text("Rp500.000").font(.app(14)).monospacedDigit()
                         }

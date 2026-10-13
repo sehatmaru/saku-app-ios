@@ -17,13 +17,13 @@ final class ShareViewController: UIViewController {
         Task { await receive() }
     }
 
-    /// Tells the user right away; tapping it opens Saku on Konfirmasi catatan. Works once the app has notification permission.
+    /// Tells the user right away; tapping it opens Saku on Konfirmasi transaksi. Works once the app has notification permission.
     private func announce() async {
         let center = UNUserNotificationCenter.current()
         guard await center.notificationSettings().authorizationStatus == .authorized else { return }
         let content = UNMutableNotificationContent()
         content.title = "Dikirim ke Saku"
-        content.body = "Teksnya masuk ke Konfirmasi catatan. Ketuk untuk memeriksa drafnya."
+        content.body = "Teksnya masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya."
         content.sound = .default
         content.userInfo = ["route": "drafts"]
         try? await center.add(UNNotificationRequest(identifier: "share-\(UUID().uuidString)", content: content,

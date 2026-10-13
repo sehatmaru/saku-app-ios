@@ -3,7 +3,7 @@ import UserNotifications
 
 /// Tells the user there are new drafts (local notification and app badge).
 enum DraftNotifier {
-    /// userInfo value that makes a tap open Konfirmasi catatan.
+    /// userInfo value that makes a tap open Konfirmasi transaksi.
     static let route = "drafts"
 
     static func announce(count: Int) async {
@@ -11,7 +11,7 @@ enum DraftNotifier {
         let center = UNUserNotificationCenter.current()
         guard (try? await center.requestAuthorization(options: [.alert, .badge])) == true else { return }
         let content = UNMutableNotificationContent()
-        content.title = L("Konfirmasi catatan")
+        content.title = L("Konfirmasi transaksi")
         content.body = L("%lld draf transaksi menunggu dicek di Saku.", count)
         content.userInfo = ["route": route]
         content.sound = .default

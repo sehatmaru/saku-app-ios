@@ -50,7 +50,7 @@ extension Draft {
     }
 }
 
-/// "Konfirmasi catatan" (design "Konfirmasi Transaksi", layout A): every draft is a card you can fix in place.
+/// "Konfirmasi transaksi" (design "Konfirmasi Transaksi", layout A): every draft is a card you can fix in place.
 /// Kategori, Dompet, Tanggal, Tipe and Nominal open the same sheets as Tambah transaksi; Simpan and Abaikan
 /// can be undone from the toast. "Simpan semua" only takes the complete ones.
 struct DraftQueueView: View {
@@ -124,7 +124,6 @@ struct DraftQueueView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                topBar
                 if !store.drafts.isEmpty {
                     list
                 } else if saved + ignored == 0 {
@@ -138,7 +137,14 @@ struct DraftQueueView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBackground)
         .animation(.settle(0.4), value: store.drafts.map(\.id))
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if !store.drafts.isEmpty {
+                    Button { showsDeleteAll = true } label: { Text("Hapus semua").foregroundStyle(Color.appText) }
+                }
+            }
+        }
         .hidesSmartButton()
         .onChange(of: sheet?.id) { focusedId = nil }
         .sheet(item: $sheet) { item in sheetContent(item) }
@@ -159,33 +165,12 @@ struct DraftQueueView: View {
         .task { await store.refreshReferenceData(userId: userId) }
     }
 
-    private var topBar: some View {
-        HStack {
-            Button { dismiss() } label: {
-                HStack(spacing: 2) {
-                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold))
-                    Text("Smart Tracker").font(.app(17))
-                }
-                .foregroundStyle(Color.appPrimary)
-                .frame(height: 44)
-            }
-            .accessibilityLabel(L("Kembali"))
-            Spacer()
-            if !store.drafts.isEmpty {
-                Button { showsDeleteAll = true } label: {
-                    Text("Hapus semua").font(.app(17)).foregroundStyle(Color.appText).frame(height: 44)
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-    }
-
     // MARK: List
 
     private var list: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Konfirmasi catatan").font(.app(34, weight: .bold)).tracking(0.2)
+                Text("Konfirmasi transaksi").font(.app(34, weight: .bold)).tracking(0.2)
                     .padding(.horizontal, 24).padding(.top, 6)
                 Label {
                     Text(L("%lld draf dicatat otomatis oleh Smart Tracker. Cek dan lengkapi sebelum disimpan.", store.drafts.count))
@@ -390,7 +375,7 @@ struct DraftQueueView: View {
 
     private var emptyQueue: some View {
         VStack(spacing: 0) {
-            Text("Konfirmasi catatan").font(.app(34, weight: .bold)).tracking(0.2)
+            Text("Konfirmasi transaksi").font(.app(34, weight: .bold)).tracking(0.2)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 6)
             VStack(spacing: 10) {
                 Image(systemName: "tray").font(.system(size: 44, weight: .light)).foregroundStyle(Color.appTextTertiary).stFloat()
@@ -401,8 +386,8 @@ struct DraftQueueView: View {
             .frame(maxHeight: .infinity)
             .stEnter(0)
             PrimaryButton(title: L("Buka Smart Tracker")) {
+                SmartButtonGate.shared.opensBarOnShow = true
                 dismiss()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { NotificationCenter.default.post(name: .openSmartTrackerBar, object: nil) }
             }
             .padding(.horizontal, 24).padding(.bottom, 30)
         }
@@ -410,10 +395,11 @@ struct DraftQueueView: View {
 
     private var allChecked: some View {
         VStack(alignment: .leading, spacing: 0) {
+            Text("Konfirmasi transaksi").font(.app(34, weight: .bold)).tracking(0.2).padding(.top, 6)
             Spacer()
             Image(systemName: "checkmark").font(.system(size: 28, weight: .bold)).foregroundStyle(Color.appPrimary)
                 .frame(width: 64, height: 64).background(Color.stSuccessBg, in: Circle()).stEnter(0)
-            Text("Semua sudah dicek").font(.app(34, weight: .bold)).padding(.top, 28).stEnter(1)
+            Text("Semua sudah dicek").font(.app(26, weight: .bold)).padding(.top, 28).stEnter(1)
             Text("Tidak ada draf Smart Tracker yang menunggu. Draf baru akan muncul di sini.")
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 8).stEnter(2)
             HStack(spacing: 0) {
@@ -787,7 +773,8 @@ private struct DraftAmountSheet: View {
             }
             .monospacedDigit()
             .frame(maxWidth: .infinity).padding(.top, 12).padding(.bottom, 18)
-            NumberPadKeys(onPress: press).padding(.horizontal, 12).padding(.bottom, 12)
+            AmountPad(color: .stGreen, isEnabled: amount > 0, onPress: press, onSave: onDone, title: "Terapkan")
+                .padding(.horizontal, 12).padding(.bottom, 12)
         }
     }
 

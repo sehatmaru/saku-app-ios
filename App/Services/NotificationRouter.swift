@@ -9,7 +9,7 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
 
     /// The card whose bill the user wants to record; Beranda clears it once the sheet is open.
     @Published var pendingCardId: String?
-    /// Set when the user taps the "new drafts" notification; Beranda opens Konfirmasi catatan and clears it.
+    /// Set when the user taps the "new drafts" notification; Beranda opens Konfirmasi transaksi and clears it.
     @Published var opensDrafts = false
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
