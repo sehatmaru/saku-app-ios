@@ -253,8 +253,12 @@ struct DashboardView: View {
                     }
                 }
             }
+            // exactly as wide as the screen: something wider than it (a chart, a long amount) can no longer
+            // make Beranda scroll sideways
+            .containerRelativeFrame(.horizontal)
             .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
         }
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .background(Color.appBackground)
         .refreshable {
             if let userId = authViewModel.currentUser?.id {
