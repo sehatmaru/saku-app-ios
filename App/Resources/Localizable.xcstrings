@@ -101,6 +101,16 @@
         }
       }
     },
+    "%@ belum terisi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is empty"
+          }
+        }
+      }
+    },
     "%@ dan budget %@ bertambah %@.": {
       "localizations": {
         "en": {
@@ -693,6 +703,16 @@
         }
       }
     },
+    "%lld ke Konfirmasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld to Confirm transactions"
+          }
+        }
+      }
+    },
     "%lld periode": {
       "localizations": {
         "en": {
@@ -763,6 +783,16 @@
         }
       }
     },
+    "%lld transaksi dari kalimatmu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld transactions from your sentence"
+          }
+        }
+      }
+    },
     "%lld transaksi lama tetap memakai namanya.": {
       "localizations": {
         "en": {
@@ -789,6 +819,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld transactions saved"
+          }
+        }
+      }
+    },
+    "%lld yang belum lengkap masuk ke Konfirmasi transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld incomplete ones go to Confirm transactions"
           }
         }
       }
@@ -1663,6 +1703,16 @@
         }
       }
     },
+    "Belum ada dompet Investasi. Tambah dulu di Dompet, lalu lengkapi di Konfirmasi transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Investment wallet yet. Add one in Wallets first, then finish in Confirm transactions."
+          }
+        }
+      }
+    },
     "Belum ada dompet dipilih": {
       "localizations": {
         "en": {
@@ -1969,6 +2019,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Haven't heard anything yet"
+          }
+        }
+      }
+    },
+    "Belum terisi: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missing: %@"
           }
         }
       }
@@ -5283,6 +5343,16 @@
         }
       }
     },
+    "Ketik ulang kalimatmu, lalu kirim": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retype your sentence, then send"
+          }
+        }
+      }
+    },
     "Ketikan": {
       "localizations": {
         "en": {
@@ -5409,6 +5479,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Coin"
+          }
+        }
+      }
+    },
+    "Koneksi terputus. Coba lagi, atau simpan nanti di Konfirmasi transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection lost. Try again, or save it for later in Confirm transactions."
           }
         }
       }
@@ -5609,6 +5689,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Complete"
+          }
+        }
+      }
+    },
+    "Lengkapi di Konfirmasi transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish in Confirm transactions"
           }
         }
       }
@@ -6733,6 +6823,16 @@
         }
       }
     },
+    "Nominalnya tidak terbaca": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read the amount"
+          }
+        }
+      }
+    },
     "Notifikasi": {
       "localizations": {
         "en": {
@@ -7459,6 +7559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose platform"
+          }
+        }
+      }
+    },
+    "Pilih sekarang, atau lengkapi nanti di Konfirmasi transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick it now, or finish later in Confirm transactions."
           }
         }
       }
@@ -8273,6 +8383,16 @@
         }
       }
     },
+    "Semua diabaikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All ignored"
+          }
+        }
+      }
+    },
     "Semua dompet dalam satu kantong.": {
       "localizations": {
         "en": {
@@ -8859,6 +8979,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Smart Tracker is off"
+          }
+        }
+      }
+    },
+    "Smart Tracker sedang membaca…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Tracker is reading…"
           }
         }
       }
@@ -10655,6 +10785,16 @@
         }
       }
     },
+    "Tulis nama dan jumlahnya dalam satu kalimat, mis. “sabun 18rb”.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write the name and the amount in one sentence, e.g. “soap 18k”."
+          }
+        }
+      }
+    },
     "Tunai": {
       "localizations": {
         "en": {
@@ -11111,6 +11251,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "wallet"
+          }
+        }
+      }
+    },
+    "dompet asal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "source wallet"
           }
         }
       }

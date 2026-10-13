@@ -478,5 +478,20 @@
   "Transfer tersimpan": "Transfer saved",
   "dompet": "wallet",
   "nominal": "amount",
-  "%@ · Smart Tracker": "%@ · Smart Tracker"
+  "%@ · Smart Tracker": "%@ · Smart Tracker",
+  "%@ belum terisi": "%@ is empty",
+  "%lld ke Konfirmasi": "%lld to Confirm transactions",
+  "%lld transaksi dari kalimatmu": "%lld transactions from your sentence",
+  "%lld yang belum lengkap masuk ke Konfirmasi transaksi": "%lld incomplete ones go to Confirm transactions",
+  "Belum ada dompet Investasi. Tambah dulu di Dompet, lalu lengkapi di Konfirmasi transaksi.": "No Investment wallet yet. Add one in Wallets first, then finish in Confirm transactions.",
+  "Belum terisi: %@": "Missing: %@",
+  "Ketik ulang kalimatmu, lalu kirim": "Retype your sentence, then send",
+  "Koneksi terputus. Coba lagi, atau simpan nanti di Konfirmasi transaksi.": "Connection lost. Try again, or save it for later in Confirm transactions.",
+  "Lengkapi di Konfirmasi transaksi": "Finish in Confirm transactions",
+  "Nominalnya tidak terbaca": "Couldn't read the amount",
+  "Pilih sekarang, atau lengkapi nanti di Konfirmasi transaksi.": "Pick it now, or finish later in Confirm transactions.",
+  "Semua diabaikan": "All ignored",
+  "Smart Tracker sedang membaca…": "Smart Tracker is reading…",
+  "Tulis nama dan jumlahnya dalam satu kalimat, mis. “sabun 18rb”.": "Write the name and the amount in one sentence, e.g. “soap 18k”.",
+  "dompet asal": "source wallet"
 }

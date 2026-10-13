@@ -16,7 +16,9 @@ struct SmartTrackerHomeOverlay: View {
     @State private var text = ""
     @State private var showsConsent = false
     @State private var showsVoice = false
-    @State private var result: Draft?
+    @State private var result: QuickInput?
+    /// "Ulang": the sentence is back in the bar, waiting to be retyped.
+    @State private var retryHint = false
     @State private var isThinking = false
     @FocusState private var focused: Bool
     /// What to do after the agreement: open the bar, or start listening.
@@ -50,15 +52,15 @@ struct SmartTrackerHomeOverlay: View {
             VoiceCaptureView(onFinish: { spoken in submit(spoken, source: .voice) },
                              onKeyboard: { showsVoice = false; isOpen = true; focused = true })
         }
-        .sheet(item: $result) { draft in
-            QuickResultSheet(draft: draft, userId: userId, onSaved: { onToast($0) },
-                             onSaveLater: { saved in store.add([saved]); onToast(L("Masuk ke Konfirmasi transaksi")) },
-                             onFillManually: { saved in
-                                 store.add([saved])
-                                 store.editRequest = saved.id
-                                 onOpenQueue()
-                             },
-                             onRedo: { isOpen = true; focused = true })
+        .sheet(item: $result) { input in
+            QuickResultSheet(sentence: input.sentence, source: input.source, drafts: input.drafts, userId: userId,
+                             onSaved: { onToast($0) }, onSaveLater: { store.add($0) },
+                             onRedo: { sentence in
+                                 text = sentence
+                                 retryHint = true
+                                 isOpen = true
+                                 focused = true
+                             })
         }
         .task {
             await NotificationManager.shared.requestPermissionIfNeeded()
@@ -132,13 +134,22 @@ struct SmartTrackerHomeOverlay: View {
             .accessibilityLabel(L("Tutup"))
             HStack(spacing: 8) {
                 Image(systemName: "sparkles").font(.system(size: 16)).foregroundStyle(Color.stGreen)
-                TextField(L("kopi 25rb gopay"), text: $text)
-                    .font(.app(16))
-                    .focused($focused)
-                    .submitLabel(.send)
-                    .onSubmit { submit(text, source: .typed) }
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                if isThinking {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(text).font(.app(15)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                        Text("Smart Tracker sedang membaca…").font(.app(12, weight: .medium)).foregroundStyle(Color.stGreen)
+                    }
+                    Spacer(minLength: 0)
+                } else {
+                    TextField(L("kopi 25rb gopay"), text: $text)
+                        .font(.app(16))
+                        .focused($focused)
+                        .submitLabel(.send)
+                        .onSubmit { submit(text, source: .typed) }
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .onChange(of: text) { retryHint = false }
+                }
                 if isThinking {
                     ProgressView().frame(width: 40, height: 40)
                 } else if text.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -177,7 +188,13 @@ struct SmartTrackerHomeOverlay: View {
         }
         .padding(.horizontal, 7).frame(height: 64)
         .background(Color.stBar.opacity(0.97), in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.06)))
+        .overlay(Capsule().strokeBorder(retryHint ? Color.stGreen : Color.primary.opacity(0.06), lineWidth: retryHint ? 1.5 : 1))
+        .overlay(alignment: .topLeading) {
+            if retryHint {
+                Text("Ketik ulang kalimatmu, lalu kirim").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    .padding(.leading, 8).offset(y: -26)
+            }
+        }
         .shadow(color: .black.opacity(0.1), radius: 14, y: 4)
         .padding(.horizontal, 20)
         // sits exactly over the system tab bar, which it replaces while open
@@ -197,6 +214,7 @@ struct SmartTrackerHomeOverlay: View {
     }
 
     private func close() {
+        retryHint = false
         focused = false
         isOpen = false
     }
@@ -208,13 +226,13 @@ struct SmartTrackerHomeOverlay: View {
         showsVoice = true
     }
 
-    /// One complete expense or income goes to the quick result sheet; anything else (several transactions,
-    /// a transfer, something unreadable) goes to Konfirmasi transaksi where it can be completed.
+    /// Every sentence ends in the quick result sheet: one transaction, several, or one that could not be read.
     private func submit(_ raw: String, source: Draft.Source) {
         let sentence = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sentence.isEmpty else { return }
         guard consented else { afterConsent = { submit(sentence, source: source) }; showsConsent = true; return }
-        text = ""
+        text = sentence
+        retryHint = false
         focused = false
         Haptics.add()
         isThinking = true
@@ -224,21 +242,24 @@ struct SmartTrackerHomeOverlay: View {
                 ? await store.refined(sentence, source: source) : nil
             isThinking = false
             let final = refined ?? drafts
-            if final.count == 1, let one = final.first,
-               one.isUnreadable || one.amount == nil || one.kind == .expense || one.kind == .income {
-                close()
-                result = one
-            } else {
-                store.add(final)
-                close()
-                onOpenQueue()
-            }
+            text = ""
+            guard !final.isEmpty else { return }
+            close()
+            result = QuickInput(sentence: sentence, source: source, drafts: final)
         }
     }
 
     private static func parse(_ text: String, source: Draft.Source, store: DraftStore) -> [Draft] {
         SmartParser.parse(text, source: source, context: store.context)
     }
+}
+
+/// What the quick result sheet shows: the sentence and the drafts read from it.
+struct QuickInput: Identifiable {
+    let id = UUID()
+    let sentence: String
+    let source: Draft.Source
+    let drafts: [Draft]
 }
 
 extension Notification.Name {
