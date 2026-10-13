@@ -412,7 +412,11 @@ struct DraftQueueView: View {
             .overlay(alignment: .bottom) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
             .padding(.top, 28).stEnter(3)
             Spacer()
-            PrimaryButton(title: L("Kembali ke Smart Tracker")) { dismiss() }.padding(.bottom, 30)
+            PrimaryButton(title: L("Kembali ke Smart Tracker")) {
+                SmartButtonGate.shared.opensBarOnShow = true
+                dismiss()
+            }
+            .padding(.bottom, 30)
         }
         .padding(.horizontal, 24)
     }
@@ -753,6 +757,8 @@ private struct DraftTypeSheet: View {
 private struct DraftAmountSheet: View {
     @State private var amount: Int
     @State private var isFresh = true
+    /// The sheet is as tall as its content, so there is no empty space under the keypad.
+    @State private var height: CGFloat = 420
     let onChange: (Int) -> Void
     let onDone: () -> Void
 
@@ -763,7 +769,13 @@ private struct DraftAmountSheet: View {
     }
 
     var body: some View {
-        PickerSheet(title: L("Nominal"), onDone: onDone) {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Nominal").font(.app(17, weight: .semibold))
+                Spacer()
+                Button("Selesai", action: onDone).font(.app(17, weight: .semibold)).foregroundStyle(Color.appPrimary)
+            }
+            .frame(height: 48).padding(.horizontal, 24).padding(.top, 14)
             HStack(alignment: .top, spacing: 4) {
                 Text("Rp").font(.app(20)).foregroundStyle(Color.appTextSecondary).padding(.top, 7)
                 Text(Double(amount).formattedAsDigits())
@@ -772,10 +784,16 @@ private struct DraftAmountSheet: View {
                     .lineLimit(1).minimumScaleFactor(0.6).contentTransition(.numericText())
             }
             .monospacedDigit()
-            .frame(maxWidth: .infinity).padding(.top, 12).padding(.bottom, 18)
+            .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 16)
             AmountPad(color: .stGreen, isEnabled: amount > 0, onPress: press, onSave: onDone, title: "Terapkan")
-                .padding(.horizontal, 12).padding(.bottom, 12)
+                .padding(.horizontal, 12).padding(.bottom, 8)
         }
+        .foregroundStyle(Color.appText)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+        .presentationDetents([.height(height + 34)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .presentationBackground(Color.appBackground)
     }
 
     private func press(_ key: String) {
