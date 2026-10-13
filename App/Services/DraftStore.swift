@@ -47,7 +47,16 @@ final class DraftStore: ObservableObject {
 
     private func load() {
         guard let data = try? Data(contentsOf: fileURL), let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data) else { return }
-        drafts = snapshot.drafts
+        // card bills are paid by hand in Saku; an older draft of that kind becomes one to fill in manually
+        drafts = snapshot.drafts.map { draft in
+            guard draft.kind == .cardPayment else { return draft }
+            var copy = draft
+            copy.kind = .expense
+            copy.isUnreadable = true
+            copy.accountId = nil
+            copy.counterpartyAccountId = nil
+            return copy
+        }
         memory = snapshot.memory
         accounts = snapshot.accounts
         categories = snapshot.categories
@@ -133,6 +142,14 @@ final class DraftStore: ObservableObject {
         persist()
     }
 
+    /// Puts a draft back where it was (Urungkan), newest first like the rest.
+    func restore(_ draft: Draft) {
+        guard !drafts.contains(where: { $0.id == draft.id }) else { return }
+        let index = drafts.firstIndex { $0.createdAt < draft.createdAt } ?? drafts.count
+        drafts.insert(draft, at: index)
+        persist()
+    }
+
     func discard(_ id: UUID) {
         drafts.removeAll { $0.id == id }
         persist()
@@ -194,31 +211,35 @@ final class DraftStore: ObservableObject {
     enum SaveError: Error { case incomplete, noUser }
 
     /// Writes the draft as a real transaction, then remembers the user's choices for next time.
-    func save(_ draft: Draft, userId: String, remember: Bool = true) async throws {
+    /// Returns the new transaction's id so a save can be undone.
+    @discardableResult
+    func save(_ draft: Draft, userId: String, remember: Bool = true) async throws -> String? {
         guard draft.isComplete, let amount = draft.amount else { throw SaveError.incomplete }
-        if draft.kind == .cardPayment && draft.accountId == nil { return try await saveOutsideCardPayment(draft) }
+        if draft.kind == .cardPayment && draft.accountId == nil { try await saveOutsideCardPayment(draft); return nil }
         guard let accountId = draft.accountId else { throw SaveError.incomplete }
         let repo = SupabaseRepository.shared
         let account = accounts.first { $0.id == accountId }
+        let created: Transaction
         switch draft.kind {
         case .expense, .income:
-            _ = try await repo.createTransaction(
+            created = try await repo.createTransaction(
                 accountId: accountId, categoryId: draft.categoryId, amount: amount,
                 type: draft.kind == .income ? .income : .expense, description: draft.title, note: nil,
                 date: draft.date, userId: userId, isCreditAccount: account?.isCreditCard ?? false)
         case .transfer, .cardPayment:
             guard let counterparty = draft.counterpartyAccountId else { throw SaveError.incomplete }
-            _ = try await repo.createTransfer(primaryAccountId: accountId, counterpartyAccountId: counterparty, amount: amount,
+            created = try await repo.createTransfer(primaryAccountId: accountId, counterpartyAccountId: counterparty, amount: amount,
                                               description: draft.title, note: nil, date: draft.date)
         }
         if remember { learn(from: draft) }
         discard(draft.id)
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
+        return created.id
     }
 
     /// Saves a draft that was never queued (the quick result sheet): same as `save`, nothing to remove from the queue.
     func saveImmediately(_ draft: Draft, userId: String) async throws {
-        try await save(draft, userId: userId)
+        _ = try await save(draft, userId: userId)
     }
 
     /// A card bill paid from outside Saku (no source wallet named): lowers the card's debt only.

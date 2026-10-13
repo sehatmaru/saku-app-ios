@@ -50,231 +50,660 @@ extension Draft {
     }
 }
 
-/// "Konfirmasi catatan" (design 1d): drafts as a deck of cards, one on top at a time. Simpan, Ubah or Abaikan; or deal with all at once.
+/// "Konfirmasi catatan" (design "Konfirmasi Transaksi", layout A): every draft is a card you can fix in place.
+/// Kategori, Dompet, Tanggal, Tipe and Nominal open the same sheets as Tambah transaksi; Simpan and Abaikan
+/// can be undone from the toast. "Simpan semua" only takes the complete ones.
 struct DraftQueueView: View {
     let userId: String
     @ObservedObject private var store = DraftStore.shared
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @FocusState private var focusedId: UUID?
 
-    private enum Outcome { case saved, ignored }
-    /// The drafts present when the sheet opened, in order, for the progress bar and "1 dari 4".
-    @State private var session: [UUID] = []
-    @State private var outcomes: [UUID: Outcome] = [:]
-    @State private var editing: Draft?
-    /// The card on screen; swiping the cards sideways moves between them.
-    @State private var selectedId: UUID?
-    @State private var isSaving = false
-    @State private var isLeaving = false
-    @State private var drag: CGFloat = 0
+    /// Counted for "Semua sudah dicek".
+    @State private var saved = 0
+    @State private var ignored = 0
+    @State private var saving: Set<UUID> = []
+    @State private var failures: [UUID: Failure] = [:]
+    @State private var sheet: DraftSheet?
+    @State private var toast: Toast?
+    @State private var showsSaveAll = false
     @State private var showsDeleteAll = false
     @State private var errorMessage: String?
 
-    private var pending: [Draft] { session.compactMap { id in outcomes[id] == nil ? store.drafts.first { $0.id == id } : nil } }
-    private var current: Draft? { pending.first { $0.id == selectedId } ?? pending.first }
-    private var savedCount: Int { outcomes.values.filter { $0 == .saved }.count }
-    private var ignoredCount: Int { outcomes.values.filter { $0 == .ignored }.count }
-    private var ready: [Draft] { pending.filter(\.isComplete) }
+    struct Failure {
+        let isOffline: Bool
+        let message: String
+
+        init(_ error: Error) {
+            let ns = error as NSError
+            let offlineCodes = [NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost, NSURLErrorTimedOut,
+                                NSURLErrorCannotConnectToHost, NSURLErrorDataNotAllowed]
+            isOffline = ns.domain == NSURLErrorDomain && offlineCodes.contains(ns.code)
+            message = FreeLimits.friendly(error).localizedDescription
+        }
+    }
+
+    struct DraftSheet: Identifiable {
+        enum Kind { case type, category, wallet, target, date, amount }
+        let draftId: UUID
+        let kind: Kind
+        var id: String { "\(draftId)-\(kind)" }
+    }
+
+    struct Toast: Identifiable {
+        enum Kind { case saved, ignored }
+        let id = UUID()
+        let text: String
+        let drafts: [Draft]
+        let transactionIds: [String]
+        let kind: Kind
+    }
+
+    private enum Level { case unread, partial, complete }
+
+    private func level(_ d: Draft) -> Level {
+        if d.isUnreadable { return .unread }
+        return d.missing.isEmpty ? .complete : .partial
+    }
+
+    private func missingNames(_ d: Draft) -> [String] {
+        d.missing.map {
+            switch $0 {
+            case .amount: L("nominal")
+            case .account: L("dompet")
+            case .counterparty: L("dompet tujuan")
+            case .category: L("kategori")
+            }
+        }
+    }
+
+    private var ready: [Draft] { store.drafts.filter(\.isComplete) }
+
+    // MARK: Body
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Button { dismiss() } label: {
-                    Image(systemName: "chevron.left").font(.system(size: 20, weight: .medium)).foregroundStyle(Color.stGreen)
-                        .frame(width: 32, height: 32)
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                topBar
+                if !store.drafts.isEmpty {
+                    list
+                } else if saved + ignored == 0 {
+                    emptyQueue
+                } else {
+                    allChecked
                 }
-                .padding(.leading, -8)
-                .accessibilityLabel(L("Kembali"))
-                Text(L("Konfirmasi catatan")).font(.app(24, weight: .bold)).tracking(-0.4).lineLimit(1).minimumScaleFactor(0.8)
-                if let current, let index = session.firstIndex(of: current.id) {
-                    Text(L("%lld dari %lld", index + 1, session.count)).font(.app(15)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
-                }
-                Spacer()
             }
-            .padding(.horizontal, 24).padding(.top, 10)
-
-            if current != nil {
-                Label(L("Dicatat otomatis oleh Smart Tracker. Periksa dulu sebelum disimpan."), systemImage: "sparkles")
-                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 10)
-            }
-
-            if store.expiringSoon > 0 && current != nil {
-                Label(L("%lld draf akan dihapus dalam 3 hari jika tidak diproses.", store.expiringSoon), systemImage: "clock")
-                    .font(.app(12)).foregroundStyle(Color.appWarning)
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 10)
-            }
-
-            if let current {
-                cardStack(current)
-                    .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 4)
-                    .frame(height: 440 + 28)
-                actions(current).padding(.top, 28)
-                Spacer(minLength: 12)
-                bulkBar.padding(.horizontal, 24).padding(.bottom, 24)
-            } else if session.isEmpty {
-                emptyQueue
-            } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "checkmark").font(.system(size: 24, weight: .bold)).foregroundStyle(Color.stGreen)
-                        .frame(width: 56, height: 56).background(Color.stSuccessBg, in: Circle())
-                        .stEnter(0)
-                    Text(L("Semua sudah dicek")).font(.app(17, weight: .semibold)).padding(.top, 6).stEnter(1)
-                    Text(L("%lld disimpan · %lld diabaikan", savedCount, ignoredCount))
-                        .font(.app(15)).foregroundStyle(Color.appTextSecondary).stEnter(2)
-                }
-                .padding(.horizontal, 40).padding(.top, 110)
-                Spacer()
-            }
+            toastView
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBackground)
+        .animation(.settle(0.4), value: store.drafts.map(\.id))
         .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(item: $editing) { draft in DraftEditView(draft: draft, store: store).detailPage() }
+        .hidesSmartButton()
+        .onChange(of: sheet?.id) { focusedId = nil }
+        .sheet(item: $sheet) { item in sheetContent(item) }
+        .sheet(isPresented: $showsSaveAll) { saveAllSheet }
         .confirmDialog(isPresented: $showsDeleteAll, icon: "trash", destructive: true,
-                       title: L("Hapus %lld draf tersisa?", pending.count),
-                       message: L("Draf hilang permanen dan tidak ada yang tercatat sebagai transaksi."),
-                       confirmTitle: L("Hapus semua")) { ignoreAll() }
+                       title: L("Hapus semua draf?"),
+                       message: L("Semua %lld draf dari Smart Tracker akan dibuang. Transaksi yang sudah tersimpan tidak terpengaruh.", store.drafts.count),
+                       confirmTitle: L("Hapus semua")) { deleteAll() }
         .confirmDialog(isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }),
-                       icon: "exclamationmark.triangle", title: L("Gagal menyimpan"),
+                       icon: "exclamationmark.triangle", title: L("Gagal"),
                        message: errorMessage ?? "", confirmTitle: nil, cancelTitle: L("Tutup"))
         .onAppear {
-            if session.isEmpty { session = store.drafts.map(\.id) }
-            if let id = store.editRequest, let draft = store.drafts.first(where: { $0.id == id }) {
+            if let id = store.editRequest, store.drafts.contains(where: { $0.id == id }) {
                 store.editRequest = nil
-                selectedId = id
-                editing = draft
+                sheet = DraftSheet(draftId: id, kind: .amount)
             }
         }
         .task { await store.refreshReferenceData(userId: userId) }
     }
 
-    /// Konfirmasi catatan with nothing in it (design 3d): what lands here, and a way to start.
-    private var emptyQueue: some View {
-        VStack(spacing: 0) {
-            STEmptyHero(icon: "tray", title: "Belum ada draf",
-                        message: "Transaksi yang ditangkap Smart Tracker menunggu di sini sampai kamu cek dan simpan.")
-                .padding(.top, 48)
-            Text(L("Draf datang dari")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 36).padding(.bottom, 8)
-                .stEnter(3)
-            VStack(spacing: 0) {
-                ForEach(Array(Self.sources.enumerated()), id: \.offset) { index, source in
-                    HStack(spacing: 12) {
-                        Image(systemName: source.icon).font(.system(size: 16)).foregroundStyle(Color.stGreen)
-                            .frame(width: 32, height: 32).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 10))
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(L(source.title)).font(.app(16))
-                            Text(L(source.detail)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 14).padding(.vertical, 10).frame(minHeight: 62)
-                    .stEnter(4 + index)
+    private var topBar: some View {
+        HStack {
+            Button { dismiss() } label: {
+                HStack(spacing: 2) {
+                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold))
+                    Text("Smart Tracker").font(.app(17))
+                }
+                .foregroundStyle(Color.appPrimary)
+                .frame(height: 44)
+            }
+            .accessibilityLabel(L("Kembali"))
+            Spacer()
+            if !store.drafts.isEmpty {
+                Button { showsDeleteAll = true } label: {
+                    Text("Hapus semua").font(.app(17)).foregroundStyle(Color.appText).frame(height: 44)
                 }
             }
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-            .padding(.horizontal, 24)
-            Spacer(minLength: 12)
-            STInkButton(title: "Catat sekarang", icon: "sparkles") {
-                dismiss()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { NotificationCenter.default.post(name: .openSmartTrackerBar, object: nil) }
+        }
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: List
+
+    private var list: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Konfirmasi catatan").font(.app(34, weight: .bold)).tracking(0.2)
+                    .padding(.horizontal, 24).padding(.top, 6)
+                Label {
+                    Text(L("%lld draf dicatat otomatis oleh Smart Tracker. Cek dan lengkapi sebelum disimpan.", store.drafts.count))
+                } icon: {
+                    Image(systemName: "sparkle").foregroundStyle(Color.appPrimary)
+                }
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                .padding(.horizontal, 24).padding(.top, 8)
+
+                VStack(spacing: 12) {
+                    ForEach(store.drafts) { draft in
+                        card(draft)
+                            .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 16)),
+                                                    removal: .opacity.combined(with: .offset(x: -28))))
+                    }
+                }
+                .padding(.horizontal, 16).padding(.top, 20).padding(.bottom, 24)
             }
-            .padding(.horizontal, 24).padding(.bottom, 30).stEnter(7)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if store.drafts.count > 1 && focusedId == nil { bulkBar }
         }
     }
 
-    private static let sources: [(icon: String, title: String, detail: String)] = [
-        ("sparkles", "Catat cepat", "Ketik atau ucapkan dari Beranda"),
-        ("bell.badge", "Notifikasi bank", "Dari aplikasi bank yang terhubung"),
-        ("square.and.arrow.up", "Bagikan teks", "Dari menu Bagikan di aplikasi lain")]
+    private var bulkBar: some View {
+        VStack(spacing: 8) {
+            PrimaryButton(title: ready.isEmpty ? L("Belum ada yang lengkap") : L("Simpan %lld yang lengkap", ready.count),
+                          isEnabled: !ready.isEmpty) { showsSaveAll = true }
+            let rest = store.drafts.count - ready.count
+            Text(rest > 0 ? L("%lld draf yang belum lengkap tetap di daftar", rest) : L("Semua draf sudah lengkap"))
+                .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+        }
+        .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 14)
+        .frame(maxWidth: .infinity)
+        .background(Color.appBackground)
+        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+    }
 
     // MARK: Card
 
-    /// The pending drafts as a deck: the first on top, the next two peeking out below. Drag the top card
-    /// sideways to send it to the back of the deck.
-    private func cardStack(_ top: Draft) -> some View {
-        let deck = pending
-        let start = deck.firstIndex { $0.id == top.id } ?? 0
-        let ordered = (0..<min(deck.count, 3)).map { deck[(start + $0) % deck.count] }
-        return ZStack(alignment: .top) {
-            ForEach(Array(ordered.enumerated()).reversed(), id: \.element.id) { depth, draft in
-                card(draft)
-                    .scaleEffect(1 - CGFloat(depth) * 0.05, anchor: .top)
-                    .offset(y: CGFloat(depth) * 16)
-                    .opacity(depth == 2 ? 0.55 : 1)
-                    .offset(x: depth == 0 ? drag : 0)
-                    .rotationEffect(.degrees(depth == 0 ? Double(drag) / 28 : 0), anchor: .bottom)
-                    .opacity(isLeaving && depth == 0 ? 0 : 1)
-                    .allowsHitTesting(depth == 0)
-                    .gesture(depth == 0 && deck.count > 1 ? swipe(deck: deck, from: start) : nil)
-                    .zIndex(Double(3 - depth))
+    private func card(_ d: Draft) -> some View {
+        let lv = level(d)
+        let isSaving = saving.contains(d.id)
+        let failure = failures[d.id]
+        let tint: Color = lv == .unread ? .stDangerText : lv == .partial ? .stWarn : .stGreen
+        let pillBg: Color = lv == .unread ? .stDangerBg : lv == .partial ? .stWarnBg : .stSuccessBg
+        let pillIcon = lv == .unread ? "questionmark" : lv == .partial ? "exclamationmark.circle.fill" : "checkmark.circle.fill"
+        let pillText = lv == .unread ? L("Tidak terbaca") : lv == .partial ? L("Kurang %@", missingNames(d).joined(separator: ", ")) : L("Siap disimpan")
+        return VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Label(L("%@ · Smart Tracker", d.sourceLabel), systemImage: d.sourceIcon)
+                        .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1).minimumScaleFactor(0.85)
+                    Spacer(minLength: 4)
+                    Text(Self.arrival(d.createdAt)).font(.app(12)).foregroundStyle(Color.appTextTertiary).lineLimit(1)
+                }
+                Label(pillText, systemImage: pillIcon)
+                    .font(.app(12, weight: .semibold)).foregroundStyle(tint)
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .background(pillBg, in: Capsule())
             }
-        }
-        .animation(.settle(0.4), value: top.id)
-        .animation(.settle(0.4), value: deck.count)
-    }
 
-    private func swipe(deck: [Draft], from index: Int) -> some Gesture {
-        DragGesture(minimumDistance: 12)
-            .onChanged { drag = $0.translation.width }
-            .onEnded { value in
-                let thrown = abs(value.predictedEndTranslation.width) > 260 || abs(value.translation.width) > 90
-                guard thrown else { withAnimation(.settle(0.35)) { drag = 0 }; return }
-                let direction: CGFloat = value.translation.width < 0 ? -1 : 1
-                withAnimation(.easeIn(duration: 0.18)) { drag = direction * 420 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-                    selectedId = deck[(index + 1) % deck.count].id
-                    drag = 0
+            if d.isUnreadable {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Smart Tracker belum paham kalimat ini").font(.app(15, weight: .semibold))
+                    Text("“\(d.title)”").font(.app(15)).italic().foregroundStyle(Color.appTextSecondary)
+                    Text("Isi nominal dan detailnya di bawah.").font(.app(13)).foregroundStyle(Color.appTextSecondary)
                 }
             }
-    }
 
-    private func card(_ draft: Draft) -> some View {
-        let wallet = store.accounts.first { $0.id == draft.accountId }
-        let counter = store.accounts.first { $0.id == draft.counterpartyAccountId }
-        let category = store.categories.first { $0.id == draft.categoryId }
-        return VStack(alignment: .leading, spacing: 0) {
-            Label(L("Smart Tracker · %@", draft.sourceLabel), systemImage: draft.sourceIcon)
-                .font(.app(13)).foregroundStyle(Color.appTextSecondary)
-            Image(systemName: category?.icon ?? draft.kindIcon).font(.system(size: 24)).foregroundStyle(Color.appText)
-                .frame(width: 52, height: 52).background(Color.stRaised, in: Circle()).padding(.top, 18)
-            Text(draft.title.isEmpty ? draft.kindTitle : draft.title).font(.app(20, weight: .semibold)).lineLimit(2).padding(.top, 12)
-            Text(draft.amount.map { (draft.kind == .expense ? "−" : "") + (isBalanceVisible ? $0.formattedAsCurrency() : "Rp" + hiddenAmount) } ?? "—")
-                .font(.app(44, weight: .ultraLight)).tracking(-1.8).monospacedDigit()
-                .lineLimit(1).minimumScaleFactor(0.5).padding(.top, 4)
-            if draft.isUnreadable {
-                Text(L("Tidak terbaca. Isi nominalnya dulu.")).font(.app(13)).foregroundStyle(Color.appWarning).padding(.top, 4)
-            }
-            if let note = draft.duplicateNote {
-                Label(note, systemImage: "doc.on.doc").font(.app(12)).foregroundStyle(Color.appWarning).padding(.top, 6)
-            }
-            Spacer(minLength: 12)
-            VStack(spacing: 0) {
-                switch draft.kind {
-                case .transfer, .cardPayment:
-                    cardRow(L("Dari"), wallet?.name ?? L("Belum dipilih"), warn: wallet == nil && draft.kind == .transfer)
-                    cardRow(draft.kind == .cardPayment ? L("Kartu") : L("Ke"), counter?.name ?? L("Belum dipilih"), warn: counter == nil)
-                default:
-                    cardRow(L("Kategori"), category?.name ?? L("Belum dipilih"), warn: category == nil)
-                    cardRow(L("Dompet"), wallet?.name ?? L("Belum dipilih"), warn: wallet == nil)
+            VStack(alignment: .leading, spacing: 2) {
+                TextField("", text: nameBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.appTextTertiary))
+                    .font(.app(17, weight: .semibold))
+                    .focused($focusedId, equals: d.id)
+                    .submitLabel(.done)
+                    .onSubmit { focusedId = nil }
+                Button { sheet = DraftSheet(draftId: d.id, kind: .amount) } label: {
+                    HStack(alignment: .top, spacing: 3) {
+                        Text("Rp").font(.app(15)).foregroundStyle(Color.appTextTertiary).padding(.top, 8)
+                        Text(d.amount.map { $0.formattedAsDigits() } ?? "0")
+                            .font(.app(44, weight: .light)).tracking(-1.2).monospacedDigit()
+                            .foregroundStyle(d.amount == nil ? Color.appTextTertiary : d.kind == .income ? Color.stGreen : Color.appText)
+                            .lineLimit(1).minimumScaleFactor(0.5)
+                        Spacer(minLength: 0)
+                    }
                 }
-                cardRow(L("Tanggal"), Self.dateLabel(draft.date), warn: false, last: true)
+                .buttonStyle(.plain)
+                .accessibilityLabel(L("Nominal"))
+                if d.amount == nil {
+                    Text("Ketuk untuk isi nominal").font(.app(13)).foregroundStyle(Color.stWarn)
+                }
+            }
+
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                ForEach(fields(d), id: \.label) { field in fieldButton(d, field) }
+            }
+
+            if let note = d.duplicateNote {
+                Label {
+                    Text(L("Mirip transaksi lain.")).fontWeight(.semibold).foregroundStyle(Color.stWarn)
+                        + Text(" " + note).foregroundStyle(Color.appTextSecondary)
+                } icon: { Image(systemName: "doc.on.doc").foregroundStyle(Color.stWarn) }
+                    .font(.app(13))
+            }
+            if let days = Calendar.current.dateComponents([.day], from: Date(), to: d.expiresAt).day, days <= 3 {
+                Label(L("Dibuang otomatis dalam %lld hari", max(days, 1)), systemImage: "hourglass")
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            }
+            if let failure {
+                Label {
+                    Text(failure.isOffline ? L("Gagal menyimpan.") : L("Gagal menyimpan:")).fontWeight(.semibold).foregroundStyle(Color.stDangerText)
+                        + Text(" " + (failure.isOffline ? L("Kamu sedang offline. Draf tetap aman di sini, coba lagi saat tersambung.") : failure.message))
+                        .foregroundStyle(Color.appTextSecondary)
+                } icon: { Image(systemName: failure.isOffline ? "wifi.slash" : "exclamationmark.triangle").foregroundStyle(Color.stDangerText) }
+                    .font(.app(13))
+                    .padding(.horizontal, 12).padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.stDangerBg, in: RoundedRectangle(cornerRadius: 12))
+            }
+
+            HStack(spacing: 10) {
+                Button { ignore(d) } label: {
+                    Text("Abaikan").font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
+                        .padding(.horizontal, 18).frame(height: 44)
+                        .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
+                }
+                .buttonStyle(PressScaleStyle())
+                .disabled(isSaving)
+                Button { save(d) } label: {
+                    HStack(spacing: 8) {
+                        if isSaving { ProgressView().tint(.white).scaleEffect(0.8) }
+                        Text(isSaving ? L("Menyimpan…") : failure != nil ? L("Coba lagi") : lv == .complete ? L("Simpan") : L("Lengkapi dulu"))
+                    }
+                    .font(.app(15, weight: .semibold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity).frame(height: 44)
+                    .background(lv == .complete ? Color.stGreen : Color.appTextTertiary, in: Capsule())
+                }
+                .buttonStyle(PressScaleStyle())
+                .disabled(isSaving)
             }
         }
-        .padding(20)
-        .frame(maxWidth: .infinity, minHeight: 392, alignment: .topLeading)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 26))
+        .padding(16)
+        .background(lv == .unread ? Color.appBackground : Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .overlay {
+            if lv == .unread {
+                RoundedRectangle(cornerRadius: 20).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+            }
+        }
+        .id(d.id)
     }
 
-    private func cardRow(_ title: String, _ value: String, warn: Bool, last: Bool = false) -> some View {
-        HStack {
-            Text(L(title)).foregroundStyle(Color.appTextSecondary)
+    private struct Field {
+        let label: String
+        let value: String
+        let icon: String
+        let isMissing: Bool
+        let kind: DraftSheet.Kind
+    }
+
+    private func fields(_ d: Draft) -> [Field] {
+        let wallet = store.accounts.first { $0.id == d.accountId }
+        let target = store.accounts.first { $0.id == d.counterpartyAccountId }
+        let category = store.categories.first { $0.id == d.categoryId }
+        var result = [Field(label: L("Tipe"), value: d.kindTitle, icon: d.kindIcon, isMissing: false, kind: .type)]
+        if d.kind == .expense || d.kind == .income {
+            result.append(Field(label: L("Kategori"), value: category?.name ?? "", icon: category?.icon ?? "tag", isMissing: category == nil, kind: .category))
+        }
+        result.append(Field(label: d.kind == .transfer ? L("Dari dompet") : L("Dompet"), value: wallet?.name ?? "", icon: "wallet.bifold",
+                            isMissing: wallet == nil, kind: .wallet))
+        if d.kind == .transfer {
+            result.append(Field(label: L("Ke dompet"), value: target?.name ?? "", icon: "arrow.right", isMissing: target == nil, kind: .target))
+        }
+        result.append(Field(label: L("Tanggal"), value: Self.dateLabel(d.date), icon: "calendar", isMissing: false, kind: .date))
+        return result
+    }
+
+    private func fieldButton(_ d: Draft, _ f: Field) -> some View {
+        Button { sheet = DraftSheet(draftId: d.id, kind: f.kind) } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(f.label).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                HStack(spacing: 6) {
+                    Image(systemName: f.isMissing ? "plus.circle" : f.icon).font(.system(size: 14))
+                    Text(f.isMissing ? L("Pilih") : f.value).font(.app(15, weight: .medium)).lineLimit(1)
+                }
+                .foregroundStyle(f.isMissing ? Color.stWarn : Color.appText)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12).padding(.vertical, 9)
+            .background(f.isMissing ? Color.clear : Color.appBackground, in: RoundedRectangle(cornerRadius: 12))
+            .overlay {
+                if f.isMissing {
+                    RoundedRectangle(cornerRadius: 12).strokeBorder(Color.stWarn, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                }
+            }
+        }
+        .buttonStyle(PressScaleStyle())
+        .accessibilityLabel(f.label)
+    }
+
+    // MARK: Other screens
+
+    private var emptyQueue: some View {
+        VStack(spacing: 0) {
+            Text("Konfirmasi catatan").font(.app(34, weight: .bold)).tracking(0.2)
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 6)
+            VStack(spacing: 10) {
+                Image(systemName: "tray").font(.system(size: 44, weight: .light)).foregroundStyle(Color.appTextTertiary).stFloat()
+                Text("Belum ada draf").font(.app(20, weight: .semibold))
+                Text("Transaksi yang dicatat Smart Tracker dari ketikan, suara, Siri, bagikan teks, atau notifikasi akan muncul di sini untuk kamu cek.")
+                    .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center).frame(maxWidth: 300)
+            }
+            .frame(maxHeight: .infinity)
+            .stEnter(0)
+            PrimaryButton(title: L("Buka Smart Tracker")) {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { NotificationCenter.default.post(name: .openSmartTrackerBar, object: nil) }
+            }
+            .padding(.horizontal, 24).padding(.bottom, 30)
+        }
+    }
+
+    private var allChecked: some View {
+        VStack(alignment: .leading, spacing: 0) {
             Spacer()
-            Text(value).foregroundStyle(warn ? Color.appWarning : Color.appText).fontWeight(warn ? .semibold : .regular)
+            Image(systemName: "checkmark").font(.system(size: 28, weight: .bold)).foregroundStyle(Color.appPrimary)
+                .frame(width: 64, height: 64).background(Color.stSuccessBg, in: Circle()).stEnter(0)
+            Text("Semua sudah dicek").font(.app(34, weight: .bold)).padding(.top, 28).stEnter(1)
+            Text("Tidak ada draf Smart Tracker yang menunggu. Draf baru akan muncul di sini.")
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 8).stEnter(2)
+            HStack(spacing: 0) {
+                stat(saved, "disimpan ke transaksi", color: Color.appPrimary).frame(maxWidth: .infinity, alignment: .leading)
+                Rectangle().fill(Color.appSeparator).frame(width: 1)
+                stat(ignored, "diabaikan", color: Color.appText).padding(.leading, 20).frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+            .padding(.top, 28).stEnter(3)
+            Spacer()
+            PrimaryButton(title: L("Kembali ke Smart Tracker")) { dismiss() }.padding(.bottom, 30)
         }
-        .font(.app(15)).frame(height: 42)
-        .overlay(alignment: .bottom) { if !last { Rectangle().fill(Color.appSeparator).frame(height: 1) } }
+        .padding(.horizontal, 24)
+    }
+
+    private func stat(_ value: Int, _ label: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("\(value)").font(.app(52, weight: .ultraLight)).tracking(-1.5).monospacedDigit().foregroundStyle(color)
+            Text(L(label)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+        }
+        .padding(.vertical, 18)
+    }
+
+    @ViewBuilder private var toastView: some View {
+        if let toast {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(Color(light: 0x3DDC97, dark: 0x3DDC97))
+                Text(toast.text).font(.app(15, weight: .medium)).lineLimit(1)
+                Button { undo(toast) } label: {
+                    Text("Urungkan").font(.app(14, weight: .semibold)).foregroundStyle(Color(light: 0x3DDC97, dark: 0x3DDC97))
+                        .padding(.horizontal, 12).frame(height: 32)
+                        .background(Color.white.opacity(0.14), in: Capsule())
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.leading, 14).padding(.trailing, 6).frame(height: 44)
+            .background(Color(light: 0x111111, dark: 0x2C2C2E), in: Capsule())
+            .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
+            .padding(.bottom, store.drafts.isEmpty ? 110 : store.drafts.count > 1 && focusedId == nil ? 124 : 40)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    // MARK: Sheets
+
+    @ViewBuilder private func sheetContent(_ item: DraftSheet) -> some View {
+        if let d = store.drafts.first(where: { $0.id == item.draftId }) {
+            switch item.kind {
+            case .type:
+                DraftTypeSheet(selected: d.kind, onDone: { sheet = nil }) { kind in
+                    edit(d.id) { draft in
+                        guard draft.kind != kind else { return }
+                        draft.kind = kind
+                        draft.categoryId = nil
+                        draft.counterpartyAccountId = nil
+                        draft.needsInvestmentWallet = false
+                    }
+                    sheet = nil
+                }
+            case .category:
+                CategoryPickerSheet(title: L("Kategori"), categories: categories(for: d.kind), selectedId: d.categoryId,
+                                    frequentIds: [], onDone: { sheet = nil }) { category in
+                    edit(d.id) { $0.categoryId = category.id; $0.fromMemory = false }
+                    learn(d.id)
+                    sheet = nil
+                }
+            case .wallet:
+                walletSheet(d, accounts: store.accounts.filter { $0.isActive && !$0.isInvestment }, selected: d.accountId,
+                            title: d.kind == .transfer ? L("Dari dompet") : L("Dompet")) { account in
+                    edit(d.id) { draft in
+                        draft.accountId = account.id
+                        draft.fromMemory = false
+                        if draft.counterpartyAccountId == account.id { draft.counterpartyAccountId = nil }
+                    }
+                    learn(d.id)
+                }
+            case .target:
+                let source = store.accounts.first { $0.id == d.accountId }
+                walletSheet(d, accounts: WalletRules.transferTargets(from: source, in: store.accounts), selected: d.counterpartyAccountId,
+                            title: L("Ke dompet")) { account in
+                    edit(d.id) { $0.counterpartyAccountId = account.id; $0.needsInvestmentWallet = false }
+                }
+            case .date:
+                PickerSheet(title: L("Tanggal"), onDone: { sheet = nil }) {
+                    DayPicker(selected: d.date, color: .stGreen) { day in
+                        edit(d.id) { $0.date = Self.keepingTime(of: $0.date, on: day) }
+                        sheet = nil
+                    }
+                }
+            case .amount:
+                DraftAmountSheet(amount: Int(d.amount ?? 0)) { value in
+                    edit(d.id) { draft in
+                        Self.clearUnreadable(&draft)
+                        draft.amount = value > 0 ? Double(value) : nil
+                    }
+                } onDone: { sheet = nil }
+            }
+        }
+    }
+
+    private func walletSheet(_ d: Draft, accounts: [Account], selected: String?, title: String,
+                             onPick: @escaping (Account) -> Void) -> some View {
+        WalletPickerSheet(title: title, accounts: accounts, selectedId: selected,
+                          mainId: store.accounts.first(where: \.isDefault)?.id, recentIds: [],
+                          onDone: { sheet = nil }, onPick: { account in onPick(account); sheet = nil })
+    }
+
+    private func categories(for kind: Draft.Kind) -> [Category] {
+        let type: CategoryType = kind == .income ? .income : .expense
+        return store.categories.filter { $0.type == type && !CategoryCatalog.isSystem($0) }
+    }
+
+    private var saveAllSheet: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L("Simpan %lld transaksi yang lengkap?", ready.count)).font(.app(20, weight: .semibold))
+                let rest = store.drafts.count - ready.count
+                Text(rest > 0 ? L("%lld draf yang belum lengkap tetap di daftar supaya bisa kamu cek nanti.", rest)
+                     : L("Semua draf akan disimpan ke transaksimu."))
+                    .font(.app(15)).foregroundStyle(Color.appTextSecondary)
+            }
+            ScrollView {
+                VStack(spacing: 14) {
+                    ForEach(ready) { d in
+                        HStack(spacing: 14) {
+                            Image(systemName: store.categories.first { $0.id == d.categoryId }?.icon ?? d.kindIcon)
+                                .font(.system(size: 18)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+                            Text(d.title.isEmpty ? d.kindTitle : d.title).font(.app(16)).lineLimit(1)
+                            Spacer()
+                            Text((d.amount ?? 0).formattedAsCurrency()).font(.app(16)).monospacedDigit()
+                        }
+                    }
+                }
+            }
+            PrimaryButton(title: L("Simpan %lld transaksi", ready.count)) { saveAllComplete() }
+            Button { showsSaveAll = false } label: {
+                Text("Batal").font(.app(17, weight: .medium)).foregroundStyle(Color.appText).frame(maxWidth: .infinity).frame(height: 44)
+            }
+        }
+        .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 16)
+        .presentationDetents([.fraction(0.6), .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .presentationBackground(Color.appBackground)
+    }
+
+    // MARK: Editing
+
+    private func edit(_ id: UUID, _ change: (inout Draft) -> Void) {
+        guard var draft = store.drafts.first(where: { $0.id == id }) else { return }
+        change(&draft)
+        failures[id] = nil
+        store.update(draft)
+    }
+
+    /// Fixing a draft the parser could not read: the user's words give way to what they fill in.
+    private static func clearUnreadable(_ draft: inout Draft) {
+        guard draft.isUnreadable else { return }
+        draft.isUnreadable = false
+        draft.title = ""
+    }
+
+    private func nameBinding(_ d: Draft) -> Binding<String> {
+        Binding(get: { d.isUnreadable ? "" : d.title },
+                set: { value in edit(d.id) { Self.clearUnreadable(&$0); $0.title = value } })
+    }
+
+    /// A correction teaches Ingatan, same as saving does.
+    private func learn(_ id: UUID) {
+        if let draft = store.drafts.first(where: { $0.id == id }) { store.learnCorrection(from: draft) }
+    }
+
+    private func openFirstMissing(_ d: Draft) {
+        let kind: DraftSheet.Kind
+        switch d.missing.first {
+        case .amount, .none: kind = .amount
+        case .account: kind = .wallet
+        case .counterparty: kind = .target
+        case .category: kind = .category
+        }
+        sheet = DraftSheet(draftId: d.id, kind: kind)
+    }
+
+    // MARK: Actions
+
+    private func filled(_ d: Draft) -> Draft {
+        var copy = d
+        if copy.title.isEmpty { copy.title = copy.kindTitle }
+        return copy
+    }
+
+    private func save(_ d: Draft) {
+        guard d.isComplete else { openFirstMissing(d); return }
+        guard !saving.contains(d.id) else { return }
+        focusedId = nil
+        saving.insert(d.id)
+        failures[d.id] = nil
+        Task {
+            do {
+                let transactionId = try await store.save(filled(d), userId: userId)
+                saving.remove(d.id)
+                saved += 1
+                show(Toast(text: Self.savedText(d.kind), drafts: [d], transactionIds: transactionId.map { [$0] } ?? [], kind: .saved))
+            } catch {
+                saving.remove(d.id)
+                failures[d.id] = Failure(error)
+            }
+        }
+    }
+
+    private func saveAllComplete() {
+        let items = ready
+        showsSaveAll = false
+        Task {
+            var done: [Draft] = []
+            var ids: [String] = []
+            for d in items {
+                saving.insert(d.id)
+                do {
+                    if let id = try await store.save(filled(d), userId: userId) { ids.append(id) }
+                    done.append(d)
+                    saved += 1
+                } catch {
+                    failures[d.id] = Failure(error)
+                }
+                saving.remove(d.id)
+            }
+            if !done.isEmpty {
+                show(Toast(text: done.count > 1 ? L("%lld transaksi tersimpan", done.count) : Self.savedText(done[0].kind),
+                           drafts: done, transactionIds: ids, kind: .saved))
+            }
+        }
+    }
+
+    private func ignore(_ d: Draft) {
+        focusedId = nil
+        store.discard(d.id)
+        ignored += 1
+        show(Toast(text: L("Draf diabaikan"), drafts: [d], transactionIds: [], kind: .ignored))
+    }
+
+    private func deleteAll() {
+        showsDeleteAll = false
+        let all = store.drafts
+        all.forEach { store.discard($0.id) }
+        ignored += all.count
+        show(Toast(text: L("%lld draf dihapus", all.count), drafts: all, transactionIds: [], kind: .ignored))
+    }
+
+    /// Urungkan: a saved transaction is removed again (balances go back) and its draft returns; an ignored draft just returns.
+    private func undo(_ t: Toast) {
+        toast = nil
+        Task {
+            do {
+                for id in t.transactionIds { try await SupabaseRepository.shared.softDeleteTransaction(id: id) }
+                if !t.transactionIds.isEmpty { NotificationCenter.default.post(name: .dataDidChange, object: nil) }
+                t.drafts.forEach { store.restore($0) }
+                if t.kind == .saved { saved -= t.drafts.count } else { ignored -= t.drafts.count }
+            } catch {
+                errorMessage = FreeLimits.friendly(error).localizedDescription
+            }
+        }
+    }
+
+    private func show(_ t: Toast) {
+        withAnimation(.settle(0.4)) { toast = t }
+        Task {
+            try? await Task.sleep(for: .seconds(5))
+            if toast?.id == t.id { withAnimation(.settle(0.3)) { toast = nil } }
+        }
+    }
+
+    // MARK: Words
+
+    private static func savedText(_ kind: Draft.Kind) -> String {
+        switch kind {
+        case .expense: return L("Pengeluaran tersimpan")
+        case .income: return L("Pemasukan tersimpan")
+        case .transfer, .cardPayment: return L("Transfer tersimpan")
+        }
+    }
+
+    /// "Masuk 09.41", "Masuk kemarin 09.41" or "Masuk 10 Okt 09.41": when the draft arrived.
+    private static func arrival(_ date: Date) -> String {
+        let time = DateFormatter.arrivalTime.string(from: date)
+        if Calendar.current.isDateInToday(date) { return L("Masuk %@", time) }
+        if Calendar.current.isDateInYesterday(date) { return L("Masuk kemarin %@", time) }
+        return L("Masuk %@ %@", DateFormatter.shortDay.string(from: date), time)
     }
 
     private static func dateLabel(_ date: Date) -> String {
@@ -285,117 +714,104 @@ struct DraftQueueView: View {
         return day
     }
 
-    // MARK: Actions
-
-    private func actions(_ draft: Draft) -> some View {
-        HStack(alignment: .top, spacing: 28) {
-            circle(L("Abaikan"), "xmark", size: 60, fill: Color.stChip, fg: Color.appText) { resolve(draft, .ignored) }
-            circle(L("Ubah"), "pencil", size: 48, fill: Color.stChip, fg: Color.appText) { editing = draft }.padding(.top, 6)
-            ZStack {
-                circle(L("Simpan"), "checkmark", size: 60, fill: draft.isComplete ? Color.stGreen : Color.appTextTertiary, fg: .white) {
-                    if draft.isComplete { resolve(draft, .saved) } else { editing = draft }
-                }
-                .opacity(isSaving ? 0.5 : 1)
-            }
-        }
-        .frame(maxWidth: .infinity)
+    /// Moves `date` to `day` but keeps its time.
+    private static func keepingTime(of date: Date, on day: Date) -> Date {
+        let calendar = Calendar.current
+        let time = calendar.dateComponents([.hour, .minute, .second], from: date)
+        return calendar.date(bySettingHour: time.hour ?? 0, minute: time.minute ?? 0, second: time.second ?? 0, of: day) ?? day
     }
+}
 
-    private func circle(_ label: String, _ icon: String, size: CGFloat, fill: Color, fg: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: icon).font(.system(size: size == 60 ? 22 : 19, weight: .bold)).foregroundStyle(fg)
-                    .frame(width: size, height: size).background(fill, in: Circle())
-                Text(L(label)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-            }
-        }
-        .buttonStyle(PressScaleStyle())
-        .disabled(isSaving)
-    }
+// MARK: - Type and amount sheets
 
-    private var bulkBar: some View {
-        HStack {
-            Button { showsDeleteAll = true } label: {
-                Label(L("Hapus semua"), systemImage: "trash")
-                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.stDangerText).frame(height: 44)
-            }
-            Spacer()
-            Button(action: saveAll) {
-                Label(L("Simpan semua (%lld)", ready.count), systemImage: "checkmark.circle")
-                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.appBackground)
-                    .padding(.horizontal, 18).frame(height: 44)
-                    .background(ready.isEmpty ? Color.appTextTertiary : Color.appText, in: Capsule())
-            }
-            .disabled(ready.isEmpty || isSaving)
-        }
-    }
+/// Pengeluaran, Pemasukan or Transfer, in the style of the wallet and category sheets.
+private struct DraftTypeSheet: View {
+    let selected: Draft.Kind
+    let onDone: () -> Void
+    let onPick: (Draft.Kind) -> Void
 
-    private func resolve(_ draft: Draft, _ outcome: Outcome, animated: Bool = true) {
-        if outcome == .ignored {
-            finish(draft, .ignored, animated: animated) { store.discard(draft.id) }
-            return
-        }
-        isSaving = true
-        Task {
-            do {
-                try await store.save(draft, userId: userId)
-                isSaving = false
-                finish(draft, .saved, animated: animated) {}
-            } catch {
-                isSaving = false
-                errorMessage = error.localizedDescription
-            }
-        }
-    }
+    private let kinds: [(kind: Draft.Kind, title: String, detail: String, icon: String, color: Color)] = [
+        (.expense, "Pengeluaran", "Uang keluar dari dompet", "arrow.up.right", .stExpense),
+        (.income, "Pemasukan", "Uang masuk ke dompet", "arrow.down.left", .stGreen),
+        (.transfer, "Transfer", "Pindah uang antar dompet", "arrow.left.arrow.right", .stTransfer)]
 
-    /// Slides the card away, then moves on to the next one.
-    private func finish(_ draft: Draft, _ outcome: Outcome, animated: Bool = true, _ work: @escaping () -> Void) {
-        // after this one goes, show the next card (or the previous when it was the last)
-        let list = pending
-        let index = list.firstIndex { $0.id == draft.id } ?? 0
-        let neighbour = list.indices.contains(index + 1) ? list[index + 1].id : (index > 0 ? list[index - 1].id : nil)
-        if animated { withAnimation(.easeOut(duration: 0.2)) { isLeaving = true } }
-        Task {
-            try? await Task.sleep(for: .milliseconds(200))
-            work()
-            withAnimation(.settle(0.4)) {
-                outcomes[draft.id] = outcome
-                selectedId = neighbour
-            }
-            if animated { withAnimation(.easeOut(duration: 0.2)) { isLeaving = false } }
-        }
-    }
-
-    private func saveAll() {
-        isSaving = true
-        Task {
-            for draft in ready {
-                do {
-                    try await store.save(draft, userId: userId)
-                    outcomes[draft.id] = .saved
-                } catch {
-                    errorMessage = error.localizedDescription
-                    break
+    var body: some View {
+        PickerSheet(title: L("Tipe transaksi"), onDone: onDone) {
+            VStack(spacing: 0) {
+                ForEach(kinds, id: \.kind) { item in
+                    let isOn = item.kind == selected
+                    Button { onPick(item.kind) } label: {
+                        HStack(spacing: 14) {
+                            Image(systemName: item.icon).font(.system(size: 18, weight: .semibold)).foregroundStyle(item.color)
+                                .frame(width: 44, height: 44).background(item.color.opacity(0.12), in: Circle())
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(L(item.title)).font(.app(16, weight: .medium))
+                                Text(L(item.detail)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                            }
+                            Spacer()
+                            if isOn { Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(Color.appPrimary) }
+                        }
+                        .padding(.horizontal, 24).frame(height: 68)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(isOn ? .isSelected : [])
                 }
             }
-            isSaving = false
+            .padding(.top, 8)
+        }
+    }
+}
+
+/// Nominal: big amount and the number pad, like the budget sheet. The first key replaces the shown amount.
+private struct DraftAmountSheet: View {
+    @State private var amount: Int
+    @State private var isFresh = true
+    let onChange: (Int) -> Void
+    let onDone: () -> Void
+
+    init(amount: Int, onChange: @escaping (Int) -> Void, onDone: @escaping () -> Void) {
+        _amount = State(initialValue: amount)
+        self.onChange = onChange
+        self.onDone = onDone
+    }
+
+    var body: some View {
+        PickerSheet(title: L("Nominal"), onDone: onDone) {
+            HStack(alignment: .top, spacing: 4) {
+                Text("Rp").font(.app(20)).foregroundStyle(Color.appTextSecondary).padding(.top, 7)
+                Text(Double(amount).formattedAsDigits())
+                    .font(.app(48, weight: .light)).tracking(-1.8)
+                    .foregroundStyle(amount > 0 ? Color.appText : Color(light: 0xC7C7CC, dark: 0x48484A))
+                    .lineLimit(1).minimumScaleFactor(0.6).contentTransition(.numericText())
+            }
+            .monospacedDigit()
+            .frame(maxWidth: .infinity).padding(.top, 12).padding(.bottom, 18)
+            NumberPadKeys(onPress: press).padding(.horizontal, 12).padding(.bottom, 12)
         }
     }
 
-    private func ignoreAll() {
-        for draft in pending {
-            store.discard(draft.id)
-            outcomes[draft.id] = .ignored
-        }
-        showsDeleteAll = false
+    private func press(_ key: String) {
+        guard let next = NumberPad.apply(key, to: isFresh ? 0 : amount) else { return }
+        isFresh = false
+        withAnimation(.snappy(duration: 0.2)) { amount = next }
+        onChange(next)
     }
 }
 
 extension DateFormatter {
-    static let shortDay: DateFormatter = {
+    /// Computed, not cached: the language can change while the app runs.
+    static var shortDay: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "d MMM"
         f.locale = AppLanguage.locale
         return f
-    }()
+    }
+
+    static var arrivalTime: DateFormatter {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX") // always 24-hour, whatever the phone's clock setting
+        f.dateFormat = "HH.mm"
+        return f
+    }
 }

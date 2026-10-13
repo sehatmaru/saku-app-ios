@@ -17,7 +17,17 @@ enum SmartParser {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
         let chunks = chunks(of: trimmed)
-        let drafts = chunks.map { draft(from: $0, source: source, context: context) }
+        let drafts = chunks.map { chunk -> Draft in
+            let parsed = draft(from: chunk, source: source, context: context)
+            // paying a credit card bill is done by hand in Saku, never from Smart Tracker: keep the words, fill in manually
+            guard parsed.kind == .cardPayment else { return parsed }
+            var unread = Draft()
+            unread.source = source
+            unread.title = chunk
+            unread.isUnreadable = true
+            unread.date = context.now
+            return unread
+        }
         // A sentence with no amount anywhere is kept whole as one empty draft with the user's words.
         if drafts.allSatisfy({ $0.amount == nil }) {
             var empty = Draft()

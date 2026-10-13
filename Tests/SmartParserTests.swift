@@ -70,11 +70,11 @@ final class SmartParserTests: XCTestCase {
         XCTAssertEqual(d.counterpartyAccountId, "gopay")
     }
 
-    func testCardPayment() {
+    /// Paying a credit card bill is done by hand in Saku: the sentence becomes a draft to fill in manually.
+    func testCardPaymentIsLeftForManualEntry() {
         let d = parse("bayar kartu kredit bca visa 2jt")[0]
-        XCTAssertEqual(d.kind, .cardPayment)
-        XCTAssertEqual(d.counterpartyAccountId, "cc")
-        XCTAssertEqual(d.amount, 2_000_000)
+        XCTAssertTrue(d.isUnreadable)
+        XCTAssertNotEqual(d.kind, .cardPayment)
     }
 
     func testSavingGoesToTheInvestmentWalletNeverAnExpense() {
