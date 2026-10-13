@@ -89,6 +89,8 @@ extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
     }
 
     public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        viewControllers.count > 1
+        // Never start a swipe-back while this stack is still pushing or popping: a second pop on top of a running
+        // transition leaves the stack half-popped (tab bar gone, navigation stuck).
+        viewControllers.count > 1 && transitionCoordinator == nil
     }
 }

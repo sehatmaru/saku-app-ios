@@ -134,8 +134,10 @@ struct DashboardView: View {
     /// Konfirmasi transaksi is a page on the Beranda stack, not a sheet.
     private func openDraftsPage() {
         selectedTab = .home
-        homePath = NavigationPath()
-        homePath.append(HomeRoute.drafts)
+        // one assignment, not reset-then-append: two changes to the path in a row can corrupt a stack that is mid-transition
+        var path = NavigationPath()
+        path.append(HomeRoute.drafts)
+        homePath = path
     }
 
     /// "Sudah, catat" on the notification: open its card once the bills have loaded.
