@@ -169,6 +169,20 @@ struct SmartTrackerHomeOverlay: View {
                         }
                     }
                     Spacer(minLength: 0)
+                } else if let notice {
+                    if let thumbnail {
+                        Image(uiImage: thumbnail).resizable().scaledToFill().frame(width: 38, height: 38)
+                            .clipShape(RoundedRectangle(cornerRadius: 10)).opacity(0.5).padding(.leading, -9)
+                    } else {
+                        Image(systemName: "camera.slash").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary)
+                    }
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(notice == .unreadable ? "Belum ada hasil" : "Kamera belum diizinkan")
+                            .font(.app(15, weight: .medium)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                        Text(notice == .unreadable ? "Tidak ada yang tersimpan" : "Ubah di Pengaturan iPhone")
+                            .font(.app(12)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
                 } else {
                     TextField(L("kopi 25rb gopay"), text: $text)
                         .font(.app(16))
@@ -181,6 +195,8 @@ struct SmartTrackerHomeOverlay: View {
                 }
                 if isThinking {
                     ProgressView().frame(width: 40, height: 40)
+                } else if notice != nil {
+                    EmptyView()
                 } else if text.trimmingCharacters(in: .whitespaces).isEmpty {
                     Menu {
                         Button { startImage(camera: true) } label: { Label("Kamera", systemImage: "camera") }
@@ -221,7 +237,7 @@ struct SmartTrackerHomeOverlay: View {
         }
         .shadow(color: .black.opacity(0.1), radius: 14, y: 4)
         .overlay(alignment: .bottom) {
-            if let notice { noticeCard(notice).offset(y: -76).transition(.opacity.combined(with: .offset(y: 8))) }
+            if let notice { noticeCard(notice).offset(y: -78).transition(.opacity.combined(with: .offset(y: 8))) }
         }
         .animation(.settle(0.3), value: notice)
         .padding(.horizontal, 20)
@@ -238,13 +254,14 @@ struct SmartTrackerHomeOverlay: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: n.icon).font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 22)
                 Text(L(n.message)).font(.app(15)).lineSpacing(2).foregroundStyle(Color.appBody)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: 8) {
-                Button { notice = nil; n.primary { startImage(camera: $0) } } label: {
+                Button { notice = nil; thumbnail = nil; n.primary { startImage(camera: $0) } } label: {
                     Text(L(n.primaryTitle)).font(.app(15, weight: .semibold)).foregroundStyle(.white)
                         .padding(.horizontal, 16).frame(height: 36).background(Color.stGreen, in: Capsule())
                 }
-                Button { notice = nil; focused = true } label: {
+                Button { notice = nil; thumbnail = nil; focused = true } label: {
                     Text("Ketik saja").font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
                         .padding(.horizontal, 16).frame(height: 36)
                         .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
@@ -270,6 +287,8 @@ struct SmartTrackerHomeOverlay: View {
     }
 
     private func close() {
+        notice = nil
+        thumbnail = nil
         retryHint = false
         focused = false
         isOpen = false
@@ -306,7 +325,6 @@ struct SmartTrackerHomeOverlay: View {
         thumbnail = ImageReader.downscaled(data, maxSide: 120).map { UIImage(cgImage: $0) }
         isThinking = true
         Task {
-            defer { thumbnail = nil }
             let lines = ImageReader.downscaled(data) == nil ? [] : await ImageReader.lines(in: ImageReader.downscaled(data)!)
             var reading = ImageParser.parse(lines: lines, context: store.context)
             // hard case: only the text goes to the language model, when agreed, online and available
@@ -318,6 +336,7 @@ struct SmartTrackerHomeOverlay: View {
                 notice = .unreadable
                 return
             }
+            thumbnail = nil
             close()
             result = QuickInput(sentence: "", source: .photo, drafts: reading.drafts)
             if reading.truncated {
