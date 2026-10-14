@@ -331,6 +331,16 @@
         }
       }
     },
+    "%@ · %lld cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld installments"
+          }
+        }
+      }
+    },
     "%@ · %lld hari lagi": {
       "localizations": {
         "en": {
@@ -397,6 +407,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@."
+          }
+        }
+      }
+    },
+    "%@/bln": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/mo"
           }
         }
       }
@@ -509,6 +529,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld entries saved"
+          }
+        }
+      }
+    },
+    "%lld cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld installments"
+          }
+        }
+      }
+    },
+    "%lld cicilan berjalan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld running installments"
+          }
+        }
+      }
+    },
+    "%lld cicilan di %lld kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld installments on %lld cards"
           }
         }
       }
@@ -689,6 +739,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "used %lld times"
+          }
+        }
+      }
+    },
+    "%lld kartu kredit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld credit cards"
           }
         }
       }
@@ -969,6 +1029,16 @@
           "stringUnit": {
             "state": "translated",
             "value": ". If "
+          }
+        }
+      }
+    },
+    "/bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/month"
           }
         }
       }
@@ -6119,6 +6189,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Paid off"
+          }
+        }
+      }
+    },
+    "Lunas %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paid off %@"
           }
         }
       }
@@ -11575,6 +11655,16 @@
         }
       }
     },
+    "dibeli %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bought %@"
+          }
+        }
+      }
+    },
     "disimpan": {
       "localizations": {
         "en": {
@@ -11751,6 +11841,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "expense"
+          }
+        }
+      }
+    },
+    "per bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "per month"
           }
         }
       }

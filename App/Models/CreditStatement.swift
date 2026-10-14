@@ -158,6 +158,14 @@ struct CreditStatement {
         return (statement, cycle.dueDate(after: statement))
     }
 
+    /// The cut-off the last part of an installment bought on `purchase` is billed on.
+    static func finalBillingDate(purchaseOn purchase: Date, months: Int, card: Account, calendar: Calendar = .current) -> Date {
+        let cycle = Cycle(card: card, calendar: calendar)
+        var cutoff = cycle.cutoff(monthAfter: cycle.lastCutoff(before: calendar.startOfDay(for: purchase)))
+        for _ in 1..<max(months, 1) { cutoff = cycle.cutoff(monthAfter: cutoff) }
+        return cutoff
+    }
+
     /// Parts of an installment billed so far (0...months).
     static func billedParts(of installment: CardInstallment, purchaseDate: Date, card: Account,
                             today: Date = Date(), calendar: Calendar = .current) -> Int {

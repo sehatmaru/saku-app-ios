@@ -58,6 +58,14 @@ final class CreditStatementTests: XCTestCase {
         XCTAssertEqual(waiting.unbilled, 500_000)
     }
 
+    func testFinalBillingDateIsTheLastPartsCutoff() {
+        // bought 13 Aug, cut-off on the 20th: parts bill 20 Aug, 20 Sep, 20 Oct
+        let end = CreditStatement.finalBillingDate(purchaseOn: date(2026, 8, 13), months: 3, card: card(balance: 0), calendar: calendar)
+        XCTAssertEqual(end, calendar.startOfDay(for: date(2026, 10, 20)))
+        let one = CreditStatement.finalBillingDate(purchaseOn: date(2026, 8, 13), months: 1, card: card(balance: 0), calendar: calendar)
+        XCTAssertEqual(one, calendar.startOfDay(for: date(2026, 8, 20)))
+    }
+
     func testChargeOnTheCutoffDayIsBilled() {
         let txns = [txn("a", .expense, 500_000, date(2026, 9, 20, hour: 23))]
         let s = statement(card(balance: 500_000), txns, today: date(2026, 9, 21))

@@ -6,6 +6,8 @@ struct RunningInstallment: Identifiable, Equatable {
     let id: String
     let title: String
     let cardName: String
+    /// The card's wallet icon id, for its logo.
+    let cardIcon: String?
     let months: Int
     /// Parts billed by the end of the period (0 for a purchase whose first statement is still to come).
     let billedParts: Int
@@ -15,6 +17,8 @@ struct RunningInstallment: Identifiable, Equatable {
     let purchaseDate: Date
     /// The cut-off the first part is billed on; only set while nothing has been billed.
     let firstBillingDate: Date?
+    /// The cut-off the last part is billed on: when the installment is paid off.
+    let endDate: Date
 
     var remainingParts: Int { months - billedParts }
 }
@@ -32,9 +36,10 @@ enum RunningInstallments {
             let billed = CreditStatement.billedParts(of: plan, purchaseDate: purchase.date, card: card, today: periodEnd, calendar: calendar)
             guard billed < plan.months else { return nil }
             let first = billed == 0 ? CreditStatement.billing(forPurchaseOn: purchase.date, card: card, calendar: calendar).statement : nil
-            return RunningInstallment(id: plan.id, title: purchase.displayNote ?? L("Pembelian cicilan"), cardName: card.name,
+            return RunningInstallment(id: plan.id, title: purchase.displayNote ?? L("Pembelian cicilan"), cardName: card.name, cardIcon: card.icon,
                                       months: plan.months, billedParts: billed, monthly: purchase.amount / Double(plan.months),
-                                      total: purchase.amount, purchaseDate: purchase.date, firstBillingDate: first)
+                                      total: purchase.amount, purchaseDate: purchase.date, firstBillingDate: first,
+                                      endDate: CreditStatement.finalBillingDate(purchaseOn: purchase.date, months: plan.months, card: card, calendar: calendar))
         }
         .sorted { $0.purchaseDate > $1.purchaseDate }
     }

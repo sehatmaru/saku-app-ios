@@ -530,5 +530,15 @@
   "Hanya %lld transaksi pertama yang dibaca. Bagi screenshot-nya agar sisanya ikut terbaca.": "Only the first %lld transactions were read. Split the screenshot so the rest is read too.",
   "Tanggal tidak terlihat, dipakai hari ini. Cek lagi.": "The date isn't visible, so today is used. Please check.",
   "Total kurang yakin. Cek lagi.": "Not sure about the total. Please check.",
-  "Tanggal dan total kurang yakin. Cek lagi.": "Not sure about the date and total. Please check."
+  "Tanggal dan total kurang yakin. Cek lagi.": "Not sure about the date and total. Please check.",
+  "%lld cicilan berjalan": "%lld running installments",
+  "%lld kartu kredit": "%lld credit cards",
+  "per bulan": "per month",
+  "/bulan": "/month",
+  "%lld cicilan di %lld kartu": "%lld installments on %lld cards",
+  "%lld cicilan": "%lld installments",
+  "dibeli %@": "bought %@",
+  "Lunas %@": "Paid off %@",
+  "%@/bln": "%@/mo",
+  "%@ · %lld cicilan": "%@ · %lld installments"
 }
