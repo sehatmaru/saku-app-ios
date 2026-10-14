@@ -111,7 +111,7 @@ struct QuickResultSheet: View {
                     .font(.app(13))
             }
             if let note = d.note {
-                Label(note, systemImage: "eye.trianglebadge.exclamationmark").font(.app(13)).foregroundStyle(Color.stWarn)
+                Label(note, systemImage: "eye").font(.app(13)).foregroundStyle(Color.stWarn)
             }
             if let failure { failureBox(failure) }
             if !d.isComplete {
@@ -245,8 +245,15 @@ struct QuickResultSheet: View {
 
     private var multiBody: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(L("%lld transaksi dari kalimatmu", drafts.count)).font(.app(20, weight: .semibold))
-                .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 10)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(source == .photo ? L("%lld transaksi", drafts.count) : L("%lld transaksi dari kalimatmu", drafts.count))
+                    .font(.app(20, weight: .semibold))
+                if drafts.count > ready.count {
+                    Text(L("%lld perlu dicek · ketuk untuk melengkapi", drafts.count - ready.count))
+                        .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                }
+            }
+            .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 10)
             ScrollView {
                 VStack(spacing: 8) {
                     ForEach(drafts) { d in card(d).transition(.asymmetric(insertion: .opacity, removal: .opacity.combined(with: .offset(x: -24)))) }
@@ -277,6 +284,11 @@ struct QuickResultSheet: View {
                 }
                 Spacer(minLength: 4)
                 Text(amountText(d)).font(.app(17)).monospacedDigit().foregroundStyle(d.kind == .income ? Color.stGreen : Color.appText)
+                Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                    .rotationEffect(.degrees(isOpen ? 180 : 0))
+            }
+            if let note = d.note, !isOpen {
+                Label(note, systemImage: "eye").font(.app(13)).foregroundStyle(Color.stWarn).lineLimit(1).padding(.leading, 38)
             }
             if isOpen {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
@@ -285,22 +297,27 @@ struct QuickResultSheet: View {
                 }
                 .transition(.opacity.combined(with: .offset(y: 8)))
             }
-            HStack(spacing: 8) {
-                Button { withAnimation(.settle(0.3)) { openId = isOpen ? nil : d.id } } label: {
-                    Text(isOpen ? L("Selesai") : L("Ubah")).font(.app(14, weight: .medium)).foregroundStyle(Color.appText)
-                        .padding(.horizontal, 14).frame(height: 32)
-                        .background(Color.appBackground, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
+            if isOpen {
+                if let note = d.note {
+                    Label(note, systemImage: "eye").font(.app(14)).foregroundStyle(Color.stWarn)
                 }
-                Button { ignore(d) } label: {
-                    Text("Abaikan").font(.app(14, weight: .medium)).foregroundStyle(Color.appTextSecondary)
-                        .padding(.horizontal, 14).frame(height: 32)
+                HStack(spacing: 10) {
+                    Button { ignore(d) } label: {
+                        Text("Abaikan").font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
+                            .padding(.horizontal, 20).frame(height: 40)
+                            .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
+                    }
+                    Button { withAnimation(.settle(0.3)) { openId = nil } } label: {
+                        Text("Selesai").font(.app(15, weight: .semibold)).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity).frame(height: 40).background(Color.stGreen, in: Capsule())
+                    }
                 }
             }
-            .padding(.leading, 38)
         }
-        .padding(.horizontal, 16).padding(.vertical, 14)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, isOpen ? 16 : 8).padding(.vertical, isOpen ? 16 : 10)
+        .background(isOpen ? Color.appFill : Color.clear, in: RoundedRectangle(cornerRadius: 20))
+        .contentShape(Rectangle())
+        .onTapGesture { if !isOpen { withAnimation(.settle(0.3)) { openId = d.id } } }
     }
 
     private func tile(_ d: Draft, label: String, value: String?, icon: String, kind: DraftFieldSheet.Kind) -> some View {
@@ -370,7 +387,7 @@ struct QuickResultSheet: View {
         let action: () -> Void
         if isMulti {
             enabled = !ready.isEmpty && !saving
-            title = saving ? L("Menyimpan…") : ready.isEmpty ? L("Belum ada yang lengkap") : L("Simpan %lld yang lengkap", ready.count)
+            title = saving ? L("Menyimpan…") : ready.isEmpty ? L("Belum ada yang lengkap") : rest > 0 ? L("Simpan %lld, lengkapi %lld nanti", ready.count, rest) : L("Simpan %lld yang lengkap", ready.count)
             action = saveReady
         } else if !complete {
             title = L("Lengkapi di Konfirmasi transaksi")

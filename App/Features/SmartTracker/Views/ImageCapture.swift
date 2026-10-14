@@ -44,21 +44,39 @@ struct ImageConsentSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Image(systemName: "photo.badge.checkmark").font(.system(size: 30)).foregroundStyle(Color.stGreen)
-            Text("Catat dari gambar").font(.app(22, weight: .semibold))
-            Text("Saku membaca tulisan di gambar langsung di HP-mu. Gambarnya tidak disimpan dan tidak dikirim ke mana pun; hanya teks hasil bacaan yang diproses, lalu dihapus setelah drafnya disimpan atau dibuang (paling lama 30 hari). Saldo dan nomor rekening diabaikan.")
-                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody)
-            Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 0) {
+            Image(systemName: "doc.viewfinder").font(.system(size: 24)).foregroundStyle(Color.stGreen)
+                .frame(width: 48, height: 48).background(Color.stGreen.opacity(0.14), in: Circle()).padding(.top, 14)
+            Text("Catat dari gambar").font(.app(24, weight: .bold)).padding(.top, 16)
+            Text("Foto bukti bayar, struk, atau screenshot mutasi. Saku mengubahnya jadi draf transaksi.")
+                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
+            VStack(alignment: .leading, spacing: 16) {
+                point("iphone", "Dibaca di HP-mu", "Gambar tidak disimpan dan tidak dikirim ke mana pun.")
+                point("textformat", "Hanya teksnya yang diproses", "Dihapus setelah draf disimpan atau dibuang, paling lama 30 hari.")
+                point("eye.slash", "Saldo dan nomor rekening diabaikan", "Yang dicatat cuma transaksinya.")
+            }
+            .padding(.top, 22)
+            Spacer(minLength: 16)
             PrimaryButton(title: L("Setuju")) {
                 ShareInbox.isImageAgreed = true
                 dismiss()
                 onAgree()
             }
-            Button("Nanti saja") { dismiss() }.font(.app(16, weight: .medium)).frame(maxWidth: .infinity)
+            Button("Nanti saja") { dismiss() }.font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
+                .frame(maxWidth: .infinity).frame(height: 44).padding(.top, 6)
         }
-        .padding(24)
-        .presentationDetents([.medium])
+        .padding(.horizontal, 24).padding(.bottom, 12)
+        .presentationDetents([.height(560)])
         .presentationDragIndicator(.visible)
+    }
+
+    private func point(_ icon: String, _ title: String, _ detail: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon).font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L(title)).font(.app(15, weight: .semibold))
+                Text(L(detail)).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+            }
+        }
     }
 }

@@ -540,5 +540,22 @@
   "dibeli %@": "bought %@",
   "Lunas %@": "Paid off %@",
   "%@/bln": "%@/mo",
-  "%@ · %lld cicilan": "%@ · %lld installments"
+  "%@ · %lld cicilan": "%@ · %lld installments",
+  "%lld transaksi": "%lld transactions",
+  "%lld perlu dicek · ketuk untuk melengkapi": "%lld need a check · tap to complete",
+  "Simpan %lld, lengkapi %lld nanti": "Save %lld, complete %lld later",
+  "Membaca gambar…": "Reading the picture…",
+  "Gambar tidak disimpan": "The picture isn't saved",
+  "Foto ulang": "Retake",
+  "Pilih dari galeri": "Pick from gallery",
+  "Saku belum boleh memakai kamera. Kamu masih bisa pilih gambar dari Galeri atau ketik transaksinya.": "Saku isn't allowed to use the camera. You can still pick a picture from the Gallery or type the transaction.",
+  "Foto bukti bayar, struk, atau screenshot mutasi. Saku mengubahnya jadi draf transaksi.": "Photos of payment proofs, receipts or bank history screenshots. Saku turns them into draft transactions.",
+  "Dibaca di HP-mu": "Read on your phone",
+  "Gambar tidak disimpan dan tidak dikirim ke mana pun.": "The picture isn't saved or sent anywhere.",
+  "Hanya teksnya yang diproses": "Only the text is processed",
+  "Dihapus setelah draf disimpan atau dibuang, paling lama 30 hari.": "Deleted once the draft is saved or discarded, 30 days at most.",
+  "Saldo dan nomor rekening diabaikan": "Balances and account numbers are ignored",
+  "Yang dicatat cuma transaksinya.": "Only the transaction is recorded.",
+  "%lld draf": "%lld drafts",
+  "Cek dan simpan": "Review and save"
 }

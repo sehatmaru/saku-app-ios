@@ -12,6 +12,7 @@ struct DashboardView: View {
     @State private var showAddSheet = false
 @AppStorage(SmartTrackerWays.quickKey) private var smartQuickOn = true
 @ObservedObject private var smartGate = SmartButtonGate.shared
+@ObservedObject private var draftStore = DraftStore.shared
 @State private var showsConsent = false
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
     @State private var isChartShown = false
@@ -274,6 +275,36 @@ struct DashboardView: View {
         .toolbar(.hidden, for: .navigationBar)
     }
 
+    /// Konfirmasi transaksi lives in the header: a plain tray when empty, a green pill with the count when drafts wait.
+    @ViewBuilder private var draftTray: some View {
+        if smartQuickOn, authViewModel.currentUser != nil {
+            let count = draftStore.drafts.count
+            Button { openDraftsPage() } label: {
+                if count == 0 {
+                    Image(systemName: "tray").font(.system(size: 22)).foregroundStyle(Color.appTextSecondary)
+                        .frame(width: 40, height: 40)
+                } else {
+                    HStack(spacing: 8) {
+                        Image(systemName: "tray").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                            .frame(width: 30, height: 30).background(Color.stGreen, in: Circle())
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(L("%lld draf", count)).font(.app(15, weight: .semibold)).monospacedDigit()
+                            Text("Cek dan simpan").font(.app(11)).foregroundStyle(Color.appTextSecondary)
+                        }
+                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                    }
+                    .foregroundStyle(Color.appText)
+                    .padding(.leading, 5).padding(.trailing, 12).frame(height: 40)
+                    .background(Color.stChip, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
+                }
+            }
+            .buttonStyle(PressScaleStyle())
+            .padding(.trailing, 6)
+            .accessibilityLabel(L("Konfirmasi transaksi"))
+        }
+    }
+
     private var homeHeader: some View {
         HStack {
             Text("Saku")
@@ -281,6 +312,7 @@ struct DashboardView: View {
                 .tracking(-0.5)
                 .foregroundStyle(Color.appText)
             Spacer()
+            draftTray
             Button {
                 withAnimation(.smooth) { isBalanceVisible.toggle() }
                 isBalanceVisibleStorage = isBalanceVisible

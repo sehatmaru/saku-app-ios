@@ -22,6 +22,9 @@ struct SmartTrackerHomeOverlay: View {
     @State private var showsLibrary = false
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var showsImageConsent = false
+    /// The picture being read, shown small in the bar. Memory only; dropped when reading ends.
+    @State private var thumbnail: UIImage?
+    @State private var notice: ImageNotice?
     @State private var result: QuickInput?
     /// "Ulang": the sentence is back in the bar, waiting to be retyped.
     @State private var retryHint = false
@@ -150,9 +153,20 @@ struct SmartTrackerHomeOverlay: View {
             HStack(spacing: 8) {
                 Image(systemName: "sparkles").font(.system(size: 16)).foregroundStyle(Color.stGreen)
                 if isThinking {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(text).font(.app(15)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
-                        Text("Smart Tracker sedang membaca…").font(.app(12, weight: .medium)).foregroundStyle(Color.stGreen)
+                    if let thumbnail {
+                        Image(uiImage: thumbnail).resizable().scaledToFill().frame(width: 38, height: 38)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                            .padding(.leading, -9)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Membaca gambar…").font(.app(15, weight: .medium)).foregroundStyle(Color.stGreen)
+                            Text("Gambar tidak disimpan").font(.app(12)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(text).font(.app(15)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                            Text("Smart Tracker sedang membaca…").font(.app(12, weight: .medium)).foregroundStyle(Color.stGreen)
+                        }
                     }
                     Spacer(minLength: 0)
                 } else {
@@ -195,21 +209,6 @@ struct SmartTrackerHomeOverlay: View {
             }
             .padding(.leading, 14).padding(.trailing, 5).frame(height: 50)
             .background(Color.stChip, in: Capsule())
-            Button { close(); onOpenQueue() } label: {
-                Image(systemName: "tray").font(.system(size: 22)).foregroundStyle(Color.appText)
-                    .frame(width: 50, height: 50)
-                    .overlay(alignment: .topTrailing) {
-                        if !store.drafts.isEmpty {
-                            Text("\(store.drafts.count)")
-                                .font(.app(11, weight: .bold)).foregroundStyle(.white)
-                                .frame(minWidth: 18, minHeight: 18).padding(.horizontal, 2)
-                                .background(Color.stGreen, in: Capsule())
-                                .overlay(Capsule().strokeBorder(Color.appBackground, lineWidth: 2))
-                                .offset(x: -2, y: 2)
-                        }
-                    }
-            }
-            .accessibilityLabel(L("Konfirmasi transaksi"))
         }
         .padding(.horizontal, 7).frame(height: 64)
         .background(Color.stBar.opacity(0.97), in: Capsule())
@@ -221,12 +220,42 @@ struct SmartTrackerHomeOverlay: View {
             }
         }
         .shadow(color: .black.opacity(0.1), radius: 14, y: 4)
+        .overlay(alignment: .bottom) {
+            if let notice { noticeCard(notice).offset(y: -76).transition(.opacity.combined(with: .offset(y: 8))) }
+        }
+        .animation(.settle(0.3), value: notice)
         .padding(.horizontal, 20)
         // sits exactly over the system tab bar, which it replaces while open
         // over the tab bar while it rests; a little above the keyboard while typing
         .offset(y: isOpen ? (focused ? -10 : 12) : 90)
         .opacity(isOpen ? 1 : 0)
         .allowsHitTesting(isOpen)
+    }
+
+    /// What went wrong with a picture, above the bar with the next step.
+    private func noticeCard(_ n: ImageNotice) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: n.icon).font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 22)
+                Text(L(n.message)).font(.app(15)).lineSpacing(2).foregroundStyle(Color.appBody)
+            }
+            HStack(spacing: 8) {
+                Button { notice = nil; n.primary { startImage(camera: $0) } } label: {
+                    Text(L(n.primaryTitle)).font(.app(15, weight: .semibold)).foregroundStyle(.white)
+                        .padding(.horizontal, 16).frame(height: 36).background(Color.stGreen, in: Capsule())
+                }
+                Button { notice = nil; focused = true } label: {
+                    Text("Ketik saja").font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
+                        .padding(.horizontal, 16).frame(height: 36)
+                        .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
+                }
+            }
+            .padding(.leading, 34)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.stBar, in: RoundedRectangle(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.1), radius: 14, y: 4)
     }
 
     // MARK: Actions
@@ -258,7 +287,7 @@ struct SmartTrackerHomeOverlay: View {
         tipSeen = true
         let go = {
             guard !camera || CameraPicker.isAllowed else {
-                onToast(L("Kamera tidak bisa dipakai. Pilih dari galeri atau ketik saja."))
+                notice = .cameraOff
                 return
             }
             focused = false
@@ -273,8 +302,11 @@ struct SmartTrackerHomeOverlay: View {
     private func read(imageData data: Data) {
         text = ""
         focused = false
+        notice = nil
+        thumbnail = ImageReader.downscaled(data, maxSide: 120).map { UIImage(cgImage: $0) }
         isThinking = true
         Task {
+            defer { thumbnail = nil }
             let lines = ImageReader.downscaled(data) == nil ? [] : await ImageReader.lines(in: ImageReader.downscaled(data)!)
             var reading = ImageParser.parse(lines: lines, context: store.context)
             // hard case: only the text goes to the language model, when agreed, online and available
@@ -283,7 +315,7 @@ struct SmartTrackerHomeOverlay: View {
             }
             isThinking = false
             guard !reading.drafts.isEmpty else {
-                onToast(L("Gambarnya tidak terbaca. Coba foto ulang atau pilih gambar yang lebih jelas."))
+                notice = .unreadable
                 return
             }
             close()
@@ -320,6 +352,19 @@ struct SmartTrackerHomeOverlay: View {
     private static func parse(_ text: String, source: Draft.Source, store: DraftStore) -> [Draft] {
         SmartParser.parse(text, source: source, context: store.context)
     }
+}
+
+/// A picture that could not be used, with what to do next.
+enum ImageNotice: Equatable {
+    case unreadable, cameraOff
+
+    var icon: String { self == .unreadable ? "photo.badge.exclamationmark" : "camera.fill" }
+    var message: String {
+        self == .unreadable ? "Gambarnya tidak terbaca. Coba foto ulang atau pilih gambar yang lebih jelas."
+            : "Saku belum boleh memakai kamera. Kamu masih bisa pilih gambar dari Galeri atau ketik transaksinya."
+    }
+    var primaryTitle: String { self == .unreadable ? "Foto ulang" : "Pilih dari galeri" }
+    func primary(_ start: (Bool) -> Void) { start(self == .unreadable) }
 }
 
 /// What the quick result sheet shows: the sentence and the drafts read from it.

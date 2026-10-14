@@ -633,6 +633,16 @@
         }
       }
     },
+    "%lld draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld drafts"
+          }
+        }
+      }
+    },
     "%lld draf akan dihapus dalam 3 hari jika tidak diproses.": {
       "localizations": {
         "en": {
@@ -789,6 +799,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld periods"
+          }
+        }
+      }
+    },
+    "%lld perlu dicek · ketuk untuk melengkapi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld need a check · tap to complete"
           }
         }
       }
@@ -2933,6 +2953,16 @@
         }
       }
     },
+    "Cek dan simpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review and save"
+          }
+        }
+      }
+    },
     "Cetak %@": {
       "localizations": {
         "en": {
@@ -3323,6 +3353,16 @@
         }
       }
     },
+    "Dibaca di HP-mu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read on your phone"
+          }
+        }
+      }
+    },
     "Dibagikan": {
       "localizations": {
         "en": {
@@ -3469,6 +3509,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deleted as soon as the draft is made"
+          }
+        }
+      }
+    },
+    "Dihapus setelah draf disimpan atau dibuang, paling lama 30 hari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted once the draft is saved or discarded, 30 days at most."
           }
         }
       }
@@ -3933,6 +3983,26 @@
         }
       }
     },
+    "Foto bukti bayar, struk, atau screenshot mutasi. Saku mengubahnya jadi draf transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos of payment proofs, receipts or bank history screenshots. Saku turns them into draft transactions."
+          }
+        }
+      }
+    },
+    "Foto ulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retake"
+          }
+        }
+      }
+    },
     "Gagal": {
       "localizations": {
         "en": {
@@ -4193,6 +4263,26 @@
         }
       }
     },
+    "Gambar tidak disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The picture isn't saved"
+          }
+        }
+      }
+    },
+    "Gambar tidak disimpan dan tidak dikirim ke mana pun.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The picture isn't saved or sent anywhere."
+          }
+        }
+      }
+    },
     "Gambarnya tidak terbaca. Coba foto ulang atau pilih gambar yang lebih jelas.": {
       "localizations": {
         "en": {
@@ -4349,6 +4439,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only changes the number on Home. Wallets still show cash and assets separately."
+          }
+        }
+      }
+    },
+    "Hanya teksnya yang diproses": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the text is processed"
           }
         }
       }
@@ -6553,6 +6653,16 @@
         }
       }
     },
+    "Membaca gambar…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading the picture…"
+          }
+        }
+      }
+    },
     "Memilih dompet Investasi mengubah transfer ini jadi Setor ke aset.": {
       "localizations": {
         "en": {
@@ -7773,6 +7883,16 @@
         }
       }
     },
+    "Pilih dari galeri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick from gallery"
+          }
+        }
+      }
+    },
     "Pilih dompet": {
       "localizations": {
         "en": {
@@ -8253,6 +8373,16 @@
         }
       }
     },
+    "Saku belum boleh memakai kamera. Kamu masih bisa pilih gambar dari Galeri atau ketik transaksinya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku isn't allowed to use the camera. You can still pick a picture from the Gallery or type the transaction."
+          }
+        }
+      }
+    },
     "Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek.": {
       "localizations": {
         "en": {
@@ -8369,6 +8499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your balance covers %@ months of spending."
+          }
+        }
+      }
+    },
+    "Saldo dan nomor rekening diabaikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balances and account numbers are ignored"
           }
         }
       }
@@ -9109,6 +9249,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save %lld complete"
+          }
+        }
+      }
+    },
+    "Simpan %lld, lengkapi %lld nanti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save %lld, complete %lld later"
           }
         }
       }
@@ -11551,6 +11701,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Card color · type the name on the card"
+          }
+        }
+      }
+    },
+    "Yang dicatat cuma transaksinya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the transaction is recorded."
           }
         }
       }

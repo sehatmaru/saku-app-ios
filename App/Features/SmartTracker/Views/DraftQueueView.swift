@@ -278,7 +278,7 @@ struct DraftQueueView: View {
                     .font(.app(13))
             }
             if let note = d.note {
-                Label(note, systemImage: "eye.trianglebadge.exclamationmark").font(.app(13)).foregroundStyle(Color.stWarn)
+                Label(note, systemImage: "eye").font(.app(13)).foregroundStyle(Color.stWarn)
             }
             if let days = Calendar.current.dateComponents([.day], from: Date(), to: d.expiresAt).day, days <= 3 {
                 Label(L("Dibuang otomatis dalam %lld hari", max(days, 1)), systemImage: "hourglass")
