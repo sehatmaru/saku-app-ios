@@ -33,7 +33,7 @@ struct RunningInstallmentsBanner: View {
             .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(PressScaleStyle())
-        .padding(.horizontal, 24).padding(.top, 16)
+        .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 14)
         .sheet(isPresented: $showsSheet) {
             RunningInstallmentsSheet(items: items, isBalanceVisible: isBalanceVisible)
         }
@@ -60,8 +60,13 @@ private struct InstallmentLogo: View {
     let size: CGFloat
 
     var body: some View {
-        WalletIconView(icon: WalletIcon.resolve(icon), size: size)
-            .overlay(Circle().stroke(Color.appSeparator, lineWidth: 1))
+        ZStack {
+            Circle().fill(Color.white)
+            // inset so wide bank logos sit inside the disc instead of touching its edge
+            WalletIconView(icon: WalletIcon.resolve(icon), size: size * 0.74)
+        }
+        .frame(width: size, height: size)
+        .overlay(Circle().stroke(Color.appSeparator, lineWidth: 1))
     }
 }
 
