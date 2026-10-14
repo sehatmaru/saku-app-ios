@@ -60,6 +60,7 @@ targets:
     sources:
       - Extensions/Share
       - path: App/Shared/Utilities/ShareInbox.swift
+      - path: App/Shared/Utilities/ImageReader.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: id.saku.app.share

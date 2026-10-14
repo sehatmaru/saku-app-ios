@@ -108,7 +108,19 @@ enum SmartTrackerConsent {
 
     static var isGranted: Bool {
         get { UserDefaults.standard.bool(forKey: key) }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
+        set {
+            UserDefaults.standard.set(newValue, forKey: key)
+            // withdrawing the agreement also switches reading pictures off
+            if !newValue { ShareInbox.isImageAgreed = false }
+        }
+    }
+}
+
+/// The short one-time agreement for reading pictures (kamera, galeri, Bagikan). Only counts while Smart Tracker is agreed.
+enum SmartTrackerImageConsent {
+    static var isGranted: Bool {
+        get { SmartTrackerConsent.isGranted && ShareInbox.isImageAgreed }
+        set { ShareInbox.isImageAgreed = newValue }
     }
 }
 

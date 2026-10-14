@@ -18,12 +18,12 @@ final class ShareViewController: UIViewController {
     }
 
     /// Tells the user right away; tapping it opens Saku on Konfirmasi transaksi. Works once the app has notification permission.
-    private func announce() async {
+    private func announce(_ body: String = "Teksnya masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya.") async {
         let center = UNUserNotificationCenter.current()
         guard await center.notificationSettings().authorizationStatus == .authorized else { return }
         let content = UNMutableNotificationContent()
         content.title = "Dikirim ke Saku"
-        content.body = "Teksnya masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya."
+        content.body = body
         content.sound = .default
         content.userInfo = ["route": "drafts"]
         try? await center.add(UNNotificationRequest(identifier: "share-\(UUID().uuidString)", content: content,
@@ -42,8 +42,16 @@ final class ShareViewController: UIViewController {
             // WhatsApp and others hand over the same text as an attachment and as contentText
             if !text.isEmpty, received.insert(text).inserted { ShareInbox.append(text) }
         }
+        var imagesRefused = false
         for provider in items.flatMap({ $0.attachments ?? [] }) {
-            if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier),
+            if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                // the short agreement for pictures is given in the app; until then nothing is read
+                guard ShareInbox.isImageAgreed else { imagesRefused = true; continue }
+                if let data = await imageData(from: provider), let image = ImageReader.downscaled(data) {
+                    let lines = await ImageReader.lines(in: image)
+                    if !lines.isEmpty { ShareInbox.append(ShareInbox.photoMark + lines.joined(separator: "\n")) }
+                }
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier),
                let text = try? await provider.loadItem(forTypeIdentifier: UTType.plainText.identifier) as? String {
                 take(text)
             } else if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier),
@@ -54,7 +62,15 @@ final class ShareViewController: UIViewController {
         for item in items {
             if let text = item.attributedContentText?.string { take(text) }
         }
-        await announce()
+        await announce(imagesRefused ? "Buka Saku dan setujui membaca gambar dulu, lalu bagikan lagi." : "Teksnya masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya.")
         extensionContext?.completeRequest(returningItems: nil)
+    }
+
+    private func imageData(from provider: NSItemProvider) async -> Data? {
+        let item = try? await provider.loadItem(forTypeIdentifier: UTType.image.identifier)
+        if let url = item as? URL { return try? Data(contentsOf: url) }
+        if let data = item as? Data { return data }
+        if let image = item as? UIImage { return image.jpegData(compressionQuality: 0.9) }
+        return nil
     }
 }

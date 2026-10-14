@@ -84,9 +84,9 @@ struct QuickResultSheet: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Image(systemName: source == .voice ? "mic" : "keyboard").font(.system(size: 14))
-            Text(source == .voice ? L("Dari suaramu") : L("Dari ketikanmu")).layoutPriority(1)
-            if !isUnclear {
+            Image(systemName: source == .voice ? "mic" : source == .photo ? "photo" : "keyboard").font(.system(size: 14))
+            Text(source == .voice ? L("Dari suaramu") : source == .photo ? L("Dari gambarmu") : L("Dari ketikanmu")).layoutPriority(1)
+            if !isUnclear && !sentence.isEmpty {
                 Text("· “\(sentence)”").foregroundStyle(Color.appTextTertiary).lineLimit(1)
             }
             Spacer(minLength: 0)
@@ -109,6 +109,9 @@ struct QuickResultSheet: View {
                         + Text(" " + note).foregroundStyle(Color.appTextSecondary)
                 } icon: { Image(systemName: "doc.on.doc").foregroundStyle(Color.stWarn) }
                     .font(.app(13))
+            }
+            if let note = d.note {
+                Label(note, systemImage: "eye.trianglebadge.exclamationmark").font(.app(13)).foregroundStyle(Color.stWarn)
             }
             if let failure { failureBox(failure) }
             if !d.isComplete {

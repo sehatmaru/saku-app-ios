@@ -515,5 +515,20 @@
   "Sisa": "Remaining",
   "Total pembelian": "Total purchase",
   "sekitar %@ per bulan": "about %@ per month",
-  "sekitar Rp%@ per bulan": "about Rp%@ per month"
+  "sekitar Rp%@ per bulan": "about Rp%@ per month",
+  "Kalimat, notifikasi, dan tulisan di gambar dibaca langsung di perangkat ini. Gambarnya tidak disimpan.": "Sentences, notifications and the text in pictures are read right on this device. Pictures are not kept.",
+  "Foto": "Photo",
+  "Dari gambarmu": "From your picture",
+  "Kamera": "Camera",
+  "Galeri": "Gallery",
+  "Catat dari gambar": "Record from a picture",
+  "Setuju": "Agree",
+  "Nanti saja": "Not now",
+  "Saku membaca tulisan di gambar langsung di HP-mu. Gambarnya tidak disimpan dan tidak dikirim ke mana pun; hanya teks hasil bacaan yang diproses, lalu dihapus setelah drafnya disimpan atau dibuang (paling lama 30 hari). Saldo dan nomor rekening diabaikan.": "Saku reads the text in the picture right on your phone. The picture is not saved or sent anywhere; only the text it reads is processed, then deleted once the draft is saved or discarded (30 days at most). Balances and account numbers are ignored.",
+  "Kamera tidak bisa dipakai. Pilih dari galeri atau ketik saja.": "The camera can't be used. Pick from the gallery or type instead.",
+  "Gambarnya tidak terbaca. Coba foto ulang atau pilih gambar yang lebih jelas.": "The picture couldn't be read. Retake it or pick a clearer one.",
+  "Hanya %lld transaksi pertama yang dibaca. Bagi screenshot-nya agar sisanya ikut terbaca.": "Only the first %lld transactions were read. Split the screenshot so the rest is read too.",
+  "Tanggal tidak terlihat, dipakai hari ini. Cek lagi.": "The date isn't visible, so today is used. Please check.",
+  "Total kurang yakin. Cek lagi.": "Not sure about the total. Please check.",
+  "Tanggal dan total kurang yakin. Cek lagi.": "Not sure about the date and total. Please check."
 }

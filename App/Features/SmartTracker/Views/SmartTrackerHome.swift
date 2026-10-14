@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 /// Smart Tracker on Beranda (design 1a): a sparkle button with the number of drafts that opens a floating
@@ -17,6 +18,10 @@ struct SmartTrackerHomeOverlay: View {
     @State private var showsConsent = false
     @State private var showsMemoryConsent = false
     @State private var showsVoice = false
+    @State private var showsCamera = false
+    @State private var showsLibrary = false
+    @State private var pickedPhoto: PhotosPickerItem?
+    @State private var showsImageConsent = false
     @State private var result: QuickInput?
     /// "Ulang": the sentence is back in the bar, waiting to be retyped.
     @State private var retryHint = false
@@ -50,6 +55,14 @@ struct SmartTrackerHomeOverlay: View {
             }
         }
         .sheet(isPresented: $showsMemoryConsent) { MemorySyncConsentSheet(profileId: UUID(uuidString: userId)) }
+        .sheet(isPresented: $showsImageConsent) { ImageConsentSheet { afterConsent?(); afterConsent = nil } }
+        .fullScreenCover(isPresented: $showsCamera) { CameraPicker { read(imageData: $0) }.ignoresSafeArea() }
+        .photosPicker(isPresented: $showsLibrary, selection: $pickedPhoto, matching: .images)
+        .onChange(of: pickedPhoto) { _, item in
+            guard let item else { return }
+            pickedPhoto = nil
+            Task { if let data = try? await item.loadTransferable(type: Data.self) { read(imageData: data) } }
+        }
         .fullScreenCover(isPresented: $showsVoice) {
             VoiceCaptureView(onFinish: { spoken in submit(spoken, source: .voice) },
                              onKeyboard: { showsVoice = false; isOpen = true; focused = true })
@@ -155,6 +168,16 @@ struct SmartTrackerHomeOverlay: View {
                 if isThinking {
                     ProgressView().frame(width: 40, height: 40)
                 } else if text.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Menu {
+                        Button { startImage(camera: true) } label: { Label("Kamera", systemImage: "camera") }
+                        Button { startImage(camera: false) } label: { Label("Galeri", systemImage: "photo.on.rectangle") }
+                    } label: {
+                        Image(systemName: "photo").font(.system(size: 18)).foregroundStyle(Color.appText)
+                            .frame(width: 40, height: 40)
+                            .background(Color.stRaised, in: Circle())
+                            .shadow(color: .black.opacity(0.08), radius: 1.5, y: 1)
+                    }
+                    .accessibilityLabel(L("Catat dari gambar"))
                     Button { startVoice() } label: {
                         Image(systemName: "mic").font(.system(size: 19)).foregroundStyle(Color.appText)
                             .frame(width: 40, height: 40)
@@ -228,6 +251,47 @@ struct SmartTrackerHomeOverlay: View {
         guard consented else { afterConsent = { showsVoice = true }; showsConsent = true; return }
         focused = false
         showsVoice = true
+    }
+
+    /// Camera or gallery. Needs the Smart Tracker agreement and the short one for pictures (asked once).
+    private func startImage(camera: Bool) {
+        tipSeen = true
+        let go = {
+            guard !camera || CameraPicker.isAllowed else {
+                onToast(L("Kamera tidak bisa dipakai. Pilih dari galeri atau ketik saja."))
+                return
+            }
+            focused = false
+            if camera { showsCamera = true } else { showsLibrary = true }
+        }
+        guard consented else { afterConsent = { startImage(camera: camera) }; showsConsent = true; return }
+        guard SmartTrackerImageConsent.isGranted else { afterConsent = go; showsImageConsent = true; return }
+        go()
+    }
+
+    /// Reads the picture on the device, then lands in the same result sheet as a sentence. The picture is dropped afterwards.
+    private func read(imageData data: Data) {
+        text = ""
+        focused = false
+        isThinking = true
+        Task {
+            let lines = ImageReader.downscaled(data) == nil ? [] : await ImageReader.lines(in: ImageReader.downscaled(data)!)
+            var reading = ImageParser.parse(lines: lines, context: store.context)
+            // hard case: only the text goes to the language model, when agreed, online and available
+            if reading.drafts.isEmpty, !lines.isEmpty, let remote = await store.refined(lines.joined(separator: "\n"), source: .photo) {
+                reading.drafts = remote
+            }
+            isThinking = false
+            guard !reading.drafts.isEmpty else {
+                onToast(L("Gambarnya tidak terbaca. Coba foto ulang atau pilih gambar yang lebih jelas."))
+                return
+            }
+            close()
+            result = QuickInput(sentence: "", source: .photo, drafts: reading.drafts)
+            if reading.truncated {
+                onToast(L("Hanya %lld transaksi pertama yang dibaca. Bagi screenshot-nya agar sisanya ikut terbaca.", ImageParser.limit))
+            }
+        }
     }
 
     /// Every sentence ends in the quick result sheet: one transaction, several, or one that could not be read.

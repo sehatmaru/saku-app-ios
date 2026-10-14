@@ -213,7 +213,13 @@ final class DraftStore: ObservableObject {
         guard SmartTrackerWays.share else { _ = ShareInbox.drain(); return }
         let texts = ShareInbox.drain()
         guard !texts.isEmpty else { return }
-        let added = texts.flatMap { SmartParser.parse($0, source: .share, context: context) }
+        let added = texts.flatMap { text -> [Draft] in
+            guard text.hasPrefix(ShareInbox.photoMark) else { return SmartParser.parse(text, source: .share, context: context) }
+            // text read from a shared picture (the picture itself never reached the app)
+            guard SmartTrackerImageConsent.isGranted else { return [] }
+            let lines = text.dropFirst(ShareInbox.photoMark.count).components(separatedBy: "\n")
+            return ImageParser.parse(lines: lines, context: context).drafts
+        }
         // the share extension already told the user; no second notification here
         add(added)
     }

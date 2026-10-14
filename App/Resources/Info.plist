@@ -35,6 +35,8 @@
 	<string>public.app-category.finance</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Saku memakai kamera agar kamu bisa memotret bukti bayar atau struk dan mencatatnya.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Saku memakai mikrofon agar kamu bisa mencatat transaksi dengan suara.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

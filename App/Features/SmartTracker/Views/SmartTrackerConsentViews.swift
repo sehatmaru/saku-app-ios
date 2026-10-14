@@ -27,7 +27,7 @@ enum SmartWay: CaseIterable {
 /// Profil › Smart Tracker › Cara data diproses.
 struct SmartTrackerPrivacyContent: View {
     private var points: [(String, String, String)] {
-        [("iphone", L("Diproses di HP-mu"), L("Kalimat dan notifikasi dibaca langsung di perangkat ini.")),
+        [("iphone", L("Diproses di HP-mu"), L("Kalimat, notifikasi, dan tulisan di gambar dibaca langsung di perangkat ini. Gambarnya tidak disimpan.")),
          ("icloud.and.arrow.up", L("Server hanya bila perlu"),
           L("Kalau kalimatnya sulit dipahami, Saku mengirim teksnya saja, tanpa saldo atau nomor rekening. Teks itu tidak disimpan dan tidak dipakai melatih AI.")),
          ("clock.badge.checkmark", L("Tidak disimpan lama"),

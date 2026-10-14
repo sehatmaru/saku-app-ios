@@ -18,6 +18,15 @@ enum ShareInbox {
         UserDefaults(suiteName: appGroup)?.set(on, forKey: "shareEnabled")
     }
 
+    /// Text read from a shared picture starts with this mark; the picture itself is never stored.
+    static let photoMark = "\u{1}photo\u{1}"
+
+    /// The short agreement for reading pictures, kept in the App Group so the extension can check it.
+    static var isImageAgreed: Bool {
+        get { UserDefaults(suiteName: appGroup)?.bool(forKey: "imageAgreed") ?? false }
+        set { UserDefaults(suiteName: appGroup)?.set(newValue, forKey: "imageAgreed") }
+    }
+
     static func append(_ text: String) {
         guard let url else { return }
         var items = (try? JSONDecoder().decode([String].self, from: Data(contentsOf: url))) ?? []

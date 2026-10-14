@@ -12,7 +12,7 @@ struct Draft: Identifiable, Codable, Hashable {
     }
 
     enum Source: String, Codable {
-        case typed, voice, siri, share, notification
+        case typed, voice, siri, share, notification, photo
     }
 
     var id = UUID()
@@ -36,6 +36,8 @@ struct Draft: Identifiable, Codable, Hashable {
     var sourceName: String?
     /// "Mirip dengan transaksi …" warning from the duplicate check.
     var duplicateNote: String?
+    /// Something Saku could not see in a picture ("Tanggal tidak terlihat"); the user is asked to check it.
+    var note: String?
     /// The sentence could not be understood; `title` holds the original text.
     var isUnreadable = false
     /// Investment deposit wanted but no investment wallet to receive it.
