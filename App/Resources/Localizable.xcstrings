@@ -463,6 +463,16 @@
         }
       }
     },
+    "%lld bagian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld parts"
+          }
+        }
+      }
+    },
     "%lld budget": {
       "localizations": {
         "en": {
@@ -1323,6 +1333,16 @@
         }
       }
     },
+    "Bagian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part"
+          }
+        }
+      }
+    },
     "Bagikan teks": {
       "localizations": {
         "en": {
@@ -1999,6 +2019,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Not billed yet (%@)"
+          }
+        }
+      }
+    },
+    "Belum ditagih · %lld bagian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not billed yet · %lld parts"
           }
         }
       }
@@ -2863,6 +2893,36 @@
         }
       }
     },
+    "Cicilan 0% yang masih ditagih di periode ini. Hanya penanda: tidak mengubah Net, budget, atau tagihan kartu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0% installments still being billed this period. Just a marker: it doesn't change Net, budget or card bills."
+          }
+        }
+      }
+    },
+    "Cicilan berjalan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running installments"
+          }
+        }
+      }
+    },
+    "Cicilan berjalan: %lld cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running installments: %lld"
+          }
+        }
+      }
+    },
     "Coba Lagi": {
       "localizations": {
         "en": {
@@ -3229,6 +3289,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Partly paid"
+          }
+        }
+      }
+    },
+    "Dibeli": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bought"
           }
         }
       }
@@ -6573,6 +6643,16 @@
         }
       }
     },
+    "Mulai ditagih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billing starts"
+          }
+        }
+      }
+    },
     "Mulai pakai Saku": {
       "localizations": {
         "en": {
@@ -7069,6 +7149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Payment recorded"
+          }
+        }
+      }
+    },
+    "Pembelian cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installment purchase"
           }
         }
       }
@@ -8873,6 +8963,16 @@
         }
       }
     },
+    "Sisa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remaining"
+          }
+        }
+      }
+    },
     "Sisa %@": {
       "localizations": {
         "en": {
@@ -10633,6 +10733,16 @@
         }
       }
     },
+    "Total pembelian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total purchase"
+          }
+        }
+      }
+    },
     "Total pengeluaran": {
       "localizations": {
         "en": {
@@ -11521,6 +11631,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "when the wallet was created"
+          }
+        }
+      }
+    },
+    "sekitar %@ per bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "about %@ per month"
+          }
+        }
+      }
+    },
+    "sekitar Rp%@ per bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "about Rp%@ per month"
           }
         }
       }

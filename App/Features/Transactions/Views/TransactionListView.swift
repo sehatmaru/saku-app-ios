@@ -69,6 +69,12 @@ struct TransactionListView: View {
                                 .onAppear { showBackToTop = false }
                                 .onDisappear { showBackToTop = true }
 
+                            // 0% installments still billing this period; search and filters never hide it
+                            let running = viewModel.runningInstallments
+                            if !running.isEmpty {
+                                RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible)
+                            }
+
                             if !hasNoTransactions {
                                 filterChips
                                     .padding(.top, isSearching ? 16 : 0)

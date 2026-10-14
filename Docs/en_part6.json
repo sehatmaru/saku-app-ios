@@ -502,5 +502,18 @@
   "Pilihan yang diingat Saku (kata kunci, kategori, dompet, dan berapa kali dipakai) disimpan di server supaya ikut ke perangkat lain. Bukan kalimat aslinya, bukan nominalnya. Mode tamu hanya di perangkat ini.": "What Saku remembers (keywords, categories, wallets and how often they were used) is kept on the server so it follows you to other devices. Not your original sentence, not the amount. Guest mode stays on this device only.",
   "Saku akan menyimpan pilihan yang diingatnya di server, supaya kategori dan dompet favoritmu tetap terisi saat ganti HP atau memakai Saku di perangkat lain.": "Saku will keep what it remembers on the server, so your favourite categories and wallets stay filled in when you switch phones or use Saku on another device.",
   "Tidak disimpan: kalimat aslinya dan nominalnya.": "Not kept: the original sentence and the amount.",
-  "Yang disimpan: kata kunci, kategori, dompet, dan berapa kali dipakai.": "Kept: keywords, categories, wallets and how often they were used."
+  "Yang disimpan: kata kunci, kategori, dompet, dan berapa kali dipakai.": "Kept: keywords, categories, wallets and how often they were used.",
+  "%lld bagian": "%lld parts",
+  "Bagian": "Part",
+  "Belum ditagih · %lld bagian": "Not billed yet · %lld parts",
+  "Cicilan 0% yang masih ditagih di periode ini. Hanya penanda: tidak mengubah Net, budget, atau tagihan kartu.": "0% installments still being billed this period. Just a marker: it doesn't change Net, budget or card bills.",
+  "Cicilan berjalan": "Running installments",
+  "Cicilan berjalan: %lld cicilan": "Running installments: %lld",
+  "Dibeli": "Bought",
+  "Mulai ditagih": "Billing starts",
+  "Pembelian cicilan": "Installment purchase",
+  "Sisa": "Remaining",
+  "Total pembelian": "Total purchase",
+  "sekitar %@ per bulan": "about %@ per month",
+  "sekitar Rp%@ per bulan": "about Rp%@ per month"
 }
