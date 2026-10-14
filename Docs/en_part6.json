@@ -560,5 +560,6 @@
   "Cek dan simpan": "Review and save",
   "Rekening, e-wallet, tunai · selalu ikut": "Bank accounts, e-wallets, cash · always included",
   "Ikutkan aset investasi": "Include investment assets",
-  "%@ dari dompet investasi": "%@ from investment wallets"
+  "%@ dari dompet investasi": "%@ from investment wallets",
+  "Saku menyimpan pasangan seperti di atas, bukan kalimat atau nominalnya. Bisa dimatikan di Profil › Smart Tracker.": "Saku saves pairs like the one above, not the sentence or the amount. You can turn it off in Profil › Smart Tracker."
 }

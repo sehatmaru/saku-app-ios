@@ -577,7 +577,7 @@ private struct HomeBalanceSheet: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 22)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 24))
+            .background(Color.stChip, in: RoundedRectangle(cornerRadius: 24))
             .padding(.top, 22)
 
             VStack(spacing: 0) {

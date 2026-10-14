@@ -180,21 +180,42 @@ struct MemorySyncConsentSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isSaving = false
 
+    private func syncDots(reversed: Bool) -> some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { i in
+                Circle().fill(Color.appPrimary).frame(width: 5, height: 5)
+                    .opacity([1.0, 0.6, 0.3][reversed ? 2 - i : i])
+            }
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.system(size: 24)).foregroundStyle(Color.stGreen)
-                .frame(width: 52, height: 52).background(Color.stSuccessBg, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.top, 28)
-            Text("Ingatan ikut ke semua perangkatmu").font(.app(24, weight: .bold)).tracking(-0.4).padding(.top, 14)
-            Text(L("Saku akan menyimpan pilihan yang diingatnya di server, supaya kategori dan dompet favoritmu tetap terisi saat ganti HP atau memakai Saku di perangkat lain."))
-                .font(.app(16)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.top, 8)
-            VStack(alignment: .leading, spacing: 8) {
-                Label(L("Yang disimpan: kata kunci, kategori, dompet, dan berapa kali dipakai."), systemImage: "checkmark")
-                Label(L("Tidak disimpan: kalimat aslinya dan nominalnya."), systemImage: "xmark")
-                Label(L("Bisa dimatikan kapan saja di Profil › Smart Tracker."), systemImage: "gearshape")
+            VStack(spacing: 14) {
+                HStack(spacing: 14) {
+                    Image(systemName: "iphone").font(.system(size: 28)).foregroundStyle(Color.appTextSecondary)
+                    syncDots(reversed: false)
+                    Image(systemName: "cloud").font(.system(size: 28)).foregroundStyle(Color.appPrimary)
+                    syncDots(reversed: true)
+                    Image(systemName: "iphone").font(.system(size: 28)).foregroundStyle(Color.appTextSecondary)
+                }
+                HStack(spacing: 10) {
+                    Text("kopi").font(.app(15, weight: .semibold))
+                    Image(systemName: "arrow.right").font(.system(size: 12)).foregroundStyle(Color.appTextTertiary)
+                    Text("Jajan & Kopi · GoPay").font(.app(15)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                    Spacer(minLength: 0)
+                    Text("12×").font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 12)
+                .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
             }
-            .font(.app(14)).foregroundStyle(Color.appTextSecondary).padding(.top, 16)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20).padding(.horizontal, 18)
+            .background(Color.stChip, in: RoundedRectangle(cornerRadius: 24))
+            .padding(.top, 28)
+            Text("Ingatan ikut ke semua perangkatmu").font(.app(24, weight: .bold)).padding(.top, 20)
+            Text(L("Saku menyimpan pasangan seperti di atas, bukan kalimat atau nominalnya. Bisa dimatikan di Profil › Smart Tracker."))
+                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
             Spacer(minLength: 20)
             Button {
                 guard let profileId else { dismiss(); return }
@@ -207,10 +228,10 @@ struct MemorySyncConsentSheet: View {
                 }
             } label: {
                 ZStack {
-                    if isSaving { ProgressView().tint(Color.appBackground) } else { Text(L("Aktifkan")) }
+                    if isSaving { ProgressView().tint(.white) } else { Text(L("Aktifkan")) }
                 }
-                .font(.app(17, weight: .semibold)).foregroundStyle(Color.appBackground)
-                .frame(maxWidth: .infinity).frame(height: 52).background(Color.appText, in: Capsule())
+                .font(.app(17, weight: .semibold)).foregroundStyle(.white)
+                .frame(maxWidth: .infinity).frame(height: 52).background(Color.appPrimary, in: Capsule())
             }
             .buttonStyle(PressScaleStyle())
             Button(L("Nanti saja")) {
@@ -221,7 +242,7 @@ struct MemorySyncConsentSheet: View {
             .frame(maxWidth: .infinity).frame(height: 44)
         }
         .padding(.horizontal, 24).padding(.bottom, 12)
-        .presentationDetents([.height(520)])
+        .presentationDetents([.height(500)])
         .presentationBackground(Color.appBackground)
         .presentationCornerRadius(30)
         .presentationDragIndicator(.visible)

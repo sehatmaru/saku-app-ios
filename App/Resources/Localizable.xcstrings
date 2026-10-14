@@ -8443,6 +8443,16 @@
         }
       }
     },
+    "Saku menyimpan pasangan seperti di atas, bukan kalimat atau nominalnya. Bisa dimatikan di Profil › Smart Tracker.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku saves pairs like the one above, not the sentence or the amount. You can turn it off in Profil › Smart Tracker."
+          }
+        }
+      }
+    },
     "Saku tidak bisa membaca notifikasi aplikasi lain. Tapi iOS punya otomatisasi di Shortcuts yang bisa meneruskan notifikasi ke Saku. Pasang satu kali untuk tiap aplikasi.": {
       "localizations": {
         "en": {
