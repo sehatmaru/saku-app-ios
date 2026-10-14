@@ -151,6 +151,16 @@
         }
       }
     },
+    "%@ dari dompet investasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ from investment wallets"
+          }
+        }
+      }
+    },
     "%@ dengan limit Rp%@ siap dipakai.": {
       "localizations": {
         "en": {
@@ -4763,6 +4773,16 @@
         }
       }
     },
+    "Ikutkan aset investasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Include investment assets"
+          }
+        }
+      }
+    },
     "Ingat pilihan ini": {
       "localizations": {
         "en": {
@@ -8159,6 +8179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bank accounts, e-wallets and cash."
+          }
+        }
+      }
+    },
+    "Rekening, e-wallet, tunai · selalu ikut": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank accounts, e-wallets, cash · always included"
           }
         }
       }

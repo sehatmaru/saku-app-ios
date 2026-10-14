@@ -101,7 +101,6 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showsHomeBalance) {
                 HomeBalanceSheet(selection: homeBalanceMode, cash: cash, assets: assets) { mode in
-                    showsHomeBalance = false
                     saveHomeBalance(mode)
                 }
             }
@@ -307,10 +306,11 @@ struct ProfileView: View {
 
     /// Optimistic: the mirror flips at once so Beranda follows; the profile row is rolled back if the save fails.
     private func saveHomeBalance(_ mode: HomeBalanceMode) {
-        guard mode.rawValue != homeBalanceMode,
-              let id = authViewModel.currentUser.flatMap({ UUID(uuidString: $0.id) }) else { return }
+        guard mode.rawValue != homeBalanceMode else { return }
         let previous = homeBalanceMode
         homeBalanceMode = mode.rawValue
+        // guests have no profile row; the device mirror is all there is
+        guard let id = authViewModel.currentUser.flatMap({ UUID(uuidString: $0.id) }) else { return }
         Task {
             do {
                 try await SupabaseSDK.updateHomeBalanceMode(profileId: id, mode: mode)
@@ -542,6 +542,12 @@ private struct HomeBalanceSheet: View {
     let assets: Double
     let onPick: (HomeBalanceMode) -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var on: Bool
+
+    init(selection: String, cash: Double, assets: Double, onPick: @escaping (HomeBalanceMode) -> Void) {
+        self.selection = selection; self.cash = cash; self.assets = assets; self.onPick = onPick
+        _on = State(initialValue: selection == HomeBalanceMode.all.rawValue)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -561,60 +567,57 @@ private struct HomeBalanceSheet: View {
             }
             .padding(.top, 14)
 
-            VStack(spacing: 12) {
-                option(.cash, title: L("Kas saja"), detail: L("Rekening, e-wallet, dan tunai."),
-                       big: cash, sub: L("Belum termasuk aset %@", assets.formattedAsCurrency()))
-                option(.all, title: L("Kas + aset"), detail: L("Nilai dompet investasi ikut dijumlahkan."),
-                       big: cash + assets, sub: L("Kas %@ + aset %@", cash.formattedAsCurrency(), assets.formattedAsCurrency()))
+            VStack(spacing: 4) {
+                Text("Total saldo di Beranda").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Text((on ? cash + assets : cash).formattedAsCurrency())
+                    .font(.app(42, weight: .ultraLight)).monospacedDigit()
+                    .contentTransition(.numericText())
+                    .animation(.easeOut(duration: 0.25), value: on)
+                    .animation(.easeOut(duration: 0.25), value: on)
             }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 22)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 24))
             .padding(.top, 22)
+
+            VStack(spacing: 0) {
+                HStack(spacing: 14) {
+                    Image(systemName: "wallet.bifold").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Kas").font(.app(16))
+                        Text("Rekening, e-wallet, tunai · selalu ikut").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    }
+                    Spacer(minLength: 8)
+                    Text(cash.formattedAsCurrency()).font(.app(15)).monospacedDigit()
+                }
+                .padding(.vertical, 14)
+                Divider()
+                HStack(spacing: 14) {
+                    Image(systemName: "chart.line.uptrend.xyaxis").font(.system(size: 18)).foregroundStyle(Color.appInvestment).frame(width: 24)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ikutkan aset investasi").font(.app(16))
+                        Text(L("%@ dari dompet investasi", assets.formattedAsCurrency())).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    }
+                    Spacer(minLength: 8)
+                    Toggle("Ikutkan aset investasi", isOn: Binding(get: { on }, set: { on = $0; onPick($0 ? .all : .cash) }))
+                        .labelsHidden().tint(.appPrimary)
+                }
+                .padding(.vertical, 14)
+            }
+            .padding(.top, 18)
 
             Text("Hanya mengubah angka di Beranda. Dompet tetap menampilkan kas dan aset terpisah.")
                 .font(.app(13))
                 .foregroundStyle(Color.appTextSecondary)
-                .padding(.top, 16)
+                .padding(.top, 10)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 20)
         .foregroundStyle(Color.appText)
-        .presentationDetents([.height(520)])
+        .presentationDetents([.height(500)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
         .presentationBackground(Color.appBackground)
-    }
-
-    private func option(_ mode: HomeBalanceMode, title: String, detail: String, big: Double, sub: String) -> some View {
-        let on = selection == mode.rawValue
-        return Button { onPick(mode); dismiss() } label: {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: on ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 22))
-                        .foregroundStyle(on ? Color.appPrimary : Color.appTextTertiary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(title).font(.app(16, weight: .medium))
-                        Text(detail).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                    }
-                    Spacer(minLength: 0)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Total saldo").font(.app(11)).foregroundStyle(Color.appTextSecondary)
-                    Text(big.formattedAsCurrency()).font(.app(26, weight: .ultraLight)).monospacedDigit()
-                    Text(sub).font(.app(11)).foregroundStyle(Color.appTextSecondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 12))
-                .padding(.leading, 34)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 16)
-            .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(on ? Color.appPrimary : Color.appBorder, lineWidth: on ? 1.5 : 1))
-            .contentShape(RoundedRectangle(cornerRadius: 18))
-        }
-        .buttonStyle(.plain)
     }
 }
 

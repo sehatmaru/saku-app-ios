@@ -557,5 +557,8 @@
   "Saldo dan nomor rekening diabaikan": "Balances and account numbers are ignored",
   "Yang dicatat cuma transaksinya.": "Only the transaction is recorded.",
   "%lld draf": "%lld drafts",
-  "Cek dan simpan": "Review and save"
+  "Cek dan simpan": "Review and save",
+  "Rekening, e-wallet, tunai · selalu ikut": "Bank accounts, e-wallets, cash · always included",
+  "Ikutkan aset investasi": "Include investment assets",
+  "%@ dari dompet investasi": "%@ from investment wallets"
 }
