@@ -106,7 +106,7 @@ final class AccountListViewModel: ObservableObject {
             if abs(delta) > 0.001 {
                 let text = note.trimmingCharacters(in: .whitespacesAndNewlines)
                 try await SupabaseRepository.shared.createAdjustmentLog(
-                    accountId: account.id, amount: delta, note: text.isEmpty ? "Perbarui nilai" : text, date: date)
+                    accountId: account.id, amount: delta, note: text.isEmpty ? "Perbarui nilai" : text, date: date.atCurrentTime())
             }
             let updated = try await SupabaseRepository.shared.setCurrentBalance(id: account.id, to: newValue)
             if let index = accounts.firstIndex(where: { $0.id == account.id }) {

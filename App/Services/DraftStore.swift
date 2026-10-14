@@ -263,7 +263,10 @@ final class DraftStore: ObservableObject {
     /// Writes the draft as a real transaction, then remembers the user's choices for next time.
     /// Returns the new transaction's id so a save can be undone.
     @discardableResult
-    func save(_ draft: Draft, userId: String, remember: Bool = true) async throws -> String? {
+    func save(_ saved: Draft, userId: String, remember: Bool = true) async throws -> String? {
+        // stamped when it is recorded (the chosen day, the time now), not with the time the draft was read
+        var draft = saved
+        draft.date = saved.date.atCurrentTime()
         guard draft.isComplete, let amount = draft.amount else { throw SaveError.incomplete }
         if draft.kind == .cardPayment && draft.accountId == nil { try await saveOutsideCardPayment(draft); return nil }
         guard let accountId = draft.accountId else { throw SaveError.incomplete }
