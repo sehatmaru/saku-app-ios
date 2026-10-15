@@ -1253,6 +1253,26 @@
         }
       }
     },
+    "Akunmu dijadwalkan dihapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account is scheduled for deletion"
+          }
+        }
+      }
+    },
+    "Akunmu dijadwalkan dihapus permanen pada %@. Sampai tanggal itu kamu bisa membatalkannya dengan masuk lagi ke Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account is scheduled to be deleted permanently on %@. Until then you can cancel it by signing in to Saku again."
+          }
+        }
+      }
+    },
     "Aman": {
       "localizations": {
         "en": {
@@ -1593,12 +1613,32 @@
         }
       }
     },
+    "Batalkan penghapusan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel deletion"
+          }
+        }
+      }
+    },
     "Batalkan perubahan sementara": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Cancel temporary change"
+          }
+        }
+      }
+    },
+    "Batalkan sekarang kalau kamu berubah pikiran: akun aktif kembali dan semua datamu utuh.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel now if you change your mind: your account is active again and all your data is intact."
           }
         }
       }
@@ -3033,6 +3073,16 @@
         }
       }
     },
+    "Ceritakan singkat (opsional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tell us briefly (optional)"
+          }
+        }
+      }
+    },
     "Cetak %@": {
       "localizations": {
         "en": {
@@ -3583,6 +3633,16 @@
         }
       }
     },
+    "Dihapus permanen pada %@. Setelah itu datamu tidak bisa dipulihkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently deleted on %@. After that your data can't be recovered."
+          }
+        }
+      }
+    },
     "Dihapus setelah draf disimpan atau dibuang, paling lama 30 hari.": {
       "localizations": {
         "en": {
@@ -4043,6 +4103,16 @@
         }
       }
     },
+    "Fiturnya kurang sesuai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The features don't fit"
+          }
+        }
+      }
+    },
     "Foto": {
       "localizations": {
         "en": {
@@ -4059,6 +4129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Photos of payment proofs, receipts or bank history screenshots. Saku turns them into draft transactions."
+          }
+        }
+      }
+    },
+    "Foto dan nama profilmu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your profile photo and name"
           }
         }
       }
@@ -4613,6 +4693,16 @@
         }
       }
     },
+    "Hapus akun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete account"
+          }
+        }
+      }
+    },
     "Hapus akun & data": {
       "localizations": {
         "en": {
@@ -4909,6 +4999,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saku's memory"
+          }
+        }
+      }
+    },
+    "Ingatan dan draf Smart Tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Tracker memory and drafts"
           }
         }
       }
@@ -5773,6 +5873,16 @@
         }
       }
     },
+    "Kenapa kamu pergi? (boleh dilewati)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Why are you leaving? (optional)"
+          }
+        }
+      }
+    },
     "Kesehatan finansial": {
       "localizations": {
         "en": {
@@ -5963,6 +6073,16 @@
         }
       }
     },
+    "Khawatir privasi data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worried about data privacy"
+          }
+        }
+      }
+    },
     "Kira-kira saja, nanti bisa disesuaikan.": {
       "localizations": {
         "en": {
@@ -6088,7 +6208,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More"
+            "value": "Other"
           }
         }
       }
@@ -7743,6 +7863,16 @@
         }
       }
     },
+    "Pengingat di HP ini dimatikan sekarang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders on this phone are turned off now"
+          }
+        }
+      }
+    },
     "Pengingat menjelang gajian": {
       "localizations": {
         "en": {
@@ -7969,6 +8099,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Needs work"
+          }
+        }
+      }
+    },
+    "Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The request wasn't sent and your account hasn't changed. Please try again in a moment."
           }
         }
       }
@@ -8209,6 +8349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What Saku remembers (keywords, categories, wallets and how often they were used) is kept on the server so it follows you to other devices. Not your original sentence, not the amount. Guest mode stays on this device only."
+          }
+        }
+      }
+    },
+    "Pindah ke aplikasi lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moving to another app"
           }
         }
       }
@@ -9099,6 +9249,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "All your wallets, one pocket."
+          }
+        }
+      }
+    },
+    "Semua dompet, transaksi, budget, dan kategorimu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All your wallets, transactions, budgets and categories"
           }
         }
       }
@@ -10713,6 +10873,16 @@
         }
       }
     },
+    "Terlalu mahal (Saku Plus)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too expensive (Saku Plus)"
+          }
+        }
+      }
+    },
     "Terlambat": {
       "localizations": {
         "en": {
@@ -10819,6 +10989,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Closed"
+          }
+        }
+      }
+    },
+    "Tetap hapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep deleting"
           }
         }
       }
@@ -11119,6 +11299,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Never mind"
+          }
+        }
+      }
+    },
+    "Tidak lagi menggunakan Saku": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I no longer use Saku"
           }
         }
       }
@@ -11795,6 +11985,16 @@
         }
       }
     },
+    "Untuk melanjutkan, ketik %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To continue, type %@"
+          }
+        }
+      }
+    },
     "Untung": {
       "localizations": {
         "en": {
@@ -11955,6 +12155,16 @@
         }
       }
     },
+    "Yang ikut terhapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What gets deleted"
+          }
+        }
+      }
+    },
     "Yang memengaruhi skor": {
       "localizations": {
         "en": {
@@ -12081,6 +12291,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "destination wallet"
+          }
+        }
+      }
+    },
+    "hapus akun saya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "delete my account"
           }
         }
       }

@@ -27,6 +27,9 @@ final class AuthViewModel: ObservableObject {
     @Published var showSplash = true
     /// Just signed up with Google/Apple and nothing set up yet: RootView shows SetupOnboardingView.
     @Published var needsSetup = false
+    /// Signed in on an account that is waiting to be deleted: RootView shows PendingDeletionView until the user
+    /// cancels the deletion or signs out.
+    @Published var pendingDeletion: Date?
 
     private var authListener: Any?
 
@@ -84,6 +87,11 @@ final class AuthViewModel: ObservableObject {
             avatarURL: profile.avatarUrl
         )
         await loadAvatar()
+        if let raw = profile.deletionScheduledFor, let date = AccountDeletion.parse(raw) {
+            pendingDeletion = date
+            needsSetup = false
+            return
+        }
         // Accounts made in the last 10 minutes count as a sign-up; existing users never see setup.
         let isNewAccount = createdAt.map { Date().timeIntervalSince($0) < 600 } ?? false
         if offersSetup, isNewAccount {
@@ -230,19 +238,19 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Account reset (development)
+    // MARK: - Hapus akun
 
-    /// Deletes the account and all its data on the server, forgets what this device kept
-    /// (cache, reminders, payday, intro) and returns to the start. False when the server refused.
-    func deleteAccountAndData() async -> Bool {
+    /// Asks the server to delete this account in 30 days, then signs out everywhere and forgets what this device kept.
+    /// False when the server refused (nothing changed).
+    func requestDeletion(reason: AccountDeletion.Reason?, note: String) async -> Bool {
         do {
-            try await SupabaseSDK.deleteMyAccount()
+            _ = try await SupabaseSDK.requestAccountDeletion(reason: reason?.rawValue, note: reason == .other ? String(note.prefix(AccountDeletion.noteLimit)) : nil)
         } catch {
-            errorMessage = error.localizedDescription
+            // the server's own message is technical and in English; nothing was changed, so just say so
+            errorMessage = L("Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.")
             return false
         }
-        // The auth user is gone, so the server can't revoke anything; clear the local session.
-        try? await SupabaseSDK.client.auth.signOut(scope: .local)
+        try? await SupabaseSDK.client.auth.signOut()
         GIDSignIn.sharedInstance.signOut()
         NotificationManager.shared.cancelAll()
         AppDataCache.shared.clearAll()
@@ -262,6 +270,22 @@ final class AuthViewModel: ObservableObject {
         return true
     }
 
+    /// "Batalkan" on PendingDeletionView: the account is active again with its data intact.
+    func cancelPendingDeletion() async -> Bool {
+        do {
+            try await SupabaseSDK.cancelAccountDeletion()
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+        await loadAvatar()
+        withAnimation(.easeInOut(duration: 0.4)) {
+            pendingDeletion = nil
+            isAuthenticated = true
+        }
+        return true
+    }
+
     // MARK: - Logout
 
     func logout() {
@@ -274,6 +298,7 @@ final class AuthViewModel: ObservableObject {
             SmartTrackerMemorySync.declinedAt = nil
             DraftStore.shared.reset()
             currentUser = nil
+            pendingDeletion = nil
             withAnimation(.easeInOut(duration: 0.4)) {
                 isAuthenticated = false
             }

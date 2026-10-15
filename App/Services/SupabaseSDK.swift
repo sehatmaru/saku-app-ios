@@ -160,9 +160,20 @@ enum SupabaseSDK {
         }
     }
 
-    /// Development tool: deletes the signed-in account and all its data on the server.
-    static func deleteMyAccount() async throws {
-        try await client.rpc("delete_my_account").execute()
+    /// Asks to delete the signed-in account. It is scheduled 30 days out (the server returns the date); `reason`
+    /// and `note` are the optional survey answer and are stored without any link to the user.
+    static func requestAccountDeletion(reason: String?, note: String?) async throws -> Date {
+        var params: [String: AnyJSON] = [:]
+        if let reason { params["p_reason"] = .string(reason) }
+        if let note, !note.isEmpty { params["p_note"] = .string(note) }
+        let raw: String = try await client.rpc("request_account_deletion", params: params).execute().value
+        guard let date = AccountDeletion.parse(raw) else { throw URLError(.cannotParseResponse) }
+        return date
+    }
+
+    /// Signing in during the wait and choosing "Batalkan".
+    static func cancelAccountDeletion() async throws {
+        try await client.rpc("cancel_account_deletion").execute()
     }
 
     /// Saves the payday (1–31). The server decides when it takes effect (now for early corrections,
@@ -259,6 +270,8 @@ struct UserProfile: Codable, Identifiable {
     var smartTrackerConsentAt: String? = nil
     /// When the user agreed to keeping Ingatan on the server; nil until then.
     var smartTrackerMemoryConsentAt: String? = nil
+    /// When a requested deletion becomes permanent; nil for an account not waiting to be deleted.
+    var deletionScheduledFor: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -272,6 +285,7 @@ struct UserProfile: Codable, Identifiable {
         case homeBalanceMode = "home_balance_mode"
         case smartTrackerConsentAt = "smart_tracker_consent_at"
         case smartTrackerMemoryConsentAt = "smart_tracker_memory_consent_at"
+        case deletionScheduledFor = "deletion_scheduled_for"
     }
 }
 

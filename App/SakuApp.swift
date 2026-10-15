@@ -54,6 +54,9 @@ struct RootView: View {
                     Task { await authViewModel.checkSession() }
                 }
                 .transition(.opacity)
+            } else if let date = authViewModel.pendingDeletion {
+                PendingDeletionView(date: date, authViewModel: authViewModel)
+                    .transition(.opacity)
             } else if authViewModel.isAuthenticated, authViewModel.needsSetup {
                 SetupOnboardingView(initialName: prefilledName) { setup in
                     await authViewModel.completeSetup(setup)
@@ -74,6 +77,7 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.5), value: authViewModel.showSplash)
         .animation(.easeInOut(duration: 0.4), value: hasSeenOnboarding)
         .animation(.easeInOut(duration: 0.4), value: authViewModel.needsSetup)
+        .animation(.easeInOut(duration: 0.4), value: authViewModel.pendingDeletion)
         .preferredColorScheme(appTheme.colorScheme)
         .environment(\.locale, AppLanguage.locale)
         .id(appLanguage)

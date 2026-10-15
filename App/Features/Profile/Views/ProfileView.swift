@@ -17,9 +17,6 @@ struct ProfileView: View {
     }
 
     @State private var showLogoutAlert = false
-    @State private var showResetAlert = false
-    @State private var isResetting = false
-    @State private var resetError: String?
     @State private var showsPayday = false
     @State private var isCancellingPayday = false
     @State private var isPaydayToastShown = false
@@ -74,8 +71,8 @@ struct ProfileView: View {
                         financeSection
                         appearanceSection
                         notificationSection
-                        if DevTools.isAccountResetEnabled { developmentSection }
                         logoutButton
+                        if authViewModel.currentUser?.isGuest == false { deleteAccountLink }
                         Text("Bergabung sejak \(memberSinceDate) · Saku versi \(appVersion)")
                             .font(.app(13))
                             .foregroundStyle(Color.appTextTertiary)
@@ -126,29 +123,6 @@ struct ProfileView: View {
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
-            .alert("Hapus akun dan semua data?", isPresented: $showResetAlert) {
-                Button("Batal", role: .cancel) {}
-                Button("Hapus semua", role: .destructive) { resetAccount() }
-            } message: {
-                Text("Akun dan semua datamu dihapus permanen, lalu kamu kembali ke awal. Tidak bisa dibatalkan.")
-            }
-            .alert("Gagal menghapus akun", isPresented: Binding(get: { resetError != nil }, set: { if !$0 { resetError = nil } })) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(resetError ?? "")
-            }
-            .overlay {
-                if isResetting {
-                    ZStack {
-                        Color.black.opacity(0.3).ignoresSafeArea()
-                        ProgressView("Menghapus…")
-                            .padding(24)
-                            .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
-                    }
-                    .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut(duration: 0.2), value: isResetting)
             .alert("Keluar", isPresented: $showLogoutAlert) {
                 Button("Batal", role: .cancel) {}
                 Button("Keluar", role: .destructive) {
@@ -371,28 +345,16 @@ struct ProfileView: View {
 
     // MARK: - Logout
 
-    /// Only while the app is in development and testing (see `DevTools`).
-    private var developmentSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            sectionCaption(L("Pengembangan"))
-            Button { showResetAlert = true } label: {
-                row(icon: "trash", title: L("Hapus akun & data"), subtitle: L("Hanya uji coba: hapus akun dan data"), isDestructive: true) {
-                    chevron
-                }
+    /// Hapus akun: a quiet link under Keluar; the screen it opens does the explaining and the confirming.
+    private var deleteAccountLink: some View {
+        NavigationLink(destination: DeleteAccountView(authViewModel: authViewModel).detailPage()) {
+            Text("Hapus akun")
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                .frame(maxWidth: .infinity).frame(height: 44)
                 .contentShape(Rectangle())
-            }
-            .buttonStyle(RowPressStyle())
-            .disabled(isResetting)
         }
-    }
-
-    private func resetAccount() {
-        isResetting = true
-        Task {
-            let ok = await authViewModel.deleteAccountAndData()
-            isResetting = false
-            if !ok { resetError = authViewModel.errorMessage ?? L("Coba lagi.") }
-        }
+        .buttonStyle(.plain)
+        .padding(.top, 8)
     }
 
     private var logoutButton: some View {
