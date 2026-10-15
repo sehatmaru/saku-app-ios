@@ -733,6 +733,16 @@
         }
       }
     },
+    "%lld hari dari hari ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days from today"
+          }
+        }
+      }
+    },
     "%lld hari lagi": {
       "localizations": {
         "en": {
@@ -2093,6 +2103,16 @@
         }
       }
     },
+    "Belum berhasil dibatalkan dan akunmu belum berubah. Coba lagi sebentar lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't cancel yet and your account hasn't changed. Please try again in a moment."
+          }
+        }
+      }
+    },
     "Belum diatur": {
       "localizations": {
         "en": {
@@ -2353,6 +2373,16 @@
         }
       }
     },
+    "Bisa dibatalkan sampai %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can cancel until %@."
+          }
+        }
+      }
+    },
     "Bisa dimatikan kapan saja di Profil › Smart Tracker": {
       "localizations": {
         "en": {
@@ -2409,6 +2439,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You can show it again any time from Manage categories."
+          }
+        }
+      }
+    },
+    "Boleh dilewati. Jawabanmu membantu kami memperbaiki Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional. Your answer helps us improve Saku."
           }
         }
       }
@@ -3629,6 +3669,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deleted as soon as the draft is made"
+          }
+        }
+      }
+    },
+    "Dihapus permanen pada": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently deleted on"
           }
         }
       }
@@ -5873,6 +5923,16 @@
         }
       }
     },
+    "Kenapa kamu pergi?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Why are you leaving?"
+          }
+        }
+      }
+    },
     "Kenapa kamu pergi? (boleh dilewati)": {
       "localizations": {
         "en": {
@@ -6109,6 +6169,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Connection lost. Try again, or save it for later in Confirm transactions."
+          }
+        }
+      }
+    },
+    "Konfirmasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm"
           }
         }
       }
@@ -6909,6 +6979,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reading the picture…"
+          }
+        }
+      }
+    },
+    "Membatalkan…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelling…"
           }
         }
       }
@@ -8783,6 +8863,16 @@
         }
       }
     },
+    "Saku versi %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku version %@"
+          }
+        }
+      }
+    },
     "Saldo": {
       "localizations": {
         "en": {
@@ -8983,12 +9073,32 @@
         }
       }
     },
+    "Sampai tanggal itu kamu bisa membatalkannya dengan masuk lagi ke Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until then you can cancel it by signing in to Saku again."
+          }
+        }
+      }
+    },
     "Satu angka untuk kondisi keuanganmu.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "One number for your financial health."
+          }
+        }
+      }
+    },
+    "Saya mengerti, lanjutkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I understand, continue"
           }
         }
       }
@@ -11981,6 +12091,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What is this cash for?"
+          }
+        }
+      }
+    },
+    "Untuk melanjutkan, ketik ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To continue, type "
           }
         }
       }

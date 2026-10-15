@@ -602,5 +602,18 @@
   "Batalkan sekarang kalau kamu berubah pikiran: akun aktif kembali dan semua datamu utuh.": "Cancel now if you change your mind: your account is active again and all your data is intact.",
   "Batalkan penghapusan": "Cancel deletion",
   "Tetap hapus": "Keep deleting",
-  "Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.": "The request wasn't sent and your account hasn't changed. Please try again in a moment."
+  "Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.": "The request wasn't sent and your account hasn't changed. Please try again in a moment.",
+  "Saya mengerti, lanjutkan": "I understand, continue",
+  "Kenapa kamu pergi?": "Why are you leaving?",
+  "Boleh dilewati. Jawabanmu membantu kami memperbaiki Saku.": "Optional. Your answer helps us improve Saku.",
+  "Konfirmasi": "Confirm",
+  "Dihapus permanen pada": "Permanently deleted on",
+  "%lld hari dari hari ini": "%lld days from today",
+  "Sampai tanggal itu kamu bisa membatalkannya dengan masuk lagi ke Saku.": "Until then you can cancel it by signing in to Saku again.",
+  "Untuk melanjutkan, ketik ": "To continue, type ",
+  "Bisa dibatalkan sampai %@.": "You can cancel until %@.",
+  "%lld hari lagi": "%lld days left",
+  "Membatalkan…": "Cancelling…",
+  "Belum berhasil dibatalkan dan akunmu belum berubah. Coba lagi sebentar lagi.": "Couldn't cancel yet and your account hasn't changed. Please try again in a moment.",
+  "Saku versi %@": "Saku version %@"
 }

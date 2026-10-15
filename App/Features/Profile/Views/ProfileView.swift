@@ -73,7 +73,7 @@ struct ProfileView: View {
                         notificationSection
                         logoutButton
                         if authViewModel.currentUser?.isGuest == false { deleteAccountLink }
-                        Text("Bergabung sejak \(memberSinceDate) · Saku versi \(appVersion)")
+                        Text(authViewModel.currentUser?.isGuest == true ? L("Saku versi %@", appVersion) : "Bergabung sejak \(memberSinceDate) · Saku versi \(appVersion)")
                             .font(.app(13))
                             .foregroundStyle(Color.appTextTertiary)
                             .multilineTextAlignment(.center)
