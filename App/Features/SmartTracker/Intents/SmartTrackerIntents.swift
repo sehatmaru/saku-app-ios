@@ -33,7 +33,7 @@ struct RecordFromNotificationIntent: AppIntent {
         guard SmartTrackerConsent.isGranted else { return .result(dialog: RecordTransactionIntent.needsConsent) }
         NotificationFilter.remember(title: notificationTitle)
         guard NotificationFilter.allows(title: notificationTitle, subtitle: subtitle) else {
-            return .result(dialog: "Notifikasi diabaikan sesuai pengaturan Notifikasi bank.")
+            return .result(dialog: "Notifikasi diabaikan sesuai pengaturan Notifikasi aplikasi.")
         }
         let count = await MainActor.run { () -> Int in
             let store = DraftStore.shared

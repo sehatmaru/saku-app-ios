@@ -7,7 +7,7 @@ enum SmartWay: CaseIterable {
     var title: String {
         switch self {
         case .quick: return L("Catat cepat")
-        case .notification: return L("Notifikasi bank")
+        case .notification: return L("Notifikasi aplikasi")
         case .share: return L("Bagikan teks")
         case .siri: return "Siri"
         }

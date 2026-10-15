@@ -61,6 +61,16 @@
         }
       }
     },
+    "\"Simpan draf\" sedang diisi, jadi notifikasi dengan judul lain tidak dibuat draf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"Save as draft\" is filled in, so notifications with other titles don't become drafts."
+          }
+        }
+      }
+    },
     "%@ akan dihapus dari daftar dompet.": {
       "localizations": {
         "en": {
@@ -769,6 +779,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lldM"
+          }
+        }
+      }
+    },
+    "%lld judul · %lld jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld titles · %lld become drafts"
           }
         }
       }
@@ -1953,12 +1973,32 @@
         }
       }
     },
+    "Belum ada kata": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No words yet"
+          }
+        }
+      }
+    },
     "Belum ada kategori": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "No categories yet"
+          }
+        }
+      }
+    },
+    "Belum ada notifikasi masuk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No notifications yet"
           }
         }
       }
@@ -3433,6 +3473,16 @@
         }
       }
     },
+    "Dari notifikasi aplikasi bank, e-wallet, atau belanja di HP-mu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From the notifications of bank, e-wallet or shopping apps on your phone."
+          }
+        }
+      }
+    },
     "Dari suaramu": {
       "localizations": {
         "en": {
@@ -3499,6 +3549,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "In shorter months, we use"
+          }
+        }
+      }
+    },
+    "Diabaikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignored"
+          }
+        }
+      }
+    },
+    "Diabaikan · ada “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignored · has “%@”"
+          }
+        }
+      }
+    },
+    "Diabaikan · tidak cocok dengan Simpan draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignored · doesn't match Save as draft"
           }
         }
       }
@@ -4093,6 +4173,16 @@
         }
       }
     },
+    "Draf · BCA": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft · BCA"
+          }
+        }
+      }
+    },
     "E-Wallet": {
       "localizations": {
         "en": {
@@ -4643,6 +4733,16 @@
         }
       }
     },
+    "Hanya ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only this"
+          }
+        }
+      }
+    },
     "Hanya mengubah angka di Beranda. Dompet tetap menampilkan kas dan aset terpisah.": {
       "localizations": {
         "en": {
@@ -4659,16 +4759,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only a marker: it doesn't change Net, budget or card bills."
-          }
-        }
-      }
-    },
-    "Hanya tangkap judul": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Only capture titles"
           }
         }
       }
@@ -5183,6 +5273,16 @@
         }
       }
     },
+    "Jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Becomes a draft"
+          }
+        }
+      }
+    },
     "Jadikan dompet utama": {
       "localizations": {
         "en": {
@@ -5319,6 +5419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transaction type"
+          }
+        }
+      }
+    },
+    "Judul notifikasi yang masuk akan muncul di sini supaya bisa kamu pilih.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titles of incoming notifications show up here so you can pick them."
           }
         }
       }
@@ -6069,6 +6179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Double-tap to confirm"
+          }
+        }
+      }
+    },
+    "Ketuk judul untuk memasukkannya ke daftar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a title to add it to a list."
           }
         }
       }
@@ -7603,12 +7723,42 @@
         }
       }
     },
+    "Notifikasi aplikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App notifications"
+          }
+        }
+      }
+    },
     "Notifikasi bank": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Bank notifications"
+          }
+        }
+      }
+    },
+    "Notifikasi dengan judul lain tidak dibuat draf. Kosongkan daftar ini untuk menangkap semuanya lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications with other titles don't become drafts. Empty this list to capture everything again."
+          }
+        }
+      }
+    },
+    "Notifikasi diabaikan sesuai pengaturan Notifikasi aplikasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notification ignored per the App notifications settings."
           }
         }
       }
@@ -7779,6 +7929,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Payment of %@ recorded"
+          }
+        }
+      }
+    },
+    "Pembayaran QRIS dan kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QRIS and card payments"
           }
         }
       }
@@ -8383,6 +8543,16 @@
         }
       }
     },
+    "Pilih notifikasi mana yang dibuat draf, berdasarkan judulnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose which notifications become drafts, by their title."
+          }
+        }
+      }
+    },
     "Pilih platform": {
       "localizations": {
         "en": {
@@ -8719,6 +8889,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rp%lldK"
+          }
+        }
+      }
+    },
+    "Rp150.000 ke Budi Santoso": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp150,000 to Budi Santoso"
           }
         }
       }
@@ -9403,6 +9583,16 @@
         }
       }
     },
+    "Semua judul ditangkap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All titles are captured"
+          }
+        }
+      }
+    },
     "Semua kategori": {
       "localizations": {
         "en": {
@@ -9749,6 +9939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save wallet"
+          }
+        }
+      }
+    },
+    "Simpan draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save as draft"
           }
         }
       }
@@ -10329,6 +10529,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Statement closes %@, due %@"
+          }
+        }
+      }
+    },
+    "Tagihan dan cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bills and installments"
           }
         }
       }
@@ -11533,6 +11743,16 @@
         }
       }
     },
+    "Top up dan tarik tunai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top ups and cash withdrawals"
+          }
+        }
+      }
+    },
     "Total aset": {
       "localizations": {
         "en": {
@@ -11825,6 +12045,16 @@
         }
       }
     },
+    "Transfer Berhasil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transfer Successful"
+          }
+        }
+      }
+    },
     "Transfer Rp500.000 ke BIBIT berhasil": {
       "localizations": {
         "en": {
@@ -11851,6 +12081,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transfers between wallets don't affect your budget."
+          }
+        }
+      }
+    },
+    "Transfer ke Budi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transfer to Budi"
+          }
+        }
+      }
+    },
+    "Transfer masuk dan keluar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incoming and outgoing transfers"
           }
         }
       }
@@ -12241,6 +12491,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Card color · type the name on the card"
+          }
+        }
+      }
+    },
+    "Yang bisa dicatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What can be recorded"
           }
         }
       }

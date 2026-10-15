@@ -31,7 +31,7 @@ struct SmartTrackerSettingsView: View {
                         wayRow(.notification, L("Diteruskan lewat Shortcuts")) {
                             HStack(spacing: 6) {
                                 Text(!NotificationTrigger.isAvailable ? L("Butuh iOS 27") : isOn ? (store.connectedApps.isEmpty ? L("Atur") : L("%lld aplikasi", store.connectedApps.count)) : L("Mati"))
-                                    .font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                                    .font(.app(15)).foregroundStyle(NotificationTrigger.isAvailable ? Color.appTextSecondary : Color.appTextTertiary)
                                 chevron
                             }
                         }
@@ -352,7 +352,8 @@ enum NotificationTrigger {
     static var isAvailable: Bool { if #available(iOS 27, *) { true } else { false } }
 }
 
-/// Notifikasi bank (design 2d): how to connect each bank or e-wallet app through a Shortcuts automation.
+/// Notifikasi aplikasi (designs "Notifikasi Bank" 1c and 2a): how to connect each bank or e-wallet app through a
+/// Shortcuts automation, which titles become drafts, and what can be recorded. Older iOS gets a notice instead of the steps.
 struct NotificationSetupGuideView: View {
     @ObservedObject private var store = DraftStore.shared
     @Environment(\.openURL) private var openURL
@@ -365,131 +366,169 @@ struct NotificationSetupGuideView: View {
          Text(L("Ketuk ")) + Text(L("Selesai")).bold() + Text(L(". Kalau muncul ")) + Text(L("Tanya Sebelum Menjalankan")).bold() + Text(L(", matikan."))]
     }
 
+    private var kinds: [(String, String)] {
+        [("arrow.left.arrow.right", L("Transfer masuk dan keluar")), ("qrcode", L("Pembayaran QRIS dan kartu")),
+         ("wallet.bifold", L("Top up dan tarik tunai")), ("doc.text", L("Tagihan dan cicilan"))]
+    }
+
+    private var privacy: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "lock").font(.system(size: 16)).foregroundStyle(Color.appTextSecondary).padding(.top, 1)
+            Text(L("Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek. Yang diingat hanya 10 judul terakhir, di HP ini, supaya bisa kamu pilih."))
+                .font(.app(13)).lineSpacing(3).foregroundStyle(Color.appTextSecondary)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var divider: some View { Rectangle().fill(Color.appSeparator).frame(height: 1).padding(.vertical, 24) }
+
+    private var recordable: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Yang bisa dicatat").font(.app(20, weight: .semibold))
+            VStack(spacing: 0) {
+                ForEach(Array(kinds.enumerated()), id: \.offset) { _, kind in
+                    HStack(spacing: 14) {
+                        Image(systemName: kind.0).font(.system(size: 18)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+                        Text(kind.1).font(.app(16))
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.vertical, 10)
+                }
+            }
+            .padding(.top, 8)
+            Text("Dari notifikasi aplikasi bank, e-wallet, atau belanja di HP-mu.")
+                .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
+        }
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    VStack(spacing: 10) {
-                        HStack(spacing: 10) {
-                            Text("BCA").font(.system(size: 10, weight: .heavy)).foregroundStyle(.white)
-                                .frame(width: 30, height: 30).background(Color(hex: "0066AE"), in: RoundedRectangle(cornerRadius: 8))
-                            VStack(alignment: .leading) {
-                                Text("BCA mobile").font(.app(13, weight: .semibold))
-                                Text(L("Transfer Rp500.000 ke BIBIT berhasil")).font(.app(13)).foregroundStyle(Color.appBody).lineLimit(1)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.horizontal, 12).padding(.vertical, 10).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 14))
-                        Image(systemName: "arrow.down").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.appTextTertiary)
-                        HStack(spacing: 10) {
-                            Image(systemName: "tray").font(.system(size: 15)).foregroundStyle(Color.stGreen)
-                                .frame(width: 30, height: 30).background(Color.stSuccessBg, in: Circle())
-                            Text(L("Draf menunggu di Konfirmasi transaksi")).font(.app(14, weight: .medium))
-                            Spacer(minLength: 0)
-                            Text("Rp500.000").font(.app(14)).monospacedDigit()
-                        }
-                        .padding(.horizontal, 12).padding(.vertical, 10).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 14))
-                    }
-                    .padding(14).background(Color.appFill, in: RoundedRectangle(cornerRadius: 18)).padding(.horizontal, 24).padding(.top, 12)
-
-                    Text(L("Setiap ada notifikasi transaksi, Shortcuts di iPhone meneruskannya ke Saku. Atur sekali saja untuk tiap aplikasi."))
-                        .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.horizontal, 24).padding(.top, 16)
-
-                    Text(L("Sudah terhubung")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                        .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 8)
-                    if store.connectedApps.isEmpty {
-                        HStack(spacing: 12) {
-                            Image(systemName: "powerplug").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary)
-                                .frame(width: 40, height: 40).background(Color.stChip, in: Circle()).stFloat()
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(L("Belum ada aplikasi terhubung")).font(.app(15, weight: .semibold))
-                                Text(L("Begitu notifikasi pertama masuk, aplikasinya muncul di sini."))
-                                    .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
-                            }
-                            Spacer(minLength: 0)
-                        }
-                        .padding(14)
-                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
-                        .padding(.horizontal, 24)
-                    } else {
-                        FlowLayout(spacing: 6) {
-                            ForEach(store.connectedApps, id: \.self) { app in
-                                Label(app, systemImage: "checkmark.circle.fill")
-                                    .font(.app(14, weight: .semibold)).foregroundStyle(Color.stSuccessText)
-                                    .padding(.horizontal, 12).frame(height: 32)
-                                    .background(Color.stSuccessBg, in: Capsule())
-                            }
-                        }
-                        .padding(.horizontal, 24)
-                    }
-
-                    if !NotificationTrigger.isAvailable {
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(L("Belum tersedia di iOS-mu")).font(.app(15, weight: .semibold))
-                                Text(L("Pemicu Notifikasi di Shortcuts baru ada di iOS 27 ke atas. Sampai iOS-mu diperbarui, catat lewat ketik atau ucapan, menu Bagikan, atau Siri."))
-                                    .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
-                            }
-                        } icon: {
-                            Image(systemName: "info.circle").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary)
-                        }
-                        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.stChip, in: RoundedRectangle(cornerRadius: 16))
-                        .padding(.horizontal, 24).padding(.top, 24)
-                    }
-                    if NotificationTrigger.isAvailable {
-                    Text(L("Cara menghubungkan")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 8)
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
-                            HStack(alignment: .top, spacing: 14) {
-                                VStack(spacing: 4) {
-                                    Text("\(index + 1)").font(.app(14, weight: .bold)).foregroundStyle(.white)
-                                        .frame(width: 28, height: 28).background(Color.stGreen, in: Circle())
-                                    if index < steps.count - 1 {
-                                        Rectangle().fill(Color.stLine).frame(width: 2).frame(maxHeight: .infinity)
-                                    }
-                                }
-                                step.font(.app(15)).lineSpacing(3).padding(.top, 3).padding(.bottom, 18)
-                                Spacer(minLength: 0)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    NotificationFilterSection().padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 16)
-                    }
-
-                    Text(L("Bisa dipakai untuk")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                        .padding(.horizontal, 24).padding(.top, 4).padding(.bottom, 8)
-                    FlowLayout(spacing: 6) {
-                        ForEach(NotificationParser.supportedApps, id: \.self) { app in
-                            Text(app).font(.app(14)).padding(.horizontal, 12).frame(height: 30).background(Color.stChip, in: Capsule())
-                        }
-                    }
-                    .padding(.horizontal, 24)
-
-                    Label(L("Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek. Yang diingat hanya 10 judul terakhir, di HP ini, supaya bisa kamu pilih."),
-                          systemImage: "lock")
-                        .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextTertiary).padding(.horizontal, 24).padding(.top, 16)
-                    Color.clear.frame(height: 130)
+                    illustration.padding(.top, 12)
+                    if NotificationTrigger.isAvailable { available } else { unavailable }
+                    Color.clear.frame(height: NotificationTrigger.isAvailable ? 130 : 24)
                 }
+                .padding(.horizontal, 24)
             }
-            LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .center)
-                .frame(height: 120).allowsHitTesting(false)
             if NotificationTrigger.isAvailable {
-            Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
-                Label(L("Buka Shortcuts"), systemImage: "arrow.up.forward.app")
-                    .font(.app(17, weight: .semibold)).foregroundStyle(Color.appBackground)
-                    .frame(maxWidth: .infinity).frame(height: 52).background(Color.appText, in: Capsule())
-            }
-            .buttonStyle(PressScaleStyle())
-            .padding(.horizontal, 24).padding(.bottom, 12)
+                LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .center)
+                    .frame(height: 120).allowsHitTesting(false)
+                Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
+                    Label(L("Buka Shortcuts"), systemImage: "arrow.up.forward.app")
+                        .font(.app(17, weight: .semibold)).foregroundStyle(Color.appBackground)
+                        .frame(maxWidth: .infinity).frame(height: 52).background(Color.appText, in: Capsule())
+                }
+                .buttonStyle(PressScaleStyle())
+                .padding(.horizontal, 24).padding(.bottom, 12)
             }
         }
         .background(Color.appBackground)
-        .navigationTitle(L("Notifikasi bank"))
+        .navigationTitle(L("Notifikasi aplikasi"))
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
+    }
+
+    /// A notification becoming a draft, with the bank's own logo.
+    private var illustration: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                WalletIconView(icon: WalletIcon.resolve("bca"), size: 28)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(L("Transfer Berhasil")).font(.app(13, weight: .semibold))
+                    Text(L("Rp150.000 ke Budi Santoso")).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Text("baru saja").font(.app(12)).foregroundStyle(Color.appTextTertiary)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 14))
+            Image(systemName: "arrow.down").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+            HStack(spacing: 12) {
+                Image(systemName: "arrow.left.arrow.right").font(.system(size: 16)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(L("Transfer ke Budi")).font(.app(15))
+                    Text(L("Draf · BCA")).font(.app(13)).foregroundStyle(Color.appPrimary)
+                }
+                Spacer(minLength: 0)
+                Text("−Rp150.000").font(.app(15)).monospacedDigit()
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 14))
+        }
+        .padding(16).background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private var available: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("Setiap ada notifikasi transaksi, Shortcuts di iPhone meneruskannya ke Saku. Atur sekali saja untuk tiap aplikasi."))
+                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.top, 16)
+
+            Text(L("Sudah terhubung")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                .padding(.top, 22).padding(.bottom, 8)
+            if store.connectedApps.isEmpty {
+                HStack(spacing: 12) {
+                    Image(systemName: "powerplug").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary)
+                        .frame(width: 40, height: 40).background(Color.stChip, in: Circle()).stFloat()
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("Belum ada aplikasi terhubung")).font(.app(15, weight: .semibold))
+                        Text(L("Begitu notifikasi pertama masuk, aplikasinya muncul di sini."))
+                            .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(14)
+                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+            } else {
+                FlowLayout(spacing: 6) {
+                    ForEach(store.connectedApps, id: \.self) { app in
+                        Label(app, systemImage: "checkmark.circle.fill")
+                            .font(.app(14, weight: .semibold)).foregroundStyle(Color.stSuccessText)
+                            .padding(.horizontal, 12).frame(height: 32)
+                            .background(Color.stSuccessBg, in: Capsule())
+                    }
+                }
+            }
+
+            Text(L("Cara menghubungkan")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                .padding(.top, 24).padding(.bottom, 8)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                    HStack(alignment: .top, spacing: 14) {
+                        VStack(spacing: 4) {
+                            Text("\(index + 1)").font(.app(14, weight: .bold)).foregroundStyle(.white)
+                                .frame(width: 28, height: 28).background(Color.stGreen, in: Circle())
+                            if index < steps.count - 1 {
+                                Rectangle().fill(Color.stLine).frame(width: 2).frame(maxHeight: .infinity)
+                            }
+                        }
+                        step.font(.app(15)).lineSpacing(3).padding(.top, 3).padding(.bottom, 18)
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+
+            divider
+            NotificationFilterSection()
+            privacy.padding(.top, 20)
+            divider
+            recordable
+        }
+    }
+
+    private var unavailable: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "info.circle").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).padding(.top, 1)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L("Belum tersedia di iOS-mu")).font(.app(16, weight: .semibold))
+                    Text(L("Pemicu Notifikasi di Shortcuts baru ada di iOS 27 ke atas. Sampai iOS-mu diperbarui, catat lewat ketik atau ucapan, menu Bagikan, atau Siri."))
+                        .font(.app(14)).lineSpacing(3).foregroundStyle(Color.appBody)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(16).background(Color.stChip, in: RoundedRectangle(cornerRadius: 16)).padding(.top, 16)
+            recordable.padding(.top, 28)
+            privacy.padding(.top, 24)
+        }
     }
 }
 
@@ -503,86 +542,254 @@ private struct ExampleLabelStyle: LabelStyle {
 }
 
 
-/// "Notifikasi yang ditangkap" (BUG-22): words that drop a notification, words that are the only ones kept, and the
-/// last titles that came in, each one tap from either list.
+/// "Notifikasi yang ditangkap" (BUG-22, design "Notifikasi Bank" 1c): three summary rows; each opens a sheet with
+/// the words that drop a notification, the words that are the only ones kept, or the titles that came in last.
 private struct NotificationFilterSection: View {
+    private enum Panel: String, Identifiable { case ignore, only, recent; var id: String { rawValue } }
+
     @State private var ignore = NotificationFilter.ignore
     @State private var only = NotificationFilter.only
     @State private var recent = NotificationFilter.recent
-    @State private var ignoreInput = ""
-    @State private var onlyInput = ""
+    @State private var panel: Panel?
+
+    private var draftCount: Int {
+        recent.filter { NotificationFilter.verdict(title: $0, ignore: ignore, only: only) == .draft }.count
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(L("Notifikasi yang ditangkap")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.bottom, 8)
-            list(title: L("Abaikan judul"), hint: L("Notifikasi yang judulnya mengandung kata ini tidak dibuat draf, mis. Promo."),
-                 words: $ignore, input: $ignoreInput, toOnly: false)
-            list(title: L("Hanya tangkap judul"), hint: L("Bila diisi, hanya notifikasi yang judulnya mengandung kata ini yang dibuat draf."),
-                 words: $only, input: $onlyInput, toOnly: true).padding(.top, 18)
-            if !recent.isEmpty {
-                Text(L("Judul terakhir")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.top, 22).padding(.bottom, 4)
-                ForEach(recent, id: \.self) { title in
-                    HStack(spacing: 8) {
-                        Text(title).font(.app(15)).lineLimit(1)
-                        Spacer(minLength: 8)
-                        pick(L("Abaikan")) { NotificationFilter.add(title, toOnly: false); reload() }
-                        pick(L("Hanya")) { NotificationFilter.add(title, toOnly: true); reload() }
-                    }
-                    .padding(.vertical, 8)
+            Text("Notifikasi yang ditangkap").font(.app(20, weight: .semibold))
+            Text("Pilih notifikasi mana yang dibuat draf, berdasarkan judulnya.")
+                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
+            VStack(spacing: 0) {
+                row(L("Abaikan judul"), ignore.isEmpty ? L("Belum ada") : ignore.joined(separator: ", ")) { panel = .ignore }
+                Divider()
+                row(L("Simpan draf"), only.isEmpty ? L("Semua judul ditangkap") : only.joined(separator: ", ")) { panel = .only }
+                Divider()
+                row(L("Judul terakhir"), recent.isEmpty ? L("Belum ada notifikasi masuk") : L("%lld judul · %lld jadi draf", recent.count, draftCount)) { panel = .recent }
+            }
+            .padding(.horizontal, 16).background(Color.appFill, in: RoundedRectangle(cornerRadius: 16)).padding(.top, 16)
+            if !only.isEmpty {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "info.circle").font(.system(size: 15)).foregroundStyle(Color.stWarn).padding(.top, 1)
+                    Text("\"Simpan draf\" sedang diisi, jadi notifikasi dengan judul lain tidak dibuat draf.")
+                        .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appBody)
                 }
+                .padding(.top, 12).transition(.opacity)
+            }
+        }
+        .animation(.easeOut(duration: 0.25), value: only.isEmpty)
+        .sheet(item: $panel, onDismiss: reload) { panel in
+            switch panel {
+            case .ignore: FilterWordsSheet(toOnly: false)
+            case .only: FilterWordsSheet(toOnly: true)
+            case .recent: RecentTitlesSheet()
             }
         }
     }
 
-    private func list(title: String, hint: String, words: Binding<[String]>, input: Binding<String>, toOnly: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.app(15, weight: .semibold))
-            Text(hint).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
-            if !words.wrappedValue.isEmpty {
-                FlowLayout(spacing: 6) {
-                    ForEach(words.wrappedValue, id: \.self) { word in
-                        Button {
-                            if toOnly { NotificationFilter.only.removeAll { $0 == word } } else { NotificationFilter.ignore.removeAll { $0 == word } }
-                            reload()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Text(word).font(.app(14))
-                                Image(systemName: "xmark").font(.system(size: 10, weight: .bold))
-                            }
-                            .padding(.horizontal, 12).frame(height: 30).background(Color.stChip, in: Capsule())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(L("Hapus %@", word))
-                    }
-                }
-            }
-            HStack(spacing: 8) {
-                TextField(L("Tambah kata"), text: input)
-                    .font(.app(15)).padding(.horizontal, 12).frame(height: 38)
-                    .background(Color.appFill, in: RoundedRectangle(cornerRadius: 10))
-                    .submitLabel(.done).onSubmit { commit(input, toOnly: toOnly) }
-                Button(L("Tambah")) { commit(input, toOnly: toOnly) }
-                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                    .disabled(input.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-        }
-    }
-
-    private func pick(_ title: String, action: @escaping () -> Void) -> some View {
+    private func row(_ title: String, _ value: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.app(13, weight: .medium)).padding(.horizontal, 12).frame(height: 28)
-                .background(Color.stChip, in: Capsule())
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.app(16)).foregroundStyle(Color.appText)
+                    Text(value).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+            }
+            .padding(.vertical, 14).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 
-    private func commit(_ input: Binding<String>, toOnly: Bool) {
-        NotificationFilter.add(input.wrappedValue, toOnly: toOnly)
-        input.wrappedValue = ""
-        reload()
-    }
-
     private func reload() {
         ignore = NotificationFilter.ignore; only = NotificationFilter.only; recent = NotificationFilter.recent
+    }
+}
+
+/// A sheet's title and the green "Selesai" on its right.
+private struct FilterSheetHeader: View {
+    let title: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title).font(.app(20, weight: .semibold))
+            Spacer(minLength: 0)
+            Button(L("Selesai")) { dismiss() }.font(.app(16, weight: .semibold)).foregroundStyle(Color.appPrimary)
+        }
+        .padding(.top, 20)
+    }
+}
+
+/// "Abaikan judul" or "Simpan draf": the words, one per row with a small x, and a field to add one.
+private struct FilterWordsSheet: View {
+    let toOnly: Bool
+    @State private var words: [String]
+    @State private var input = ""
+
+    init(toOnly: Bool) {
+        self.toOnly = toOnly
+        _words = State(initialValue: toOnly ? NotificationFilter.only : NotificationFilter.ignore)
+    }
+
+    private var canAdd: Bool { !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                FilterSheetHeader(title: toOnly ? L("Simpan draf") : L("Abaikan judul"))
+                Text(toOnly ? L("Bila diisi, hanya notifikasi yang judulnya mengandung kata ini yang dibuat draf.")
+                            : L("Notifikasi yang judulnya mengandung kata ini tidak dibuat draf, mis. Promo."))
+                    .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
+                HStack(spacing: 8) {
+                    TextField(L("Tambah kata"), text: $input)
+                        .font(.app(16)).padding(.horizontal, 14).frame(height: 44)
+                        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 12))
+                        .submitLabel(.done).onSubmit(add)
+                    Button(L("Tambah"), action: add)
+                        .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                        .padding(.horizontal, 18).frame(height: 44)
+                        .background(Color.appPrimary.opacity(0.12), in: Capsule())
+                        .opacity(canAdd ? 1 : 0.4).disabled(!canAdd)
+                }
+                .padding(.top, 16)
+                if toOnly, !words.isEmpty {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "info.circle").font(.system(size: 15)).foregroundStyle(Color.stWarn).padding(.top, 1)
+                        Text("Notifikasi dengan judul lain tidak dibuat draf. Kosongkan daftar ini untuk menangkap semuanya lagi.")
+                            .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appBody)
+                    }
+                    .padding(.top, 12)
+                }
+                VStack(spacing: 0) {
+                    ForEach(words, id: \.self) { word in
+                        HStack(alignment: .top, spacing: 12) {
+                            Text(word).font(.app(16)).fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                            Button { remove(word) } label: {
+                                Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Color.appTextSecondary)
+                                    .frame(width: 28, height: 28).background(Color.appFill, in: Circle())
+                            }
+                            .buttonStyle(.plain).accessibilityLabel(L("Hapus %@", word))
+                        }
+                        .padding(.vertical, 12)
+                        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+                    }
+                    if words.isEmpty {
+                        Text("Belum ada kata").font(.app(15)).foregroundStyle(Color.appTextTertiary)
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 12)
+                            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+                    }
+                }
+                .padding(.top, 12)
+            }
+            .padding(.horizontal, 24).padding(.bottom, 24)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible).presentationCornerRadius(28).presentationBackground(Color.appBackground)
+    }
+
+    private func add() {
+        guard canAdd else { return }
+        NotificationFilter.add(input, toOnly: toOnly)
+        input = ""
+        words = toOnly ? NotificationFilter.only : NotificationFilter.ignore
+    }
+
+    private func remove(_ word: String) {
+        if toOnly { NotificationFilter.only.removeAll { $0 == word } } else { NotificationFilter.ignore.removeAll { $0 == word } }
+        words = toOnly ? NotificationFilter.only : NotificationFilter.ignore
+    }
+}
+
+/// "Judul terakhir": the titles that came in, each opening to two buttons that put the whole title on a list.
+private struct RecentTitlesSheet: View {
+    @State private var recent = NotificationFilter.recent
+    @State private var ignore = NotificationFilter.ignore
+    @State private var only = NotificationFilter.only
+    @State private var opened: String?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                FilterSheetHeader(title: L("Judul terakhir"))
+                Text("Ketuk judul untuk memasukkannya ke daftar.").font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
+                if recent.isEmpty {
+                    VStack(spacing: 6) {
+                        Image(systemName: "bell").font(.system(size: 32, weight: .light)).foregroundStyle(Color.appTextTertiary)
+                        Text("Belum ada notifikasi masuk").font(.app(16, weight: .semibold))
+                        Text("Judul notifikasi yang masuk akan muncul di sini supaya bisa kamu pilih.")
+                            .font(.app(14)).lineSpacing(2).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity).padding(.top, 40).padding(.bottom, 24)
+                }
+                VStack(spacing: 0) {
+                    ForEach(recent, id: \.self) { title in titleRow(title) }
+                }
+                .padding(.top, 8)
+            }
+            .padding(.horizontal, 24).padding(.bottom, 24)
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible).presentationCornerRadius(28).presentationBackground(Color.appBackground)
+    }
+
+    private func status(_ title: String) -> (text: String, isDraft: Bool) {
+        switch NotificationFilter.verdict(title: title, ignore: ignore, only: only) {
+        case .draft: return (L("Jadi draf"), true)
+        case .ignored(let word):
+            return (L("Diabaikan · ada “%@”", word.count > 24 ? String(word.prefix(24)) + "…" : word), false)
+        case .notInOnly: return (L("Diabaikan · tidak cocok dengan Simpan draf"), false)
+        }
+    }
+
+    private func titleRow(_ title: String) -> some View {
+        let info = status(title)
+        let isOpen = opened == title
+        let inIgnore = ignore.contains { $0.caseInsensitiveCompare(title) == .orderedSame }
+        let inOnly = only.contains { $0.caseInsensitiveCompare(title) == .orderedSame }
+        return VStack(alignment: .leading, spacing: 0) {
+            Button { withAnimation(.spring(duration: 0.3)) { opened = isOpen ? nil : title } } label: {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(title).font(.app(15)).lineSpacing(2).foregroundStyle(info.isDraft ? Color.appText : Color.appTextSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(info.text).font(.app(12)).foregroundStyle(info.isDraft ? Color.appPrimary : Color.appTextTertiary)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                        .rotationEffect(.degrees(isOpen ? 180 : 0)).padding(.top, 5)
+                }
+                .padding(.vertical, 12).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if isOpen {
+                HStack(spacing: 8) {
+                    pill(inIgnore ? L("Diabaikan") : L("Abaikan"), on: inIgnore) { apply(title, inOnly: false) }
+                    pill(inOnly ? L("Hanya ini") : L("Simpan draf"), on: inOnly) { apply(title, inOnly: true) }
+                }
+                .padding(.bottom, 14).transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+    }
+
+    private func pill(_ text: String, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(text).font(.app(14, weight: .medium)).foregroundStyle(on ? Color.appBackground : Color.appText)
+                .frame(maxWidth: .infinity).frame(height: 40)
+                .background(on ? Color.appText : Color.clear, in: Capsule())
+                .overlay(Capsule().strokeBorder(on ? Color.appText : Color.appBorder, lineWidth: 1))
+        }
+        .buttonStyle(PressScaleStyle())
+    }
+
+    private func apply(_ title: String, inOnly: Bool) {
+        NotificationFilter.toggle(title, inOnly: inOnly)
+        ignore = NotificationFilter.ignore
+        only = NotificationFilter.only
     }
 }

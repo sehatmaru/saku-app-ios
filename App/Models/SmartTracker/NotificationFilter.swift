@@ -31,6 +31,42 @@ enum NotificationFilter {
         return only.isEmpty || hits(only)
     }
 
+    /// What happens to a notification with this title, for the "Judul terakhir" list.
+    enum Verdict: Equatable {
+        case draft
+        /// Dropped because the title contains this word of "Abaikan judul".
+        case ignored(word: String)
+        /// "Simpan draf" has words and none of them is in the title.
+        case notInOnly
+    }
+
+    static func verdict(title: String, ignore: [String], only: [String]) -> Verdict {
+        let text = title.lowercased()
+        if let word = ignore.first(where: { !$0.isEmpty && text.contains($0.lowercased()) }) { return .ignored(word: word) }
+        if !only.isEmpty, !only.contains(where: { !$0.isEmpty && text.contains($0.lowercased()) }) { return .notInOnly }
+        return .draft
+    }
+
+    /// Puts a whole title on one list, or takes it off when it is already there. Adding to one list takes it off the other.
+    static func toggled(_ title: String, inOnly: Bool, ignore: [String], only: [String]) -> (ignore: [String], only: [String]) {
+        func same(_ a: String, _ b: String) -> Bool { a.caseInsensitiveCompare(b) == .orderedSame }
+        var ignore = ignore, only = only
+        if inOnly {
+            if only.contains(where: { same($0, title) }) { only.removeAll { same($0, title) } }
+            else { only.append(title); ignore.removeAll { same($0, title) } }
+        } else {
+            if ignore.contains(where: { same($0, title) }) { ignore.removeAll { same($0, title) } }
+            else { ignore.append(title); only.removeAll { same($0, title) } }
+        }
+        return (ignore, only)
+    }
+
+    static func toggle(_ title: String, inOnly: Bool) {
+        let result = toggled(title, inOnly: inOnly, ignore: ignore, only: only)
+        ignore = result.ignore
+        only = result.only
+    }
+
     static func allows(title: String, subtitle: String) -> Bool {
         allows(title: title, subtitle: subtitle, ignore: ignore, only: only)
     }

@@ -32,4 +32,18 @@ final class NotificationFilterTests: XCTestCase {
         XCTAssertEqual(NotificationFilter.recent.first, "judul 5")
         XCTAssertEqual(NotificationFilter.recent.filter { $0.lowercased() == "judul 5" }.count, 1)
     }
+
+    func testVerdictNamesTheReason() {
+        XCTAssertEqual(NotificationFilter.verdict(title: "Promo Akhir Tahun", ignore: ["promo"], only: []), .ignored(word: "promo"))
+        XCTAssertEqual(NotificationFilter.verdict(title: "Info saldo", ignore: [], only: ["transfer"]), .notInOnly)
+        XCTAssertEqual(NotificationFilter.verdict(title: "Transfer Berhasil", ignore: ["promo"], only: ["transfer"]), .draft)
+    }
+
+    func testToggleMovesATitleBetweenTheLists() {
+        var lists = NotificationFilter.toggled("Transfer Berhasil", inOnly: false, ignore: [], only: ["transfer berhasil"])
+        XCTAssertEqual(lists.ignore, ["Transfer Berhasil"])
+        XCTAssertEqual(lists.only, [])
+        lists = NotificationFilter.toggled("transfer berhasil", inOnly: false, ignore: lists.ignore, only: lists.only)
+        XCTAssertEqual(lists.ignore, [])
+    }
 }
