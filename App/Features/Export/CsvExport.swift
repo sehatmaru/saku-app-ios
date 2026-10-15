@@ -27,10 +27,10 @@ enum CsvExport {
             .newestFirst()
             .map { txn in
                 [date(txn.date), typeLabel(txn.type),
-                 txn.categoryId.flatMap { names[$0] } ?? "",
-                 wallets[txn.accountId] ?? "",
-                 txn.counterpartyAccountId.flatMap { wallets[$0] } ?? "",
-                 amount(txn.amount), txn.displayNote ?? ""]
+                 text(txn.categoryId.flatMap { names[$0] } ?? ""),
+                 text(wallets[txn.accountId] ?? ""),
+                 text(txn.counterpartyAccountId.flatMap { wallets[$0] } ?? ""),
+                 amount(txn.amount), text(txn.displayNote ?? "")]
             }
         return file([L("Tanggal"), L("Jenis"), L("Kategori"), L("Dompet"), L("Dompet tujuan"), L("Nominal"), L("Catatan")],
                     rows, delimiter)
@@ -38,7 +38,7 @@ enum CsvExport {
 
     /// Name, type, current balance and opening balance (US2).
     static func wallets(_ accounts: [Account], delimiter: Delimiter) -> String {
-        let rows = accounts.map { [$0.name, walletTypeLabel($0.type), amount($0.balance), amount($0.openingBalance)] }
+        let rows = accounts.map { [text($0.name), walletTypeLabel($0.type), amount($0.balance), amount($0.openingBalance)] }
         return file([L("Nama"), L("Jenis"), L("Saldo Saat Ini"), L("Saldo Awal")], rows, delimiter)
     }
 
@@ -46,7 +46,7 @@ enum CsvExport {
     static func budgets(_ budgets: [Budget], categories: [Category], delimiter: Delimiter) -> String {
         let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         let rows = budgets.map { budget in
-            [names[budget.categoryId] ?? budget.name, amount(budget.amount), period(budget), amount(budget.spent)]
+            [text(names[budget.categoryId] ?? budget.name), amount(budget.amount), period(budget), amount(budget.spent)]
         }
         return file([L("Kategori"), L("Nominal"), L("Periode"), L("Terpakai")], rows, delimiter)
     }
@@ -63,6 +63,12 @@ enum CsvExport {
     static func field(_ value: String, _ delimiter: Delimiter) -> String {
         guard value.contains(delimiter.rawValue) || value.contains("\"") || value.contains("\n") || value.contains("\r") else { return value }
         return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
+
+    /// Free text that starts with = + - @ would run as a formula in Excel and Sheets; a leading apostrophe keeps it text.
+    static func text(_ value: String) -> String {
+        guard let first = value.first, "=+-@\t".contains(first) else { return value }
+        return "'" + value
     }
 
     /// Plain number: no thousands separators, a dot for decimals, no trailing zeros (US1).

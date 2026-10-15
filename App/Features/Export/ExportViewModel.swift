@@ -4,6 +4,8 @@ import Foundation
 @MainActor
 final class ExportViewModel: ObservableObject {
     @Published private(set) var isReady = false
+    /// A fetch failed: the file would be incomplete, so the page says so instead of sharing it silently.
+    @Published private(set) var loadFailed = false
     @Published private(set) var transactions: [Transaction] = []
     @Published private(set) var accounts: [Account] = []
     @Published private(set) var categories: [Category] = []
@@ -15,11 +17,25 @@ final class ExportViewModel: ObservableObject {
         async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
         async let categoriesTask = SupabaseRepository.shared.fetchCategories()
         async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)
-        if let fetched = try? await transactionsTask { transactions = fetched }
-        if let fetched = try? await accountsTask { accounts = fetched }
-        if let fetched = try? await categoriesTask { categories = fetched }
-        if let fetched = try? await budgetsTask { budgets = fetched }
-        isReady = true
+        var failed = false
+        do { transactions = try await transactionsTask } catch { failed = true }
+        do { accounts = try await accountsTask } catch { failed = true }
+        do { categories = try await categoriesTask } catch { failed = true }
+        do {
+            // fetchBudgets leaves `spent` at 0; the Budget page fills it the same way (TC 50).
+            var fetched = try await budgetsTask
+            for index in fetched.indices {
+                let budget = fetched[index]
+                do {
+                    fetched[index].spent = try await SupabaseRepository.shared.fetchBudgetSpent(
+                        categoryId: budget.categoryId, userId: userId,
+                        startDate: budget.currentPeriodStart(), endDate: budget.currentPeriodEnd())
+                } catch { failed = true }
+            }
+            budgets = fetched
+        } catch { failed = true }
+        loadFailed = failed
+        isReady = !failed
     }
 
     func transactionsCsv(interval: DateInterval?, delimiter: CsvExport.Delimiter) -> String {

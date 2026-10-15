@@ -3523,6 +3523,16 @@
         }
       }
     },
+    "Data belum lengkap dimuat. Periksa koneksi lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The data didn't load fully. Check your connection and try again."
+          }
+        }
+      }
+    },
     "Data yang diproses": {
       "localizations": {
         "en": {

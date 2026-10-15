@@ -662,5 +662,6 @@
   "Saldo Awal": "Opening balance",
   "Penyesuaian": "Adjustment",
   "Dompet tujuan": "Destination wallet",
-  "Gagal membuat file CSV.": "Couldn't make the CSV file."
+  "Gagal membuat file CSV.": "Couldn't make the CSV file.",
+  "Data belum lengkap dimuat. Periksa koneksi lalu coba lagi.": "The data didn't load fully. Check your connection and try again."
 }

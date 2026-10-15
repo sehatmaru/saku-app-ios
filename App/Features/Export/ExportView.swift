@@ -19,6 +19,7 @@ struct ExportView: View {
     @State private var delimiter: CsvExport.Delimiter = .comma
     @State private var sharing: ShareItem?
     @State private var showsFailure = false
+    @State private var showsLoadFailure = false
 
     private var cycle: PaydayCycle { PaydayCycle.current }
 
@@ -48,6 +49,9 @@ struct ExportView: View {
         .task { await viewModel.load(userId: authViewModel.currentUser?.id) }
         .sheet(item: $sharing) { ShareSheet(url: $0.url) }
         .alert(L("Gagal membuat file CSV."), isPresented: $showsFailure) {
+            Button("Tutup", role: .cancel) {}
+        }
+        .alert(L("Data belum lengkap dimuat. Periksa koneksi lalu coba lagi."), isPresented: $showsLoadFailure) {
             Button("Tutup", role: .cancel) {}
         }
     }
@@ -156,6 +160,11 @@ struct ExportView: View {
     }
 
     private func share(_ csv: String, name: String) {
+        if viewModel.loadFailed {
+            showsLoadFailure = true
+            Task { await viewModel.load(userId: authViewModel.currentUser?.id) }
+            return
+        }
         if let url = viewModel.write(csv, name: name) {
             sharing = ShareItem(url: url)
         } else {
