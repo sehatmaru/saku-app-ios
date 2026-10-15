@@ -371,6 +371,7 @@ final class DraftStore: ObservableObject {
         forgetAllMemory()
         drafts = []
         connectedApps = []
+        NotificationFilter.clearRecent()
         persist()
     }
 
@@ -402,6 +403,7 @@ final class DraftStore: ObservableObject {
         categories = []
         connectedApps = []
         recent = []
+        NotificationFilter.clearRecent()
         memoryTombstones = []
         memoryForgottenAt = nil
         persist()

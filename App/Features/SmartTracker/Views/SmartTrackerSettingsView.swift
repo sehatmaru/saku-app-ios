@@ -456,6 +456,7 @@ struct NotificationSetupGuideView: View {
                         }
                     }
                     .padding(.horizontal, 24)
+                    NotificationFilterSection().padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 16)
                     }
 
                     Text(L("Bisa dipakai untuk")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
@@ -467,7 +468,7 @@ struct NotificationSetupGuideView: View {
                     }
                     .padding(.horizontal, 24)
 
-                    Label(L("Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek."),
+                    Label(L("Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek. Yang diingat hanya 10 judul terakhir, di HP ini, supaya bisa kamu pilih."),
                           systemImage: "lock")
                         .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextTertiary).padding(.horizontal, 24).padding(.top, 16)
                     Color.clear.frame(height: 130)
@@ -498,5 +499,90 @@ private struct ExampleLabelStyle: LabelStyle {
             configuration.icon.font(.system(size: 15)).foregroundStyle(Color.appTextSecondary)
             configuration.title
         }
+    }
+}
+
+
+/// "Notifikasi yang ditangkap" (BUG-22): words that drop a notification, words that are the only ones kept, and the
+/// last titles that came in, each one tap from either list.
+private struct NotificationFilterSection: View {
+    @State private var ignore = NotificationFilter.ignore
+    @State private var only = NotificationFilter.only
+    @State private var recent = NotificationFilter.recent
+    @State private var ignoreInput = ""
+    @State private var onlyInput = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("Notifikasi yang ditangkap")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.bottom, 8)
+            list(title: L("Abaikan judul"), hint: L("Notifikasi yang judulnya mengandung kata ini tidak dibuat draf, mis. Promo."),
+                 words: $ignore, input: $ignoreInput, toOnly: false)
+            list(title: L("Hanya tangkap judul"), hint: L("Bila diisi, hanya notifikasi yang judulnya mengandung kata ini yang dibuat draf."),
+                 words: $only, input: $onlyInput, toOnly: true).padding(.top, 18)
+            if !recent.isEmpty {
+                Text(L("Judul terakhir")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.top, 22).padding(.bottom, 4)
+                ForEach(recent, id: \.self) { title in
+                    HStack(spacing: 8) {
+                        Text(title).font(.app(15)).lineLimit(1)
+                        Spacer(minLength: 8)
+                        pick(L("Abaikan")) { NotificationFilter.add(title, toOnly: false); reload() }
+                        pick(L("Hanya")) { NotificationFilter.add(title, toOnly: true); reload() }
+                    }
+                    .padding(.vertical, 8)
+                }
+            }
+        }
+    }
+
+    private func list(title: String, hint: String, words: Binding<[String]>, input: Binding<String>, toOnly: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.app(15, weight: .semibold))
+            Text(hint).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+            if !words.wrappedValue.isEmpty {
+                FlowLayout(spacing: 6) {
+                    ForEach(words.wrappedValue, id: \.self) { word in
+                        Button {
+                            if toOnly { NotificationFilter.only.removeAll { $0 == word } } else { NotificationFilter.ignore.removeAll { $0 == word } }
+                            reload()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(word).font(.app(14))
+                                Image(systemName: "xmark").font(.system(size: 10, weight: .bold))
+                            }
+                            .padding(.horizontal, 12).frame(height: 30).background(Color.stChip, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(L("Hapus %@", word))
+                    }
+                }
+            }
+            HStack(spacing: 8) {
+                TextField(L("Tambah kata"), text: input)
+                    .font(.app(15)).padding(.horizontal, 12).frame(height: 38)
+                    .background(Color.appFill, in: RoundedRectangle(cornerRadius: 10))
+                    .submitLabel(.done).onSubmit { commit(input, toOnly: toOnly) }
+                Button(L("Tambah")) { commit(input, toOnly: toOnly) }
+                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                    .disabled(input.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+    }
+
+    private func pick(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.app(13, weight: .medium)).padding(.horizontal, 12).frame(height: 28)
+                .background(Color.stChip, in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func commit(_ input: Binding<String>, toOnly: Bool) {
+        NotificationFilter.add(input.wrappedValue, toOnly: toOnly)
+        input.wrappedValue = ""
+        reload()
+    }
+
+    private func reload() {
+        ignore = NotificationFilter.ignore; only = NotificationFilter.only; recent = NotificationFilter.recent
     }
 }

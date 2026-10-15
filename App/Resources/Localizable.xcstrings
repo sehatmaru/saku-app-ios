@@ -1153,6 +1153,16 @@
         }
       }
     },
+    "Abaikan judul": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignore titles"
+          }
+        }
+      }
+    },
     "Akan datang": {
       "localizations": {
         "en": {
@@ -2289,6 +2299,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recurring"
+          }
+        }
+      }
+    },
+    "Bila diisi, hanya notifikasi yang judulnya mengandung kata ini yang dibuat draf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When filled in, only notifications whose title contains these words become drafts."
           }
         }
       }
@@ -4453,6 +4473,16 @@
         }
       }
     },
+    "Hanya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only"
+          }
+        }
+      }
+    },
     "Hanya %@ – %@. Setelah itu kembali ke %@.": {
       "localizations": {
         "en": {
@@ -4503,6 +4533,16 @@
         }
       }
     },
+    "Hanya tangkap judul": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only capture titles"
+          }
+        }
+      }
+    },
     "Hanya teksnya yang diproses": {
       "localizations": {
         "en": {
@@ -4539,6 +4579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete"
+          }
+        }
+      }
+    },
+    "Hapus %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@"
           }
         }
       }
@@ -5119,6 +5169,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transaction type"
+          }
+        }
+      }
+    },
+    "Judul terakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent titles"
           }
         }
       }
@@ -7343,6 +7403,36 @@
         }
       }
     },
+    "Notifikasi diabaikan sesuai pengaturan Notifikasi bank.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notification ignored per the Notifikasi bank settings."
+          }
+        }
+      }
+    },
+    "Notifikasi yang ditangkap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captured notifications"
+          }
+        }
+      }
+    },
+    "Notifikasi yang judulnya mengandung kata ini tidak dibuat draf, mis. Promo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications whose title contains these words don't become drafts, e.g. Promo."
+          }
+        }
+      }
+    },
     "Nyalakan Smart Tracker": {
       "localizations": {
         "en": {
@@ -8479,6 +8569,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saku only reads notifications to make drafts, then deletes them right away. Nothing is recorded until you check it."
+          }
+        }
+      }
+    },
+    "Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek. Yang diingat hanya 10 judul terakhir, di HP ini, supaya bisa kamu pilih.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku only reads notifications to make drafts, then deletes them right away. Nothing is recorded until you check it. Only the last 10 titles are remembered, on this phone, so you can pick them."
           }
         }
       }
@@ -10129,6 +10229,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add your first wallet"
+          }
+        }
+      }
+    },
+    "Tambah kata": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a word"
           }
         }
       }
