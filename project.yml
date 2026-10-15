@@ -48,12 +48,25 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - Tests
+      - path: Tests
+        excludes:
+          - "UI"
     dependencies:
       - target: Saku
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: id.saku.tests
+  SakuUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Tests/UI
+    dependencies:
+      - target: Saku
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: id.saku.uitests
+        TEST_TARGET_NAME: Saku
   SakuShare:
     type: app-extension
     platform: iOS
@@ -79,6 +92,7 @@ schemes:
       config: Debug
       targets:
         - SakuTests
+        - SakuUITests
     profile:
       config: Release
     analyze:

@@ -112,6 +112,7 @@ struct SmartTrackerHomeOverlay: View {
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityLabel(L("Catat cepat"))
+        .accessibilityIdentifier("smartTrackerFab")
         .frame(maxWidth: .infinity, alignment: .trailing)
         .padding(.trailing, 20)
         .padding(.bottom, 62)

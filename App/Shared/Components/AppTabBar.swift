@@ -20,8 +20,8 @@ struct HidesDetailAddButton: PreferenceKey {
 }
 
 extension View {
-    /// A page pushed over the tabs: the tab bar slides away. With `onAdd`, a lone glass +
-    /// takes its place at the bottom right.
+    /// A page pushed over the tabs: the tab bar slides away and the Smart Tracker button hides
+    /// with it. With `onAdd`, a lone glass + takes its place at the bottom right.
     func detailPage(addLabel: String = "Tambah", onAdd: (() -> Void)? = nil) -> some View {
         modifier(DetailPageChrome(addLabel: addLabel, onAdd: onAdd))
     }
@@ -41,6 +41,8 @@ private struct DetailPageChrome: ViewModifier {
     func body(content: Content) -> some View {
         content
             .toolbar(.hidden, for: .tabBar)
+            // A pushed page is not a tab root: the Smart Tracker button belongs to the tab pages only.
+            .hidesSmartButton()
             .onPreferenceChange(HidesDetailAddButton.self) { hidden in
                 withAnimation(.spring(duration: 0.3)) { isHiddenByPage = hidden }
             }
