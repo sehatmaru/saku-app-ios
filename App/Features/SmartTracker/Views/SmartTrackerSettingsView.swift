@@ -30,7 +30,7 @@ struct SmartTrackerSettingsView: View {
                     NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
                         wayRow(.notification, L("Diteruskan lewat Shortcuts")) {
                             HStack(spacing: 6) {
-                                Text(isOn ? (store.connectedApps.isEmpty ? L("Atur") : L("%lld aplikasi", store.connectedApps.count)) : L("Mati"))
+                                Text(!NotificationTrigger.isAvailable ? L("Butuh iOS 27") : isOn ? (store.connectedApps.isEmpty ? L("Atur") : L("%lld aplikasi", store.connectedApps.count)) : L("Mati"))
                                     .font(.app(15)).foregroundStyle(Color.appTextSecondary)
                                 chevron
                             }
@@ -347,6 +347,11 @@ struct SmartTrackerMemoryView: View {
     }
 }
 
+/// The "Notifikasi" trigger of Shortcuts automations only exists from iOS 27; older iPhones cannot forward bank notifications.
+enum NotificationTrigger {
+    static var isAvailable: Bool { if #available(iOS 27, *) { true } else { false } }
+}
+
 /// Notifikasi bank (design 2d): how to connect each bank or e-wallet app through a Shortcuts automation.
 struct NotificationSetupGuideView: View {
     @ObservedObject private var store = DraftStore.shared
@@ -418,6 +423,21 @@ struct NotificationSetupGuideView: View {
                         .padding(.horizontal, 24)
                     }
 
+                    if !NotificationTrigger.isAvailable {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(L("Belum tersedia di iOS-mu")).font(.app(15, weight: .semibold))
+                                Text(L("Pemicu Notifikasi di Shortcuts baru ada di iOS 27 ke atas. Sampai iOS-mu diperbarui, catat lewat ketik atau ucapan, menu Bagikan, atau Siri."))
+                                    .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                            }
+                        } icon: {
+                            Image(systemName: "info.circle").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary)
+                        }
+                        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.stChip, in: RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal, 24).padding(.top, 24)
+                    }
+                    if NotificationTrigger.isAvailable {
                     Text(L("Cara menghubungkan")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
                         .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 8)
                     VStack(alignment: .leading, spacing: 0) {
@@ -436,6 +456,7 @@ struct NotificationSetupGuideView: View {
                         }
                     }
                     .padding(.horizontal, 24)
+                    }
 
                     Text(L("Bisa dipakai untuk")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
                         .padding(.horizontal, 24).padding(.top, 4).padding(.bottom, 8)
@@ -454,6 +475,7 @@ struct NotificationSetupGuideView: View {
             }
             LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .center)
                 .frame(height: 120).allowsHitTesting(false)
+            if NotificationTrigger.isAvailable {
             Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
                 Label(L("Buka Shortcuts"), systemImage: "arrow.up.forward.app")
                     .font(.app(17, weight: .semibold)).foregroundStyle(Color.appBackground)
@@ -461,6 +483,7 @@ struct NotificationSetupGuideView: View {
             }
             .buttonStyle(PressScaleStyle())
             .padding(.horizontal, 24).padding(.bottom, 12)
+            }
         }
         .background(Color.appBackground)
         .navigationTitle(L("Notifikasi bank"))

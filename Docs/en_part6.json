@@ -565,5 +565,8 @@
   "Lihat semua (%lld)": "See all (%lld)",
   "Hanya penanda: tidak mengubah Net, budget, atau tagihan kartu.": "Only a marker: it doesn't change Net, budget or card bills.",
   "%@ · lunas %@": "%@ · paid off %@",
-  "/bln": "/mo"
+  "/bln": "/mo",
+  "Butuh iOS 27": "Needs iOS 27",
+  "Belum tersedia di iOS-mu": "Not available on your iOS yet",
+  "Pemicu Notifikasi di Shortcuts baru ada di iOS 27 ke atas. Sampai iOS-mu diperbarui, catat lewat ketik atau ucapan, menu Bagikan, atau Siri.": "The Notification trigger in Shortcuts only exists on iOS 27 and later. Until your iOS is updated, record by typing or speaking, the Share menu, or Siri."
 }

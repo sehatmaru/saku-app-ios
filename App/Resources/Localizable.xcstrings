@@ -2203,6 +2203,16 @@
         }
       }
     },
+    "Belum tersedia di iOS-mu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not available on your iOS yet"
+          }
+        }
+      }
+    },
     "Beranda": {
       "localizations": {
         "en": {
@@ -2729,6 +2739,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Needs 3 months of data to be rated. %lld days to go."
+          }
+        }
+      }
+    },
+    "Butuh iOS 27": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs iOS 27"
           }
         }
       }
@@ -7489,6 +7509,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Installment purchase"
+          }
+        }
+      }
+    },
+    "Pemicu Notifikasi di Shortcuts baru ada di iOS 27 ke atas. Sampai iOS-mu diperbarui, catat lewat ketik atau ucapan, menu Bagikan, atau Siri.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Notification trigger in Shortcuts only exists on iOS 27 and later. Until your iOS is updated, record by typing or speaking, the Share menu, or Siri."
           }
         }
       }
