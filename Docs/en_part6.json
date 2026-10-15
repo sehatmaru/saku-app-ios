@@ -580,5 +580,6 @@
   "Tambah kata": "Add a word",
   "Tambah": "Add",
   "Notifikasi diabaikan sesuai pengaturan Notifikasi bank.": "Notification ignored per the Notifikasi bank settings.",
-  "Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek. Yang diingat hanya 10 judul terakhir, di HP ini, supaya bisa kamu pilih.": "Saku only reads notifications to make drafts, then deletes them right away. Nothing is recorded until you check it. Only the last 10 titles are remembered, on this phone, so you can pick them."
+  "Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek. Yang diingat hanya 10 judul terakhir, di HP ini, supaya bisa kamu pilih.": "Saku only reads notifications to make drafts, then deletes them right away. Nothing is recorded until you check it. Only the last 10 titles are remembered, on this phone, so you can pick them.",
+  "Nama tidak boleh kosong": "Name can't be empty"
 }

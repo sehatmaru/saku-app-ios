@@ -7163,6 +7163,16 @@
         }
       }
     },
+    "Nama tidak boleh kosong": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name can't be empty"
+          }
+        }
+      }
+    },
     "Nama transaksi": {
       "localizations": {
         "en": {

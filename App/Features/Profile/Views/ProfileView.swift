@@ -419,6 +419,7 @@ struct ProfileEditView: View {
     @ObservedObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showToast = false
+    @State private var toastIsError = false
     @State private var toastMessage = ""
     @State private var pickerItem: PhotosPickerItem?
     @State private var newPhoto: UIImage?
@@ -477,7 +478,7 @@ struct ProfileEditView: View {
         .navigationTitle("Ubah Profil")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
-        .toast(isPresented: $showToast, message: toastMessage)
+        .toast(isPresented: $showToast, message: toastMessage, icon: toastIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
     }
 
     /// Label on the left in secondary, value on the right, hairline below.
@@ -502,9 +503,11 @@ struct ProfileEditView: View {
                     authViewModel.currentUser = updated
                     if let newPhoto { authViewModel.avatarImage = newPhoto }
                     self.newPhoto = nil
+                    toastIsError = false
                     toastMessage = L("Profil berhasil disimpan")
                     withAnimation { showToast = true }
                 } else if let error = viewModel.errorMessage {
+                    toastIsError = true
                     toastMessage = error
                     withAnimation { showToast = true }
                 }
