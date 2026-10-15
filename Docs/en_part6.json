@@ -641,5 +641,7 @@
   "Belum ada kata": "No words yet",
   "Ketuk judul untuk memasukkannya ke daftar.": "Tap a title to add it to a list.",
   "Belum ada notifikasi masuk": "No notifications yet",
-  "Judul notifikasi yang masuk akan muncul di sini supaya bisa kamu pilih.": "Titles of incoming notifications show up here so you can pick them."
+  "Judul notifikasi yang masuk akan muncul di sini supaya bisa kamu pilih.": "Titles of incoming notifications show up here so you can pick them.",
+  "Notifikasi %@ sudah tercatat sebagai cicilan %@": "The %@ notification is already recorded as the %@ installment",
+  "Notifikasi %@ sudah tercatat sebagai tagihan berulang %@": "The %@ notification is already recorded as the %@ recurring bill"
 }

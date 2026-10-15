@@ -7723,6 +7723,26 @@
         }
       }
     },
+    "Notifikasi %@ sudah tercatat sebagai cicilan %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The %@ notification is already recorded as the %@ installment"
+          }
+        }
+      }
+    },
+    "Notifikasi %@ sudah tercatat sebagai tagihan berulang %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The %@ notification is already recorded as the %@ recurring bill"
+          }
+        }
+      }
+    },
     "Notifikasi aplikasi": {
       "localizations": {
         "en": {

@@ -6,6 +6,8 @@ struct RunningInstallment: Identifiable, Equatable {
     let id: String
     /// The purchase transaction, opened when a row is tapped.
     let transactionId: String
+    /// The card the installment is billed on; for matching notifications (Enhancement 3).
+    let accountId: String
     let title: String
     let cardName: String
     /// The card's wallet icon id, for its logo.
@@ -17,6 +19,8 @@ struct RunningInstallment: Identifiable, Equatable {
     let monthly: Double
     let total: Double
     let purchaseDate: Date
+    /// The cut-off each part is billed on, in order (Enhancement 3).
+    let billingDates: [Date]
     /// The cut-off the first part is billed on; only set while nothing has been billed.
     let firstBillingDate: Date?
     /// The cut-off the last part is billed on: when the installment is paid off.
@@ -37,11 +41,13 @@ enum RunningInstallments {
                   purchase.date <= periodEnd else { return nil }
             let billed = CreditStatement.billedParts(of: plan, purchaseDate: purchase.date, card: card, today: periodEnd, calendar: calendar)
             guard billed < plan.months else { return nil }
-            let first = billed == 0 ? CreditStatement.billing(forPurchaseOn: purchase.date, card: card, calendar: calendar).statement : nil
-            return RunningInstallment(id: plan.id, transactionId: purchase.id, title: purchase.displayNote ?? L("Pembelian cicilan"), cardName: card.name, cardIcon: card.icon,
+            let billings = CreditStatement.partBillings(of: plan, purchaseDate: purchase.date, card: card, calendar: calendar)
+            return RunningInstallment(id: plan.id, transactionId: purchase.id, accountId: plan.accountId,
+                                      title: purchase.displayNote ?? L("Pembelian cicilan"), cardName: card.name, cardIcon: card.icon,
                                       months: plan.months, billedParts: billed, monthly: purchase.amount / Double(plan.months),
-                                      total: purchase.amount, purchaseDate: purchase.date, firstBillingDate: first,
-                                      endDate: CreditStatement.finalBillingDate(purchaseOn: purchase.date, months: plan.months, card: card, calendar: calendar))
+                                      total: purchase.amount, purchaseDate: purchase.date, billingDates: billings,
+                                      firstBillingDate: billed == 0 ? billings.first : nil,
+                                      endDate: billings.last ?? CreditStatement.finalBillingDate(purchaseOn: purchase.date, months: plan.months, card: card, calendar: calendar))
         }
         .sorted { $0.purchaseDate > $1.purchaseDate }
     }

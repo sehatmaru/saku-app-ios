@@ -125,7 +125,7 @@ struct DraftQueueView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                if !store.drafts.isEmpty {
+                if !store.drafts.isEmpty || !store.notices.isEmpty {
                     list
                 } else if saved + ignored == 0 {
                     emptyQueue
@@ -189,6 +189,18 @@ struct DraftQueueView: View {
                     }
                 }
                 .padding(.horizontal, 16).padding(.top, 20).padding(.bottom, 24)
+
+                // Notifications already recorded: information only, kept for 7 days (K5, K10).
+                if !store.notices.isEmpty {
+                    VStack(spacing: 10) {
+                        ForEach(store.notices) { notice in
+                            noticeRow(notice)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
+                    .animation(.settle(0.3), value: store.notices.map(\.id))
+                }
             }
         }
         .scrollDismissesKeyboard(.interactively)
@@ -325,6 +337,36 @@ struct DraftQueueView: View {
             }
         }
         .id(d.id)
+    }
+
+    /// "Notifikasi BCA sudah tercatat sebagai cicilan iPhone 15": information only, with Batalkan (K5).
+    private func noticeRow(_ notice: SkippedNotice) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "checkmark.seal")
+                .font(.system(size: 17)).foregroundStyle(Color.stGreen).padding(.top, 1)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(noticeText(notice))
+                    .font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button { withAnimation(.settle(0.3)) { store.cancelNotice(notice) } } label: {
+                    Text("Batalkan").font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        .transition(.opacity.combined(with: .offset(y: 12)))
+    }
+
+    private func noticeText(_ notice: SkippedNotice) -> String {
+        let name = notice.draft.sourceName ?? notice.draft.title
+        return switch notice.match {
+        case .installment(let title): L("Notifikasi %@ sudah tercatat sebagai cicilan %@", name, title)
+        case .bill(let bill): L("Notifikasi %@ sudah tercatat sebagai tagihan berulang %@", name, bill)
+        }
     }
 
     private struct Field {

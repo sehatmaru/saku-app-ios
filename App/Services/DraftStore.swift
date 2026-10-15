@@ -10,6 +10,8 @@ final class DraftStore: ObservableObject {
     static let shared = DraftStore()
 
     @Published private(set) var drafts: [Draft] = []
+    /// Notifications that are already recorded; the queue shows them for 7 days (Enhancement 3, K5, K10).
+    @Published private(set) var notices: [SkippedNotice] = []
     /// A draft the queue should open in the editor as soon as it appears ("Isi manual" in the quick result).
     @Published var editRequest: UUID?
     @Published private(set) var memory: [MerchantMemory.Entry] = []
@@ -19,9 +21,14 @@ final class DraftStore: ObservableObject {
     /// Bank and e-wallet apps whose notifications have reached Saku (shown as "Sudah terhubung").
     @Published private(set) var connectedApps: [String] = []
     private var recent: [Transaction] = []
+    /// Card installments and registered recurring bills, read only for the "already recorded" match.
+    private var installments: [CardInstallment] = []
+    private var subscriptions: [CardSubscription] = []
 
     private struct Snapshot: Codable {
         var drafts: [Draft] = []
+        /// Skipped notices; optional so older files still load (Enhancement 3).
+        var notices: [SkippedNotice]?
         var memory: [MerchantMemory.Entry] = []
         var accounts: [Account] = []
         var categories: [Category] = []
@@ -72,22 +79,26 @@ final class DraftStore: ObservableObject {
         accounts = snapshot.accounts
         categories = snapshot.categories
         connectedApps = snapshot.connectedApps
+        notices = snapshot.notices ?? []
         memoryTombstones = snapshot.memoryTombstones ?? []
         memoryForgottenAt = snapshot.memoryForgottenAt
         purgeExpired()
     }
 
     private func persist() {
-        let snapshot = Snapshot(drafts: drafts, memory: memory, accounts: accounts, categories: categories, connectedApps: connectedApps,
+        let snapshot = Snapshot(drafts: drafts, notices: notices, memory: memory, accounts: accounts, categories: categories, connectedApps: connectedApps,
                                 memoryTombstones: memoryTombstones, memoryForgottenAt: memoryForgottenAt)
         if let data = try? JSONEncoder().encode(snapshot) { try? data.write(to: fileURL, options: .atomic) }
         updateBadge()
     }
 
-    /// Drafts the user never handled are dropped after 30 days.
+    /// Drafts the user never handled are dropped after 30 days; skipped notices after 7 (K10).
     func purgeExpired(now: Date = Date()) {
         let kept = drafts.filter { $0.expiresAt > now }
-        if kept.count != drafts.count { drafts = kept; persist() }
+        let keptNotices = notices.filter { $0.expiresAt > now }
+        if kept.count != drafts.count { drafts = kept }
+        if keptNotices.count != notices.count { notices = keptNotices }
+        if kept.count != drafts.count || keptNotices.count != notices.count { persist() }
     }
 
     /// Drafts that disappear within three days, for the in-app notice.
@@ -110,9 +121,27 @@ final class DraftStore: ObservableObject {
         if let fetched = try? await accountsTask { accounts = fetched }
         if let fetched = try? await categoriesTask { categories = fetched }
         if let fetched = try? await transactionsTask { recent = fetched }
+        // Installments and registered bills, read only for the "already recorded" match (Enhancement 3).
+        let cardIds = accounts.filter(\.isCreditCard).map(\.id)
+        if !cardIds.isEmpty, let fetched = try? await SupabaseRepository.shared.fetchInstallments(accountIds: cardIds) {
+            installments = fetched
+        }
+        let accountIds = accounts.map(\.id)
+        if !accountIds.isEmpty, let fetched = try? await SupabaseRepository.shared.fetchSubscriptions(accountIds: accountIds) {
+            subscriptions = fetched
+        }
         persist()
         recheckDuplicates()
         await syncMemory()
+    }
+
+    /// Reference data without the network (tests).
+    func seedReferenceData(accounts: [Account]? = nil, recent: [Transaction]? = nil,
+                           installments: [CardInstallment]? = nil, subscriptions: [CardSubscription]? = nil) {
+        if let accounts { self.accounts = accounts }
+        if let recent { self.recent = recent }
+        if let installments { self.installments = installments }
+        if let subscriptions { self.subscriptions = subscriptions }
     }
 
     // MARK: Ingatan sync
@@ -198,6 +227,58 @@ final class DraftStore: ObservableObject {
         let index = drafts.firstIndex { $0.createdAt < draft.createdAt } ?? drafts.count
         drafts.insert(draft, at: index)
         persist()
+    }
+
+    // MARK: Already recorded (Enhancement 3)
+
+    /// Queues what a notification produced: a draft that is already recorded as a running installment
+    /// or an active recurring bill is kept as a skipped notice instead (K1, K5).
+    @discardableResult
+    func addFromNotification(_ new: [Draft], appName: String) -> (added: Int, skipped: Int) {
+        var added: [Draft] = []
+        for var draft in new {
+            if draft.sourceName == nil { draft.sourceName = appName }
+            if let match = AlreadyRecorded.match(draft: draft, installments: runningInstallments,
+                                                 subscriptions: subscriptions, recent: recent) {
+                notices.insert(SkippedNotice(draft: draft, match: match), at: 0)
+            } else {
+                added.append(draft)
+            }
+        }
+        if !added.isEmpty { drafts.insert(contentsOf: added.map(withDuplicateNote), at: 0) }
+        persist()
+        return (added.count, new.count - added.count)
+    }
+
+    /// "Batalkan" on a skipped notice: the notification becomes a draft again, like before (K5).
+    func cancelNotice(_ notice: SkippedNotice) {
+        guard let index = notices.firstIndex(where: { $0.id == notice.id }) else { return }
+        add([notices.remove(at: index).draft])
+    }
+
+    /// The other way around (K6): a recurring bill just posted its transaction, so waiting notification
+    /// drafts that match it are skipped with the same notice.
+    func skipWaitingDrafts(billName: String, amount: Double, accountId: String, billingDate: Date) {
+        let calendar = Calendar.current
+        var skipped: [SkippedNotice] = []
+        drafts.removeAll { draft in
+            guard draft.source == .notification, let draftAmount = draft.amount,
+                  abs(draftAmount - amount) < AlreadyRecorded.billTolerance,
+                  draft.accountId == nil || draft.accountId == accountId,
+                  AlreadyRecorded.within(days: AlreadyRecorded.dayWindow, of: billingDate, draft.date, calendar)
+            else { return false }
+            skipped.append(SkippedNotice(draft: draft, match: .bill(name: billName)))
+            return true
+        }
+        if !skipped.isEmpty {
+            notices.insert(contentsOf: skipped, at: 0)
+            persist()
+        }
+    }
+
+    /// The installments still running now, read only for the match (K1, K13: paid-off plans are not here).
+    private var runningInstallments: [RunningInstallment] {
+        RunningInstallments.compute(installments: installments, transactions: recent, accounts: accounts, periodEnd: Date())
     }
 
     func discard(_ id: UUID) {

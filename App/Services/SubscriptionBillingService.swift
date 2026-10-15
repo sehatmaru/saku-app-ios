@@ -33,6 +33,11 @@ enum SubscriptionBillingService {
                         isCreditAccount: isCredit[sub.accountId] ?? false,
                         clientOperationId: operationId
                     )
+                    // The bill is recorded now: waiting notification drafts that match it are skipped (K6).
+                    await MainActor.run {
+                        DraftStore.shared.skipWaitingDrafts(billName: sub.name, amount: sub.amount,
+                                                            accountId: sub.accountId, billingDate: billingDate)
+                    }
 
                     guard let next = sub.rolledNextBillingDate(from: billingDate) else { break }
                     try await SupabaseRepository.shared.updateSubscription(

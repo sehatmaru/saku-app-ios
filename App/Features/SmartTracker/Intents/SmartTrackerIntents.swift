@@ -35,19 +35,26 @@ struct RecordFromNotificationIntent: AppIntent {
         guard NotificationFilter.allows(title: notificationTitle, subtitle: subtitle) else {
             return .result(dialog: "Notifikasi diabaikan sesuai pengaturan Notifikasi aplikasi.")
         }
-        let count = await MainActor.run { () -> Int in
+        let result = await MainActor.run { () -> (added: Int, skipped: Int) in
             let store = DraftStore.shared
             let drafts = NotificationParser.parse(app: appName, title: notificationTitle, subtitle: subtitle, body: body,
                                                   context: store.context)
             if !drafts.isEmpty { store.noteConnected(app: appName) }
-            return store.add(drafts.map { var d = $0; d.sourceName = appName; return d }).count
+            return store.addFromNotification(drafts, appName: appName)
         }
-        if count > 0 { await DraftNotifier.announce(count: count) }
+        if result.added > 0 { await DraftNotifier.announce(count: result.added) }
         // an empty body usually means the Shortcut's Body variable is not filled, which is worth saying
         let nothing = body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && subtitle.isEmpty
             ? "Isi notifikasi kosong. Cek variabel Isi di Shortcuts."
             : "Tidak ada nominal, notifikasi diabaikan."
-        return .result(dialog: count > 0 ? "Draf dari notifikasi masuk ke Konfirmasi transaksi." : IntentDialog(stringLiteral: nothing))
+        let dialog: IntentDialog = if result.added > 0 {
+            "Draf dari notifikasi masuk ke Konfirmasi transaksi."
+        } else if result.skipped > 0 {
+            "Notifikasi sudah tercatat di Saku, jadi tidak dibuat draf baru. Bisa dibatalkan di Konfirmasi transaksi."
+        } else {
+            IntentDialog(stringLiteral: nothing)
+        }
+        return .result(dialog: dialog)
     }
 }
 

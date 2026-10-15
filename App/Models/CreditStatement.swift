@@ -166,6 +166,20 @@ struct CreditStatement {
         return cutoff
     }
 
+    /// The cut-offs every part of an installment bills on, in order (one per month). Used to match
+    /// a bank notification against the part it belongs to (Enhancement 3).
+    static func partBillings(of installment: CardInstallment, purchaseDate: Date, card: Account,
+                             calendar: Calendar = .current) -> [Date] {
+        let cycle = Cycle(card: card, calendar: calendar)
+        var cutoff = cycle.cutoff(monthAfter: cycle.lastCutoff(before: calendar.startOfDay(for: purchaseDate)))
+        var dates: [Date] = []
+        for _ in 0..<max(installment.months, 1) {
+            dates.append(cutoff)
+            cutoff = cycle.cutoff(monthAfter: cutoff)
+        }
+        return dates
+    }
+
     /// Parts of an installment billed so far (0...months).
     static func billedParts(of installment: CardInstallment, purchaseDate: Date, card: Account,
                             today: Date = Date(), calendar: Calendar = .current) -> Int {
