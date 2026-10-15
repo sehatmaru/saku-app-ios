@@ -178,6 +178,15 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
 
+            NavigationLink(destination: ExportView()) {
+                row(icon: "square.and.arrow.up", title: L("Ekspor data"), subtitle: L("Transaksi, dompet, dan budget")) {
+                    Text(verbatim: "CSV").font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    chevron
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+
             NavigationLink(destination: SmartTrackerSettingsView()) {
                 row(icon: "sparkles", title: L("Catat cepat"), subtitle: L("Ingatan, notifikasi, dan data")) {
                     chevron

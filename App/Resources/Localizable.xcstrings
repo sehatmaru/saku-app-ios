@@ -1523,6 +1523,36 @@
         }
       }
     },
+    "Bagikan CSV budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share budgets CSV"
+          }
+        }
+      }
+    },
+    "Bagikan CSV dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share wallets CSV"
+          }
+        }
+      }
+    },
+    "Bagikan CSV transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share transactions CSV"
+          }
+        }
+      }
+    },
     "Bagikan teks": {
       "localizations": {
         "en": {
@@ -4043,6 +4073,16 @@
         }
       }
     },
+    "Dompet tujuan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destination wallet"
+          }
+        }
+      }
+    },
     "Dompet utama": {
       "localizations": {
         "en": {
@@ -4223,6 +4263,26 @@
         }
       }
     },
+    "Ekspor data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export data"
+          }
+        }
+      }
+    },
+    "Excel dengan pengaturan Indonesia: pilih titik koma supaya kolom terpisah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excel with Indonesian settings: pick semicolon so the columns split correctly."
+          }
+        }
+      }
+    },
     "Filter": {
       "localizations": {
         "en": {
@@ -4319,6 +4379,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't pay the bill. Try again."
+          }
+        }
+      }
+    },
+    "Gagal membuat file CSV.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't make the CSV file."
           }
         }
       }
@@ -5863,6 +5933,16 @@
         }
       }
     },
+    "Kategori, nominal, periode, dan terpakai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category, amount, period, and spent."
+          }
+        }
+      }
+    },
     "Ke": {
       "localizations": {
         "en": {
@@ -6279,6 +6359,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Coin"
+          }
+        }
+      }
+    },
+    "Koma": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comma"
           }
         }
       }
@@ -7503,6 +7593,16 @@
         }
       }
     },
+    "Nama, jenis, saldo saat ini, dan saldo awal.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name, type, current balance, and opening balance."
+          }
+        }
+      }
+    },
     "Nanti saja": {
       "localizations": {
         "en": {
@@ -8003,6 +8103,16 @@
         }
       }
     },
+    "Pemisah kolom": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Column separator"
+          }
+        }
+      }
+    },
     "Pengeluaran": {
       "localizations": {
         "en": {
@@ -8139,6 +8249,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reminder before payday"
+          }
+        }
+      }
+    },
+    "Penyesuaian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjustment"
           }
         }
       }
@@ -8793,6 +8913,16 @@
         }
       }
     },
+    "Rentang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Range"
+          }
+        }
+      }
+    },
     "Rentang tanggal": {
       "localizations": {
         "en": {
@@ -9129,6 +9259,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ balance is now %@"
+          }
+        }
+      }
+    },
+    "Saldo Awal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opening balance"
+          }
+        }
+      }
+    },
+    "Saldo Saat Ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current balance"
           }
         }
       }
@@ -9529,6 +9679,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Every way of recording stops. %lld drafts and %lld memories are deleted from this phone. Transactions already saved stay safe."
+          }
+        }
+      }
+    },
+    "Semua data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All data"
           }
         }
       }
@@ -11763,6 +11923,16 @@
         }
       }
     },
+    "Titik koma": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semicolon"
+          }
+        }
+      }
+    },
     "Top up dan tarik tunai": {
       "localizations": {
         "en": {
@@ -12051,6 +12221,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transactions you record in %@ will show up here."
+          }
+        }
+      }
+    },
+    "Transaksi, dompet, dan budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions, wallets, and budgets"
           }
         }
       }
