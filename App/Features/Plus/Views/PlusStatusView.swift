@@ -1,14 +1,14 @@
 import SwiftUI
 
 /// Profil › Saku Plus: the plan's status, what it gives, and (tester accounts on internal builds only) the
-/// switch that turns Plus on without buying (US8). Buying and restoring come with Epic 11 US3/US7.
+/// switch (any account, debug and TestFlight builds only) that turns Plus on without buying (US8). Buying and restoring come with Epic 11 US3/US7.
 struct PlusStatusView: View {
     @ObservedObject private var plus = PlusStore.shared
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var isSwitching = false
     @State private var failure: String?
 
-    private var showsTestSwitch: Bool { plus.isTester && PlusStore.isInternalBuild }
+    private var showsTestSwitch: Bool { PlusStore.isInternalBuild }
 
     private var limits: [(String, String)] { [
         (L("Dompet uang aktif"), String(FreeLimits.moneyWallets)),
@@ -89,7 +89,7 @@ struct PlusStatusView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Saku Plus untuk uji").font(.app(16)).foregroundStyle(Color.appText)
-                Text("Hanya akun penguji. Dihapus sebelum rilis App Store.")
+                Text("Hanya di build uji. Dihapus sebelum rilis App Store.")
                     .font(.app(12)).foregroundStyle(Color.appTextTertiary)
             }
             Spacer()
@@ -111,7 +111,7 @@ struct PlusStatusView: View {
                 try await SupabaseSDK.setTestPlus(on)
                 _ = try await SupabaseSDK.fetchProfile(authUserId: authId)
             } catch {
-                failure = "\(error)".contains("not_tester") ? L("Akun ini bukan akun penguji.") : L("Belum berhasil mengubah. Coba lagi sebentar lagi.")
+                failure = "\(error)".contains("test_plus_off") ? L("Tombol uji sedang dimatikan di server.") : L("Belum berhasil mengubah. Coba lagi sebentar lagi.")
             }
         }
     }

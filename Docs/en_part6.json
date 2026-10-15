@@ -704,10 +704,10 @@
   "Kamu memakai paket gratis.": "You're on the free plan.",
   "Berlaku sampai %@": "Valid until %@",
   "Saku Plus untuk uji": "Saku Plus for testing",
-  "Hanya akun penguji. Dihapus sebelum rilis App Store.": "Tester accounts only. Removed before the App Store release.",
-  "Akun ini bukan akun penguji.": "This account isn't a tester account.",
   "Belum berhasil mengubah. Coba lagi sebentar lagi.": "Couldn't change it. Try again in a moment.",
   "Paket gratis maksimal %lld Dompet Investasi aktif.": "The free plan holds at most %lld active Investment wallet.",
   "Paket gratis maksimal %lld dompet uang aktif.": "The free plan holds at most %lld active money wallets.",
-  "Fitur ini butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.": "This feature needs Saku Plus. Drafts you already have can still be reviewed and saved."
+  "Fitur ini butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.": "This feature needs Saku Plus. Drafts you already have can still be reviewed and saved.",
+  "Tombol uji sedang dimatikan di server.": "The test switch is turned off on the server.",
+  "Hanya di build uji. Dihapus sebelum rilis App Store.": "Test builds only. Removed before the App Store release."
 }

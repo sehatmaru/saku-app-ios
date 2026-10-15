@@ -1273,16 +1273,6 @@
         }
       }
     },
-    "Akun ini bukan akun penguji.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This account isn't a tester account."
-          }
-        }
-      }
-    },
     "Akun tamu hanya ada di iPhone ini. Jika keluar atau app dihapus, datanya tidak bisa dibuka lagi.": {
       "localizations": {
         "en": {
@@ -5033,22 +5023,22 @@
         }
       }
     },
-    "Hanya akun penguji. Dihapus sebelum rilis App Store.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tester accounts only. Removed before the App Store release."
-          }
-        }
-      }
-    },
     "Hanya bulan ini": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "This month only"
+          }
+        }
+      }
+    },
+    "Hanya di build uji. Dihapus sebelum rilis App Store.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test builds only. Removed before the App Store release."
           }
         }
       }
@@ -12369,6 +12359,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Semicolon"
+          }
+        }
+      }
+    },
+    "Tombol uji sedang dimatikan di server.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The test switch is turned off on the server."
           }
         }
       }
