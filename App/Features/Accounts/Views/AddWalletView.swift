@@ -13,6 +13,8 @@ struct NewWallet {
     var dueDate: String?
     var statementDay: Int?
     var cardNetwork: String?
+    /// Cards: the starting bill wasn't printed yet; set to the next cut-off ("yyyy-MM-dd").
+    var openingUnbilledUntil: String?
     var isDefault: Bool
 }
 
@@ -34,13 +36,15 @@ struct AddWalletView: View {
     }
 
     // Wallet types, in stack order: key, label, colour, description.
-    private static let types: [(Account.AccountType, String, String, String)] = [
-        (.bank, "Bank", "0066AE", "Rekening tabungan atau giro"),
-        (.ewallet, "E-wallet", "00AA44", "GoPay, OVO, DANA, dan lainnya"),
-        (.cash, "Tunai", "616161", "Uang fisik di dompet atau celengan"),
-        (.credit, "Kartu kredit", "1A1F71", "Lacak limit, tagihan, dan jatuh tempo"),
-    ]
+    private static var types: [(Account.AccountType, String, String, String)] { [
+        (.bank, L("Bank"), "0066AE", L("Rekening tabungan atau giro")),
+        (.ewallet, L("E-wallet"), "00AA44", L("GoPay, OVO, DANA, dan lainnya")),
+        (.cash, L("Tunai"), "616161", L("Uang fisik di dompet atau celengan")),
+        (.credit, L("Kartu kredit"), "1A1F71", L("Lacak limit, tagihan, dan jatuh tempo")),
+        (.investment, L("Investasi"), "946200", L("Reksadana, saham, crypto, emas · nilai manual")),
+    ] }
     static let swatches = ["616161", "16875A", "0066AE", "472B91", "C2410C", "9D174D"]
+    static let investmentSwatches = ["946200", "0F6E5C", "5B3FA8", "0066AE", "9D174D", "616161"]
     /// Card issuers and the card colour each one gets.
     static let issuers: [(id: String, color: String)] = [
         ("bca", "1A1F71"), ("mandiri", "0B2545"), ("bni", "C2410C"), ("bri", "1F3A93"),
@@ -60,6 +64,8 @@ struct AddWalletView: View {
     @State private var balance = 0
     @State private var limit = 0
     @State private var bill = 0
+    /// The starting bill was already printed by the bank (false: spending since the last cut-off).
+    @State private var billPrinted = true
     @State private var statementDay: Int?
     @State private var dueDay: Int?
     @State private var isDefault = false
@@ -72,6 +78,7 @@ struct AddWalletView: View {
 
     private var isCredit: Bool { type == .credit }
     private var isCash: Bool { type == .cash }
+    private var isInvestment: Bool { type == .investment }
     private var onCard: Bool { step != .type }
     private var isDone: Bool { step == .done }
 
@@ -90,6 +97,7 @@ struct AddWalletView: View {
         case .bank: WalletIcon.icons(for: .bank)
         case .ewallet: WalletIcon.icons(for: .ewallet)
         case .credit: Self.issuers.compactMap { issuer in WalletIcon.allIcons.first { $0.id == issuer.id } }
+        case .investment: WalletIcon.icons(for: .investment)
         default: []
         }
     }
@@ -108,6 +116,12 @@ struct AddWalletView: View {
             return chosenProvider.color
         }
         return Color(hex: color ?? typeColor)
+    }
+
+    /// Gold coins for Emas, the chart for every other platform; nil outside investments.
+    private var investmentSymbol: String? {
+        guard isInvestment else { return nil }
+        return chosenProvider?.id == "emas" ? "dollarsign.circle" : "chart.line.uptrend.xyaxis"
     }
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
@@ -134,8 +148,8 @@ struct AddWalletView: View {
     }
 
     private var cardLabel: String {
-        if step == .limit || (isCredit && step == .provider) { return "Limit kredit" }
-        return isCredit ? "Sisa limit" : "Saldo"
+        if step == .limit || (isCredit && step == .provider) { return L("Limit kredit") }
+        return isCredit ? L("Sisa limit") : isInvestment ? L("Nilai awal") : L("Saldo")
     }
 
     // MARK: Body
@@ -218,14 +232,14 @@ struct AddWalletView: View {
 
     private func title(for s: Step) -> String {
         switch s {
-        case .type: "Tambah dompet"
-        case .provider: isCash ? "Nama & warna" : isCredit ? "Bank & jenis kartu" : type == .bank ? "Pilih bank" : "Pilih e-wallet"
-        case .balance: "Saldo awal"
-        case .limit: "Limit kredit"
-        case .bill: "Tagihan saat ini"
-        case .statement: "Cetak tagihan"
-        case .due: "Jatuh tempo"
-        case .done: "Selesai"
+        case .type: L("Tambah dompet")
+        case .provider: isCash ? L("Nama & warna") : isCredit ? L("Bank & jenis kartu") : isInvestment ? L("Pilih platform") : type == .bank ? L("Pilih bank") : L("Pilih e-wallet")
+        case .balance: isInvestment ? L("Nilai awal") : L("Saldo awal")
+        case .limit: L("Limit kredit")
+        case .bill: L("Tagihan saat ini")
+        case .statement: L("Cetak tagihan")
+        case .due: L("Jatuh tempo")
+        case .done: L("Selesai")
         }
     }
 
@@ -296,7 +310,17 @@ struct AddWalletView: View {
                 .frame(width: 44, height: 44)
                 .overlay(Image(systemName: kind.cardSymbol).font(.system(size: 20)))
             VStack(alignment: .leading, spacing: 3) {
-                Text(label).font(.app(18, weight: .semibold)).tracking(-0.2)
+                HStack(spacing: 8) {
+                    Text(label).font(.app(18, weight: .semibold)).tracking(-0.2)
+                    if kind == .investment {
+                        Text("Baru")
+                            .font(.app(11, weight: .bold))
+                            .foregroundStyle(Color.appInvestmentPanel)
+                            .padding(.horizontal, 7)
+                            .frame(height: 20)
+                            .background(.white, in: Capsule())
+                    }
+                }
                 Text(desc).font(.app(13)).foregroundStyle(.white.opacity(0.8))
             }
             .padding(.top, 2)
@@ -315,7 +339,8 @@ struct AddWalletView: View {
     private var formFace: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
-                CardLogoBox(logo: chosenProvider?.id, symbol: (type ?? .bank).cardSymbol, color: cardColor)
+                CardLogoBox(logo: chosenProvider.flatMap { UIImage(named: $0.id) != nil ? $0.id : nil },
+                            symbol: investmentSymbol ?? (type ?? .bank).cardSymbol, color: cardColor)
                     .scaleEffect(pop ? 0.6 : 1)
                     .animation(pop ? .easeOut(duration: 0.08) : .spring(duration: 0.46, bounce: 0.55), value: pop)
                 TextField("", text: $name, prompt: Text("Ketik nama dompet").foregroundStyle(.white.opacity(0.6)))
@@ -368,7 +393,7 @@ struct AddWalletView: View {
                                 .animation(.spring(duration: 0.46, bounce: 0.5), value: network)
                                 .padding(.bottom, 6)
                             Text("Jatuh tempo").font(.app(12)).foregroundStyle(.white.opacity(0.8))
-                            Text(dueDay.map { "Tgl \($0)" } ?? "—")
+                            Text(dueDay.map { L("Tgl %lld", $0) } ?? "—")
                                 .font(.app(15, weight: .semibold))
                                 .monospacedDigit()
                         }
@@ -390,11 +415,11 @@ struct AddWalletView: View {
             layer(step == .provider && !isCash) { providerPanel }
             layer(step == .provider && isCash) { cashPanel }
             layer([.balance, .limit, .bill].contains(step)) { numberPanel(bottom: bottom) }
-            layer(step == .statement) { dayPanel(caption: "Tanggal cetak tagihan tiap bulan",
-                                                note: "Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya.",
+            layer(step == .statement) { dayPanel(caption: L("Tanggal cetak tagihan tiap bulan"),
+                                                note: L("Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya."),
                                                 selection: $statementDay) }
-            layer(step == .due) { dayPanel(caption: "Tanggal jatuh tempo tiap bulan",
-                                          note: "Tagihan dicatat sebagai utang dan tidak mengurangi total saldo.",
+            layer(step == .due) { dayPanel(caption: L("Tanggal jatuh tempo tiap bulan"),
+                                          note: L("Tagihan dicatat sebagai utang dan tidak mengurangi total saldo."),
                                           selection: $dueDay) }
             doneTexts
                 .padding(.top, 174)
@@ -417,10 +442,21 @@ struct AddWalletView: View {
 
     private var providerPanel: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if isInvestment {
+                Text("Platform").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 12)
+            }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 4), spacing: 18) {
                 ForEach(Array(providers.enumerated()), id: \.element.id) { j, icon in
-                    providerCell(name: icon.name, selected: provider == j, ring: icon.color, index: j) {
-                        Image(icon.id).resizable().scaledToFit().frame(width: 42, height: 24)
+                    providerCell(name: icon.name, selected: provider == j, ring: icon.color, index: j,
+                                 fill: isInvestment && UIImage(named: icon.id) == nil ? icon.color : .white) {
+                        if isInvestment && UIImage(named: icon.id) == nil {
+                            Image(systemName: icon.id == "emas" ? "dollarsign.circle" : "chart.line.uptrend.xyaxis")
+                                .font(.system(size: 24)).foregroundStyle(.white)
+                        } else {
+                            Image(icon.id).resizable().scaledToFit().frame(width: 42, height: 24)
+                        }
                     } tap: { pickProvider(j) }
                 }
                 otherCell(index: providers.count)
@@ -442,7 +478,7 @@ struct AddWalletView: View {
             }
 
             if provider == -1 {
-                swatchRow(caption: "Warna kartu · ketik nama langsung di kartu")
+                swatchRow(caption: isInvestment ? L("Warna kartu · nama diketik di kartu") : L("Warna kartu · ketik nama langsung di kartu"))
                     .padding(.horizontal, 24)
                     .padding(.top, 22)
                     .transition(.opacity.combined(with: .offset(y: 10)))
@@ -451,12 +487,12 @@ struct AddWalletView: View {
         .animation(.settle(0.42), value: provider)
     }
 
-    private func providerCell<Logo: View>(name: String, selected: Bool, ring: Color, index: Int,
+    private func providerCell<Logo: View>(name: String, selected: Bool, ring: Color, index: Int, fill: Color = .white,
                                           @ViewBuilder logo: () -> Logo, tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
             VStack(spacing: 8) {
                 Circle()
-                    .fill(.white)
+                    .fill(fill)
                     .frame(width: 62, height: 62)
                     .overlay(logo())
                     .overlay(Circle().strokeBorder(Color(light: 0xE5E5EA, dark: 0x3A3A3C), lineWidth: selected ? 0 : 1))
@@ -540,7 +576,7 @@ struct AddWalletView: View {
                     .appear(step == .provider && isCash, delay: 0.12 + Double(j) * 0.045)
                 }
             }
-            swatchRow(caption: "Warna kartu").padding(.top, 14)
+            swatchRow(caption: L("Warna kartu")).padding(.top, 14)
         }
         .padding(.horizontal, 24)
     }
@@ -549,7 +585,7 @@ struct AddWalletView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(caption).font(.app(13)).foregroundStyle(Color.appTextSecondary)
             HStack(spacing: 14) {
-                ForEach(Self.swatches, id: \.self) { hex in
+                ForEach(isInvestment ? Self.investmentSwatches : Self.swatches, id: \.self) { hex in
                     let on = (color ?? typeColor) == hex
                     Button { color = hex } label: {
                         Circle()
@@ -586,7 +622,15 @@ struct AddWalletView: View {
                     }
                 }
             }
-            if step == .balance {
+            if step == .balance && isInvestment {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "info.circle").font(.system(size: 17)).padding(.top, 1)
+                    Text("Opsional. Isi modal yang sudah kamu investasikan. Nilai awal masuk ke Total aset dan tidak dicatat sebagai pengeluaran.")
+                        .font(.app(14)).lineSpacing(3)
+                }
+                .foregroundStyle(Color.appTextSecondary)
+            }
+            if step == .balance && !isInvestment {
                 Toggle(isOn: $isDefault) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Jadikan dompet utama").font(.app(16))
@@ -599,11 +643,21 @@ struct AddWalletView: View {
                 .padding(.top, 2)
             }
             if step == .limit || step == .bill {
-                Text(step == .limit ? "Batas total yang diberikan bank untuk kartu ini."
-                     : bill > limit ? "Tagihan melebihi limit kredit." : "Isi 0 jika belum ada tagihan bulan ini.")
+                Text(step == .limit ? L("Batas total yang diberikan bank untuk kartu ini.")
+                     : bill > limit ? L("Tagihan melebihi limit kredit.") : L("Isi 0 jika belum ada tagihan bulan ini."))
                     .font(.app(14))
                     .foregroundStyle(step == .bill && bill > limit ? Color.appError : Color.appTextSecondary)
                     .lineSpacing(3)
+            }
+            if step == .bill && bill > 0 {
+                HStack(spacing: 8) {
+                    billChip(L("Sudah dicetak bank"), selected: billPrinted) { billPrinted = true }
+                    billChip(L("Belum dicetak"), selected: !billPrinted) { billPrinted = false }
+                }
+                Text(billPrinted ? L("Tagihan ini perlu dibayar sebelum jatuh tempo.")
+                     : L("Pemakaian sejak cut-off terakhir. Baru ditagih di cut-off berikutnya."))
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
             }
             Spacer(minLength: 0)
             GeometryReader { geo in
@@ -616,10 +670,10 @@ struct AddWalletView: View {
                             if isSaving {
                                 ProgressView().tint(.white)
                             } else {
-                                Image(systemName: step == .balance ? "checkmark" : "arrow.right")
+                                Image(systemName: step == .balance && !(isInvestment && balance == 0) ? "checkmark" : "arrow.right")
                                     .font(.system(size: 24, weight: .bold))
                             }
-                            Text(step == .balance ? "Simpan" : "Lanjut").font(.app(14, weight: .semibold))
+                            Text(step == .balance ? (isInvestment && balance == 0 ? L("Lewati") : "Simpan") : "Lanjut").font(.app(14, weight: .semibold))
                         }
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -671,9 +725,11 @@ struct AddWalletView: View {
     private var doneTexts: some View {
         VStack(spacing: 6) {
             Text("Dompet ditambahkan").font(.app(22, weight: .semibold)).tracking(-0.3)
-            Text((trimmedName.isEmpty ? "Dompet baru" : trimmedName)
-                 + (isCredit ? " dengan limit Rp\(Self.digits(limit)) siap dipakai."
-                    : " dengan saldo Rp\(Self.digits(balance)) sudah masuk ke total saldo."))
+            Text(isCredit ? L("%@ dengan limit Rp%@ siap dipakai.", trimmedName.isEmpty ? L("Dompet baru") : trimmedName, Self.digits(limit))
+                 : isInvestment
+                    ? (balance > 0 ? L("%@ senilai Rp%@ masuk ke Total aset, bukan pengeluaran.", trimmedName.isEmpty ? L("Dompet baru") : trimmedName, Self.digits(balance))
+                       : L("%@ siap. Isi nilainya kapan saja lewat Perbarui nilai.", trimmedName.isEmpty ? L("Dompet baru") : trimmedName))
+                 : L("%@ dengan saldo Rp%@ sudah masuk ke total saldo.", trimmedName.isEmpty ? L("Dompet baru") : trimmedName, Self.digits(balance)))
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
                 .multilineTextAlignment(.center)
@@ -688,12 +744,12 @@ struct AddWalletView: View {
         VStack {
             Spacer()
             ZStack(alignment: .bottom) {
-                primaryButton("Lanjut", icon: "arrow.right", trailingIcon: true, enabled: isValid, action: next)
+                primaryButton(L("Lanjut"), icon: "arrow.right", trailingIcon: true, enabled: isValid, action: next)
                     .layerShown([.provider, .statement].contains(step))
-                primaryButton("Simpan dompet", icon: "checkmark", trailingIcon: false, enabled: isValid, action: next)
+                primaryButton(L("Simpan dompet"), icon: "checkmark", trailingIcon: false, enabled: isValid, action: next)
                     .layerShown(step == .due)
                 VStack(spacing: 10) {
-                    primaryButton("Lihat dompet", icon: nil, trailingIcon: false, enabled: true) { dismiss() }
+                    primaryButton(L("Lihat dompet"), icon: nil, trailingIcon: false, enabled: true) { dismiss() }
                     Button(action: again) {
                         Label("Tambah dompet lain", systemImage: "plus")
                             .font(.app(17, weight: .semibold))
@@ -717,7 +773,7 @@ struct AddWalletView: View {
     private func primaryButton(_ title: String, icon: String?, trailingIcon: Bool, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                if isSaving && title == "Simpan dompet" {
+                if isSaving && title == L("Simpan dompet") {
                     ProgressView().tint(.white)
                 } else if let icon, !trailingIcon {
                     Image(systemName: icon).font(.system(size: 15, weight: .bold))
@@ -744,7 +800,7 @@ struct AddWalletView: View {
         name = kind == .cash ? "Dompet tunai" : ""
         color = kind == .cash ? "616161" : nil
         network = nil
-        balance = 0; limit = 0; bill = 0
+        balance = 0; limit = 0; bill = 0; billPrinted = true
         statementDay = nil; dueDay = nil; isDefault = false
         step = .provider
     }
@@ -764,7 +820,7 @@ struct AddWalletView: View {
     private func pickOther() {
         provider = -1
         name = ""
-        if color == nil || color == "616161" { color = "16875A" }
+        if color == nil || color == "616161" { color = isInvestment ? "946200" : "16875A" }
         pulsePop()
         nameFocused = true
     }
@@ -833,6 +889,8 @@ struct AddWalletView: View {
             dueDate: isCredit ? dueDay.map(String.init) : nil,
             statementDay: isCredit ? statementDay : nil,
             cardNetwork: isCredit ? network : nil,
+            openingUnbilledUntil: isCredit && bill > 0 && !billPrinted
+                ? statementDay.map { CreditStatement.nextCutoffString(statementDay: $0) } : nil,
             isDefault: !isCredit && isDefault
         )
         Task {
@@ -845,6 +903,18 @@ struct AddWalletView: View {
                 saveFailed = true
             }
         }
+    }
+
+    private func billChip(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.app(14, weight: .medium))
+                .foregroundStyle(selected ? Color.white : Color.appText)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
+                .background(selected ? Color.appPrimary : Color.appCardBackground, in: Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
     }
 
     private func again() {
@@ -862,7 +932,7 @@ struct AddWalletView: View {
 private extension Int {
     /// "100rb", "1 jt", "50 jt" for the quick amount chips.
     var formattedShort: String {
-        self >= 1_000_000 ? "\(self / 1_000_000) jt" : "\(self / 1000)rb"
+        self >= 1_000_000 ? L("%lld jt", self / 1_000_000) : L("%lldrb", self / 1000)
     }
 }
 

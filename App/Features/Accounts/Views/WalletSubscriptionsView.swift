@@ -6,7 +6,6 @@ struct WalletSubscriptionsView: View {
     let subscriptions: [CardSubscription]
     let categories: [Category]
     /// Transactions this wallet's recurring bills have posted on their own.
-    var recorded: [Transaction] = []
 
     private struct Editing: Identifiable {
         let existing: CardSubscription?
@@ -19,17 +18,15 @@ struct WalletSubscriptionsView: View {
     @State private var selectedDay = Calendar.current.component(.day, from: Date())
     @State private var toastText = ""
     @State private var isToastShown = false
-    @State private var showsAllRecorded = false
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
 
     static let dueColor = Color(light: 0xC2410C, dark: 0xF07A45)
     private static let dueFill = Color(light: 0xFFF1E8, dark: 0x3A2418)
 
-    init(account: Account, subscriptions: [CardSubscription], categories: [Category], recorded: [Transaction] = []) {
+    init(account: Account, subscriptions: [CardSubscription], categories: [Category]) {
         self.account = account
         self.subscriptions = subscriptions
         self.categories = categories
-        self.recorded = recorded
     }
 
     // MARK: Month maths
@@ -71,12 +68,12 @@ struct WalletSubscriptionsView: View {
         isBalanceVisible ? value.formattedAsCurrency() : "Rp" + hiddenAmount
     }
 
-    private static let monthTitle: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "id_ID"); f.dateFormat = "MMMM yyyy"; return f
-    }()
-    private static let dayTitle: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "id_ID"); f.dateFormat = "EEEE, d MMMM"; return f
-    }()
+    private static var monthTitle: DateFormatter {
+        let f = DateFormatter(); f.locale = AppLanguage.locale; f.dateFormat = "MMMM yyyy"; return f
+    }
+    private static var dayTitle: DateFormatter {
+        let f = DateFormatter(); f.locale = AppLanguage.locale; f.dateFormat = "EEEE, d MMMM"; return f
+    }
 
     // MARK: Body
 
@@ -88,15 +85,13 @@ struct WalletSubscriptionsView: View {
                 monthHeader
                 calendarGrid
                 legend
-                EmptyStateButton(title: "Tambah di tanggal \(selected)", isFullWidth: true) {
+                EmptyStateButton(title: L("Tambah di tanggal %lld", selected), isFullWidth: true) {
                     form = Editing(existing: nil, day: selected)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
                 dayList
                     .padding(.top, 18)
-                recordedList
-                    .padding(.top, 24)
             }
             .padding(.bottom, 60)
         }
@@ -107,7 +102,7 @@ struct WalletSubscriptionsView: View {
         .fullScreenCover(item: $form) { form in
             AddSubscriptionView(categories: categories, account: account, subscriptions: subscriptions,
                                 existing: form.existing, day: form.day) {
-                toastText = form.existing == nil ? "Tagihan berulang ditambahkan" : "Perubahan disimpan"
+                toastText = form.existing == nil ? L("Tagihan berulang ditambahkan") : L("Perubahan disimpan")
                 if form.existing == nil { selectedDay = form.day }
                 Task {
                     // After the cover has slid away.
@@ -164,8 +159,8 @@ struct WalletSubscriptionsView: View {
                 .contentTransition(.opacity)
             Spacer()
             HStack(spacing: 4) {
-                monthButton("chevron.left", label: "Bulan sebelumnya", step: -1)
-                monthButton("chevron.right", label: "Bulan berikutnya", step: 1)
+                monthButton("chevron.left", label: L("Bulan sebelumnya"), step: -1)
+                monthButton("chevron.right", label: L("Bulan berikutnya"), step: 1)
             }
         }
         .padding(.leading, 24)
@@ -192,7 +187,7 @@ struct WalletSubscriptionsView: View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
         return VStack(spacing: 0) {
             LazyVGrid(columns: columns, spacing: 0) {
-                ForEach(Array(["S", "S", "R", "K", "J", "S", "M"].enumerated()), id: \.offset) { _, label in
+                ForEach(Array([L("Senin"), L("Selasa"), L("Rabu"), L("Kamis"), L("Jumat"), L("Sabtu"), L("Minggu")].map { String($0.prefix(1)) }.enumerated()), id: \.offset) { _, label in
                     Text(label)
                         .font(.app(12, weight: .semibold))
                         .foregroundStyle(Color(light: 0xA1A1A6, dark: 0x8E8E93))
@@ -245,14 +240,14 @@ struct WalletSubscriptionsView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Tanggal \(day)" + (dots.isEmpty ? "" : ", \(dots.count) tagihan"))
+        .accessibilityLabel(dots.isEmpty ? L("Tanggal %lld", day) : L("Tanggal %lld, %lld tagihan", day, dots.count))
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     private var legend: some View {
         HStack(spacing: 16) {
-            legendItem(.appPrimary, "Tagihan berulang")
-            if isCardDueShown { legendItem(Self.dueColor, "Jatuh tempo kartu") }
+            legendItem(.appPrimary, L("Tagihan berulang"))
+            if isCardDueShown { legendItem(Self.dueColor, L("Jatuh tempo kartu")) }
             Spacer(minLength: 0)
         }
         .font(.app(12))
@@ -314,79 +309,6 @@ struct WalletSubscriptionsView: View {
         .animation(.settle(0.35), value: subscriptions.map(\.id))
     }
 
-    // MARK: Recorded
-
-    private static let recordedDate: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "id_ID"); f.dateFormat = "d MMM yyyy"; return f
-    }()
-
-    /// What the recurring bills already posted, newest first.
-    private var recordedList: some View {
-        let sorted = recorded.sorted { $0.date > $1.date }
-        let shown = showsAllRecorded ? sorted : Array(sorted.prefix(8))
-        return VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Sudah dicatat otomatis")
-                    .font(.app(13, weight: .semibold))
-                    .foregroundStyle(Color.appTextSecondary)
-                Spacer()
-                if !sorted.isEmpty {
-                    Text("\(sorted.count) transaksi")
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-            .padding(.bottom, 4)
-
-            if sorted.isEmpty {
-                Text("Belum ada. Tagihan yang jatuh tempo muncul di sini setelah dicatat.")
-                    .font(.app(15))
-                    .foregroundStyle(Color(light: 0xA1A1A6, dark: 0x8E8E93))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 10)
-            }
-            ForEach(shown) { txn in
-                HStack(spacing: 14) {
-                    iconCircle("checkmark", fill: Color.appPrimary.opacity(0.12), tint: .appPrimary)
-                    HStack(spacing: 10) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(txn.recurringName ?? "Tagihan berulang")
-                                .font(.app(16))
-                                .foregroundStyle(Color.appText)
-                                .lineLimit(1)
-                            Text(Self.recordedDate.string(from: txn.date))
-                                .font(.app(13))
-                                .foregroundStyle(Color.appTextSecondary)
-                        }
-                        Spacer(minLength: 0)
-                        Text("−" + money(txn.amount))
-                            .font(.app(16))
-                            .monospacedDigit()
-                            .foregroundStyle(Color.appText)
-                    }
-                    .frame(height: 64)
-                    .rowSeparator()
-                }
-                .padding(.horizontal, 24)
-                .accessibilityElement(children: .combine)
-            }
-            if sorted.count > shown.count {
-                Button("Lihat semua (\(sorted.count))") {
-                    withAnimation(.settle(0.35)) { showsAllRecorded = true }
-                }
-                .font(.app(15, weight: .medium))
-                .foregroundStyle(Color.appPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-            }
-        }
-        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-    }
-
     private func iconCircle(_ symbol: String, fill: Color, tint: Color) -> some View {
         Circle()
             .fill(fill)
@@ -435,7 +357,7 @@ struct WalletSubscriptionsView: View {
                             .foregroundStyle(sub.isActive ? Color.appText : Color.appTextSecondary)
                     }
                     HStack(spacing: 6) {
-                        Text(category?.name ?? "Lainnya")
+                        Text(category?.name ?? L("Lainnya"))
                         if sub.frequency == .yearly { Text("· tiap tahun") }
                         if !sub.isActive {
                             Text("Dijeda")

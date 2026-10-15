@@ -27,13 +27,18 @@ struct HeroAmount: View {
                 .font(.app(symbol))
                 .foregroundStyle(prefixColor)
                 .padding(.top, top)
-            Text(isVisible ? value.formattedAsDigits() : hiddenAmount)
-                .font(.app(number, weight: weight))
-                .tracking(tracking)
-                .foregroundStyle(color)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .contentTransition(.numericText())
+            // The mask's bullets have a different line height than digits; a hidden "0" keeps the
+            // row the same height so the layout below doesn't jump when the eye is toggled.
+            ZStack(alignment: .leading) {
+                Text("0").font(.app(number, weight: weight)).hidden()
+                Text(isVisible ? value.formattedAsDigits() : hiddenAmount)
+                    .font(.app(number, weight: weight))
+                    .tracking(tracking)
+                    .foregroundStyle(color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .contentTransition(.numericText())
+            }
         }
         .monospacedDigit()
     }
@@ -104,6 +109,8 @@ struct SegmentBar: View {
     var delay: Double = 0
     /// For bars that stay mounted while hidden: fills only while true.
     var isActive = true
+    /// False for bars that fill once and then stay full when the screen is left and re-entered.
+    var replays = true
     @State private var isShown = false
 
     var body: some View {
@@ -119,6 +126,7 @@ struct SegmentBar: View {
         // Fill on the next frame so the first render is empty and the change animates.
         .task { isShown = true }
         .onDisappear {
+            guard replays else { return }
             var reset = SwiftUI.Transaction()
             reset.disablesAnimations = true
             withTransaction(reset) { isShown = false }

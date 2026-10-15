@@ -7,6 +7,7 @@ final class AppDataCache {
     struct DashboardState {
         var balance: Double
         var creditDebt: Double = 0
+        var investmentCapital: Double = 0
         var openingBalance: Double
         var totalIncome: Double
         var totalExpense: Double

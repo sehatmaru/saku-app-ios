@@ -35,17 +35,14 @@ struct OnboardingCategory: Identifiable {
     }
     var color: Color { Color(hex: hex) }
 
+    /// The built-in list for accounts created from the "Perampingan Kategori" release on (category set 2).
     static let expense: [OnboardingCategory] = [
-        .init(key: "expense_daily_meals", name: "Makan Harian", icon: "fork.knife", isExpense: true),
-        .init(key: "expense_snack_coffee", name: "Jajan & Kopi", icon: "cup.and.saucer", isExpense: true),
-        .init(key: "expense_restaurant_mall", name: "Restoran & Mall", icon: "wineglass", isExpense: true),
-        .init(key: "expense_groceries_household", name: "Belanja & Rumah Tangga", icon: "cart", isExpense: true),
         .init(key: "expense_transport", name: "Transportasi", icon: "car", isExpense: true),
-        .init(key: "expense_entertainment", name: "Hiburan", icon: "gamecontroller", isExpense: true),
-        .init(key: "expense_sport_fitness", name: "Olahraga & Kebugaran", icon: "dumbbell", isExpense: true),
-        .init(key: "expense_care_health", name: "Perawatan & Kesehatan", icon: "heart", isExpense: true),
-        .init(key: "expense_personal_spending", name: "Pengeluaran Pribadi", icon: "bag", isExpense: true),
-        .init(key: "expense_social_donation", name: "Sosial & Donasi", icon: "hand.raised", isExpense: true),
+        .init(key: "expense_snack_coffee", name: "Jajan & Kopi", icon: "cup.and.saucer", isExpense: true),
+        .init(key: "expense_daily_meals", name: "Makan Harian", icon: "fork.knife", isExpense: true),
+        .init(key: "expense_groceries_household", name: "Belanja & Rumah Tangga", icon: "cart", isExpense: true),
+        .init(key: "expense_bills_subscriptions", name: "Tagihan & Langganan", icon: "doc.text", isExpense: true),
+        .init(key: "expense_health_sport", name: "Kesehatan & Olahraga", icon: "heart", isExpense: true),
         .init(key: "expense_etc", name: "Lain-lain", icon: "ellipsis", isExpense: true),
     ]
 

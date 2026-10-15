@@ -20,8 +20,10 @@ struct Category: Identifiable, Codable, Hashable {
     let systemKey: String?
     /// "system" for the built-in ones everybody shares, "user" for the user's own.
     var ownerType: String? = nil
+    /// The shared name of a built-in category the user renamed; nil when the name is untouched.
+    var defaultName: String? = nil
 
-    /// Built-in: can be hidden, not renamed or deleted.
+    /// Built-in: can be hidden and renamed, but not restyled or deleted.
     var isBuiltIn: Bool { ownerType != "user" }
 
     enum CodingKeys: String, CodingKey {
@@ -41,11 +43,23 @@ struct CategoryPreference: Codable, Hashable {
     let categoryId: String
     var isHidden: Bool
     var sortOrder: Int?
+    /// The user's own name for the category.
+    var customName: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case categoryId = "category_id"
         case isHidden = "is_hidden"
         case sortOrder = "sort_order"
+        case customName = "custom_name"
+    }
+}
+
+extension Category {
+    /// A copy under the user's own name; `defaultName` keeps the shared one so it can be restored.
+    func named(_ newName: String) -> Category {
+        let shared = defaultName ?? name
+        return Category(id: id, name: newName, icon: icon, color: color, type: type, systemKey: systemKey,
+                        ownerType: ownerType, defaultName: newName == shared ? nil : shared)
     }
 }
 

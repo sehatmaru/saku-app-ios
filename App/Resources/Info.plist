@@ -2,43 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>id</string>
-    <key>CFBundleExecutable</key>
-    <string>$(EXECUTABLE_NAME)</string>
-    <key>CFBundleIdentifier</key>
-    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>SakuQ</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>LSRequiresIPhoneOS</key>
-    <true/>
-    <key>UIAppFonts</key>
-    <array>
-        <string>PlusJakartaSans.ttf</string>
-    </array>
-    <key>UILaunchScreen</key>
-    <dict>
-        <key>UIColorName</key>
-        <string>BrandGreen</string>
-    </dict>
-    <key>UIRequiredDeviceCapabilities</key>
-    <array>
-        <string>armv7</string>
-    </array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>GIDClientID</key>
-	<string>799706557725-smklpamdcf8m4bmngclootnphbfp1ttf.apps.googleusercontent.com</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>id</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Saku</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -46,9 +23,40 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.799706557725-smklpamdcf8m4bmngclootnphbfp1ttf</string>
+				<string>com.googleusercontent.apps.799706557725-s6mvfhhqq1klvl9t28phj1rkotau4oea</string>
 			</array>
 		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>GIDClientID</key>
+	<string>799706557725-s6mvfhhqq1klvl9t28phj1rkotau4oea.apps.googleusercontent.com</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.finance</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Saku memakai kamera agar kamu bisa memotret bukti bayar atau struk dan mencatatnya.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Saku memakai mikrofon agar kamu bisa mencatat transaksi dengan suara.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Saku mengubah ucapanmu menjadi teks untuk dibuat draf transaksi.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>PlusJakartaSans.ttf</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>BrandGreen</string>
+	</dict>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 </dict>
 </plist>

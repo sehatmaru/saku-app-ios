@@ -5,6 +5,8 @@ import SwiftUI
 final class DashboardViewModel: ObservableObject {
     @Published var balance: Double = 0
     @Published var creditDebt: Double = 0
+    /// Capital put into the active investment wallets (see `InvestmentSummary`).
+    @Published var investmentCapital: Double = 0
     @Published var openingBalance: Double = 0
     @Published var totalIncome: Double = 0
     @Published var totalExpense: Double = 0
@@ -35,6 +37,17 @@ final class DashboardViewModel: ObservableObject {
     private var loadedUserId: String?
 
     var totalRemaining: Double { totalBudget - totalSpent }
+    /// Investment wallets, kept apart from the cash `balance`.
+    var assetsTotal: Double { WealthSummary(accounts: accounts).assets }
+    var wealth: Double { balance + assetsTotal }
+    var hasInvestments: Bool { accounts.contains { $0.isActive && $0.isInvestment } }
+    /// Gain over capital across all active investment wallets; nil while nothing was put in.
+    var assetsGainPercent: Double? { investmentCapital > 0 ? (assetsTotal - investmentCapital) / investmentCapital : nil }
+
+    /// Days left in the payday period, today counted.
+    var daysLeftInPeriod: Int { PaydayCycle.current.days().left + 1 }
+    /// What can be spent per day until the period ends; nil when nothing is safe to spend.
+    var safePerDay: Double? { safeToSpend > 0 ? (safeToSpend / Double(daysLeftInPeriod)).rounded(.down) : nil }
 
     /// Balance minus what already has to leave it this month: printed card bills and
     /// subscriptions paid from a wallet.
@@ -101,6 +114,7 @@ final class DashboardViewModel: ObservableObject {
             errorMessage = nil
             balance = cached.balance
             creditDebt = cached.creditDebt
+            investmentCapital = cached.investmentCapital
             openingBalance = cached.openingBalance
             totalIncome = cached.totalIncome
             totalExpense = cached.totalExpense
@@ -160,7 +174,7 @@ final class DashboardViewModel: ObservableObject {
             totalMonthlySubscriptions = activeSubs.reduce(0) { $0 + $1.monthlyAmount }
 
             let statements = cards.compactMap { CreditStatement(card: $0, transactions: transactions, installments: installments) }
-            cardDueTotal = statements.reduce(0) { $0 + $1.remaining }
+            cardDueTotal = statements.reduce(0) { $0 + $1.remaining + $1.currentPeriod }
             overdueBills = zip(cards, statements)
                 .filter { $0.1.status == .overdue }
                 .map { OverdueCardBill(card: $0.0, statement: $0.1) }
@@ -175,8 +189,12 @@ final class DashboardViewModel: ObservableObject {
             await NotificationManager.shared.resyncCardDue(cards: cards, statements: statements)
 
             // Archived wallets leave the totals, same as on Dompet.
-            balance = activeAccounts.filter { !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
+            balance = WealthSummary(accounts: activeAccounts).cash
             creditDebt = cards.reduce(0) { $0 + $1.balance }
+            investmentCapital = activeAccounts.filter(\.isInvestment).reduce(0) { sum, account in
+                sum + InvestmentSummary(account: account, transactions: transactions.filter {
+                    $0.accountId == account.id || $0.counterpartyAccountId == account.id }).capital
+            }
 
             let thisMonthTransactions = transactions.filter { isCurrentMonth($0.date) }
             currentMonthTransactionCount = thisMonthTransactions.count
@@ -235,6 +253,7 @@ final class DashboardViewModel: ObservableObject {
             AppDataCache.shared.setDashboardState(.init(
                 balance: balance,
                 creditDebt: creditDebt,
+                investmentCapital: investmentCapital,
                 openingBalance: openingBalance,
                 totalIncome: totalIncome,
                 totalExpense: totalExpense,
@@ -264,29 +283,31 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
-    /// Scores the last three months (including this one) and today's balances.
+    /// Scores the last three finished payday cycles and today's balances.
     private func computeHealth(transactions: [Transaction]) -> FinancialHealth {
         let now = Date()
-        let recent = monthlyCashflow.suffix(3)
+        let cycle = PaydayCycle.current
+        let cashflow = FinancialHealth.cashflowCycles(transactions, cycle: cycle, now: now, calendar: calendar)
         let cards = accounts.filter { $0.isActive && $0.isCreditCard }
-        let dayCount = Double(calendar.range(of: .day, in: .month, for: now)?.count ?? 30)
         let startOfToday = calendar.startOfDay(for: now)
         let since = calendar.date(byAdding: .day, value: -29, to: startOfToday) ?? startOfToday
         let activeDays = Set(transactions.filter { $0.date >= since && $0.type != .adjustment }
             .map { calendar.startOfDay(for: $0.date) }).count
         return FinancialHealth(.init(
-            monthlyIncome: recent.map(\.income),
-            monthlyExpense: recent.map(\.expense),
+            monthlyIncome: cashflow.income,
+            monthlyExpense: cashflow.expense,
             liquidBalance: balance,
             creditDebt: max(cards.reduce(0) { $0 + $1.balance }, 0),
             creditLimit: cards.reduce(0) { $0 + ($1.creditLimit ?? 0) },
             hasCreditCard: !cards.isEmpty,
             budgetTotal: totalBudget,
             budgetSpent: totalSpent,
-            monthProgress: Double(calendar.component(.day, from: now)) / dayCount,
+            monthProgress: FinancialHealth.cycleProgress(cycle, on: now, calendar: calendar),
             activeDays: activeDays,
             topExpenseCategory: categorySpending.first?.0.name,
             hasTransactions: transactions.contains { $0.type == .income || $0.type == .expense },
+            daysOfData: transactions.filter { $0.type != .adjustment }.map(\.date).min()
+                .map { calendar.dateComponents([.day], from: calendar.startOfDay(for: $0), to: startOfToday).day ?? 0 } ?? 0,
             overdueBills: overdueBills.map {
                 .init(cardName: $0.card.name, amount: $0.statement.remaining, daysLate: $0.statement.daysOverdue)
             }
@@ -324,7 +345,7 @@ final class DashboardViewModel: ObservableObject {
     private func shortMonthLabel(_ month: Int, _ year: Int) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM"
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = AppLanguage.locale
         guard let date = calendar.date(from: DateComponents(year: year, month: month)) else { return "" }
         return formatter.string(from: date)
     }

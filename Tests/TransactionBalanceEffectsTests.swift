@@ -1,5 +1,5 @@
 import XCTest
-@testable import SakuQ
+@testable import Saku
 
 /// `updateTransaction` reverses the old effects and applies the new ones, so these
 /// effects must be exact for every type and for credit cards.

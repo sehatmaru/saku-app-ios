@@ -20,8 +20,8 @@ struct HidesDetailAddButton: PreferenceKey {
 }
 
 extension View {
-    /// A page pushed over the tabs: the tab bar slides away. With `onAdd`, a lone glass +
-    /// takes its place at the bottom right.
+    /// A page pushed over the tabs: the tab bar slides away and the Smart Tracker button hides
+    /// with it. With `onAdd`, a lone glass + takes its place at the bottom right.
     func detailPage(addLabel: String = "Tambah", onAdd: (() -> Void)? = nil) -> some View {
         modifier(DetailPageChrome(addLabel: addLabel, onAdd: onAdd))
     }
@@ -41,6 +41,8 @@ private struct DetailPageChrome: ViewModifier {
     func body(content: Content) -> some View {
         content
             .toolbar(.hidden, for: .tabBar)
+            // A pushed page is not a tab root: the Smart Tracker button belongs to the tab pages only.
+            .hidesSmartButton()
             .onPreferenceChange(HidesDetailAddButton.self) { hidden in
                 withAnimation(.spring(duration: 0.3)) { isHiddenByPage = hidden }
             }
@@ -58,7 +60,7 @@ private struct DetailPageChrome: ViewModifier {
                     .padding(.trailing, 20)
                     .padding(.bottom, 8)
                     .transition(.scale(scale: 0.5).combined(with: .opacity))
-                    .accessibilityLabel(addLabel)
+                    .accessibilityLabel(Text(LocalizedStringKey(addLabel)))
                 }
             }
             // Appears as the tab bar slides away, so the + reads as what's left of it.
@@ -89,6 +91,8 @@ extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
     }
 
     public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        viewControllers.count > 1
+        // Never start a swipe-back while this stack is still pushing or popping: a second pop on top of a running
+        // transition leaves the stack half-popped (tab bar gone, navigation stuck).
+        viewControllers.count > 1 && transitionCoordinator == nil
     }
 }

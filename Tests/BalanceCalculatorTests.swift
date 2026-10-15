@@ -1,5 +1,5 @@
 import XCTest
-@testable import SakuQ
+@testable import Saku
 
 final class BalanceCalculatorTests: XCTestCase {
     func testAppliesIncomeExpenseAndTransferBalances() {

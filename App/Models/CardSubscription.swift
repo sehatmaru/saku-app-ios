@@ -76,7 +76,7 @@ struct CardSubscription: Identifiable, Codable {
         guard let date = nextBillingDateAsDate else { return "-" }
         let formatter = DateFormatter()
         formatter.dateFormat = "d MMM yyyy"
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = AppLanguage.locale
         return formatter.string(from: date)
     }
 }

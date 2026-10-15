@@ -16,19 +16,27 @@ struct AddTransactionView: View {
     /// Keeps the form on `initialType`, e.g. a transfer started from a wallet.
     var locksType = false
     var initialAccount: Account?
+    /// Starts a transfer as "Setor ke aset" or "Tarik dari aset" (the wallet given as `initialAccount` is the investment one).
+    var initialAssetMode: AssetMode?
     var editing: Transaction?
     var onUpdated: ((Transaction) -> Void)?
 
+    /// A transfer into or out of an investment wallet; nil is a plain transfer between wallets.
+    enum AssetMode: Equatable { case deposit, withdraw }
+
     @State private var typeIndex = 0
+    @State private var assetMode: AssetMode?
     @State private var dragX: CGFloat = 0
     @State private var amount = 0
     @State private var isBumped = false
     @State private var shakeX: CGFloat = 0
+    @State private var categoryShakeX: CGFloat = 0
     @State private var category: Category?
     @State private var account: Account?
     @State private var target: Account?
     @State private var date = Calendar.current.startOfDay(for: Date())
     @State private var note = ""
+    @FocusState private var noteFocused: Bool
     @State private var sheet: PickerKind?
     @State private var flashed: Set<PickerKind> = []
     @State private var isEntered = false
@@ -38,13 +46,14 @@ struct AddTransactionView: View {
     /// Sum of this month's budgets and every expense, for the daily-budget strip.
     @State private var monthlyBudget: Double = 0
     @State private var expenses: [Transaction] = []
+    /// Every transaction, for "Terakhir dipakai" and "Sering dipakai" in the pickers.
+    @State private var history: [Transaction] = []
     /// 0% installment months for a new card expense; 0 means none.
     @State private var installmentMonths = 0
     /// The expense saved but its installment didn't; closing after the alert avoids a duplicate on retry.
     @State private var closesAfterAlert = false
     /// Hidden flags and order for the category picker.
     @State private var preferences: [CategoryPreference] = []
-    @State private var didPickCategory = false
     /// Also make this expense a recurring bill, posted again each period; nil for a one-off.
     @State private var repeatFrequency: CardSubscription.Frequency?
     /// Short screens (iPhone SE) get a tighter header, rows and keys so nothing runs under the pad.
@@ -80,7 +89,33 @@ struct AddTransactionView: View {
     private var activeAccounts: [Account] {
         accounts.filter(\.isActive).sorted { $0.isDefault && !$1.isDefault }
     }
-    private var targetAccounts: [Account] { activeAccounts.filter { !$0.isCreditCard } }
+    private var hasInvestments: Bool { activeAccounts.contains(where: \.isInvestment) }
+    private var cashWallets: [Account] { activeAccounts.filter { !$0.isInvestment && !$0.isCreditCard } }
+    private var investmentWallets: [Account] { activeAccounts.filter(\.isInvestment) }
+    private var panelColor: Color { isTransfer && assetMode != nil ? .appInvestmentPanel : style.color }
+    private var showsAssetModes: Bool { isTransfer && hasInvestments && editing == nil }
+    /// Expense and income can't sit on an investment wallet; a transfer's source depends on its mode.
+    private var sourceAccounts: [Account] {
+        guard isTransfer else { return WalletRules.spendingSources(activeAccounts) }
+        switch assetMode {
+        case .deposit: return cashWallets
+        case .withdraw: return investmentWallets
+        case nil: return activeAccounts
+        }
+    }
+    private var targetAccounts: [Account] {
+        switch assetMode {
+        case .deposit: return investmentWallets
+        case .withdraw: return cashWallets
+        case nil: return WalletRules.transferTargets(from: account, in: activeAccounts)
+        }
+    }
+    /// What stops a transfer into or out of an asset: more than the cash wallet holds, or than the asset is worth.
+    private var assetError: String? {
+        guard isTransfer, let account, let mode = assetMode, amount > 0, Double(amount) > account.balance else { return nil }
+        let money = "Rp" + account.balance.formattedAsDigits()
+        return mode == .withdraw ? L("Melebihi nilai %@ %@", account.name, money) : L("Melebihi saldo %@ %@", account.name, money)
+    }
     private var isCardExpense: Bool { style.type == .expense && account?.isCreditCard == true }
     /// The plan that will actually be saved: only new card expenses can be split.
     private var planMonths: Int { isCardExpense && editing == nil ? installmentMonths : 0 }
@@ -130,12 +165,15 @@ struct AddTransactionView: View {
             rows
                 .padding(.top, isCompact ? 4 : 10)
             Spacer(minLength: isCompact ? 4 : 12)
-            AmountPad(color: style.color, isEnabled: amount > 0, isSaving: isSaving, onPress: press, onSave: save,
-                      keyHeight: isCompact ? 46 : 52)
-                .animation(.easeInOut(duration: 0.4), value: typeIndex)
-                .disabled(isSaving || done != nil)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 4)
+            // The system keyboard replaces the number pad while typing a note.
+            if !noteFocused {
+                AmountPad(color: panelColor, isEnabled: amount > 0 && (isTransfer || category != nil) && assetError == nil, isSaving: isSaving, onPress: press, onSave: save,
+                          keyHeight: isCompact ? 46 : 52)
+                    .animation(.easeInOut(duration: 0.4), value: typeIndex)
+                    .disabled(isSaving || done != nil)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 4)
+            }
         }
         .onGeometryChange(for: Bool.self, of: { $0.size.height < 720 }) { isCompact = $0 }
         .simultaneousGesture(TapGesture().onEnded { hideRepeatTip() })
@@ -155,10 +193,15 @@ struct AddTransactionView: View {
             target = accounts.first { $0.id == editing.counterpartyAccountId }
             date = editing.date
             note = editing.description ?? ""
+            if account?.isInvestment == true { assetMode = .withdraw } else if target?.isInvestment == true { assetMode = .deposit }
+        } else if let mode = initialAssetMode, let wallet = initialAccount, wallet.isInvestment {
+            typeIndex = Self.types.firstIndex { $0.type == .transfer } ?? 0
+            assetMode = mode
+            account = mode == .withdraw ? wallet : cashWallets.first ?? activeAccounts.first { !$0.isInvestment }
+            target = mode == .withdraw ? cashWallets.first : wallet
         } else {
             typeIndex = Self.types.firstIndex { $0.type == initialType } ?? 0
-            account = initialAccount ?? activeAccounts.first
-            category = typeCategories.first
+            account = initialAccount.flatMap { $0.isInvestment ? nil : $0 } ?? WalletRules.spendingSources(activeAccounts).first ?? activeAccounts.first
             target = targetAccounts.first { $0.id != account?.id }
         }
         Task {
@@ -170,10 +213,6 @@ struct AddTransactionView: View {
     private func loadPreferences() async {
         guard let loaded = try? await SupabaseRepository.shared.fetchCategoryPreferences() else { return }
         preferences = loaded
-        // A new entry starts on the user's first category unless they already picked one.
-        if editing == nil, !didPickCategory, !isTransfer {
-            category = typeCategories.first
-        }
     }
 
     private func loadBudgetData() async {
@@ -181,7 +220,9 @@ struct AddTransactionView: View {
         async let transactions = SupabaseRepository.shared.fetchTransactions(userId: userId)
         monthlyBudget = ((try? await budgets) ?? []).filter(\.isActive).reduce(0) { $0 + $1.amount }
         // The transaction being edited is re-counted with its new amount as you type.
-        expenses = ((try? await transactions) ?? []).filter { $0.type == .expense && $0.id != editing?.id }
+        let all = ((try? await transactions) ?? []).filter { $0.id != editing?.id }
+        history = all
+        expenses = all.filter { $0.type == .expense }
     }
 
     private var calendar: Calendar { .current }
@@ -223,10 +264,15 @@ struct AddTransactionView: View {
                     .padding(.top, 4)
                 amountText
                     .padding(.top, isCompact ? 4 : 12)
+                if showsAssetModes {
+                    assetModeControl
+                        .padding(.horizontal, 20)
+                        .padding(.top, isCompact ? 8 : 14)
+                }
                 info
-                    .frame(height: isCompact ? 32 : 54, alignment: .top)
+                    .frame(height: isCompact ? 32 : (showsAssetModes ? 30 : 54), alignment: .top)
                     .padding(.horizontal, 24)
-                    .padding(.top, isCompact ? 8 : 16)
+                    .padding(.top, isCompact ? 8 : (showsAssetModes ? 10 : 16))
             }
             .opacity(done == nil ? 1 : 0)
             .scaleEffect(done == nil ? 1 : 0.97)
@@ -239,8 +285,9 @@ struct AddTransactionView: View {
         .frame(maxWidth: .infinity)
         .background {
             UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32)
-                .fill(style.color)
+                .fill(panelColor)
                 .animation(.easeInOut(duration: 0.45), value: typeIndex)
+                .animation(.easeInOut(duration: 0.45), value: assetMode)
                 .ignoresSafeArea(edges: .top)
         }
         .contentShape(Rectangle())
@@ -335,25 +382,64 @@ struct AddTransactionView: View {
                 .font(.app(15, weight: .medium))
                 .monospacedDigit()
                 .opacity(style.type == .income ? 1 : 0)
-            HStack(spacing: 10) {
-                walletChip(account)
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 13, weight: .bold))
-                    .opacity(0.7)
-                walletChip(target)
+            Group {
+                if let assetError {
+                    Label(assetError, systemImage: "exclamationmark.circle.fill")
+                        .font(.app(13, weight: .bold))
+                        .foregroundStyle(panelColor)
+                        .padding(.horizontal, 12)
+                        .frame(height: 26)
+                        .background(.white, in: Capsule())
+                } else {
+                    HStack(spacing: 10) {
+                        walletChip(account)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .bold))
+                            .opacity(0.7)
+                        walletChip(target)
+                    }
+                    .font(.app(15, weight: .medium))
+                }
             }
-            .font(.app(15, weight: .medium))
             .opacity(isTransfer ? 1 : 0)
         }
         .animation(.easeInOut(duration: 0.3), value: typeIndex)
     }
 
-    private var incomeText: String {
+    private var assetModeControl: some View {
+        let modes: [(AssetMode?, String)] = [(nil, L("Antar dompet")), (.deposit, L("Setor ke aset")), (.withdraw, L("Tarik dari aset"))]
+        return HStack(spacing: 0) {
+            ForEach(modes.indices, id: \.self) { i in
+                let on = assetMode == modes[i].0
+                Button { setAssetMode(modes[i].0) } label: {
+                    Text(modes[i].1)
+                        .font(.app(13, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .foregroundStyle(on ? panelColor : .white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 30)
+                        .background(on ? Color.white : .clear, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .background(.black.opacity(0.2), in: Capsule())
+        .animation(.easeInOut(duration: 0.24), value: assetMode)
+    }
+
+    private var incomeText: String { incomeMessage(done: false) }
+
+    /// "Saldo X jadi Rp…" while typing, "Saldo X sekarang Rp…" once saved.
+    private func incomeMessage(done: Bool) -> String {
         guard let account else { return "" }
         // When editing, the saved amount is already in the balance.
         let saved = editing?.type == .income && editing?.accountId == account.id ? editing?.amount ?? 0 : 0
         let next = account.balance - saved + Double(amount)
-        return "Saldo \(account.name) jadi " + (next < 0 ? "−Rp" : "Rp") + next.formattedAsDigits()
+        let money = (next < 0 ? "−Rp" : "Rp") + next.formattedAsDigits()
+        return done ? L("Saldo %@ sekarang %@", account.name, money) : L("Saldo %@ jadi %@", account.name, money)
     }
 
     private func walletChip(_ account: Account?) -> some View {
@@ -362,7 +448,7 @@ struct AddTransactionView: View {
                 .fill(walletColor(account))
                 .frame(width: 16, height: 11)
                 .overlay(RoundedRectangle(cornerRadius: 2).stroke(.white.opacity(0.5), lineWidth: 1))
-            Text(account?.name ?? "Pilih")
+            Text(account?.name ?? L("Pilih"))
                 .lineLimit(1)
         }
     }
@@ -376,7 +462,7 @@ struct AddTransactionView: View {
         let after = daily > 0 ? Int((min(1, (spent + typed) / daily) * 30).rounded()) : 0
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Sisa budget " + TransactionDates.dayShort(date))
+                Text(L("Sisa budget %@", TransactionDates.dayShort(date)))
                     .font(.app(13))
                     .opacity(0.85)
                 Spacer()
@@ -384,7 +470,7 @@ struct AddTransactionView: View {
                     Image(systemName: "exclamationmark.circle.fill")
                         .font(.system(size: 14))
                         .opacity(left < 0 && daily > 0 ? 1 : 0)
-                    Text(daily <= 0 ? "—" : left < 0 ? "Lewat Rp" + (-left).formattedAsDigits() : "Rp" + left.formattedAsDigits())
+                    Text(daily <= 0 ? "—" : left < 0 ? L("Lewat Rp%@", (-left).formattedAsDigits()) : "Rp" + left.formattedAsDigits())
                         .font(.app(15, weight: .semibold))
                         .contentTransition(.numericText())
                 }
@@ -411,11 +497,11 @@ struct AddTransactionView: View {
     }
 
     private func budgetFootnote(daily: Double, spent: Double, typed: Double) -> String {
-        guard daily > 0 else { return "Belum ada budget bulan ini" }
+        guard daily > 0 else { return L("Belum ada budget bulan ini") }
         let perDay = "Rp" + daily.formattedAsDigits()
         return typed > 0
-            ? "Sebelumnya Rp" + max(0, daily - spent).formattedAsDigits() + " · budget \(perDay)/hari"
-            : "Budget harian \(perDay)"
+            ? L("Sebelumnya Rp%@ · budget %@/hari", max(0, daily - spent).formattedAsDigits(), perDay)
+            : L("Budget harian %@", perDay)
     }
 
     @ViewBuilder
@@ -428,7 +514,7 @@ struct AddTransactionView: View {
                 .overlay {
                     Image(systemName: "checkmark")
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(style.color)
+                        .foregroundStyle(panelColor)
                 }
                 .scaleEffect(isDone ? 1 : 0.4)
                 .animation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.56), value: isDone)
@@ -466,7 +552,7 @@ struct AddTransactionView: View {
             Button {
                 hideRepeatTip()
                 if planMonths > 0 {
-                    flashRepeatBubble("Matikan cicilan dulu")
+                    flashRepeatBubble(L("Matikan cicilan dulu"))
                 } else {
                     showsRepeatMenu = true
                 }
@@ -490,7 +576,7 @@ struct AddTransactionView: View {
                 .opacity(planMonths > 0 ? 0.45 : 1)
             }
             .buttonStyle(PressScaleStyle())
-            .accessibilityLabel(isOn ? "Ulangi, berikutnya \(TransactionDates.dayMonth.string(from: nextRepeatDate))" : "Ulangi")
+            .accessibilityLabel(isOn ? L("Ulangi, berikutnya %@", TransactionDates.dayMonth.string(from: nextRepeatDate)) : L("Ulangi"))
             .overlay(alignment: .topTrailing) { repeatBubbles }
             .onAppear(perform: showRepeatTipOnce)
         }
@@ -499,7 +585,7 @@ struct AddTransactionView: View {
     /// The dark bubble under the icon: the one-time tooltip, or a short reason.
     @ViewBuilder
     private var repeatBubbles: some View {
-        let text = repeatBubble ?? (showsRepeatTip ? "Jadikan tagihan berulang" : nil)
+        let text = repeatBubble ?? (showsRepeatTip ? L("Jadikan tagihan berulang") : nil)
         if let text, !showsRepeatMenu {
             Text(text)
                 .font(.app(14, weight: .semibold))
@@ -543,7 +629,7 @@ struct AddTransactionView: View {
     /// Bottom sheet from the ↻ icon (Pengingat Tagihan 4b): pick Tidak / Tiap bulan / Tiap tahun,
     /// see the next date, then Selesai.
     private var repeatSheet: some View {
-        PickerSheet(title: "Tagihan berulang", onDone: { showsRepeatMenu = false }) {
+        PickerSheet(title: L("Tagihan berulang"), onDone: { showsRepeatMenu = false }) {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(spacing: 0) {
                     ForEach(Self.repeatOptions, id: \.1) { option, title in
@@ -551,7 +637,7 @@ struct AddTransactionView: View {
                             withAnimation(.settle(0.3)) { repeatFrequency = option }
                         } label: {
                             HStack(spacing: 12) {
-                                Text(title).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
+                                Text(L(title)).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
                                 Spacer()
                                 if let option {
                                     Text(repeatMenuDate(option))
@@ -617,12 +703,12 @@ struct AddTransactionView: View {
         }
     }
 
-    private static let longDate: DateFormatter = {
+    private static var longDate: DateFormatter {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         f.dateFormat = "EEEE, d MMM yyyy"
         return f
-    }()
+    }
 
     private func repeatMenuDate(_ frequency: CardSubscription.Frequency) -> String {
         let date = repeatDate(frequency)
@@ -635,20 +721,22 @@ struct AddTransactionView: View {
     private var rows: some View {
         VStack(spacing: 0) {
             if isTransfer {
-                row(.account, label: "Dari", value: account?.name ?? "Pilih", swatch: walletColor(account), index: 0)
-                row(.target, label: "Ke", value: target?.name ?? "Pilih", swatch: walletColor(target), index: 1)
+                row(.account, label: L("Dari"), value: account?.name ?? L("Pilih"), swatch: walletColor(account),
+                    isLocked: assetMode == .withdraw, isAsset: account?.isInvestment == true, index: 0)
+                row(.target, label: L("Ke"), value: target?.name ?? L("Pilih"), swatch: walletColor(target),
+                    isLocked: assetMode == .deposit, isAsset: target?.isInvestment == true, index: 1)
             } else {
-                row(.category, label: "Kategori", value: category?.name ?? "Pilih",
-                    icon: category?.icon ?? "tag", iconColor: style.color, index: 0)
-                row(.account, label: "Dompet", value: account?.name ?? "Pilih", swatch: walletColor(account),
+                row(.category, label: L("Kategori"), value: category?.name ?? L("Belum dipilih"),
+                    icon: category?.icon, iconColor: style.color, isPlaceholder: category == nil, index: 0)
+                row(.account, label: L("Dompet"), value: account?.name ?? L("Pilih"), swatch: walletColor(account),
                     sub: isCardExpense && planMonths == 0 ? account.map(billingText) : nil, index: 1)
                 if isCardExpense, let account, editing == nil {
-                    row(.installment, label: "Cicilan", value: installmentMonths == 0 ? "Tidak" : "\(installmentMonths) bulan",
+                    row(.installment, label: L("Cicilan"), value: installmentMonths == 0 ? L("Tidak") : L("%lld bulan", installmentMonths),
                         icon: "calendar.badge.clock", iconColor: .appTextSecondary,
                         sub: planMonths > 0 ? planText(card: account) : nil, index: 1)
                 }
             }
-            row(.date, label: "Tanggal", value: dateValue, icon: "calendar", iconColor: .appTextSecondary, index: 2)
+            row(.date, label: L("Tanggal"), value: dateValue, icon: "calendar", iconColor: .appTextSecondary, index: 2)
 
             HStack(spacing: 12) {
                 Text("Catatan")
@@ -659,6 +747,8 @@ struct AddTransactionView: View {
                     .font(.app(16, weight: .medium))
                     .foregroundStyle(Color.appText)
                     .submitLabel(.done)
+                    .focused($noteFocused)
+                    .onSubmit { noteFocused = false }
             }
             .frame(height: rowHeight)
             .padding(.leading, 24)
@@ -670,14 +760,17 @@ struct AddTransactionView: View {
     }
 
     private func row(_ kind: PickerKind, label: String, value: String, swatch: Color? = nil,
-                     icon: String? = nil, iconColor: Color = .appTextSecondary, sub: String? = nil, index: Int) -> some View {
+                     icon: String? = nil, iconColor: Color = .appTextSecondary, sub: String? = nil,
+                     isPlaceholder: Bool = false, isLocked: Bool = false, isAsset: Bool = false, index: Int) -> some View {
         Button {
             if done == nil { sheet = kind }
         } label: {
             DetailRow(label: label, value: value, swatch: swatch, icon: icon, iconColor: iconColor, sub: sub,
-                      showsChevron: true, height: rowHeight)
+                      showsChevron: true, isLocked: isLocked, isAsset: isAsset, height: rowHeight, isPlaceholder: isPlaceholder)
                 .background(flashed.contains(kind) ? style.color.opacity(0.1) : .clear)
                 .animation(.easeInOut(duration: 0.45), value: flashed)
+                .offset(x: kind == .category ? categoryShakeX : 0)
+                .animation(.easeOut(duration: 0.06), value: categoryShakeX)
         }
         .buttonStyle(.plain)
         .rise(isEntered, y: 14, delay: 0.2 + Double(index) * 0.06, fade: 0.4, move: 0.5)
@@ -701,14 +794,13 @@ struct AddTransactionView: View {
 
     private func billingText(card: Account) -> String {
         let billing = CreditStatement.billing(forPurchaseOn: date, card: card)
-        return "Tagihan " + TransactionDates.dayMonth.string(from: billing.statement)
-            + " · bayar " + TransactionDates.dayMonth.string(from: billing.due)
+        return L("Tagihan %@ · bayar %@", TransactionDates.dayMonth.string(from: billing.statement), TransactionDates.dayMonth.string(from: billing.due))
     }
 
     private func planText(card: Account) -> String {
         let monthly = Double(amount) / Double(max(1, planMonths))
         let billing = CreditStatement.billing(forPurchaseOn: date, card: card)
-        return "Rp" + monthly.formattedAsDigits() + "/bulan · mulai tagihan " + TransactionDates.dayMonth.string(from: billing.statement)
+        return L("Rp%@/bulan · mulai tagihan %@", monthly.formattedAsDigits(), TransactionDates.dayMonth.string(from: billing.statement))
     }
 
     private var dateValue: String {
@@ -736,7 +828,10 @@ struct AddTransactionView: View {
         guard done == nil, index != typeIndex, allowedTypes.contains(index) else { return }
         withAnimation(.settle(0.46)) { typeIndex = index }
         if !isTransfer {
-            category = typeCategories.first
+            assetMode = nil
+            category = nil
+            // Leaving a transfer that started from an investment wallet: spending can't sit there.
+            if account?.isInvestment == true { account = sourceAccounts.first }
         } else if target == nil || target?.id == account?.id {
             target = targetAccounts.first { $0.id != account?.id }
         }
@@ -763,18 +858,86 @@ struct AddTransactionView: View {
 
     @ViewBuilder
     private func pickerSheet(_ kind: PickerKind) -> some View {
+        switch kind {
+        case .category:
+            CategoryPickerSheet(title: sheetTitle(kind), categories: typeCategories, selectedId: category?.id,
+                                frequentIds: frequentCategoryIds, onDone: { sheet = nil }) { cat in
+                pick(.category) { category = cat }
+            }
+        case .account, .target:
+            walletSheet(kind)
+        default:
+            optionSheet(kind)
+        }
+    }
+
+    /// The wallet sheet. With an investment wallet around it explains the locks: where a deposit starts, where a
+    /// withdrawal ends, and why expenses and income can't use an asset.
+    private func walletSheet(_ kind: PickerKind) -> some View {
+        var list = kind == .target ? targetAccounts : sourceAccounts
+        var disabled: [String: String] = [:]
+        var kasNote: String?
+        var investmentNote: String?
+        var footer: WalletPickerSheet.Footer?
+        if isTransfer && hasInvestments {
+            switch (kind, assetMode) {
+            case (.account, .deposit): kasNote = L("Setor ke aset: sumber selalu dompet kas.")
+            case (.account, .withdraw): investmentNote = L("Tarik dari aset: sumber dikunci ke dompet Investasi.")
+            case (.account, nil): list = activeAccounts; investmentNote = L("Dompet Investasi hanya bisa jadi sumber untuk Tarik dari aset.")
+            case (_, .deposit): investmentNote = L("Setor ke aset: tujuan dikunci ke dompet Investasi.")
+            case (_, .withdraw):
+                list = cashWallets + investmentWallets
+                investmentWallets.forEach { disabled[$0.id] = L("Tidak bisa antar Investasi") }
+            default:
+                list = cashWallets + investmentWallets
+                if let account { disabled[account.id] = L("Dompet sumber") }
+                investmentNote = L("Memilih dompet Investasi mengubah transfer ini jadi Setor ke aset.")
+            }
+        } else if !isTransfer && hasInvestments {
+            let kindText = style.type == .income ? L("pemasukan") : L("pengeluaran")
+            footer = .init(text: L("Dompet Investasi tidak muncul di sini karena tidak bisa dipakai untuk %@.", kindText),
+                           actionTitle: L("Pakai uang aset? Catat Tarik dari aset")) {
+                sheet = nil
+                if let i = Self.types.firstIndex(where: { $0.type == .transfer }) { setType(i) }
+                setAssetMode(.withdraw)
+            }
+        }
+        return WalletPickerSheet(title: sheetTitle(kind), accounts: list,
+                                 selectedId: kind == .target ? target?.id : account?.id,
+                                 mainId: activeAccounts.first(where: \.isDefault)?.id,
+                                 recentIds: recentWalletIds(among: list), onDone: { sheet = nil },
+                                 onPick: { acc in pick(kind) { choose(acc, for: kind) } },
+                                 disabled: disabled, kasNote: kasNote, investmentNote: investmentNote, footer: footer)
+    }
+
+    /// The last three wallets used, newest first.
+    private func recentWalletIds(among list: [Account]) -> [String] {
+        let allowed = Set(list.map(\.id))
+        var seen: [String] = []
+        for txn in history.newestFirst() {
+            for id in [txn.accountId] + [txn.counterpartyAccountId].compactMap({ $0 }) where allowed.contains(id) && !seen.contains(id) {
+                seen.append(id)
+            }
+            if seen.count >= 3 { break }
+        }
+        return seen
+    }
+
+    /// The categories used most for this kind of transaction, most used first.
+    private var frequentCategoryIds: [String] {
+        let allowed = Set(typeCategories.map(\.id))
+        let counts = history.filter { $0.type == style.type }
+            .compactMap(\.categoryId).filter(allowed.contains)
+            .reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        return counts.sorted { $0.value > $1.value }.prefix(3).map(\.key)
+    }
+
+    @ViewBuilder
+    private func optionSheet(_ kind: PickerKind) -> some View {
         PickerSheet(title: sheetTitle(kind), onDone: { sheet = nil }) {
             switch kind {
-            case .category:
-                CategoryPickerGrid(categories: typeCategories, selectedId: category?.id, color: style.color) { cat in
-                    didPickCategory = true
-                    pick(.category) { category = cat }
-                }
-            case .account, .target:
-                WalletPickerGrid(accounts: kind == .target ? targetAccounts : activeAccounts,
-                                 selectedId: kind == .target ? target?.id : account?.id) { acc in
-                    pick(kind) { choose(acc, for: kind) }
-                }
+            case .category, .account, .target:
+                EmptyView()
             case .date:
                 DayPicker(selected: date, color: style.color) { day in
                     pick(.date) { date = keepingTime(of: date, on: day) }
@@ -787,11 +950,11 @@ struct AddTransactionView: View {
 
     private func sheetTitle(_ kind: PickerKind) -> String {
         switch kind {
-        case .category: "Kategori"
-        case .account: isTransfer ? "Dari dompet" : "Dompet"
-        case .target: "Ke dompet"
-        case .date: "Tanggal"
-        case .installment: "Cicilan 0%"
+        case .category: L("Kategori")
+        case .account: isTransfer ? L("Dari dompet") : L("Dompet")
+        case .target: L("Ke dompet")
+        case .date: L("Tanggal")
+        case .installment: L("Cicilan 0%")
         }
     }
 
@@ -803,7 +966,7 @@ struct AddTransactionView: View {
                     Button {
                         pick(.installment) { installmentMonths = months }
                     } label: {
-                        Text(months == 0 ? "Tidak" : "\(months) bulan")
+                        Text(months == 0 ? L("Tidak") : L("%lld bulan", months))
                             .font(.app(15, weight: .medium))
                             .foregroundStyle(isOn ? Color.appBackground : Color.appText)
                             .frame(maxWidth: .infinity)
@@ -823,16 +986,47 @@ struct AddTransactionView: View {
         .padding(.bottom, 24)
     }
 
-    /// Picking the other side of a transfer swaps the two wallets.
+    /// Picking the other side of a transfer swaps the two wallets; picking an investment wallet turns it into
+    /// a deposit or withdrawal.
     private func choose(_ acc: Account, for kind: PickerKind) {
         if kind == .target {
-            if acc.id == account?.id { account = target }
-            target = acc
+            if acc.isInvestment {
+                assetMode = .deposit
+                if account?.isInvestment != false { account = cashWallets.first }
+                target = acc
+            } else {
+                if acc.id == account?.id { account = target }
+                target = acc
+            }
+        } else if acc.isInvestment, isTransfer {
+            assetMode = .withdraw
+            account = acc
+            if target?.isInvestment != false { target = cashWallets.first }
         } else {
             if isTransfer, acc.id == target?.id {
-                target = account?.isCreditCard == false ? account : targetAccounts.first { $0.id != acc.id }
+                target = account.flatMap { WalletRules.canTransfer(from: acc, to: $0) ? $0 : nil }
+                    ?? WalletRules.transferTargets(from: acc, in: activeAccounts).first
             }
             account = acc
+        }
+    }
+
+    /// The three-way switch under the amount: between wallets, deposit to an asset, withdraw from an asset.
+    private func setAssetMode(_ mode: AssetMode?) {
+        guard done == nil, mode != assetMode else { return }
+        withAnimation(.settle(0.4)) {
+            assetMode = mode
+            switch mode {
+            case nil:
+                if account?.isInvestment != false { account = cashWallets.first ?? activeAccounts.first { !$0.isInvestment } }
+                target = cashWallets.first { $0.id != account?.id }
+            case .deposit:
+                if account?.isInvestment != false { account = cashWallets.first }
+                target = investmentWallets.first
+            case .withdraw:
+                account = investmentWallets.first
+                target = cashWallets.first
+            }
         }
     }
 
@@ -847,12 +1041,21 @@ struct AddTransactionView: View {
     private func save() {
         guard done == nil, !isSaving else { return }
         guard amount > 0 else {
-            shake()
+            shake($shakeX)
             return
         }
         guard let account else { return }
+        guard isTransfer || category != nil else {
+            shake($categoryShakeX)
+            return
+        }
         if isTransfer, target == nil || target?.id == account.id {
-            errorMessage = "Pilih dompet tujuan yang berbeda."
+            errorMessage = L("Pilih dompet tujuan yang berbeda.")
+            return
+        }
+        if let assetError {
+            errorMessage = assetError
+            shake($shakeX)
             return
         }
         let value = Double(amount)
@@ -890,7 +1093,7 @@ struct AddTransactionView: View {
                             onSave()
                             NotificationCenter.default.post(name: .dataDidChange, object: nil)
                             closesAfterAlert = true
-                            errorMessage = "Pengeluaran tersimpan, tapi cicilan gagal dibuat. " + error.localizedDescription
+                            errorMessage = L("Pengeluaran tersimpan, tapi cicilan gagal dibuat. %@", error.localizedDescription)
                             return
                         }
                     }
@@ -908,7 +1111,7 @@ struct AddTransactionView: View {
                             onSave()
                             NotificationCenter.default.post(name: .dataDidChange, object: nil)
                             closesAfterAlert = true
-                            errorMessage = "Pengeluaran tersimpan, tapi tagihan berulangnya gagal dibuat. " + error.localizedDescription
+                            errorMessage = L("Pengeluaran tersimpan, tapi tagihan berulangnya gagal dibuat. %@", error.localizedDescription)
                             return
                         }
                     }
@@ -935,31 +1138,47 @@ struct AddTransactionView: View {
         return formatter.string(from: date)
     }
 
+    /// "Total aset jadi Rp… · bukan pengeluaran" for a deposit, "Saldo kas jadi Rp… · bukan pemasukan" for a withdrawal.
+    private func transferFootnote(from account: Account, value: Double) -> String {
+        let now = WealthSummary(accounts: accounts)
+        switch assetMode {
+        case .deposit?: return L("Total aset jadi Rp%@ · bukan pengeluaran", (now.assets + value).formattedAsDigits())
+        case .withdraw?: return L("Saldo kas jadi Rp%@ · bukan pemasukan", (now.cash + value).formattedAsDigits())
+        case nil: return "\(account.name) → \(target?.name ?? "")"
+        }
+    }
+
     private func doneSummary(amount value: Double, account: Account) -> DoneSummary {
         let money = style.sign + "Rp" + value.formattedAsDigits()
         let day = TransactionDates.dayName(date)
         let detail = isTransfer
             ? money + " · " + day
-            : money + " · " + (category?.name ?? "Tanpa kategori") + " · " + day
+            : money + " · " + (category?.name ?? L("Tanpa kategori")) + " · " + day
         let footnote: String
         switch style.type {
         case .expense:
             let left = dailyBudget - spentOnDate - value
             footnote = dailyBudget <= 0 ? ""
-                : (left < 0 ? "Lewat budget " : "Sisa budget ") + TransactionDates.dayShort(date) + " Rp" + abs(left).formattedAsDigits()
+                : (left < 0 ? L("Lewat budget %@: Rp%@", TransactionDates.dayShort(date), abs(left).formattedAsDigits()) : L("Sisa budget %@: Rp%@", TransactionDates.dayShort(date), abs(left).formattedAsDigits()))
         case .income:
-            footnote = incomeText.replacingOccurrences(of: " jadi ", with: " sekarang ")
+            footnote = incomeMessage(done: true)
         default:
-            footnote = "\(account.name) → \(target?.name ?? "")"
+            footnote = transferFootnote(from: account, value: value)
         }
-        let title = editing == nil ? style.label + " tersimpan" : "Perubahan tersimpan"
+        let title: String
+        switch (editing == nil, assetMode) {
+        case (true, .deposit?): title = L("Setor ke aset tersimpan")
+        case (true, .withdraw?): title = L("Tarik dari aset tersimpan")
+        case (true, nil): title = L("%@ tersimpan", style.label)
+        default: title = L("Perubahan tersimpan")
+        }
         return DoneSummary(title: title, detail: detail, footnote: footnote)
     }
 
-    private func shake() {
+    private func shake(_ offset: Binding<CGFloat>) {
         Task {
             for x in [-10, 9, -6, 4, 0] as [CGFloat] {
-                shakeX = x
+                offset.wrappedValue = x
                 try? await Task.sleep(for: .milliseconds(60))
             }
         }
@@ -976,7 +1195,12 @@ struct DetailRow: View {
     /// A small grey line under the value.
     var sub: String?
     var showsChevron = false
+    /// A lock in place of the chevron, and a small "Aset" tag after the value (investment wallets).
+    var isLocked = false
+    var isAsset = false
     var height: CGFloat = 52
+    /// Nothing chosen yet: the value reads grey.
+    var isPlaceholder = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -994,10 +1218,21 @@ struct DetailRow: View {
                         .foregroundStyle(iconColor)
                 }
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(value)
-                        .font(.app(16, weight: .medium))
-                        .foregroundStyle(Color.appText)
-                        .lineLimit(1)
+                    HStack(spacing: 8) {
+                        Text(value)
+                            .font(.app(16, weight: .medium))
+                            .foregroundStyle(isPlaceholder ? Color.appTextTertiary : Color.appText)
+                            .lineLimit(1)
+                        if isAsset {
+                            Label(L("Aset"), systemImage: "chart.line.uptrend.xyaxis")
+                                .font(.app(11, weight: .bold))
+                                .foregroundStyle(Color.appInvestment)
+                                .padding(.horizontal, 7)
+                                .frame(height: 20)
+                                .background(Color.appInvestmentTint, in: Capsule())
+                                .fixedSize()
+                        }
+                    }
                     if let sub {
                         Text(sub)
                             .font(.app(12))
@@ -1008,8 +1243,8 @@ struct DetailRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
+            Image(systemName: isLocked ? "lock" : "chevron.right")
+                .font(.system(size: isLocked ? 14 : 13, weight: .semibold))
                 .foregroundStyle(Color(light: 0xC7C7CC, dark: 0x48484A))
                 .opacity(showsChevron ? 1 : 0)
                 .animation(.easeInOut(duration: 0.25), value: showsChevron)

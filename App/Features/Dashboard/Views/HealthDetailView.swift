@@ -10,7 +10,7 @@ struct HealthDetailView: View {
                 hero
                 SectionDivider()
                 factorsSection
-                if !health.isHealthy, !health.recommendations.isEmpty {
+                if !health.recommendations.isEmpty {
                     SectionDivider()
                     recommendationsSection
                 }
@@ -45,9 +45,18 @@ struct HealthDetailView: View {
                         .foregroundStyle(Color.appTextSecondary)
                 }
                 Spacer()
-                Text(health.label)
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(health.color)
+                if let label = health.label {
+                    Text(label)
+                        .font(.app(17, weight: .semibold))
+                        .foregroundStyle(health.color)
+                } else {
+                    Text("Sementara")
+                        .font(.app(14, weight: .semibold))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        .background(Color.appFill, in: Capsule())
+                }
             }
 
             SegmentBar(value: Double(health.score) / 100, color: health.color, count: 40, height: 22, spacing: 3)
@@ -65,16 +74,18 @@ struct HealthDetailView: View {
     }
 
     private var verdict: String {
-        if health.isHealthy { return "Keuanganmu sehat. Pertahankan kebiasaan ini." }
-        guard let weakest = health.weakest else { return "" }
-        return "\(weakest.title) paling menahan skormu. Perbaiki itu dulu untuk menambah hingga \(weakest.missing) poin."
+        if health.isHealthy { return L("Keuanganmu sehat. Pertahankan kebiasaan ini.") }
+        guard let weakest = health.weakest else {
+            return health.isProvisional ? L("Skor sementara. Skor lengkap muncul setelah 3 bulan pemakaian.") : ""
+        }
+        return L("%@ paling menahan skormu. Perbaiki itu dulu untuk menambah hingga %lld poin.", weakest.title, weakest.missing)
     }
 
     // MARK: Factors
 
     private var factorsSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Yang memengaruhi skor")
+            SectionHeader(title: L("Yang memengaruhi skor"))
             ForEach(health.factors) { factor in
                 factorRow(factor)
             }
@@ -96,7 +107,7 @@ struct HealthDetailView: View {
                         .font(.app(16, weight: .medium))
                         .foregroundStyle(Color.appText)
                     Spacer()
-                    (Text("\(factor.points)").foregroundStyle(Color.appText)
+                    (Text(factor.isPending ? "–" : "\(factor.points)").foregroundStyle(Color.appText)
                      + Text("/\(factor.maxPoints)").foregroundStyle(Color.appTextTertiary))
                         .font(.app(15))
                         .monospacedDigit()
@@ -117,7 +128,7 @@ struct HealthDetailView: View {
 
     private var recommendationsSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Rekomendasi")
+            SectionHeader(title: L("Rekomendasi"))
             VStack(spacing: 10) {
                 ForEach(Array(health.recommendations.enumerated()), id: \.element.id) { index, factor in
                     recommendationCard(factor, number: index + 1)
@@ -142,10 +153,12 @@ struct HealthDetailView: View {
                         .font(.app(16, weight: .semibold))
                         .foregroundStyle(Color.appText)
                     Spacer()
-                    Text("+\(factor.missing) poin")
-                        .font(.app(13, weight: .medium))
-                        .foregroundStyle(Color.appPrimary)
-                        .monospacedDigit()
+                    if factor.missing > 0 {
+                        Text("+\(factor.missing) poin")
+                            .font(.app(13, weight: .medium))
+                            .foregroundStyle(Color.appPrimary)
+                            .monospacedDigit()
+                    }
                 }
                 Text(factor.tip ?? "")
                     .font(.app(15))

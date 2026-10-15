@@ -25,6 +25,8 @@ struct CreditStatement {
     let remaining: Double
     /// Debt not billed yet: charges since the cut-off and installment parts still to come.
     let unbilled: Double
+    /// Charges since the last cut-off (payments not netted): what the next statement will bill.
+    let currentPeriod: Double
     let status: Status
     /// What's left of the minimum payment after what was already paid.
     let minimumDue: Double
@@ -62,6 +64,9 @@ struct CreditStatement {
         for txn in transactions where txn.date >= boundary {
             let effect = Self.debtEffect(of: txn, on: card.id)
             changeSince += effect
+            // A balance adjustment made after the cut-off is debt the next statement bills; one dated
+            // on the cut-off day or before (see `lastCutoffNoon`) is part of the statement itself.
+            if txn.type == .adjustment, txn.accountId == card.id { changeSince += txn.delta ?? 0 }
             if txn.type == .transfer, txn.counterpartyAccountId == card.id { paidSince += txn.amount }
             if txn.type == .cardPayment, txn.accountId == card.id { paidSince += txn.amount }
         }
@@ -76,11 +81,18 @@ struct CreditStatement {
             unbilledParts += purchase.amount / Double(installment.months) * Double(installment.months - billed)
         }
 
-        let billedAmount = max(0, balanceAtCutoff - unbilledParts)
+        // A starting bill entered as "not printed yet" joins the statement at the cut-off it waited for.
+        var unbilledOpening = 0.0
+        if let until = card.openingUnbilledUntil.flatMap(Self.dateOnly.date(from:)), last < until {
+            unbilledOpening = card.openingBalance
+        }
+
+        let billedAmount = max(0, balanceAtCutoff - unbilledParts - unbilledOpening)
         statementAmount = billedAmount
         paid = paidSince
         remaining = max(0, billedAmount - paidSince)
         unbilled = max(0, card.balance - remaining)
+        currentPeriod = max(0, changeSince + paidSince)
 
         let minimum = billedAmount > 0 ? min(billedAmount, max(billedAmount * Self.minimumShare, Self.minimumFloor)) : 0
         minimumDue = max(0, minimum - paidSince)
@@ -118,12 +130,40 @@ struct CreditStatement {
         }
     }
 
+    private static let dateOnly: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    /// The next cut-off after today for a card cutting off on `statementDay`, as "yyyy-MM-dd".
+    static func nextCutoffString(statementDay: Int, today: Date = Date(), calendar: Calendar = .current) -> String {
+        let cycle = Cycle(statementDay: statementDay, dueDay: statementDay, calendar: calendar)
+        return dateOnly.string(from: cycle.cutoff(monthAfter: cycle.lastCutoff(before: calendar.startOfDay(for: today))))
+    }
+
+    /// Noon on the last cut-off day: a balance adjustment dated here lands in the printed statement.
+    static func lastCutoffNoon(statementDay: Int, today: Date = Date(), calendar: Calendar = .current) -> Date {
+        let cycle = Cycle(statementDay: statementDay, dueDay: statementDay, calendar: calendar)
+        let day = cycle.lastCutoff(before: calendar.startOfDay(for: today))
+        return calendar.date(byAdding: .hour, value: 12, to: day) ?? day
+    }
+
     /// The statement a purchase made on `date` lands on, and when that's due.
     static func billing(forPurchaseOn date: Date, card: Account, calendar: Calendar = .current) -> (statement: Date, due: Date) {
         let cycle = Cycle(card: card, calendar: calendar)
         let day = calendar.startOfDay(for: date)
         let statement = cycle.cutoff(monthAfter: cycle.lastCutoff(before: day))
         return (statement, cycle.dueDate(after: statement))
+    }
+
+    /// The cut-off the last part of an installment bought on `purchase` is billed on.
+    static func finalBillingDate(purchaseOn purchase: Date, months: Int, card: Account, calendar: Calendar = .current) -> Date {
+        let cycle = Cycle(card: card, calendar: calendar)
+        var cutoff = cycle.cutoff(monthAfter: cycle.lastCutoff(before: calendar.startOfDay(for: purchase)))
+        for _ in 1..<max(months, 1) { cutoff = cycle.cutoff(monthAfter: cutoff) }
+        return cutoff
     }
 
     /// Parts of an installment billed so far (0...months).
@@ -134,6 +174,53 @@ struct CreditStatement {
         return cycle.cutoffsReached(from: purchaseDate, through: last, cap: installment.months)
     }
 
+    // MARK: Billing cycles
+
+    /// One billing period of a card: the charges between two cut-offs and the payments made toward them.
+    struct BillingCycle: Identifiable {
+        let start: Date
+        /// The cut-off the period ends on; for the open period, the one it is waiting for.
+        let end: Date
+        let dueDate: Date
+        /// Not billed yet: after the last cut-off.
+        let isOpen: Bool
+        var transactions: [Transaction]
+        var charged: Double
+        var paid: Double
+        var id: Date { end }
+    }
+
+    /// The card's periods, newest first: the open one, then each billed one back to its first transaction.
+    /// A payment counts toward the statement printed before the day it was made.
+    static func cycles(card: Account, transactions: [Transaction], today: Date = Date(),
+                       calendar: Calendar = .current, maxCycles: Int = 24) -> [BillingCycle] {
+        guard card.isCreditCard else { return [] }
+        let cycle = Cycle(card: card, calendar: calendar)
+        let todayStart = calendar.startOfDay(for: today)
+        let earliest = transactions.map { calendar.startOfDay(for: $0.date) }.min() ?? todayStart
+
+        let last = cycle.lastCutoff(before: todayStart)
+        var ends = [cycle.cutoff(monthAfter: last), last]
+        func start(of end: Date) -> Date { cycle.dayAfter(cycle.lastCutoff(before: end)) }
+        while ends.count < maxCycles, let tail = ends.last, start(of: tail) > earliest {
+            ends.append(cycle.lastCutoff(before: tail))
+        }
+        var result = ends.enumerated().map { index, end in
+            BillingCycle(start: start(of: end), end: end, dueDate: cycle.dueDate(after: end),
+                         isOpen: index == 0, transactions: [], charged: 0, paid: 0)
+        }
+        func index(of day: Date) -> Int? { result.firstIndex { day >= $0.start && day <= $0.end } }
+
+        for txn in transactions.sorted(by: { $0.date > $1.date }) {
+            guard let own = index(of: calendar.startOfDay(for: txn.date)) else { continue }
+            let effect = debtEffect(of: txn, on: card.id)
+            let target = effect < 0 && own + 1 < result.count ? own + 1 : own
+            result[target].transactions.append(txn)
+            if effect > 0 { result[target].charged += effect } else if effect < 0 { result[target].paid -= effect }
+        }
+        return result
+    }
+
     // MARK: Cycle dates
 
     /// Cut-off and due days of one card, clamped to each month's length.
@@ -141,6 +228,12 @@ struct CreditStatement {
         let statementDay: Int
         let dueDay: Int
         let calendar: Calendar
+
+        init(statementDay: Int, dueDay: Int, calendar: Calendar) {
+            self.statementDay = statementDay
+            self.dueDay = dueDay
+            self.calendar = calendar
+        }
 
         init(card: Account, calendar: Calendar) {
             // Cards saved before cut-off existed: assume the statement prints 15 days before the due day.

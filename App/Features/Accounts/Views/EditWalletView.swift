@@ -11,6 +11,9 @@ struct WalletEdit {
     var dueDay: Int?
     var statementDay: Int?     // cut-off, credit only
     var isDefault: Bool
+    /// Card only: how much the printed bill and the running bill each changed (0 = untouched).
+    var billedDelta: Double = 0
+    var runningDelta: Double = 0
 }
 
 /// Ubah dompet (design "Edit Dompet" 1a–1c): the same card-as-form as Tambah dompet, every change
@@ -21,23 +24,39 @@ struct EditWalletView: View {
 
     private let account: Account
     private let transactionCount: Int
+    /// Credit cards: the printed bill still owed, and the running bill after it.
+    private let statementBilled: Int
+    private let statementRunning: Int
     private let onSave: (WalletEdit) async -> Bool
     private let onArchive: () async -> Bool
     private let onUnarchive: () async -> Bool
     private let onDelete: () async -> Bool
+    /// Investment wallets: the capital put in, the totals for the archive/delete warning, and Perbarui nilai.
+    private let capital: Double
+    private let wealth: WealthSummary?
+    private let onUpdateValue: (() -> Void)?
 
-    init(account: Account, transactionCount: Int,
+    init(account: Account, transactionCount: Int, billed: Double? = nil, running: Double? = nil,
+         capital: Double = 0, wealth: WealthSummary? = nil, onUpdateValue: (() -> Void)? = nil,
          onSave: @escaping (WalletEdit) async -> Bool,
          onArchive: @escaping () async -> Bool,
          onUnarchive: @escaping () async -> Bool,
          onDelete: @escaping () async -> Bool) {
         self.account = account
         self.transactionCount = transactionCount
+        self.capital = capital
+        self.wealth = wealth
+        self.onUpdateValue = onUpdateValue
         self.onSave = onSave
         self.onArchive = onArchive
         self.onUnarchive = onUnarchive
         self.onDelete = onDelete
-        let draft = Draft(account)
+        var draft = Draft(account)
+        // Without a statement the whole debt counts as the printed bill.
+        draft.billed = Int((billed ?? account.balance).rounded())
+        draft.running = Int((running ?? 0).rounded())
+        statementBilled = draft.billed
+        statementRunning = draft.running
         _orig = State(initialValue: draft)
         _cur = State(initialValue: draft)
         _isArchived = State(initialValue: account.isArchived)
@@ -51,6 +70,9 @@ struct EditWalletView: View {
         var network: String?
         /// Saldo, or the current bill for a card.
         var balance: Int
+        /// Card: the two parts of `balance`, edited separately.
+        var billed = 0
+        var running = 0
         var limit: Int
         var dueDay: Int?
         var statementDay: Int?
@@ -69,7 +91,7 @@ struct EditWalletView: View {
         }
     }
 
-    private enum Field { case balance, limit }
+    private enum Field { case balance, limit, billed, running }
 
     private enum Sheet: Identifiable {
         case provider, network, due, statement, amount(Field), archive
@@ -79,18 +101,17 @@ struct EditWalletView: View {
     @State private var orig: Draft
     @State private var cur: Draft
     @State private var isArchived: Bool
+    /// Total aset just before archiving, since `wealth` is recomputed once the wallet is out of it.
+    @State private var assetsBeforeArchive: Double?
     @State private var sheet: Sheet?
     @State private var isSaving = false
     @State private var isBusy = false
     /// Save feedback: check badge + card pop, then the toast.
     @State private var saved = false
     @State private var toast = false
-    @State private var toastText = "Perubahan disimpan"
+    @State private var toastText = L("Perubahan disimpan")
     @State private var pop = false
     // Number pad
-    @State private var buf = 0
-    @State private var fresh = true
-    @State private var bump = false
     // End screen after archive
     @State private var endShown = false
     // Delete: ask, then a few seconds to undo before it really happens (like a transaction).
@@ -103,6 +124,7 @@ struct EditWalletView: View {
 
     private var isCredit: Bool { account.type == .credit }
     private var isCash: Bool { account.type == .cash }
+    private var isInvestment: Bool { account.isInvestment }
     private var trimmedName: String { cur.name.trimmingCharacters(in: .whitespaces) }
     private var isDirty: Bool { cur != orig }
     private var canSave: Bool { isDirty && !trimmedName.isEmpty && !isSaving }
@@ -121,7 +143,7 @@ struct EditWalletView: View {
         case .bank: WalletIcon.icons(for: .bank)
         case .ewallet: WalletIcon.icons(for: .ewallet)
         case .credit: AddWalletView.issuers.compactMap { issuer in WalletIcon.allIcons.first { $0.id == issuer.id } }
-        case .cash: []
+        case .cash, .investment: []
         }
     }
 
@@ -136,14 +158,15 @@ struct EditWalletView: View {
 
     private var typeLabel: String {
         switch account.type {
-        case .bank: "Bank"
-        case .ewallet: "E-wallet"
-        case .cash: "Tunai"
-        case .credit: "Kartu kredit"
+        case .bank: L("Bank")
+        case .ewallet: L("E-wallet")
+        case .cash: L("Tunai")
+        case .credit: L("Kartu kredit")
+        case .investment: L("Investasi")
         }
     }
 
-    private var providerLabel: String { isCredit ? "Bank penerbit" : account.type == .bank ? "Bank" : "E-wallet" }
+    private var providerLabel: String { isCredit ? L("Bank penerbit") : account.type == .bank ? L("Bank") : L("E-wallet") }
 
     private static func rp(_ value: Int) -> String { Double(value).formattedAsCurrency() }
 
@@ -158,9 +181,6 @@ struct EditWalletView: View {
                 formRows
                     .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
                     .padding(.top, 24)
-                actionRows
-                    .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-                    .padding(.top, 28)
                 Text("\(transactionCount) transaksi")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextTertiary)
@@ -168,11 +188,14 @@ struct EditWalletView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
                     .padding(.top, 14)
-                    .padding(.bottom, 60)
+                    .padding(.bottom, 24)
             }
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !nameFocused { actionBar }
+        }
         .opacity(isDeleting ? 0.3 : 1)
         .allowsHitTesting(!isDeleting)
         .animation(.easeInOut(duration: 0.4), value: isDeleting)
@@ -279,7 +302,7 @@ struct EditWalletView: View {
                     }
                     HStack(alignment: .bottom, spacing: 10) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(isCredit ? "Sisa limit" : "Saldo").font(.app(12)).foregroundStyle(.white.opacity(0.8))
+                            Text(isCredit ? L("Sisa limit") : L("Saldo")).font(.app(12)).foregroundStyle(.white.opacity(0.8))
                             Text(Self.rp(isCredit ? max(cur.limit - cur.balance, 0) : cur.balance))
                                 .font(.app(32))
                                 .tracking(-0.8)
@@ -297,7 +320,7 @@ struct EditWalletView: View {
                                         .transition(.scale(scale: 0.8, anchor: .trailing).combined(with: .opacity))
                                 }
                                 Text("Jatuh tempo").font(.app(12)).foregroundStyle(.white.opacity(0.8))
-                                Text(cur.dueDay.map { "Tgl \($0)" } ?? "—")
+                                Text(cur.dueDay.map { L("Tgl %lld", $0) } ?? "—")
                                     .font(.app(15, weight: .semibold))
                                     .monospacedDigit()
                                     .contentTransition(.numericText())
@@ -332,7 +355,7 @@ struct EditWalletView: View {
 
     private var formRows: some View {
         VStack(spacing: 0) {
-            rowContent("Tipe") {
+            rowContent(L("Tipe")) {
                 HStack(spacing: 8) {
                     Image(systemName: account.type.cardSymbol)
                         .font(.system(size: 17))
@@ -346,7 +369,7 @@ struct EditWalletView: View {
                     .accessibilityLabel("Terkunci")
             }
 
-            if !isCash {
+            if !isCash && !isInvestment {
                 tapRow(providerLabel, open: .provider) {
                     HStack(spacing: 10) {
                         logoChip {
@@ -356,24 +379,34 @@ struct EditWalletView: View {
                                 Image(systemName: account.type.cardSymbol).font(.system(size: 11)).foregroundStyle(Color.appTextSecondary)
                             }
                         }
-                        Text(currentProvider?.name ?? "Lainnya").font(.app(16, weight: .medium))
+                        Text(currentProvider?.name ?? L("Lainnya")).font(.app(16, weight: .medium))
                     }
                 } trailing: { chevron }
             }
 
             if isCredit {
-                tapRow("Jenis kartu", open: .network) {
+                tapRow(L("Jenis kartu"), open: .network) {
                     HStack(spacing: 10) {
                         logoChip { networkLogo(cur.network, width: 24, height: 14, gpnSize: 9) }
-                        Text(networkLabel(cur.network) ?? "Pilih").font(.app(16, weight: .medium))
+                        Text(networkLabel(cur.network) ?? L("Pilih")).font(.app(16, weight: .medium))
                     }
                 } trailing: { chevron }
             }
 
-            if isCash {
-                rowContent("Warna", height: 60) {
+            if isInvestment {
+                // The icon and the capital are shown, not edited (no screens for them in the design).
+                rowContent(L("Ikon")) {
+                    HStack(spacing: 8) {
+                        Image(systemName: account.typeSymbol).font(.system(size: 17)).foregroundStyle(Color.appInvestment)
+                        Text(account.icon == "emas" ? L("Koin") : L("Grafik naik")).font(.app(16, weight: .medium))
+                    }
+                } trailing: { EmptyView() }
+            }
+
+            if isCash || isInvestment {
+                rowContent(L("Warna"), height: 60) {
                     HStack(spacing: 10) {
-                        ForEach(AddWalletView.swatches, id: \.self) { hex in
+                        ForEach(isInvestment ? AddWalletView.investmentSwatches : AddWalletView.swatches, id: \.self) { hex in
                             let on = cur.color == hex
                             Button { withAnimation(.easeInOut(duration: 0.3)) { cur.color = hex } } label: {
                                 Circle()
@@ -392,16 +425,29 @@ struct EditWalletView: View {
             }
 
             if isCredit {
-                amountRow("Limit kredit", value: cur.limit, action: "Ubah", field: .limit)
-                amountRow("Tagihan saat ini", value: cur.balance, action: "Sesuaikan", field: .balance)
-                tapRow("Jatuh tempo", open: .due) {
-                    Text(cur.dueDay.map { "Tanggal \($0)" } ?? "—").font(.app(16, weight: .medium)).monospacedDigit()
+                amountRow(L("Limit kredit"), value: cur.limit, action: L("Ubah"), field: .limit)
+                amountRow(L("Tagihan terbit"), value: cur.billed, action: L("Sesuaikan"), field: .billed)
+                amountRow(L("Tagihan berjalan"), value: cur.running, action: L("Sesuaikan"), field: .running)
+                tapRow(L("Jatuh tempo"), open: .due) {
+                    Text(cur.dueDay.map { L("Tanggal %lld", $0) } ?? "—").font(.app(16, weight: .medium)).monospacedDigit()
                 } trailing: { chevron }
-                tapRow("Cetak tagihan", open: .statement) {
-                    Text(cur.statementDay.map { "Tanggal \($0)" } ?? "—").font(.app(16, weight: .medium)).monospacedDigit()
+                tapRow(L("Cetak tagihan"), open: .statement) {
+                    Text(cur.statementDay.map { L("Tanggal %lld", $0) } ?? "—").font(.app(16, weight: .medium)).monospacedDigit()
                 } trailing: { chevron }
+            } else if isInvestment {
+                Button { onUpdateValue?() } label: {
+                    rowContent(L("Nilai saat ini")) {
+                        Text(Self.rp(Int(account.balance.rounded()))).font(.app(16, weight: .medium)).monospacedDigit()
+                    } trailing: {
+                        Text("Perbarui nilai").font(.app(15)).foregroundStyle(Color.appPrimary)
+                    }
+                }
+                .buttonStyle(RowHighlightStyle())
+                rowContent(L("Modal disetor")) {
+                    Text(Self.rp(Int(capital.rounded()))).font(.app(16, weight: .medium)).monospacedDigit()
+                } trailing: { EmptyView() }
             } else {
-                amountRow("Saldo saat ini", value: cur.balance, action: "Sesuaikan", field: .balance)
+                amountRow(L("Saldo saat ini"), value: cur.balance, action: L("Sesuaikan"), field: .balance)
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Dompet utama").font(.app(16))
@@ -419,35 +465,37 @@ struct EditWalletView: View {
         }
     }
 
-    private var actionRows: some View {
-        VStack(spacing: 0) {
+    /// Arsipkan and Hapus: two pills pinned over a white fade, so they stay reachable while the form scrolls.
+    private var actionBar: some View {
+        HStack(spacing: 12) {
             Button {
                 if isArchived { Task { await unarchive(fromEnd: false) } } else { sheet = .archive }
             } label: {
-                actionLabel(isArchived ? "Pulihkan dompet" : "Arsipkan dompet",
-                            icon: isArchived ? "arrow.uturn.backward" : "archivebox", tint: Color.appText)
+                Label(isArchived ? L("Pulihkan") : L("Arsipkan"), systemImage: isArchived ? "arrow.uturn.backward" : "archivebox")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(Color.appBackground, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
             }
-            .buttonStyle(RowHighlightStyle())
+            .buttonStyle(PressScaleStyle())
             .disabled(isBusy)
 
             Button { nameFocused = false; isConfirmingDelete = true } label: {
-                actionLabel("Hapus dompet", icon: "trash", tint: Color.appError)
+                Label(L("Hapus"), systemImage: "trash")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(Color.appError)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(Color.appError.opacity(0.1), in: Capsule())
             }
-            .buttonStyle(RowHighlightStyle(tint: Color.appError.opacity(0.06)))
+            .buttonStyle(PressScaleStyle())
         }
-    }
-
-    private func actionLabel(_ title: String, icon: String, tint: Color) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon).font(.system(size: 19)).frame(width: 24)
-            Text(title).font(.app(16))
-            Spacer(minLength: 0)
-        }
-        .foregroundStyle(tint)
         .padding(.horizontal, 24)
-        .frame(height: 52)
-        .contentShape(Rectangle())
-        .rowSeparator()
+        .padding(.top, 40)
+        .padding(.bottom, 8)
+        .background {
+            LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .init(x: 0.5, y: 0.4))
+        }
     }
 
     private func rowContent<V: View, T: View>(_ label: String, height: CGFloat = 52,
@@ -520,25 +568,34 @@ struct EditWalletView: View {
     private func sheetView(_ s: Sheet) -> some View {
         switch s {
         case .provider:
-            SheetFrame(title: isCredit ? "Bank penerbit" : account.type == .bank ? "Pilih bank" : "Pilih e-wallet",
-                       closeTitle: "Selesai", onClose: closeSheet) { providerGrid }
+            SheetFrame(title: isCredit ? L("Bank penerbit") : account.type == .bank ? L("Pilih bank") : L("Pilih e-wallet"),
+                       closeTitle: L("Selesai"), onClose: closeSheet) { providerGrid }
         case .network:
-            SheetFrame(title: "Jenis kartu", closeTitle: "Selesai", onClose: closeSheet) { networkList }
+            SheetFrame(title: L("Jenis kartu"), closeTitle: L("Selesai"), onClose: closeSheet) { networkList }
         case .due:
-            SheetFrame(title: "Jatuh tempo", closeTitle: "Selesai", onClose: closeSheet) {
-                dayGrid(\.dueDay, note: "Tagihan dicatat sebagai utang dan tidak mengurangi total saldo.")
+            SheetFrame(title: L("Jatuh tempo"), closeTitle: L("Selesai"), onClose: closeSheet) {
+                dayGrid(\.dueDay, note: L("Tagihan dicatat sebagai utang dan tidak mengurangi total saldo."))
             }
         case .statement:
-            SheetFrame(title: "Tanggal cetak tagihan", closeTitle: "Selesai", onClose: closeSheet) {
-                dayGrid(\.statementDay, note: "Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya.")
+            SheetFrame(title: L("Tanggal cetak tagihan"), closeTitle: L("Selesai"), onClose: closeSheet) {
+                dayGrid(\.statementDay, note: L("Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya."))
             }
         case .amount(let field):
-            SheetFrame(title: field == .limit ? "Limit kredit" : isCredit ? "Sesuaikan tagihan" : "Sesuaikan saldo",
-                       closeTitle: "Batal", onClose: closeSheet) { numpad(field) }
+            AdjustAmountView(account: account, kind: adjustKind(field), current: adjustValue(field),
+                             limit: cur.limit, total: cur.balance) { value in
+                withAnimation(.settle(0.42)) {
+                    switch field {
+                    case .limit: cur.limit = value
+                    case .balance: cur.balance = value
+                    case .billed: cur.billed = value; cur.balance = cur.billed + cur.running
+                    case .running: cur.running = value; cur.balance = cur.billed + cur.running
+                    }
+                }
+            }
         case .archive:
-            SheetFrame(title: "Arsipkan \(orig.name)?", closeTitle: "Batal", onClose: closeSheet) {
-                confirm(text: "Dompet disembunyikan dari daftar dan total saldo. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja.",
-                        button: "Arsipkan", icon: "archivebox", destructive: false) { await archive() }
+            SheetFrame(title: L("Arsipkan %@?", orig.name), closeTitle: L("Batal"), onClose: closeSheet) {
+                confirm(text: L("Dompet disembunyikan dari daftar dan total saldo. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja."),
+                        button: L("Arsipkan"), icon: "archivebox", destructive: false) { await archive() }
             }
         }
     }
@@ -638,81 +695,42 @@ struct EditWalletView: View {
         .padding(.bottom, 8)
     }
 
-    private func numpad(_ field: Field) -> some View {
-        let prev = field == .limit ? cur.limit : cur.balance
-        let delta = buf - prev
-        let isSaldo = field == .balance && !isCredit
-        let chipBg = isSaldo ? (delta > 0 ? Color.appPrimary.opacity(0.12) : Color.appError.opacity(0.12)) : Color.appFill
-        let chipFg = isSaldo ? (delta > 0 ? Color.appPrimary : Color.appError) : Color.appBody
-        return VStack(spacing: 0) {
-            VStack(spacing: 8) {
-                HStack(alignment: .top, spacing: 4) {
-                    Text("Rp").font(.app(20)).foregroundStyle(Color.appTextSecondary).padding(.top, 7)
-                    Text(Double(buf).formattedAsDigits())
-                        .font(.app(48, weight: .light))
-                        .tracking(-1.8)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .opacity(fresh ? 0.4 : 1)
-                        .animation(.easeInOut(duration: 0.2), value: fresh)
-                        .contentTransition(.numericText())
-                }
-                .monospacedDigit()
-                .scaleEffect(bump ? 1.04 : 1)
-                .animation(.easeOut(duration: 0.14), value: bump)
 
-                HStack(spacing: 8) {
-                    Text("Sebelumnya \(Self.rp(prev))")
-                    Text((delta > 0 ? "+" : delta < 0 ? "−" : "") + Self.rp(abs(delta)))
-                        .font(.app(13, weight: .semibold))
-                        .foregroundStyle(chipFg)
-                        .padding(.horizontal, 9)
-                        .frame(height: 24)
-                        .background(chipBg, in: Capsule())
-                        .opacity(delta != 0 ? 1 : 0)
-                        .scaleEffect(delta != 0 ? 1 : 0.6)
-                        .animation(.spring(duration: 0.38, bounce: 0.5), value: delta != 0)
-                        .animation(.easeInOut(duration: 0.22), value: delta > 0)
+    /// "Total aset akan berkurang Rp…" with the totals before and after, for an investment wallet worth something.
+    @ViewBuilder
+    private func assetWarning(destructive: Bool) -> some View {
+        if isInvestment, orig.balance > 0, let wealth {
+            let value = Double(orig.balance)
+            let ink = destructive ? Color.appError : Color(light: 0xC2410C, dark: 0xFFB340)
+            let fill = destructive ? Color(light: 0xFDECEA, dark: 0x3A1C1A) : Color(light: 0xFFF1E8, dark: 0x3A2316)
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 18)).foregroundStyle(ink).padding(.top, 1)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L("Total aset akan berkurang %@", Self.rp(orig.balance)))
+                        .font(.app(16, weight: .semibold))
+                        .foregroundStyle(ink)
+                    warningLine(L("Total aset"), wealth.assets, wealth.assets - value)
+                    warningLine(L("Total kekayaan"), wealth.total, wealth.total - value)
                 }
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-                .monospacedDigit()
-
-                Text(field == .limit ? "Limit baru berlaku untuk perhitungan sisa limit."
-                     : "Selisihnya dicatat sebagai transaksi Penyesuaian saldo.")
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextTertiary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 8)
-            .padding(.bottom, 18)
-
-            GeometryReader { geo in
-                let side = (geo.size.width - 6) / 4
-                HStack(spacing: 6) {
-                    NumberPadKeys(onPress: press)
-                        .frame(width: geo.size.width - side - 6)
-                    Button { apply(field) } label: {
-                        VStack(spacing: 6) {
-                            Image(systemName: "checkmark").font(.system(size: 24, weight: .bold))
-                            Text("Terapkan").font(.app(14, weight: .semibold))
-                        }
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.appPrimary, in: RoundedRectangle(cornerRadius: 14))
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .frame(width: side)
-                }
-            }
-            .frame(height: 52 * 4 + 6 * 3)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(fill, in: RoundedRectangle(cornerRadius: 16))
         }
     }
 
-    /// Sheet copy plus one full-width capsule; `button` nil shows the explanation only.
+    private func warningLine(_ title: String, _ from: Double, _ to: Double) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title).font(.app(12)).foregroundStyle(Color.appBody).opacity(0.8)
+            (Text(Double(from).formattedAsCurrency() + " → ").foregroundStyle(Color.appBody)
+             + Text(Double(to).formattedAsCurrency()).fontWeight(.semibold).foregroundStyle(Color.appText))
+                .font(.app(14))
+                .monospacedDigit()
+                .lineLimit(1)
+        }
+    }
+
     private func confirm(text: String, button: String?, icon: String, destructive: Bool,
                          action: @escaping () async -> Void) -> some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -721,6 +739,7 @@ struct EditWalletView: View {
                 .foregroundStyle(Color.appBody)
                 .lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
+            assetWarning(destructive: false)
             if let button {
                 Button { Task { await action() } } label: {
                     HStack(spacing: 8) {
@@ -754,12 +773,12 @@ struct EditWalletView: View {
         let balance = Double(orig.balance)
         if isCredit {
             return balance > 0
-                ? "\(orig.name) dan utang \(Self.rp(orig.balance)) akan dihapus dari daftar dan total."
-                : "\(orig.name) akan dihapus dari daftar dompet."
+                ? L("%@ dan utang %@ akan dihapus dari daftar dan total.", orig.name, Self.rp(orig.balance))
+                : L("%@ akan dihapus dari daftar dompet.", orig.name)
         }
         return balance != 0
-            ? "\(orig.name) dan saldonya (\(Self.rp(orig.balance))) akan keluar dari total saldo."
-            : "\(orig.name) akan dihapus dari daftar dompet."
+            ? L("%@ dan saldonya (%@) akan keluar dari total saldo.", orig.name, Self.rp(orig.balance))
+            : L("%@ akan dihapus dari daftar dompet.", orig.name)
     }
 
     /// Bottom dialog: trash badge, title, what happens, a red Hapus and Batal. A wallet with
@@ -781,19 +800,20 @@ struct EditWalletView: View {
                             .font(.system(size: 22))
                             .foregroundStyle(blocked ? Color.appText : Color(light: 0xD1343A, dark: 0xFF6B6B))
                     }
-                Text(blocked ? "Dompet ini tidak bisa dihapus" : "Hapus dompet ini?")
+                Text(blocked ? L("Dompet ini tidak bisa dihapus") : L("Hapus dompet ini?"))
                     .font(.app(17, weight: .semibold))
                     .padding(.top, 8)
                 Text(blocked
-                     ? "\(orig.name) punya \(transactionCount) transaksi. "
-                        + (isArchived ? "Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan."
-                           : "Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan.")
+                     ? L("%@ punya %lld transaksi.", orig.name, transactionCount) + " "
+                        + (isArchived ? L("Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan.")
+                           : L("Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan."))
                      : deleteSubtitle)
                     .font(.app(15))
                     .foregroundStyle(Color.appTextSecondary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
+                if !blocked { assetWarning(destructive: true).padding(.vertical, 6) }
                 VStack(spacing: 8) {
                     if !blocked {
                         Button { startDelete() } label: {
@@ -818,7 +838,7 @@ struct EditWalletView: View {
                         }
                     }
                     Button { isConfirmingDelete = false } label: {
-                        Text(blocked && isArchived ? "Tutup" : "Batal")
+                        Text(blocked && isArchived ? L("Tutup") : L("Batal"))
                             .font(.app(16, weight: .medium))
                             .foregroundStyle(Color.appText)
                             .frame(maxWidth: .infinity)
@@ -835,7 +855,7 @@ struct EditWalletView: View {
             .padding(.bottom, 20)
             .background(Self.dialogBackground, in: UnevenRoundedRectangle(topLeadingRadius: 28, bottomLeadingRadius: 38, bottomTrailingRadius: 38, topTrailingRadius: 28))
             .padding(.horizontal, 8)
-            .offset(y: isConfirmingDelete ? 0 : 420)
+            .offset(y: isConfirmingDelete ? 0 : 760)
         }
         .animation(.settle(0.44), value: isConfirmingDelete)
     }
@@ -875,11 +895,13 @@ struct EditWalletView: View {
                 .foregroundStyle(Color.appText)
                 .scaleEffect(endShown ? 1 : 0.4)
                 .animation(.spring(duration: 0.56, bounce: 0.5).delay(endShown ? 0.12 : 0), value: endShown)
-            Text(orig.name + " diarsipkan")
+            Text(L("%@ diarsipkan", orig.name))
                 .font(.app(20, weight: .semibold))
                 .tracking(-0.2)
                 .padding(.top, 10)
-            Text("Kamu bisa memulihkannya dari Dompet › Diarsipkan.")
+            Text(isInvestment && wealth != nil
+                 ? L("Total aset sekarang %@. Pulihkan dari Dompet › Diarsipkan.", Self.rp(Int(max((assetsBeforeArchive ?? wealth?.assets ?? 0) - Double(orig.balance), 0))))
+                 : L("Kamu bisa memulihkannya dari Dompet › Diarsipkan."))
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
                 .lineSpacing(3)
@@ -956,29 +978,26 @@ struct EditWalletView: View {
         closeSoon()
     }
 
+    private func adjustKind(_ field: Field) -> AdjustAmountView.Kind {
+        switch field {
+        case .limit: .limit
+        case .balance: .balance
+        case .billed: .billed
+        case .running: .running
+        }
+    }
+
+    private func adjustValue(_ field: Field) -> Int {
+        switch field {
+        case .limit: cur.limit
+        case .balance: cur.balance
+        case .billed: cur.billed
+        case .running: cur.running
+        }
+    }
+
     private func openNumpad(_ field: Field) {
-        buf = field == .limit ? cur.limit : cur.balance
-        fresh = true
         sheet = .amount(field)
-    }
-
-    /// The first key replaces the old amount; after that keys append.
-    private func press(_ key: String) {
-        if fresh && key == "del" {
-            buf = 0
-        } else if let next = NumberPad.apply(key, to: fresh ? 0 : buf) {
-            withAnimation(.settle(0.2)) { buf = next }
-        }
-        fresh = false
-        bump = true
-        Task { try? await Task.sleep(for: .seconds(0.11)); bump = false }
-    }
-
-    private func apply(_ field: Field) {
-        withAnimation(.settle(0.42)) {
-            if field == .limit { cur.limit = buf } else { cur.balance = buf }
-        }
-        sheet = nil
     }
 
     private func save() {
@@ -994,16 +1013,18 @@ struct EditWalletView: View {
             creditLimit: isCredit ? Double(cur.limit) : nil,
             dueDay: isCredit ? cur.dueDay : nil,
             statementDay: isCredit ? cur.statementDay : nil,
-            isDefault: cur.isDefault
+            isDefault: cur.isDefault,
+            billedDelta: isCredit ? Double(cur.billed - orig.billed) : 0,
+            runningDelta: isCredit ? Double(cur.running - orig.running) : 0
         )
         Task {
             let ok = await onSave(edit)
             isSaving = false
-            guard ok else { failMessage = "Gagal menyimpan perubahan"; return }
+            guard ok else { failMessage = L("Gagal menyimpan perubahan"); return }
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             cur.name = trimmedName
             orig = cur
-            toastText = "Perubahan disimpan"
+            toastText = L("Perubahan disimpan")
             saved = true
             toast = true
             try? await Task.sleep(for: .seconds(1.4))
@@ -1013,9 +1034,10 @@ struct EditWalletView: View {
 
     private func archive() async {
         isBusy = true
+        assetsBeforeArchive = wealth?.assets
         let ok = await onArchive()
         isBusy = false
-        guard ok else { failMessage = "Gagal mengarsipkan dompet"; return }
+        guard ok else { failMessage = L("Gagal mengarsipkan dompet"); return }
         isArchived = true
         await showEnd()
     }
@@ -1043,7 +1065,7 @@ struct EditWalletView: View {
             if ok {
                 if dismissAfter { dismiss() }
             } else {
-                failMessage = "Gagal menghapus dompet"
+                failMessage = L("Gagal menghapus dompet")
             }
         }
     }
@@ -1061,12 +1083,12 @@ struct EditWalletView: View {
         isBusy = true
         let ok = await onUnarchive()
         isBusy = false
-        guard ok else { failMessage = "Gagal memulihkan dompet"; return }
+        guard ok else { failMessage = L("Gagal memulihkan dompet"); return }
         isArchived = false
         if fromEnd {
             endShown = false
         } else {
-            toastText = "Dompet dipulihkan"
+            toastText = L("Dompet dipulihkan")
             toast = true
         }
     }

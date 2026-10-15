@@ -79,7 +79,7 @@ struct SwipeToConfirm: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(label)
             .accessibilityAddTraits(.isButton)
-            .accessibilityHint(isEnabled ? "Ketuk dua kali untuk konfirmasi" : "")
+            .accessibilityHint(isEnabled ? L("Ketuk dua kali untuk konfirmasi") : "")
             .accessibilityAction { isEnabled ? finish(maxX: maxX) : onBlocked() }
         }
         .frame(height: Self.height)

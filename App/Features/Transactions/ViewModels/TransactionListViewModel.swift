@@ -12,6 +12,8 @@ final class TransactionListViewModel: ObservableObject {
     @Published var allTransactions: [Transaction] = []
     @Published var categories: [Category] = []
     @Published var accounts: [Account] = []
+    /// 0% card installments, for the "Cicilan berjalan" marker above the list.
+    @Published var installments: [CardInstallment] = []
     @Published var thisMonthIncome: Double = 0
     @Published var thisMonthExpense: Double = 0
     @Published var isLoading = false
@@ -21,6 +23,19 @@ final class TransactionListViewModel: ObservableObject {
     private var loadedUserId: String?
 
     var thisMonthBalance: Double { thisMonthIncome - thisMonthExpense }
+
+    /// Installments still being billed at the end of the current payday period.
+    var runningInstallments: [RunningInstallment] {
+        guard !installments.isEmpty else { return [] }
+        let end = PaydayCycle.current.period(containing: Date()).end.addingTimeInterval(-1)
+        return RunningInstallments.compute(installments: installments, transactions: allTransactions, accounts: accounts, periodEnd: end)
+    }
+
+    private func refreshInstallments() async {
+        let ids = accounts.filter(\.isCreditCard).map(\.id)
+        guard !ids.isEmpty else { installments = []; return }
+        if let fetched = try? await SupabaseRepository.shared.fetchInstallments(accountIds: ids) { installments = fetched }
+    }
 
     func loadTransactions(userId: String, forceRefresh: Bool = false) async {
         guard !isLoading, !isRefreshing else { return }
@@ -33,6 +48,7 @@ final class TransactionListViewModel: ObservableObject {
             calculateThisMonthSummary()
             loadedUserId = userId
             hasLoadedOnce = true
+            await refreshInstallments()
             return
         }
 
@@ -63,6 +79,7 @@ final class TransactionListViewModel: ObservableObject {
             AppDataCache.shared.setTransactionState(.init(transactions: allTransactions, categories: categories, accounts: accounts), for: userId)
             loadedUserId = userId
             hasLoadedOnce = true
+            await refreshInstallments()
         } catch {
             if error is CancellationError { return }
             errorMessage = error.localizedDescription
@@ -70,13 +87,10 @@ final class TransactionListViewModel: ObservableObject {
         }
     }
 
+    /// "Bulan ini" runs from payday, the same period the Beranda summary uses.
     private func calculateThisMonthSummary() {
-        let calendar = Calendar.current
-        let now = Date()
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
-              let nextMonth = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return }
-
-        let thisMonth = allTransactions.filter { $0.date >= monthStart && $0.date < nextMonth }
+        let cycle = PaydayCycle.current
+        let thisMonth = allTransactions.filter { cycle.contains($0.date) }
         thisMonthIncome = thisMonth.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
         thisMonthExpense = thisMonth.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
     }
@@ -88,7 +102,7 @@ final class TransactionListViewModel: ObservableObject {
         }
 
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = AppLanguage.locale
         formatter.dateFormat = "MMMM yyyy"
 
         return grouped.map { month, items in
@@ -98,7 +112,7 @@ final class TransactionListViewModel: ObservableObject {
                 id: "\(calendar.component(.year, from: month))-\(calendar.component(.month, from: month))",
                 month: month,
                 label: label,
-                transactions: items.sorted { $0.date > $1.date }
+                transactions: items.newestFirst()
             )
         }
         .sorted { $0.month > $1.month }

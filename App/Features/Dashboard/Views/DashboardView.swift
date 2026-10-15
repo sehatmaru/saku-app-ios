@@ -10,6 +10,10 @@ struct DashboardView: View {
     }
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
+@AppStorage(SmartTrackerWays.quickKey) private var smartQuickOn = true
+@ObservedObject private var smartGate = SmartButtonGate.shared
+@ObservedObject private var draftStore = DraftStore.shared
+@State private var showsConsent = false
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
     @State private var isChartShown = false
     /// Day index picked in the "Bulan ini" chart; nil means today.
@@ -21,6 +25,7 @@ struct DashboardView: View {
     @State private var didWelcome = false
     /// "Tambah dompet" on the empty Beranda opens Dompet straight into the add sheet.
     @State private var addsWalletOnOpen = false
+    @AppStorage(HomeBalanceSetting.key) private var homeBalanceMode = HomeBalanceMode.cash.rawValue
     @State private var showsSafeInfo = false
     /// Catat tagihan for an overdue card bill, from the banner or a notification.
     /// Kept as the bill it was opened with, so the sheet survives the reload after paying.
@@ -28,6 +33,7 @@ struct DashboardView: View {
     @State private var toastText = ""
     @State private var isToastShown = false
     @ObservedObject private var notificationRouter = NotificationRouter.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     enum AppTab: Hashable {
         case home, transactions, budget, profile
@@ -38,6 +44,7 @@ struct DashboardView: View {
     /// Pages pushed on Beranda by value.
     enum HomeRoute: Hashable {
         case wallets
+        case drafts
     }
 
     var body: some View {
@@ -50,6 +57,7 @@ struct DashboardView: View {
                 Haptics.welcome()
             }
             isBalanceVisible = isBalanceVisibleStorage
+            DraftStore.shared.isGuest = authViewModel.currentUser?.isGuest == true
             if let userId = authViewModel.currentUser?.id {
                 Task {
                     await SubscriptionBillingService.processDueBills(userId: userId)
@@ -57,6 +65,10 @@ struct DashboardView: View {
                     await viewModel.loadDashboard(userId: userId)
                 }
             }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Ingatan follows the account: pick up what other devices learned while this one was away
+            if phase == .active { Task { await DraftStore.shared.syncMemory() } }
         }
         .onChange(of: isBalanceVisibleStorage) { _, newValue in
             isBalanceVisible = newValue
@@ -71,11 +83,29 @@ struct DashboardView: View {
         .fullScreenCover(item: $recordCard) { bill in
             PayCardBillSheet(card: bill.card, statement: bill.statement, wallets: viewModel.accounts, mode: .record,
                              onPaid: { amount, _, isFull in
-                toastText = isFull ? "\(bill.card.name) lunas · pembayaran tercatat" : "Pembayaran \(amount.formattedAsCurrency()) tercatat"
+                toastText = isFull ? L("%@ lunas · pembayaran tercatat", bill.card.name) : L("Pembayaran %@ tercatat", amount.formattedAsCurrency())
                 isToastShown = true
             })
         }
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
+        .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
+        .overlay {
+            if selectedTab != .home || homePath.isEmpty, smartGate.hiders == 0, viewModel.hasLoadedOnce, smartQuickOn, let userId = authViewModel.currentUser?.id {
+                SmartTrackerHomeOverlay(userId: userId, isFresh: viewModel.recentTransactions.isEmpty, onOpenQueue: { openDraftsPage() }) { text in
+                    toastText = text
+                    isToastShown = true
+                }
+            }
+        }
+        .onAppear { openDraftsIfRequested(); askConsentForSharedText() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in askConsentForSharedText() }
+        .sheet(isPresented: $showsConsent) {
+            SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) {
+                showsConsent = false
+                DraftStore.shared.ingestSharedText()
+                openDraftsPage()
+            }
+        }
         .onChange(of: viewModel.overdueBills.map(\.id)) { _, _ in openPendingRecord() }
         .toast(toastText, isShown: $isToastShown)
         .fullScreenCover(isPresented: $showAddSheet) {
@@ -92,6 +122,29 @@ struct DashboardView: View {
                 )
             }
         }
+    }
+
+    /// Text was shared to Saku before the user agreed to Smart Tracker: ask now, then read it.
+    private func askConsentForSharedText() {
+        guard !SmartTrackerConsent.isGranted, ShareInbox.hasItems, authViewModel.isAuthenticated else { return }
+        showsConsent = true
+    }
+
+    /// Tapping the "new drafts" notification: read what was shared, then show Konfirmasi transaksi.
+    private func openDraftsIfRequested() {
+        guard notificationRouter.opensDrafts else { return }
+        notificationRouter.opensDrafts = false
+        DraftStore.shared.ingestSharedText()
+        openDraftsPage()
+    }
+
+    /// Konfirmasi transaksi is a page on the Beranda stack, not a sheet.
+    private func openDraftsPage() {
+        selectedTab = .home
+        // one assignment, not reset-then-append: two changes to the path in a row can corrupt a stack that is mid-transition
+        var path = NavigationPath()
+        path.append(HomeRoute.drafts)
+        homePath = path
     }
 
     /// "Sudah, catat" on the notification: open its card once the bills have loaded.
@@ -122,23 +175,28 @@ struct DashboardView: View {
         Tab(value: AppTab.home) {
             NavigationStack(path: $homePath) {
                 mainContent
-                    .navigationDestination(for: HomeRoute.self) { _ in
-                        AccountListView(startsAdding: addsWalletOnOpen, path: $homePath)
+                    .navigationDestination(for: HomeRoute.self) { route in
+                        switch route {
+                        case .wallets:
+                            AccountListView(startsAdding: addsWalletOnOpen, path: $homePath)
+                        case .drafts:
+                            if let userId = authViewModel.currentUser?.id { DraftQueueView(userId: userId).detailPage() }
+                        }
                     }
             }
             .onChange(of: homePath.count) { _, count in if count == 0 { addsWalletOnOpen = false } }
-        } label: { tabLabel("Beranda", "house.fill") }
+        } label: { tabLabel(L("Beranda"), "house.fill") }
         Tab(value: AppTab.transactions) {
             TransactionListView { showAddSheet = true }
-        } label: { tabLabel("Transaksi", "list.bullet") }
+        } label: { tabLabel(L("Transaksi"), "list.bullet") }
         Tab(value: AppTab.add) {
             Color.clear
-        } label: { tabLabel("Tambah transaksi", "plus") }
+        } label: { tabLabel(L("Tambah transaksi"), "plus") }
         Tab(value: AppTab.budget) {
             BudgetListView()
-        } label: { tabLabel("Budget", "chart.pie.fill") }
+        } label: { tabLabel(L("Budget"), "chart.pie.fill") }
         Tab(value: AppTab.profile) {
-            ProfileView()
+            ProfileView(cash: viewModel.balance, assets: viewModel.assetsTotal)
         } label: {
             Label {
                 Text("Profil")
@@ -157,7 +215,8 @@ struct DashboardView: View {
     @MainActor
     private var avatarImage: UIImage {
         let renderer = ImageRenderer(content: InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U",
-                                                             size: 28, fontSize: 11))
+                                                             size: 28, fontSize: 11,
+                                                             image: authViewModel.avatarImage))
         renderer.scale = UITraitCollection.current.displayScale
         return renderer.uiImage?.withRenderingMode(.alwaysOriginal) ?? UIImage()
     }
@@ -190,6 +249,8 @@ struct DashboardView: View {
                             .padding(.bottom, 90)
                     } else {
                         SectionDivider()
+                        cashFlowSection
+                        SectionDivider()
                         healthSection
                         SectionDivider()
                         monthSection
@@ -199,8 +260,12 @@ struct DashboardView: View {
                     }
                 }
             }
+            // exactly as wide as the screen: something wider than it (a chart, a long amount) can no longer
+            // make Beranda scroll sideways
+            .containerRelativeFrame(.horizontal)
             .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
         }
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .background(Color.appBackground)
         .refreshable {
             if let userId = authViewModel.currentUser?.id {
@@ -210,22 +275,55 @@ struct DashboardView: View {
         .toolbar(.hidden, for: .navigationBar)
     }
 
+    /// Konfirmasi transaksi lives in the header: a plain tray when empty, a green pill with the count when drafts wait.
+    @ViewBuilder private var draftTray: some View {
+        if smartQuickOn, authViewModel.currentUser != nil {
+            let count = draftStore.drafts.count
+            Button { openDraftsPage() } label: {
+                if count == 0 {
+                    Image(systemName: "tray").font(.system(size: 22)).foregroundStyle(Color.appTextSecondary)
+                        .frame(width: 40, height: 40)
+                } else {
+                    HStack(spacing: 8) {
+                        Image(systemName: "tray").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                            .frame(width: 30, height: 30).background(Color.stGreen, in: Circle())
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(L("%lld draf", count)).font(.app(15, weight: .semibold)).monospacedDigit()
+                            Text("Cek dan simpan").font(.app(11)).foregroundStyle(Color.appTextSecondary)
+                        }
+                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                    }
+                    .foregroundStyle(Color.appText)
+                    .padding(.leading, 5).padding(.trailing, 12).frame(height: 40)
+                    .background(Color.stChip, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
+                }
+            }
+            .buttonStyle(PressScaleStyle())
+            .padding(.trailing, 6)
+            .accessibilityLabel(L("Konfirmasi transaksi"))
+        }
+    }
+
     private var homeHeader: some View {
         HStack {
-            Text("SakuQ")
+            Text("Saku")
                 .font(.wordmark(19))
                 .tracking(-0.5)
                 .foregroundStyle(Color.appText)
             Spacer()
+            draftTray
             Button {
                 withAnimation(.smooth) { isBalanceVisible.toggle() }
                 isBalanceVisibleStorage = isBalanceVisible
             } label: {
+                // eye.slash is taller than eye; a fixed frame keeps the header (and everything below) still.
                 Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
                     .font(.system(size: 20))
                     .foregroundStyle(Color.appText)
+                    .frame(width: 28, height: 25)
             }
-            .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+            .accessibilityLabel(isBalanceVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
         }
         .padding(.horizontal, 24)
         .padding(.top, 8)
@@ -262,7 +360,7 @@ struct DashboardView: View {
             SectionDivider()
 
             VStack(alignment: .leading, spacing: 0) {
-                SectionHeader(title: "Kesehatan finansial")
+                SectionHeader(title: L("Kesehatan finansial"))
                 SkeletonBlock(width: 110, height: 50, radius: 10)
                     .padding(.top, 14)
                 SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
@@ -284,7 +382,7 @@ struct DashboardView: View {
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
                 .lineSpacing(3)
-            EmptyStateButton(title: "Tambah dompet", isFullWidth: true) {
+            EmptyStateButton(title: L("Tambah dompet"), isFullWidth: true) {
                 addsWalletOnOpen = true
                 homePath.append(HomeRoute.wallets)
             }
@@ -299,7 +397,7 @@ struct DashboardView: View {
 
     private var emptyHealthSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Kesehatan finansial")
+            SectionHeader(title: L("Kesehatan finansial"))
             SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
                 .padding(.top, 16)
             Text("Skor muncul setelah kamu mencatat pemasukan atau pengeluaran.")
@@ -324,47 +422,57 @@ struct DashboardView: View {
 
     // MARK: Summary
 
-    /// Big total, a green/red bar for money in vs out, then Masuk · Keluar · Net.
+    /// Big total: kas by default, kas + aset when Profil says so.
     private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
+        let showsWealth = viewModel.hasInvestments && homeBalanceMode == HomeBalanceMode.all.rawValue
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
                 Text("Total saldo")
                     .font(.app(15))
                     .foregroundStyle(Color.appTextSecondary)
                 Spacer()
                 walletsButton
             }
-            HeroAmount(value: viewModel.balance, size: .hero,
+            HeroAmount(value: showsWealth ? viewModel.wealth : viewModel.balance, size: .hero,
                        color: hasNoWallets ? .appTextTertiary : .appText,
                        prefixColor: hasNoWallets ? .appTextTertiary : .appTextSecondary,
                        isVisible: isBalanceVisible, weight: .ultraLight)
                 .padding(.top, 2)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 36)
+        .padding(.bottom, hasNoWallets ? 32 : 36)
+    }
 
-            Group {
-                if hasNoWallets {
-                    RoundedRectangle(cornerRadius: 3).fill(Color.appDivider).frame(height: 6)
-                } else {
-                    FlowSplitBar(income: viewModel.totalIncome, expense: viewModel.totalExpense)
-                }
+    // MARK: Cash flow
+
+    /// "Arus kas 25 Sep – 24 Okt": a green/red bar for money in vs out, Masuk · Keluar · Net and Aman dipakai.
+    private var cashFlowSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                SectionHeader(title: L("Arus kas %@", PaydayCycle.current.label()))
+                NavigationLink("Analisis") { AnalyticsView(viewModel: viewModel).detailPage() }
+                    .font(.app(15))
+                    .foregroundStyle(Color.appPrimary)
             }
-            .padding(.top, 28)
+
+            FlowSplitBar(income: viewModel.totalIncome, expense: viewModel.totalExpense)
+                .padding(.top, 14)
 
             HStack {
-                flowStat("Masuk", viewModel.totalIncome)
+                flowStat(Lx("Masuk", en: "In"), viewModel.totalIncome)
                 Spacer()
-                flowStat("Keluar", viewModel.totalExpense)
+                flowStat(Lx("Keluar", en: "Out"), viewModel.totalExpense)
                 Spacer()
                 flowStat("Net", viewModel.netCashflow, signed: true)
             }
             .padding(.top, 12)
 
-            if !hasNoWallets, viewModel.cardDueTotal + viewModel.upcomingBillsTotal > 0 {
-                safeToSpendRow
-            }
+            safeToSpendCard
+                .padding(.top, 14)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 36)
-        .padding(.bottom, hasNoWallets ? 32 : 36)
+        .padding(.vertical, 20)
     }
 
     // MARK: Safe to spend
@@ -375,42 +483,59 @@ struct DashboardView: View {
         return (negative ? "−" : "") + "Rp" + amount.formattedAsDigits()
     }
 
-    /// "Aman dipakai Rp…" under the flow stats: balance minus card bills and subscriptions due.
-    private var safeToSpendRow: some View {
+    /// "Aman dipakai Rp45.000/hari untuk 4 hari tersisa.": the total spread over the days left in the period.
+    private var safeToSpendCard: some View {
         let safe = viewModel.safeToSpend
-        return Button { showsSafeInfo = true } label: {
-            HStack(spacing: 6) {
-                Text("Aman dipakai")
-                    .foregroundStyle(Color.appTextSecondary)
-                Text(maskedAmount(safe, negative: safe < 0))
-                    .fontWeight(.medium)
-                    .foregroundStyle(safe < 0 ? Color.appError : Color.appText)
-                    .monospacedDigit()
-                Image(systemName: "info.circle")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.appTextTertiary)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.appTextTertiary)
+        func line(visible: Bool) -> Text {
+            if let perDay = viewModel.safePerDay {
+                return Text(L("Aman dipakai") + " ").foregroundStyle(Color.appText)
+                    + Text(visible ? "Rp" + perDay.formattedAsDigits() + "/" + L("hari") : hiddenAmount).fontWeight(.semibold).foregroundStyle(Color.appText)
+                    + Text(" " + L("untuk %lld hari tersisa.", viewModel.daysLeftInPeriod)).foregroundStyle(Color.appText)
             }
-            .font(.app(15))
-            .lineLimit(1)
-            .contentShape(Rectangle())
+            return Text(L("Aman dipakai") + " ").foregroundStyle(Color.appText)
+                + Text(visible ? maskedAmount(safe, negative: safe < 0) : hiddenAmount).fontWeight(.semibold).foregroundStyle(safe < 0 ? Color.appError : Color.appText)
+        }
+        // The visible text is laid out (hidden) in both states so the card keeps its height when masked.
+        let sizedLine = ZStack(alignment: .topLeading) {
+            line(visible: true).hidden()
+            line(visible: isBalanceVisible)
+        }
+        return Button { showsSafeInfo = true } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "checkmark.shield")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.appPrimary)
+                    .padding(.top, 1)
+                VStack(alignment: .leading, spacing: 2) {
+                    sizedLine
+                        .font(.app(15))
+                        .monospacedDigit()
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
+                    .padding(.top, 4)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.appCardBackground.opacity(0), in: RoundedRectangle(cornerRadius: 16))
+            .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
-        .padding(.top, 14)
-        .accessibilityHint("Lihat cara menghitungnya")
+        .accessibilityHint("Lihat rincian")
         .sheet(isPresented: $showsSafeInfo) { safeToSpendSheet }
     }
 
     private var safeToSpendSheet: some View {
         let safe = viewModel.safeToSpend
-        return PickerSheet(title: "Aman dipakai", onDone: { showsSafeInfo = false }) {
+        return PickerSheet(title: L("Aman dipakai"), onDone: { showsSafeInfo = false }) {
             VStack(alignment: .leading, spacing: 0) {
-                safeRow("Total saldo", maskedAmount(viewModel.balance))
-                safeRow("Tagihan kartu kredit", maskedAmount(viewModel.cardDueTotal, negative: true))
-                safeRow("Langganan sampai akhir bulan", maskedAmount(viewModel.upcomingBillsTotal, negative: true))
+                safeRow(viewModel.hasInvestments ? L("Saldo kas") : L("Total saldo"), maskedAmount(viewModel.balance))
+                safeRow(L("Tagihan kartu kredit"), maskedAmount(viewModel.cardDueTotal, negative: true))
+                safeRow(L("Langganan bulan ini"), maskedAmount(viewModel.upcomingBillsTotal, negative: true))
                 HStack {
                     Text("Aman dipakai")
                         .font(.app(17, weight: .semibold))
@@ -421,7 +546,7 @@ struct DashboardView: View {
                         .monospacedDigit()
                 }
                 .padding(.vertical, 14)
-                Text("Saldo yang tersisa setelah tagihan kartu kredit yang belum dibayar dan langganan yang jatuh tempo bulan ini, supaya kamu tidak memakai uang yang sudah ada peruntukannya.")
+                Text("Saldo dikurangi tagihan kartu kredit (termasuk belanja yang belum ditagih) dan langganan bulan ini.")
                     .font(.app(15))
                     .foregroundStyle(Color.appBody)
                     .padding(.top, 12)
@@ -481,13 +606,18 @@ struct DashboardView: View {
     private func flowStat(_ label: String, _ amount: Double, signed: Bool = false) -> some View {
         let sign = signed ? (amount > 0 ? "+" : amount < 0 ? "−" : "") : ""
         let color: Color = signed ? (amount > 0 ? .appPrimary : amount < 0 ? .appError : .appText) : .appText
-        return (Text(label + " ").foregroundStyle(Color.appTextSecondary)
-                + Text(hasNoWallets ? "–" : isBalanceVisible ? sign + amount.abbreviatedRupiah() : hiddenAmount)
-                    .fontWeight(.medium)
-                    .foregroundStyle(hasNoWallets ? Color.appTextTertiary : color))
-            .font(.app(15))
-            .monospacedDigit()
-            .lineLimit(1)
+        let text = Text(label + " ").foregroundStyle(Color.appTextSecondary)
+            + Text(hasNoWallets ? "–" : isBalanceVisible ? sign + amount.abbreviatedRupiah() : hiddenAmount)
+                .fontWeight(.medium)
+                .foregroundStyle(hasNoWallets ? Color.appTextTertiary : color)
+        // A hidden digit keeps the line height the same whether the value or the mask shows.
+        return ZStack(alignment: .leading) {
+            Text("0").hidden()
+            text
+        }
+        .font(.app(15))
+        .monospacedDigit()
+        .lineLimit(1)
     }
 
     // MARK: Health score
@@ -501,7 +631,8 @@ struct DashboardView: View {
         } else {
             NavigationLink { HealthDetailView(health: health).detailPage() } label: {
                 VStack(alignment: .leading, spacing: 0) {
-                    SectionHeader(title: "Kesehatan finansial", trailing: health.label, trailingColor: health.color)
+                    SectionHeader(title: L("Kesehatan finansial"), trailing: health.label ?? L("Sementara"),
+                                  trailingColor: health.isProvisional ? .appTextSecondary : health.color)
 
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("\(health.score)")
@@ -514,8 +645,15 @@ struct DashboardView: View {
                     }
                     .padding(.top, 14)
 
-                    SegmentBar(value: Double(health.score) / 100, color: health.color, count: 40, height: 22, spacing: 3)
+                    SegmentBar(value: Double(health.score) / 100, color: health.color, count: 40, height: 22, spacing: 3, replays: false)
                         .padding(.top, 16)
+
+                    if health.isPartial {
+                        Text("Skor sementara, belum termasuk arus kas dan dana darurat.")
+                            .font(.app(13))
+                            .foregroundStyle(Color.appTextTertiary)
+                            .padding(.top, 10)
+                    }
 
                     HStack(spacing: 10) {
                         if let weakest = health.weakest, !health.isHealthy {
@@ -556,17 +694,17 @@ struct DashboardView: View {
         let peak = max(days.max() ?? 0, average, 1) * 1.05
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                SectionHeader(title: "Bulan ini")
+                SectionHeader(title: L("Bulan ini"))
                 NavigationLink("Analisis") { AnalyticsView(viewModel: viewModel).detailPage() }
                     .font(.app(15))
                     .foregroundStyle(Color.appPrimary)
             }
 
             HStack(alignment: .top, spacing: 32) {
-                countStat(average, label: "rata-rata / hari") { value in
+                countStat(average, label: L("rata-rata / hari")) { value in
                     isBalanceVisible ? value.rounded(.toNearestOrEven).formattedAsCurrency() : "Rp" + hiddenAmount
                 }
-                countStat(Double(viewModel.currentMonthTransactionCount), label: "transaksi") { "\(Int($0.rounded()))" }
+                countStat(Double(viewModel.currentMonthTransactionCount), label: L("transaksi")) { "\(Int($0.rounded()))" }
             }
             .padding(.top, 14)
 
@@ -632,7 +770,7 @@ struct DashboardView: View {
                         .onTapGesture { selectedDay = i }
                         .accessibilityElement()
                         .accessibilityLabel(dayTitle(i, of: days.count))
-                        .accessibilityValue(isBalanceVisible ? "Rp" + days[i].formattedAsDigits() : "tersembunyi")
+                        .accessibilityValue(isBalanceVisible ? "Rp" + days[i].formattedAsDigits() : L("tersembunyi"))
                         .accessibilityAddTraits(i == selected ? [.isButton, .isSelected] : .isButton)
                 }
             }
@@ -682,14 +820,16 @@ struct DashboardView: View {
 
     /// "Hari ini" for the last bar, otherwise e.g. "Sel, 15 Sep".
     private func dayTitle(_ index: Int, of count: Int) -> String {
-        guard index != count - 1 else { return "Hari ini" }
+        guard index != count - 1 else { return L("Hari ini") }
         let calendar = Calendar.current
         let start = PaydayCycle.current.period(containing: Date(), calendar: calendar).start
         let date = calendar.date(byAdding: .day, value: index, to: start) ?? start
         return Self.weekdayDayFormatter.string(from: date)
     }
 
+    /// Plays the first time Beranda shows the chart; coming back from another tab or page keeps it as is.
     private func replayChart() {
+        guard !isChartShown else { return }
         var reset = SwiftUI.Transaction()
         reset.disablesAnimations = true
         withTransaction(reset) {
@@ -715,7 +855,7 @@ struct DashboardView: View {
         }
         let rest = 1 - slices.map(\.share).reduce(0, +)
         if rest > 0.005 {
-            slices.append(CategorySlice(name: "Lainnya", share: rest, color: Self.slicePalette[4]))
+            slices.append(CategorySlice(name: L("Lainnya"), share: rest, color: Self.slicePalette[4]))
         }
         return slices
     }
@@ -773,8 +913,8 @@ struct DashboardView: View {
         let shown = showAllBudgets ? sorted : Array(sorted.prefix(3))
         return VStack(alignment: .leading, spacing: 0) {
             SectionHeader(
-                title: "Budget",
-                trailing: sorted.isEmpty ? nil : "Sisa " + (isBalanceVisible ? max(0, viewModel.totalRemaining).formattedAsCurrency() : "Rp" + hiddenAmount)
+                title: L("Budget"),
+                trailing: sorted.isEmpty ? nil : L("Sisa %@", isBalanceVisible ? max(0, viewModel.totalRemaining).formattedAsCurrency() : "Rp" + hiddenAmount)
             )
 
             if sorted.isEmpty {
@@ -794,7 +934,7 @@ struct DashboardView: View {
                     withAnimation(.easeInOut(duration: 0.25)) { showAllBudgets.toggle() }
                 } label: {
                     HStack(spacing: 6) {
-                        Text(showAllBudgets ? "Tampilkan lebih sedikit" : "Lihat semua (\(sorted.count))")
+                        Text(showAllBudgets ? L("Tampilkan lebih sedikit") : L("Lihat semua (%lld)", sorted.count))
                         Image(systemName: showAllBudgets ? "chevron.up" : "chevron.down")
                             .font(.system(size: 12, weight: .semibold))
                     }
@@ -842,7 +982,7 @@ struct DashboardView: View {
                     .lineLimit(1)
                 }
                 SegmentBar(value: ratio, color: ratio >= 1 ? .appError : ratio >= 0.8 ? .appWarning : .appPrimary,
-                           delay: 0.3 + Double(index) * 0.08)
+                           delay: 0.3 + Double(index) * 0.08, replays: false)
             }
         }
         .padding(.vertical, 12)
@@ -853,21 +993,21 @@ struct DashboardView: View {
     /// "Hari ini", "Kemarin", or "Kamis, 24 Sep".
     static func dayHeader(for date: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "Hari ini" }
-        if calendar.isDateInYesterday(date) { return "Kemarin" }
+        if calendar.isDateInToday(date) { return L("Hari ini") }
+        if calendar.isDateInYesterday(date) { return L("Kemarin") }
         return shortDayFormatter.string(from: date)
     }
 
     private static func formatter(_ format: String) -> DateFormatter {
         let f = DateFormatter()
         f.dateFormat = format
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
     }
 
-    private static let shortDayFormatter = formatter("EEEE, d MMM")
-    private static let dayMonthFormatter = formatter("d MMM")
-    private static let weekdayDayFormatter = formatter("EEE, d MMM")
+    private static var shortDayFormatter: DateFormatter { formatter("EEEE, d MMM") }
+    private static var dayMonthFormatter: DateFormatter { formatter("d MMM") }
+    private static var weekdayDayFormatter: DateFormatter { formatter("EEE, d MMM") }
 }
 
 /// The Dompet pill's mark: the pocket pops in, then the cards rise and fan.

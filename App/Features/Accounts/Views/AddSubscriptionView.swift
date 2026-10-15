@@ -100,12 +100,15 @@ struct AddSubscriptionView: View {
             }
             Spacer(minLength: 12)
             // v4: Simpan sits beside the keys again; tapping it while invalid shows why.
-            AmountPad(color: color, isEnabled: isValid, isSaving: isSaving, onPress: press) {
-                isValid ? save() : blocked()
+            // The system keyboard replaces the number pad while typing the name.
+            if !isNameFocused {
+                AmountPad(color: color, isEnabled: isValid, isSaving: isSaving, onPress: press) {
+                    isValid ? save() : blocked()
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+                .sensoryFeedback(.success, trigger: isDone) { _, done in done }
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
-            .sensoryFeedback(.success, trigger: isDone) { _, done in done }
         }
         .background(Color.appBackground)
         .ignoresSafeArea(.keyboard)
@@ -164,7 +167,7 @@ struct AddSubscriptionView: View {
             Spacer()
             if let existing, !isDone {
                 Menu {
-                    Button(existing.isActive ? "Jeda" : "Aktifkan",
+                    Button(existing.isActive ? L("Jeda") : L("Aktifkan"),
                            systemImage: existing.isActive ? "pause" : "play") { togglePause() }
                     Button("Hapus", systemImage: "trash", role: .destructive) { showDeleteConfirm = true }
                 } label: {
@@ -181,7 +184,7 @@ struct AddSubscriptionView: View {
         .overlay {
             HStack(spacing: 8) {
                 if existing == nil { Image(systemName: "repeat").font(.system(size: 15, weight: .bold)) }
-                Text(existing == nil ? "Tagihan berulang" : "Ubah tagihan")
+                Text(existing == nil ? L("Tagihan berulang") : L("Ubah tagihan"))
                     .font(.app(17, weight: .semibold))
             }
         }
@@ -262,8 +265,9 @@ struct AddSubscriptionView: View {
                 .padding(.top, 8)
 
                 ZStack(alignment: .topLeading) {
-                    Text("Tiap tanggal \(billingDay)" + (sameDayCount > 0
-                         ? " · sudah ada \(sameDayCount) tagihan di tanggal ini" : " · belum ada tagihan lain"))
+                    Text(sameDayCount > 0
+                         ? L("Tiap tanggal %lld · sudah ada %lld tagihan di tanggal ini", billingDay, sameDayCount)
+                         : L("Tiap tanggal %lld · belum ada tagihan lain", billingDay))
                         .font(.app(12))
                         .monospacedDigit()
                         .opacity(isOverLimit ? 0 : 0.75)
@@ -315,7 +319,7 @@ struct AddSubscriptionView: View {
             Text("Tagihan berulang tersimpan")
                 .font(.app(20, weight: .semibold))
                 .padding(.top, 6)
-            Text(([Double(amount).formattedAsCurrency()] + (selectedCategory.map { [$0.name] } ?? []) + ["tiap tgl \(billingDay)"])
+            Text(([Double(amount).formattedAsCurrency()] + (selectedCategory.map { [$0.name] } ?? []) + [L("tiap tgl %lld", billingDay)])
                 .joined(separator: " · "))
                 .font(.app(14))
                 .opacity(0.85)
@@ -364,7 +368,7 @@ struct AddSubscriptionView: View {
 
     private var nameRow: some View {
         HStack(spacing: 12) {
-            label("Nama")
+            label(L("Nama"))
             TextField("Contoh: Netflix", text: $nameText)
                 .font(.app(16, weight: .medium))
                 .foregroundStyle(Color.appText)
@@ -415,9 +419,9 @@ struct AddSubscriptionView: View {
     }
 
     private var categoryRow: some View {
-        pickerRow("Kategori", row: .category, icon: selectedCategory?.icon ?? "tag",
+        pickerRow(L("Kategori"), row: .category, icon: selectedCategory?.icon ?? "tag",
                   iconColor: selectedCategory == nil ? .appTextSecondary : color,
-                  value: selectedCategory?.name ?? "Pilih",
+                  value: selectedCategory?.name ?? L("Pilih"),
                   valueColor: selectedCategory == nil ? .appTextSecondary : .appText) {
             isNameFocused = false
             showCategorySheet = true
@@ -425,8 +429,8 @@ struct AddSubscriptionView: View {
     }
 
     private var dayRow: some View {
-        pickerRow("Tanggal", row: .day, icon: "calendar", iconColor: .appTextSecondary,
-                  value: "Tiap tanggal \(billingDay)", valueColor: .appText) {
+        pickerRow(L("Tanggal"), row: .day, icon: "calendar", iconColor: .appTextSecondary,
+                  value: L("Tiap tanggal %lld", billingDay), valueColor: .appText) {
             isNameFocused = false
             showDaySheet = true
         }
@@ -453,7 +457,7 @@ struct AddSubscriptionView: View {
 
     private var categorySheet: some View {
         VStack(spacing: 0) {
-            sheetHeader("Kategori") { showCategorySheet = false }
+            sheetHeader(L("Kategori")) { showCategorySheet = false }
             ScrollView {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 4), spacing: 18) {
                     ForEach(expenseCategories) { category in
@@ -498,7 +502,7 @@ struct AddSubscriptionView: View {
 
     private var daySheet: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sheetHeader("Tanggal tagih") { showDaySheet = false }
+            sheetHeader(L("Tanggal tagih")) { showDaySheet = false }
             Text("Ditagih tiap bulan di tanggal yang sama, dan dicatat otomatis saat kamu buka Saku di tanggal itu. Titik = sudah ada tagihan.")
                 .font(.app(13))
                 .foregroundStyle(Color.appTextSecondary)
@@ -530,7 +534,7 @@ struct AddSubscriptionView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Tanggal \(d)" + (busyDays.contains(d) ? ", sudah ada tagihan" : ""))
+                    .accessibilityLabel(busyDays.contains(d) ? L("Tanggal %lld, sudah ada tagihan", d) : L("Tanggal %lld", d))
                     .accessibilityAddTraits(isOn ? .isSelected : [])
                 }
             }
@@ -673,7 +677,7 @@ struct AddSubscriptionView: View {
                 return
             } catch {
                 isSaving = false
-                errorMessage = "Gagal menyimpan. Coba lagi."
+                errorMessage = L("Gagal menyimpan. Coba lagi.")
             }
         }
     }
@@ -699,7 +703,7 @@ struct AddSubscriptionView: View {
                 return
             } catch {
                 isSaving = false
-                errorMessage = "Gagal menyimpan. Coba lagi."
+                errorMessage = L("Gagal menyimpan. Coba lagi.")
             }
         }
     }
@@ -717,7 +721,7 @@ struct AddSubscriptionView: View {
                 return
             } catch {
                 isSaving = false
-                errorMessage = "Gagal menghapus. Coba lagi."
+                errorMessage = L("Gagal menghapus. Coba lagi.")
             }
         }
     }

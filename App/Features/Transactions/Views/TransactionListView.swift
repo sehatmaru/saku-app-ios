@@ -18,9 +18,12 @@ struct TransactionListView: View {
     /// Months where the user tapped "Tampilkan N lainnya".
     @State private var fullyShownMonths: Set<String> = []
     @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
     @State private var showAdvancedSearch = false
     @State private var showBackToTop = false
     @State private var hasInitialExpanded = false
+    /// The purchase behind a tapped running installment.
+    @State private var openedInstallment: Transaction?
 
     /// Rows shown per month before "Tampilkan N lainnya".
     private let previewCount = 7
@@ -34,14 +37,14 @@ struct TransactionListView: View {
                             .frame(height: 0)
                             .id("scrollTop")
 
-                        ScreenHeader(title: "Transaksi") {
+                        ScreenHeader(title: L("Transaksi")) {
                             Button {
                                 withAnimation(.smooth) { isBalanceVisible.toggle() }
                                 isBalanceVisibleStorage = isBalanceVisible
                             } label: {
                                 Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
                             }
-                            .accessibilityLabel(isBalanceVisible ? "Sembunyikan saldo" : "Tampilkan saldo")
+                            .accessibilityLabel(isBalanceVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
                         }
 
                         searchField
@@ -57,15 +60,28 @@ struct TransactionListView: View {
                             if let error = viewModel.errorMessage {
                                 ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                             }
-                            summary
+                            // The month hero gives way while searching, so results start higher.
+                            if !isSearching {
+                                summary
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
 
                             Color.clear
                                 .frame(height: 1)
                                 .onAppear { showBackToTop = false }
                                 .onDisappear { showBackToTop = true }
 
+                            // 0% installments still billing this period; search and filters never hide it
+                            let running = viewModel.runningInstallments
+                            if !running.isEmpty {
+                                RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible) { id in
+                                    openedInstallment = viewModel.allTransactions.first { $0.id == id }
+                                }
+                            }
+
                             if !hasNoTransactions {
                                 filterChips
+                                    .padding(.top, isSearching ? 16 : 0)
                             }
 
                             if filteredTransactions.isEmpty {
@@ -76,10 +92,16 @@ struct TransactionListView: View {
                         }
                     }
                     .padding(.bottom, 24)
+                    .animation(.smooth(duration: 0.4), value: isSearching)
                 }
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
                 .background(Color.appBackground)
                 .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(isPresented: Binding(get: { openedInstallment != nil }, set: { if !$0 { openedInstallment = nil } })) {
+                    if let transaction = openedInstallment {
+                        TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts).detailPage()
+                    }
+                }
                 .scrollDismissesKeyboard(.immediately)
                 .refreshable {
                     guard let userId = authViewModel.currentUser?.id else { return }
@@ -112,7 +134,7 @@ struct TransactionListView: View {
                                 .background(.regularMaterial, in: Circle())
                                 .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
                         }
-                        .accessibilityLabel("Kembali ke atas")
+                        .accessibilityLabel(L("Kembali ke atas"))
                         .padding(.trailing, 24)
                         .padding(.bottom, 16)
                         .transition(.scale.combined(with: .opacity))
@@ -148,7 +170,7 @@ struct TransactionListView: View {
     private var transactionSkeleton: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Net cashflow \(Self.monthFormatter.string(from: Date()))")
+                Text("Net cashflow \(PaydayCycle.current.label())")
                     .font(.app(15))
                     .foregroundStyle(Color.appTextSecondary)
                 SkeletonBlock(width: 230, height: 48, radius: 10)
@@ -193,7 +215,7 @@ struct TransactionListView: View {
             .padding(.horizontal, 24)
             .padding(.top, 24)
         }
-        .accessibilityLabel("Memuat")
+        .accessibilityLabel(L("Memuat"))
     }
 
     /// Widths of the skeleton rows: title and subtitle as shares of the row, amount in points.
@@ -207,21 +229,27 @@ struct TransactionListView: View {
 
     // MARK: Search
 
+    /// The field has focus or a query: the month summary steps aside.
+    private var isSearching: Bool {
+        searchFocused || !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 16))
                 .foregroundStyle(Color.appTextSecondary)
-            TextField("Cari transaksi...", text: $searchText)
+            TextField("Cari catatan atau kategori", text: $searchText)
                 .font(.app(16))
                 .submitLabel(.search)
                 .autocorrectionDisabled()
+                .focused($searchFocused)
             if !searchText.isEmpty {
                 Button { searchText = "" } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(Color.appTextTertiary)
                 }
-                .accessibilityLabel("Hapus pencarian")
+                .accessibilityLabel(L("Hapus pencarian"))
             }
         }
         .padding(.horizontal, 12)
@@ -236,7 +264,7 @@ struct TransactionListView: View {
         let net = viewModel.thisMonthBalance
         let tone: Color = net > 0 ? .appIncome : net < 0 ? .appError : .appText
         return VStack(alignment: .leading, spacing: 0) {
-            Text("Net cashflow \(Self.monthFormatter.string(from: Date()))")
+            Text("Net cashflow \(PaydayCycle.current.label())")
                 .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
 
@@ -259,9 +287,9 @@ struct TransactionListView: View {
                     .padding(.top, 22)
 
                 HStack {
-                    flowTotal("Masuk", viewModel.thisMonthIncome)
+                    flowTotal(Lx("Masuk", en: "In"), viewModel.thisMonthIncome)
                     Spacer()
-                    flowTotal("Keluar", viewModel.thisMonthExpense)
+                    flowTotal(Lx("Keluar", en: "Out"), viewModel.thisMonthExpense)
                 }
                 .padding(.top, 12)
             }
@@ -289,7 +317,7 @@ struct TransactionListView: View {
                 if hasAdvancedFilters {
                     activeFilterChips
                 }
-                FilterChip(title: "Semua", isSelected: filter.transactionTypes.isEmpty) {
+                FilterChip(title: L("Semua"), isSelected: filter.transactionTypes.isEmpty) {
                     filter.transactionTypes = []
                 }
                 ForEach([Transaction.TransactionType.income, .expense, .transfer], id: \.self) { type in
@@ -297,7 +325,7 @@ struct TransactionListView: View {
                         filter.transactionTypes = filter.transactionTypes == [type] ? [] : [type]
                     }
                 }
-                FilterChip(title: "Berulang", isSelected: filter.recurringOnly) {
+                FilterChip(title: L("Berulang"), isSelected: filter.recurringOnly) {
                     filter.recurringOnly.toggle()
                 }
             }
@@ -319,7 +347,7 @@ struct TransactionListView: View {
             if !filter.expenseCategoryIds.isEmpty || !filter.incomeCategoryIds.isEmpty {
                 let count = filter.expenseCategoryIds.count + filter.incomeCategoryIds.count
                 ActiveFilterChip(
-                    title: "Kategori (\(count))",
+                    title: L("Kategori (%lld)", count),
                     onRemove: {
                         filter.expenseCategoryIds = []
                         filter.incomeCategoryIds = []
@@ -329,7 +357,7 @@ struct TransactionListView: View {
 
             if let from = filter.dateFrom, let to = filter.dateTo {
                 ActiveFilterChip(
-                    title: "\(from.formatted(date: .numeric, time: .omitted)) - \(to.formatted(date: .numeric, time: .omitted))",
+                    title: "\(from.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLanguage.locale))) - \(to.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLanguage.locale)))",
                     onRemove: {
                         filter.dateFrom = nil
                         filter.dateTo = nil
@@ -337,12 +365,12 @@ struct TransactionListView: View {
                 )
             } else if let from = filter.dateFrom {
                 ActiveFilterChip(
-                    title: "Dari \(from.formatted(date: .numeric, time: .omitted))",
+                    title: L("Dari %@", from.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLanguage.locale))),
                     onRemove: { filter.dateFrom = nil }
                 )
             } else if let to = filter.dateTo {
                 ActiveFilterChip(
-                    title: "Sampai \(to.formatted(date: .numeric, time: .omitted))",
+                    title: L("Sampai %@", to.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLanguage.locale))),
                     onRemove: { filter.dateTo = nil }
                 )
             }
@@ -371,16 +399,16 @@ struct TransactionListView: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Filter lanjutan")
+        .accessibilityLabel(L("Filter lanjutan"))
     }
 
     private func typeLabel(_ type: Transaction.TransactionType) -> String {
         switch type {
-        case .income: "Pemasukan"
-        case .expense: "Pengeluaran"
-        case .transfer: "Transfer"
-        case .adjustment: "Penyesuaian saldo"
-        case .cardPayment: "Bayar tagihan"
+        case .income: L("Pemasukan")
+        case .expense: L("Pengeluaran")
+        case .transfer: L("Transfer")
+        case .adjustment: L("Penyesuaian saldo")
+        case .cardPayment: L("Bayar tagihan")
         }
     }
 
@@ -421,9 +449,10 @@ struct TransactionListView: View {
 
         let trimmedSearchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedSearchText.isEmpty {
+            // Search matches what the row shows: the note or the category name.
+            let categoryNames = Dictionary(uniqueKeysWithValues: viewModel.categories.map { ($0.id, $0.name) })
             result = result.filter { transaction in
-                let note = transaction.note ?? ""
-                return note.localizedCaseInsensitiveContains(trimmedSearchText)
+                transaction.matches(search: trimmedSearchText, categoryName: transaction.categoryId.flatMap { categoryNames[$0] })
             }
         }
 
@@ -563,10 +592,10 @@ struct TransactionListView: View {
             VStack(spacing: 22) {
                 EmptyMessage(
                     icon: "tray",
-                    title: "Belum ada transaksi",
-                    message: "Pemasukan dan pengeluaran yang kamu catat di \(Self.monthFormatter.string(from: Date())) akan muncul di sini."
+                    title: L("Belum ada transaksi"),
+                    message: L("Pemasukan dan pengeluaran yang kamu catat di %@ akan muncul di sini.", PaydayCycle.current.label())
                 )
-                EmptyStateButton(title: "Catat transaksi", action: onAdd)
+                EmptyStateButton(title: L("Catat transaksi"), action: onAdd)
             }
             .padding(.horizontal, 40)
             .padding(.top, 68)
@@ -574,12 +603,12 @@ struct TransactionListView: View {
             VStack(spacing: 22) {
                 EmptyMessage(
                     icon: "magnifyingglass",
-                    title: "Tidak ada hasil",
+                    title: L("Tidak ada hasil"),
                     message: query.isEmpty
-                        ? "Tidak ada transaksi dengan filter ini."
-                        : "Tidak ada transaksi \"\(query)\" dengan filter ini."
+                        ? L("Tidak ada transaksi dengan filter ini.")
+                        : L("Tidak ada transaksi \"%@\" dengan filter ini.", query)
                 )
-                EmptyStateButton(title: "Hapus filter", icon: nil, isSecondary: true) {
+                EmptyStateButton(title: L("Hapus filter"), icon: nil, isSecondary: true) {
                     withAnimation(.smooth) {
                         searchText = ""
                         filter = TransactionFilter()
@@ -590,13 +619,6 @@ struct TransactionListView: View {
             .padding(.top, 96)
         }
     }
-
-    private static let monthFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMMM"
-        f.locale = Locale(identifier: "id_ID")
-        return f
-    }()
 }
 
 struct ActiveFilterChip: View {

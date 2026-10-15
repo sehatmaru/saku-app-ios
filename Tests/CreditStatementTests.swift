@@ -1,5 +1,5 @@
 import XCTest
-@testable import SakuQ
+@testable import Saku
 
 /// Card: statement prints on the 20th, due on the 5th, Jakarta time.
 final class CreditStatementTests: XCTestCase {
@@ -43,6 +43,27 @@ final class CreditStatementTests: XCTestCase {
         XCTAssertEqual(s.status, .unpaid)
         XCTAssertEqual(s.minimumDue, 100_000)
         XCTAssertEqual(s.interestIfMinimum, 900_000 * 0.0175, accuracy: 0.01)
+    }
+
+    func testAdjustmentOnCutoffDayRaisesTheBillButLaterOneWaits() {
+        func adjust(_ delta: Double, _ on: Date) -> Transaction {
+            Transaction(id: "adj", accountId: "card", counterpartyAccountId: nil, categoryId: nil, amount: abs(delta),
+                        type: .adjustment, description: nil, note: nil, date: on, delta: delta)
+        }
+        let base = [txn("a", .expense, 3_000_000, date(2026, 9, 10))]
+        let printed = statement(card(balance: 3_500_000), base + [adjust(500_000, date(2026, 9, 20))], today: date(2026, 9, 29))
+        XCTAssertEqual(printed.remaining, 3_500_000)
+        let waiting = statement(card(balance: 3_500_000), base + [adjust(500_000, date(2026, 9, 29))], today: date(2026, 9, 29))
+        XCTAssertEqual(waiting.remaining, 3_000_000)
+        XCTAssertEqual(waiting.unbilled, 500_000)
+    }
+
+    func testFinalBillingDateIsTheLastPartsCutoff() {
+        // bought 13 Aug, cut-off on the 20th: parts bill 20 Aug, 20 Sep, 20 Oct
+        let end = CreditStatement.finalBillingDate(purchaseOn: date(2026, 8, 13), months: 3, card: card(balance: 0), calendar: calendar)
+        XCTAssertEqual(end, calendar.startOfDay(for: date(2026, 10, 20)))
+        let one = CreditStatement.finalBillingDate(purchaseOn: date(2026, 8, 13), months: 1, card: card(balance: 0), calendar: calendar)
+        XCTAssertEqual(one, calendar.startOfDay(for: date(2026, 8, 20)))
     }
 
     func testChargeOnTheCutoffDayIsBilled() {
@@ -124,9 +145,71 @@ final class CreditStatementTests: XCTestCase {
         XCTAssertEqual(s.nextStatementDate, calendar.startOfDay(for: date(2027, 3, 31)))
     }
 
+    /// A card added on 2 Oct with a starting bill of 1 jt that the bank hasn't printed yet.
+    private func newCard(unbilledUntil: String?) -> Account {
+        Account(id: "card", name: "Baru", type: .credit, icon: nil, isArchived: false, isDefault: false,
+                openingBalance: 1_000_000, currentBalance: 1_000_000, creditLimit: 10_000_000, dueDate: "5",
+                statementDay: 20, openingUnbilledUntil: unbilledUntil)
+    }
+
+    func testStartingBillNotPrintedYetIsNotDue() {
+        let s = statement(newCard(unbilledUntil: "2026-10-20"), [], today: date(2026, 10, 2))
+        XCTAssertEqual(s.statementAmount, 0)
+        XCTAssertEqual(s.status, .none)
+        XCTAssertEqual(s.unbilled, 1_000_000)
+    }
+
+    func testStartingBillJoinsTheStatementAfterThatCutoff() {
+        let s = statement(newCard(unbilledUntil: "2026-10-20"), [], today: date(2026, 10, 21))
+        XCTAssertEqual(s.statementAmount, 1_000_000)
+        XCTAssertEqual(s.status, .unpaid)
+    }
+
+    func testStartingBillPrintedIsDueRightAway() {
+        let s = statement(newCard(unbilledUntil: nil), [], today: date(2026, 10, 2))
+        XCTAssertEqual(s.statementAmount, 1_000_000)
+        XCTAssertEqual(s.status, .unpaid)
+    }
+
+    func testNextCutoffString() {
+        XCTAssertEqual(CreditStatement.nextCutoffString(statementDay: 20, today: date(2026, 10, 2), calendar: calendar), "2026-10-20")
+        XCTAssertEqual(CreditStatement.nextCutoffString(statementDay: 1, today: date(2026, 10, 2), calendar: calendar), "2026-11-01")
+    }
+
     func testNotACreditCard() {
         let bank = Account(id: "bank", name: "BCA", type: .bank, icon: nil, isArchived: false, isDefault: false,
                            openingBalance: 0, creditLimit: nil, dueDate: nil)
         XCTAssertNil(CreditStatement(card: bank, transactions: [], installments: []))
+    }
+}
+
+extension CreditStatementTests {
+    private func cycleCard() -> Account {
+        Account(id: "card", name: "BCA Visa", type: .credit, icon: nil, isArchived: false, isDefault: false,
+                openingBalance: 0, currentBalance: 0, creditLimit: 10_000_000, dueDate: "5", statementDay: 20)
+    }
+
+    func testCyclesSplitChargesAtTheCutoffAndAttachPaymentsToTheBilledOne() {
+        let day = { (m: Int, d: Int) in Calendar.current.date(from: DateComponents(year: 2026, month: m, day: d, hour: 12))! }
+        let t = { (id: String, type: Transaction.TransactionType, amount: Double, on: Date) in
+            Transaction(id: id, accountId: "card", counterpartyAccountId: nil, categoryId: nil, amount: amount,
+                        type: type, description: nil, note: nil, date: on, delta: nil)
+        }
+        let txns = [t("a", .expense, 1_000_000, day(9, 10)), t("b", .expense, 300_000, day(9, 25)),
+                    t("p", .cardPayment, 100_000, day(9, 28))]
+        let cycles = CreditStatement.cycles(card: cycleCard(), transactions: txns, today: day(9, 29))
+
+        XCTAssertTrue(cycles[0].isOpen)
+        XCTAssertEqual(cycles[0].charged, 300_000)                 // 21 Sep – 20 Okt, not billed yet
+        XCTAssertEqual(cycles[1].charged, 1_000_000)               // 21 Agu – 20 Sep
+        XCTAssertEqual(cycles[1].paid, 100_000)                    // the payment counts toward it
+        XCTAssertEqual(cycles[1].transactions.map(\.id).sorted(), ["a", "p"])
+    }
+
+    func testCyclesAlwaysIncludeTheOpenAndLastBilledPeriod() {
+        let cycles = CreditStatement.cycles(card: cycleCard(), transactions: [], today: Date())
+        XCTAssertGreaterThanOrEqual(cycles.count, 2)
+        XCTAssertTrue(cycles[0].isOpen)
+        XCTAssertFalse(cycles[1].isOpen)
     }
 }

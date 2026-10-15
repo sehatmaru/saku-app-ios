@@ -9,27 +9,42 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
 
     /// The card whose bill the user wants to record; Beranda clears it once the sheet is open.
     @Published var pendingCardId: String?
+    /// Set when the user taps the "new drafts" notification; Beranda opens Konfirmasi transaksi and clears it.
+    @Published var opensDrafts = false
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .sound]
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                            didReceive response: UNNotificationResponse) async {
+    /// Uses the completion-handler form and calls it on the main thread on purpose: when the `async` form
+    /// finished on a background thread, UIKit's snapshot step after the tap asserted "main thread" and the
+    /// app aborted (every notification tap crashed, visible in the device crash logs).
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping () -> Void) {
         let content = response.notification.request.content
-        guard content.categoryIdentifier == NotificationManager.lateCategory,
-              let cardId = content.userInfo["cardId"] as? String else { return }
+        let route = content.userInfo["route"] as? String
+        let category = content.categoryIdentifier
+        let cardId = content.userInfo["cardId"] as? String
         let statementTime = content.userInfo["statementDate"] as? Double ?? 0
         let action = response.actionIdentifier
         let title = content.title
         let body = content.body
+        nonisolated(unsafe) let finish = completionHandler
 
-        if action == NotificationManager.notYetAction {
-            await NotificationManager.shared.snoozeLateReminder(
-                cardId: cardId, statementDate: Date(timeIntervalSince1970: statementTime), title: title, body: body)
-        } else {
-            await MainActor.run { NotificationRouter.shared.pendingCardId = cardId }
+        Task { @MainActor in
+            defer { finish() }
+            if route == DraftNotifier.route {
+                NotificationRouter.shared.opensDrafts = true
+                return
+            }
+            guard category == NotificationManager.lateCategory, let cardId else { return }
+            if action == NotificationManager.notYetAction {
+                await NotificationManager.shared.snoozeLateReminder(
+                    cardId: cardId, statementDate: Date(timeIntervalSince1970: statementTime), title: title, body: body)
+            } else {
+                NotificationRouter.shared.pendingCardId = cardId
+            }
         }
     }
 }

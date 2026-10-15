@@ -4,6 +4,8 @@ import Foundation
 final class AccountListViewModel: ObservableObject {
     @Published var accounts: [Account] = []
     @Published var totalBalance: Double = 0
+    /// Active investment wallets only; not part of `totalBalance` (cash).
+    @Published var assetsTotal: Double = 0
     @Published var totalCreditDebt: Double = 0
     /// Subscriptions on active wallets, active or paused.
     @Published var subscriptions: [CardSubscription] = []
@@ -65,14 +67,15 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, makeDefault: Bool = false) async -> Bool {
+    func addAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, openingUnbilledUntil: String? = nil, makeDefault: Bool = false) async -> Bool {
         if accounts.contains(where: { $0.name == name && $0.type == type && $0.isActive }) {
             print("⚠️ Nama '\(name)' sudah digunakan untuk kategori \(type.rawValue)")
             return false
         }
         do {
-            let isDefault = accounts.isEmpty
-            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork)
+            // An investment wallet is never the main wallet: the main one is where spending lands.
+            let isDefault = accounts.filter { !$0.isInvestment }.isEmpty && type != .investment
+            let account = try await SupabaseRepository.shared.createAccount(name: name, type: type, openingBalance: openingBalance, icon: icon, userId: userId, isDefault: isDefault, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, openingUnbilledUntil: openingUnbilledUntil)
             accounts.append(account)
             if makeDefault && !isDefault {
                 await setDefaultAccount(id: account.id, userId: userId)
@@ -94,22 +97,60 @@ final class AccountListViewModel: ObservableObject {
         }
     }
 
-    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil) async -> Bool {
+    /// "Perbarui nilai": the new worth of an investment wallet. The difference is logged as an adjustment
+    /// (not income or expense) and the starting balance, which the capital is counted from, stays as it was.
+    func updateInvestmentValue(account: Account, newValue: Double, date: Date, note: String) async -> Bool {
+        guard account.isInvestment, newValue >= 0 else { return false }
         do {
-            if abs(newBalance - oldBalance) > 0.001 {
+            let delta = newValue - account.balance
+            if abs(delta) > 0.001 {
+                let text = note.trimmingCharacters(in: .whitespacesAndNewlines)
+                try await SupabaseRepository.shared.createAdjustmentLog(
+                    accountId: account.id, amount: delta, note: text.isEmpty ? "Perbarui nilai" : text, date: date.atCurrentTime())
+            }
+            let updated = try await SupabaseRepository.shared.setCurrentBalance(id: account.id, to: newValue)
+            if let index = accounts.firstIndex(where: { $0.id == account.id }) {
+                var next = updated
+                next.currentBalance = newValue
+                accounts[index] = next
+            }
+            recalculateBalance()
+            if let loadedUserId { AppDataCache.shared.setAccounts(accounts, for: loadedUserId) }
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            return true
+        } catch {
+            print("❌ updateInvestmentValue failed: \(error)")
+            return false
+        }
+    }
+
+    func rebalanceAccount(id: String, name: String, type: Account.AccountType, icon: String?, isArchived: Bool, newBalance: Double, oldBalance: Double, userId: String, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, billedDelta: Double = 0, runningDelta: Double = 0) async -> Bool {
+        // An investment can be worth 0 but never less.
+        if type == .investment && newBalance < 0 { return false }
+        do {
+            // A card has two bills: a change to the printed one is dated on the last cut-off, so it lands
+            // in this statement; a change to the running one is dated now and waits for the next cut-off.
+            if type == .credit, abs(billedDelta) > 0.001 || abs(runningDelta) > 0.001 {
+                let cutoff = statementDay.map { CreditStatement.lastCutoffNoon(statementDay: $0) } ?? Date()
+                for (delta, date, label) in [(billedDelta, cutoff, "tagihan terbit"), (runningDelta, Date(), "tagihan berjalan")] where abs(delta) > 0.001 {
+                    let note = "Penyesuaian \(label): \(delta > 0 ? "+" : "-")Rp \(String(Int(abs(delta))).formattedWithThousandSeparator)"
+                    do {
+                        try await SupabaseRepository.shared.createAdjustmentLog(accountId: id, amount: delta, note: note, date: date)
+                    } catch {
+                        print("⚠️ adjustment log failed (balance already updated): \(error)")
+                    }
+                }
+            } else if abs(newBalance - oldBalance) > 0.001 {
                 let delta = newBalance - oldBalance
                 let note = "Penyesuaian Saldo: Rp \(String(Int(oldBalance)).formattedWithThousandSeparator) → Rp \(String(Int(newBalance)).formattedWithThousandSeparator) (perubahan \(delta > 0 ? "+" : "")\(String(Int(delta)).formattedWithThousandSeparator))"
-
                 do {
-                    try await SupabaseRepository.shared.createAdjustmentLog(
-                        accountId: id, amount: delta, note: note, date: Date()
-                    )
+                    try await SupabaseRepository.shared.createAdjustmentLog(accountId: id, amount: delta, note: note, date: Date())
                 } catch {
                     print("⚠️ adjustment log failed (balance already updated): \(error)")
                 }
             }
 
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork)
+            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: type == .investment ? (accounts.first { $0.id == id }?.openingBalance ?? newBalance) : newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, clearOpeningUnbilled: abs(billedDelta) > 0.001)
             if let index = accounts.firstIndex(where: { $0.id == id }) {
                 var updatedAccount = updated
                 if abs(newBalance - oldBalance) > 0.001 {
@@ -214,7 +255,9 @@ final class AccountListViewModel: ObservableObject {
     }
 
     private func recalculateBalance() {
-        totalBalance = accounts.filter { $0.isActive && !$0.isCreditCard }.reduce(0) { $0 + $1.balance }
+        let wealth = WealthSummary(accounts: accounts)
+        totalBalance = wealth.cash
+        assetsTotal = wealth.assets
         totalCreditDebt = accounts.filter { $0.isActive && $0.isCreditCard }.reduce(0) { $0 + $1.balance }
     }
 
@@ -229,7 +272,7 @@ final class AccountListViewModel: ObservableObject {
         }
 
         for key in grouped.keys {
-            grouped[key] = grouped[key]?.sorted { $0.date > $1.date }
+            grouped[key] = grouped[key]?.newestFirst()
         }
 
         return grouped

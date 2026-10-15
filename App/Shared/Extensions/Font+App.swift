@@ -5,7 +5,7 @@ extension Font {
         .system(size: size, weight: weight)
     }
 
-    /// Plus Jakarta Sans ExtraBold, reserved for the SakuQ wordmark.
+    /// Plus Jakarta Sans ExtraBold, reserved for the Saku wordmark.
     static func wordmark(_ size: CGFloat) -> Font {
         .custom("PlusJakartaSans-Regular_ExtraBold", size: size)
     }

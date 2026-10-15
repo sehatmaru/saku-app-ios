@@ -44,7 +44,7 @@ struct BillDateSheet: View {
 
     private var monthTitle: String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = AppLanguage.locale
         formatter.dateFormat = "LLLL yyyy"
         return formatter.string(from: month).capitalized
     }
@@ -70,15 +70,15 @@ struct BillDateSheet: View {
                 if hasPrevious || hasNext {
                     Button { shift(-1) } label: { Image(systemName: "chevron.left") }
                         .disabled(!hasPrevious)
-                        .accessibilityLabel("Bulan sebelumnya")
+                        .accessibilityLabel(L("Bulan sebelumnya"))
                 }
-                Text(monthTitle + " · titik oranye = jatuh tempo")
+                Text(L("%@ · titik oranye = jatuh tempo", monthTitle))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                 if hasPrevious || hasNext {
                     Button { shift(1) } label: { Image(systemName: "chevron.right") }
                         .disabled(!hasNext)
-                        .accessibilityLabel("Bulan berikutnya")
+                        .accessibilityLabel(L("Bulan berikutnya"))
                 }
                 Spacer(minLength: 0)
             }
@@ -90,7 +90,7 @@ struct BillDateSheet: View {
 
             let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
             LazyVGrid(columns: columns, spacing: 0) {
-                ForEach(Array(["S", "S", "R", "K", "J", "S", "M"].enumerated()), id: \.offset) { _, name in
+                ForEach(Array([L("Senin"), L("Selasa"), L("Rabu"), L("Kamis"), L("Jumat"), L("Sabtu"), L("Minggu")].map { String($0.prefix(1)) }.enumerated()), id: \.offset) { _, name in
                     Text(name)
                         .font(.app(12, weight: .semibold))
                         .foregroundStyle(Color.appTextTertiary)
@@ -143,7 +143,7 @@ struct BillDateSheet: View {
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
-        .accessibilityLabel(day.formatted(.dateTime.day().month(.wide)) + (isDue ? ", jatuh tempo" : ""))
+        .accessibilityLabel(day.formatted(.dateTime.day().month(.wide).locale(AppLanguage.locale)) + (isDue ? L(", jatuh tempo") : ""))
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }

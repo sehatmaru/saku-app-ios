@@ -30,6 +30,10 @@ extension Color {
     static let appBorder = Color(light: 0xD2D2D7, dark: 0x48484A)
     /// Search fields, round action buttons.
     static let appFill = Color(light: 0xF2F2F4, dark: 0x1C1C1E)
+    /// Investment wallets: old gold on light, a brighter gold on dark (the panel behind white text stays #946200).
+    static let appInvestment = Color(light: 0x946200, dark: 0xE0A93B)
+    static let appInvestmentTint = Color(light: 0xFBF3E2, dark: 0x2A2415)
+    static let appInvestmentPanel = Color(light: 0x946200, dark: 0x946200)
     static let appIncome = appPrimary
     /// Expenses stay neutral: only income is colored.
     static let appExpense = appText

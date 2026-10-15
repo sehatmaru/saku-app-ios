@@ -87,6 +87,12 @@ struct WalletIcon: Identifiable, Equatable {
         WalletIcon(id: "dana", name: "DANA", shortName: "DANA", color: Color(red: 0/255, green: 99/255, blue: 173/255), category: .ewallet),
         WalletIcon(id: "linkaja", name: "LinkAja", shortName: "LINK", color: Color(red: 212/255, green: 32/255, blue: 39/255), category: .ewallet),
 
+        WalletIcon(id: "bibit", name: "Bibit", shortName: "BIBIT", color: Color(hex: "00875A"), category: .investment),
+        WalletIcon(id: "stockbit", name: "Stockbit", shortName: "STOCK", color: Color(hex: "2E3A46"), category: .investment),
+        WalletIcon(id: "emas", name: "Emas", shortName: "EMAS", color: Color(hex: "946200"), category: .investment),
+        WalletIcon(id: "ajaib", name: "Ajaib", shortName: "AJAIB", color: Color(hex: "2F6FE4"), category: .investment),
+        WalletIcon(id: "binance", name: "Binance", shortName: "BNB", color: Color(hex: "1E2026"), category: .investment),
+
         WalletIcon(id: "visa", name: "Visa", shortName: "VISA", color: Color(red: 26/255, green: 31/255, blue: 113/255), category: .credit),
         WalletIcon(id: "mastercard", name: "Mastercard", shortName: "MC", color: Color(red: 235/255, green: 155/255, blue: 30/255), category: .credit),
         WalletIcon(id: "jcb", name: "JCB", shortName: "JCB", color: Color(red: 0/255, green: 51/255, blue: 153/255), category: .credit),

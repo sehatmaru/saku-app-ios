@@ -1,6 +1,7 @@
-name: SakuQ
+name: Saku
 options:
-  bundleIdPrefix: com.sakuq
+  developmentLanguage: id
+  bundleIdPrefix: id.saku
   deploymentTarget:
     iOS: "18.0"
   xcodeVersion: "16.0"
@@ -16,21 +17,25 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    STRING_CATALOG_GENERATE_SYMBOLS: NO
     TARGETED_DEVICE_FAMILY: "1"
     INFOPLIST_FILE: App/Resources/Info.plist
     DEVELOPMENT_TEAM: ""
 
 targets:
-  SakuQ:
+  Saku:
     type: application
     platform: iOS
     sources:
       - App
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.sakuq.app
+        PRODUCT_BUNDLE_IDENTIFIER: id.saku.app
         INFOPLIST_FILE: App/Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: App/Resources/Saku.entitlements
     dependencies:
       - package: Supabase
         product: Supabase
@@ -38,28 +43,56 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
-  SakuQTests:
+      - target: SakuShare
+  SakuTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - Tests
+      - path: Tests
+        excludes:
+          - "UI"
     dependencies:
-      - target: SakuQ
+      - target: Saku
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.sakuq.tests
+        PRODUCT_BUNDLE_IDENTIFIER: id.saku.tests
+  SakuUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Tests/UI
+    dependencies:
+      - target: Saku
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: id.saku.uitests
+        TEST_TARGET_NAME: Saku
+  SakuShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Extensions/Share
+      - path: App/Shared/Utilities/ShareInbox.swift
+      - path: App/Shared/Utilities/ImageReader.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: id.saku.app.share
+        INFOPLIST_FILE: Extensions/Share/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensions/Share/SakuShare.entitlements
+        SKIP_INSTALL: YES
 
 schemes:
-  SakuQ:
+  Saku:
     build:
       targets:
-        SakuQ: all
+        Saku: all
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - SakuQTests
+        - SakuTests
+        - SakuUITests
     profile:
       config: Release
     analyze:

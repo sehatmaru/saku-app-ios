@@ -20,7 +20,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, isDefault: Bool = false, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil) async throws -> Account {
+    func createAccount(name: String, type: Account.AccountType, openingBalance: Double, icon: String?, userId: String, isDefault: Bool = false, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, openingUnbilledUntil: String? = nil) async throws -> Account {
         var payload: [String: AnyJSON] = [
             "user_id": AnyJSON.string(userId),
             "name": AnyJSON.string(name),
@@ -35,6 +35,7 @@ final class SupabaseRepository: @unchecked Sendable {
         if let statementDay { payload["statement_day"] = AnyJSON.integer(statementDay) }
         if let color { payload["color"] = AnyJSON.string(color) }
         if let cardNetwork { payload["card_network"] = AnyJSON.string(cardNetwork) }
+        if let openingUnbilledUntil { payload["opening_unbilled_until"] = AnyJSON.string(openingUnbilledUntil) }
         return try await client
             .from("accounts")
             .insert(payload)
@@ -44,7 +45,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool, isDefault: Bool? = nil, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil) async throws -> Account {
+    func updateAccount(id: String, name: String, type: Account.AccountType, openingBalance: Double, currentBalance: Double?, icon: String?, isArchived: Bool, isDefault: Bool? = nil, creditLimit: Double? = nil, dueDate: String? = nil, statementDay: Int? = nil, color: String? = nil, cardNetwork: String? = nil, openingUnbilledUntil: String? = nil, clearOpeningUnbilled: Bool = false) async throws -> Account {
         var payload: [String: AnyJSON] = [
             "name": AnyJSON.string(name),
             "account_type": AnyJSON.string(type.rawValue),
@@ -59,9 +60,23 @@ final class SupabaseRepository: @unchecked Sendable {
         if let statementDay { payload["statement_day"] = AnyJSON.integer(statementDay) }
         if let color { payload["color"] = AnyJSON.string(color) }
         if let cardNetwork { payload["card_network"] = AnyJSON.string(cardNetwork) }
+        if let openingUnbilledUntil { payload["opening_unbilled_until"] = AnyJSON.string(openingUnbilledUntil) }
+        else if clearOpeningUnbilled { payload["opening_unbilled_until"] = AnyJSON.null }
         return try await client
             .from("accounts")
             .update(payload)
+            .eq("id", value: id)
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    /// Sets the stored balance directly, leaving the starting balance alone.
+    func setCurrentBalance(id: String, to value: Double) async throws -> Account {
+        try await client
+            .from("accounts")
+            .update(["current_balance": AnyJSON.double(value)])
             .eq("id", value: id)
             .select()
             .single()
@@ -94,6 +109,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .eq("user_id", value: userId)
             .is("deleted_at", value: nil)
             .order("occurred_at", ascending: false)
+            .order("created_at", ascending: false)
             .execute()
             .value
     }
@@ -106,6 +122,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .or("primary_account_id.eq.\(accountId),counterparty_account_id.eq.\(accountId)")
             .is("deleted_at", value: nil)
             .order("occurred_at", ascending: false)
+            .order("created_at", ascending: false)
             .execute()
             .value
     }
@@ -439,17 +456,26 @@ final class SupabaseRepository: @unchecked Sendable {
 
     // MARK: - Categories
 
+    /// Categories under the user's own names (renamed built-in ones included).
     func fetchCategories() async throws -> [Category] {
-        try await client
+        async let loaded: [Category] = client
             .from("categories")
             .select()
             .is("deleted_at", value: nil)
             .order("name", ascending: true)
             .execute()
             .value
+        let names = ((try? await fetchCategoryPreferences()) ?? [])
+            .reduce(into: [String: String]()) { if let name = $1.customName { $0[$1.categoryId] = name } }
+        return try await loaded.map { names[$0.id].map($0.named) ?? $0 }
     }
 
     func createCategory(name: String, type: CategoryType, icon: String?, color: String?, userId: String) async throws -> Category {
+        do { return try await insertCategory(name: name, type: type, icon: icon, color: color, userId: userId) }
+        catch { throw FreeLimits.friendly(error) }
+    }
+
+    private func insertCategory(name: String, type: CategoryType, icon: String?, color: String?, userId: String) async throws -> Category {
         try await client
             .from("categories")
             .insert([
@@ -487,7 +513,7 @@ final class SupabaseRepository: @unchecked Sendable {
     func fetchCategoryPreferences() async throws -> [CategoryPreference] {
         try await client
             .from("category_preferences")
-            .select("category_id,is_hidden,sort_order")
+            .select("category_id,is_hidden,sort_order,custom_name")
             .execute()
             .value
     }
@@ -495,11 +521,27 @@ final class SupabaseRepository: @unchecked Sendable {
     /// Hides or shows a category for this user. Hidden ones leave the pickers (and budgets);
     /// transactions and the budget row are kept, so showing it again brings everything back.
     func setCategoryHidden(id: String, hidden: Bool) async throws {
+        do {
+            try await client
+                .from("category_preferences")
+                .upsert([
+                    "category_id": AnyJSON.string(id),
+                    "is_hidden": AnyJSON.bool(hidden),
+                    "updated_at": AnyJSON.string(Date().iso8601Formatted),
+                ] as [String: AnyJSON], onConflict: "user_id,category_id")
+                .execute()
+        } catch {
+            throw FreeLimits.friendly(error)
+        }
+    }
+
+    /// Gives a category (built-in ones too) the user's own name; nil brings the shared name back.
+    func setCategoryName(id: String, name: String?) async throws {
         try await client
             .from("category_preferences")
             .upsert([
                 "category_id": AnyJSON.string(id),
-                "is_hidden": AnyJSON.bool(hidden),
+                "custom_name": name.map { AnyJSON.string($0) } ?? AnyJSON.null,
                 "updated_at": AnyJSON.string(Date().iso8601Formatted),
             ] as [String: AnyJSON], onConflict: "user_id,category_id")
             .execute()
@@ -528,8 +570,9 @@ final class SupabaseRepository: @unchecked Sendable {
 
     // MARK: - Budgets
 
+    /// Budgets with this period's amount: a temporary change if one covers it, else the base amount.
     func fetchBudgets(userId: String) async throws -> [Budget] {
-        try await client
+        var budgets: [Budget] = try await client
             .from("budgets")
             .select()
             .eq("user_id", value: userId)
@@ -537,6 +580,45 @@ final class SupabaseRepository: @unchecked Sendable {
             .order("created_at", ascending: true)
             .execute()
             .value
+        let changes = (try? await fetchBudgetAmountChanges()) ?? []
+        let periodStart = PaydayCycle.current.period(containing: Date()).start
+        for index in budgets.indices {
+            let resolved = ResolvedBudgetAmount.resolve(
+                base: budgets[index].amount, changes: changes.filter { $0.budgetId == budgets[index].id },
+                periodStart: periodStart)
+            guard resolved.source == .temporary else { continue }
+            budgets[index].baseAmount = budgets[index].amount
+            budgets[index].amount = resolved.amount
+            budgets[index].temporary = resolved.temporary
+        }
+        return budgets
+    }
+
+    /// Every amount change that still counts (canceled ones are left out), oldest first.
+    func fetchBudgetAmountChanges() async throws -> [BudgetAmountChange] {
+        try await client
+            .from("budget_amount_changes")
+            .select()
+            .is("canceled_at", value: nil)
+            .order("effective_from")
+            .execute()
+            .value
+    }
+
+    /// `kind` "base": new amount from `from` on. "temporary": the amount for `from`..<`to`.
+    func setBudgetAmount(budgetId: String, amount: Double, kind: String, from: Date, to: Date?) async throws {
+        var params: [String: AnyJSON] = [
+            "p_budget_id": .string(budgetId), "p_amount": .double(amount), "p_kind": .string(kind),
+            "p_from": .string(BudgetAmountChange.dayString(from)),
+        ]
+        if let to { params["p_to"] = .string(BudgetAmountChange.dayString(to)) }
+        try await client.rpc("set_budget_amount", params: params).execute()
+    }
+
+    func cancelBudgetTemporary(budgetId: String, periodStart: Date) async throws {
+        try await client.rpc("cancel_budget_temporary", params: [
+            "p_budget_id": budgetId, "p_period_start": BudgetAmountChange.dayString(periodStart),
+        ]).execute()
     }
 
     func fetchBudgetSpent(categoryId: String, userId: String, startDate: String, endDate: String?) async throws -> Double {
@@ -560,6 +642,15 @@ final class SupabaseRepository: @unchecked Sendable {
     }
 
     func createBudget(categoryId: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, userId: String) async throws -> Budget {
+        do {
+            return try await insertBudget(categoryId: categoryId, name: name, amount: amount, periodUnit: periodUnit,
+                                          periodInterval: periodInterval, startDate: startDate, endDate: endDate, userId: userId)
+        } catch {
+            throw FreeLimits.friendly(error)
+        }
+    }
+
+    private func insertBudget(categoryId: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, userId: String) async throws -> Budget {
         try await client
             .from("budgets")
             .insert([
@@ -631,5 +722,12 @@ extension SupabaseRepository {
 private extension Date {
     var iso8601Formatted: String {
         ISO8601DateFormatter().string(from: self)
+    }
+}
+
+extension SupabaseRepository {
+    /// Every budget the user ever had, deleted ones included, for the history.
+    func fetchBudgetsForHistory() async throws -> [BudgetHistoryBudget] {
+        try await client.from("budgets").select().order("created_at").execute().value
     }
 }

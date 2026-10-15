@@ -30,22 +30,22 @@ enum CategoryCatalog {
     static func validate(_ name: String, type: CategoryType, excluding id: String?,
                          in categories: [Category], hiddenIds: Set<String>) -> String? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return "Nama belum diisi" }
-        if trimmed.lowercased() == "penyesuaian saldo" { return "Nama dipakai sistem" }
+        if trimmed.isEmpty { return L("Nama belum diisi") }
+        if trimmed.lowercased() == "penyesuaian saldo" { return L("Nama dipakai sistem") }
         if let dup = categories.first(where: {
             $0.type == type && $0.id != id && !isSystem($0) && $0.name.lowercased() == trimmed.lowercased()
         }) {
-            return "Sudah ada “\(dup.name)”" + (hiddenIds.contains(dup.id) ? " (disembunyikan)" : "")
+            return hiddenIds.contains(dup.id) ? L("Sudah ada “%@” (disembunyikan)", dup.name) : L("Sudah ada “%@”", dup.name)
         }
         return nil
     }
 
     /// "Rp1,5 jt" or "Rp400 rb".
     static func short(_ value: Double) -> String {
-        guard value >= 1_000_000 else { return "Rp\(Int((value / 1000).rounded())) rb" }
+        guard value >= 1_000_000 else { return L("Rp%lld rb", Int((value / 1000).rounded())) }
         let millions = (value / 100_000).rounded() / 10
         let text = millions == millions.rounded() ? String(Int(millions)) : String(format: "%.1f", millions)
-        return "Rp" + text.replacingOccurrences(of: ".", with: ",") + " jt"
+        return L("Rp%@ jt", text.replacingOccurrences(of: ".", with: AppLanguage.code == "en" ? "." : ","))
     }
 
     static func typeColor(_ type: CategoryType) -> Color {
@@ -138,7 +138,7 @@ struct CategoryFormView: View {
     private var tint: Color { CategoryCatalog.typeColor(type) }
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var error: String? {
-        isBuiltIn ? nil : CategoryCatalog.validate(name, type: type, excluding: editing?.id, in: categories, hiddenIds: hiddenIds)
+        CategoryCatalog.validate(name, type: type, excluding: editing?.id, in: categories, hiddenIds: hiddenIds)
     }
     private var showsError: Bool { error != nil && (triedSave || !trimmedName.isEmpty) }
     private var savesBudget: Bool { type == .expense && budgetOn && budgetAmount > 0 }
@@ -168,7 +168,7 @@ struct CategoryFormView: View {
             }
         }
         .background(Color.appBackground)
-        .toast((editing?.name ?? "") + " ditampilkan lagi", isShown: $showsUndoToast)
+        .toast(L("%@ ditampilkan lagi", editing?.name ?? ""), isShown: $showsUndoToast)
         .sheet(item: $sheet, onDismiss: {
             if budgetAmount <= 0 { budgetOn = false }
         }) { kind in
@@ -207,7 +207,7 @@ struct CategoryFormView: View {
                     .frame(width: 70, alignment: .leading)
                     .disabled(isDone)
                 Spacer()
-                Text(editing == nil ? "Kategori baru" : "Ubah kategori")
+                Text(editing == nil ? L("Kategori baru") : L("Ubah kategori"))
                     .font(.app(17, weight: .semibold))
                 Spacer()
                 Color.clear.frame(width: 70, height: 1)
@@ -266,7 +266,7 @@ struct CategoryFormView: View {
                 .multilineTextAlignment(.center)
                 .tint(.white)
                 .submitLabel(.done)
-                .disabled(isBuiltIn || isDone)
+                .disabled(isDone)
                 .padding(.horizontal, 32)
                 .padding(.top, 14)
                 .offset(x: shakeX)
@@ -298,9 +298,9 @@ struct CategoryFormView: View {
     }
 
     private var subtitle: String {
-        guard let editing else { return "Ketik nama di atas" }
-        return (transactionCount > 0 ? "\(transactionCount) transaksi" : "Belum dipakai")
-            + (editing.isBuiltIn ? " · Kategori bawaan" : "")
+        guard let editing else { return L("Ketik nama di atas") }
+        return (transactionCount > 0 ? L("%lld transaksi", transactionCount) : L("Belum dipakai"))
+            + (editing.isBuiltIn ? " · " + L("Kategori bawaan") : "")
     }
 
     private var doneOverlay: some View {
@@ -315,10 +315,10 @@ struct CategoryFormView: View {
                 }
                 .scaleEffect(isDone ? 1 : 0.4)
                 .animation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.56), value: isDone)
-            Text(editing == nil ? "Kategori tersimpan" : "Perubahan tersimpan")
+            Text(editing == nil ? L("Kategori tersimpan") : L("Perubahan tersimpan"))
                 .font(.app(20, weight: .semibold))
                 .padding(.top, 6)
-            Text(trimmedName + (savesBudget ? " · Budget Rp" + budgetAmount.formattedAsDigits() + "/periode" : ""))
+            Text(trimmedName + (savesBudget ? " · " + L("Budget Rp%@/periode", budgetAmount.formattedAsDigits()) : ""))
                 .font(.app(14))
                 .opacity(0.85)
                 .monospacedDigit()
@@ -344,7 +344,7 @@ struct CategoryFormView: View {
                     .transition(.opacity)
             }
             if isBuiltIn {
-                Label("Nama dan ikon kategori bawaan tidak bisa diubah", systemImage: "lock")
+                Label("Ikon dan warna kategori bawaan tidak bisa diubah", systemImage: "lock")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextTertiary)
                     .padding(.horizontal, 24)
@@ -373,14 +373,14 @@ struct CategoryFormView: View {
                 .foregroundStyle(Color.appTextSecondary)
                 .frame(width: 76, alignment: .leading)
             if let editing {
-                Text(editing.type == .expense ? "Pengeluaran" : "Pemasukan")
+                Text(editing.type == .expense ? L("Pengeluaran") : L("Pemasukan"))
                     .font(.app(16, weight: .medium))
                 Spacer()
                 Label("Tidak bisa diubah", systemImage: "lock")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextTertiary)
             } else {
-                SlidingSegment(options: ["Pengeluaran", "Pemasukan"], selection: Binding(
+                SlidingSegment(options: [L("Pengeluaran"), L("Pemasukan")], selection: Binding(
                     get: { type == .expense ? 0 : 1 },
                     set: { type = $0 == 0 ? .expense : .income }
                 ))
@@ -397,7 +397,7 @@ struct CategoryFormView: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Atur budget").font(.app(16))
-                    Text("Nominal per periode · " + cycle.label())
+                    Text(L("Nominal per periode · %@", cycle.label()))
                         .font(.app(13))
                         .foregroundStyle(Color.appTextSecondary)
                 }
@@ -419,12 +419,12 @@ struct CategoryFormView: View {
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
                         .frame(width: 76, alignment: .leading)
-                    Text(budgetAmount > 0 ? "Rp" + budgetAmount.formattedAsDigits() : "Belum diisi")
+                    Text(budgetAmount > 0 ? "Rp" + budgetAmount.formattedAsDigits() : L("Belum diisi"))
                         .font(.app(16, weight: .medium))
                         .foregroundStyle(Color.appText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if budgetAmount > 0 {
-                        Text("≈Rp" + (budgetAmount / Double(max(cycle.days().total, 1))).formattedAsDigits() + "/hari")
+                        Text(L("≈Rp%@/hari", (budgetAmount / Double(max(cycle.days().total, 1))).formattedAsDigits()))
                             .font(.app(13))
                             .foregroundStyle(Color.appTextSecondary)
                     }
@@ -589,7 +589,7 @@ struct CategoryFormView: View {
     // MARK: - Hide
 
     private var hideSheet: some View {
-        PickerSheet(title: "Sembunyikan kategori?", actionTitle: "Batal", onDone: { sheet = nil }) {
+        PickerSheet(title: L("Sembunyikan kategori?"), actionTitle: L("Batal"), onDone: { sheet = nil }) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 14) {
                     Circle()
@@ -637,22 +637,22 @@ struct CategoryFormView: View {
     private var hideInfo: [(icon: String, text: String)] {
         let current = editing?.name ?? trimmedName
         var items: [(icon: String, text: String)] = [
-            ("eye.slash", "Tidak muncul lagi di pilihan kategori saat mencatat transaksi."),
+            ("eye.slash", L("Tidak muncul lagi di pilihan kategori saat mencatat transaksi.")),
             ("clock.arrow.circlepath", transactionCount > 0
-                ? "\(transactionCount) transaksi lama tetap tercatat sebagai \(current)."
-                : "Belum ada transaksi di kategori ini."),
+                ? L("%lld transaksi lama tetap tercatat sebagai %@.", transactionCount, current)
+                : L("Belum ada transaksi di kategori ini.")),
         ]
         if let budget, budget.amount > 0 {
-            items.append(("chart.pie", "Budget Rp" + budget.amount.formattedAsDigits() + " berhenti mulai periode ini."))
+            items.append(("chart.pie", L("Budget Rp%@ berhenti mulai periode ini.", budget.amount.formattedAsDigits())))
         }
-        items.append(("arrow.counterclockwise", "Bisa ditampilkan lagi kapan saja dari Kelola kategori."))
+        items.append(("arrow.counterclockwise", L("Bisa ditampilkan lagi kapan saja dari Kelola kategori.")))
         return items
     }
 
     private var hiddenDetail: String {
-        "Tidak muncul lagi saat mencatat."
-            + (transactionCount > 0 ? " \(transactionCount) transaksi lama tetap memakai namanya." : "")
-            + ((budget?.amount ?? 0) > 0 ? " Budget " + CategoryCatalog.short(budget?.amount ?? 0) + " dihentikan." : "")
+        L("Tidak muncul lagi saat mencatat.")
+            + (transactionCount > 0 ? " " + L("%lld transaksi lama tetap memakai namanya.", transactionCount) : "")
+            + ((budget?.amount ?? 0) > 0 ? " " + L("Budget %@ dihentikan.", CategoryCatalog.short(budget?.amount ?? 0)) : "")
     }
 
     private func hide() {
@@ -720,8 +720,15 @@ struct CategoryFormView: View {
             let category: Category
             do {
                 if let editing {
-                    category = editing.isBuiltIn ? editing
-                        : try await repo.updateCategory(id: editing.id, name: name, icon: icon, color: color)
+                    if editing.isBuiltIn {
+                        // Only the user's own name changes; typing the shared name again restores it.
+                        category = editing.named(name)
+                        if name != editing.name {
+                            try await repo.setCategoryName(id: editing.id, name: category.defaultName == nil ? nil : name)
+                        }
+                    } else {
+                        category = try await repo.updateCategory(id: editing.id, name: name, icon: icon, color: color)
+                    }
                 } else {
                     category = try await repo.createCategory(name: name, type: type, icon: icon, color: color, userId: userId)
                 }
@@ -753,7 +760,7 @@ struct CategoryFormView: View {
                 isSaving = false
                 NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 outcomeAfterAlert = .saved(category)
-                errorMessage = "Kategori tersimpan, tapi budget gagal disimpan. " + error.localizedDescription
+                errorMessage = L("Kategori tersimpan, tapi budget gagal disimpan. %@", error.localizedDescription)
                 return
             }
             NotificationCenter.default.post(name: .dataDidChange, object: nil)
@@ -787,7 +794,7 @@ private struct BudgetAmountSheet: View {
     private var suggestion: Int { Int((average / 1000).rounded() * 1000) }
 
     var body: some View {
-        PickerSheet(title: "Budget per periode", onDone: { onDone(Double(amount)) }) {
+        PickerSheet(title: L("Budget per periode"), onDone: { onDone(Double(amount)) }) {
             VStack(spacing: 8) {
                 HStack(alignment: .top, spacing: 4) {
                     Text("Rp")
@@ -813,7 +820,7 @@ private struct BudgetAmountSheet: View {
                         isFresh = true
                         bump()
                     } label: {
-                        Label("Rata-rata 3 bulan terakhir Rp" + Double(suggestion).formattedAsDigits(), systemImage: "sparkles")
+                        Label(L("Rata-rata 3 bulan terakhir Rp%@", Double(suggestion).formattedAsDigits()), systemImage: "sparkles")
                             .font(.app(13, weight: .semibold))
                             .foregroundStyle(Color.appPrimary)
                             .padding(.leading, 10)
@@ -838,8 +845,8 @@ private struct BudgetAmountSheet: View {
 
     private var info: String {
         let days = max(cycle.days().total, 1)
-        return "Periode " + cycle.label()
-            + (amount > 0 ? " · ≈Rp" + (Double(amount) / Double(days)).formattedAsDigits() + " per hari" : "")
+        return L("Periode %@", cycle.label())
+            + (amount > 0 ? " · " + L("≈Rp%@ per hari", (Double(amount) / Double(days)).formattedAsDigits()) : "")
     }
 
     private func press(_ key: String) {
@@ -893,7 +900,7 @@ private struct HiddenEndScreen: View {
                             .scaleEffect(isShown ? 1 : 0)
                             .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.52).delay(0.18), value: isShown)
                     }
-                Text(category.name + " disembunyikan")
+                Text(L("%@ disembunyikan", category.name))
                     .font(.app(24, weight: .bold))
                     .tracking(-0.4)
                     .foregroundStyle(Color.appText)
@@ -911,7 +918,7 @@ private struct HiddenEndScreen: View {
             .animation(.timingCurve(0.3, 1.4, 0.5, 1, duration: 0.52), value: isShown)
 
             VStack(spacing: 6) {
-                EmptyStateButton(title: "Selesai", icon: nil, isFullWidth: true, action: onDone)
+                EmptyStateButton(title: L("Selesai"), icon: nil, isFullWidth: true, action: onDone)
                 Button(action: onUndo) {
                     Label("Urungkan", systemImage: "arrow.counterclockwise")
                         .font(.app(16, weight: .semibold))

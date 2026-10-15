@@ -95,8 +95,8 @@ struct OnboardingView: View {
 
     private var walletsSlide: some View {
         let on = isVisible(0)
-        return slidePage(title: "Semua dompet dalam satu kantong.",
-                         subtitle: "Bank, e-wallet, cash, dan kartu kredit — saldonya terlihat sekaligus.",
+        return slidePage(title: L("Semua dompet dalam satu kantong."),
+                         subtitle: L("Bank, e-wallet, tunai, dan kartu kredit. Semua saldo dalam satu layar."),
                          isShown: on) {
             ZStack(alignment: .topLeading) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -157,7 +157,7 @@ struct OnboardingView: View {
                 .padding(.horizontal, 18)
             }
             .overlay(alignment: .bottomLeading) {
-                Text(kind)
+                Text(L(kind))
                     .font(.app(12))
                     .opacity(0.82)
                     .padding(.leading, 18)
@@ -177,11 +177,11 @@ struct OnboardingView: View {
 
     private var budgetSlide: some View {
         let on = isVisible(1)
-        return slidePage(title: "Budget yang kelihatan sisanya.",
-                         subtitle: "Hijau aman, oranye hati-hati, merah sudah lewat. Tanpa hitung manual.",
+        return slidePage(title: L("Sisa budget terlihat jelas."),
+                         subtitle: L("Hijau aman, oranye hampir habis, merah lewat batas."),
                          isShown: on) {
             VStack(alignment: .leading, spacing: 0) {
-                SectionHeader(title: "Budget", trailing: "September")
+                SectionHeader(title: L("Budget"), trailing: L("September"))
                     .padding(.bottom, 8)
                     .opacity(on ? 1 : 0)
                     .animation(.easeInOut(duration: 0.4), value: on)
@@ -195,9 +195,9 @@ struct OnboardingView: View {
                             .frame(width: 24)
                         VStack(spacing: 10) {
                             HStack {
-                                Text(b.name).font(.app(16, weight: .medium))
+                                Text(L(b.name)).font(.app(16, weight: .medium))
                                 Spacer()
-                                Text(b.label).font(.app(14)).foregroundStyle(b.labelColor)
+                                Text(L(b.label)).font(.app(14)).foregroundStyle(b.labelColor)
                             }
                             SegmentTrack(count: 30, filled: on ? Int((b.ratio * 30).rounded()) : 0, color: b.color,
                                          delay: 0.35 + Double(j) * 0.17, step: 0.016)
@@ -218,11 +218,11 @@ struct OnboardingView: View {
     private var healthSlide: some View {
         let on = isVisible(2)
         let q = slide == 2 ? progress : 0
-        return slidePage(title: "Satu angka untuk kondisi keuanganmu.",
-                         subtitle: "Dihitung dari arus kas, budget, dan sebaran saldo — diperbarui setiap hari.",
+        return slidePage(title: L("Satu angka untuk kondisi keuanganmu."),
+                         subtitle: L("Dari arus kas, budget, dana darurat, dan kebiasaan mencatat. Diperbarui tiap kamu mencatat."),
                          isShown: on) {
             VStack(alignment: .leading, spacing: 0) {
-                SectionHeader(title: "Kesehatan finansial", trailing: "Baik", trailingColor: .appPrimary)
+                SectionHeader(title: L("Kesehatan finansial"), trailing: L("Baik"), trailingColor: .appPrimary)
 
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     CountingText(value: 78 * q) { String(Int($0.rounded())) }
@@ -239,9 +239,9 @@ struct OnboardingView: View {
                     .padding(.top, 22)
 
                 HStack(spacing: 0) {
-                    stat("Arus kas", 32 * q, of: 40)
-                    stat("Budget", 26 * q, of: 35)
-                    stat("Diversifikasi", 20 * q, of: 25)
+                    stat(L("Arus kas"), 32 * q, of: 40)
+                    stat(L("Budget"), 26 * q, of: 35)
+                    stat(L("Dana darurat"), 20 * q, of: 25)
                 }
                 .padding(.top, 22)
             }
@@ -309,9 +309,9 @@ struct OnboardingView: View {
             }
             .animation(.settle(0.42), value: slide)
             .accessibilityElement()
-            .accessibilityLabel("Halaman \(slide + 1) dari 3")
+            .accessibilityLabel(L("Halaman %lld dari 3", slide + 1))
 
-            PrimaryButton(title: slide < 2 ? "Lanjut" : "Mulai", trailingIcon: "arrow.right") {
+            PrimaryButton(title: slide < 2 ? L("Lanjut") : L("Mulai"), trailingIcon: "arrow.right") {
                 if slide < 2 { go(slide + 1) } else { onFinish() }
             }
         }

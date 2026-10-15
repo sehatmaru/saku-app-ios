@@ -62,7 +62,7 @@ struct OverdueBillBanner: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
                 logoChip(bill.card, color: color)
-                Text((count > 1 ? "" : "Tagihan ") + bill.card.name + " sudah lewat")
+                Text(count > 1 ? L("%@ sudah lewat", bill.card.name) : L("Tagihan %@ sudah lewat", bill.card.name))
                     .font(.app(15, weight: .semibold))
                     .lineLimit(1)
                 Spacer(minLength: 0)
@@ -204,7 +204,7 @@ struct OverdueBillBanner: View {
 
     private var laterRow: some View {
         let first = laterBills[0]
-        let text = (laterBills.count > 1 ? "\(laterBills.count) tagihan belum" : "Belum") + " dibayar · ingatkan besok"
+        let text = laterBills.count > 1 ? L("%lld tagihan belum dibayar · ingatkan besok", laterBills.count) : L("Belum dibayar · ingatkan besok")
         return Button {
             withAnimation(.settle(0.42)) {
                 for bill in laterBills {

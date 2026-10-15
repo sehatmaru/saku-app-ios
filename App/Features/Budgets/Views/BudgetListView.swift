@@ -13,6 +13,7 @@ struct BudgetListView: View {
     @AppStorage("paydayCardDismissed") private var isPaydayCardDismissed = false
     /// Tambah budget is showing: for `category` when a row was tapped, else from the pick step.
     @State private var addTarget: AddTarget?
+    @State private var showsBudgetLimit = false
 
     private struct AddTarget: Identifiable {
         let id = UUID()
@@ -26,7 +27,9 @@ struct BudgetListView: View {
     @State private var flashId: String?
     @State private var toastText = ""
     @State private var isToastShown = false
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
+    /// Local copy so the toggle animates (an @AppStorage change ignores withAnimation); same as Transaksi.
+    @State private var isBalanceVisible = true
 
     private var setItems: [BudgetListItem] {
         viewModel.budgetItems.filter { $0.budget != nil }
@@ -49,13 +52,21 @@ struct BudgetListView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ScreenHeader(title: "Budget") {}
+                    ScreenHeader(title: L("Budget")) {
+                        NavigationLink(destination: BudgetHistoryView(viewModel: viewModel).detailPage()) {
+                            Image(systemName: "clock.arrow.circlepath")
+                        }
+                        .accessibilityLabel(L("Riwayat budget"))
+                        Button {
+                            withAnimation(.smooth) { isBalanceVisible.toggle() }
+                            isBalanceVisibleStorage = isBalanceVisible
+                        } label: {
+                            Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+                        }
+                        .accessibilityLabel(isBalanceVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
+                    }
 
                     periodHeader
-
-                    addBudgetButton
-                        .padding(.horizontal, 24)
-                        .padding(.top, 18)
 
                     if showsPaydayCard {
                         paydayCard
@@ -93,10 +104,14 @@ struct BudgetListView: View {
                     }
                 }
             }
+            .confirmDialog(isPresented: $showsBudgetLimit, icon: "lock", title: L("Batas budget tercapai"),
+                           message: FreeLimits.budgetMessage(), confirmTitle: nil, cancelTitle: L("Mengerti"))
             .sheet(isPresented: $showPaydaySheet) {
                 PaydaySheet(context: .card) { day in paydayPicked(day) }
             }
             .toast(toastText, isShown: $isToastShown)
+            .onAppear { isBalanceVisible = isBalanceVisibleStorage }
+            .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
                 await viewModel.loadBudgets(userId: userId)
@@ -147,11 +162,13 @@ struct BudgetListView: View {
                     .foregroundStyle(Color.appPrimary)
             }
             .monospacedDigit()
+            // Same sweep as the category bars, starting with the first row once the list is shown
+            // (not while the skeleton is up, where nobody sees it), and only on first open.
             SegmentBar(value: Double(dayNumber) / Double(max(days.total, 1)), count: days.total,
-                       isActive: !isPeriodHidden)
+                       delay: 0.3, isActive: !isPeriodHidden && viewModel.hasLoadedOnce, replays: false)
                 .id(days.total)
                 .padding(.top, 10)
-            (Text(headerPayday.map { "Gajian tiap tanggal \($0)" } ?? "Mengikuti tanggal 1")
+            (Text(headerPayday.map { L("Gajian tiap tanggal %lld", $0) } ?? L("Mengikuti tanggal 1"))
                 + Text(" · hari ke-\(dayNumber) dari \(days.total)"))
                 .padding(.top, 12)
         }
@@ -163,14 +180,6 @@ struct BudgetListView: View {
         .offset(y: isPeriodHidden ? 8 : 0)
         .animation(.easeInOut(duration: 0.22), value: isPeriodHidden)
         .accessibilityElement(children: .combine)
-    }
-
-    /// Right under the period hero; dimmed until the budgets have loaded.
-    private var addBudgetButton: some View {
-        EmptyStateButton(title: "Tambah budget", isFullWidth: true) { addTarget = AddTarget(category: nil) }
-            .opacity(viewModel.hasLoadedOnce ? 1 : 0.4)
-            .disabled(!viewModel.hasLoadedOnce)
-            .accessibilityLabel("Tambah budget")
     }
 
     private var paydayCard: some View {
@@ -224,7 +233,7 @@ struct BudgetListView: View {
             frozenPayday = nil
             isPeriodHidden = false
             try? await Task.sleep(for: .milliseconds(140))
-            showToast("Periode budget diperbarui")
+            showToast(L("Periode budget diperbarui"))
         }
     }
 
@@ -233,7 +242,7 @@ struct BudgetListView: View {
     private var budgetList: some View {
         VStack(alignment: .leading, spacing: 0) {
             if !setItems.isEmpty {
-                SectionHeader(title: "Per kategori", trailing: "\(setItems.count) aktif")
+                SectionHeader(title: L("Per kategori"), trailing: L("%lld aktif", setItems.count))
                     .padding(.horizontal, 24)
                     .padding(.top, 14)
                     .padding(.bottom, 4)
@@ -241,7 +250,8 @@ struct BudgetListView: View {
             ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
                 NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
                     BudgetCardView(budget: item.budget, category: item.category,
-                                   fillDelay: 0.3 + Double(i) * 0.07, isFillActive: !isPeriodHidden)
+                                   fillDelay: 0.3 + Double(i) * 0.07, isFillActive: !isPeriodHidden,
+                                   isBalanceVisible: isBalanceVisible)
                         .padding(.horizontal, 24)
                         .background(flashId == item.category.id ? Color.appPrimary.opacity(0.1) : .clear)
                         .animation(.easeInOut(duration: 0.7), value: flashId)
@@ -249,12 +259,12 @@ struct BudgetListView: View {
                 .buttonStyle(RowPressStyle())
             }
             if !unsetItems.isEmpty {
-                SectionHeader(title: "Belum diatur", trailing: "\(unsetItems.count)")
+                SectionHeader(title: L("Belum diatur"), trailing: "\(unsetItems.count)")
                     .padding(.horizontal, 24)
                     .padding(.top, setItems.isEmpty ? 14 : 22)
                     .padding(.bottom, 4)
                 ForEach(unsetItems) { item in
-                    Button { addTarget = AddTarget(category: item.category) } label: {
+                    Button { requestAdd(item.category) } label: {
                         unsetRow(item.category)
                             .padding(.horizontal, 24)
                     }
@@ -286,8 +296,8 @@ struct BudgetListView: View {
                     .foregroundStyle(Color.appText)
                     .lineLimit(1)
                 Text(average > 0
-                     ? "Rata-rata 3 bulan " + (isBalanceVisible ? average.formattedAsCurrency() : "Rp" + hiddenAmount)
-                     : "Belum dipakai")
+                     ? L("Rata-rata 3 bulan %@", isBalanceVisible ? average.formattedAsCurrency() : "Rp" + hiddenAmount)
+                     : L("Belum dipakai"))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
@@ -309,17 +319,22 @@ struct BudgetListView: View {
 
     private var emptyState: some View {
         EmptyMessage(icon: "chart.pie",
-                     title: "Belum ada budget",
-                     message: "Atur batas pengeluaran per kategori. Tiap periode mulai dari nol, sisa tidak terbawa.")
+                     title: L("Belum ada budget"),
+                     message: L("Atur batas pengeluaran per kategori. Tiap periode mulai dari nol, sisa tidak terbawa."))
             .padding(.horizontal, 40)
             .padding(.top, 70)
+    }
+
+    /// Free accounts hold at most 7 budgets; existing ones are never removed.
+    private func requestAdd(_ category: Category) {
+        if viewModel.budgets.count >= FreeLimits.budgets { showsBudgetLimit = true } else { addTarget = AddTarget(category: category) }
     }
 
     private func budgetAdded(_ category: Category) {
         flashId = category.id
         Task {
             try? await Task.sleep(for: .milliseconds(300))
-            showToast("Budget \(category.name) aktif")
+            showToast(L("Budget %@ aktif", category.name))
             try? await Task.sleep(for: .milliseconds(1100))
             flashId = nil
         }
@@ -358,23 +373,7 @@ struct BudgetListView: View {
             category: item.category,
             allTransactions: viewModel.allExpenseTransactions.filter { $0.categoryId == item.category.id },
             accounts: viewModel.accounts,
-            onAdjustBudget: { updated in
-                Task {
-                    let name = updated.name
-                    let amount = updated.amount
-                    let periodUnit = updated.periodUnit
-                    let periodInterval = updated.periodInterval
-                    let startDate = updated.startDate
-                    let endDate = updated.endDate
-                    let isActive = updated.isActive
-                    await viewModel.updateBudget(id: updated.id, name: name, amount: amount, periodUnit: periodUnit, periodInterval: periodInterval, startDate: startDate, endDate: endDate, isActive: isActive)
-                }
-            },
-            onUnsetBudget: {
-                Task {
-                    await viewModel.removeBudget(id: item.budget!.id)
-                }
-            }
+            viewModel: viewModel
         )
     }
 }
@@ -388,7 +387,7 @@ struct BudgetCardView: View {
     /// Empties the bar while false, e.g. while the period changes.
     var isFillActive = true
 
-    @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    var isBalanceVisible = true
 
     var body: some View {
         if let budget {
@@ -419,11 +418,16 @@ struct BudgetCardView: View {
                         .monospacedDigit()
                         .lineLimit(1)
                 }
-                SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive)
-                Text("\(money(budget.spent)) dari \(money(budget.amount))")
+                SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive, replays: false)
+                Text(L("%@ dari %@", money(budget.spent), money(budget.amount)))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
+                if budget.temporary != nil {
+                    Text(L("Sementara"))
+                        .font(.app(12, weight: .medium))
+                        .foregroundStyle(Color.appPrimary)
+                }
             }
         }
         .padding(.vertical, 13)
@@ -434,11 +438,11 @@ struct BudgetCardView: View {
         if budget.remaining < 0 {
             // Big overruns shortened ("Lewat Rp6 M") so the status fits beside the name.
             let over = -budget.remaining
-            return "Lewat " + (over >= 10_000_000 && isBalanceVisible ? "Rp" + over.abbreviatedRupiah() : money(over))
+            return L("Lewat %@", over >= 10_000_000 && isBalanceVisible ? "Rp" + over.abbreviatedRupiah() : money(over))
         }
-        if budget.remaining == 0 { return "Habis" }
+        if budget.remaining == 0 { return L("Habis") }
         // Today still counts as a day to spend in.
-        return money(budget.remaining / Double(budget.daysRemaining + 1)) + "/hari"
+        return L("%@/hari", money(budget.remaining / Double(budget.daysRemaining + 1)))
     }
 
     private func color(_ budget: Budget) -> Color {

@@ -18,6 +18,10 @@ struct Account: Identifiable, Codable, Hashable {
     var color: String? = nil
     /// Credit cards: visa, mastercard, jcb, amex or gpn.
     var cardNetwork: String? = nil
+    /// Credit cards: the starting balance wasn't billed yet until this cut-off ("yyyy-MM-dd"); nil = it was.
+    var openingUnbilledUntil: String? = nil
+    /// When the starting balance was set (the wallet's creation); an ISO timestamp.
+    var openedAt: String? = nil
 
     var isActive: Bool { !isArchived }
     var isCreditCard: Bool { type == .credit }
@@ -47,6 +51,7 @@ struct Account: Identifiable, Codable, Hashable {
         case bank = "Bank"
         case ewallet = "E-Wallet"
         case credit = "Credit Card"
+        case investment = "Investment"
     }
 
     enum CodingKeys: String, CodingKey {
@@ -63,5 +68,7 @@ struct Account: Identifiable, Codable, Hashable {
         case statementDay = "statement_day"
         case color
         case cardNetwork = "card_network"
+        case openingUnbilledUntil = "opening_unbilled_until"
+        case openedAt = "opening_balance_at"
     }
 }

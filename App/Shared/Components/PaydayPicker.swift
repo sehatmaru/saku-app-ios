@@ -30,20 +30,19 @@ extension PaydayCycle {
         return Self.dayMonth.string(from: Calendar.current.date(byAdding: .day, value: -1, to: end) ?? end)
     }
 
-    private static let dayMonth: DateFormatter = {
+    static var dayMonth: DateFormatter {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         f.dateFormat = "d MMM"
         return f
-    }()
+    }
 }
 
 /// Saves the payday on the signed-in user's profile and reloads everything period-based.
 @MainActor
-private func savePayday(_ day: Int, auth: AuthViewModel) async -> Bool {
-    guard let id = auth.currentUser.flatMap({ UUID(uuidString: $0.id) }) else { return false }
+private func savePayday(_ day: Int) async -> Bool {
     do {
-        try await SupabaseSDK.updatePayday(profileId: id, day: day)
+        try await SupabaseSDK.updatePayday(day: day)
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
         return true
     } catch {
@@ -60,8 +59,8 @@ struct PaydayDayPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                chip("Akhir bulan", 31)
-                chip("Tidak tentu / tanggal 1", 1)
+                chip(L("Akhir bulan"), 31)
+                chip(L("Tidak tentu / tanggal 1"), 1)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 6)
@@ -120,10 +119,10 @@ struct PaydayPreview: View {
     var body: some View {
         let cycle = PaydayCycle(day: day)
         VStack(alignment: .leading, spacing: 8) {
-            row("chart.pie", "Budget & ringkasan berjalan", cycle.rangeLabel())
-            row("bell", "Pengingat menjelang gajian", cycle.lastDayLabel())
+            row("chart.pie", L("Periode budget & ringkasan"), cycle.rangeLabel())
+            row("bell", L("Pengingat menjelang gajian"), cycle.lastDayLabel())
             if day >= 29 {
-                row("info.circle", "Di bulan yang lebih pendek, dipakai", "tanggal terakhir")
+                row("info.circle", L("Di bulan yang lebih pendek, dipakai"), L("tanggal terakhir"))
             }
         }
         .padding(.horizontal, 16)
@@ -158,12 +157,12 @@ struct PaydaySheet: View {
     /// The saved day, or nil when closed without a change.
     let onDone: (Int?) -> Void
 
-    @EnvironmentObject private var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var selection: Int?
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var didFinish = false
+    @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
 
     init(context: PaydayContext, onDone: @escaping (Int?) -> Void) {
         self.context = context
@@ -190,7 +189,7 @@ struct PaydaySheet: View {
             .padding(.horizontal, 24)
             .padding(.top, 13)
 
-            Text("Budget, “Aman dipakai” harian, dan ringkasan bulan ini di Beranda dimulai dari tanggal ini.")
+            Text("Budget dan ringkasan bulan ini di Beranda mulai dari tanggal ini.")
                 .font(.app(14))
                 .lineSpacing(2)
                 .foregroundStyle(Color.appTextSecondary)
@@ -209,7 +208,7 @@ struct PaydaySheet: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 12)
             } else if context == .settings {
-                Label("Periode budget dan ringkasan bulan ini langsung mengikuti tanggal baru.", systemImage: "info.circle")
+                Label(changeNote, systemImage: "info.circle")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .padding(.horizontal, 24)
@@ -226,18 +225,32 @@ struct PaydaySheet: View {
         .onDisappear { if !didFinish { onDone(nil) } }
     }
 
+    /// What saving does. The server decides the real date; this mirrors its rule for the copy
+    /// (a correction applies now for a new account, else at the end of the running period).
+    private var changeNote: String {
+        let cycle = PaydayCycle.current
+        guard let day = selection, day != PaydaySetting.day, !cycle.schedule.isEmpty,
+              Date().timeIntervalSince1970 - memberSince > 7 * 86_400 else {
+            return L("Periode budget dan ringkasan bulan ini langsung mengikuti tanggal baru.")
+        }
+        let period = cycle.period(containing: Date())
+        return L("Perubahan ini berlaku mulai %@. Periode berjalan (%@ - %@) tetap memakai tanggal gajian lama supaya angka bulan ini dan bulan-bulan lalu tidak berubah.",
+                 PaydayCycle.dayMonth.string(from: period.end), PaydayCycle.dayMonth.string(from: period.start),
+                 cycle.lastDayLabel())
+    }
+
     private func done() {
         guard let day = selection, day != PaydaySetting.day else { dismiss(); return }
         isSaving = true
         errorMessage = nil
         Task {
-            if await savePayday(day, auth: authViewModel) {
+            if await savePayday(day) {
                 didFinish = true
                 dismiss()
                 onDone(day)
             } else {
                 isSaving = false
-                errorMessage = "Gagal menyimpan tanggal gajian. Coba lagi."
+                errorMessage = L("Gagal menyimpan tanggal gajian. Coba lagi.")
             }
         }
     }

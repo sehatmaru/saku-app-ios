@@ -40,6 +40,9 @@ final class BudgetListViewModel: ObservableObject {
         return setItems + unsetItems
     }
 
+    /// Shown expense categories (hidden and system ones left out), the ones Budget lists.
+    var shownExpenseCategories: [Category] { expenseCategories }
+
     private var expenseCategories: [Category] {
         // Penyesuaian Saldo is used by balance corrections on its own and never gets a budget.
         categories.filter { $0.type == .expense && !CategoryCatalog.isSystem($0) }.arranged(by: preferences).shown
@@ -205,6 +208,47 @@ final class BudgetListViewModel: ObservableObject {
             print("❌ updateBudget failed: \(error)")
             return false
         }
+    }
+
+    /// Changes a budget's amount: for good from this period on, or for N periods (fixed dates),
+    /// after which it returns to its own amount by itself.
+    func saveAmount(budget: Budget, amount: Double, duration: BudgetAmountDuration) async -> Bool {
+        let cycle = PaydayCycle.current
+        let start = cycle.period(containing: Date()).start
+        do {
+            switch duration {
+            case .forever:
+                try await SupabaseRepository.shared.setBudgetAmount(
+                    budgetId: budget.id, amount: amount, kind: "base", from: start, to: nil)
+            case .periods(let n):
+                try await SupabaseRepository.shared.setBudgetAmount(
+                    budgetId: budget.id, amount: amount, kind: "temporary", from: start,
+                    to: cycle.period(offset: max(n, 1) - 1).end)
+            }
+            await reload()
+            return true
+        } catch {
+            print("❌ saveAmount failed: \(error)")
+            return false
+        }
+    }
+
+    /// Back to the budget's own amount from this period on.
+    func cancelTemporary(budget: Budget) async -> Bool {
+        do {
+            try await SupabaseRepository.shared.cancelBudgetTemporary(
+                budgetId: budget.id, periodStart: PaydayCycle.current.period(containing: Date()).start)
+            await reload()
+            return true
+        } catch {
+            print("❌ cancelTemporary failed: \(error)")
+            return false
+        }
+    }
+
+    private func reload() async {
+        if let userId = loadedUserId { await loadBudgets(userId: userId, forceRefresh: true) }
+        NotificationCenter.default.post(name: .dataDidChange, object: nil)
     }
 
     func removeBudget(id: String) async -> Bool {

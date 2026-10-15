@@ -3,17 +3,18 @@ import SwiftUI
 /// Colour, label, icon and sign for each transaction type, shared by the add form and the detail page.
 struct TransactionStyle {
     let type: Transaction.TransactionType
-    let label: String
+    let labelKey: String
+    var label: String { L(labelKey) }
     let icon: String
     let color: Color
     let sign: String
 
-    static let expense = TransactionStyle(type: .expense, label: "Pengeluaran", icon: "arrow.up.right", color: Color(hex: "D93636"), sign: "−")
-    static let income = TransactionStyle(type: .income, label: "Pemasukan", icon: "arrow.down.left", color: Color(hex: "16875A"), sign: "+")
-    static let transfer = TransactionStyle(type: .transfer, label: "Transfer", icon: "arrow.left.arrow.right", color: Color(hex: "143A73"), sign: "")
-    static let adjustment = TransactionStyle(type: .adjustment, label: "Penyesuaian saldo", icon: "arrow.triangle.2.circlepath", color: Color(hex: "616161"), sign: "")
+    static let expense = TransactionStyle(type: .expense, labelKey: "Pengeluaran", icon: "arrow.up.right", color: Color(hex: "D93636"), sign: "−")
+    static let income = TransactionStyle(type: .income, labelKey: "Pemasukan", icon: "arrow.down.left", color: Color(hex: "16875A"), sign: "+")
+    static let transfer = TransactionStyle(type: .transfer, labelKey: "Transfer", icon: "arrow.left.arrow.right", color: Color(hex: "143A73"), sign: "")
+    static let adjustment = TransactionStyle(type: .adjustment, labelKey: "Penyesuaian saldo", icon: "arrow.triangle.2.circlepath", color: Color(hex: "616161"), sign: "")
 
-    static let cardPayment = TransactionStyle(type: .cardPayment, label: "Bayar tagihan", icon: "creditcard", color: Color(hex: "16875A"), sign: "+")
+    static let cardPayment = TransactionStyle(type: .cardPayment, labelKey: "Bayar tagihan", icon: "creditcard", color: Color(hex: "16875A"), sign: "+")
 
     /// The three types the add form's carousel offers, in order.
     static let entryTypes = [expense, income, transfer]
@@ -39,7 +40,7 @@ func walletColor(_ account: Account?) -> Color {
 /// Bottom sheet with a title, a Selesai button and scrolling content.
 struct PickerSheet<Content: View>: View {
     let title: String
-    var actionTitle = "Selesai"
+    var actionTitle = L("Selesai")
     let onDone: () -> Void
     @ViewBuilder var content: Content
 
@@ -67,104 +68,6 @@ struct PickerSheet<Content: View>: View {
     }
 }
 
-/// Four-column grid of round category icons; the picked one fills with `color`.
-struct CategoryPickerGrid: View {
-    let categories: [Category]
-    let selectedId: String?
-    let color: Color
-    let onPick: (Category) -> Void
-
-    var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 18) {
-            ForEach(categories) { cat in
-                let isOn = cat.id == selectedId
-                Button { onPick(cat) } label: {
-                    VStack(spacing: 7) {
-                        Circle()
-                            .fill(isOn ? color : Color.appFill)
-                            .frame(width: 54, height: 54)
-                            .overlay {
-                                Image(systemName: cat.icon ?? "tag")
-                                    .font(.system(size: 22))
-                                    .foregroundStyle(isOn ? Color.white : Color.appText)
-                            }
-                            .scaleEffect(isOn ? 1.08 : 1)
-                            .animation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.32), value: isOn)
-                        Text(cat.name)
-                            .font(.app(12))
-                            .foregroundStyle(isOn ? Color.appText : Color.appTextSecondary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isOn ? .isSelected : [])
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 24)
-    }
-}
-
-/// Two-column grid of wallet cards with balance; the picked one gets a ring.
-struct WalletPickerGrid: View {
-    let accounts: [Account]
-    let selectedId: String?
-    let onPick: (Account) -> Void
-
-    var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-            ForEach(accounts) { acc in
-                let isOn = acc.id == selectedId
-                let color = walletColor(acc)
-                Button { onPick(acc) } label: {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text(WalletIcon.resolve(acc.icon)?.shortName ?? String(acc.name.prefix(4)).uppercased())
-                                .font(.app(10, weight: .heavy))
-                                .tracking(0.5)
-                            Spacer()
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 11, weight: .bold))
-                                .opacity(isOn ? 1 : 0)
-                        }
-                        Spacer(minLength: 0)
-                        Text(acc.name)
-                            .font(.app(14, weight: .semibold))
-                            .lineLimit(1)
-                        Text(acc.isCreditCard
-                             ? "Sisa limit Rp" + (acc.availableCredit ?? 0).formattedAsDigits()
-                             : "Rp" + acc.balance.formattedAsDigits())
-                            .font(.app(12))
-                            .opacity(0.82)
-                            .monospacedDigit()
-                            .lineLimit(1)
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .frame(height: 76)
-                    .background(color, in: RoundedRectangle(cornerRadius: 14))
-                    .overlay {
-                        if isOn {
-                            RoundedRectangle(cornerRadius: 16).inset(by: -2).stroke(Color.appBackground, lineWidth: 2)
-                            RoundedRectangle(cornerRadius: 18).inset(by: -4).stroke(color, lineWidth: 2)
-                        }
-                    }
-                    .scaleEffect(isOn ? 1.03 : 1)
-                    .animation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.32), value: isOn)
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isOn ? .isSelected : [])
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
-        .padding(.bottom, 24)
-    }
-}
-
 /// Hari ini / Kemarin chips over a Monday-first month grid; future days are disabled.
 struct DayPicker: View {
     let selected: Date
@@ -189,8 +92,8 @@ struct DayPicker: View {
         let grid = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                quickDay("Hari ini", today)
-                quickDay("Kemarin", yesterday)
+                quickDay(L("Hari ini"), today)
+                quickDay(L("Kemarin"), yesterday)
             }
 
             HStack {
@@ -198,17 +101,17 @@ struct DayPicker: View {
                     .font(.app(15, weight: .semibold))
                 Spacer()
                 Button { moveMonth(-1) } label: { Image(systemName: "chevron.left") }
-                    .accessibilityLabel("Bulan sebelumnya")
+                    .accessibilityLabel(L("Bulan sebelumnya"))
                 Button { moveMonth(1) } label: { Image(systemName: "chevron.right") }
                     .disabled(isCurrentMonth)
-                    .accessibilityLabel("Bulan berikutnya")
+                    .accessibilityLabel(L("Bulan berikutnya"))
             }
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(Color.appText)
             .padding(.top, 16)
 
             LazyVGrid(columns: grid, spacing: 0) {
-                ForEach(["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"], id: \.self) {
+                ForEach([L("Sen"), L("Sel"), L("Rab"), L("Kam"), L("Jum"), L("Sab"), L("Min")], id: \.self) {
                     Text($0).font(.app(12)).foregroundStyle(Color(light: 0x8E8E93, dark: 0x8E8E93))
                 }
             }
@@ -280,12 +183,12 @@ struct DayPicker: View {
         shownMonth = calendar.date(byAdding: .month, value: delta, to: shownMonth) ?? shownMonth
     }
 
-    private static let monthYear: DateFormatter = {
+    private static var monthYear: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "MMMM yyyy"
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
-    }()
+    }
 }
 
 // MARK: - Number pad
@@ -327,7 +230,7 @@ struct NumberPadKeys: View {
                     .frame(height: keyHeight)
                 }
                 .buttonStyle(KeyStyle())
-                .accessibilityLabel(key == "del" ? "Hapus" : key)
+                .accessibilityLabel(key == "del" ? L("Hapus") : key)
             }
         }
     }
@@ -338,6 +241,7 @@ struct SaveKey: View {
     let color: Color
     let isEnabled: Bool
     var isSaving = false
+    var title: LocalizedStringKey = "Simpan"
     let action: () -> Void
 
     var body: some View {
@@ -348,7 +252,7 @@ struct SaveKey: View {
                 } else {
                     Image(systemName: "checkmark").font(.system(size: 24, weight: .bold))
                 }
-                Text("Simpan").font(.app(14, weight: .semibold))
+                Text(title).font(.app(14, weight: .semibold))
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -367,6 +271,7 @@ struct AmountPad: View {
     let onPress: (String) -> Void
     let onSave: () -> Void
     var keyHeight: CGFloat = 52
+    var title: LocalizedStringKey = "Simpan"
 
     var body: some View {
         GeometryReader { geo in
@@ -374,7 +279,7 @@ struct AmountPad: View {
             HStack(spacing: 6) {
                 NumberPadKeys(onPress: onPress, keyHeight: keyHeight)
                     .frame(width: geo.size.width - saveWidth - 6)
-                SaveKey(color: color, isEnabled: isEnabled, isSaving: isSaving, action: onSave)
+                SaveKey(color: color, isEnabled: isEnabled, isSaving: isSaving, title: title, action: onSave)
                     .frame(width: saveWidth)
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -408,15 +313,15 @@ enum TransactionDates {
 
     /// "Hari ini", "Kemarin" or e.g. "Sel, 15 Sep".
     static func dayName(_ date: Date) -> String {
-        if calendar.isDateInToday(date) { return "Hari ini" }
-        if calendar.isDateInYesterday(date) { return "Kemarin" }
+        if calendar.isDateInToday(date) { return L("Hari ini") }
+        if calendar.isDateInYesterday(date) { return L("Kemarin") }
         return weekdayDayMonth.string(from: date)
     }
 
     /// "hari ini", "kemarin" or e.g. "15 Sep".
     static func dayShort(_ date: Date) -> String {
-        if calendar.isDateInToday(date) { return "hari ini" }
-        if calendar.isDateInYesterday(date) { return "kemarin" }
+        if calendar.isDateInToday(date) { return L("hari ini") }
+        if calendar.isDateInYesterday(date) { return L("kemarin") }
         return dayMonth.string(from: date)
     }
 
@@ -431,16 +336,16 @@ enum TransactionDates {
         return parts.hour != 0 || parts.minute != 0
     }
 
-    static let dayMonth = formatter("d MMM")
-    static let weekdayDayMonth = formatter("EEE, d MMM")
-    private static let full = formatter("EEEE, d MMM")
-    private static let fullWithYear = formatter("EEEE, d MMM yyyy")
-    private static let time = formatter("HH.mm")
+    static var dayMonth: DateFormatter { formatter("d MMM") }
+    static var weekdayDayMonth: DateFormatter { formatter("EEE, d MMM") }
+    private static var full: DateFormatter { formatter("EEEE, d MMM") }
+    private static var fullWithYear: DateFormatter { formatter("EEEE, d MMM yyyy") }
+    private static var time: DateFormatter { formatter("HH.mm") }
 
     private static func formatter(_ format: String) -> DateFormatter {
         let f = DateFormatter()
         f.dateFormat = format
-        f.locale = Locale(identifier: "id_ID")
+        f.locale = AppLanguage.locale
         return f
     }
 }

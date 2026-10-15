@@ -25,11 +25,11 @@ struct AnalyticsView: View {
         let maxAmount = max(months.map(\.income).max() ?? 0, months.map(\.expense).max() ?? 0, 1)
 
         return VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Cashflow 5 bulan terakhir")
+            SectionHeader(title: L("Cashflow 5 bulan terakhir"))
 
             HStack(spacing: 16) {
-                legend("Pemasukan", color: .appPrimary)
-                legend("Pengeluaran", color: .appText)
+                legend(L("Pemasukan"), color: .appPrimary)
+                legend(L("Pengeluaran"), color: .appText)
             }
             .padding(.top, 8)
 
@@ -83,11 +83,11 @@ struct AnalyticsView: View {
         let total = viewModel.categorySpending.map(\.amount).reduce(0, +)
 
         return VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: "Pengeluaran bulan ini", trailing: viewModel.totalExpense.formattedAsCurrency())
+            SectionHeader(title: L("Pengeluaran bulan ini"), trailing: viewModel.totalExpense.formattedAsCurrency())
 
             if viewModel.categorySpending.isEmpty {
-                EmptyMessage(icon: "chart.bar", title: "Belum ada pengeluaran",
-                             message: "Belum ada pengeluaran bulan ini")
+                EmptyMessage(icon: "chart.bar", title: L("Belum ada pengeluaran"),
+                             message: L("Belum ada pengeluaran bulan ini"))
                     .padding(.vertical, 40)
             } else {
                 VStack(spacing: 0) {

@@ -16,11 +16,14 @@ struct AddBudgetView: View {
         self.onAdded = onAdded
         _category = State(initialValue: category)
         _step = State(initialValue: category == nil ? 1 : 2)
+        _opensOnAmount = State(initialValue: category != nil)
     }
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var step = 1
+    /// Opened from a category row (Atur): there is no category step behind it, so back means cancel.
+    @State private var opensOnAmount: Bool
     @State private var category: Category?
     @State private var amount = 0
     @State private var bump = false
@@ -195,7 +198,7 @@ struct AddBudgetView: View {
                             .font(.app(16))
                             .foregroundStyle(Color.appText)
                             .lineLimit(1)
-                        Text("Rata-rata 3 bulan " + money(avg))
+                        Text(L("Rata-rata 3 bulan %@", money(avg)))
                             .font(.app(13))
                             .monospacedDigit()
                             .foregroundStyle(Color.appTextSecondary)
@@ -238,14 +241,18 @@ struct AddBudgetView: View {
             HStack {
                 Button {
                     guard !isSaving, !isDone else { return }
-                    step = 1
+                    if opensOnAmount { dismiss() } else { step = 1 }
                 } label: {
-                    HStack(spacing: 2) {
-                        Image(systemName: "chevron.left").font(.system(size: 18, weight: .bold))
-                        Text("Kategori").font(.app(17))
+                    if opensOnAmount {
+                        Text("Batal").font(.app(17))
+                    } else {
+                        HStack(spacing: 2) {
+                            Image(systemName: "chevron.left").font(.system(size: 18, weight: .bold))
+                            Text("Kategori").font(.app(17))
+                        }
                     }
                 }
-                .accessibilityLabel("Kembali ke kategori")
+                .accessibilityLabel(opensOnAmount ? "Batal" : "Kembali ke kategori")
                 Spacer()
             }
             .overlay {
@@ -330,7 +337,7 @@ struct AddBudgetView: View {
                     Button(action: useAverage) {
                         HStack(spacing: 6) {
                             Image(systemName: "sparkles").font(.system(size: 13, weight: .bold))
-                            Text("Rata-rata 3 bulan " + money(average))
+                            Text(L("Rata-rata 3 bulan %@", money(average)))
                         }
                         .font(.app(13, weight: .semibold))
                         .monospacedDigit()
@@ -349,8 +356,8 @@ struct AddBudgetView: View {
             .padding(.top, 14)
 
             VStack(spacing: 6) {
-                infoRow("Periode", "\(cycle.rangeLabel()) · \(daysLeft) hari lagi")
-                infoRow("Bisa dipakai", amount > 0 ? "≈ " + money(Double(amount) / Double(daysLeft)) + " per hari" : "—")
+                infoRow(L("Periode"), L("%@ · %lld hari lagi", cycle.rangeLabel(), daysLeft))
+                infoRow(L("Bisa dipakai"), amount > 0 ? L("≈ %@ per hari", money(Double(amount) / Double(daysLeft))) : "—")
             }
             .padding(.horizontal, 24)
             .padding(.top, 18)
@@ -441,7 +448,7 @@ struct AddBudgetView: View {
                                                startDate: start, endDate: nil, userId: userId)
             isSaving = false
             guard ok else {
-                errorMessage = "Gagal menyimpan budget. Coba lagi."
+                errorMessage = L("Gagal menyimpan budget. Coba lagi.")
                 return
             }
             isDone = true
