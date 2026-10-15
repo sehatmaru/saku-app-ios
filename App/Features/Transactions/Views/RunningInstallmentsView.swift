@@ -6,7 +6,11 @@ import SwiftUI
 struct RunningInstallmentsBanner: View {
     let items: [RunningInstallment]
     let isBalanceVisible: Bool
+    /// Opens the purchase transaction of a tapped installment (the sheet closes first).
+    var onOpen: (String) -> Void = { _ in }
     @State private var showsSheet = false
+    /// Opened only once the sheet is gone; navigating while it is still dismissing is lost.
+    @State private var pendingOpen: String?
 
     private var monthly: Double { items.reduce(0) { $0 + $1.monthly } }
 
@@ -28,8 +32,13 @@ struct RunningInstallmentsBanner: View {
         }
         .buttonStyle(PressScaleStyle())
         .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 14)
-        .sheet(isPresented: $showsSheet) {
-            RunningInstallmentsSheet(items: items, isBalanceVisible: isBalanceVisible)
+        .sheet(isPresented: $showsSheet, onDismiss: {
+            if let id = pendingOpen { pendingOpen = nil; onOpen(id) }
+        }) {
+            RunningInstallmentsSheet(items: items, isBalanceVisible: isBalanceVisible) { id in
+                pendingOpen = id
+                showsSheet = false
+            }
         }
     }
 }
@@ -38,6 +47,7 @@ struct RunningInstallmentsBanner: View {
 struct RunningInstallmentsSheet: View {
     let items: [RunningInstallment]
     let isBalanceVisible: Bool
+    var onOpen: (String) -> Void = { _ in }
     @Environment(\.dismiss) private var dismiss
     @State private var showsAll = false
     @State private var contentHeight: CGFloat = 480
@@ -90,6 +100,11 @@ struct RunningInstallmentsSheet: View {
     }
 
     private func row(_ item: RunningInstallment) -> some View {
+        Button { onOpen(item.transactionId) } label: { rowContent(item) }
+            .buttonStyle(RowPressStyle())
+    }
+
+    private func rowContent(_ item: RunningInstallment) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title).font(.app(16)).lineLimit(1)
@@ -98,7 +113,9 @@ struct RunningInstallmentsSheet: View {
             }
             Spacer(minLength: 8)
             Text(money(item.monthly)).font(.app(15)).monospacedDigit()
+            Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
         }
+        .contentShape(Rectangle())
         .padding(.vertical, 13)
         .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
     }

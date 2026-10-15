@@ -4,6 +4,8 @@ import Foundation
 /// it reads `card_installments` and the statement logic and changes no total, Net or budget.
 struct RunningInstallment: Identifiable, Equatable {
     let id: String
+    /// The purchase transaction, opened when a row is tapped.
+    let transactionId: String
     let title: String
     let cardName: String
     /// The card's wallet icon id, for its logo.
@@ -36,7 +38,7 @@ enum RunningInstallments {
             let billed = CreditStatement.billedParts(of: plan, purchaseDate: purchase.date, card: card, today: periodEnd, calendar: calendar)
             guard billed < plan.months else { return nil }
             let first = billed == 0 ? CreditStatement.billing(forPurchaseOn: purchase.date, card: card, calendar: calendar).statement : nil
-            return RunningInstallment(id: plan.id, title: purchase.displayNote ?? L("Pembelian cicilan"), cardName: card.name, cardIcon: card.icon,
+            return RunningInstallment(id: plan.id, transactionId: purchase.id, title: purchase.displayNote ?? L("Pembelian cicilan"), cardName: card.name, cardIcon: card.icon,
                                       months: plan.months, billedParts: billed, monthly: purchase.amount / Double(plan.months),
                                       total: purchase.amount, purchaseDate: purchase.date, firstBillingDate: first,
                                       endDate: CreditStatement.finalBillingDate(purchaseOn: purchase.date, months: plan.months, card: card, calendar: calendar))

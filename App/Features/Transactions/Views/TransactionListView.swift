@@ -22,6 +22,8 @@ struct TransactionListView: View {
     @State private var showAdvancedSearch = false
     @State private var showBackToTop = false
     @State private var hasInitialExpanded = false
+    /// The purchase behind a tapped running installment.
+    @State private var openedInstallment: Transaction?
 
     /// Rows shown per month before "Tampilkan N lainnya".
     private let previewCount = 7
@@ -72,7 +74,9 @@ struct TransactionListView: View {
                             // 0% installments still billing this period; search and filters never hide it
                             let running = viewModel.runningInstallments
                             if !running.isEmpty {
-                                RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible)
+                                RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible) { id in
+                                    openedInstallment = viewModel.allTransactions.first { $0.id == id }
+                                }
                             }
 
                             if !hasNoTransactions {
@@ -93,6 +97,11 @@ struct TransactionListView: View {
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
                 .background(Color.appBackground)
                 .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(isPresented: Binding(get: { openedInstallment != nil }, set: { if !$0 { openedInstallment = nil } })) {
+                    if let transaction = openedInstallment {
+                        TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts).detailPage()
+                    }
+                }
                 .scrollDismissesKeyboard(.immediately)
                 .refreshable {
                     guard let userId = authViewModel.currentUser?.id else { return }
