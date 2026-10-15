@@ -7,6 +7,17 @@ enum FreeLimits {
     static let expenseCategories = 7
     static let incomeCategories = 5
     static let budgets = 7
+    /// Money wallets (every type but Investment) and Investment wallets, archived ones not counted.
+    static let moneyWallets = 5
+    static let investmentWallets = 1
+
+    /// Whether adding a wallet of this type is refused: only for accounts without Saku Plus (US9).
+    static func isWalletLimited(_ type: Account.AccountType, in accounts: [Account], isPlus: Bool) -> Bool {
+        guard !isPlus else { return false }
+        let active = accounts.filter(\.isActive)
+        if type == .investment { return active.filter { $0.type == .investment }.count >= investmentWallets }
+        return active.filter { $0.type != .investment }.count >= moneyWallets
+    }
 
     static func categories(_ type: CategoryType) -> Int { type == .income ? incomeCategories : expenseCategories }
 
@@ -30,6 +41,8 @@ enum FreeLimits {
         if text.contains("category_limit_income") { return LimitError(message: categoryMessage(.income)) }
         if text.contains("category_limit_expense") { return LimitError(message: categoryMessage(.expense)) }
         if text.contains("budget_limit") { return LimitError(message: budgetMessage()) }
+        if text.contains("wallet_limit_investment") { return LimitError(message: L("Paket gratis maksimal %lld Dompet Investasi aktif.", investmentWallets)) }
+        if text.contains("wallet_limit_money") { return LimitError(message: L("Paket gratis maksimal %lld dompet uang aktif.", moneyWallets)) }
         return error
     }
 

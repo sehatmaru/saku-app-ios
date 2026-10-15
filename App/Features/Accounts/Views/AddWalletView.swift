@@ -26,8 +26,12 @@ struct AddWalletView: View {
     @Environment(\.dismiss) private var dismiss
 
     let onSave: (NewWallet) async -> Bool
+    /// True for a type the free plan can no longer add (US9); the offer shows instead of the next step.
+    let isLimited: (Account.AccountType) -> Bool
+    @State private var plusReason: PlusReason?
 
-    init(onSave: @escaping (NewWallet) async -> Bool) {
+    init(isLimited: @escaping (Account.AccountType) -> Bool = { _ in false }, onSave: @escaping (NewWallet) async -> Bool) {
+        self.isLimited = isLimited
         self.onSave = onSave
     }
 
@@ -176,6 +180,7 @@ struct AddWalletView: View {
         }
         .foregroundStyle(Color.appText)
         .onChange(of: step) { _, _ in nameFocused = false }
+        .plusOffer($plusReason)
         .alert("Gagal menyimpan dompet", isPresented: $saveFailed) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -795,6 +800,7 @@ struct AddWalletView: View {
     // MARK: Actions
 
     private func choose(_ kind: Account.AccountType) {
+        if isLimited(kind) { plusReason = kind == .investment ? .investmentWallets : .moneyWallets; return }
         type = kind
         provider = kind == .cash ? -1 : nil
         name = kind == .cash ? "Dompet tunai" : ""

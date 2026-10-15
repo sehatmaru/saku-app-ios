@@ -20,7 +20,13 @@ enum SupabaseSDK {
         await syncSmartTrackerConsent(profile)
         SmartTrackerMemorySync.isGranted = profile.smartTrackerMemoryConsentAt != nil
         await refreshPaydaySchedule()
+        await PlusStore.shared.apply(profile)
         return profile
+    }
+
+    /// US8: turns Saku Plus on or off for a tester account; the server refuses anyone else (`not_tester`).
+    static func setTestPlus(_ on: Bool) async throws {
+        try await client.rpc("set_test_plus", params: ["p_on": AnyJSON.bool(on)]).execute()
     }
 
     /// The profile decides. If this device agreed but saving failed earlier, the agreement is saved now.
@@ -272,6 +278,11 @@ struct UserProfile: Codable, Identifiable {
     var smartTrackerMemoryConsentAt: String? = nil
     /// When a requested deletion becomes permanent; nil for an account not waiting to be deleted.
     var deletionScheduledFor: String? = nil
+    /// Saku Plus: free, trial, active or grace; nil until the server has the columns.
+    var plusStatus: String? = nil
+    var plusUntil: String? = nil
+    /// Tester accounts may use the internal Plus switch.
+    var isTester: Bool? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -286,6 +297,9 @@ struct UserProfile: Codable, Identifiable {
         case smartTrackerConsentAt = "smart_tracker_consent_at"
         case smartTrackerMemoryConsentAt = "smart_tracker_memory_consent_at"
         case deletionScheduledFor = "deletion_scheduled_for"
+        case plusStatus = "plus_status"
+        case plusUntil = "plus_until"
+        case isTester = "is_tester"
     }
 }
 

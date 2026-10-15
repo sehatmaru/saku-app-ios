@@ -20,6 +20,8 @@ struct SmartTrackerHomeOverlay: View {
     @State private var showsVoice = false
     @State private var showsCamera = false
     @State private var showsLibrary = false
+    @State private var plusReason: PlusReason?
+    @ObservedObject private var plus = PlusStore.shared
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var showsImageConsent = false
     /// The picture being read, shown small in the bar. Memory only; dropped when reading ends.
@@ -60,6 +62,7 @@ struct SmartTrackerHomeOverlay: View {
         .sheet(isPresented: $showsMemoryConsent) { MemorySyncConsentSheet(profileId: UUID(uuidString: userId)) }
         .sheet(isPresented: $showsImageConsent) { ImageConsentSheet { afterConsent?(); afterConsent = nil } }
         .fullScreenCover(isPresented: $showsCamera) { CameraPicker { read(imageData: $0) }.ignoresSafeArea() }
+        .plusOffer($plusReason)
         .photosPicker(isPresented: $showsLibrary, selection: $pickedPhoto, matching: .images)
         .onChange(of: pickedPhoto) { _, item in
             guard let item else { return }
@@ -305,6 +308,8 @@ struct SmartTrackerHomeOverlay: View {
     /// Camera or gallery. Needs the Smart Tracker agreement and the short one for pictures (asked once).
     private func startImage(camera: Bool) {
         tipSeen = true
+        // Reading a photo is a Saku Plus feature (US9).
+        guard plus.isPlus else { plusReason = .receiptPhoto; return }
         let go = {
             guard !camera || CameraPicker.isAllowed else {
                 notice = .cameraOff

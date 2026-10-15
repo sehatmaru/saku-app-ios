@@ -22,6 +22,7 @@ struct AccountListView: View {
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
     @State private var isBalanceVisible = true
     @State private var showAddWallet = false
+    @ObservedObject private var plus = PlusStore.shared
     @State private var accountTransactions: [String: [Transaction]] = [:]
     @State private var categories: [Category] = []
     @State private var cachedUserId: String?
@@ -248,7 +249,7 @@ struct AccountListView: View {
             }
             .fullScreenCover(isPresented: $showAddWallet) {
                 if let userId = authViewModel.currentUser?.id {
-                    AddWalletView { wallet in
+                    AddWalletView(isLimited: { FreeLimits.isWalletLimited($0, in: viewModel.accounts, isPlus: plus.isPlus) }) { wallet in
                         let success = await viewModel.addAccount(
                             name: wallet.name, type: wallet.type, openingBalance: wallet.balance, icon: wallet.icon,
                             userId: userId, creditLimit: wallet.creditLimit, dueDate: wallet.dueDate,

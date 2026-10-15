@@ -1273,6 +1273,16 @@
         }
       }
     },
+    "Akun ini bukan akun penguji.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This account isn't a tester account."
+          }
+        }
+      }
+    },
     "Akun tamu hanya ada di iPhone ini. Jika keluar atau app dihapus, datanya tidak bisa dibuka lagi.": {
       "localizations": {
         "en": {
@@ -1479,6 +1489,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Set budget"
+          }
+        }
+      }
+    },
+    "Atur budget dulu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage budgets first"
+          }
+        }
+      }
+    },
+    "Atur dompet dulu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage wallets first"
+          }
+        }
+      }
+    },
+    "Atur kategori dulu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage categories first"
           }
         }
       }
@@ -1703,6 +1743,16 @@
         }
       }
     },
+    "Batas Dompet Investasi tercapai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Investment wallet limit reached"
+          }
+        }
+      }
+    },
     "Batas budget tercapai": {
       "localizations": {
         "en": {
@@ -1713,12 +1763,32 @@
         }
       }
     },
+    "Batas dompet tercapai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet limit reached"
+          }
+        }
+      }
+    },
     "Batas kategori tercapai": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Category limit reached"
+          }
+        }
+      }
+    },
+    "Batas paket gratis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free plan limits"
           }
         }
       }
@@ -2183,6 +2253,16 @@
         }
       }
     },
+    "Belum berhasil mengubah. Coba lagi sebentar lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't change it. Try again in a moment."
+          }
+        }
+      }
+    },
     "Belum diatur": {
       "localizations": {
         "en": {
@@ -2399,6 +2479,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stop recording"
+          }
+        }
+      }
+    },
+    "Berlaku sampai %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valid until %@"
           }
         }
       }
@@ -2913,6 +3003,16 @@
         }
       }
     },
+    "Butuh Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs Plus"
+          }
+        }
+      }
+    },
     "Butuh iOS 27": {
       "localizations": {
         "en": {
@@ -3089,6 +3189,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Record from notification"
+          }
+        }
+      }
+    },
+    "Catat dari notifikasi bank dan e-wallet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record from bank and e-wallet notifications"
+          }
+        }
+      }
+    },
+    "Catat dari notifikasi butuh Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording from notifications needs Saku Plus"
           }
         }
       }
@@ -3279,6 +3399,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Try speaking closer to the microphone, or just type the sentence."
+          }
+        }
+      }
+    },
+    "Coba gratis 7 hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try free for 7 days"
           }
         }
       }
@@ -3539,6 +3669,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Data processed"
+          }
+        }
+      }
+    },
+    "Data yang melebihi batas tetap aman dan tetap dipakai. Hanya penambahan baru yang tertahan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data above the limit stays safe and keeps working. Only new additions are held back."
           }
         }
       }
@@ -3963,6 +4103,16 @@
         }
       }
     },
+    "Dompet Investasi aktif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active Investment wallets"
+          }
+        }
+      }
+    },
     "Dompet Investasi hanya bisa jadi sumber untuk Tarik dari aset.": {
       "localizations": {
         "en": {
@@ -4093,6 +4243,16 @@
         }
       }
     },
+    "Dompet uang aktif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active money wallets"
+          }
+        }
+      }
+    },
     "Dompet utama": {
       "localizations": {
         "en": {
@@ -4119,6 +4279,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallets · %lld accounts"
+          }
+        }
+      }
+    },
+    "Dompet, kategori, dan budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets, categories and budgets"
+          }
+        }
+      }
+    },
+    "Dompet, kategori, dan budget tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited wallets, categories and budgets"
           }
         }
       }
@@ -4313,6 +4493,16 @@
         }
       }
     },
+    "Fitur ini butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This feature needs Saku Plus. Drafts you already have can still be reviewed and saved."
+          }
+        }
+      }
+    },
     "Fiturnya kurang sesuai": {
       "localizations": {
         "en": {
@@ -4349,6 +4539,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your profile photo and name"
+          }
+        }
+      }
+    },
+    "Foto struk butuh Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Receipt photos need Saku Plus"
+          }
+        }
+      }
+    },
+    "Foto struk dan screenshot": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Receipt photos and screenshots"
+          }
+        }
+      }
+    },
+    "Foto struk dan screenshot jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Receipt photos and screenshots become drafts"
           }
         }
       }
@@ -4753,6 +4973,16 @@
         }
       }
     },
+    "Gratis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free"
+          }
+        }
+      }
+    },
     "Habis": {
       "localizations": {
         "en": {
@@ -4799,6 +5029,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only the first %lld transactions were read. Split the screenshot so the rest is read too."
+          }
+        }
+      }
+    },
+    "Hanya akun penguji. Dihapus sebelum rilis App Store.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tester accounts only. Removed before the App Store release."
           }
         }
       }
@@ -5689,6 +5929,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You're signed in as a guest. After signing out, this guest account's data can't be opened again."
+          }
+        }
+      }
+    },
+    "Kamu memakai paket gratis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're on the free plan."
           }
         }
       }
@@ -6593,6 +6843,16 @@
         }
       }
     },
+    "Lebih banyak bantuan AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More AI help"
+          }
+        }
+      }
+    },
     "Lengkapi": {
       "localizations": {
         "en": {
@@ -6889,6 +7149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Max. 4 letters"
+          }
+        }
+      }
+    },
+    "Masa tenggang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grace period"
           }
         }
       }
@@ -7973,12 +8243,72 @@
         }
       }
     },
+    "Paket gratis maksimal %lld Dompet Investasi aktif.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free plan holds at most %lld active Investment wallet."
+          }
+        }
+      }
+    },
+    "Paket gratis maksimal %lld Dompet Investasi aktif. Arsipkan yang tidak dipakai untuk memberi ruang, atau pakai Saku Plus tanpa batas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free plan holds at most %lld active Investment wallet. Archive the one you don't use to make room, or use Saku Plus with no limits."
+          }
+        }
+      }
+    },
+    "Paket gratis maksimal %lld budget. Budget yang sudah ada tetap aman. Pakai Saku Plus tanpa batas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free plan holds at most %lld budgets. Your existing budgets are safe. Use Saku Plus with no limits."
+          }
+        }
+      }
+    },
     "Paket gratis maksimal %lld budget. Budget yang sudah ada tetap aman. Saku Plus tanpa batas segera hadir.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The free plan allows up to %lld budgets. Your existing budgets are safe. Saku Plus with no limits is coming soon."
+          }
+        }
+      }
+    },
+    "Paket gratis maksimal %lld dompet uang aktif.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free plan holds at most %lld active money wallets."
+          }
+        }
+      }
+    },
+    "Paket gratis maksimal %lld dompet uang aktif. Arsipkan dompet yang tidak dipakai untuk memberi ruang, atau pakai Saku Plus tanpa batas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free plan holds at most %lld active money wallets. Archive wallets you don't use to make room, or use Saku Plus with no limits."
+          }
+        }
+      }
+    },
+    "Paket gratis maksimal %lld kategori %@ aktif. Sembunyikan kategori yang tidak kamu pakai untuk memberi ruang, atau pakai Saku Plus tanpa batas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free plan holds at most %lld active %@ categories. Hide categories you don't use to make room, or use Saku Plus with no limits."
           }
         }
       }
@@ -8089,6 +8419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Payment recorded"
+          }
+        }
+      }
+    },
+    "Pembelian Saku Plus segera hadir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buying Saku Plus is coming soon."
           }
         }
       }
@@ -9123,6 +9463,46 @@
         }
       }
     },
+    "Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku Plus"
+          }
+        }
+      }
+    },
+    "Saku Plus membaca foto struk dan screenshot jadi draf transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku Plus reads receipt photos and screenshots into draft transactions."
+          }
+        }
+      }
+    },
+    "Saku Plus mencatat transaksi dari notifikasi bank dan e-wallet otomatis. Draf yang sudah ada tetap bisa diperiksa dan disimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku Plus records transactions from bank and e-wallet notifications automatically. Drafts you already have can still be reviewed and saved."
+          }
+        }
+      }
+    },
+    "Saku Plus untuk uji": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku Plus for testing"
+          }
+        }
+      }
+    },
     "Saku akan menyimpan pilihan yang diingatnya di server, supaya kategori dan dompet favoritmu tetap terisi saat ganti HP atau memakai Saku di perangkat lain.": {
       "localizations": {
         "en": {
@@ -9769,6 +10149,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "All factors look good"
+          }
+        }
+      }
+    },
+    "Semua fitur Saku Plus terbuka.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every Saku Plus feature is unlocked."
+          }
+        }
+      }
+    },
+    "Semua fitur terbuka": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every feature unlocked"
           }
         }
       }
@@ -11163,6 +11563,36 @@
         }
       }
     },
+    "Tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No limits"
+          }
+        }
+      }
+    },
+    "Tanpa batas dan catat otomatis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No limits and automatic recording"
+          }
+        }
+      }
+    },
+    "Tanpa batas dompet, kategori, dan budget, plus catat dari notifikasi dan foto struk.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No limits on wallets, categories and budgets, plus recording from notifications and receipt photos."
+          }
+        }
+      }
+    },
     "Tanpa dompet": {
       "localizations": {
         "en": {
@@ -12325,6 +12755,16 @@
         }
       }
     },
+    "Trial": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trial"
+          }
+        }
+      }
+    },
     "Tulis nama dan jumlahnya dalam satu kalimat, mis. “sabun 18rb”.": {
       "localizations": {
         "en": {
@@ -12511,6 +12951,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Edit bill"
+          }
+        }
+      }
+    },
+    "Uji internal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Internal testing"
           }
         }
       }
@@ -12761,6 +13211,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What affects your score"
+          }
+        }
+      }
+    },
+    "Yang terbuka": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's unlocked"
           }
         }
       }

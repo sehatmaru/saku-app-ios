@@ -13,7 +13,8 @@ struct CategoriesView: View {
     @State private var isHiddenOpen = false
     @State private var flashId: String?
     @State private var form: FormItem?
-    @State private var limitType: CategoryType?
+    @State private var limitReason: PlusReason?
+    @ObservedObject private var plus = PlusStore.shared
     @State private var toastText = ""
     @State private var showsToast = false
 
@@ -74,11 +75,9 @@ struct CategoriesView: View {
             )
         }
         .detailPage(addLabel: L("Tambah kategori")) {
-            if atLimit(type) { limitType = type } else { form = FormItem(id: "new-\(type.rawValue)", mode: .new(type)) }
+            if atLimit(type) { limitReason = .categories(type) } else { form = FormItem(id: "new-\(type.rawValue)", mode: .new(type)) }
         }
-        .confirmDialog(isPresented: Binding(get: { limitType != nil }, set: { if !$0 { limitType = nil } }),
-                       icon: "lock", title: L("Batas kategori tercapai"),
-                       message: FreeLimits.categoryMessage(limitType ?? type), confirmTitle: nil, cancelTitle: L("Mengerti"))
+        .plusOffer($limitReason)
         .task { await load() }
     }
 
@@ -381,11 +380,11 @@ struct CategoriesView: View {
 
     /// Free accounts hold at most 7 expense and 5 income categories that are shown.
     private func atLimit(_ type: CategoryType) -> Bool {
-        FreeLimits.activeCount(model.arranged(type).shown, type: type) >= FreeLimits.categories(type)
+        !plus.isPlus && FreeLimits.activeCount(model.arranged(type).shown, type: type) >= FreeLimits.categories(type)
     }
 
     private func show(_ category: Category) {
-        if atLimit(category.type) { limitType = category.type; return }
+        if atLimit(category.type) { limitReason = .categories(category.type); return }
         Task {
             guard await model.setHidden(category.id, hidden: false) else { return }
             flash(category.id, for: 1.2)

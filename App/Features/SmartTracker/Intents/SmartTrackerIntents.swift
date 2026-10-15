@@ -31,6 +31,8 @@ struct RecordFromNotificationIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard SmartTrackerConsent.isGranted else { return .result(dialog: RecordTransactionIntent.needsConsent) }
+        // Recording from notifications is a Saku Plus feature; drafts already queued stay (US6, TC 17).
+        guard PlusStore.cachedIsPlus else { return .result(dialog: "Fitur ini butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.") }
         NotificationFilter.remember(title: notificationTitle)
         guard NotificationFilter.allows(title: notificationTitle, subtitle: subtitle) else {
             return .result(dialog: "Notifikasi diabaikan sesuai pengaturan Notifikasi aplikasi.")

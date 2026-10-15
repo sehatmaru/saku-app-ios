@@ -255,6 +255,7 @@ final class AuthViewModel: ObservableObject {
         NotificationManager.shared.cancelAll()
         AppDataCache.shared.clearAll()
         PaydaySetting.day = nil
+        PlusStore.shared.reset()
         PaydaySetting.schedule = []
         HomeBalanceSetting.mode = nil
         SmartTrackerConsent.isGranted = false
@@ -297,6 +298,7 @@ final class AuthViewModel: ObservableObject {
             SmartTrackerMemorySync.isGranted = false
             SmartTrackerMemorySync.declinedAt = nil
             DraftStore.shared.reset()
+            PlusStore.shared.reset()
             currentUser = nil
             pendingDeletion = nil
             withAnimation(.easeInOut(duration: 0.4)) {

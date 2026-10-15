@@ -5,6 +5,7 @@ import PhotosUI
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: ProfileViewModel
+    @ObservedObject private var plus = PlusStore.shared
 
     /// Today's cash and assets, for the previews in the "Total saldo di Beranda" sheet.
     var cash: Double = 0
@@ -169,6 +170,15 @@ struct ProfileView: View {
     private var financeSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionCaption(L("Keuangan"))
+
+            NavigationLink(destination: PlusStatusView()) {
+                row(icon: "star.circle", title: L("Saku Plus"), subtitle: plus.isPlus ? L("Semua fitur terbuka") : L("Tanpa batas dan catat otomatis")) {
+                    Text(plus.entitlement.status.title).font(.app(15)).foregroundStyle(plus.isPlus ? Color.stGreen : Color.appTextSecondary)
+                    chevron
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
 
             NavigationLink(destination: CategoriesView()) {
                 row(icon: "square.grid.2x2", title: L("Kategori"), subtitle: L("Tambah, ubah, sembunyikan")) {
