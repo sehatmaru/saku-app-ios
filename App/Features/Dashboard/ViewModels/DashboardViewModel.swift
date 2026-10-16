@@ -208,18 +208,12 @@ final class DashboardViewModel: ObservableObject {
 
             totalBudget = budgets.reduce(0) { $0 + $1.amount }
 
-            var budgetsWithSpent: [Budget] = []
-            for var budget in budgets {
-                budget.spent = (try? await SupabaseRepository.shared.fetchBudgetSpent(
-                    categoryId: budget.categoryId,
-                    userId: userId,
-                    startDate: budget.currentPeriodStart(),
-                    endDate: budget.currentPeriodEnd()
-                )) ?? 0
-                budgetsWithSpent.append(budget)
+            self.budgets = budgets.map { budget in
+                var copy = budget
+                copy.spent = budget.spentInCurrentPeriod(transactions: transactions)
+                return copy
             }
-            self.budgets = budgetsWithSpent
-            totalSpent = budgetsWithSpent.reduce(0) { $0 + $1.spent }
+            totalSpent = self.budgets.reduce(0) { $0 + $1.spent }
 
             // One bar per day of the current period so far, from payday.
             let periodStart = PaydayCycle.current.period(containing: Date(), calendar: calendar).start

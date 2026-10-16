@@ -621,26 +621,6 @@ final class SupabaseRepository: @unchecked Sendable {
         ]).execute()
     }
 
-    func fetchBudgetSpent(categoryId: String, userId: String, startDate: String, endDate: String?) async throws -> Double {
-        struct Row: Decodable { let amount: Double }
-
-        var query = client
-            .from("transactions")
-            .select("amount")
-            .eq("user_id", value: userId)
-            .eq("category_id", value: categoryId)
-            .eq("transaction_type", value: "expense")
-            .gte("occurred_at", value: startDate)
-            .is("deleted_at", value: nil)
-
-        if let endDate {
-            query = query.lt("occurred_at", value: endDate)
-        }
-
-        let rows: [Row] = try await query.execute().value
-        return rows.reduce(0) { $0 + $1.amount }
-    }
-
     func createBudget(categoryId: String, name: String, amount: Double, periodUnit: String, periodInterval: Int, startDate: String, endDate: String?, userId: String) async throws -> Budget {
         do {
             return try await insertBudget(categoryId: categoryId, name: name, amount: amount, periodUnit: periodUnit,

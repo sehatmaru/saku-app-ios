@@ -22,15 +22,10 @@ final class ExportViewModel: ObservableObject {
         do { accounts = try await accountsTask } catch { failed = true }
         do { categories = try await categoriesTask } catch { failed = true }
         do {
-            // fetchBudgets leaves `spent` at 0; the Budget page fills it the same way (TC 50).
+            // fetchBudgets leaves `spent` at 0; it is computed here from the transactions fetched above (BUG-31).
             var fetched = try await budgetsTask
             for index in fetched.indices {
-                let budget = fetched[index]
-                do {
-                    fetched[index].spent = try await SupabaseRepository.shared.fetchBudgetSpent(
-                        categoryId: budget.categoryId, userId: userId,
-                        startDate: budget.currentPeriodStart(), endDate: budget.currentPeriodEnd())
-                } catch { failed = true }
+                fetched[index].spent = fetched[index].spentInCurrentPeriod(transactions: transactions)
             }
             budgets = fetched
         } catch { failed = true }

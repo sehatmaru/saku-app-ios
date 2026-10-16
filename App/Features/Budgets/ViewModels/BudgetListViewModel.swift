@@ -114,20 +114,13 @@ final class BudgetListViewModel: ObservableObject {
                 accountsTask
             )
 
-            var budgetsWithSpent: [Budget] = []
-            for var budget in fetchedBudgets {
-                let spent = try? await SupabaseRepository.shared.fetchBudgetSpent(
-                    categoryId: budget.categoryId,
-                    userId: userId,
-                    startDate: budget.currentPeriodStart(),
-                    endDate: budget.currentPeriodEnd()
-                )
-                budget.spent = spent ?? 0
-                budgetsWithSpent.append(budget)
+            budgets = fetchedBudgets.map { budget in
+                var copy = budget
+                copy.spent = budget.spentInCurrentPeriod(transactions: fetchedTransactions)
+                return copy
             }
 
             preferences = (try? await preferencesTask) ?? preferences
-            budgets = budgetsWithSpent
             categories = fetchedCategories
             allExpenseTransactions = fetchedTransactions
             accounts = fetchedAccounts

@@ -41,39 +41,32 @@ struct Budget: Identifiable, Codable {
         daysRemaining > 0 ? remaining / Double(daysRemaining) : remaining
     }
 
-    func currentPeriodStart() -> String {
-        let calendar = Calendar.current
-        let now = Date()
-        let formatter = ISO8601DateFormatter()
-
-        switch periodUnit {
-        case "month":
-            return formatter.string(from: PaydayCycle.current.period(containing: now, calendar: calendar).start)
-        case "week":
-            let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
-            return formatter.string(from: start)
-        default:
-            return startDate
-        }
-    }
-
-    func currentPeriodEnd() -> String? {
-        let calendar = Calendar.current
-        let now = Date()
-        let formatter = ISO8601DateFormatter()
-
+    /// The budget's period in force now: start included, end excluded. Read locally so the Budget
+    /// page never needs one HTTP call per budget just to know what was spent (BUG-31).
+    func currentPeriod(calendar: Calendar = .current, now: Date = Date()) -> DateInterval? {
         switch periodUnit {
         case "month":
             let start = PaydayCycle.current.period(containing: now, calendar: calendar).start
             guard let later = calendar.date(byAdding: .month, value: periodInterval - 1, to: start) else { return nil }
-            return formatter.string(from: PaydayCycle.current.period(containing: later, calendar: calendar).end)
+            return DateInterval(start: start, end: PaydayCycle.current.period(containing: later, calendar: calendar).end)
         case "week":
             guard let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)),
-                  let next = calendar.date(byAdding: .weekOfYear, value: periodInterval, to: start) else { return nil }
-            return formatter.string(from: next)
+                  let end = calendar.date(byAdding: .weekOfYear, value: periodInterval, to: start) else { return nil }
+            return DateInterval(start: start, end: end)
         default:
-            return endDate
+            guard let start = ISO8601DateFormatter().date(from: startDate) else { return nil }
+            let end = endDate.flatMap { ISO8601DateFormatter().date(from: $0) } ?? .distantFuture
+            return DateInterval(start: start, end: end)
         }
+    }
+
+    /// Spent in this budget's category during its current period, from transactions already fetched
+    /// on the device. Local on purpose (BUG-31): the old per-budget server call showed 0 when it failed.
+    func spentInCurrentPeriod(transactions: [Transaction], calendar: Calendar = .current, now: Date = Date()) -> Double {
+        guard let period = currentPeriod(calendar: calendar, now: now) else { return 0 }
+        return transactions
+            .filter { $0.type == .expense && $0.categoryId == categoryId && $0.date >= period.start && $0.date < period.end }
+            .reduce(0) { $0 + $1.amount }
     }
 
     var spendingStatus: SpendingStatus {

@@ -123,16 +123,14 @@ struct TransactionDetailView: View {
         async let budgets = SupabaseRepository.shared.fetchBudgets(userId: userId)
         if let fetched = try? await fetchedAccounts { accounts = fetched }
         let calendar = Calendar.current
-        monthTransactions = ((try? await transactions) ?? []).filter {
+        let allTransactions = (try? await transactions) ?? []
+        monthTransactions = allTransactions.filter {
             PaydayCycle.current.contains($0.date, periodOf: txn.date, calendar: calendar)
         }
         let active = ((try? await budgets) ?? []).filter(\.isActive)
         monthlyBudget = active.reduce(0) { $0 + $1.amount }
         if var budget = active.first(where: { $0.categoryId == txn.categoryId && txn.type == .expense }) {
-            budget.spent = (try? await SupabaseRepository.shared.fetchBudgetSpent(
-                categoryId: budget.categoryId, userId: userId,
-                startDate: budget.currentPeriodStart(), endDate: budget.currentPeriodEnd()
-            )) ?? 0
+            budget.spent = budget.spentInCurrentPeriod(transactions: allTransactions)
             categoryBudget = budget
         } else {
             categoryBudget = nil
