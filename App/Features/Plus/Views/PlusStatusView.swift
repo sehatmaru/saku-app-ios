@@ -54,7 +54,13 @@ struct PlusStatusView: View {
                 Text(previews ? L("Ketuk \"Sekarang\" untuk kembali") : L("Ketuk untuk membandingkan"))
                     .font(.app(12)).foregroundStyle(Color.appTextTertiary).padding(.top, 8)
                 VStack(spacing: 0) {
-                    ForEach(rows) { row in rowView(row) }
+                    ForEach(rows) { row in
+                        if row.id == "ai" {
+                            NavigationLink(destination: AIQuotaView().detailPage()) { rowView(row) }.buttonStyle(.plain)
+                        } else {
+                            rowView(row)
+                        }
+                    }
                 }
                 .padding(.top, 14)
                 .id(showsPlus)
@@ -267,11 +273,4 @@ struct PlusStatusView: View {
             }
         }
     }
-}
-
-/// AI help left this month. The server does not count it yet, so this is a sample for test builds (design "Plus D Jatah AI").
-struct AIQuota: Equatable {
-    var left: Int
-    var total: Int
-    static let sample = AIQuota(left: 9, total: 15)
 }

@@ -180,6 +180,15 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
 
+            if PlusStore.isInternalBuild {
+                // referral codes need the server; the page runs on sample data and stays out of the App Store build
+                NavigationLink(destination: ReferralView().detailPage()) {
+                    row(icon: "person.2", title: L("Ajak teman"), subtitle: L("Dapat +5 bantuan AI per teman")) { chevron }
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(RowPressStyle())
+            }
+
             NavigationLink(destination: CategoriesView()) {
                 row(icon: "square.grid.2x2", title: L("Kategori"), subtitle: L("Tambah, ubah, sembunyikan")) {
                     chevron

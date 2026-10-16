@@ -613,6 +613,16 @@
         }
       }
     },
+    "%lld dari %lld teman bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld friends this month"
+          }
+        }
+      }
+    },
     "%lld dipakai": {
       "localizations": {
         "en": {
@@ -1013,6 +1023,16 @@
         }
       }
     },
+    "+%lld jatah AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld AI quota"
+          }
+        }
+      }
+    },
     "+%lld poin": {
       "localizations": {
         "en": {
@@ -1039,6 +1059,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "+100K"
+          }
+        }
+      }
+    },
+    "+5 bantuan AI per teman, maksimal +20 setiap bulan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+5 AI help per friend, up to +20 every month."
           }
         }
       }
@@ -1133,6 +1163,36 @@
         }
       }
     },
+    "1 teman bergabung · berlaku sampai 31 Okt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 friend joined · valid until Oct 31"
+          }
+        }
+      }
+    },
+    "1 teman lagi menunggu transaksi pertama. Bisa tambah +%lld lagi bulan ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 more friend is waiting for a first transaction. You can still add +%lld this month."
+          }
+        }
+      }
+    },
+    "2 dari 4": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 of 4"
+          }
+        }
+      }
+    },
     "2 hari lalu": {
       "localizations": {
         "en": {
@@ -1203,6 +1263,26 @@
         }
       }
     },
+    "Ajak teman": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invite friends"
+          }
+        }
+      }
+    },
+    "Ajak teman, dapat +5": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invite a friend, get +5"
+          }
+        }
+      }
+    },
     "Akan datang": {
       "localizations": {
         "en": {
@@ -1269,6 +1349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Turn on to record with one sentence"
+          }
+        }
+      }
+    },
+    "Aku pakai Saku buat catat keuangan. Pakai kodeku %@ waktu daftar: saku.app/u/%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I use Saku to track my money. Use my code %@ when you sign up: saku.app/u/%@"
           }
         }
       }
@@ -1359,6 +1449,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Analytics"
+          }
+        }
+      }
+    },
+    "Angka contoh sampai server siap.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample numbers until the server is ready."
           }
         }
       }
@@ -1459,6 +1559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cash flow %@"
+          }
+        }
+      }
+    },
+    "Asal jatah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where it comes from"
           }
         }
       }
@@ -1599,6 +1709,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Share transactions CSV"
+          }
+        }
+      }
+    },
+    "Bagikan kode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share code"
+          }
+        }
+      }
+    },
+    "Bagikan kodemu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share your code"
           }
         }
       }
@@ -1783,6 +1913,16 @@
         }
       }
     },
+    "Batas +20 bulan ini sudah tercapai. Teman tetap bisa memakai kodemu; hadiah berikutnya mulai 1 Nov.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The +20 limit for this month is reached. Friends can still use your code; the next rewards start Nov 1."
+          }
+        }
+      }
+    },
     "Batas budget tercapai": {
       "localizations": {
         "en": {
@@ -1819,6 +1959,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Free plan limits"
+          }
+        }
+      }
+    },
+    "Batas tercapai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit reached"
           }
         }
       }
@@ -1949,6 +2099,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Once the first notification arrives, its app shows up here."
+          }
+        }
+      }
+    },
+    "Begitu temanmu mencatat transaksi pertamanya, +5 bantuan AI langsung masuk ke akunmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As soon as your friend records their first transaction, +5 AI help goes into your account."
           }
         }
       }
@@ -2229,6 +2389,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No bill yet"
+          }
+        }
+      }
+    },
+    "Belum ada teman bulan ini. Hadiah terisi lagi setiap tanggal 1.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No friends yet this month. Rewards reset on the 1st of every month."
           }
         }
       }
@@ -2529,6 +2699,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Joined %@ · Saku version %@"
+          }
+        }
+      }
+    },
+    "Berhasil · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done · %@"
           }
         }
       }
@@ -3143,6 +3323,16 @@
         }
       }
     },
+    "Cara kerjanya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How it works"
+          }
+        }
+      }
+    },
     "Cara mencatat": {
       "localizations": {
         "en": {
@@ -3613,6 +3803,16 @@
         }
       }
     },
+    "Dapat +5 bantuan AI per teman": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get +5 AI help per friend"
+          }
+        }
+      }
+    },
     "Dari": {
       "localizations": {
         "en": {
@@ -3743,12 +3943,32 @@
         }
       }
     },
+    "Dari teman": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From friends"
+          }
+        }
+      }
+    },
     "Data belum lengkap dimuat. Periksa koneksi lalu coba lagi.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The data didn't load fully. Check your connection and try again."
+          }
+        }
+      }
+    },
+    "Data contoh sampai server siap.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample data until the server is ready."
           }
         }
       }
@@ -4139,6 +4359,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Paused"
+          }
+        }
+      }
+    },
+    "Dipakai untuk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used for"
           }
         }
       }
@@ -4639,6 +4869,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Export data"
+          }
+        }
+      }
+    },
+    "Email": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email"
           }
         }
       }
@@ -5193,6 +5433,16 @@
         }
       }
     },
+    "Gratis bulanan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free monthly"
+          }
+        }
+      }
+    },
     "Habis": {
       "localizations": {
         "en": {
@@ -5203,12 +5453,42 @@
         }
       }
     },
+    "Habis. Mengetik tetap jalan seperti biasa. Terisi lagi 1 Nov.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All used. Typing works as usual. Refills on Nov 1."
+          }
+        }
+      }
+    },
+    "Hadiah masuk saat temanmu mencatat transaksi pertama. Maksimal +20 per bulan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The reward arrives when your friend records a first transaction. Up to +20 a month."
+          }
+        }
+      }
+    },
     "Halaman %lld dari 3": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Page %lld of 3"
+          }
+        }
+      }
+    },
+    "Hampir habis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Almost out"
           }
         }
       }
@@ -5319,6 +5599,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only for %@ - %@. After that it goes back to %@."
+          }
+        }
+      }
+    },
+    "Hanya untuk akun baru. Satu akun hanya bisa memakai satu kode.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New accounts only. One account can use only one code."
           }
         }
       }
@@ -5613,6 +5903,26 @@
         }
       }
     },
+    "Hitungan bulanan mulai lagi setiap tanggal 1.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The monthly count starts again on the 1st."
+          }
+        }
+      }
+    },
+    "Ia memasukkan kodemu saat membuat akun Saku. Langkah ini opsional untuknya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They enter your code when creating a Saku account. This step is optional for them."
+          }
+        }
+      }
+    },
     "Ikon": {
       "localizations": {
         "en": {
@@ -5869,6 +6179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Allowance "
+          }
+        }
+      }
+    },
+    "Jatah AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI quota"
           }
         }
       }
@@ -6693,6 +7013,16 @@
         }
       }
     },
+    "Ketentuan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terms"
+          }
+        }
+      }
+    },
     "Ketentuan Layanan": {
       "localizations": {
         "en": {
@@ -6919,6 +7249,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "A rough guess is fine; you can adjust it later."
+          }
+        }
+      }
+    },
+    "Kirim kode atau tautan lewat WhatsApp, pesan, atau aplikasi apa saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send the code or link through WhatsApp, messages or any app."
+          }
+        }
+      }
+    },
+    "Kode kamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your code"
           }
         }
       }
@@ -7863,6 +8213,16 @@
         }
       }
     },
+    "Mencatat dengan mengetik biasa tidak memakai jatah. Jatah hanya terpakai saat AI membaca teks bebas, foto struk, atau email.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typing normally doesn't use your quota. It's only used when AI reads free text, receipt photos or email."
+          }
+        }
+      }
+    },
     "Mencatat di %lld dari 30 hari terakhir.": {
       "localizations": {
         "en": {
@@ -7959,6 +8319,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fills the category"
+          }
+        }
+      }
+    },
+    "Menunggu transaksi pertama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for first transaction"
           }
         }
       }
@@ -8219,6 +8589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Category name"
+          }
+        }
+      }
+    },
+    "Nama temanmu hanya tampil di riwayat bila ia mengizinkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your friend's name shows in the history only if they allow it."
           }
         }
       }
@@ -9803,6 +10183,16 @@
         }
       }
     },
+    "Riwayat ajakan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invite history"
+          }
+        }
+      }
+    },
     "Riwayat belum bisa dimuat.": {
       "localizations": {
         "en": {
@@ -10269,6 +10659,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your balance is negative, so there's no emergency fund."
+          }
+        }
+      }
+    },
+    "Salin kode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy code"
           }
         }
       }
@@ -10903,6 +11303,26 @@
         }
       }
     },
+    "Setiap tanggal 1": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the 1st of every month"
+          }
+        }
+      }
+    },
+    "Setiap teman yang mencatat transaksi pertama menambah +5 bantuan AI untukmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every friend who records a first transaction adds +5 AI help for you."
+          }
+        }
+      }
+    },
     "Setor": {
       "localizations": {
         "en": {
@@ -11153,6 +11573,16 @@
         }
       }
     },
+    "Sisa %lld. Terisi lagi 1 Nov, 17 hari lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld left. Refills on Nov 1, in 17 days."
+          }
+        }
+      }
+    },
     "Sisa Rp%@": {
       "localizations": {
         "en": {
@@ -11209,6 +11639,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "See what's left in every budget."
+          }
+        }
+      }
+    },
+    "Sisa bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left this month"
           }
         }
       }
@@ -11853,6 +12293,16 @@
         }
       }
     },
+    "Tambah dengan Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add more with Plus"
+          }
+        }
+      }
+    },
     "Tambah di tanggal %lld": {
       "localizations": {
         "en": {
@@ -12273,6 +12723,16 @@
         }
       }
     },
+    "Teks bebas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free text"
+          }
+        }
+      }
+    },
     "Teks ikon": {
       "localizations": {
         "en": {
@@ -12289,6 +12749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Theme"
+          }
+        }
+      }
+    },
+    "Temanmu mendaftar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your friend signs up"
           }
         }
       }
@@ -12389,6 +12859,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Thank you"
+          }
+        }
+      }
+    },
+    "Terisi lagi 1 Nov.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refills on Nov 1."
           }
         }
       }
@@ -12509,6 +12989,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Used · due %@"
+          }
+        }
+      }
+    },
+    "Tersalin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
           }
         }
       }
@@ -13221,6 +13711,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This transaction +Rp%@"
+          }
+        }
+      }
+    },
+    "Transaksi pertama tercatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First transaction recorded"
           }
         }
       }
