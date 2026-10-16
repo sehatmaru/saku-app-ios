@@ -38,10 +38,16 @@ struct CameraPicker: UIViewControllerRepresentable {
     }
 }
 
-/// The short agreement shown once, the first time pictures are used (K13).
+/// The short agreement shown once, the first time pictures are used (K13). When Smart Tracker is
+/// not on yet, this same sheet turns it on ("Setuju dan aktifkan", design "Catat dari Gambar").
 struct ImageConsentSheet: View {
+    var profileId: UUID?
     let onAgree: () -> Void
+    /// "Lihat detail": opens the full Smart Tracker agreement.
+    var onDetails: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
+
+    private var needsTracker: Bool { !SmartTrackerConsent.isGranted }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -56,18 +62,54 @@ struct ImageConsentSheet: View {
                 point("eye.slash", "Saldo dan nomor rekening diabaikan", "Yang dicatat cuma transaksinya.")
             }
             .padding(.top, 22)
-            Spacer(minLength: 16)
-            PrimaryButton(title: L("Setuju")) {
-                ShareInbox.isImageAgreed = true
-                dismiss()
-                onAgree()
+            if needsTracker {
+                // Smart Tracker is off: agreeing here switches it on too (design 2, "belum disetujui")
+                Button { onDetails?() } label: {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(Color.stGreen).padding(.top, 1)
+                        (Text(L("Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker."))
+                            + Text(" ") + Text(L("Lihat detail")).foregroundStyle(Color.stGreen).fontWeight(.semibold))
+                            .font(.app(14)).lineSpacing(2).foregroundStyle(Color.appBody)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 20)
             }
+            Spacer(minLength: 16)
+            PrimaryButton(title: L(needsTracker ? "Setuju dan aktifkan" : "Setuju")) { agree() }
             Button("Nanti saja") { dismiss() }.font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
                 .frame(maxWidth: .infinity).frame(height: 44).padding(.top, 6)
         }
         .padding(.horizontal, 24).padding(.bottom, 12)
-        .presentationDetents([.height(560)])
+        .presentationDetents([.height(needsTracker ? 640 : 560)])
         .presentationDragIndicator(.visible)
+    }
+
+    /// Agreeing also switches Smart Tracker on when it was off; saved on the profile so it follows
+    /// the account to every device, like the full agreement does.
+    private func agree() {
+        if needsTracker {
+            SmartTrackerConsent.isGranted = true
+            SmartTrackerConsent.since = Date()
+            if let profileId {
+                Task {
+                    try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
+                    // the agreement above also covers Ingatan on the server; guests stay on the device
+                    if !DraftStore.shared.isGuest {
+                        try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
+                        await DraftStore.shared.syncMemory()
+                    }
+                }
+            }
+        }
+        ShareInbox.isImageAgreed = true
+        dismiss()
+        onAgree()
     }
 
     private func point(_ icon: String, _ title: String, _ detail: String) -> some View {

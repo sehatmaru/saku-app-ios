@@ -11663,6 +11663,16 @@
         }
       }
     },
+    "Setuju dan aktifkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agree and turn on"
+          }
+        }
+      }
+    },
     "Siap disimpan": {
       "localizations": {
         "en": {
@@ -11989,6 +11999,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Smart Tracker is not on yet"
+          }
+        }
+      }
+    },
+    "Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Tracker isn't on yet. By agreeing, you switch it on too."
           }
         }
       }

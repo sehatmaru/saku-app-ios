@@ -856,5 +856,7 @@
   "Hanya %lld transaksi pertama yang dibaca, bagi screenshot-nya.": "Only the first %lld transactions are read; split the screenshot.",
   "%lld dari %lld baris": "%lld of %lld rows",
   "Pilih gambar lain": "Pick another picture",
-  "Baru masuk": "Just arrived"
+  "Baru masuk": "Just arrived",
+  "Setuju dan aktifkan": "Agree and turn on",
+  "Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker.": "Smart Tracker isn't on yet. By agreeing, you switch it on too."
 }

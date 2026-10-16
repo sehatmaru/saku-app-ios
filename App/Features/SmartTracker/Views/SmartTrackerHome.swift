@@ -62,7 +62,15 @@ struct SmartTrackerHomeOverlay: View {
             }
         }
         .sheet(isPresented: $showsMemoryConsent) { MemorySyncConsentSheet(profileId: UUID(uuidString: userId)) }
-        .sheet(isPresented: $showsImageConsent) { ImageConsentSheet { afterConsent?(); afterConsent = nil } }
+        .sheet(isPresented: $showsImageConsent) {
+            ImageConsentSheet(profileId: UUID(uuidString: userId)) {
+                afterConsent?()
+                afterConsent = nil
+            } onDetails: {
+                showsImageConsent = false
+                showsConsent = true
+            }
+        }
         .fullScreenCover(isPresented: $showsCamera) { CameraPicker { read(imageData: $0) }.ignoresSafeArea() }
         .plusOffer($plusReason)
         .photosPicker(isPresented: $showsLibrary, selection: $pickedPhoto, matching: .images)
@@ -371,7 +379,8 @@ struct SmartTrackerHomeOverlay: View {
         showsVoice = true
     }
 
-    /// Camera or gallery. Needs the Smart Tracker agreement and the short one for pictures (asked once).
+    /// Camera or gallery. Needs the short agreement for pictures (asked once); when Smart Tracker is
+    /// not on yet, that same sheet switches it on ("Setuju dan aktifkan", design "Sheet persetujuan gambar").
     private func startImage(camera: Bool) {
         tipSeen = true
         // Reading a photo is a Saku Plus feature (US9).
@@ -384,7 +393,6 @@ struct SmartTrackerHomeOverlay: View {
             focused = false
             if camera { showsCamera = true } else { showsLibrary = true }
         }
-        guard consented else { afterConsent = { startImage(camera: camera) }; showsConsent = true; return }
         guard SmartTrackerImageConsent.isGranted else { afterConsent = go; showsImageConsent = true; return }
         go()
     }
