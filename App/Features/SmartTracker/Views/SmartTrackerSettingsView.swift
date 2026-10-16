@@ -3,6 +3,7 @@ import SwiftUI
 /// Profil › Smart Tracker (design 2b): status, the ways of recording (each with its own switch), what is
 /// kept on this phone, privacy, and one button to turn the whole thing on or off.
 struct SmartTrackerSettingsView: View {
+    @ObservedObject private var plus = PlusStore.shared
     @ObservedObject private var store = DraftStore.shared
     @EnvironmentObject private var authViewModel: AuthViewModel
     @AppStorage(SmartTrackerConsent.key) private var isOn = false
@@ -30,6 +31,10 @@ struct SmartTrackerSettingsView: View {
                     NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
                         wayRow(.notification, L("Diteruskan lewat Shortcuts")) {
                             HStack(spacing: 6) {
+                                if !plus.isPlus {
+                                    Text(verbatim: "Plus").font(.app(11, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                                        .padding(.horizontal, 8).padding(.vertical, 2).background(Color.appPrimary.opacity(0.12), in: Capsule())
+                                }
                                 Text(!NotificationTrigger.isAvailable ? L("Butuh iOS 27") : isOn ? (store.connectedApps.isEmpty ? L("Atur") : L("%lld aplikasi", store.connectedApps.count)) : L("Mati"))
                                     .font(.app(15)).foregroundStyle(NotificationTrigger.isAvailable ? Color.appTextSecondary : Color.appTextTertiary)
                                 chevron

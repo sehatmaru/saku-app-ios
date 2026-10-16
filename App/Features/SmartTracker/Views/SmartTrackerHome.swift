@@ -210,6 +210,10 @@ struct SmartTrackerHomeOverlay: View {
                             .frame(width: 40, height: 40)
                             .background(Color.stRaised, in: Circle())
                             .shadow(color: .black.opacity(0.08), radius: 1.5, y: 1)
+                            // a Plus feature stays visible, with a small green dot instead of a lock (design 7a)
+                            .overlay(alignment: .topTrailing) {
+                                if !plus.isPlus { Circle().fill(Color.appPrimary).frame(width: 9, height: 9).offset(x: -2, y: 2) }
+                            }
                     }
                     .accessibilityLabel(L("Catat dari gambar"))
                     Button { startVoice() } label: {

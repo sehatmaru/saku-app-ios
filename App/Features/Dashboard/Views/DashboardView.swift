@@ -237,6 +237,7 @@ struct DashboardView: View {
                     if let error = viewModel.errorMessage {
                         ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
                     }
+                    PlusBannerView()
                     summarySection
                     if !viewModel.overdueBills.isEmpty {
                         OverdueBillBanner(bills: viewModel.overdueBills, isBalanceVisible: isBalanceVisible) { bill in

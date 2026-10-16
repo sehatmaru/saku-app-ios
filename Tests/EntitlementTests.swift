@@ -62,3 +62,42 @@ final class EntitlementTests: XCTestCase {
         XCTAssertTrue(FreeLimits.friendly(Raw(description: "wallet_limit_investment")) is FreeLimits.LimitError)
     }
 }
+
+/// Phases and the banner (design "Plus B Status").
+@MainActor
+final class PlusPhaseTests: XCTestCase {
+    private let now = Date(timeIntervalSince1970: 1_800_000_000)
+    private func day(_ n: Double) -> Date { now.addingTimeInterval(n * 86_400 - 3_600) }
+
+    func testPhases() {
+        XCTAssertEqual(Entitlement.free.phase(at: now), .free)
+        XCTAssertEqual(Entitlement(status: .trial, until: day(3)).phase(at: now), .trial)
+        XCTAssertEqual(Entitlement(status: .active, until: day(300)).phase(at: now), .active)
+        XCTAssertEqual(Entitlement(status: .grace, until: day(5)).phase(at: now), .grace)
+        XCTAssertEqual(Entitlement(status: .active, until: day(-1)).phase(at: now), .ended, "a past end date is ended, not free")
+        XCTAssertEqual(Entitlement(status: .active, until: nil).phase(at: now), .active)
+    }
+
+    func testDaysLeftCountsAStartedDay() {
+        XCTAssertEqual(Entitlement(status: .trial, until: day(3)).daysLeft(at: now), 3)
+        XCTAssertEqual(Entitlement(status: .trial, until: day(1)).daysLeft(at: now), 1)
+        XCTAssertNil(Entitlement(status: .active).daysLeft(at: now))
+    }
+
+    func testBannerPriorityAndDays() {
+        XCTAssertEqual(PlusBanner.pick(for: Entitlement(status: .grace, until: day(5)), now: now, dismissed: [])?.kind, .grace)
+        XCTAssertEqual(PlusBanner.pick(for: Entitlement(status: .trial, until: day(2)), now: now, dismissed: [])?.kind, .trialEnding(days: 2))
+        XCTAssertEqual(PlusBanner.pick(for: Entitlement(status: .trial, until: day(1)), now: now, dismissed: [])?.kind, .trialEnding(days: 1))
+        XCTAssertNil(PlusBanner.pick(for: Entitlement(status: .trial, until: day(3)), now: now, dismissed: []), "day 4 and earlier: no banner")
+        XCTAssertNil(PlusBanner.pick(for: Entitlement(status: .active, until: day(1)), now: now, dismissed: []), "a paid plan has no trial banner")
+        XCTAssertNil(PlusBanner.pick(for: Entitlement.free, now: now, dismissed: []))
+    }
+
+    func testClosedBannerStaysClosedOnlyForTheSameSituation() {
+        let trial2 = Entitlement(status: .trial, until: day(2))
+        let key = PlusBanner.pick(for: trial2, now: now, dismissed: [])!.key
+        XCTAssertNil(PlusBanner.pick(for: trial2, now: now, dismissed: [key]))
+        let trial1 = Entitlement(status: .trial, until: day(1))
+        XCTAssertNotNil(PlusBanner.pick(for: trial1, now: now, dismissed: [key]), "the next day is a new banner")
+    }
+}

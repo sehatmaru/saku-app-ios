@@ -98,3 +98,27 @@ extension PlusStatus {
         }
     }
 }
+
+/// Where an account stands, for the status page and banners (design "Plus B Status").
+enum PlusPhase: Equatable {
+    case free, trial, active, grace
+    /// Had Plus, and its end date has passed.
+    case ended
+}
+
+extension Entitlement {
+    func phase(at now: Date = Date()) -> PlusPhase {
+        guard status != .free else { return .free }
+        if let until, until <= now { return .ended }
+        switch status {
+        case .trial: return .trial
+        case .grace: return .grace
+        default: return .active
+        }
+    }
+
+    /// Whole days until the end date, counting a started day as a day; nil without an end date.
+    func daysLeft(at now: Date = Date()) -> Int? {
+        until.map { max(0, Int(ceil($0.timeIntervalSince(now) / 86_400))) }
+    }
+}

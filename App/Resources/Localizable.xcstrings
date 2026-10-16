@@ -1683,6 +1683,26 @@
         }
       }
     },
+    "Bantuan AI bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI help this month"
+          }
+        }
+      }
+    },
+    "Bantuan AI memakai angka contoh sampai server siap.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI help uses sample numbers until the server is ready."
+          }
+        }
+      }
+    },
     "Barang dan nominalnya belum ketemu": {
       "localizations": {
         "en": {
@@ -2463,6 +2483,26 @@
         }
       }
     },
+    "Berakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ended"
+          }
+        }
+      }
+    },
+    "Berakhir %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ended %@"
+          }
+        }
+      }
+    },
     "Beranda": {
       "localizations": {
         "en": {
@@ -2549,6 +2589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recurring"
+          }
+        }
+      }
+    },
+    "Besok, %@, %@ ditagih untuk 1 tahun Saku Plus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow, %@, %@ is charged for 1 year of Saku Plus."
           }
         }
       }
@@ -3733,6 +3783,16 @@
         }
       }
     },
+    "Dengan Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With Plus"
+          }
+        }
+      }
+    },
     "Dengan Plus, atur budget untuk setiap kategori. Atau ubah budget yang ada.": {
       "localizations": {
         "en": {
@@ -4079,6 +4139,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Paused"
+          }
+        }
+      }
+    },
+    "Diperpanjang %@ · %@ per tahun.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renews %@ · %@ a year."
           }
         }
       }
@@ -6113,6 +6183,16 @@
         }
       }
     },
+    "Kamu sedang memakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're on"
+          }
+        }
+      }
+    },
     "Kamu sedang offline. Draf tetap aman di sini, coba lagi saat tersambung.": {
       "localizations": {
         "en": {
@@ -6443,6 +6523,26 @@
         }
       }
     },
+    "Kelola di App Store": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage in the App Store"
+          }
+        }
+      }
+    },
+    "Kelola langganan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage subscription"
+          }
+        }
+      }
+    },
     "Keluar": {
       "localizations": {
         "en": {
@@ -6683,6 +6783,16 @@
         }
       }
     },
+    "Ketuk \"Sekarang\" untuk kembali": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap \"Now\" to go back"
+          }
+        }
+      }
+    },
     "Ketuk Berikutnya, cari Saku, lalu pilih aksi ": {
       "localizations": {
         "en": {
@@ -6749,6 +6859,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tap to enter the amount"
+          }
+        }
+      }
+    },
+    "Ketuk untuk membandingkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to compare"
           }
         }
       }
@@ -7043,6 +7163,36 @@
         }
       }
     },
+    "Lanjutkan dengan Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue with Plus"
+          }
+        }
+      }
+    },
+    "Laporan PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF reports"
+          }
+        }
+      }
+    },
+    "Lebih banyak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More"
+          }
+        }
+      }
+    },
     "Lengkapi": {
       "localizations": {
         "en": {
@@ -7179,6 +7329,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "See how your budget did in earlier periods."
+          }
+        }
+      }
+    },
+    "Lihat detail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See details"
           }
         }
       }
@@ -7749,6 +7909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Got it, continue"
+          }
+        }
+      }
+    },
+    "Mengetik selalu tanpa batas. Beberapa jumlah dibatasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typing is always unlimited. Some amounts are limited."
           }
         }
       }
@@ -8453,6 +8623,16 @@
         }
       }
     },
+    "Pada %@, %@ per tahun ditagih lewat App Store. Batalkan sebelum itu bila tidak ingin lanjut.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On %@, %@ a year is charged through the App Store. Cancel before then if you don't want to continue."
+          }
+        }
+      }
+    },
     "Pakai uang aset? Catat Tarik dari aset": {
       "localizations": {
         "en": {
@@ -8603,6 +8783,26 @@
         }
       }
     },
+    "Pembayaran belum berhasil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payment didn't go through"
+          }
+        }
+      }
+    },
+    "Pembayaran belum berhasil. Plus tetap terbuka sampai %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The payment didn't go through. Plus stays open until %@."
+          }
+        }
+      }
+    },
     "Pembayaran berhasil": {
       "localizations": {
         "en": {
@@ -8669,6 +8869,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Column separator"
+          }
+        }
+      }
+    },
+    "Penerusan email": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email forwarding"
           }
         }
       }
@@ -8883,6 +9093,16 @@
         }
       }
     },
+    "Perbarui pembayaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update payment"
+          }
+        }
+      }
+    },
     "Perhatian": {
       "localizations": {
         "en": {
@@ -9039,6 +9259,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Needs work"
+          }
+        }
+      }
+    },
+    "Perlu tindakan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs action"
           }
         }
       }
@@ -9333,12 +9563,52 @@
         }
       }
     },
+    "Plus berakhir %@. Semua data tetap ada.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus ended %@. All your data is still here."
+          }
+        }
+      }
+    },
     "Plus membuka Dompet Investasi tanpa batas, semua masuk ke Total kekayaan.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Plus opens Investment wallets with no limit, all counted in Total wealth."
+          }
+        }
+      }
+    },
+    "Plus tetap terbuka sampai %@. Perbarui metode pembayaran di App Store.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus stays open until %@. Update your payment method in the App Store."
+          }
+        }
+      }
+    },
+    "Pratinjau bila langganan berhenti. Datamu tetap aman.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview if the subscription stops. Your data stays safe."
+          }
+        }
+      }
+    },
+    "Pratinjau. Begini Saku-mu setelah mencoba Plus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview. This is Saku after you try Plus."
           }
         }
       }
@@ -9689,6 +9959,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saturday"
+          }
+        }
+      }
+    },
+    "Saku Gratis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku Free"
           }
         }
       }
@@ -10129,6 +10409,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Healthy"
+          }
+        }
+      }
+    },
+    "Sekarang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
           }
         }
       }
@@ -10583,6 +10873,16 @@
         }
       }
     },
+    "Setelah %@, %@ per tahun ditagih lewat App Store. Batalkan kapan saja sebelumnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After %@, %@ a year is charged through the App Store. Cancel any time before."
+          }
+        }
+      }
+    },
     "Setelah kamu menyimpan draf, Saku mengingat kategori dan dompet pilihanmu untuk kata yang sama.": {
       "localizations": {
         "en": {
@@ -10839,6 +11139,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The remaining %@ incurs about %@/month in interest"
+          }
+        }
+      }
+    },
+    "Sisa %lld dari %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld left"
           }
         }
       }
@@ -11503,6 +11813,16 @@
         }
       }
     },
+    "Tahunan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yearly"
+          }
+        }
+      }
+    },
     "Tambah": {
       "localizations": {
         "en": {
@@ -11823,6 +12143,16 @@
         }
       }
     },
+    "Tanpa Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without Plus"
+          }
+        }
+      }
+    },
     "Tanpa batas": {
       "localizations": {
         "en": {
@@ -11959,6 +12289,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Theme"
+          }
+        }
+      }
+    },
+    "Tenggang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grace"
           }
         }
       }
@@ -13021,6 +13361,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Trial"
+          }
+        }
+      }
+    },
+    "Trial berakhir 2 hari lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trial ends in 2 days"
+          }
+        }
+      }
+    },
+    "Trial berakhir besok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trial ends tomorrow"
+          }
+        }
+      }
+    },
+    "Trial · %lld hari lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trial · %lld days left"
           }
         }
       }

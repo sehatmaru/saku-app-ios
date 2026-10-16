@@ -24,9 +24,10 @@ enum SupabaseSDK {
         return profile
     }
 
-    /// US8: turns Saku Plus on or off for a tester account; the server refuses anyone else (`not_tester`).
-    static func setTestPlus(_ on: Bool) async throws {
-        try await client.rpc("set_test_plus", params: ["p_on": AnyJSON.bool(on)]).execute()
+    /// US8: puts the account in one Plus state (free, trial, active, grace, ended) for testing; the server
+    /// only allows it while its test switch is on (`test_plus_off`).
+    static func setTestPlusState(_ state: String) async throws {
+        try await client.rpc("set_test_plus_state", params: ["p_state": AnyJSON.string(state)]).execute()
     }
 
     /// The profile decides. If this device agreed but saving failed earlier, the agreement is saved now.
