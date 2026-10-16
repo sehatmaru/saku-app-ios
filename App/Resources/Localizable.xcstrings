@@ -698,7 +698,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld drafts will be deleted in 3 days if not handled."
+            "value": "%lld drafts will be deleted in 3 days if left unprocessed."
           }
         }
       }

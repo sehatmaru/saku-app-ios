@@ -181,6 +181,16 @@ struct DraftQueueView: View {
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary)
                 .padding(.horizontal, 24).padding(.top, 8)
 
+                // TC 45: a head-up in the last days before drafts expire (restored after the layout-A redesign dropped it).
+                if store.expiringSoon > 0 {
+                    Label(L("%lld draf akan dihapus dalam 3 hari jika tidak diproses.", store.expiringSoon), systemImage: "clock")
+                        .font(.app(13))
+                        .foregroundStyle(Color.appWarning)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 10)
+                }
+
                 VStack(spacing: 12) {
                     ForEach(store.drafts) { draft in
                         card(draft)

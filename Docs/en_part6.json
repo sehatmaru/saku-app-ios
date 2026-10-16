@@ -858,5 +858,6 @@
   "Pilih gambar lain": "Pick another picture",
   "Baru masuk": "Just arrived",
   "Setuju dan aktifkan": "Agree and turn on",
-  "Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker.": "Smart Tracker isn't on yet. By agreeing, you switch it on too."
+  "Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker.": "Smart Tracker isn't on yet. By agreeing, you switch it on too.",
+  "%lld draf akan dihapus dalam 3 hari jika tidak diproses.": "%lld drafts will be deleted in 3 days if left unprocessed."
 }
