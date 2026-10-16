@@ -88,6 +88,8 @@ struct ImageConsentSheet: View {
         .padding(.horizontal, 24).padding(.bottom, 12)
         .presentationDetents([.height(needsTracker ? 640 : 560)])
         .presentationDragIndicator(.visible)
+        // the design's dialog is opaque, not the system's liquid glass (same as the other sheets)
+        .presentationBackground(Color.appBackground)
     }
 
     /// Agreeing also switches Smart Tracker on when it was off; saved on the profile so it follows
