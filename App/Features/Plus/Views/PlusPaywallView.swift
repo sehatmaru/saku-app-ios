@@ -11,16 +11,16 @@ enum PlusReason: Identifiable, Equatable {
         }
     }
 
-    /// Says what the user already has, not "limit reached".
+    /// The benefit the user is reaching for (design "Plus A Penawaran").
     var title: String {
         switch self {
-        case .moneyWallets: L("Kamu sudah punya %lld dompet aktif", FreeLimits.moneyWallets)
-        case .investmentWallets: L("Pantau lebih dari satu investasi")
-        case .categories(let type): L("Kamu sudah punya %lld kategori %@", FreeLimits.categories(type), type == .income ? L("pemasukan") : L("pengeluaran"))
-        case .budgets: L("Kamu sudah punya %lld budget", FreeLimits.budgets)
-        case .notifications: L("Catat dari notifikasi bank")
-        case .receiptPhoto: L("Foto struk, langsung jadi transaksi")
-        case .general: L("Catat lebih sedikit, tahu lebih banyak")
+        case .moneyWallets: L("Dompet tanpa batas")
+        case .investmentWallets: L("Investasi tanpa batas")
+        case .categories: L("Kategori tanpa batas")
+        case .budgets: L("Budget tanpa batas")
+        case .notifications: L("Catat dari notifikasi")
+        case .receiptPhoto: L("Catat dari foto struk")
+        case .general: L("Catat lebih sedikit")
         }
     }
 
@@ -63,6 +63,8 @@ struct PlusPaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var yearly = true
     @State private var showsSoon = false
+    /// A sheet at its short height: the same content, smaller (design 1h).
+    @State private var compact = false
 
     private var price: String { yearly ? "\(PlusPricing.yearly)/\(L("tahun"))" : "\(PlusPricing.monthly)/\(L("bulan"))" }
 
@@ -80,20 +82,22 @@ struct PlusPaywallView: View {
                     .accessibilityLabel(L("Tutup"))
                 }
                 Text(reason.title)
-                    .font(.app(30, weight: .bold)).tracking(-0.5).foregroundStyle(Color.appText)
-                    .fixedSize(horizontal: false, vertical: true).padding(.top, 14).stEnter(0)
+                    .font(.app(compact ? 24 : 30, weight: .bold)).tracking(-0.5).foregroundStyle(Color.appText)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, compact ? 8 : 14).stEnter(0)
                 Text(reason.message)
                     .font(.app(15)).foregroundStyle(Color.appTextSecondary)
                     .fixedSize(horizontal: false, vertical: true).padding(.top, 10).stEnter(1)
 
-                PaywallHero().padding(.top, 20).stEnter(2)
-                Text("Juga: laporan PDF dan lebih banyak bantuan AI")
+                PaywallHero(compact: compact).padding(.top, compact ? 12 : 20).stEnter(2)
+                if !compact {
+                    Text("Juga: laporan PDF dan lebih banyak bantuan AI")
+                        .font(.app(12)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).padding(.top, 12)
+                    HStack(spacing: 14) {
+                        Label(L("Data tetap milikmu"), systemImage: "checkmark.shield")
+                        Label(L("Batalkan kapan saja"), systemImage: "xmark.circle")
+                    }
                     .font(.app(12)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).padding(.top, 12)
-                HStack(spacing: 14) {
-                    Label(L("Data tetap milikmu"), systemImage: "checkmark.shield")
-                    Label(L("Batalkan kapan saja"), systemImage: "xmark.circle")
                 }
-                .font(.app(12)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).padding(.top, 12)
 
                 if PlusStore.isInternalBuild {
                     Text(verbatim: "HARGA CONTOH · BELUM FINAL")
@@ -108,7 +112,7 @@ struct PlusPaywallView: View {
                              per: L("Setara %@/bln", PlusPricing.yearlyPerMonth), best: true, selected: yearly) { yearly = true }
                     planCard(name: L("Bulanan"), strike: nil, price: PlusPricing.monthly, per: L("per bulan"), best: false, selected: !yearly) { yearly = false }
                 }
-                .padding(.top, PlusStore.isInternalBuild ? 12 : 28)
+                .padding(.top, PlusStore.isInternalBuild ? 12 : (compact ? 16 : 28))
                 Text(L("Harga peluncuran sampai %@", PlusPricing.launchUntil))
                     .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
 
@@ -138,6 +142,9 @@ struct PlusPaywallView: View {
         }
         .scrollIndicators(.hidden)
         .background(Color.appBackground)
+        .onGeometryChange(for: Bool.self) { $0.size.height < 650 } action: { compact = $0 }
+        .presentationDetents([.fraction(0.56), .large])
+        .presentationDragIndicator(.visible)
         .alert(L("Pembelian segera hadir"), isPresented: $showsSoon) { Button("OK", role: .cancel) {} } message: {
             Text("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka.")
         }
@@ -174,8 +181,11 @@ struct PlusPaywallView: View {
     }
 }
 
-/// The paywall's story: four short scenes (notification, receipt, email, no limits) that replace a feature list.
+/// The paywall's story: eight short scenes that replace a feature list. Each shows what arrives (a notification, a
+/// photo, an email) and then what it became. Swipe or tap a dot to move; it also advances by itself every 4.8 s.
 private struct PaywallHero: View {
+    let compact: Bool
+
     private struct Scene {
         let badge: String, badgeColor: Color, notifTitle: String, notifBody: String
         let icon: String, rowTitle: String, rowSub: String, amount: String, caption: String
@@ -183,22 +193,81 @@ private struct PaywallHero: View {
 
     private let scenes: [Scene] = [
         Scene(badge: "BCA", badgeColor: Color(light: 0x0060AF, dark: 0x0060AF), notifTitle: "BCA mobile", notifBody: "Debit Rp45.000 · KOPI KENANGAN",
-              icon: "cup.and.saucer", rowTitle: "Kopi Kenangan", rowSub: L("Makan · BCA · dari notifikasi"), amount: "−Rp45.000", caption: L("Notifikasi bank langsung jadi draf")),
+              icon: "cup.and.saucer", rowTitle: "Kopi Kenangan", rowSub: L("Makan · BCA · dari notifikasi"), amount: "−Rp45.000", caption: L("Notifikasi bank jadi draf, tinggal simpan")),
         Scene(badge: "camera", badgeColor: Color(light: 0x111111, dark: 0x3A3A3C), notifTitle: L("Foto struk"), notifBody: "IMG_2041.jpg · Indomaret",
               icon: "cart", rowTitle: "Indomaret", rowSub: L("Belanja · GoPay · dari foto struk"), amount: "−Rp87.500", caption: L("Foto struk dibaca otomatis")),
         Scene(badge: "envelope", badgeColor: Color(light: 0x6E6E73, dark: 0x636366), notifTitle: L("Diteruskan ke Saku"), notifBody: "Tokopedia · Pesanan selesai",
-              icon: "shippingbox", rowTitle: "Tokopedia", rowSub: L("Belanja · BCA · dari email"), amount: "−Rp249.000", caption: L("Email tagihan jadi transaksi")),
+              icon: "shippingbox", rowTitle: "Tokopedia", rowSub: L("Belanja · BCA · dari email"), amount: "−Rp249.000", caption: L("Teruskan email, draf siap disimpan")),
         Scene(badge: "infinity", badgeColor: Color.appPrimary, notifTitle: L("Dompet ke-6"), notifBody: L("Batas gratis 5 dompet"),
-              icon: "wallet.pass", rowTitle: L("Tabungan liburan"), rowSub: L("Dompet baru · tanpa batas"), amount: "Rp0", caption: L("Dompet, kategori, budget tanpa batas"))
+              icon: "wallet.pass", rowTitle: L("Tabungan liburan"), rowSub: L("Dompet baru · tanpa batas"), amount: "Rp0", caption: L("Dompet, kategori, budget tanpa batas")),
+        Scene(badge: "sparkles", badgeColor: Color.appPrimary, notifTitle: L("Catat cepat"), notifBody: "makan siang 35rb, parkir 5rb",
+              icon: "sparkles", rowTitle: L("2 transaksi terbaca"), rowSub: L("Makan · Transport"), amount: "−Rp40.000", caption: L("Bantuan AI tanpa batas")),
+        Scene(badge: "doc.richtext", badgeColor: Color(light: 0x111111, dark: 0x3A3A3C), notifTitle: L("Laporan Oktober"), notifBody: L("PDF · 2 halaman · siap"),
+              icon: "doc.richtext", rowTitle: L("Laporan Okt 2026"), rowSub: L("Ringkasan bulanan · siap dibagikan"), amount: "", caption: L("Laporan PDF bulanan")),
+        Scene(badge: "square.and.arrow.up", badgeColor: Color(light: 0x111111, dark: 0x3A3A3C), notifTitle: L("Ekspor data"), notifBody: L("CSV · semua transaksi"),
+              icon: "checkmark.shield", rowTitle: L("Datamu tetap ada"), rowSub: L("Juga saat Plus berhenti"), amount: "", caption: L("Data tetap milikmu")),
+        Scene(badge: "gearshape", badgeColor: Color(light: 0x6E6E73, dark: 0x636366), notifTitle: "App Store", notifBody: L("Langganan · Saku Plus"),
+              icon: "xmark.circle", rowTitle: L("Batalkan langganan"), rowSub: L("Dua ketukan, tanpa biaya"), amount: "", caption: L("Batalkan kapan saja")),
     ]
 
     @State private var index = 0
     @State private var showsResult = false
+    /// Changes when the user moves the hero, so the 4.8 s timer starts over.
+    @State private var restart = 0
+
+    private var height: CGFloat { compact ? 116 : 200 }
+    private var scale: CGFloat { compact ? 0.62 : 1.1 }
 
     var body: some View {
+        VStack(spacing: 10) {
+            GeometryReader { proxy in
+                canvas
+                    .frame(width: proxy.size.width / scale, height: height / scale)
+                    .scaleEffect(scale)
+                    .frame(width: proxy.size.width, height: height)
+            }
+            .frame(height: height)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 20).onEnded { value in
+                if value.translation.width < -30 { go(index + 1) } else if value.translation.width > 30 { go(index - 1) }
+            })
+            HStack(spacing: 4) {
+                ForEach(scenes.indices, id: \.self) { i in
+                    Button { go(i) } label: {
+                        Capsule().fill(i <= index ? Color.appPrimary : Color.appBorder.opacity(0.6)).frame(width: 18, height: 3)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .task(id: restart) {
+            // each scene: what arrives first, then what it became (4.8 s per scene)
+            while !Task.isCancelled {
+                withAnimation(.easeOut(duration: 0.4)) { showsResult = false }
+                try? await Task.sleep(for: .seconds(2.2))
+                if Task.isCancelled { return }
+                withAnimation(.easeOut(duration: 0.4)) { showsResult = true }
+                try? await Task.sleep(for: .seconds(2.6))
+                if Task.isCancelled { return }
+                withAnimation(.easeInOut(duration: 0.3)) { index = (index + 1) % scenes.count }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(scenes[index].caption)
+    }
+
+    private func go(_ target: Int) {
+        withAnimation(.easeInOut(duration: 0.3)) { index = (target + scenes.count) % scenes.count; showsResult = false }
+        restart += 1
+    }
+
+    /// One scene drawn on a 150 pt tall canvas; the caller scales it.
+    private var canvas: some View {
         let scene = scenes[index]
-        ZStack {
-            RoundedRectangle(cornerRadius: 20).fill(Color.appFill)
+        return ZStack {
+            RoundedRectangle(cornerRadius: 20).fill(Color.stChip)
             if showsResult {
                 HStack(spacing: 12) {
                     Image(systemName: scene.icon).font(.system(size: 18)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
@@ -228,32 +297,9 @@ private struct PaywallHero: View {
             }
             VStack {
                 Spacer()
-                Text(scene.caption).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText).padding(.bottom, 30)
-            }
-            VStack {
-                Spacer()
-                HStack(spacing: 4) {
-                    ForEach(scenes.indices, id: \.self) { i in
-                        Capsule().fill(i == index ? Color.appPrimary : Color.appBorder.opacity(0.6)).frame(width: 22, height: 3)
-                    }
-                }
-                .padding(.bottom, 14)
+                Text(scene.caption).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText).padding(.bottom, 16)
             }
         }
-        .frame(height: 150)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .task {
-            // each scene: the notification first, then what it became (the design runs 4.8 s per scene)
-            while !Task.isCancelled {
-                withAnimation(.easeOut(duration: 0.4)) { showsResult = false }
-                try? await Task.sleep(for: .seconds(2.2))
-                withAnimation(.easeOut(duration: 0.4)) { showsResult = true }
-                try? await Task.sleep(for: .seconds(2.6))
-                withAnimation(.easeInOut(duration: 0.3)) { index = (index + 1) % scenes.count }
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(scene.caption)
     }
 
     @ViewBuilder private func badge(_ scene: Scene) -> some View {
@@ -270,8 +316,12 @@ private struct PaywallHero: View {
 }
 
 extension View {
-    /// Presents the Plus paywall for `reason` (nil = closed).
+    /// Presents the Plus paywall for `reason` (nil = closed): full screen from Profil, a sheet over the
+    /// screen the user came from when a limit or a Plus feature opened it (design 1g and 1h).
     func plusOffer(_ reason: Binding<PlusReason?>) -> some View {
-        fullScreenCover(item: reason) { PlusPaywallView(reason: $0) }
+        let full = Binding<PlusReason?>(get: { reason.wrappedValue == .general ? .general : nil }, set: { reason.wrappedValue = $0 })
+        let sheet = Binding<PlusReason?>(get: { reason.wrappedValue == .general ? nil : reason.wrappedValue }, set: { reason.wrappedValue = $0 })
+        return fullScreenCover(item: full) { PlusPaywallView(reason: $0) }
+            .sheet(item: sheet) { PlusPaywallView(reason: $0) }
     }
 }

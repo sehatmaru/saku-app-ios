@@ -1203,6 +1203,16 @@
         }
       }
     },
+    "2 transaksi terbaca": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 transactions read"
+          }
+        }
+      }
+    },
     "30 Hari": {
       "localizations": {
         "en": {
@@ -1833,6 +1843,16 @@
         }
       }
     },
+    "Bantuan AI tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI help with no limit"
+          }
+        }
+      }
+    },
     "Barang dan nominalnya belum ketemu": {
       "localizations": {
         "en": {
@@ -1879,6 +1899,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel any time"
+          }
+        }
+      }
+    },
+    "Batalkan langganan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel subscription"
           }
         }
       }
@@ -3113,6 +3143,16 @@
         }
       }
     },
+    "Budget tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budgets with no limit"
+          }
+        }
+      }
+    },
     "Budget tersimpan": {
       "localizations": {
         "en": {
@@ -3293,6 +3333,16 @@
         }
       }
     },
+    "CSV · semua transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CSV · all transactions"
+          }
+        }
+      }
+    },
     "Cabut persetujuan": {
       "localizations": {
         "en": {
@@ -3453,6 +3503,16 @@
         }
       }
     },
+    "Catat dari foto struk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record from receipt photos"
+          }
+        }
+      }
+    },
     "Catat dari gambar": {
       "localizations": {
         "en": {
@@ -3469,16 +3529,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Record from notification"
-          }
-        }
-      }
-    },
-    "Catat dari notifikasi bank": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Record from bank notifications"
           }
         }
       }
@@ -3503,12 +3553,12 @@
         }
       }
     },
-    "Catat lebih sedikit, tahu lebih banyak": {
+    "Catat lebih sedikit": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Record less, know more"
+            "value": "Record less"
           }
         }
       }
@@ -3999,6 +4049,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Data above the limit stays safe and keeps working. Only new additions are held back."
+          }
+        }
+      }
+    },
+    "Datamu tetap ada": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data stays"
           }
         }
       }
@@ -4643,6 +4703,16 @@
         }
       }
     },
+    "Dompet tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets with no limit"
+          }
+        }
+      }
+    },
     "Dompet tujuan": {
       "localizations": {
         "en": {
@@ -4823,6 +4893,16 @@
         }
       }
     },
+    "Dua ketukan, tanpa biaya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Two taps, no fee"
+          }
+        }
+      }
+    },
     "E-Wallet": {
       "localizations": {
         "en": {
@@ -4879,16 +4959,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Email"
-          }
-        }
-      }
-    },
-    "Email tagihan jadi transaksi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Billing emails become transactions"
           }
         }
       }
@@ -4999,16 +5069,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Receipt photos are read automatically"
-          }
-        }
-      }
-    },
-    "Foto struk, langsung jadi transaksi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Receipt photo, straight to a transaction"
           }
         }
       }
@@ -6053,6 +6113,16 @@
         }
       }
     },
+    "Investasi tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Investments with no limit"
+          }
+        }
+      }
+    },
     "Isi 0 jika belum ada tagihan bulan ini.": {
       "localizations": {
         "en": {
@@ -6303,6 +6373,16 @@
         }
       }
     },
+    "Juga saat Plus berhenti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Even when Plus stops"
+          }
+        }
+      }
+    },
     "Juga: laporan PDF dan lebih banyak bantuan AI": {
       "localizations": {
         "en": {
@@ -6533,36 +6613,6 @@
         }
       }
     },
-    "Kamu sudah punya %lld budget": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You already have %lld budgets"
-          }
-        }
-      }
-    },
-    "Kamu sudah punya %lld dompet aktif": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You already have %lld active wallets"
-          }
-        }
-      }
-    },
-    "Kamu sudah punya %lld kategori %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You already have %lld %@ categories"
-          }
-        }
-      }
-    },
     "Kamu sudah punya budget sementara %@ sampai %@. Yang baru akan menggantikannya.": {
       "localizations": {
         "en": {
@@ -6759,6 +6809,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Expense categories"
+          }
+        }
+      }
+    },
+    "Kategori tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Categories with no limit"
           }
         }
       }
@@ -7433,6 +7493,16 @@
         }
       }
     },
+    "Langganan · Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription · Saku Plus"
+          }
+        }
+      }
+    },
     "Langganan: %@": {
       "localizations": {
         "en": {
@@ -7523,12 +7593,42 @@
         }
       }
     },
+    "Laporan Okt 2026": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oct 2026 report"
+          }
+        }
+      }
+    },
+    "Laporan Oktober": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "October report"
+          }
+        }
+      }
+    },
     "Laporan PDF": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "PDF reports"
+          }
+        }
+      }
+    },
+    "Laporan PDF bulanan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly PDF report"
           }
         }
       }
@@ -7849,6 +7949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Food · BCA · from notification"
+          }
+        }
+      }
+    },
+    "Makan · Transport": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Food · Transport"
           }
         }
       }
@@ -8903,12 +9013,12 @@
         }
       }
     },
-    "Notifikasi bank langsung jadi draf": {
+    "Notifikasi bank jadi draf, tinggal simpan": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bank notifications become drafts right away"
+            "value": "Bank notifications become drafts, just save"
           }
         }
       }
@@ -9003,6 +9113,16 @@
         }
       }
     },
+    "PDF · 2 halaman · siap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF · 2 pages · ready"
+          }
+        }
+      }
+    },
     "Pada %@, %@ per tahun ditagih lewat App Store. Batalkan sebelum itu bila tidak ingin lanjut.": {
       "localizations": {
         "en": {
@@ -9079,16 +9199,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Setup guide for Shortcuts"
-          }
-        }
-      }
-    },
-    "Pantau lebih dari satu investasi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Track more than one investment"
           }
         }
       }
@@ -10169,6 +10279,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Show less"
+          }
+        }
+      }
+    },
+    "Ringkasan bulanan · siap dibagikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly summary · ready to share"
           }
         }
       }
@@ -13009,6 +13129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Closed"
+          }
+        }
+      }
+    },
+    "Teruskan email, draf siap disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forward an email, the draft is ready to save"
           }
         }
       }
