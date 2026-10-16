@@ -150,8 +150,30 @@ struct DeleteAccountView: View {
     private var confirmStep: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Konfirmasi").font(.app(28, weight: .bold)).tracking(-0.4).padding(.top, 22)
+            // SAKU-72 (US3): the export offer comes before the confirmation field and can be skipped
+            // by simply going on; the export flow is the one from Profil > Ekspor data, and the back
+            // button returns to this screen.
+            NavigationLink(destination: ExportView().detailPage()) {
+                HStack(spacing: 14) {
+                    Image(systemName: "square.and.arrow.up").font(.system(size: 18)).foregroundStyle(Color.appPrimary)
+                        .frame(width: 40, height: 40).background(Color.appPrimary.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("Ekspor data dulu")).font(.app(16, weight: .semibold))
+                        Text(L("Simpan transaksi dan dompetmu sebagai CSV sebelum akun dihapus."))
+                            .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                            .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                }
+                .padding(14)
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+            .padding(.top, 14)
             (Text(L("Untuk melanjutkan, ketik ")) + Text(L("hapus akun saya")).fontWeight(.semibold))
-                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.top, 8)
+                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.top, 18)
             ZStack(alignment: .trailing) {
                 TextField(L("hapus akun saya"), text: $confirmation)
                     .font(.app(16)).textInputAutocapitalization(.never).autocorrectionDisabled()

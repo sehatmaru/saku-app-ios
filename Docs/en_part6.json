@@ -859,5 +859,7 @@
   "Baru masuk": "Just arrived",
   "Setuju dan aktifkan": "Agree and turn on",
   "Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker.": "Smart Tracker isn't on yet. By agreeing, you switch it on too.",
-  "%lld draf akan dihapus dalam 3 hari jika tidak diproses.": "%lld drafts will be deleted in 3 days if left unprocessed."
+  "%lld draf akan dihapus dalam 3 hari jika tidak diproses.": "%lld drafts will be deleted in 3 days if left unprocessed.",
+  "Ekspor data dulu": "Export your data first",
+  "Simpan transaksi dan dompetmu sebagai CSV sebelum akun dihapus.": "Save your transactions and wallets as CSV before the account is deleted."
 }
