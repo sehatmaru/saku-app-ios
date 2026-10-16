@@ -1963,6 +1963,16 @@
         }
       }
     },
+    "Batas gratis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free limit"
+          }
+        }
+      }
+    },
     "Batas gratis 5 dompet": {
       "localizations": {
         "en": {
@@ -4063,6 +4073,16 @@
         }
       }
     },
+    "Datamu tetap ada setelahnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data stays afterwards"
+          }
+        }
+      }
+    },
     "Dengan Plus": {
       "localizations": {
         "en": {
@@ -4209,6 +4229,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Shared"
+          }
+        }
+      }
+    },
+    "Dibatalkan · tanpa biaya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled · no charge"
           }
         }
       }
@@ -4443,6 +4473,16 @@
         }
       }
     },
+    "Diperpanjang 15 Okt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renews Oct 15"
+          }
+        }
+      }
+    },
     "Dipilih otomatis saat mencatat transaksi": {
       "localizations": {
         "en": {
@@ -4519,6 +4559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Forwarded to Saku"
+          }
+        }
+      }
+    },
+    "Diteruskan ke catat@saku.id": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forwarded to catat@saku.id"
           }
         }
       }
@@ -4889,6 +4939,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Draft · BCA"
+          }
+        }
+      }
+    },
+    "Draf · Belanja · dari email": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft · Shopping · from email"
+          }
+        }
+      }
+    },
+    "Draf · Makan · dari notifikasi BCA": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft · Food · from BCA notification"
           }
         }
       }
@@ -5319,6 +5389,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't save:"
+          }
+        }
+      }
+    },
+    "Gaji Oktober": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "October salary"
           }
         }
       }
@@ -7939,6 +8019,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Forget everything?"
+          }
+        }
+      }
+    },
+    "Makan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Food"
           }
         }
       }
@@ -10583,6 +10673,16 @@
         }
       }
     },
+    "Saku membuat draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku makes a draft"
+          }
+        }
+      }
+    },
     "Saku menyimpan pasangan seperti di atas, bukan kalimat atau nominalnya. Bisa dimatikan di Profil › Smart Tracker.": {
       "localizations": {
         "en": {
@@ -12953,6 +13053,16 @@
         }
       }
     },
+    "Terbaca 2 transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 transactions read"
+          }
+        }
+      }
+    },
     "Terbuka": {
       "localizations": {
         "en": {
@@ -13119,6 +13229,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copied"
+          }
+        }
+      }
+    },
+    "Tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved"
           }
         }
       }
