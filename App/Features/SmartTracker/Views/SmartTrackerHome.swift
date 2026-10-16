@@ -300,6 +300,8 @@ struct SmartTrackerHomeOverlay: View {
         retryHint = false
         focused = false
         isOpen = false
+        // BUG-32: reopening starts on an empty form, never with the last sentence still in it.
+        text = ""
     }
 
     private func startVoice() {

@@ -49,4 +49,28 @@ final class SmartButtonVisibilityTests: XCTestCase {
         XCTAssertTrue(app.tabBars.firstMatch.waitForNonExistence(timeout: 5), "tab bar hides on the pushed page")
         XCTAssertTrue(app.buttons["smartTrackerFab"].waitForNonExistence(timeout: 3), "the ✦ button hides too")
     }
+
+    /// BUG-32: closing the Catat cepat bar resets the form; reopening starts empty.
+    @MainActor
+    func testSmartTrackerFormResetsAfterClose() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let fab = app.buttons["smartTrackerFab"]
+        XCTAssertTrue(fab.waitForExistence(timeout: 25), "tombol ✦ di Beranda")
+
+        fab.tap()
+        let field = app.textFields.firstMatch
+        if !field.waitForExistence(timeout: 5) { fab.tap() } // a first tap can be eaten by an overlay
+        XCTAssertTrue(field.waitForExistence(timeout: 6), "bar Catat cepat terbuka")
+        field.tap()
+        field.typeText("kopi 25rb")
+
+        app.buttons["Tutup"].tap()
+        XCTAssertTrue(fab.waitForExistence(timeout: 5), "bar tertutup")
+
+        fab.tap()
+        if !field.waitForExistence(timeout: 5) { fab.tap() }
+        XCTAssertTrue(field.waitForExistence(timeout: 6), "bar terbuka lagi")
+        XCTAssertNotEqual(field.value as? String, "kopi 25rb", "form ter-reset setelah dibuka lagi")
+    }
 }
