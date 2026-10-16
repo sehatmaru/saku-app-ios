@@ -171,7 +171,7 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 0) {
             sectionCaption(L("Keuangan"))
 
-            NavigationLink(destination: PlusStatusView()) {
+            NavigationLink(destination: PlusStatusView().detailPage()) {
                 row(icon: "star.circle", title: L("Saku Plus"), subtitle: plus.isPlus ? L("Semua fitur terbuka") : L("Tanpa batas dan catat otomatis")) {
                     Text(plus.entitlement.status.title).font(.app(15)).foregroundStyle(plus.isPlus ? Color.stGreen : Color.appTextSecondary)
                     chevron
@@ -197,7 +197,7 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
 
-            NavigationLink(destination: ExportView()) {
+            NavigationLink(destination: ExportView().detailPage()) {
                 row(icon: "square.and.arrow.up", title: L("Ekspor data"), subtitle: L("Transaksi, dompet, dan budget")) {
                     Text(verbatim: "CSV").font(.app(15)).foregroundStyle(Color.appTextSecondary)
                     chevron
@@ -206,7 +206,7 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
 
-            NavigationLink(destination: SmartTrackerSettingsView()) {
+            NavigationLink(destination: SmartTrackerSettingsView().detailPage()) {
                 row(icon: "sparkles", title: L("Catat cepat"), subtitle: L("Ingatan, notifikasi, dan data")) {
                     chevron
                 }
