@@ -28,6 +28,8 @@ struct SmartTrackerHomeOverlay: View {
     @State private var thumbnail: UIImage?
     @State private var notice: ImageNotice?
     @State private var result: QuickInput?
+    /// Rows read from a long history, waiting for "Mengerti" on the warning card.
+    @State private var pendingResult: QuickInput?
     /// "Ulang": the sentence is back in the bar, waiting to be retyped.
     @State private var retryHint = false
     @State private var isThinking = false
@@ -174,19 +176,45 @@ struct SmartTrackerHomeOverlay: View {
                     }
                     Spacer(minLength: 0)
                 } else if let notice {
-                    if let thumbnail {
-                        Image(uiImage: thumbnail).resizable().scaledToFill().frame(width: 38, height: 38)
-                            .clipShape(RoundedRectangle(cornerRadius: 10)).opacity(0.5).padding(.leading, -9)
+                    if case .tooLong(let shown, let total) = notice {
+                        // while the warning is up the bar keeps its reading look, with how far it got
+                        if let thumbnail {
+                            Image(uiImage: thumbnail).resizable().scaledToFill().frame(width: 38, height: 38)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                                .padding(.leading, -9)
+                        }
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Membaca gambar…").font(.app(15, weight: .medium)).foregroundStyle(Color.stGreen)
+                            Text(L("%lld dari %lld baris", shown, total)).font(.app(12)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                        ProgressView().frame(width: 40, height: 40)
                     } else {
-                        Image(systemName: "camera.slash").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary)
+                        if let thumbnail {
+                            Image(uiImage: thumbnail).resizable().scaledToFill().frame(width: 38, height: 38)
+                                .clipShape(RoundedRectangle(cornerRadius: 10)).opacity(0.5).padding(.leading, -9)
+                        } else {
+                            Image(systemName: "camera.slash").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary)
+                        }
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(notice == .unreadable ? "Belum ada hasil" : "Kamera belum diizinkan")
+                                .font(.app(15, weight: .medium)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                            Text(notice == .unreadable ? "Tidak ada yang tersimpan" : "Ubah di Pengaturan iPhone")
+                                .font(.app(12)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                        // with the camera off, voice is still a way to record (design 4)
+                        if notice == .cameraOff {
+                            Button { startVoice() } label: {
+                                Image(systemName: "mic").font(.system(size: 19)).foregroundStyle(Color.appText)
+                                    .frame(width: 40, height: 40)
+                                    .background(Color.stRaised, in: Circle())
+                                    .shadow(color: .black.opacity(0.08), radius: 1.5, y: 1)
+                            }
+                            .accessibilityLabel(L("Catat dengan suara"))
+                        }
                     }
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(notice == .unreadable ? "Belum ada hasil" : "Kamera belum diizinkan")
-                            .font(.app(15, weight: .medium)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
-                        Text(notice == .unreadable ? "Tidak ada yang tersimpan" : "Ubah di Pengaturan iPhone")
-                            .font(.app(12)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
-                    }
-                    Spacer(minLength: 0)
                 } else {
                     TextField(L("kopi 25rb gopay"), text: $text)
                         .font(.app(16))
@@ -260,17 +288,19 @@ struct SmartTrackerHomeOverlay: View {
     private func noticeCard(_ n: ImageNotice) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: n.icon).font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 22)
-                Text(L(n.message)).font(.app(15)).lineSpacing(2).foregroundStyle(Color.appBody)
+                Image(systemName: n.icon).font(.system(size: 19))
+                    .foregroundStyle(n.isWarning ? Color.stWarn : Color.appTextSecondary).frame(width: 22)
+                Text(L(n.message)).font(.app(15)).lineSpacing(2)
+                    .foregroundStyle(n.isWarning ? Color.stWarn : Color.appBody)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: 8) {
-                Button { notice = nil; thumbnail = nil; n.primary { startImage(camera: $0) } } label: {
+                Button { primary(n) } label: {
                     Text(L(n.primaryTitle)).font(.app(15, weight: .semibold)).foregroundStyle(.white)
                         .padding(.horizontal, 16).frame(height: 36).background(Color.stGreen, in: Capsule())
                 }
-                Button { notice = nil; thumbnail = nil; focused = true } label: {
-                    Text("Ketik saja").font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
+                Button { secondary(n) } label: {
+                    Text(L(n.secondaryTitle)).font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
                         .padding(.horizontal, 16).frame(height: 36)
                         .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
                 }
@@ -281,6 +311,27 @@ struct SmartTrackerHomeOverlay: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.stBar, in: RoundedRectangle(cornerRadius: 24))
         .shadow(color: .black.opacity(0.1), radius: 14, y: 4)
+    }
+
+    /// The green button on a picture notice.
+    private func primary(_ n: ImageNotice) {
+        notice = nil
+        thumbnail = nil
+        switch n {
+        case .unreadable: startImage(camera: true)
+        case .cameraOff: startImage(camera: false)
+        case .tooLong: openPendingResult()
+        }
+    }
+
+    /// The quiet button on a picture notice.
+    private func secondary(_ n: ImageNotice) {
+        notice = nil
+        thumbnail = nil
+        switch n {
+        case .unreadable, .cameraOff: focused = true
+        case .tooLong: startImage(camera: false)
+        }
     }
 
     // MARK: Actions
@@ -302,6 +353,15 @@ struct SmartTrackerHomeOverlay: View {
         isOpen = false
         // BUG-32: reopening starts on an empty form, never with the last sentence still in it.
         text = ""
+        pendingResult = nil
+    }
+
+    /// "Mengerti" on the too-long warning: the rows that were read open as usual (design 4).
+    private func openPendingResult() {
+        let pending = pendingResult
+        thumbnail = nil
+        close()
+        result = pending
     }
 
     private func startVoice() {
@@ -348,12 +408,15 @@ struct SmartTrackerHomeOverlay: View {
                 notice = .unreadable
                 return
             }
+            if reading.truncated {
+                // "Mutasi terlalu panjang": a warning card first, the rows open on "Mengerti" (design 4)
+                pendingResult = QuickInput(sentence: "", source: .photo, drafts: reading.drafts)
+                notice = .tooLong(shown: reading.drafts.count, total: reading.totalRows)
+                return
+            }
             thumbnail = nil
             close()
             result = QuickInput(sentence: "", source: .photo, drafts: reading.drafts)
-            if reading.truncated {
-                onToast(L("Hanya %lld transaksi pertama yang dibaca. Bagi screenshot-nya agar sisanya ikut terbaca.", ImageParser.limit))
-            }
         }
     }
 
@@ -388,14 +451,36 @@ struct SmartTrackerHomeOverlay: View {
 /// A picture that could not be used, with what to do next.
 enum ImageNotice: Equatable {
     case unreadable, cameraOff
+    /// A bank history with more rows than `ImageParser.limit` (design "Mutasi terlalu panjang").
+    case tooLong(shown: Int, total: Int)
 
-    var icon: String { self == .unreadable ? "photo.badge.exclamationmark" : "camera.fill" }
-    var message: String {
-        self == .unreadable ? "Gambarnya tidak terbaca. Coba foto ulang atau pilih gambar yang lebih jelas."
-            : "Saku belum boleh memakai kamera. Kamu masih bisa pilih gambar dari Galeri atau ketik transaksinya."
+    var icon: String {
+        switch self {
+        case .unreadable: "photo.badge.exclamationmark"
+        case .cameraOff: "camera.fill"
+        case .tooLong: "info.circle"
+        }
     }
-    var primaryTitle: String { self == .unreadable ? "Foto ulang" : "Pilih dari galeri" }
-    func primary(_ start: (Bool) -> Void) { start(self == .unreadable) }
+    var message: String {
+        switch self {
+        case .unreadable: "Gambarnya tidak terbaca. Coba foto ulang atau pilih gambar yang lebih jelas."
+        case .cameraOff: "Saku belum boleh memakai kamera. Kamu masih bisa pilih gambar dari Galeri atau ketik transaksinya."
+        case .tooLong(let shown, _): L("Hanya %lld transaksi pertama yang dibaca, bagi screenshot-nya.", shown)
+        }
+    }
+    var primaryTitle: String {
+        switch self {
+        case .unreadable: "Foto ulang"
+        case .cameraOff: "Pilih dari galeri"
+        case .tooLong: "Mengerti"
+        }
+    }
+    var secondaryTitle: String {
+        if case .tooLong = self { return L("Pilih gambar lain") }
+        return "Ketik saja"
+    }
+    /// The too-long warning is a note, not a failure: amber instead of the quiet grey.
+    var isWarning: Bool { if case .tooLong = self { return true }; return false }
 }
 
 /// What the quick result sheet shows: the sentence and the drafts read from it.

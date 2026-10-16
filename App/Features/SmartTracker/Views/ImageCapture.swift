@@ -45,7 +45,7 @@ struct ImageConsentSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Image(systemName: "doc.viewfinder").font(.system(size: 24)).foregroundStyle(Color.stGreen)
+            Image(systemName: "viewfinder").font(.system(size: 24)).foregroundStyle(Color.stGreen)
                 .frame(width: 48, height: 48).background(Color.stGreen.opacity(0.14), in: Circle()).padding(.top, 14)
             Text("Catat dari gambar").font(.app(24, weight: .bold)).padding(.top, 16)
             Text("Foto bukti bayar, struk, atau screenshot mutasi. Saku mengubahnya jadi draf transaksi.")

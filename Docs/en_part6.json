@@ -852,5 +852,9 @@
   "Gaji Oktober": "October salary",
   "Dibatalkan · tanpa biaya": "Cancelled · no charge",
   "Diperpanjang 15 Okt": "Renews Oct 15",
-  "Datamu tetap ada setelahnya": "Your data stays afterwards"
+  "Datamu tetap ada setelahnya": "Your data stays afterwards",
+  "Hanya %lld transaksi pertama yang dibaca, bagi screenshot-nya.": "Only the first %lld transactions are read; split the screenshot.",
+  "%lld dari %lld baris": "%lld of %lld rows",
+  "Pilih gambar lain": "Pick another picture",
+  "Baru masuk": "Just arrived"
 }

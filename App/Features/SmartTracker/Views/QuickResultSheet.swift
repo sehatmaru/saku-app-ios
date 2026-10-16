@@ -291,8 +291,16 @@ struct QuickResultSheet: View {
                 Label(note, systemImage: "eye").font(.app(13)).foregroundStyle(Color.stWarn).lineLimit(1).padding(.leading, 38)
             }
             if isOpen {
+                // the amount big above the tiles (design 6, expanded row)
+                HStack(alignment: .top, spacing: 6) {
+                    Text("Rp").font(.app(15)).foregroundStyle(Color.appTextTertiary).padding(.top, 8)
+                    Text(d.amount.map { $0.formattedAsDigits() } ?? "0")
+                        .font(.app(44, weight: .light)).tracking(-1.2).monospacedDigit()
+                        .foregroundStyle(d.amount == nil ? Color.appTextTertiary : Color.appText)
+                        .lineLimit(1).minimumScaleFactor(0.5)
+                    Spacer(minLength: 0)
+                }
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                    tile(d, label: L("Nominal"), value: d.amount.map { $0.formattedAsDigits() }, icon: "banknote", kind: .amount)
                     ForEach(fields(d, includeType: true), id: \.key) { f in tile(d, label: f.label, value: f.value, icon: f.icon, kind: f.kind) }
                 }
                 .transition(.opacity.combined(with: .offset(y: 8)))
@@ -304,13 +312,15 @@ struct QuickResultSheet: View {
                 HStack(spacing: 10) {
                     Button { ignore(d) } label: {
                         Text("Abaikan").font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
-                            .padding(.horizontal, 20).frame(height: 40)
+                            .padding(.horizontal, 20).frame(height: 44)
                             .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
                     }
-                    Button { withAnimation(.settle(0.3)) { openId = nil } } label: {
-                        Text("Selesai").font(.app(15, weight: .semibold)).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity).frame(height: 40).background(Color.stGreen, in: Capsule())
+                    Button { saveCard(d) } label: {
+                        Text(d.isComplete ? L("Simpan") : L("Lengkapi dulu")).font(.app(15, weight: .semibold)).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity).frame(height: 44)
+                            .background(d.isComplete ? Color.stGreen : Color.appTextTertiary, in: Capsule())
                     }
+                    .disabled(!d.isComplete || saving)
                 }
             }
         }
@@ -490,6 +500,31 @@ struct QuickResultSheet: View {
                 saving = false
                 dismiss()
                 onSaved("\(filled(d).title) \(amountText(d)) " + L("tersimpan"))
+            } catch {
+                saving = false
+                failure = DraftQueueView.Failure(error)
+            }
+        }
+    }
+
+    /// Saves a single row straight from an expanded card ("Simpan" in design 6).
+    private func saveCard(_ d: Draft) {
+        guard d.isComplete, !saving else { return }
+        saving = true
+        failure = nil
+        Task {
+            do {
+                try await store.saveImmediately(filled(d), userId: userId)
+                saving = false
+                let title = filled(d).title
+                withAnimation(.settle(0.3)) {
+                    if openId == d.id { openId = nil }
+                    drafts.removeAll { $0.id == d.id }
+                }
+                if drafts.isEmpty {
+                    dismiss()
+                    onSaved("\(title) \(amountText(d)) " + L("tersimpan"))
+                }
             } catch {
                 saving = false
                 failure = DraftQueueView.Failure(error)

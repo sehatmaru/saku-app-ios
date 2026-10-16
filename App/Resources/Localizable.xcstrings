@@ -603,6 +603,16 @@
         }
       }
     },
+    "%lld dari %lld baris": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld rows"
+          }
+        }
+      }
+    },
     "%lld dari %lld sudah ditagih": {
       "localizations": {
         "en": {
@@ -1869,6 +1879,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "New"
+          }
+        }
+      }
+    },
+    "Baru masuk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just arrived"
           }
         }
       }
@@ -5649,6 +5669,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only %@ – %@. After that it goes back to %@."
+          }
+        }
+      }
+    },
+    "Hanya %lld transaksi pertama yang dibaca, bagi screenshot-nya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the first %lld transactions are read; split the screenshot."
           }
         }
       }
@@ -10009,6 +10039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose e-wallet"
+          }
+        }
+      }
+    },
+    "Pilih gambar lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick another picture"
           }
         }
       }

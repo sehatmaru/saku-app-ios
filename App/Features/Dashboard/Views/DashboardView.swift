@@ -32,6 +32,9 @@ struct DashboardView: View {
     @State private var recordCard: OverdueCardBill?
     @State private var toastText = ""
     @State private var isToastShown = false
+    /// The tray pill says "Baru masuk" for a moment after drafts land (design 1a).
+    @State private var isTrayFresh = false
+    @State private var trayBump = false
     @ObservedObject private var notificationRouter = NotificationRouter.shared
     @Environment(\.scenePhase) private var scenePhase
 
@@ -89,6 +92,16 @@ struct DashboardView: View {
         }
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
+        .onChange(of: draftStore.drafts.count) { old, new in
+            // "Baru masuk" on the tray pill right after drafts land (design 1a)
+            guard new > old else { return }
+            withAnimation(.settle(0.25)) { isTrayFresh = true; trayBump = true }
+            withAnimation(.settle(0.3).delay(0.16)) { trayBump = false }
+            Task {
+                try? await Task.sleep(for: .seconds(2.6))
+                withAnimation(.settle(0.3)) { isTrayFresh = false }
+            }
+        }
         .overlay {
             if selectedTab != .home || homePath.isEmpty, smartGate.hiders == 0, viewModel.hasLoadedOnce, smartQuickOn, let userId = authViewModel.currentUser?.id {
                 SmartTrackerHomeOverlay(userId: userId, isFresh: viewModel.recentTransactions.isEmpty, onOpenQueue: { openDraftsPage() }) { text in
@@ -288,9 +301,11 @@ struct DashboardView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "tray").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
                             .frame(width: 30, height: 30).background(Color.stGreen, in: Circle())
+                            .background { if isTrayFresh { STPulse(color: .stGreen) } }
                         VStack(alignment: .leading, spacing: 0) {
                             Text(L("%lld draf", count)).font(.app(15, weight: .semibold)).monospacedDigit()
-                            Text("Cek dan simpan").font(.app(11)).foregroundStyle(Color.appTextSecondary)
+                            Text(isTrayFresh ? L("Baru masuk") : "Cek dan simpan")
+                                .font(.app(11)).foregroundStyle(isTrayFresh ? Color.stGreen : Color.appTextSecondary)
                         }
                         Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
                     }
@@ -298,6 +313,9 @@ struct DashboardView: View {
                     .padding(.leading, 5).padding(.trailing, 12).frame(height: 40)
                     .background(Color.stChip, in: Capsule())
                     .overlay(Capsule().strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
+                    // fresh drafts land with a small bump (design 1a)
+                    .scaleEffect(trayBump ? 1.12 : 1)
+                    .animation(.spring(duration: 0.3, bounce: 0.6), value: trayBump)
                 }
             }
             .buttonStyle(PressScaleStyle())

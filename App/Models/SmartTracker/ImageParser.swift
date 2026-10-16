@@ -10,6 +10,8 @@ enum ImageParser {
         var drafts: [Draft] = []
         /// More rows than `limit`; the rest were left out.
         var truncated = false
+        /// Rows found in the picture before the limit ("20 dari 34 baris").
+        var totalRows = 0
     }
 
     private static let apps: [(name: String, words: [String])] = [
@@ -28,6 +30,7 @@ enum ImageParser {
         let rows = blocks.filter { amount(in: $0.lines.joined(separator: " ")) != nil }
         if rows.count >= 2 {
             var reading = Reading()
+            reading.totalRows = rows.count
             reading.truncated = rows.count > limit
             reading.drafts = rows.prefix(limit).compactMap { row in
                 let text = row.lines.joined(separator: " ")

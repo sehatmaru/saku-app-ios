@@ -45,6 +45,7 @@ final class ImageParserTests: XCTestCase {
         let r = ImageParser.parse(lines: lines, context: context)
         XCTAssertEqual(r.drafts.count, 20)
         XCTAssertTrue(r.truncated)
+        XCTAssertEqual(r.totalRows, 22, "how many rows the picture had, for \"20 dari 22 baris\"")
         XCTAssertEqual(r.drafts[0].accountId, "bca")
     }
 
