@@ -204,7 +204,7 @@ struct ProfileView: View {
     private var plusHeroCard: some View {
         let trial = plus.entitlement.phase() == .trial
         let daysLeft = plus.entitlement.daysLeft() ?? 0
-        return VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 14) {
                 InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U", size: 56, fontSize: 20,
                                image: authViewModel.avatarImage)
@@ -235,6 +235,7 @@ struct ProfileView: View {
                     Text(trial ? L("Sisa %lld hari", daysLeft) : L("Saku Plus aktif")).font(.app(16, weight: .semibold))
                     Text(trial ? L("Uji coba Plus s.d. %@", shortUntil) : L("s.d. %@", longUntil))
                         .font(.app(13)).foregroundStyle(Color(light: 0xE3F4EC, dark: 0xE3F4EC))
+                        .minimumScaleFactor(0.8)
                 }
                 .lineLimit(1)
                 Spacer(minLength: 8)
@@ -254,10 +255,10 @@ struct ProfileView: View {
                 Color.appPrimary
                 // the crown floats gently behind the card (design: floaty, 6s)
                 Image(systemName: "crown.fill")
-                    .font(.system(size: 140))
+                    .font(.system(size: 104))
                     .foregroundStyle(.white.opacity(0.14))
                     .rotationEffect(.degrees(floating ? -6 : -12))
-                    .offset(x: 14, y: floating ? -20 : -12)
+                    .offset(x: 10, y: floating ? 2 : 10)
                     .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: floating)
             }
         }
