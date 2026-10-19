@@ -172,24 +172,7 @@ struct PaydaySheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // header: X on the left, title centered (design "Tanggal gajian")
-            ZStack {
-                Text(L("Tanggal gajian")).font(.app(17, weight: .semibold))
-                HStack {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .frame(width: 32, height: 32)
-                            .background(Color.appFill, in: Circle())
-                    }
-                    .accessibilityLabel(L("Tutup"))
-                    Spacer()
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 14)
-            .padding(.bottom, 16)
+            Color.clear.frame(height: 24)
 
             // the running period stays as is; the next one follows the picked day (design)
             VStack(alignment: .leading, spacing: 6) {
@@ -269,7 +252,7 @@ struct PaydaySheet: View {
         }
         .background(Color.appBackground)
         .disabled(isSaving)
-        .presentationDetents([.height(context == .settings ? 680 : 660)])
+        .presentationDetents([.height(context == .settings ? 642 : 622)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
         .presentationBackground(Color.appBackground)

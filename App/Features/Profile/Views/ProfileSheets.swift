@@ -3,35 +3,10 @@ import UIKit
 
 // The Profil settings sheets, design "Sheet Pengaturan":
 // Tema, Bahasa and Total saldo are choice cards with a live preview, and Ekspor data
-// offers an XLS workbook and a PDF report. Every sheet keeps the app's bottom-sheet chrome:
-// X button on the left, centered title, grabber, radius 28.
+// offers an XLS workbook and a PDF report. The sheets have no title or close button: the grabber
+// and a swipe down close them, and the content starts right below it (radius 28).
 
 // MARK: - Chrome
-
-/// The shared header: X on the left, title in the middle.
-private struct SheetHeader: View {
-    let title: String
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ZStack {
-            Text(title).font(.app(17, weight: .semibold))
-            HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color.appTextSecondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.appFill, in: Circle())
-                }
-                .accessibilityLabel(L("Tutup"))
-                Spacer()
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 14)
-    }
-}
 
 /// The green check that pops in on a selected card (design: pop .35s).
 private struct PickedBadge: View {
@@ -66,7 +41,7 @@ struct ThemeSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SheetHeader(title: L("Tema"))
+            Color.clear.frame(height: 24)
 
             HStack(alignment: .top, spacing: 12) {
                 ForEach(options, id: \.key) { option in
@@ -111,7 +86,7 @@ struct ThemeSheet: View {
 
             Spacer(minLength: 0)
         }
-        .presentationDetents([.height(360)])
+        .presentationDetents([.height(338)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
         .presentationBackground(Color.appBackground)
@@ -187,7 +162,7 @@ struct LanguageSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SheetHeader(title: L("Bahasa"))
+            Color.clear.frame(height: 24)
 
             HStack(alignment: .top, spacing: 12) {
                 ForEach(options, id: \.key) { option in
@@ -237,7 +212,7 @@ struct LanguageSheet: View {
 
             Spacer(minLength: 0)
         }
-        .presentationDetents([.height(380)])
+        .presentationDetents([.height(358)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
         .presentationBackground(Color.appBackground)
@@ -277,7 +252,7 @@ struct BalanceSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SheetHeader(title: L("Total saldo"))
+            Color.clear.frame(height: 24)
 
             // Preview: exactly what Beranda will show.
             VStack(alignment: .leading, spacing: 4) {
@@ -344,7 +319,7 @@ struct BalanceSheet: View {
 
             Spacer(minLength: 0)
         }
-        .presentationDetents([.height(470)])
+        .presentationDetents([.height(448)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
         .presentationBackground(Color.appBackground)
@@ -416,7 +391,7 @@ struct ExportSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SheetHeader(title: L("Ekspor data"))
+            Color.clear.frame(height: 24)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -431,7 +406,7 @@ struct ExportSheet: View {
             }
             .scrollIndicators(.hidden)
         }
-        .presentationDetents([.height(min(contentHeight + 62, 720))])
+        .presentationDetents([.height(min(contentHeight + 42, 720))])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
         .presentationBackground(Color.appBackground)
