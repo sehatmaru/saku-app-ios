@@ -64,6 +64,8 @@ struct PlusPaywallView: View {
     @State private var yearly = true
     /// The purchase went through (for now the button succeeds right away; StoreKit comes with US3).
     @State private var purchased = false
+    @State private var isBuying = false
+    @State private var purchaseError: String?
     /// Counts plan changes: the chosen price pulses once on each.
     @State private var pulse = 0
     /// A sheet at its short height: the same content, smaller (design 1h).
@@ -119,7 +121,7 @@ struct PlusPaywallView: View {
                 Text(L("Harga peluncuran sampai %@", PlusPricing.launchUntil))
                     .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
 
-                PrimaryButton(title: L("Coba gratis 7 hari")) { withAnimation(.easeOut(duration: 0.3)) { purchased = true } }.padding(.top, compact ? 12 : 16).stEnter(4)
+                PrimaryButton(title: L("Coba gratis 7 hari"), isLoading: isBuying) { startTrial() }.padding(.top, compact ? 12 : 16).stEnter(4)
                 Text(L("Gratis 7 hari, lalu %@. Batalkan kapan saja di Pengaturan iPhone › Apple ID.", price))
                     .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.top, 10)
@@ -155,7 +157,30 @@ struct PlusPaywallView: View {
                     .transition(.opacity)
             }
         }
-        .interactiveDismissDisabled(purchased)
+        .interactiveDismissDisabled(purchased || isBuying)
+        .alert(purchaseError ?? "", isPresented: Binding(get: { purchaseError != nil }, set: { if !$0 { purchaseError = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
+    }
+
+    /// Until StoreKit exists (US3) the trial is started on the server through the internal test switch, so the
+    /// account really becomes Plus; builds without that switch say buying is not open yet.
+    private func startTrial() {
+        guard PlusStore.isInternalBuild else { purchaseError = L("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka."); return }
+        isBuying = true
+        Task {
+            defer { isBuying = false }
+            do {
+                try await SupabaseSDK.setTestPlusState("trial7")
+                let session = try await SupabaseSDK.client.auth.session
+                _ = try await SupabaseSDK.fetchProfile(authUserId: session.user.id)
+                withAnimation(.easeOut(duration: 0.3)) { purchased = true }
+            } catch {
+                purchaseError = "\(error)".contains("test_plus_off")
+                    ? L("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka.")
+                    : L("Pembelian belum berhasil. Kamu belum ditagih apa pun. Coba lagi sebentar lagi.")
+            }
+        }
     }
 
     private func planCard(name: String, strike: String?, price: String, per: String, best: Bool, selected: Bool,

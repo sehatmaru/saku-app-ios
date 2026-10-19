@@ -922,5 +922,6 @@
   "Aktifkan catat dari notifikasi bank": "Turn on recording from bank notifications",
   "Lanjut tambah dompet": "Continue adding a wallet",
   "Lanjut tambah kategori": "Continue adding a category",
-  "Lanjut tambah budget": "Continue adding a budget"
+  "Lanjut tambah budget": "Continue adding a budget",
+  "Pembelian belum berhasil. Kamu belum ditagih apa pun. Coba lagi sebentar lagi.": "The purchase didn't go through. You haven't been charged. Try again in a moment."
 }

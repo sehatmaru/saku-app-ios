@@ -9833,6 +9833,16 @@
         }
       }
     },
+    "Pembelian belum berhasil. Kamu belum ditagih apa pun. Coba lagi sebentar lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The purchase didn't go through. You haven't been charged. Try again in a moment."
+          }
+        }
+      }
+    },
     "Pembelian cicilan": {
       "localizations": {
         "en": {
