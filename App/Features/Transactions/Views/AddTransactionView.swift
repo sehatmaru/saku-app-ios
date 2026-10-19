@@ -34,7 +34,9 @@ struct AddTransactionView: View {
     @State private var category: Category?
     @State private var account: Account?
     @State private var target: Account?
-    @State private var date = Calendar.current.startOfDay(for: Date())
+    /// Starts at the current instant, not midnight, so the hour of the entry is recorded and
+    /// can be shown in the transaction lists (SAKU-770). Editing keeps the stored date.
+    @State private var date = Date()
     @State private var note = ""
     @FocusState private var noteFocused: Bool
     @State private var sheet: PickerKind?
