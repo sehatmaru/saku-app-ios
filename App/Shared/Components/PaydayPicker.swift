@@ -172,57 +172,121 @@ struct PaydaySheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Tanggal gajian")
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(Color.appText)
-                Spacer()
-                if isSaving {
-                    ProgressView()
-                } else {
-                    Button("Selesai", action: done)
-                        .font(.app(17, weight: .semibold))
-                        .foregroundStyle(Color.appPrimary)
+            // header: X on the left, title centered (design "Tanggal gajian")
+            ZStack {
+                Text(L("Tanggal gajian")).font(.app(17, weight: .semibold))
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .frame(width: 32, height: 32)
+                            .background(Color.appFill, in: Circle())
+                    }
+                    .accessibilityLabel(L("Tutup"))
+                    Spacer()
                 }
             }
-            .frame(height: 48)
-            .padding(.horizontal, 24)
-            .padding(.top, 13)
+            .padding(.horizontal, 20)
+            .padding(.top, 14)
+            .padding(.bottom, 16)
 
-            Text("Budget dan ringkasan bulan ini di Beranda mulai dari tanggal ini.")
-                .font(.app(14))
-                .lineSpacing(2)
-                .foregroundStyle(Color.appTextSecondary)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 14)
+            // the running period stays as is; the next one follows the picked day (design)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("Periode berjalan")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                        Text(PaydayCycle.current.rangeLabel())
+                            .font(.app(17, weight: .medium)).monospacedDigit()
+                            .foregroundStyle(Color.appText)
+                    }
+                    Spacer(minLength: 8)
+                    Text(L("Tidak berubah")).font(.app(12, weight: .medium))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .padding(.horizontal, 10).frame(height: 22)
+                        .background(Color.appBackground, in: Capsule())
+                }
+                .padding(.horizontal, 16).padding(.vertical, 12)
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.appTextTertiary)
+                    .frame(maxWidth: .infinity)
+
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("Periode berikutnya")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                        Text(nextPeriodLabel)
+                            .font(.app(19, weight: .semibold)).monospacedDigit()
+                            .foregroundStyle(Color.appPrimary)
+                            .contentTransition(.numericText())
+                    }
+                    Spacer(minLength: 8)
+                    if isChanged {
+                        Text(L("Tanggal baru")).font(.app(12, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10).frame(height: 22)
+                            .background(Color.appPrimary, in: Capsule())
+                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    }
+                }
+                .padding(.horizontal, 16).padding(.vertical, 12)
+                .background(Color.appPrimary.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
+                .animation(.easeOut(duration: 0.3), value: isChanged)
+            }
+            .padding(.horizontal, 24)
 
             PaydayDayPicker(selection: $selection)
+                .padding(.top, 16)
 
-            PaydayPreview(day: selection ?? PaydaySetting.day ?? 1)
-                .padding(.top, 12)
+            // the info box and the save button (design)
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "info.circle").font(.system(size: 18)).foregroundStyle(Color.appPrimary)
+                Text(changeNote)
+                    .font(.app(14)).lineSpacing(2).foregroundStyle(Color.appBody)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
 
             if let errorMessage {
                 Text(errorMessage)
                     .font(.app(13))
                     .foregroundStyle(Color.appError)
                     .padding(.horizontal, 24)
-                    .padding(.top, 12)
-            } else if context == .settings {
-                Label(changeNote, systemImage: "info.circle")
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
+                    .padding(.top, 10)
             }
-            Spacer(minLength: 0)
+
+            Spacer(minLength: 12)
+
+            PrimaryButton(title: L("Simpan"), isLoading: isSaving, action: done)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
         }
         .background(Color.appBackground)
         .disabled(isSaving)
-        .presentationDetents([.height(context == .settings ? 640 : 610)])
+        .presentationDetents([.height(context == .settings ? 680 : 660)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
         .presentationBackground(Color.appBackground)
         .onDisappear { if !didFinish { onDone(nil) } }
+    }
+
+    private var isChanged: Bool {
+        (selection ?? PaydaySetting.day) != PaydaySetting.day
+    }
+
+    /// "25 Okt – 24 Nov": what the next period looks like once the picked day takes over.
+    private var nextPeriodLabel: String {
+        let day = selection ?? PaydaySetting.day ?? 1
+        let current = PaydayCycle.current.period(containing: Date())
+        let next = PaydayCycle(day: day).period(containing: current.end)
+        let end = Calendar.current.date(byAdding: .day, value: -1, to: next.end) ?? next.end
+        return PaydayCycle.dayMonth.string(from: next.start) + " – " + PaydayCycle.dayMonth.string(from: end)
     }
 
     /// What saving does. The server decides the real date; this mirrors its rule for the copy

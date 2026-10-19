@@ -30,13 +30,12 @@ struct ProfileView: View {
     @State private var showsHomeBalance = false
     @State private var showsTheme = false
     @State private var showsLanguage = false
+    @State private var showsExport = false
     @State private var homeBalanceFailed = false
     @AppStorage(HomeBalanceSetting.key) private var homeBalanceMode = HomeBalanceMode.cash.rawValue
 
     @AppStorage("appLanguage") private var appLanguage = "id"
     @AppStorage("appTheme") private var appTheme: ThemeOption = .system
-    @AppStorage("notifTransactions") private var notifTransactions = true
-    @AppStorage("notifBudget") private var notifBudget = true
     @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
 
     enum ThemeOption: String, CaseIterable {
@@ -98,7 +97,6 @@ struct ProfileView: View {
                             .padding(.top, 14).stEnter(2)
                         dataSection.stEnter(3)
                         appearanceSection.stEnter(4)
-                        notificationSection.stEnter(5)
                         if authViewModel.currentUser?.isGuest == false {
                             logoutButton.stEnter(6)
                         }
@@ -129,22 +127,25 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showsHomeBalance) {
-                HomeBalanceSheet(selection: homeBalanceMode, cash: cash, assets: assets) { mode in
+                BalanceSheet(selection: homeBalanceMode, cash: cash, assets: assets) { mode in
                     saveHomeBalance(mode)
                 }
             }
             .sheet(isPresented: $showsTheme) {
-                OptionSheet(title: L("Tema"), selection: appTheme,
-                            options: ThemeOption.allCases.map { ($0, L($0.rawValue), nil) }) { appTheme = $0 }
+                ThemeSheet(selection: appTheme.rawValue) { raw in
+                    if let option = ThemeOption(rawValue: raw) { appTheme = option }
+                }
             }
             .sheet(isPresented: $showsLanguage) {
-                OptionSheet(title: L("Bahasa"), selection: appLanguage,
-                            options: [("id", "Bahasa Indonesia", "Indonesian"), ("en", "English", "English")]) { code in
+                LanguageSheet(selection: appLanguage) { code in
                     guard code != appLanguage else { return }
                     // Cached dashboard state holds pre-rendered text (health tips, month labels).
                     AppDataCache.shared.clearAll()
                     appLanguage = code
                 }
+            }
+            .sheet(isPresented: $showsExport) {
+                ExportSheet()
             }
             .alert("Gagal menyimpan", isPresented: $homeBalanceFailed) {
                 Button("OK", role: .cancel) {}
@@ -394,7 +395,7 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
 
-            NavigationLink(destination: ExportView().detailPage()) {
+            Button { showsExport = true } label: {
                 row(icon: "square.and.arrow.up", title: L("Ekspor data")) {
                     Text(verbatim: "CSV").font(.app(15)).foregroundStyle(Color.appTextSecondary)
                     chevron
@@ -481,22 +482,6 @@ struct ProfileView: View {
         }
     }
 
-    private var notificationSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            sectionCaption(L("Notifikasi"))
-            row(icon: "arrow.left.arrow.right", title: L("Transaksi baru"), subtitle: L("Tiap ada transaksi")) {
-                Toggle("Transaksi baru", isOn: $notifTransactions)
-                    .labelsHidden()
-                    .tint(.appPrimary)
-            }
-            row(icon: "chart.pie", title: L("Budget hampir habis"), subtitle: L("Saat mencapai 80%")) {
-                Toggle("Budget hampir habis", isOn: $notifBudget)
-                    .labelsHidden()
-                    .tint(.appPrimary)
-            }
-        }
-    }
-
     private func sectionCaption(_ title: String) -> some View {
         Text(title)
             .font(.app(13))
@@ -556,290 +541,259 @@ struct ProfileView: View {
 struct ProfileEditView: View {
     @ObservedObject var viewModel: ProfileViewModel
     @ObservedObject var authViewModel: AuthViewModel
+    @ObservedObject private var plus = PlusStore.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showToast = false
     @State private var toastIsError = false
     @State private var toastMessage = ""
     @State private var pickerItem: PhotosPickerItem?
     @State private var newPhoto: UIImage?
+    /// "Hapus foto" clears the avatar on save.
+    @State private var removesPhoto = false
+    @State private var showsDeleteConfirm = false
+    @State private var deletesAccount = false
+    /// Entrance motion of the avatar card (design "Ubah Profil": rise and pop).
+    @State private var entered = false
+    @FocusState private var nameFocused: Bool
+    @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
+
+    private var isGuest: Bool { authViewModel.currentUser?.isGuest == true }
+    private var trimmed: String { viewModel.displayName.trimmingCharacters(in: .whitespaces) }
+    /// "Simpan" lights up only when the name actually changed and is not empty (design).
+    private var changed: Bool { !trimmed.isEmpty && trimmed != (authViewModel.currentUser?.displayName ?? "") }
+    private var shownName: String { trimmed.isEmpty ? L("Nama") : trimmed }
+    private var photo: UIImage? { newPhoto ?? (removesPhoto ? nil : authViewModel.avatarImage) }
+    private var initials: String {
+        let parts = trimmed.split(separator: " ").prefix(2)
+        return parts.isEmpty ? "U" : parts.map { String($0.prefix(1)).uppercased() }.joined()
+    }
+    private var memberSinceLabel: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        formatter.locale = AppLanguage.locale
+        return formatter.string(from: Date(timeIntervalSince1970: memberSince))
+    }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                PhotosPicker(selection: $pickerItem, matching: .images) {
-                    InitialsAvatar(initials: initials, size: 88, fontSize: 32,
-                                   image: newPhoto ?? authViewModel.avatarImage)
-                        .overlay(alignment: .bottomTrailing) {
-                            Image(systemName: "camera.fill")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.white)
-                                .frame(width: 28, height: 28)
-                                .background(Color.appPrimary, in: Circle())
-                                .overlay(Circle().strokeBorder(Color.appBackground, lineWidth: 2))
+            VStack(alignment: .leading, spacing: 0) {
+                // top bar: back on the left, Simpan on the right (design "Ubah Profil")
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left").font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(Color.appPrimary)
+                            .frame(width: 40, height: 40).contentShape(Rectangle())
+                    }
+                    .accessibilityLabel(L("Kembali"))
+                    Spacer()
+                    Button { save() } label: {
+                        HStack(spacing: 6) {
+                            if viewModel.isLoading { ProgressView().tint(.white).scaleEffect(0.8) }
+                            Text(L("Simpan")).font(.app(15, weight: .medium))
                         }
-                }
-                .accessibilityLabel("Ubah foto profil")
-                .padding(.top, 24)
-                .padding(.bottom, 32)
-                .onChange(of: pickerItem) { _, item in
-                    Task {
-                        guard let data = try? await item?.loadTransferable(type: Data.self) else { return }
-                        newPhoto = UIImage(data: data)
+                        .foregroundStyle(.white)
+                        .frame(height: 36).padding(.horizontal, 18)
+                        .background(Color.appPrimary, in: Capsule())
+                        .opacity(changed ? 1 : 0.35)
                     }
+                    .disabled(!changed || viewModel.isLoading)
                 }
+                .padding(.horizontal, 20).padding(.top, 8)
 
-                VStack(spacing: 0) {
-                    formRow(L("Nama")) {
-                        TextField("Masukkan nama", text: $viewModel.displayName)
-                            .font(.app(16))
-                            .foregroundStyle(Color.appText)
-                            .textContentType(.name)
-                            .submitLabel(.done)
-                    }
-                    formRow("Email") {
-                        Text(authViewModel.currentUser?.isGuest == true ? L("Mode tamu") : authViewModel.currentUser?.email ?? "")
-                            .font(.app(16))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .lineLimit(1)
-                    }
-                }
-                .overlay(alignment: .top) {
-                    Rectangle().fill(Color.appSeparator).frame(height: 1)
-                }
+                Text(L("Ubah profil")).font(.app(34, weight: .bold)).tracking(0.2)
+                    .padding(.horizontal, 24).padding(.top, 6).padding(.bottom, 16)
 
-                saveButton
-                    .padding(.horizontal, 24)
-                    .padding(.top, 32)
-                    .padding(.bottom, 32)
-
-                // Design "Profil Revamp": Hapus akun moved here from the Profil tab; it lives with
-                // the account details now.
-                if authViewModel.currentUser?.isGuest == false {
-                    NavigationLink(destination: DeleteAccountView(authViewModel: authViewModel).detailPage()) {
-                        Text(L("Hapus akun"))
-                            .font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                            .frame(maxWidth: .infinity).frame(height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.bottom, 24)
+                VStack(spacing: 22) {
+                    avatarCard
+                    infoSection
+                    if !isGuest { deleteCard }
                 }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 48)
             }
         }
         .background(Color.appBackground)
-        .navigationTitle("Ubah Profil")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
+        .onAppear {
+            viewModel.loadProfile(from: authViewModel.currentUser)
+            entered = true
+        }
         .toast(isPresented: $showToast, message: toastMessage, icon: toastIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
-    }
-
-    /// Label on the left in secondary, value on the right, hairline below.
-    private func formRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
-        HStack(spacing: 12) {
-            Text(label)
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-                .frame(width: 76, alignment: .leading)
-            content()
-                .frame(maxWidth: .infinity, alignment: .leading)
+        .confirmDialog(isPresented: $showsDeleteConfirm, icon: "trash", destructive: true,
+                       title: L("Hapus akun?"),
+                       message: L("Semua datamu akan terhapus permanen. Kamu tidak bisa membatalkannya."),
+                       confirmTitle: L("Hapus akun")) {
+            showsDeleteConfirm = false
+            // the full delete flow (explanation, survey, typed confirmation) takes over from here
+            deletesAccount = true
         }
-        .frame(height: 52)
-        .padding(.horizontal, 24)
-        .rowSeparator()
-    }
-
-    private var saveButton: some View {
-        Button {
-            Task {
-                if let updated = await viewModel.saveProfile(user: authViewModel.currentUser, photo: newPhoto) {
-                    authViewModel.currentUser = updated
-                    if let newPhoto { authViewModel.avatarImage = newPhoto }
-                    self.newPhoto = nil
-                    toastIsError = false
-                    toastMessage = L("Profil berhasil disimpan")
-                    withAnimation { showToast = true }
-                } else if let error = viewModel.errorMessage {
-                    toastIsError = true
-                    toastMessage = error
-                    withAnimation { showToast = true }
-                }
-            }
-        } label: {
-            HStack(spacing: 8) {
-                if viewModel.isLoading {
-                    ProgressView().tint(.white)
-                }
-                Text("Simpan")
-                    .font(.app(16, weight: .semibold))
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 48)
-            .background(Color.appPrimary, in: Capsule())
+        .navigationDestination(isPresented: $deletesAccount) {
+            DeleteAccountView(authViewModel: authViewModel).detailPage()
         }
-        .buttonStyle(PressScaleStyle())
-        .disabled(viewModel.isLoading)
     }
 
-    private var initials: String {
-        let name = authViewModel.currentUser?.displayName ?? "U"
-        let parts = name.split(separator: " ").prefix(2)
-        return parts.map { String($0.prefix(1)).uppercased() }.joined()
-    }
-}
+    // MARK: Pieces
 
-// MARK: - Total saldo di Beranda
-
-/// Two options, each with a one-line explanation and a small preview of the Beranda number.
-private struct HomeBalanceSheet: View {
-    let selection: String
-    let cash: Double
-    let assets: Double
-    let onPick: (HomeBalanceMode) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var on: Bool
-
-    init(selection: String, cash: Double, assets: Double, onPick: @escaping (HomeBalanceMode) -> Void) {
-        self.selection = selection; self.cash = cash; self.assets = assets; self.onPick = onPick
-        _on = State(initialValue: selection == HomeBalanceMode.all.rawValue)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+    /// Avatar, live name with the Plus badge, joined date and the photo actions.
+    private var avatarCard: some View {
+        VStack(spacing: 14) {
             ZStack {
-                Text("Total saldo di Beranda").font(.app(17, weight: .semibold))
-                HStack {
-                    Spacer()
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(Color.appFill, in: Circle())
-                    }
-                    .accessibilityLabel(L("Tutup"))
+                Circle().strokeBorder(Color.appPrimary.opacity(0.25), lineWidth: 2).frame(width: 104, height: 104)
+                InitialsAvatar(initials: initials, size: 92, fontSize: 32, image: photo)
+                    .scaleEffect(entered ? 1 : 0.6).opacity(entered ? 1 : 0)
+                    .animation(.spring(duration: 0.6, bounce: 0.3).delay(0.1), value: entered)
+                PhotosPicker(selection: $pickerItem, matching: .images) {
+                    Image(systemName: "camera").font(.system(size: 18)).foregroundStyle(Color.appPrimary)
+                        .frame(width: 34, height: 34).background(.white, in: Circle())
+                        .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
                 }
+                .accessibilityLabel(L("Ganti foto"))
+                .offset(x: 35, y: 32)
+                .scaleEffect(entered ? 1 : 0.6).opacity(entered ? 1 : 0)
+                .animation(.spring(duration: 0.5, bounce: 0.35).delay(0.45), value: entered)
             }
-            .padding(.top, 14)
-
             VStack(spacing: 4) {
-                Text("Total saldo di Beranda").font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                Text((on ? cash + assets : cash).formattedAsCurrency())
-                    .font(.app(42, weight: .ultraLight)).monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(.easeOut(duration: 0.25), value: on)
-                    .animation(.easeOut(duration: 0.25), value: on)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 22)
-            .background(Color.stChip, in: RoundedRectangle(cornerRadius: 24))
-            .padding(.top, 22)
-
-            VStack(spacing: 0) {
-                HStack(spacing: 14) {
-                    Image(systemName: "wallet.bifold").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Kas").font(.app(16))
-                        Text("Rekening, e-wallet, tunai · selalu ikut").font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                    }
-                    Spacer(minLength: 8)
-                    Text(cash.formattedAsCurrency()).font(.app(15)).monospacedDigit()
+                HStack(spacing: 8) {
+                    Text(shownName).font(.app(22, weight: .semibold)).tracking(-0.3)
+                    if plus.isPlus { plusBadge }
                 }
-                .padding(.vertical, 14)
-                Divider()
-                HStack(spacing: 14) {
-                    Image(systemName: "chart.line.uptrend.xyaxis").font(.system(size: 18)).foregroundStyle(Color.appInvestment).frame(width: 24)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Ikutkan aset investasi").font(.app(16))
-                        Text(L("%@ dari dompet investasi", assets.formattedAsCurrency())).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                    }
-                    Spacer(minLength: 8)
-                    Toggle("Ikutkan aset investasi", isOn: Binding(get: { on }, set: { on = $0; onPick($0 ? .all : .cash) }))
-                        .labelsHidden().tint(.appPrimary)
-                }
-                .padding(.vertical, 14)
+                Text(L("Bergabung sejak %@", memberSinceLabel))
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
             }
-            .padding(.top, 18)
-
-            Text("Hanya mengubah angka di Beranda. Dompet tetap menampilkan kas dan aset terpisah.")
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-                .padding(.top, 10)
-            Spacer(minLength: 0)
+            HStack(spacing: 8) {
+                PhotosPicker(selection: $pickerItem, matching: .images) {
+                    Label(L("Ganti foto"), systemImage: "camera")
+                        .font(.app(14, weight: .medium)).foregroundStyle(Color.appPrimary)
+                        .frame(height: 36).padding(.horizontal, 16).background(.white, in: Capsule())
+                }
+                Button { removesPhoto = true; newPhoto = nil } label: {
+                    Text(L("Hapus foto"))
+                        .font(.app(14, weight: .medium)).foregroundStyle(Color.appTextSecondary)
+                        .frame(height: 36).padding(.horizontal, 16).background(.white.opacity(0.6), in: Capsule())
+                }
+                .disabled(photo == nil)
+                .opacity(photo == nil ? 0.5 : 1)
+            }
         }
-        .padding(.horizontal, 20)
-        .foregroundStyle(Color.appText)
-        .presentationDetents([.height(500)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .padding(.horizontal, 18).padding(.top, 24).padding(.bottom, 18)
+        .frame(maxWidth: .infinity)
+        .background(Color.appPrimary.opacity(0.12))
+        .overlay(alignment: .topTrailing) {
+            // the crown watermark peeking from the corner (design "Ubah Profil")
+            Image(systemName: "crown.fill").font(.system(size: 140))
+                .foregroundStyle(Color.appPrimary.opacity(0.08))
+                .offset(x: 18, y: -16)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .opacity(entered ? 1 : 0).offset(y: entered ? 0 : 16)
+        .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.6), value: entered)
+        .onChange(of: pickerItem) { _, item in
+            Task {
+                guard let data = try? await item?.loadTransferable(type: Data.self) else { return }
+                newPhoto = UIImage(data: data)
+                removesPhoto = false
+            }
+        }
+    }
+
+    private var plusBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "crown.fill").font(.system(size: 12))
+            Text(verbatim: "Plus").font(.app(12, weight: .semibold))
+        }
+        .foregroundStyle(Color.appInvestment)
+        .frame(height: 22).padding(.horizontal, 9)
+        .background(Color.appInvestmentTint, in: Capsule())
+    }
+
+    /// Nama (with a live counter and a focus ring) and the locked email (design).
+    private var infoSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L("Info akun")).font(.app(13, weight: .semibold))
+                .foregroundStyle(Color.appTextSecondary).tracking(0.2)
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("Nama")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                    TextField("", text: $viewModel.displayName, prompt: Text(L("Nama")).foregroundStyle(Color.appTextTertiary))
+                        .font(.app(17, weight: .medium)).foregroundStyle(Color.appText)
+                        .textContentType(.name).submitLabel(.done)
+                        .focused($nameFocused)
+                }
+                Spacer(minLength: 8)
+                Text("\(viewModel.displayName.count)/30")
+                    .font(.app(13)).foregroundStyle(Color.appTextTertiary).monospacedDigit()
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(nameFocused ? Color.appPrimary : .clear, lineWidth: 1.5))
+            .onChange(of: viewModel.displayName) { _, value in
+                if value.count > 30 { viewModel.displayName = String(value.prefix(30)) }
+            }
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Email").font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                    Text(authViewModel.currentUser?.isGuest == true ? L("Mode tamu") : authViewModel.currentUser?.email ?? "")
+                        .font(.app(17, weight: .medium)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "lock").font(.system(size: 16)).foregroundStyle(Color.appTextTertiary)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+
+            Text(L("Email dipakai untuk masuk dan tidak bisa diubah di sini."))
+                .font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.horizontal, 4)
+        }
+    }
+
+    /// The quiet danger card that leads to the delete flow through a confirm (design).
+    private var deleteCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "trash").font(.system(size: 17)).foregroundStyle(Color.appError)
+                    .frame(width: 40, height: 40).background(Color.appError.opacity(0.12), in: Circle())
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(L("Hapus akun")).font(.app(16, weight: .semibold))
+                    Text(L("Semua transaksi, dompet, dan budget akan terhapus permanen dan tidak bisa dikembalikan."))
+                        .font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Button { showsDeleteConfirm = true } label: {
+                Text(L("Hapus akun")).font(.app(16, weight: .medium)).foregroundStyle(Color.appError)
+                    .frame(maxWidth: .infinity).frame(height: 46)
+                    .background(Color.appError.opacity(0.12), in: Capsule())
+            }
+            .buttonStyle(PressScaleStyle())
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 24))
+        .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(Color.appError.opacity(0.25), lineWidth: 1))
+    }
+
+    private func save() {
+        guard changed, !viewModel.isLoading else { return }
+        Task {
+            if let updated = await viewModel.saveProfile(user: authViewModel.currentUser, photo: newPhoto, removePhoto: removesPhoto) {
+                authViewModel.currentUser = updated
+                if let newPhoto { authViewModel.avatarImage = newPhoto }
+                if removesPhoto { authViewModel.avatarImage = nil }
+                self.newPhoto = nil
+                self.removesPhoto = false
+                toastIsError = false
+                toastMessage = L("Profil berhasil disimpan")
+                withAnimation { showToast = true }
+            } else if let error = viewModel.errorMessage {
+                toastIsError = true
+                toastMessage = error
+                withAnimation { showToast = true }
+            }
+        }
     }
 }
 
-
-// MARK: - Option sheet
-
-/// Theme and language: a short list, tap a row to pick it and close.
-private struct OptionSheet<Value: Equatable>: View {
-    let title: String
-    let selection: Value
-    let options: [(value: Value, title: String, subtitle: String?)]
-    let onPick: (Value) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ZStack {
-                Text(title).font(.app(17, weight: .semibold))
-                HStack {
-                    Spacer()
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(Color.appFill, in: Circle())
-                    }
-                    .accessibilityLabel(L("Tutup"))
-                }
-            }
-            .padding(.top, 14)
-
-            VStack(spacing: 0) {
-                ForEach(options.indices, id: \.self) { i in
-                    let option = options[i]
-                    let on = option.value == selection
-                    Button { onPick(option.value); dismiss() } label: {
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(option.title).font(.app(16))
-                                if let subtitle = option.subtitle {
-                                    Text(subtitle).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                                }
-                            }
-                            Spacer()
-                            if on {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(Color.appPrimary)
-                            }
-                        }
-                        .frame(minHeight: 56)
-                        .rowSeparator()
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(RowPressStyle())
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
-            }
-            .padding(.top, 12)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 20)
-        .foregroundStyle(Color.appText)
-        .presentationDetents([.height(CGFloat(options.count) * 56 + 110)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
-    }
-}

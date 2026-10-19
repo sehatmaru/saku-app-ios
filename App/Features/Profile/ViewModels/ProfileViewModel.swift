@@ -9,8 +9,9 @@ final class ProfileViewModel: ObservableObject {
         displayName = user?.displayName ?? ""
     }
 
-    /// Saves the name and, when `photo` is set, uploads it first. Returns the updated user.
-    func saveProfile(user: User?, photo: UIImage?) async -> User? {
+    /// Saves the name and, when `photo` is set, uploads it first; `removePhoto` clears the avatar.
+    /// Returns the updated user.
+    func saveProfile(user: User?, photo: UIImage?, removePhoto: Bool = false) async -> User? {
         errorMessage = nil
         displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !displayName.isEmpty else {
@@ -26,6 +27,9 @@ final class ProfileViewModel: ObservableObject {
             var avatarURL: String?
             if let jpeg = photo.flatMap(Self.avatarJPEG) {
                 avatarURL = try await SupabaseSDK.uploadAvatar(authUserId: authUserId, jpeg: jpeg)
+            } else if removePhoto {
+                // "Hapus foto": store it empty rather than keeping the old one
+                avatarURL = ""
             }
             try await SupabaseSDK.updateProfile(id: profile.id, displayName: displayName, avatarURL: avatarURL)
             return User(

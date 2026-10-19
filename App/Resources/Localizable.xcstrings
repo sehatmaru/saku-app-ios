@@ -873,6 +873,16 @@
         }
       }
     },
+    "%lld periode dipilih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld periods picked"
+          }
+        }
+      }
+    },
     "%lld perlu dicek · ketuk untuk melengkapi": {
       "localizations": {
         "en": {
@@ -1783,6 +1793,16 @@
         }
       }
     },
+    "Bahasa Indonesia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indonesian"
+          }
+        }
+      }
+    },
     "Baik": {
       "localizations": {
         "en": {
@@ -2283,6 +2303,16 @@
         }
       }
     },
+    "Belum ada budget di periode ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No budgets in this period yet."
+          }
+        }
+      }
+    },
     "Belum ada budget untuk transaksi ini.": {
       "localizations": {
         "en": {
@@ -2763,6 +2793,16 @@
         }
       }
     },
+    "Bergabung sejak %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Joined %@"
+          }
+        }
+      }
+    },
     "Bergabung sejak %@ · Saku versi %@": {
       "localizations": {
         "en": {
@@ -2999,6 +3039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Create category “%@”"
+          }
+        }
+      }
+    },
+    "Buat laporan PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create PDF report"
           }
         }
       }
@@ -4093,6 +4143,26 @@
         }
       }
     },
+    "Data mentah untuk diolah sendiri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raw data to work with yourself"
+          }
+        }
+      }
+    },
+    "Data tersedia sejak %@. Geser untuk periode lainnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data goes back to %@. Scroll for other periods."
+          }
+        }
+      }
+    },
     "Data tetap milikmu": {
       "localizations": {
         "en": {
@@ -4373,6 +4443,26 @@
         }
       }
     },
+    "Dibuat %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made %@"
+          }
+        }
+      }
+    },
+    "Dibuat dengan Saku": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made with Saku"
+          }
+        }
+      }
+    },
     "Dicatat Smart Tracker · periksa dulu": {
       "localizations": {
         "en": {
@@ -4483,6 +4573,16 @@
         }
       }
     },
+    "Dihitung dari kas saja · tampil di Beranda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Counted from cash only · shown on Home"
+          }
+        }
+      }
+    },
     "Dihitung dari kas, tanpa aset.": {
       "localizations": {
         "en": {
@@ -4499,6 +4599,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Calculated from the last 3 months of income and expenses, wallet balances, credit cards and this month's budget. The score updates every time you record a transaction."
+          }
+        }
+      }
+    },
+    "Dihitung dari semua dompet · tampil di Beranda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Counted from all wallets · shown on Home"
           }
         }
       }
@@ -5073,6 +5183,16 @@
         }
       }
     },
+    "Ekspor XLS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export XLS"
+          }
+        }
+      }
+    },
     "Ekspor dan laporan lengkap": {
       "localizations": {
         "en": {
@@ -5103,12 +5223,32 @@
         }
       }
     },
+    "Ekspor ke XLS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export to XLS"
+          }
+        }
+      }
+    },
     "Email": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Email"
+          }
+        }
+      }
+    },
+    "Email dipakai untuk masuk dan tidak bisa diubah di sini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This email is used to sign in and can't be changed here."
           }
         }
       }
@@ -5269,6 +5409,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't make the CSV file."
+          }
+        }
+      }
+    },
+    "Gagal membuat file. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't make the file. Try again."
           }
         }
       }
@@ -5553,6 +5703,16 @@
         }
       }
     },
+    "Ganti foto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change photo"
+          }
+        }
+      }
+    },
     "Ganti perubahan sementara?": {
       "localizations": {
         "en": {
@@ -5689,6 +5849,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The reward arrives when your friend records a first transaction. Up to +20 a month."
+          }
+        }
+      }
+    },
+    "Halaman %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page %lld"
           }
         }
       }
@@ -5913,6 +6083,16 @@
         }
       }
     },
+    "Hapus akun?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete account?"
+          }
+        }
+      }
+    },
     "Hapus budget": {
       "localizations": {
         "en": {
@@ -5979,6 +6159,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Clear filters"
+          }
+        }
+      }
+    },
+    "Hapus foto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove photo"
           }
         }
       }
@@ -6183,12 +6373,32 @@
         }
       }
     },
+    "Ikuti pengaturan iPhone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow iPhone setting"
+          }
+        }
+      }
+    },
     "Ikutkan aset investasi": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Include investment assets"
+          }
+        }
+      }
+    },
+    "Info akun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account info"
           }
         }
       }
@@ -6993,6 +7203,16 @@
         }
       }
     },
+    "Kategori terbesar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top categories"
+          }
+        }
+      }
+    },
     "Kategori tersimpan": {
       "localizations": {
         "en": {
@@ -7769,6 +7989,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Continue with Plus"
+          }
+        }
+      }
+    },
+    "Laporan Keuangan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Financial Report"
           }
         }
       }
@@ -9873,6 +10103,26 @@
         }
       }
     },
+    "Periode berikutnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next period"
+          }
+        }
+      }
+    },
+    "Periode berjalan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current period"
+          }
+        }
+      }
+    },
     "Periode budget & ringkasan": {
       "localizations": {
         "en": {
@@ -10193,6 +10443,16 @@
         }
       }
     },
+    "Pilih periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a period"
+          }
+        }
+      }
+    },
     "Pilih platform": {
       "localizations": {
         "en": {
@@ -10509,6 +10769,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Monthly summary · ready to share"
+          }
+        }
+      }
+    },
+    "Ringkasan dan analisis, siap dibagikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Summary and analysis, ready to share"
           }
         }
       }
@@ -11193,6 +11463,26 @@
         }
       }
     },
+    "Selalu gelap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always dark"
+          }
+        }
+      }
+    },
+    "Selalu terang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always light"
+          }
+        }
+      }
+    },
     "Selamanya": {
       "localizations": {
         "en": {
@@ -11249,6 +11539,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The full amount uses up the card limit right away, but each bill only charges one part."
+          }
+        }
+      }
+    },
+    "Seluruh teks di Saku memakai bahasa yang dipilih.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All text in Saku uses the language you pick."
           }
         }
       }
@@ -11363,12 +11663,32 @@
         }
       }
     },
+    "Semua datamu akan terhapus permanen. Kamu tidak bisa membatalkannya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All your data will be deleted permanently. You can't undo this."
+          }
+        }
+      }
+    },
     "Semua diabaikan": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "All ignored"
+          }
+        }
+      }
+    },
+    "Semua dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All wallets"
           }
         }
       }
@@ -11519,6 +11839,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "All transactions are shown"
+          }
+        }
+      }
+    },
+    "Semua transaksi, dompet, dan budget akan terhapus permanen dan tidak bisa dikembalikan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All your transactions, wallets, and budgets will be gone for good and can't be brought back."
           }
         }
       }
@@ -11769,6 +12099,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Agree and turn on"
+          }
+        }
+      }
+    },
+    "Sheet %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sheet %lld"
           }
         }
       }
@@ -12069,6 +12409,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "System"
+          }
+        }
+      }
+    },
+    "Sistem mengikuti pengaturan tampilan iPhone-mu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System follows your iPhone's appearance setting."
           }
         }
       }
@@ -12913,6 +13263,16 @@
         }
       }
     },
+    "Tanggal baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New date"
+          }
+        }
+      }
+    },
     "Tanggal bayar": {
       "localizations": {
         "en": {
@@ -13333,6 +13693,16 @@
         }
       }
     },
+    "Termasuk e-wallet dan kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Includes e-wallets and cards"
+          }
+        }
+      }
+    },
     "Terpakai": {
       "localizations": {
         "en": {
@@ -13689,6 +14059,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nothing is recorded until you tap Save."
+          }
+        }
+      }
+    },
+    "Tidak berubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stays the same"
           }
         }
       }
@@ -14355,6 +14735,16 @@
         }
       }
     },
+    "Tunai dan rekening bank": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash and bank accounts"
+          }
+        }
+      }
+    },
     "Tutup": {
       "localizations": {
         "en": {
@@ -14511,6 +14901,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Change the amount first"
+          }
+        }
+      }
+    },
+    "Ubah profil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit profile"
           }
         }
       }
