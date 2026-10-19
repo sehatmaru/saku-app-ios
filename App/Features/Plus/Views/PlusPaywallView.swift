@@ -62,7 +62,8 @@ struct PlusPaywallView: View {
     let reason: PlusReason
     @Environment(\.dismiss) private var dismiss
     @State private var yearly = true
-    @State private var showsSoon = false
+    /// The purchase went through (for now the button succeeds right away; StoreKit comes with US3).
+    @State private var purchased = false
     /// Counts plan changes: the chosen price pulses once on each.
     @State private var pulse = 0
     /// A sheet at its short height: the same content, smaller (design 1h).
@@ -118,7 +119,7 @@ struct PlusPaywallView: View {
                 Text(L("Harga peluncuran sampai %@", PlusPricing.launchUntil))
                     .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
 
-                PrimaryButton(title: L("Coba gratis 7 hari")) { showsSoon = true }.padding(.top, compact ? 12 : 16).stEnter(4)
+                PrimaryButton(title: L("Coba gratis 7 hari")) { withAnimation(.easeOut(duration: 0.3)) { purchased = true } }.padding(.top, compact ? 12 : 16).stEnter(4)
                 Text(L("Gratis 7 hari, lalu %@. Batalkan kapan saja di Pengaturan iPhone › Apple ID.", price))
                     .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.top, 10)
@@ -148,9 +149,13 @@ struct PlusPaywallView: View {
         .onGeometryChange(for: Bool.self) { $0.size.height < 650 } action: { compact = $0 }
         .presentationDetents([.fraction(0.56), .large])
         .presentationDragIndicator(.visible)
-        .alert(L("Pembelian segera hadir"), isPresented: $showsSoon) { Button("OK", role: .cancel) {} } message: {
-            Text("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka.")
+        .overlay {
+            if purchased {
+                PlusSuccessView(reason: reason) { dismiss() }
+                    .transition(.opacity)
+            }
         }
+        .interactiveDismissDisabled(purchased)
     }
 
     private func planCard(name: String, strike: String?, price: String, per: String, best: Bool, selected: Bool,
@@ -248,10 +253,124 @@ private enum Mo {
     /// Fade up from 14 pt.
     static func hin(_ t: Double, _ delay: Double, _ dur: Double) -> Fx { let u = p(t, delay, dur); return Fx(o: u, y: 14 * (1 - u)) }
     static func slideL(_ t: Double, _ delay: Double, _ dur: Double) -> Fx { let u = p(t, delay, dur); return Fx(o: u, x: -30 * (1 - u)) }
+    /// Fade up from 14 pt (the design's "rise").
+    static func rise(_ t: Double, _ delay: Double, _ dur: Double) -> Fx { hin(t, delay, dur) }
+    /// Fade in from 10 pt down at 92% size ("tileIn").
+    static func tile(_ t: Double, _ delay: Double, _ dur: Double) -> Fx { let u = p(t, delay, dur); return Fx(o: u, y: 10 * (1 - u), s: 0.92 + 0.08 * u) }
     /// Scale 0 to 1.15 and settle at 1.
     static func pop(_ t: Double, _ delay: Double, _ dur: Double) -> Fx {
         let u = clamp((t * 1000 - delay) / dur)
         return Fx(o: min(1, u / 0.6), s: u < 0.6 ? 1.15 * u / 0.6 : 1.15 - 0.15 * (u - 0.6) / 0.4)
+    }
+}
+
+/// "Selamat datang di Saku Plus" (design 2a): a circle pops, its check is drawn, two rings and 22 particles spread,
+/// the features tick on one by one and the next step slides in.
+private struct PlusSuccessView: View {
+    let reason: PlusReason
+    let onDone: () -> Void
+    @State private var start = Date()
+
+    private let particles: [(x: Double, y: Double, size: CGFloat, round: Bool, color: Int, delay: Double)] = (0..<22).map { i in
+        let angle = Double(i) / 22 * .pi * 2 + Double(i % 2) * 0.2
+        let dist = 70 + Double(i * 37 % 50)
+        return (cos(angle) * dist, sin(angle) * dist, i % 3 == 0 ? 8 : 5, i % 4 != 2, i % 4, 480 + Double(i % 5) * 30)
+    }
+
+    private var tiles: [(String, String)] { [
+        ("infinity", L("Tanpa batas")), ("bell.badge", L("Notifikasi bank")), ("camera", L("Foto struk")),
+        ("envelope", L("Email tagihan")), ("doc.richtext", L("Laporan PDF")), ("sparkles", L("AI lebih banyak")),
+    ] }
+
+    private var cta: String {
+        switch reason {
+        case .moneyWallets, .investmentWallets: L("Lanjut tambah dompet")
+        case .categories: L("Lanjut tambah kategori")
+        case .budgets: L("Lanjut tambah budget")
+        default: L("Selesai")
+        }
+    }
+
+    var body: some View {
+        TimelineView(.animation) { context in
+            let t = context.date.timeIntervalSince(start)
+            ScrollView {
+                VStack(spacing: 0) {
+                    celebration(t).frame(width: 104, height: 104).padding(.top, 70)
+                    Text("Saku Plus").font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                        .padding(.horizontal, 12).padding(.vertical, 4).background(Color.appPrimary.opacity(0.12), in: Capsule())
+                        .fx(Mo.rise(t, 900, 480)).padding(.top, 22)
+                    Text("Selamat datang di Saku Plus").font(.app(30, weight: .bold)).tracking(-0.4).multilineTextAlignment(.center)
+                        .foregroundStyle(Color.appText).fx(Mo.rise(t, 1000, 480)).padding(.top, 14)
+                    Text("Pilihan yang cerdas untuk keuanganmu. Semua sudah terbuka di setiap perangkat akunmu.")
+                        .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true).fx(Mo.rise(t, 1100, 480)).padding(.top, 8)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                        ForEach(Array(tiles.enumerated()), id: \.offset) { i, tile in
+                            VStack(alignment: .leading, spacing: 8) {
+                                Image(systemName: tile.0).font(.system(size: 19)).foregroundStyle(Color.appPrimary)
+                                Text(tile.1).font(.app(12, weight: .medium)).foregroundStyle(Color.appText)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading).padding(.horizontal, 10).padding(.vertical, 12)
+                            .background(Color.stChip, in: RoundedRectangle(cornerRadius: 16))
+                            .overlay(alignment: .topTrailing) {
+                                Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
+                                    .frame(width: 16, height: 16).background(Color.appPrimary, in: Circle()).padding(8)
+                                    .fx(Mo.pop(t, 1450 + Double(i) * 90, 340))
+                            }
+                            .fx(Mo.tile(t, 1250 + Double(i) * 90, 420))
+                        }
+                    }
+                    .padding(.top, 20)
+                    HStack(spacing: 12) {
+                        Image(systemName: "bolt").font(.system(size: 18)).foregroundStyle(Color.appPrimary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Langkah pertama yang disarankan").font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
+                            Text("Aktifkan catat dari notifikasi bank").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                    }
+                    .padding(.horizontal, 16).padding(.vertical, 14)
+                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.appBorder.opacity(0.6), lineWidth: 1))
+                    .fx(Mo.rise(t, 1900, 460)).padding(.top, 14)
+                    PrimaryButton(title: cta, action: onDone).fx(Mo.rise(t, 2100, 480)).padding(.top, 24)
+                }
+                .padding(.horizontal, 24).padding(.bottom, 24)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .background(Color.paywallSurface)
+        .onAppear { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    }
+
+    private func celebration(_ t: Double) -> some View {
+        let cols: [Color] = [Color.appPrimary, Color.appSecondary, Color.appInvestment, Color.appText]
+        return ZStack {
+            ForEach(0..<2, id: \.self) { i in
+                let u = Mo.clamp((t * 1000 - (500 + Double(i) * 300)) / 1400)
+                Circle().stroke(Color.appPrimary, lineWidth: 2).scaleEffect(0.85 + 1.25 * Mo.ease(u))
+                    .opacity(u <= 0 ? 0 : 0.55 * (1 - Mo.ease(u)))
+            }
+            ForEach(0..<particles.count, id: \.self) { i in
+                let pt = particles[i]
+                let u = Mo.clamp((t * 1000 - pt.delay) / 1100), e = Mo.ease(u)
+                RoundedRectangle(cornerRadius: pt.round ? pt.size : 2).fill(cols[pt.color])
+                    .frame(width: pt.size, height: pt.size)
+                    .scaleEffect(0.2 + 0.8 * e).offset(x: pt.x * e, y: pt.y * e)
+                    .opacity(u <= 0 ? 0 : (u < 0.15 ? u / 0.15 : 1 - Mo.clamp((u - 0.15) / 0.85)))
+            }
+            Circle().fill(Color.appPrimary)
+                .scaleEffect(Mo.pop(t, 150, 520).s * (1 + 0.04 * sin(max(0, t - 1.6) / 2.8 * .pi * 2) * (t > 1.6 ? 1 : 0)))
+                .opacity(Mo.pop(t, 150, 520).o)
+            Path { path in
+                path.move(to: CGPoint(x: 12, y: 24)); path.addLine(to: CGPoint(x: 20, y: 32)); path.addLine(to: CGPoint(x: 35, y: 15))
+            }
+            .trim(from: 0, to: Mo.p(t, 560, 420))
+            .stroke(.white, style: StrokeStyle(lineWidth: 4.5, lineCap: .round, lineJoin: .round))
+            .frame(width: 46, height: 46)
+        }
     }
 }
 

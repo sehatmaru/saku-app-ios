@@ -1263,6 +1263,16 @@
         }
       }
     },
+    "AI lebih banyak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More AI"
+          }
+        }
+      }
+    },
     "ASET": {
       "localizations": {
         "en": {
@@ -1369,6 +1379,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Turn on Smart Tracker"
+          }
+        }
+      }
+    },
+    "Aktifkan catat dari notifikasi bank": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on recording from bank notifications"
           }
         }
       }
@@ -5253,6 +5273,16 @@
         }
       }
     },
+    "Email tagihan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billing email"
+          }
+        }
+      }
+    },
     "Excel dengan pengaturan Indonesia: pilih titik koma supaya kolom terpisah.": {
       "localizations": {
         "en": {
@@ -7933,12 +7963,52 @@
         }
       }
     },
+    "Langkah pertama yang disarankan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggested first step"
+          }
+        }
+      }
+    },
     "Lanjut": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Continue"
+          }
+        }
+      }
+    },
+    "Lanjut tambah budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue adding a budget"
+          }
+        }
+      }
+    },
+    "Lanjut tambah dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue adding a wallet"
+          }
+        }
+      }
+    },
+    "Lanjut tambah kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue adding a category"
           }
         }
       }
@@ -10493,6 +10563,16 @@
         }
       }
     },
+    "Pilihan yang cerdas untuk keuanganmu. Semua sudah terbuka di setiap perangkat akunmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A smart choice for your money. Everything is unlocked on every device of your account."
+          }
+        }
+      }
+    },
     "Pilihan yang diingat Saku (kata kunci, kategori, dompet, dan berapa kali dipakai) disimpan di server supaya ikut ke perangkat lain. Bukan kalimat aslinya, bukan nominalnya. Mode tamu hanya di perangkat ini.": {
       "localizations": {
         "en": {
@@ -11489,6 +11569,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Forever"
+          }
+        }
+      }
+    },
+    "Selamat datang di Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Saku Plus"
           }
         }
       }
