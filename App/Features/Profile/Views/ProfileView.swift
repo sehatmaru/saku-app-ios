@@ -555,10 +555,8 @@ struct ProfileEditView: View {
     @State private var toastIsError = false
     @State private var toastMessage = ""
     @State private var pickerItem: PhotosPickerItem?
-    @State private var newPhoto: UIImage?
-    /// "Hapus foto" clears the avatar on save.
-    @State private var removesPhoto = false
     @State private var deletesAccount = false
+    @State private var isSavingPhoto = false
     /// Entrance motion of the avatar card (design "Ubah Profil": rise and pop).
     @State private var entered = false
     @FocusState private var nameFocused: Bool
@@ -569,7 +567,7 @@ struct ProfileEditView: View {
     /// "Simpan" lights up only when the name actually changed and is not empty (design).
     private var changed: Bool { !trimmed.isEmpty && trimmed != (authViewModel.currentUser?.displayName ?? "") }
     private var shownName: String { trimmed.isEmpty ? L("Nama") : trimmed }
-    private var photo: UIImage? { newPhoto ?? (removesPhoto ? nil : authViewModel.avatarImage) }
+    private var photo: UIImage? { authViewModel.avatarImage }
     private var initials: String {
         let parts = trimmed.split(separator: " ").prefix(2)
         return parts.isEmpty ? "U" : parts.map { String($0.prefix(1)).uppercased() }.joined()
@@ -584,7 +582,7 @@ struct ProfileEditView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // top bar: back on the left, Simpan on the right (design "Ubah Profil")
+                // top bar: just back; the name's check mark saves, the photo saves itself
                 HStack {
                     Button { dismiss() } label: {
                         Image(systemName: "chevron.left").font(.system(size: 22, weight: .bold))
@@ -593,17 +591,6 @@ struct ProfileEditView: View {
                     }
                     .accessibilityLabel(L("Kembali"))
                     Spacer()
-                    Button { save() } label: {
-                        HStack(spacing: 6) {
-                            if viewModel.isLoading { ProgressView().tint(.white).scaleEffect(0.8) }
-                            Text(L("Simpan")).font(.app(15, weight: .medium))
-                        }
-                        .foregroundStyle(.white)
-                        .frame(height: 36).padding(.horizontal, 18)
-                        .background(Color.appPrimary, in: Capsule())
-                        .opacity(changed ? 1 : 0.35)
-                    }
-                    .disabled(!changed || viewModel.isLoading)
                 }
                 .padding(.horizontal, 20).padding(.top, 8)
 
@@ -638,18 +625,24 @@ struct ProfileEditView: View {
         VStack(spacing: 14) {
             ZStack {
                 Circle().strokeBorder(Color.appPrimary.opacity(0.25), lineWidth: 2).frame(width: 104, height: 104)
-                InitialsAvatar(initials: initials, size: 92, fontSize: 32, image: photo)
-                    .scaleEffect(entered ? 1 : 0.6).opacity(entered ? 1 : 0)
-                    .animation(.spring(duration: 0.6, bounce: 0.3).delay(0.1), value: entered)
+                // tapping the avatar changes the photo; it saves as soon as one is picked
                 PhotosPicker(selection: $pickerItem, matching: .images) {
-                    Image(systemName: "camera").font(.system(size: 18)).foregroundStyle(Color.appPrimary)
-                        .frame(width: 34, height: 34).background(.white, in: Circle())
-                        .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                    InitialsAvatar(initials: initials, size: 92, fontSize: 32, image: photo)
+                        .overlay { if isSavingPhoto { Circle().fill(.black.opacity(0.35)); ProgressView().tint(.white) } }
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel(L("Ganti foto"))
-                .offset(x: 35, y: 32)
+                .contextMenu {
+                    if photo != nil { Button(L("Hapus foto"), role: .destructive) { savePhoto(nil) } }
+                }
                 .scaleEffect(entered ? 1 : 0.6).opacity(entered ? 1 : 0)
-                .animation(.spring(duration: 0.5, bounce: 0.35).delay(0.45), value: entered)
+                .animation(.spring(duration: 0.6, bounce: 0.3).delay(0.1), value: entered)
+                Image(systemName: "camera").font(.system(size: 16)).foregroundStyle(Color.appPrimary)
+                    .frame(width: 32, height: 32).background(.white, in: Circle())
+                    .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                    .offset(x: 35, y: 32).allowsHitTesting(false)
+                    .scaleEffect(entered ? 1 : 0.6).opacity(entered ? 1 : 0)
+                    .animation(.spring(duration: 0.5, bounce: 0.35).delay(0.45), value: entered)
             }
             VStack(spacing: 4) {
                 HStack(spacing: 8) {
@@ -657,21 +650,7 @@ struct ProfileEditView: View {
                     if plus.isPlus { plusBadge }
                 }
                 Text(L("Bergabung sejak %@", memberSinceLabel))
-                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
-            }
-            HStack(spacing: 8) {
-                PhotosPicker(selection: $pickerItem, matching: .images) {
-                    Label(L("Ganti foto"), systemImage: "camera")
-                        .font(.app(14, weight: .medium)).foregroundStyle(Color.appPrimary)
-                        .frame(height: 36).padding(.horizontal, 16).background(.white, in: Capsule())
-                }
-                Button { removesPhoto = true; newPhoto = nil } label: {
-                    Text(L("Hapus foto"))
-                        .font(.app(14, weight: .medium)).foregroundStyle(Color.appTextSecondary)
-                        .frame(height: 36).padding(.horizontal, 16).background(.white.opacity(0.6), in: Capsule())
-                }
-                .disabled(photo == nil)
-                .opacity(photo == nil ? 0.5 : 1)
+                    .font(.app(11)).foregroundStyle(Color.appTextSecondary)
             }
         }
         .padding(.horizontal, 18).padding(.top, 24).padding(.bottom, 18)
@@ -688,9 +667,9 @@ struct ProfileEditView: View {
         .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.6), value: entered)
         .onChange(of: pickerItem) { _, item in
             Task {
-                guard let data = try? await item?.loadTransferable(type: Data.self) else { return }
-                newPhoto = UIImage(data: data)
-                removesPhoto = false
+                guard let data = try? await item?.loadTransferable(type: Data.self), let image = UIImage(data: data) else { return }
+                savePhoto(image)
+                pickerItem = nil
             }
         }
     }
@@ -711,6 +690,7 @@ struct ProfileEditView: View {
             Text(L("Info akun")).font(.app(13, weight: .semibold))
                 .foregroundStyle(Color.appTextSecondary).tracking(0.2)
 
+            HStack(spacing: 10) {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L("Nama")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
@@ -727,6 +707,20 @@ struct ProfileEditView: View {
             .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(nameFocused ? Color.appPrimary : .clear, lineWidth: 1.5))
+            // the check mark appears beside the field only when the name changed
+            if changed {
+                Button { save() } label: {
+                    Group {
+                        if viewModel.isLoading { ProgressView().tint(.white) } else { Image(systemName: "checkmark").font(.system(size: 17, weight: .bold)) }
+                    }
+                    .foregroundStyle(.white).frame(width: 48, height: 48).background(Color.appPrimary, in: Circle())
+                }
+                .buttonStyle(PressScaleStyle()).disabled(viewModel.isLoading)
+                .accessibilityLabel(L("Simpan"))
+                .transition(.scale.combined(with: .opacity))
+            }
+            }
+            .animation(.spring(duration: 0.3, bounce: 0.2), value: changed)
             .onChange(of: viewModel.displayName) { _, value in
                 if value.count > 30 { viewModel.displayName = String(value.prefix(30)) }
             }
@@ -743,8 +737,6 @@ struct ProfileEditView: View {
             .padding(.horizontal, 16).padding(.vertical, 12)
             .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
 
-            Text(L("Email dipakai untuk masuk dan tidak bisa diubah di sini."))
-                .font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.horizontal, 4)
         }
     }
 
@@ -775,15 +767,30 @@ struct ProfileEditView: View {
         .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(Color.appError.opacity(0.25), lineWidth: 1))
     }
 
+    /// Saves the photo (nil removes it) on its own, leaving a half-typed name alone.
+    private func savePhoto(_ image: UIImage?) {
+        guard !isSavingPhoto, let name = authViewModel.currentUser?.displayName else { return }
+        isSavingPhoto = true
+        Task {
+            defer { isSavingPhoto = false }
+            if let updated = await viewModel.saveProfile(user: authViewModel.currentUser, photo: image, removePhoto: image == nil, name: name) {
+                authViewModel.currentUser = updated
+                authViewModel.avatarImage = image
+                toastIsError = false
+                toastMessage = image == nil ? L("Foto dihapus") : L("Foto profil diperbarui")
+            } else {
+                toastIsError = true
+                toastMessage = viewModel.errorMessage ?? L("Foto belum tersimpan. Coba lagi.")
+            }
+            withAnimation { showToast = true }
+        }
+    }
+
     private func save() {
         guard changed, !viewModel.isLoading else { return }
         Task {
-            if let updated = await viewModel.saveProfile(user: authViewModel.currentUser, photo: newPhoto, removePhoto: removesPhoto) {
+            if let updated = await viewModel.saveProfile(user: authViewModel.currentUser, photo: nil) {
                 authViewModel.currentUser = updated
-                if let newPhoto { authViewModel.avatarImage = newPhoto }
-                if removesPhoto { authViewModel.avatarImage = nil }
-                self.newPhoto = nil
-                self.removesPhoto = false
                 toastIsError = false
                 toastMessage = L("Profil berhasil disimpan")
                 withAnimation { showToast = true }

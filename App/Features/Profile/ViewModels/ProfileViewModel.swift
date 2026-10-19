@@ -11,9 +11,11 @@ final class ProfileViewModel: ObservableObject {
 
     /// Saves the name and, when `photo` is set, uploads it first; `removePhoto` clears the avatar.
     /// Returns the updated user.
-    func saveProfile(user: User?, photo: UIImage?, removePhoto: Bool = false) async -> User? {
+    /// `name` saves that name instead of the field's (a photo change saves on its own and leaves a half-typed name alone).
+    func saveProfile(user: User?, photo: UIImage?, removePhoto: Bool = false, name: String? = nil) async -> User? {
         errorMessage = nil
-        displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name == nil { displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let displayName = name ?? self.displayName
         guard !displayName.isEmpty else {
             errorMessage = L("Nama tidak boleh kosong")
             return nil
