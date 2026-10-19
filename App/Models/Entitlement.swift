@@ -63,6 +63,7 @@ final class PlusStore: ObservableObject {
         defaults.set(new.status.rawValue, forKey: Self.statusKey)
         defaults.set(new.until, forKey: Self.untilKey)
         defaults.set(tester, forKey: Self.testerKey)
+        ShareInbox.isPlus = new.isPlus()
     }
 
     /// Signing out: the next account starts from free.

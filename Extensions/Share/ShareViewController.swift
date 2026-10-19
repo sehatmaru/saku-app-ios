@@ -47,8 +47,11 @@ final class ShareViewController: UIViewController {
         }
         var imagesRefused = false
         var imagesSeen = 0
+        var needsPlus = false
         for provider in items.flatMap({ $0.attachments ?? [] }) {
             if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                // reading pictures is a Saku Plus feature, like Catat dari gambar in the app
+                guard ShareInbox.isPlus else { needsPlus = true; continue }
                 // the short agreement for pictures is given in the app; until then nothing is read
                 guard ShareInbox.isImageAgreed else { imagesRefused = true; continue }
                 imagesSeen += 1
@@ -69,7 +72,8 @@ final class ShareViewController: UIViewController {
         }
         // say what happened on screen too: the notification only shows when the app has permission
         let message: String
-        if imagesRefused && added == 0 { message = "Buka Saku dan setujui membaca gambar dulu (Konfirmasi transaksi › Catat dari gambar), lalu bagikan lagi." }
+        if needsPlus && added == 0 { message = "Membaca gambar butuh Saku Plus. Teks tetap bisa dibagikan ke Saku." }
+        else if imagesRefused && added == 0 { message = "Buka Saku dan setujui membaca gambar dulu (Konfirmasi transaksi › Catat dari gambar), lalu bagikan lagi." }
         else if imagesSeen > 0 && added == 0 { message = "Tidak ada tulisan yang terbaca di gambarnya, jadi belum ada yang masuk ke Konfirmasi transaksi." }
         else if added == 0 { message = "Tidak ada yang bisa dikirim ke Saku." }
         else { message = "Masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya." }

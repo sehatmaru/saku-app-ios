@@ -27,6 +27,12 @@ enum ShareInbox {
         set { UserDefaults(suiteName: appGroup)?.set(newValue, forKey: "imageAgreed") }
     }
 
+    /// Whether the account has Saku Plus, mirrored by the app so the extension can refuse pictures (Plus) without a network call.
+    static var isPlus: Bool {
+        get { UserDefaults(suiteName: appGroup)?.bool(forKey: "plusActive") ?? false }
+        set { UserDefaults(suiteName: appGroup)?.set(newValue, forKey: "plusActive") }
+    }
+
     static func append(_ text: String) {
         guard let url else { return }
         var items = (try? JSONDecoder().decode([String].self, from: Data(contentsOf: url))) ?? []
