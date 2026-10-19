@@ -45,6 +45,13 @@ struct ProfileView: View {
         case system = "Sistem"
     }
 
+    /// The free card's "Coba Saku Plus" opens the paywall with the general pitch.
+    @State private var plusReason: PlusReason?
+    /// Entrance motion of the Plus hero (design "Profil Revamp"): pop-in and the trial ring growing.
+    @State private var heroIn = false
+    @State private var ringGrown = false
+    @State private var floating = false
+
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
@@ -66,21 +73,45 @@ struct ProfileView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     ScreenHeader(title: L("Profil")) {}
-                    profileHeader
-                    SectionDivider()
+                    // Design "Profil Revamp" 1a: identity first, then status (the Plus card), then settings.
+                    if plus.isPlus {
+                        plusHeroCard.stEnter(0)
+                    } else {
+                        profileHeader.stEnter(0)
+                        if authViewModel.currentUser?.isGuest == true {
+                            guestCard.stEnter(1)
+                        } else {
+                            freePlusCard.stEnter(1)
+                        }
+                    }
                     VStack(alignment: .leading, spacing: 0) {
-                        financeSection
-                        appearanceSection
-                        notificationSection
-                        logoutButton
-                        if authViewModel.currentUser?.isGuest == false { deleteAccountLink }
-                        Text(authViewModel.currentUser?.isGuest == true ? L("Saku versi %@", appVersion) : "Bergabung sejak \(memberSinceDate) · Saku versi \(appVersion)")
+                        if PlusStore.isInternalBuild {
+                            // referral codes need the server; the page runs on sample data and stays out of the App Store build
+                            NavigationLink(destination: ReferralView().detailPage()) {
+                                row(icon: "person.2", title: L("Ajak teman"), subtitle: L("Dapat +5 bantuan AI per teman")) { chevron }
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(RowPressStyle())
+                            .stEnter(2)
+                        }
+                        Rectangle().fill(Color.appDivider).frame(height: 1)
+                            .padding(.top, 14).stEnter(2)
+                        dataSection.stEnter(3)
+                        appearanceSection.stEnter(4)
+                        notificationSection.stEnter(5)
+                        if authViewModel.currentUser?.isGuest == false {
+                            logoutButton.stEnter(6)
+                        }
+                        Text(authViewModel.currentUser?.isGuest == true
+                             ? L("Saku versi %@", appVersion)
+                             : L("Bergabung sejak %@ · Saku versi %@", memberSinceDate, appVersion))
                             .font(.app(13))
                             .foregroundStyle(Color.appTextTertiary)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
-                            .padding(.top, 16)
-                            .padding(.bottom, 32)
+                            .padding(.top, 18)
+                            .padding(.bottom, 96) // room for the floating ✦
+                            .stEnter(7)
                     }
                     .padding(.horizontal, 24)
                 }
@@ -121,6 +152,7 @@ struct ProfileView: View {
                 Text("Gagal menyimpan. Coba lagi.")
             }
             .toast(L("Tanggal gajian disimpan"), isShown: $isPaydayToastShown)
+            .plusOffer($plusReason)
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
@@ -137,77 +169,186 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Header
+    // MARK: - Header and status cards (design "Profil Revamp" 1a)
 
-    /// Avatar, name and email in one row, with "Ubah" to edit.
+    /// Avatar, name and email in one row, with "Ubah" to edit. Guests have no profile to edit.
     private var profileHeader: some View {
-        HStack(spacing: 16) {
-            InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U", size: 64, fontSize: 24,
+        let isGuest = authViewModel.currentUser?.isGuest == true
+        return HStack(spacing: 14) {
+            InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U", size: 56, fontSize: 20,
                            image: authViewModel.avatarImage)
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(authViewModel.currentUser?.fullName ?? "User")
-                    .font(.app(22, weight: .semibold))
+                    .font(.app(20, weight: .semibold))
                     .tracking(-0.2)
                     .foregroundStyle(Color.appText)
-                Text(authViewModel.currentUser?.isGuest == true ? L("Mode tamu") : authViewModel.currentUser?.email ?? "")
-                    .font(.app(15))
+                Text(isGuest ? L("Data hanya di perangkat ini") : authViewModel.currentUser?.email ?? "")
+                    .font(.app(14))
                     .foregroundStyle(Color.appTextSecondary)
             }
             .lineLimit(1)
             Spacer(minLength: 8)
-            NavigationLink("Ubah") { ProfileEditView(viewModel: viewModel, authViewModel: authViewModel).detailPage() }
-                .font(.app(15))
-                .foregroundStyle(Color.appPrimary)
+            if !isGuest {
+                NavigationLink("Ubah") { ProfileEditView(viewModel: viewModel, authViewModel: authViewModel).detailPage() }
+                    .font(.app(15))
+                    .foregroundStyle(Color.appPrimary)
+            }
         }
         .padding(.horizontal, 24)
         .padding(.top, 24)
-        .padding(.bottom, 28)
+        .padding(.bottom, 18)
+    }
+
+    /// The green hero for Plus accounts: identity, the crown watermark and the status row with Kelola.
+    private var plusHeroCard: some View {
+        let trial = plus.entitlement.phase() == .trial
+        let daysLeft = plus.entitlement.daysLeft() ?? 0
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 14) {
+                InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U", size: 56, fontSize: 20,
+                               image: authViewModel.avatarImage)
+                    .overlay(Circle().strokeBorder(.white.opacity(0.9), lineWidth: 3))
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "crown.fill").font(.system(size: 12)).foregroundStyle(Color.appInvestment)
+                            .frame(width: 24, height: 24).background(.white, in: Circle())
+                            .offset(x: 4, y: 2)
+                            .scaleEffect(heroIn ? 1 : 0.6).opacity(heroIn ? 1 : 0)
+                            .animation(.spring(duration: 0.5, bounce: 0.35).delay(0.5), value: heroIn)
+                    }
+                    .scaleEffect(heroIn ? 1 : 0.6).opacity(heroIn ? 1 : 0)
+                    .animation(.spring(duration: 0.6, bounce: 0.3).delay(0.15), value: heroIn)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(authViewModel.currentUser?.fullName ?? "User").font(.app(20, weight: .semibold)).tracking(-0.2)
+                    Text(authViewModel.currentUser?.email ?? "")
+                        .font(.app(14)).foregroundStyle(Color(light: 0xE3F4EC, dark: 0xE3F4EC))
+                }
+                .lineLimit(1)
+                Spacer(minLength: 8)
+                NavigationLink("Ubah") { ProfileEditView(viewModel: viewModel, authViewModel: authViewModel).detailPage() }
+                    .font(.app(15))
+                    .foregroundStyle(.white)
+            }
+            HStack(spacing: 12) {
+                if trial { trialRing(daysLeft: daysLeft) }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(trial ? L("Sisa %lld hari", daysLeft) : L("Saku Plus aktif")).font(.app(16, weight: .semibold))
+                    Text(trial ? L("Uji coba Plus s.d. %@", shortUntil) : L("s.d. %@", longUntil))
+                        .font(.app(13)).foregroundStyle(Color(light: 0xE3F4EC, dark: 0xE3F4EC))
+                }
+                .lineLimit(1)
+                Spacer(minLength: 8)
+                NavigationLink(destination: PlusStatusView().detailPage()) {
+                    Text(L("Kelola")).font(.app(15, weight: .medium)).foregroundStyle(Color.appPrimary)
+                        .frame(height: 34).padding(.horizontal, 16).background(.white, in: Capsule())
+                }
+            }
+            .padding(.top, 14)
+            .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.28)).frame(height: 1) }
+        }
+        .foregroundStyle(.white)
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            ZStack(alignment: .topTrailing) {
+                Color.appPrimary
+                // the crown floats gently behind the card (design: floaty, 6s)
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 140))
+                    .foregroundStyle(.white.opacity(0.14))
+                    .rotationEffect(.degrees(floating ? -6 : -12))
+                    .offset(x: 14, y: floating ? -20 : -12)
+                    .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: floating)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+        .onAppear { heroIn = true; floating = true; ringGrown = true }
+    }
+
+    /// The trial's ring fills 7 of 14 days when the card opens (design: ring, 1.4s).
+    private func trialRing(daysLeft: Int) -> some View {
+        ZStack {
+            Circle().stroke(.white.opacity(0.25), lineWidth: 6)
+            Circle()
+                .trim(from: 0, to: ringGrown ? min(1, Double(daysLeft) / 14) : 0)
+                .stroke(.white, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.easeOut(duration: 1.4).delay(0.3), value: ringGrown)
+            Text("\(daysLeft)").font(.app(20, weight: .light))
+        }
+        .frame(width: 52, height: 52)
+    }
+
+    /// Free accounts: the quiet invitation with three benefits and one button.
+    private var freePlusCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: "crown.fill").font(.system(size: 18)).foregroundStyle(Color.appInvestment)
+                Text(L("Coba Saku Plus")).font(.app(18, weight: .semibold))
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                benefit(L("Semua fitur terbuka"))
+                benefit(L("Bantuan AI tanpa batas"))
+                benefit(L("Ekspor dan laporan lengkap"))
+            }
+            PrimaryButton(title: L("Coba Saku Plus")) { plusReason = .general }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .padding(.horizontal, 24)
+        .padding(.bottom, 6)
+    }
+
+    private func benefit(_ text: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.appPrimary)
+            Text(text).font(.app(15))
+        }
+    }
+
+    /// Guests cannot buy Plus yet: the honest ask is saving their data by signing in.
+    private var guestCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(L("Amankan datamu")).font(.app(17, weight: .semibold))
+                Text(L("Masuk agar datamu tersimpan di semua perangkat. Saku Plus tersedia setelah masuk."))
+                    .font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            PrimaryButton(title: L("Masuk atau daftar")) { authViewModel.logout() }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .padding(.horizontal, 24)
+        .padding(.bottom, 6)
+    }
+
+    private var longUntil: String { untilText("d MMM yyyy") }
+    private var shortUntil: String { untilText("d MMM") }
+
+    /// The end date of the paid or trial period; the internal test switch has none.
+    private func untilText(_ format: String) -> String {
+        guard let date = plus.entitlement.until else { return "-" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = format
+        formatter.locale = AppLanguage.locale
+        return formatter.string(from: date)
     }
 
     // MARK: - Sections
 
-    /// Kategori and the payday that budgets and "bulan ini" run from.
-    private var financeSection: some View {
+    /// Design "Profil Revamp": one Data section (no caption "Keuangan"); values sit on the right
+    /// and subtitles that only repeated the value are gone.
+    private var dataSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionCaption(L("Keuangan"))
-
-            NavigationLink(destination: PlusStatusView().detailPage()) {
-                row(icon: "star.circle", title: L("Saku Plus"), subtitle: plus.isPlus ? L("Semua fitur terbuka") : L("Tanpa batas dan catat otomatis")) {
-                    Text(plus.entitlement.status.title).font(.app(15)).foregroundStyle(plus.isPlus ? Color.stGreen : Color.appTextSecondary)
-                    chevron
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(RowPressStyle())
-
-            if PlusStore.isInternalBuild {
-                // referral codes need the server; the page runs on sample data and stays out of the App Store build
-                NavigationLink(destination: ReferralView().detailPage()) {
-                    row(icon: "person.2", title: L("Ajak teman"), subtitle: L("Dapat +5 bantuan AI per teman")) { chevron }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(RowPressStyle())
-            }
+            sectionCaption(L("Data"))
 
             NavigationLink(destination: CategoriesView()) {
-                row(icon: "square.grid.2x2", title: L("Kategori"), subtitle: L("Tambah, ubah, sembunyikan")) {
-                    chevron
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(RowPressStyle())
-
-            NavigationLink(destination: ExportView().detailPage()) {
-                row(icon: "square.and.arrow.up", title: L("Ekspor data"), subtitle: L("Transaksi, dompet, dan budget")) {
-                    Text(verbatim: "CSV").font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                    chevron
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(RowPressStyle())
-
-            NavigationLink(destination: SmartTrackerSettingsView().detailPage()) {
-                row(icon: "sparkles", title: L("Catat cepat"), subtitle: L("Ingatan, notifikasi, dan data")) {
+                row(icon: "square.grid.2x2", title: L("Kategori")) {
                     chevron
                 }
                 .contentShape(Rectangle())
@@ -215,8 +356,8 @@ struct ProfileView: View {
             .buttonStyle(RowPressStyle())
 
             Button { showsPayday = true } label: {
-                row(icon: "calendar", title: L("Tanggal gajian"), subtitle: L("Awal periode budget")) {
-                    Text(paydayDay == 0 ? L("Belum diatur") : L("Tgl %lld", paydayDay))
+                row(icon: "calendar", title: L("Tanggal gajian")) {
+                    Text(paydayDay == 0 ? L("Belum diatur") : "\(paydayDay)")
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
                         .contentTransition(.numericText())
@@ -244,6 +385,23 @@ struct ProfileView: View {
                 }
                 .padding(.vertical, 8)
             }
+
+            NavigationLink(destination: SmartTrackerSettingsView().detailPage()) {
+                row(icon: "sparkles", title: L("Smart tracker")) {
+                    chevron
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+
+            NavigationLink(destination: ExportView().detailPage()) {
+                row(icon: "square.and.arrow.up", title: L("Ekspor data")) {
+                    Text(verbatim: "CSV").font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    chevron
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
         }
     }
 
@@ -294,7 +452,7 @@ struct ProfileView: View {
             .buttonStyle(RowPressStyle())
 
             Button { showsHomeBalance = true } label: {
-                row(icon: "house", title: L("Total saldo di Beranda")) {
+                row(icon: "house", title: L("Total saldo")) {
                     Text(homeBalanceMode == HomeBalanceMode.all.rawValue ? L("Kas + aset") : L("Kas saja"))
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
@@ -373,29 +531,20 @@ struct ProfileView: View {
 
     // MARK: - Logout
 
-    /// Hapus akun: a quiet link under Keluar; the screen it opens does the explaining and the confirming.
-    private var deleteAccountLink: some View {
-        NavigationLink(destination: DeleteAccountView(authViewModel: authViewModel).detailPage()) {
-            Text("Hapus akun")
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                .frame(maxWidth: .infinity).frame(height: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.top, 8)
-    }
-
+    /// Design "Profil Revamp": a soft error-tinted bar, not a bordered capsule.
     private var logoutButton: some View {
         Button {
             showLogoutAlert = true
         } label: {
-            Label("Keluar", systemImage: "rectangle.portrait.and.arrow.right")
-                .font(.app(16, weight: .medium))
-                .foregroundStyle(Color.appError)
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .overlay(Capsule().strokeBorder(Color.appBorder))
-                .contentShape(Capsule())
+            HStack(spacing: 8) {
+                Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 17))
+                Text("Keluar").font(.app(16, weight: .medium))
+            }
+            .foregroundStyle(Color.appError)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(Color.appError.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
         .padding(.top, 28)
@@ -462,6 +611,19 @@ struct ProfileEditView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 32)
                     .padding(.bottom, 32)
+
+                // Design "Profil Revamp": Hapus akun moved here from the Profil tab; it lives with
+                // the account details now.
+                if authViewModel.currentUser?.isGuest == false {
+                    NavigationLink(destination: DeleteAccountView(authViewModel: authViewModel).detailPage()) {
+                        Text(L("Hapus akun"))
+                            .font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                            .frame(maxWidth: .infinity).frame(height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 24)
+                }
             }
         }
         .background(Color.appBackground)

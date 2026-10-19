@@ -5,14 +5,14 @@ import XCTest
 final class ExportBeforeDeleteTests: XCTestCase {
     @MainActor
     private func walkToConfirmation(_ app: XCUIApplication) {
-        let profil = app.tabBars.buttons["Profil"]
-        XCTAssertTrue(profil.waitForExistence(timeout: 25), "tab bar at launch")
-        profil.tap()
-        usleep(900_000)
-        if !profil.isSelected { profil.tap() } // a first tap can be eaten by an overlay
+        let editRow = app.buttons["Ubah"].firstMatch
+        XCTAssertTrue(editRow.waitForExistence(timeout: 8), "row Ubah")
+        editRow.tap()
 
+        // Hapus akun moved to the Ubah Profil screen (design "Profil Revamp")
         let deleteRow = app.buttons["Hapus akun"].firstMatch
-        XCTAssertTrue(deleteRow.waitForExistence(timeout: 8), "row Hapus akun")
+        if !deleteRow.waitForExistence(timeout: 4) { app.swipeUp() }
+        XCTAssertTrue(deleteRow.waitForExistence(timeout: 6), "row Hapus akun")
         if !deleteRow.isHittable { app.swipeUp() }
         deleteRow.tap()
 

@@ -861,5 +861,18 @@
   "Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker.": "Smart Tracker isn't on yet. By agreeing, you switch it on too.",
   "%lld draf akan dihapus dalam 3 hari jika tidak diproses.": "%lld drafts will be deleted in 3 days if left unprocessed.",
   "Ekspor data dulu": "Export your data first",
-  "Simpan transaksi dan dompetmu sebagai CSV sebelum akun dihapus.": "Save your transactions and wallets as CSV before the account is deleted."
+  "Simpan transaksi dan dompetmu sebagai CSV sebelum akun dihapus.": "Save your transactions and wallets as CSV before the account is deleted.",
+  "Coba Saku Plus": "Try Saku Plus",
+  "Ekspor dan laporan lengkap": "Export and full reports",
+  "Kelola": "Manage",
+  "Saku Plus aktif": "Saku Plus is active",
+  "s.d. %@": "until %@",
+  "Uji coba Plus s.d. %@": "Plus trial until %@",
+  "Sisa %lld hari": "%lld days left",
+  "Amankan datamu": "Keep your data safe",
+  "Masuk agar datamu tersimpan di semua perangkat. Saku Plus tersedia setelah masuk.": "Sign in so your data is saved on every device. Saku Plus is available after signing in.",
+  "Masuk atau daftar": "Sign in or sign up",
+  "Data hanya di perangkat ini": "Data stays on this device only",
+  "Data": "Data",
+  "Smart tracker": "Smart tracker"
 }

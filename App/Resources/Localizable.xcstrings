@@ -1443,6 +1443,16 @@
         }
       }
     },
+    "Amankan datamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep your data safe"
+          }
+        }
+      }
+    },
     "Ambil foto struk atau screenshot, Saku mengisi jumlah, toko, dan tanggalnya.": {
       "localizations": {
         "en": {
@@ -3753,6 +3763,16 @@
         }
       }
     },
+    "Coba Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Saku Plus"
+          }
+        }
+      }
+    },
     "Coba bicara lebih dekat ke mikrofon, atau ketik saja kalimatnya.": {
       "localizations": {
         "en": {
@@ -4033,6 +4053,16 @@
         }
       }
     },
+    "Data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data"
+          }
+        }
+      }
+    },
     "Data belum lengkap dimuat. Periksa koneksi lalu coba lagi.": {
       "localizations": {
         "en": {
@@ -4049,6 +4079,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sample data until the server is ready."
+          }
+        }
+      }
+    },
+    "Data hanya di perangkat ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data stays on this device only"
           }
         }
       }
@@ -5029,6 +5069,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Edit transaction"
+          }
+        }
+      }
+    },
+    "Ekspor dan laporan lengkap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export and full reports"
           }
         }
       }
@@ -7023,6 +7073,16 @@
         }
       }
     },
+    "Kelola": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage"
+          }
+        }
+      }
+    },
     "Kelola di App Store": {
       "localizations": {
         "en": {
@@ -8149,6 +8209,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "In Rp%@ · out Rp%@"
+          }
+        }
+      }
+    },
+    "Masuk agar datamu tersimpan di semua perangkat. Saku Plus tersedia setelah masuk.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in so your data is saved on every device. Saku Plus is available after signing in."
+          }
+        }
+      }
+    },
+    "Masuk atau daftar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in or sign up"
           }
         }
       }
@@ -10633,6 +10713,16 @@
         }
       }
     },
+    "Saku Plus aktif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku Plus is active"
+          }
+        }
+      }
+    },
     "Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka.": {
       "localizations": {
         "en": {
@@ -11863,6 +11953,16 @@
         }
       }
     },
+    "Sisa %lld hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days left"
+          }
+        }
+      }
+    },
     "Sisa %lld. Terisi lagi 1 Nov, 17 hari lagi.": {
       "localizations": {
         "en": {
@@ -12069,6 +12169,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Smart Tracker · %@"
+          }
+        }
+      }
+    },
+    "Smart tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart tracker"
           }
         }
       }
@@ -14415,6 +14525,16 @@
         }
       }
     },
+    "Uji coba Plus s.d. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus trial until %@"
+          }
+        }
+      }
+    },
     "Uji internal": {
       "localizations": {
         "en": {
@@ -14981,6 +15101,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "average / day"
+          }
+        }
+      }
+    },
+    "s.d. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "until %@"
           }
         }
       }

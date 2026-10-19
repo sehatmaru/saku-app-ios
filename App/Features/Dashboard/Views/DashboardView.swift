@@ -173,6 +173,19 @@ struct DashboardView: View {
     /// The system Liquid Glass tab bar: icon-only tabs with + in the middle and the
     /// initials avatar for Profil.
     private var tabs: some View {
+        Group {
+            if #available(iOS 26.0, *) {
+                // the tab bar steps aside while scrolling down; the + stays (design note)
+                tabView.tabBarMinimizeBehavior(.onScrollDown)
+            } else {
+                tabView
+            }
+        }
+    }
+
+    /// The system Liquid Glass tab bar: icon-only tabs with + in the middle and the
+    /// initials avatar for Profil.
+    private var tabView: some View {
         TabView(selection: Binding(
             get: { selectedTab },
             set: { tab in
