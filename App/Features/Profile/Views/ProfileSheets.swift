@@ -355,6 +355,9 @@ struct ExportSheet: View {
     @State private var isBuilding = false
     @State private var showsFailure = false
     @State private var showsLoadFailure = false
+    @ObservedObject private var plus = PlusStore.shared
+    /// Free accounts get a preview of the PDF instead of the file (Fitur 8, US4).
+    @State private var showsPdfPreview = false
     /// The sheet is as tall as its content (design), up to a cap where it scrolls.
     @State private var contentHeight: CGFloat = 560
 
@@ -412,6 +415,10 @@ struct ExportSheet: View {
         .presentationBackground(Color.appBackground)
         .task { await viewModel.load(userId: authViewModel.currentUser?.id) }
         .sheet(item: $sharing) { ExportShareSheet(urls: $0.urls) }
+        .sheet(isPresented: $showsPdfPreview) {
+            PdfPreviewView(summary: PdfReport.summary(transactions: viewModel.transactions, categories: viewModel.categories,
+                                                      intervals: selectedIntervals), periodLabel: periodLabel)
+        }
         .alert(L("Gagal membuat file. Coba lagi."), isPresented: $showsFailure) {
             Button(L("Tutup"), role: .cancel) {}
         }
@@ -616,6 +623,7 @@ struct ExportSheet: View {
 
     private func exportPdf() {
         guard !viewModel.loadFailed else { retryLoad(); return }
+        guard plus.isPlus else { showsPdfPreview = true; return }
         isBuilding = true
         defer { isBuilding = false }
         if let url = PdfReport.write(transactions: viewModel.transactions, accounts: viewModel.accounts,

@@ -58,4 +58,16 @@ final class PdfReportTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
     }
+
+    /// Fitur 8 US4: the free preview shows these numbers, so they must follow the picked period.
+    func testSummaryTotalsAndTopCategoriesFollowThePeriod() {
+        let oct = DateInterval(start: date(2026, 9, 25), end: date(2026, 10, 25))
+        let all = PdfReport.summary(transactions: transactions, categories: [coffee], intervals: nil)
+        XCTAssertEqual(all.income, 5_000_000); XCTAssertEqual(all.expense, 25_000)
+        XCTAssertEqual(all.topCategories.first?.0, "Makan, Minum")
+        let none = PdfReport.summary(transactions: transactions, categories: [coffee],
+                                     intervals: [DateInterval(start: date(2025, 1, 1), end: date(2025, 2, 1))])
+        XCTAssertEqual(none.income, 0); XCTAssertTrue(none.topCategories.isEmpty)
+        XCTAssertEqual(PdfReport.summary(transactions: transactions, categories: [coffee], intervals: [oct]).expense, 25_000)
+    }
 }

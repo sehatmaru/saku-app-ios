@@ -1513,6 +1513,26 @@
         }
       }
     },
+    "Analisis dan saran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analysis and advice"
+          }
+        }
+      }
+    },
+    "Analisis dan saran ada di Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analysis and advice are in Saku Plus"
+          }
+        }
+      }
+    },
     "Analitik": {
       "localizations": {
         "en": {
@@ -3363,6 +3383,16 @@
         }
       }
     },
+    "Buka dengan Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock with Saku Plus"
+          }
+        }
+      }
+    },
     "Buka dompet": {
       "localizations": {
         "en": {
@@ -4289,6 +4319,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "With Plus, make categories your way. Or hide the ones you don't use."
+          }
+        }
+      }
+    },
+    "Dengan Plus, laporan PDF memuat analisis dan saran untuk periodemu, siap dibagikan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With Plus, the PDF report includes analysis and advice for your period, ready to share."
           }
         }
       }
@@ -5259,6 +5299,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Export CSV"
+          }
+        }
+      }
+    },
+    "Ekspor CSV tetap gratis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CSV export stays free."
           }
         }
       }
@@ -8203,6 +8253,16 @@
         }
       }
     },
+    "Laporan PDF lengkap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full PDF report"
+          }
+        }
+      }
+    },
     "Lebih banyak": {
       "localizations": {
         "en": {
@@ -10779,6 +10839,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plus stays open until %@. Update your payment method in the App Store."
+          }
+        }
+      }
+    },
+    "Pratinjau": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview"
           }
         }
       }

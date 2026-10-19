@@ -5,21 +5,34 @@ import UIKit
 enum PdfReport {
     // MARK: Files
 
-    static func data(transactions: [Transaction], accounts: [Account], categories: [Category],
-                     budgets: [Budget], intervals: [DateInterval]?, periodLabel: String) -> Data? {
+    /// The numbers at the top of the report: totals and the biggest expense categories of the picked periods.
+    /// Shared with the free preview (Fitur 8 US4), which shows these and blurs the analysis.
+    struct Summary {
+        var income: Double
+        var expense: Double
+        var topCategories: [(String, Double)]
+    }
+
+    static func summary(transactions: [Transaction], categories: [Category], intervals: [DateInterval]?) -> Summary {
         let rows = transactions.filter { txn in
             guard let intervals else { return true }
             return intervals.contains { txn.date >= $0.start && txn.date < $0.end }
         }
-        let income = rows.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
-        let expense = rows.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
-
         let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         var totals: [String: Double] = [:]
         for txn in rows where txn.type == .expense {
             totals[txn.categoryId.flatMap { names[$0] } ?? L("Tanpa kategori"), default: 0] += txn.amount
         }
-        let topCategories = totals.sorted { $0.value > $1.value }.prefix(6).map { ($0.key, $0.value) }
+        return Summary(income: rows.filter { $0.type == .income }.reduce(0) { $0 + $1.amount },
+                       expense: rows.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount },
+                       topCategories: totals.sorted { $0.value > $1.value }.prefix(6).map { ($0.key, $0.value) })
+    }
+
+    static func data(transactions: [Transaction], accounts: [Account], categories: [Category],
+                     budgets: [Budget], intervals: [DateInterval]?, periodLabel: String) -> Data? {
+        let summary = summary(transactions: transactions, categories: categories, intervals: intervals)
+        let income = summary.income, expense = summary.expense, topCategories = summary.topCategories
+        let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
 
         let budgetRows = budgets.map { budget in
             (names[budget.categoryId] ?? budget.name, budget.spent, budget.amount)
