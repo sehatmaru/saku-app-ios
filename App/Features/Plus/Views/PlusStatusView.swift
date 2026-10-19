@@ -35,7 +35,7 @@ struct PlusStatusView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                if onPlus || phase == .ended { statusHero.stEnter(0); tiles.padding(.top, 14).stEnter(1) } else { freeHero.stEnter(0); table.padding(.top, 16).stEnter(1) }
+                if onPlus || phase == .ended { statusHero.motion(.fup); tiles.padding(.top, 14) } else { freeHero.motion(.fup); table.padding(.top, 16) }
                 if onPlus || phase == .ended { Divider().overlay(Color.appDivider).padding(.top, 20).padding(.bottom, 6) } else { Spacer().frame(height: 8) }
                 manageRow
                 if !onPlus {
@@ -49,6 +49,7 @@ struct PlusStatusView: View {
                 if PlusStore.isInternalBuild { testPicker }
             }
             .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 40)
+            .id(phase)
         }
         .scrollIndicators(.hidden)
         .background(Color.appBackground)
@@ -87,14 +88,14 @@ struct PlusStatusView: View {
             }
             .font(.app(13, weight: .medium)).foregroundStyle(Color.appTextSecondary)
             .padding(.horizontal, 16).padding(.vertical, 12).background(Color.appFill)
-            ForEach(Array(limits.enumerated()), id: \.offset) { _, row in
-                tableRow(row.0) {
+            ForEach(Array(limits.enumerated()), id: \.offset) { index, row in
+                tableRow(row.0, index: index) {
                     Text(row.1).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 64, alignment: .trailing)
                     Image(systemName: "infinity").font(.system(size: 18, weight: .bold)).foregroundStyle(Color.appPrimary).frame(width: 72, alignment: .trailing)
                 }
             }
-            ForEach(features, id: \.self) { title in
-                tableRow(title) {
+            ForEach(Array(features.enumerated()), id: \.offset) { index, title in
+                tableRow(title, index: limits.count + index) {
                     Text(verbatim: "–").font(.app(15)).foregroundStyle(Color.appTextTertiary).frame(width: 64, alignment: .trailing)
                     Image(systemName: "checkmark.circle.fill").font(.system(size: 20)).foregroundStyle(Color.appPrimary).frame(width: 72, alignment: .trailing)
                 }
@@ -104,13 +105,14 @@ struct PlusStatusView: View {
         .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(Color.appDivider))
     }
 
-    private func tableRow<T: View>(_ title: String, @ViewBuilder trailing: () -> T) -> some View {
+    private func tableRow<T: View>(_ title: String, index: Int, @ViewBuilder trailing: () -> T) -> some View {
         HStack(spacing: 12) {
             Text(title).font(.app(16)).frame(maxWidth: .infinity, alignment: .leading)
             trailing()
         }
         .padding(.horizontal, 16).padding(.vertical, 14)
         .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+        .motion(.fleft, delay: Double(index) * 0.07)
     }
 
     // MARK: Plus states (design 2b trial, 3a active, 3b grace, 3c ended)
@@ -160,6 +162,7 @@ struct PlusStatusView: View {
             HStack(spacing: 3) {
                 ForEach(0..<14, id: \.self) { i in
                     Capsule().fill(i < filled ? Color.white : Color.white.opacity(0.3)).frame(height: 6)
+                        .motion(.tick, delay: 0.25 + Double(i) * 0.045)
                 }
             }
             .padding(.top, 14)
@@ -170,6 +173,7 @@ struct PlusStatusView: View {
                         .frame(maxWidth: .infinity).frame(height: 44).background(.white, in: Capsule())
                 }
                 .buttonStyle(PressScaleStyle()).padding(.top, 16)
+                .motion(.pop, delay: 0.3)
             }
         }
         .foregroundStyle(.white)
@@ -182,9 +186,10 @@ struct PlusStatusView: View {
         let items = [("infinity", L("Tanpa batas")), ("bell", L("Notifikasi bank")), ("camera", L("Foto struk")),
                      ("envelope", L("Email tagihan")), ("doc.richtext", L("Laporan PDF")), ("sparkles", L("AI tanpa batas"))]
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 VStack(alignment: .leading, spacing: 8) {
                     Image(systemName: item.0).font(.system(size: 18)).foregroundStyle(locked ? Color.appTextTertiary : Color.appPrimary).frame(height: 22, alignment: .leading)
+                        .motion(.bob, delay: Double(index) * 0.3)
                     Text(item.1).font(.app(12, weight: .medium)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                 }
@@ -192,8 +197,10 @@ struct PlusStatusView: View {
                 .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
                 .overlay(alignment: .topTrailing) {
                     Image(systemName: locked ? "lock.fill" : "checkmark").font(.system(size: 8, weight: .bold)).foregroundStyle(.white)
-                        .frame(width: 16, height: 16).background(locked ? Color.appTextTertiary : Color.appPrimary, in: Circle()).padding(10)
+                        .frame(width: 16, height: 16).background(locked ? Color.appTextTertiary : Color.appPrimary, in: Circle())
+                        .motion(.chk, delay: Double(index) * 0.08 + 0.5).padding(10)
                 }
+                .motion(.tile, delay: Double(index) * 0.08 + 0.15)
             }
         }
     }
@@ -263,5 +270,41 @@ struct PlusStatusView: View {
                 failure = "\(error)".contains("test_plus_off") ? L("Tombol uji sedang dimatikan di server.") : L("Belum berhasil mengubah. Coba lagi sebentar lagi.")
             }
         }
+    }
+}
+
+/// The page's motion from the design: rise, slide in, grow, pop and bob, each with its own delay (seconds).
+private extension View {
+    func motion(_ kind: PlanMotion.Kind, delay: Double = 0) -> some View { modifier(PlanMotion(kind: kind, delay: delay)) }
+}
+
+private struct PlanMotion: ViewModifier {
+    enum Kind { case fup, fleft, tile, tick, chk, pop, bob }
+    let kind: Kind
+    let delay: Double
+    @State private var on = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var curve: Animation {
+        switch kind {
+        case .fup, .fleft: .easeOut(duration: 0.5).delay(delay)
+        case .tile: .timingCurve(0.2, 0.9, 0.25, 1, duration: 0.7).delay(delay)
+        case .tick: .easeOut(duration: 0.4).delay(delay)
+        case .chk: .timingCurve(0.3, 1.5, 0.5, 1, duration: 0.5).delay(delay)
+        case .pop: .spring(duration: 0.5, bounce: 0.3).delay(delay)
+        case .bob: .easeInOut(duration: 1.7).repeatForever(autoreverses: true).delay(delay)
+        }
+    }
+
+    func body(content: Content) -> some View {
+        let shown = on || reduceMotion
+        return content
+            .opacity([.tick, .bob].contains(kind) || shown ? 1 : 0)
+            .offset(x: kind == .fleft && !shown ? -16 : 0,
+                    y: kind == .fup && !shown ? 14 : kind == .tile && !shown ? 18 : kind == .bob && on && !reduceMotion ? -3 : 0)
+            .scaleEffect(x: kind == .tick && !shown ? 0 : 1, y: 1, anchor: .leading)
+            .scaleEffect(kind == .chk && !shown ? 0 : kind == .tile && !shown ? 0.94 : kind == .pop && !shown ? 0.88 : 1)
+            .animation(curve, value: on)
+            .onAppear { on = true }
     }
 }
