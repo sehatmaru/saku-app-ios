@@ -551,7 +551,6 @@ struct ProfileEditView: View {
     @State private var newPhoto: UIImage?
     /// "Hapus foto" clears the avatar on save.
     @State private var removesPhoto = false
-    @State private var showsDeleteConfirm = false
     @State private var deletesAccount = false
     /// Entrance motion of the avatar card (design "Ubah Profil": rise and pop).
     @State private var entered = false
@@ -621,14 +620,6 @@ struct ProfileEditView: View {
             entered = true
         }
         .toast(isPresented: $showToast, message: toastMessage, icon: toastIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
-        .confirmDialog(isPresented: $showsDeleteConfirm, icon: "trash", destructive: true,
-                       title: L("Hapus akun?"),
-                       message: L("Semua datamu akan terhapus permanen. Kamu tidak bisa membatalkannya."),
-                       confirmTitle: L("Hapus akun")) {
-            showsDeleteConfirm = false
-            // the full delete flow (explanation, survey, typed confirmation) takes over from here
-            deletesAccount = true
-        }
         .navigationDestination(isPresented: $deletesAccount) {
             DeleteAccountView(authViewModel: authViewModel).detailPage()
         }
@@ -751,7 +742,7 @@ struct ProfileEditView: View {
         }
     }
 
-    /// The quiet danger card that leads to the delete flow through a confirm (design).
+    /// The quiet danger card that leads straight to the delete flow.
     private var deleteCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
@@ -764,7 +755,8 @@ struct ProfileEditView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Button { showsDeleteConfirm = true } label: {
+            // straight into the delete flow: it explains the 30 days, asks why and confirms by typing
+            Button { deletesAccount = true } label: {
                 Text(L("Hapus akun")).font(.app(16, weight: .medium)).foregroundStyle(Color.appError)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(Color.appError.opacity(0.12), in: Capsule())
