@@ -4,14 +4,16 @@ import UserNotifications
 
 /// "Bagikan ke Saku": takes the shared text and drops it in the inbox for the app to turn into drafts.
 final class ShareViewController: UIViewController {
+    private let label = UILabel()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        let label = UILabel()
         label.text = "Mengirim ke Saku…"
         label.textAlignment = .center
+        label.numberOfLines = 0
         label.font = .preferredFont(forTextStyle: .headline)
-        label.frame = view.bounds
+        label.frame = view.bounds.insetBy(dx: 24, dy: 0)
         label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(label)
         Task { await receive() }
@@ -37,19 +39,22 @@ final class ShareViewController: UIViewController {
         }
         let items = (extensionContext?.inputItems as? [NSExtensionItem]) ?? []
         var received = Set<String>()
+        var added = 0
         func take(_ text: String) {
             let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
             // WhatsApp and others hand over the same text as an attachment and as contentText
-            if !text.isEmpty, received.insert(text).inserted { ShareInbox.append(text) }
+            if !text.isEmpty, received.insert(text).inserted { ShareInbox.append(text); added += 1 }
         }
         var imagesRefused = false
+        var imagesSeen = 0
         for provider in items.flatMap({ $0.attachments ?? [] }) {
             if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                 // the short agreement for pictures is given in the app; until then nothing is read
                 guard ShareInbox.isImageAgreed else { imagesRefused = true; continue }
+                imagesSeen += 1
                 if let data = await imageData(from: provider), let image = ImageReader.downscaled(data) {
                     let lines = await ImageReader.lines(in: image)
-                    if !lines.isEmpty { ShareInbox.append(ShareInbox.photoMark + lines.joined(separator: "\n")) }
+                    if !lines.isEmpty { ShareInbox.append(ShareInbox.photoMark + lines.joined(separator: "\n")); added += 1 }
                 }
             } else if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier),
                let text = try? await provider.loadItem(forTypeIdentifier: UTType.plainText.identifier) as? String {
@@ -62,7 +67,15 @@ final class ShareViewController: UIViewController {
         for item in items {
             if let text = item.attributedContentText?.string { take(text) }
         }
-        await announce(imagesRefused ? "Buka Saku dan setujui membaca gambar dulu, lalu bagikan lagi." : "Teksnya masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya.")
+        // say what happened on screen too: the notification only shows when the app has permission
+        let message: String
+        if imagesRefused && added == 0 { message = "Buka Saku dan setujui membaca gambar dulu (Konfirmasi transaksi › Catat dari gambar), lalu bagikan lagi." }
+        else if imagesSeen > 0 && added == 0 { message = "Tidak ada tulisan yang terbaca di gambarnya, jadi belum ada yang masuk ke Konfirmasi transaksi." }
+        else if added == 0 { message = "Tidak ada yang bisa dikirim ke Saku." }
+        else { message = "Masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya." }
+        label.text = message
+        await announce(message)
+        if added == 0 { try? await Task.sleep(for: .seconds(3)) }
         extensionContext?.completeRequest(returningItems: nil)
     }
 
