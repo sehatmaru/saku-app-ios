@@ -380,6 +380,8 @@ struct ExportSheet: View {
     @State private var isBuilding = false
     @State private var showsFailure = false
     @State private var showsLoadFailure = false
+    /// The sheet is as tall as its content (design), up to a cap where it scrolls.
+    @State private var contentHeight: CGFloat = 560
 
     private var cycle: PaydayCycle { PaydayCycle.current }
 
@@ -425,10 +427,11 @@ struct ExportSheet: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 18)
                 .padding(.bottom, 34)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
             }
             .scrollIndicators(.hidden)
         }
-        .presentationDetents([.height(660)])
+        .presentationDetents([.height(min(contentHeight + 62, 720))])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
         .presentationBackground(Color.appBackground)
@@ -475,6 +478,12 @@ struct ExportSheet: View {
                     }
                 }
                 .padding(.vertical, 1)
+                .padding(.horizontal, 24)
+            }
+            .padding(.horizontal, -24)
+            .overlay(alignment: .trailing) {
+                LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .leading, endPoint: .trailing)
+                    .frame(width: 40).padding(.trailing, -24).allowsHitTesting(false)
             }
 
             Text(L("Data tersedia sejak %@. Geser untuk periode lainnya.",
