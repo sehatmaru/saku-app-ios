@@ -24,7 +24,7 @@ final class ExportBeforeDeleteTests: XCTestCase {
         skip.tap()
     }
 
-    /// TC 32 / TC 33 / TC 34: offer before the field, opens the existing export page, back returns.
+    /// TC 32 / TC 33 / TC 34: offer before the field, opens the export sheet, closing it returns.
     /// Skipped in guest mode: Hapus akun is only offered to signed-in accounts.
     @MainActor
     func testExportOfferShowsBeforeConfirmationAndReturns() throws {
@@ -48,9 +48,10 @@ final class ExportBeforeDeleteTests: XCTestCase {
         XCTAssertLessThan(offer.frame.minY, field.frame.minY, "TC 32: the offer sits before the confirmation field")
 
         offer.tap()
-        XCTAssertTrue(app.staticTexts["Ekspor data"].waitForExistence(timeout: 6), "TC 33: the existing export page opens")
+        XCTAssertTrue(app.staticTexts["Ekspor data"].waitForExistence(timeout: 6), "TC 33: the same export sheet as Profil opens")
+        XCTAssertTrue(app.buttons["Ekspor XLS"].exists, "the XLS card is there")
 
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.buttons["Tutup"].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Konfirmasi"].waitForExistence(timeout: 5), "TC 33: back on the delete screen")
         XCTAssertTrue(app.buttons["Ekspor data dulu"].waitForExistence(timeout: 4), "TC 34: skipping is just going on")
     }

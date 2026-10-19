@@ -12343,12 +12343,12 @@
         }
       }
     },
-    "Simpan transaksi dan dompetmu sebagai CSV sebelum akun dihapus.": {
+    "Simpan transaksi dan dompetmu sebagai XLS atau PDF sebelum akun dihapus.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Save your transactions and wallets as CSV before the account is deleted."
+            "value": "Save your transactions and wallets as XLS or PDF before the account is deleted."
           }
         }
       }

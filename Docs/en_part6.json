@@ -860,7 +860,6 @@
   "Setuju dan aktifkan": "Agree and turn on",
   "Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker.": "Smart Tracker isn't on yet. By agreeing, you switch it on too.",
   "Ekspor data dulu": "Export your data first",
-  "Simpan transaksi dan dompetmu sebagai CSV sebelum akun dihapus.": "Save your transactions and wallets as CSV before the account is deleted.",
   "Coba Saku Plus": "Try Saku Plus",
   "Ekspor dan laporan lengkap": "Export and full reports",
   "Kelola": "Manage",
@@ -923,5 +922,6 @@
   "Lanjut tambah dompet": "Continue adding a wallet",
   "Lanjut tambah kategori": "Continue adding a category",
   "Lanjut tambah budget": "Continue adding a budget",
-  "Pembelian belum berhasil. Kamu belum ditagih apa pun. Coba lagi sebentar lagi.": "The purchase didn't go through. You haven't been charged. Try again in a moment."
+  "Pembelian belum berhasil. Kamu belum ditagih apa pun. Coba lagi sebentar lagi.": "The purchase didn't go through. You haven't been charged. Try again in a moment.",
+  "Simpan transaksi dan dompetmu sebagai XLS atau PDF sebelum akun dihapus.": "Save your transactions and wallets as XLS or PDF before the account is deleted."
 }

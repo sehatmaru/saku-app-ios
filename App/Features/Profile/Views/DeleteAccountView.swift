@@ -7,6 +7,7 @@ struct DeleteAccountView: View {
     @ObservedObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var step = 1
+@State private var showsExport = false
     @State private var reason: AccountDeletion.Reason?
     @State private var note = ""
     @State private var confirmation = ""
@@ -42,6 +43,7 @@ struct DeleteAccountView: View {
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .animation(.spring(duration: 0.42, bounce: 0.1), value: step)
+        .sheet(isPresented: $showsExport) { ExportSheet() }
     }
 
     // MARK: Header: back, three ticks, step
@@ -151,15 +153,15 @@ struct DeleteAccountView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Konfirmasi").font(.app(28, weight: .bold)).tracking(-0.4).padding(.top, 22)
             // SAKU-72 (US3): the export offer comes before the confirmation field and can be skipped
-            // by simply going on; the export flow is the one from Profil > Ekspor data, and the back
-            // button returns to this screen.
-            NavigationLink(destination: ExportView().detailPage()) {
+            // by simply going on; it opens the same sheet as Profil > Ekspor data, and closing it returns
+            // to this screen.
+            Button { showsExport = true } label: {
                 HStack(spacing: 14) {
                     Image(systemName: "square.and.arrow.up").font(.system(size: 18)).foregroundStyle(Color.appPrimary)
                         .frame(width: 40, height: 40).background(Color.appPrimary.opacity(0.12), in: Circle())
                     VStack(alignment: .leading, spacing: 2) {
                         Text(L("Ekspor data dulu")).font(.app(16, weight: .semibold))
-                        Text(L("Simpan transaksi dan dompetmu sebagai CSV sebelum akun dihapus."))
+                        Text(L("Simpan transaksi dan dompetmu sebagai XLS atau PDF sebelum akun dihapus."))
                             .font(.app(13)).foregroundStyle(Color.appTextSecondary)
                             .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
                     }
