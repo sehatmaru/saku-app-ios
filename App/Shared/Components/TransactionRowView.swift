@@ -65,6 +65,8 @@ struct TransactionRowView: View {
             }
         }
         if showDate { parts.append(Self.dateFormatter.string(from: transaction.date)) }
+        // SAKU-770: the hour of the transaction, so rows on the same day can be told apart.
+        if let time = TransactionDates.timeOfDay(transaction.date) { parts.append(time) }
         return parts.joined(separator: " · ")
     }
 

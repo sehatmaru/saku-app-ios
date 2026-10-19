@@ -331,6 +331,11 @@ enum TransactionDates {
         return hasTime(date) ? day + " · " + time.string(from: date) : day
     }
 
+    /// "14.04" for a row's subtitle; nil at midnight, which means no time was recorded.
+    static func timeOfDay(_ date: Date) -> String? {
+        hasTime(date) ? time.string(from: date) : nil
+    }
+
     private static func hasTime(_ date: Date) -> Bool {
         let parts = calendar.dateComponents([.hour, .minute], from: date)
         return parts.hour != 0 || parts.minute != 0
