@@ -1273,6 +1273,16 @@
         }
       }
     },
+    "AI tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited AI"
+          }
+        }
+      }
+    },
     "ASET": {
       "localizations": {
         "en": {
@@ -1899,6 +1909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "AI help uses sample numbers until the server is ready."
+          }
+        }
+      }
+    },
+    "Bantuan AI per bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI help per month"
           }
         }
       }
@@ -2789,6 +2809,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ended %@"
+          }
+        }
+      }
+    },
+    "Berakhir %@. Datamu tetap aman.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ended %@. Your data is safe."
           }
         }
       }
@@ -4719,6 +4749,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Billed %@"
+          }
+        }
+      }
+    },
+    "Ditagih %@ · %@ per tahun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billed %@ · %@ a year"
+          }
+        }
+      }
+    },
+    "Ditagih berikutnya %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next billing %@"
           }
         }
       }
@@ -6759,6 +6809,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transaction type"
+          }
+        }
+      }
+    },
+    "Join Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Join Saku Plus"
           }
         }
       }
@@ -9653,6 +9713,16 @@
         }
       }
     },
+    "Paket Saku": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku plan"
+          }
+        }
+      }
+    },
     "Paket gratis maksimal %lld Dompet Investasi aktif.": {
       "localizations": {
         "en": {
@@ -9789,6 +9859,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Payment didn't go through"
+          }
+        }
+      }
+    },
+    "Pembayaran belum berhasil. Plus berakhir %@ bila tidak diperbarui.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The payment didn't go through. Plus ends %@ if it isn't updated."
           }
         }
       }
@@ -10313,6 +10393,16 @@
         }
       }
     },
+    "Perpanjang Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renew Saku Plus"
+          }
+        }
+      }
+    },
     "Perubahan budget belum tersimpan. Coba lagi.": {
       "localizations": {
         "en": {
@@ -10619,6 +10709,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Platform"
+          }
+        }
+      }
+    },
+    "Plus berakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus ended"
           }
         }
       }
@@ -15285,6 +15385,16 @@
         }
       }
     },
+    "Yang kamu dapat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What you get"
+          }
+        }
+      }
+    },
     "Yang memengaruhi skor": {
       "localizations": {
         "en": {
@@ -15465,6 +15575,16 @@
         }
       }
     },
+    "hari lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "days left"
+          }
+        }
+      }
+    },
     "kartu": {
       "localizations": {
         "en": {
@@ -15591,6 +15711,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "per month"
+          }
+        }
+      }
+    },
+    "per tahun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a year"
           }
         }
       }

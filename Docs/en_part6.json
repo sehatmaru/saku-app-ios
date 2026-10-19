@@ -923,5 +923,18 @@
   "Lanjut tambah kategori": "Continue adding a category",
   "Lanjut tambah budget": "Continue adding a budget",
   "Pembelian belum berhasil. Kamu belum ditagih apa pun. Coba lagi sebentar lagi.": "The purchase didn't go through. You haven't been charged. Try again in a moment.",
-  "Simpan transaksi dan dompetmu sebagai XLS atau PDF sebelum akun dihapus.": "Save your transactions and wallets as XLS or PDF before the account is deleted."
+  "Simpan transaksi dan dompetmu sebagai XLS atau PDF sebelum akun dihapus.": "Save your transactions and wallets as XLS or PDF before the account is deleted.",
+  "Paket Saku": "Saku plan",
+  "Yang kamu dapat": "What you get",
+  "Join Saku Plus": "Join Saku Plus",
+  "hari lagi": "days left",
+  "Plus berakhir": "Plus ended",
+  "Perpanjang Saku Plus": "Renew Saku Plus",
+  "Ditagih %@ · %@ per tahun": "Billed %@ · %@ a year",
+  "Ditagih berikutnya %@": "Next billing %@",
+  "Pembayaran belum berhasil. Plus berakhir %@ bila tidak diperbarui.": "The payment didn't go through. Plus ends %@ if it isn't updated.",
+  "Berakhir %@. Datamu tetap aman.": "Ended %@. Your data is safe.",
+  "AI tanpa batas": "Unlimited AI",
+  "Bantuan AI per bulan": "AI help per month",
+  "per tahun": "a year"
 }

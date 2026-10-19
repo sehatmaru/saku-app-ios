@@ -1,15 +1,10 @@
 import SwiftUI
 
-/// Profil › Saku Plus (design "Plus B Status" 4f, states 4g-4k): what plan the account is on, a preview of the
-/// other side, and where to manage it. Debug and TestFlight builds also get a picker for every state (US8).
+/// Profil › Paket Saku (design "Saku Gratis": 1a free, 2b trial, 3a active, 3b grace, 3c ended): the plan the account is on and where to manage it. Debug and TestFlight builds also get a picker for every state (US8).
 struct PlusStatusView: View {
     @ObservedObject private var plus = PlusStore.shared
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.openURL) private var openURL
-    @StateObject private var categories = CategoriesModel()
-    @State private var walletCount = 0
-    @State private var budgetCount = 0
-    @State private var previews = false
     @State private var paywall: PlusReason?
     @State private var showsSoon = false
     @State private var isSwitching = false
@@ -17,84 +12,50 @@ struct PlusStatusView: View {
 
     private var phase: PlusPhase { plus.entitlement.phase() }
     private var onPlus: Bool { [.trial, .active, .grace].contains(phase) }
-    /// What the screen shows: the opposite side while previewing.
-    private var showsPlus: Bool { onPlus != previews }
     private var until: String { plus.entitlement.until.map(AccountDeletion.dayText) ?? "" }
     private var userId: String { authViewModel.currentUser?.id ?? "" }
     private let subscriptionsURL = URL(string: "https://apps.apple.com/account/subscriptions")
+    /// The dark card of the design (ink-950).
+    private static let ink = Color(light: 0x111113, dark: 0x2A2A2E)
 
-    private struct Row: Identifiable {
-        let id: String, icon: String, label: String
-        var value = "", used = 0, of = 0, plusOnly = false
+    private var showsAI: Bool { PlusStore.isInternalBuild }
+
+    /// What the free plan allows: Dompet, Kategori, Budget (and Bantuan AI while it uses sample numbers).
+    private var limits: [(String, String)] {
+        var list = [(L("Dompet uang aktif"), "\(FreeLimits.moneyWallets)"), (L("Kategori pengeluaran"), "\(FreeLimits.expenseCategories)"), (L("Budget"), "\(FreeLimits.budgets)")]
+        // AI help is counted on the server, which is not built yet: sample numbers, for test builds only
+        if showsAI { list.append((L("Bantuan AI per bulan"), "\(AIQuota.sample.total)")) }
+        return list
     }
 
-    private var rows: [Row] {
-        let expense = FreeLimits.activeCount(categories.arranged(.expense).shown, type: .expense)
-        var list = [
-            Row(id: "wallet", icon: "wallet.pass", label: L("Dompet uang aktif"), value: L("%lld dari %lld", walletCount, FreeLimits.moneyWallets), used: walletCount, of: FreeLimits.moneyWallets),
-            Row(id: "category", icon: "tag", label: L("Kategori pengeluaran"), value: L("%lld dari %lld", expense, FreeLimits.expenseCategories), used: expense, of: FreeLimits.expenseCategories),
-            Row(id: "budget", icon: "target", label: L("Budget"), value: L("%lld dari %lld", budgetCount, FreeLimits.budgets), used: budgetCount, of: FreeLimits.budgets),
-        ]
-        // AI help is counted on the server, which is not built yet: sample numbers, for test builds only
-        if PlusStore.isInternalBuild { list.append(Row(id: "ai", icon: "sparkles", label: L("Bantuan AI bulan ini"), value: L("Sisa %lld dari %lld", AIQuota.sample.left, AIQuota.sample.total), used: AIQuota.sample.total - AIQuota.sample.left, of: AIQuota.sample.total)) }
-        list += [
-            Row(id: "notif", icon: "bell.badge", label: L("Catat dari notifikasi"), plusOnly: true),
-            Row(id: "photo", icon: "camera", label: L("Foto struk dan screenshot"), plusOnly: true),
-            Row(id: "email", icon: "envelope", label: L("Penerusan email"), plusOnly: true),
-            Row(id: "pdf", icon: "doc.richtext", label: L("Laporan PDF"), plusOnly: true),
-        ]
-        return list
+    private var features: [String] {
+        [L("Catat dari notifikasi"), L("Foto struk dan screenshot"), L("Penerusan email"), L("Laporan PDF")]
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                header.stEnter(0)
-                switcher.padding(.top, 18).stEnter(1)
-                Text(previews ? L("Ketuk \"Sekarang\" untuk kembali") : L("Ketuk untuk membandingkan"))
-                    .font(.app(12)).foregroundStyle(Color.appTextTertiary).padding(.top, 8)
-                VStack(spacing: 0) {
-                    ForEach(rows) { row in
-                        if row.id == "ai" {
-                            NavigationLink(destination: AIQuotaView().detailPage()) { rowView(row) }.buttonStyle(.plain)
-                        } else {
-                            rowView(row)
-                        }
-                    }
+                if onPlus || phase == .ended { statusHero.stEnter(0); tiles.padding(.top, 14).stEnter(1) } else { freeHero.stEnter(0); table.padding(.top, 16).stEnter(1) }
+                if onPlus || phase == .ended { Divider().overlay(Color.appDivider).padding(.top, 20).padding(.bottom, 6) } else { Spacer().frame(height: 8) }
+                manageRow
+                if !onPlus {
+                    Text("Data yang melebihi batas tetap aman dan tetap dipakai. Hanya penambahan baru yang tertahan.")
+                        .font(.app(13)).foregroundStyle(Color.appTextTertiary).fixedSize(horizontal: false, vertical: true).padding(.top, 6)
                 }
-                .padding(.top, 14)
-                .id(showsPlus)
-                .transition(.opacity)
-                if PlusStore.isInternalBuild {
+                if showsAI && !onPlus {
                     Text("Bantuan AI memakai angka contoh sampai server siap.")
                         .font(.app(12)).foregroundStyle(Color.appTextTertiary).padding(.top, 6)
                 }
-                Divider().overlay(Color.appDivider).padding(.vertical, 18)
-                if let cta {
-                    PrimaryButton(title: cta) { ctaTapped() }
-                }
-                Button { manageTapped() } label: {
-                    HStack {
-                        Text(onPlus ? L("Kelola langganan") : L("Pulihkan pembelian")).font(.app(16)).foregroundStyle(Color.appText)
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextTertiary)
-                    }
-                    .padding(.vertical, 14)
-                }
-                .buttonStyle(.plain)
-                Text("Data yang melebihi batas tetap aman dan tetap dipakai. Hanya penambahan baru yang tertahan.")
-                    .font(.app(13)).foregroundStyle(Color.appTextTertiary).fixedSize(horizontal: false, vertical: true)
                 if PlusStore.isInternalBuild { testPicker }
             }
             .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 40)
         }
         .scrollIndicators(.hidden)
         .background(Color.appBackground)
-        .navigationTitle(L("Saku Plus"))
+        .navigationTitle(L("Paket Saku"))
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
         .plusOffer($paywall)
-        .task { await load() }
         .alert(L("Pembelian segera hadir"), isPresented: $showsSoon) { Button("OK", role: .cancel) {} } message: {
             Text("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka.")
         }
@@ -103,114 +64,154 @@ struct PlusStatusView: View {
         }
     }
 
-    // MARK: Header
+    // MARK: Free (design 1a): dark card, then the Gratis vs Plus table
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Kamu sedang memakai").font(.app(14)).foregroundStyle(Color.appTextSecondary)
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(tier).font(.app(34, weight: .light)).tracking(-0.8)
-                    .foregroundStyle(showsPlus ? Color.appPrimary : Color.appText)
-                    .contentTransition(.opacity)
-                if !previews, let pill { Text(pill.0).font(.app(12, weight: .semibold)).foregroundStyle(pill.1)
-                    .padding(.horizontal, 10).padding(.vertical, 4).background(pill.2, in: Capsule()) }
+    private var freeHero: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Kamu sedang memakai").font(.app(14)).foregroundStyle(.white.opacity(0.7))
+                Text("Saku Gratis").font(.app(30, weight: .semibold)).tracking(-0.3).foregroundStyle(.white)
             }
-            Text(subtitle).font(.app(14)).foregroundStyle(phase == .grace && !previews ? Color.appError : Color.appTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            PrimaryButton(title: L("Join Saku Plus")) { paywall = .general }
         }
+        .padding(24).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Self.ink, in: RoundedRectangle(cornerRadius: 28))
     }
 
-    private var tier: String {
-        if previews { return onPlus ? L("Tanpa Plus") : L("Dengan Plus") }
-        return onPlus ? L("Saku Plus") : L("Saku Gratis")
+    private var table: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Yang kamu dapat").frame(maxWidth: .infinity, alignment: .leading)
+                Text("Gratis").frame(width: 64, alignment: .trailing)
+                Text(verbatim: "Plus").fontWeight(.semibold).foregroundStyle(Color.appPrimary).frame(width: 72, alignment: .trailing)
+            }
+            .font(.app(13, weight: .medium)).foregroundStyle(Color.appTextSecondary)
+            .padding(.horizontal, 16).padding(.vertical, 12).background(Color.appFill)
+            ForEach(Array(limits.enumerated()), id: \.offset) { _, row in
+                tableRow(row.0) {
+                    Text(row.1).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 64, alignment: .trailing)
+                    Image(systemName: "infinity").font(.system(size: 18, weight: .bold)).foregroundStyle(Color.appPrimary).frame(width: 72, alignment: .trailing)
+                }
+            }
+            ForEach(features, id: \.self) { title in
+                tableRow(title) {
+                    Text(verbatim: "–").font(.app(15)).foregroundStyle(Color.appTextTertiary).frame(width: 64, alignment: .trailing)
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 20)).foregroundStyle(Color.appPrimary).frame(width: 72, alignment: .trailing)
+                }
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(Color.appDivider))
     }
 
-    private var subtitle: String {
-        if previews { return onPlus ? L("Pratinjau bila langganan berhenti. Datamu tetap aman.") : L("Pratinjau. Begini Saku-mu setelah mencoba Plus.") }
+    private func tableRow<T: View>(_ title: String, @ViewBuilder trailing: () -> T) -> some View {
+        HStack(spacing: 12) {
+            Text(title).font(.app(16)).frame(maxWidth: .infinity, alignment: .leading)
+            trailing()
+        }
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+    }
+
+    // MARK: Plus states (design 2b trial, 3a active, 3b grace, 3c ended)
+
+    private var heroColor: Color {
         switch phase {
-        case .free: return L("Mengetik selalu tanpa batas. Beberapa jumlah dibatasi.")
-        case .trial: return L("Pada %@, %@ per tahun ditagih lewat App Store. Batalkan sebelum itu bila tidak ingin lanjut.", until, PlusPricing.yearly)
-        case .active: return L("Diperpanjang %@ · %@ per tahun.", until, PlusPricing.yearly)
-        case .grace: return L("Pembayaran belum berhasil. Plus tetap terbuka sampai %@.", until)
-        case .ended: return L("Plus berakhir %@. Semua data tetap ada.", until)
+        case .grace: Color.appWarning
+        case .ended: Self.ink
+        default: Color.appPrimary
         }
     }
 
-    /// Label, text colour, background.
-    private var pill: (String, Color, Color)? {
+    private var statusHero: some View {
+        let left = plus.entitlement.daysLeft() ?? 0
+        let big: String, unit: String, tag: String?, caption: String, filled: Int
         switch phase {
-        case .free: nil
-        case .trial: (L("Trial · %lld hari lagi", plus.entitlement.daysLeft() ?? 0), Color.appPrimary, Color.appPrimary.opacity(0.12))
-        case .active: (L("Tahunan"), Color.appPrimary, Color.appPrimary.opacity(0.12))
-        case .grace: (L("Perlu tindakan"), Color.appError, Color.appError.opacity(0.12))
-        case .ended: (L("Berakhir %@", until), Color.appTextSecondary, Color.stChip)
+        case .trial:
+            big = "\(left)"; unit = L("hari lagi"); tag = nil; filled = min(14, left * 2)
+            caption = L("Ditagih %@ · %@ per tahun", until, PlusPricing.yearly)
+        case .active:
+            big = PlusPricing.yearly; unit = L("per tahun"); tag = L("Aktif"); filled = 14
+            caption = L("Ditagih berikutnya %@", until)
+        case .grace:
+            big = "\(left)"; unit = L("hari lagi"); tag = L("Masa tenggang"); filled = max(1, min(14, left))
+            caption = L("Pembayaran belum berhasil. Plus berakhir %@ bila tidak diperbarui.", until)
+        default:
+            big = L("Plus berakhir"); unit = ""; tag = L("Berakhir"); filled = 0
+            caption = L("Berakhir %@. Datamu tetap aman.", until)
+        }
+        let button = phase == .grace ? L("Perbarui pembayaran") : (phase == .ended ? L("Perpanjang Saku Plus") : nil)
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Label { Text("Saku Plus").font(.app(15, weight: .semibold)) } icon: { Image(systemName: "sparkles").font(.system(size: 15)) }
+                Spacer()
+                if let tag {
+                    Text(tag).font(.app(12, weight: .semibold)).lineLimit(1).fixedSize()
+                        .padding(.horizontal, 10).frame(height: 24).background(.white.opacity(0.2), in: Capsule())
+                } else {
+                    Text("Trial").font(.app(13)).foregroundStyle(.white.opacity(0.8))
+                }
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(big).font(.app(big.count > 4 ? (phase == .ended ? 34 : 44) : 56, weight: .ultraLight)).tracking(-1.5).lineLimit(1).minimumScaleFactor(0.6)
+                if !unit.isEmpty { Text(unit).font(.app(17)) }
+            }
+            .padding(.top, 8)
+            HStack(spacing: 3) {
+                ForEach(0..<14, id: \.self) { i in
+                    Capsule().fill(i < filled ? Color.white : Color.white.opacity(0.3)).frame(height: 6)
+                }
+            }
+            .padding(.top, 14)
+            Text(caption).font(.app(13)).lineSpacing(2).foregroundStyle(.white.opacity(0.88)).fixedSize(horizontal: false, vertical: true).padding(.top, 12)
+            if let button {
+                Button { ctaTapped() } label: {
+                    Text(button).font(.app(15, weight: .semibold)).foregroundStyle(phase == .grace ? Color.appWarning : Self.ink)
+                        .frame(maxWidth: .infinity).frame(height: 44).background(.white, in: Capsule())
+                }
+                .buttonStyle(PressScaleStyle()).padding(.top, 16)
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 20).padding(.top, 22).padding(.bottom, 20)
+        .background(heroColor, in: RoundedRectangle(cornerRadius: 28))
+    }
+
+    private var tiles: some View {
+        let locked = phase == .ended
+        let items = [("infinity", L("Tanpa batas")), ("bell", L("Notifikasi bank")), ("camera", L("Foto struk")),
+                     ("envelope", L("Email tagihan")), ("doc.richtext", L("Laporan PDF")), ("sparkles", L("AI tanpa batas"))]
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                VStack(alignment: .leading, spacing: 8) {
+                    Image(systemName: item.0).font(.system(size: 18)).foregroundStyle(locked ? Color.appTextTertiary : Color.appPrimary).frame(height: 22, alignment: .leading)
+                    Text(item.1).font(.app(12, weight: .medium)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(12).frame(maxWidth: .infinity, minHeight: 84, alignment: .topLeading)
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+                .overlay(alignment: .topTrailing) {
+                    Image(systemName: locked ? "lock.fill" : "checkmark").font(.system(size: 8, weight: .bold)).foregroundStyle(.white)
+                        .frame(width: 16, height: 16).background(locked ? Color.appTextTertiary : Color.appPrimary, in: Circle()).padding(10)
+                }
+            }
         }
     }
 
-    // MARK: Preview switch
-
-    private var switcher: some View {
-        HStack(spacing: 0) {
-            segment(L("Sekarang"), selected: !previews) { withAnimation(.easeInOut(duration: 0.25)) { previews = false } }
-            segment(onPlus ? L("Tanpa Plus") : L("Dengan Plus"), selected: previews) { withAnimation(.easeInOut(duration: 0.25)) { previews = true } }
-        }
-        .padding(3)
-        .background(Color.stChip, in: Capsule())
-    }
-
-    private func segment(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title).font(.app(14, weight: .semibold))
-                .foregroundStyle(selected && previews && !onPlus ? Color.white : Color.appText)
-                .frame(maxWidth: .infinity).frame(height: 36)
-                .background { if selected { Capsule().fill(previews && !onPlus ? Color.appPrimary : Color.appBackground) } }
+    private var manageRow: some View {
+        Button { manageTapped() } label: {
+            HStack(spacing: 14) {
+                Image(systemName: onPlus || phase == .ended ? "creditcard" : "arrow.clockwise").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+                Text(onPlus || phase == .ended ? L("Kelola langganan") : L("Pulihkan pembelian")).font(.app(16)).foregroundStyle(Color.appText)
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+            }
+            .frame(minHeight: 56)
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: Rows
-
-    private func rowView(_ row: Row) -> some View {
-        let unlocked = showsPlus
-        let atLimit = row.of > 0 && row.used >= row.of
-        let value: String = {
-            guard unlocked else { return row.value }
-            return row.of > 0 ? (row.id == "ai" ? L("Lebih banyak") : L("Tanpa batas")) : L("Terbuka")
-        }()
-        return HStack(spacing: 14) {
-            Image(systemName: row.icon).font(.system(size: 18)).frame(width: 24)
-                .foregroundStyle(unlocked ? Color.appPrimary : Color.appTextSecondary)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(row.label).font(.app(15)).foregroundStyle(Color.appText)
-                if row.of > 0, !unlocked {
-                    HStack(spacing: 2) {
-                        ForEach(0..<10, id: \.self) { i in
-                            Capsule().fill(i < Int((Double(row.used) / Double(row.of) * 10).rounded())
-                                           ? (atLimit ? Color.appWarning : Color.appText) : Color.appBorder.opacity(0.5))
-                                .frame(height: 3)
-                        }
-                    }
-                    .frame(width: 110)
-                }
-            }
-            Spacer(minLength: 8)
-            if !unlocked, row.plusOnly {
-                Text(verbatim: "Plus").font(.app(11, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                    .padding(.horizontal, 8).padding(.vertical, 2).background(Color.appPrimary.opacity(0.12), in: Capsule())
-            }
-            if unlocked, row.plusOnly { Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appPrimary) }
-            Text(value).font(.app(14)).monospacedDigit()
-                .foregroundStyle(unlocked ? Color.appPrimary : (atLimit ? Color.appWarning : Color.appTextSecondary))
-        }
-        .padding(.vertical, 11)
-    }
-
     // MARK: Actions
-
-    private var cta: String? {
-        if onPlus { return phase == .grace ? L("Perbarui pembayaran") : nil }
-        return phase == .ended ? L("Lanjutkan dengan Plus") : L("Coba gratis 7 hari")
-    }
 
     private func ctaTapped() {
         if phase == .grace, let subscriptionsURL { openURL(subscriptionsURL) } else { paywall = .general }
@@ -218,15 +219,6 @@ struct PlusStatusView: View {
 
     private func manageTapped() {
         if onPlus, let subscriptionsURL { openURL(subscriptionsURL) } else { showsSoon = true }
-    }
-
-    private func load() async {
-        guard !userId.isEmpty else { return }
-        await categories.load(userId: userId)
-        if let accounts = try? await SupabaseRepository.shared.fetchAccounts(userId: userId) {
-            walletCount = accounts.filter { $0.isActive && $0.type != .investment }.count
-        }
-        if let budgets = try? await SupabaseRepository.shared.fetchBudgets(userId: userId) { budgetCount = budgets.count }
     }
 
     // MARK: Internal test picker (US8)
@@ -267,8 +259,7 @@ struct PlusStatusView: View {
             do {
                 try await SupabaseSDK.setTestPlusState(key)
                 _ = try await SupabaseSDK.fetchProfile(authUserId: authId)
-                previews = false
-            } catch {
+                            } catch {
                 failure = "\(error)".contains("test_plus_off") ? L("Tombol uji sedang dimatikan di server.") : L("Belum berhasil mengubah. Coba lagi sebentar lagi.")
             }
         }
