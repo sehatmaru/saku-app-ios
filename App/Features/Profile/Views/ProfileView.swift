@@ -201,6 +201,26 @@ struct ProfileView: View {
     }
 
     /// The green hero for Plus accounts: identity, the crown watermark and the status row with Kelola.
+    /// The plan ring: dashed, one segment per bar of Paket Saku (trial 7, yearly 12, monthly 10, grace 1 of 14), the lit ones
+    /// are what is left. They grow in one by one when the card opens.
+    private func planRing(_ bars: (total: Int, filled: Int), daysLeft: Int) -> some View {
+        let gap = bars.total > 12 ? 0.012 : 0.02
+        let size = 1 / Double(bars.total)
+        return ZStack {
+            ForEach(0..<bars.total, id: \.self) { i in
+                Circle()
+                    .trim(from: Double(i) * size + gap / 2, to: Double(i + 1) * size - gap / 2)
+                    .stroke(i < bars.filled ? Color.white : Color.white.opacity(0.28), style: StrokeStyle(lineWidth: 6, lineCap: .butt))
+                    .rotationEffect(.degrees(-90))
+                    .opacity(ringGrown ? 1 : 0)
+                    .animation(.easeOut(duration: 0.3).delay(0.3 + Double(i) * 0.06), value: ringGrown)
+            }
+            if daysLeft < 100 { Text("\(daysLeft)").font(.app(20, weight: .light)) }
+            else { Image(systemName: "sparkles").font(.system(size: 18)) }
+        }
+        .frame(width: 52, height: 52)
+    }
+
     private var plusHeroCard: some View {
         let trial = plus.entitlement.phase() == .trial
         let daysLeft = plus.entitlement.daysLeft() ?? 0
@@ -229,8 +249,8 @@ struct ProfileView: View {
                     .font(.app(15))
                     .foregroundStyle(.white)
             }
-            VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
+                if let bars = plus.entitlement.bars() { planRing(bars, daysLeft: daysLeft) }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(trial ? L("Sisa %lld hari", daysLeft) : L("Saku Plus aktif")).font(.app(16, weight: .semibold))
                     Text(trial ? L("Uji coba Plus s.d. %@", shortUntil) : L("s.d. %@", longUntil))
@@ -243,17 +263,6 @@ struct ProfileView: View {
                     Text(L("Kelola")).font(.app(15, weight: .medium)).foregroundStyle(Color.appPrimary)
                         .frame(height: 34).padding(.horizontal, 16).background(.white, in: Capsule())
                 }
-            }
-            // same bars and rules as Paket Saku: trial 7, yearly 12, monthly 10, grace 1 lit
-            if let bars = plus.entitlement.bars() {
-                HStack(spacing: 3) {
-                    ForEach(0..<bars.total, id: \.self) { i in
-                        Capsule().fill(i < bars.filled ? Color.white : Color.white.opacity(0.3)).frame(height: 5)
-                            .scaleEffect(x: ringGrown ? 1 : 0, y: 1, anchor: .leading)
-                            .animation(.easeOut(duration: 0.4).delay(0.3 + Double(i) * 0.045), value: ringGrown)
-                    }
-                }
-            }
             }
             .padding(.top, 14)
             .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.28)).frame(height: 1) }
