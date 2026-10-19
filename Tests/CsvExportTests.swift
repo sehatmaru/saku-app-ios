@@ -138,4 +138,13 @@ final class CsvExportTests: XCTestCase {
         let csv = CsvExport.wallets([Account(id: "w", name: "@dompet", type: .cash, icon: nil, isArchived: false, isDefault: false, openingBalance: 0, currentBalance: -5, creditLimit: nil, dueDate: nil)], delimiter: .comma)
         XCTAssertTrue(csv.contains("'@dompet,Cash,-5,0"), "amounts keep their minus sign")
     }
+
+    /// Ekspor data: several periods picked by hand are all exported, nothing outside them.
+    func testSeveralPeriodsKeepOnlyTransactionsInsideThem() {
+        let sept = DateInterval(start: date(2026, 8, 25, 0), end: date(2026, 9, 25, 0))
+        let oct = DateInterval(start: date(2026, 9, 25, 0), end: date(2026, 10, 25, 0))
+        let csv = CsvExport.transactions(transactions, accounts: [wallet], categories: [coffee],
+                                         intervals: [sept, oct], delimiter: .comma)
+        XCTAssertEqual(csv.components(separatedBy: "\r\n").filter { !$0.isEmpty }.count, 3, "header plus the two inside the periods")
+    }
 }

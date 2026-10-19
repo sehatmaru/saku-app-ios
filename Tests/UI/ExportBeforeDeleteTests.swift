@@ -49,9 +49,9 @@ final class ExportBeforeDeleteTests: XCTestCase {
 
         offer.tap()
         XCTAssertTrue(app.staticTexts["Ekspor data"].waitForExistence(timeout: 6), "TC 33: the same export sheet as Profil opens")
-        XCTAssertTrue(app.buttons["Ekspor XLS"].exists, "the XLS card is there")
+        XCTAssertTrue(app.buttons["Ekspor CSV"].exists, "the CSV card is there")
 
-        app.buttons["Tutup"].firstMatch.tap()
+        app.swipeDown(velocity: .fast) // the sheet has no close button; swiping it down closes it
         XCTAssertTrue(app.staticTexts["Konfirmasi"].waitForExistence(timeout: 5), "TC 33: back on the delete screen")
         XCTAssertTrue(app.buttons["Ekspor data dulu"].waitForExistence(timeout: 4), "TC 34: skipping is just going on")
     }

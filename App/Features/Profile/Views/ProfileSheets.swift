@@ -3,7 +3,7 @@ import UIKit
 
 // The Profil settings sheets, design "Sheet Pengaturan":
 // Tema, Bahasa and Total saldo are choice cards with a live preview, and Ekspor data
-// offers an XLS workbook and a PDF report. The sheets have no title or close button: the grabber
+// offers CSV files and a PDF report. The sheets have no title or close button: the grabber
 // and a swipe down close them, and the content starts right below it (radius 28).
 
 // MARK: - Chrome
@@ -328,13 +328,13 @@ struct BalanceSheet: View {
 
 // MARK: - Ekspor data
 
-/// Periode chips over the XLS and PDF cards (design "Sheet Pengaturan", section Data).
+/// Periode chips over the CSV and PDF cards (design "Sheet Pengaturan", section Data).
 struct ExportSheet: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel = ExportViewModel()
     @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
 
-    /// Which files the XLS workbook holds.
+    /// Which CSV files are made.
     enum XlsPart: String, CaseIterable, Hashable {
         case transactions, wallets, budgets
 
@@ -396,7 +396,7 @@ struct ExportSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     periodSection
-                    xlsCard
+                    csvCard
                     pdfCard
                 }
                 .padding(.horizontal, 24)
@@ -411,7 +411,7 @@ struct ExportSheet: View {
         .presentationCornerRadius(28)
         .presentationBackground(Color.appBackground)
         .task { await viewModel.load(userId: authViewModel.currentUser?.id) }
-        .sheet(item: $sharing) { ExportShareSheet(url: $0.url) }
+        .sheet(item: $sharing) { ExportShareSheet(urls: $0.urls) }
         .alert(L("Gagal membuat file. Coba lagi."), isPresented: $showsFailure) {
             Button(L("Tutup"), role: .cancel) {}
         }
@@ -489,9 +489,9 @@ struct ExportSheet: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    // MARK: XLS
+    // MARK: CSV
 
-    private var xlsCard: some View {
+    private var csvCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
                 Image(systemName: "tablecells")
@@ -500,7 +500,7 @@ struct ExportSheet: View {
                     .frame(width: 44, height: 44)
                     .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 14))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(L("Ekspor ke XLS")).font(.app(17, weight: .semibold))
+                    Text(L("Ekspor ke CSV")).font(.app(17, weight: .semibold))
                     Text(L("Data mentah untuk diolah sendiri")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
                 }
             }
@@ -529,8 +529,8 @@ struct ExportSheet: View {
                 }
             }
 
-            exportButton(title: L("Ekspor XLS"), icon: "arrow.down", style: .primary, enabled: !parts.isEmpty && !isBuilding) {
-                exportXls()
+            exportButton(title: L("Ekspor CSV"), icon: "arrow.down", style: .primary, enabled: !parts.isEmpty && !isBuilding) {
+                exportCsv()
             }
         }
         .padding(16)
@@ -591,27 +591,27 @@ struct ExportSheet: View {
 
     // MARK: Building
 
-    private func exportXls() {
+    /// One CSV file per picked part, shared together (a comma or a semicolon: Indonesian Excel wants the semicolon).
+    private func exportCsv() {
         guard !viewModel.loadFailed else { retryLoad(); return }
         isBuilding = true
         defer { isBuilding = false }
-        var sheets: [XlsxExport.Sheet] = []
+        let delimiter: CsvExport.Delimiter = AppLanguage.locale.language.languageCode?.identifier == "id" ? .semicolon : .comma
+        let stamp = CsvExport.date(Date())
+        var urls: [URL] = []
         if parts.contains(.transactions) {
-            sheets.append(XlsxExport.transactions(viewModel.transactions, accounts: viewModel.accounts,
-                                                  categories: viewModel.categories, intervals: selectedIntervals))
+            let csv = CsvExport.transactions(viewModel.transactions, accounts: viewModel.accounts, categories: viewModel.categories,
+                                             intervals: selectedIntervals, delimiter: delimiter)
+            if let url = viewModel.write(csv, name: "saku-transaksi-\(stamp).csv") { urls.append(url) }
         }
         if parts.contains(.wallets) {
-            sheets.append(XlsxExport.wallets(viewModel.accounts))
+            if let url = viewModel.write(CsvExport.wallets(viewModel.accounts, delimiter: delimiter), name: "saku-dompet-\(stamp).csv") { urls.append(url) }
         }
         if parts.contains(.budgets) {
-            sheets.append(XlsxExport.budgets(viewModel.budgets, categories: viewModel.categories))
+            let csv = CsvExport.budgets(viewModel.budgets, categories: viewModel.categories, delimiter: delimiter)
+            if let url = viewModel.write(csv, name: "saku-budget-\(stamp).csv") { urls.append(url) }
         }
-        let name = parts.count == 1 ? "saku-\(parts.first!.rawValue).xlsx" : "saku-export.xlsx"
-        if let url = XlsxExport.write(sheets, name: name) {
-            sharing = ExportFile(url: url)
-        } else {
-            showsFailure = true
-        }
+        if urls.isEmpty { showsFailure = true } else { sharing = ExportFile(urls: urls) }
     }
 
     private func exportPdf() {
@@ -622,7 +622,7 @@ struct ExportSheet: View {
                                      categories: viewModel.categories, budgets: viewModel.budgets,
                                      intervals: selectedIntervals, periodLabel: periodLabel,
                                      name: "saku-laporan-\(CsvExport.date(Date())).pdf") {
-            sharing = ExportFile(url: url)
+            sharing = ExportFile(urls: [url])
         } else {
             showsFailure = true
         }
@@ -644,15 +644,15 @@ struct ExportSheet: View {
 /// The file waiting to be shared.
 private struct ExportFile: Identifiable {
     let id = UUID()
-    let url: URL
+    let urls: [URL]
 }
 
 /// The system share sheet for a file made on the device.
 private struct ExportShareSheet: UIViewControllerRepresentable {
-    let url: URL
+    let urls: [URL]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        UIActivityViewController(activityItems: urls, applicationActivities: nil)
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}

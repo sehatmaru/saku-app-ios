@@ -161,7 +161,7 @@ struct DeleteAccountView: View {
                         .frame(width: 40, height: 40).background(Color.appPrimary.opacity(0.12), in: Circle())
                     VStack(alignment: .leading, spacing: 2) {
                         Text(L("Ekspor data dulu")).font(.app(16, weight: .semibold))
-                        Text(L("Simpan transaksi dan dompetmu sebagai XLS atau PDF sebelum akun dihapus."))
+                        Text(L("Simpan transaksi dan dompetmu sebagai CSV atau PDF sebelum akun dihapus."))
                             .font(.app(13)).foregroundStyle(Color.appTextSecondary)
                             .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
                     }

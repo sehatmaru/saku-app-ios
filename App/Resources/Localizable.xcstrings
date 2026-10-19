@@ -5253,12 +5253,12 @@
         }
       }
     },
-    "Ekspor XLS": {
+    "Ekspor CSV": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Export XLS"
+            "value": "Export CSV"
           }
         }
       }
@@ -5293,12 +5293,12 @@
         }
       }
     },
-    "Ekspor ke XLS": {
+    "Ekspor ke CSV": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Export to XLS"
+            "value": "Export to CSV"
           }
         }
       }
@@ -12473,12 +12473,12 @@
         }
       }
     },
-    "Simpan transaksi dan dompetmu sebagai XLS atau PDF sebelum akun dihapus.": {
+    "Simpan transaksi dan dompetmu sebagai CSV atau PDF sebelum akun dihapus.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Save your transactions and wallets as XLS or PDF before the account is deleted."
+            "value": "Save your transactions and wallets as CSV or PDF before the account is deleted."
           }
         }
       }

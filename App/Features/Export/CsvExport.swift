@@ -16,11 +16,13 @@ enum CsvExport {
 
     /// Every transaction in `interval` (nil = everything), newest first.
     static func transactions(_ transactions: [Transaction], accounts: [Account], categories: [Category],
-                             interval: DateInterval? = nil, delimiter: Delimiter) -> String {
+                             interval: DateInterval? = nil, intervals: [DateInterval]? = nil, delimiter: Delimiter) -> String {
         let wallets = Dictionary(accounts.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         let rows = transactions
             .filter { txn in
+                // `intervals` is the several periods picked in Ekspor data; `interval` the single one
+                if let intervals { return intervals.contains { txn.date >= $0.start && txn.date < $0.end } }
                 guard let interval else { return true }
                 return txn.date >= interval.start && txn.date < interval.end
             }
