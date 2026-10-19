@@ -600,8 +600,7 @@ struct ProfileEditView: View {
                 }
                 .padding(.horizontal, 20).padding(.top, 8)
 
-                Text(L("Ubah profil")).font(.app(34, weight: .bold)).tracking(0.2)
-                    .padding(.horizontal, 24).padding(.top, 6).padding(.bottom, 16)
+                Color.clear.frame(height: 10)
 
                 VStack(spacing: 22) {
                     avatarCard
