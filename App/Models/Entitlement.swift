@@ -6,11 +6,16 @@ enum PlusStatus: String, Codable {
     case free, trial, active, grace
 }
 
+/// How the paid plan renews. The server has no column for it yet (StoreKit fills it), so it is yearly unless
+/// a test build sets it.
+enum PlusPlan: String { case yearly, monthly }
+
 /// The one place the app asks "does this account have Saku Plus?" (US8: no second path).
 struct Entitlement: Equatable {
     var status: PlusStatus = .free
     /// When the paid or trial period ends; nil means no end date (the internal test switch).
     var until: Date?
+    var plan: PlusPlan = .yearly
 
     static let free = Entitlement()
 
@@ -20,9 +25,10 @@ struct Entitlement: Equatable {
         return until.map { $0 > now } ?? true
     }
 
-    init(status: PlusStatus = .free, until: Date? = nil) {
+    init(status: PlusStatus = .free, until: Date? = nil, plan: PlusPlan = .yearly) {
         self.status = status
         self.until = until
+        self.plan = plan
     }
 
     /// From the profile's own columns; anything unknown reads as free.
@@ -40,6 +46,7 @@ final class PlusStore: ObservableObject {
     private nonisolated static let statusKey = "plusStatus"
     private nonisolated static let untilKey = "plusUntil"
     private nonisolated static let testerKey = "plusIsTester"
+    private nonisolated static let planKey = "plusPlan"
 
     @Published private(set) var entitlement: Entitlement
     /// Tester accounts may use the internal switch (US8); the server checks it again.
@@ -53,7 +60,15 @@ final class PlusStore: ObservableObject {
     }
 
     func apply(_ profile: UserProfile) {
-        apply(Entitlement(status: profile.plusStatus, until: profile.plusUntil), isTester: profile.isTester ?? false)
+        var new = Entitlement(status: profile.plusStatus, until: profile.plusUntil)
+        new.plan = entitlement.plan
+        apply(new, isTester: profile.isTester ?? false)
+    }
+
+    /// Test builds only: the server does not know the plan yet.
+    func setPlan(_ plan: PlusPlan) {
+        entitlement.plan = plan
+        UserDefaults.standard.set(plan.rawValue, forKey: Self.planKey)
     }
 
     func apply(_ new: Entitlement, isTester tester: Bool) {
@@ -63,6 +78,7 @@ final class PlusStore: ObservableObject {
         defaults.set(new.status.rawValue, forKey: Self.statusKey)
         defaults.set(new.until, forKey: Self.untilKey)
         defaults.set(tester, forKey: Self.testerKey)
+        defaults.set(new.plan.rawValue, forKey: Self.planKey)
         ShareInbox.isPlus = new.isPlus()
     }
 
@@ -75,7 +91,8 @@ final class PlusStore: ObservableObject {
     private nonisolated static var cached: Entitlement {
         let defaults = UserDefaults.standard
         return Entitlement(status: defaults.string(forKey: statusKey).flatMap(PlusStatus.init(rawValue:)) ?? .free,
-                           until: defaults.object(forKey: untilKey) as? Date)
+                           until: defaults.object(forKey: untilKey) as? Date,
+                           plan: defaults.string(forKey: planKey).flatMap(PlusPlan.init(rawValue:)) ?? .yearly)
     }
 
     /// The test switch is for builds that are not on the App Store: debug or TestFlight (US8).
@@ -115,6 +132,22 @@ extension Entitlement {
         case .trial: return .trial
         case .grace: return .grace
         default: return .active
+        }
+    }
+
+    /// The bar under the plan: Trial 7 bars (a day each), yearly 12 (a month each), monthly 10 (3 days each), grace 1 lit
+    /// of 14, ended all dim. `filled` is what is left. nil while free. Shared by Paket Saku and the Profil card.
+    func bars(at now: Date = Date()) -> (total: Int, filled: Int)? {
+        let left = daysLeft(at: now) ?? 0
+        switch phase(at: now) {
+        case .free: return nil
+        case .trial: return (7, min(7, max(left, 1)))
+        case .active:
+            let monthly = plan == .monthly
+            let total = monthly ? 10 : 12
+            return (total, min(total, max(1, monthly ? Int(ceil(Double(left) / 3)) : Int(ceil(Double(left) / 30.4)))))
+        case .grace: return (14, 1)
+        case .ended: return (14, 0)
         }
     }
 

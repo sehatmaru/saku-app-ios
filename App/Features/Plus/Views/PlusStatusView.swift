@@ -127,21 +127,24 @@ struct PlusStatusView: View {
 
     private var statusHero: some View {
         let left = plus.entitlement.daysLeft() ?? 0
-        let big: String, unit: String, tag: String?, caption: String, filled: Int
+        let big: String, unit: String, tag: String?, caption: String
         switch phase {
         case .trial:
-            big = "\(left)"; unit = L("hari lagi"); tag = nil; filled = min(14, left * 2)
+            big = "\(left)"; unit = L("hari lagi"); tag = nil
             caption = L("Ditagih %@ · %@ per tahun", until, PlusPricing.yearly)
         case .active:
-            big = PlusPricing.yearly; unit = L("per tahun"); tag = L("Aktif"); filled = 14
+            let monthly = plus.entitlement.plan == .monthly
+            big = monthly ? PlusPricing.monthly : PlusPricing.yearly; unit = monthly ? L("per bulan") : L("per tahun"); tag = L("Aktif")
+
             caption = L("Ditagih berikutnya %@", until)
         case .grace:
-            big = "\(left)"; unit = L("hari lagi"); tag = L("Masa tenggang"); filled = max(1, min(14, left))
+            big = "\(left)"; unit = L("hari lagi"); tag = L("Masa tenggang")
             caption = L("Pembayaran belum berhasil. Plus berakhir %@ bila tidak diperbarui.", until)
         default:
-            big = L("Plus berakhir"); unit = ""; tag = L("Berakhir"); filled = 0
+            big = L("Plus berakhir"); unit = ""; tag = L("Berakhir")
             caption = L("Berakhir %@. Datamu tetap aman.", until)
         }
+        let (bars, filled) = plus.entitlement.bars() ?? (14, 0)
         let button = phase == .grace ? L("Perbarui pembayaran") : (phase == .ended ? L("Perpanjang Saku Plus") : nil)
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -160,7 +163,7 @@ struct PlusStatusView: View {
             }
             .padding(.top, 8)
             HStack(spacing: 3) {
-                ForEach(0..<14, id: \.self) { i in
+                ForEach(0..<bars, id: \.self) { i in
                     Capsule().fill(i < filled ? Color.white : Color.white.opacity(0.3)).frame(height: 6)
                         .motion(.tick, delay: 0.25 + Double(i) * 0.045)
                 }
@@ -189,7 +192,6 @@ struct PlusStatusView: View {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 VStack(alignment: .leading, spacing: 8) {
                     Image(systemName: item.0).font(.system(size: 18)).foregroundStyle(locked ? Color.appTextTertiary : Color.appPrimary).frame(height: 22, alignment: .leading)
-                        .motion(.bob, delay: Double(index) * 0.3)
                     Text(item.1).font(.app(12, weight: .medium)).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                 }
@@ -235,7 +237,7 @@ struct PlusStatusView: View {
             Text("Uji internal").font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.top, 22)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach([("free", L("Gratis")), ("trial", L("Trial")), ("active", L("Aktif")), ("grace", L("Tenggang")), ("ended", L("Berakhir"))], id: \.0) { key, title in
+                    ForEach([("free", L("Gratis")), ("trial", L("Trial")), ("active", L("Aktif")), ("monthly", L("Bulanan")), ("grace", L("Tenggang")), ("ended", L("Berakhir"))], id: \.0) { key, title in
                         Button { switchTo(key) } label: {
                             Text(title).font(.app(14, weight: .semibold))
                                 .foregroundStyle(isCurrent(key) ? Color.white : Color.appText)
@@ -252,7 +254,9 @@ struct PlusStatusView: View {
 
     private func isCurrent(_ key: String) -> Bool {
         switch (key, phase) {
-        case ("free", .free), ("trial", .trial), ("active", .active), ("grace", .grace), ("ended", .ended): true
+        case ("free", .free), ("trial", .trial), ("grace", .grace), ("ended", .ended): true
+        case ("active", .active): plus.entitlement.plan == .yearly
+        case ("monthly", .active): plus.entitlement.plan == .monthly
         default: false
         }
     }
@@ -264,7 +268,8 @@ struct PlusStatusView: View {
         Task {
             defer { isSwitching = false }
             do {
-                try await SupabaseSDK.setTestPlusState(key)
+                try await SupabaseSDK.setTestPlusState(key == "monthly" ? "active" : key)
+                PlusStore.shared.setPlan(key == "monthly" ? .monthly : .yearly)
                 _ = try await SupabaseSDK.fetchProfile(authUserId: authId)
                             } catch {
                 failure = "\(error)".contains("test_plus_off") ? L("Tombol uji sedang dimatikan di server.") : L("Belum berhasil mengubah. Coba lagi sebentar lagi.")
@@ -279,7 +284,7 @@ private extension View {
 }
 
 private struct PlanMotion: ViewModifier {
-    enum Kind { case fup, fleft, tile, tick, chk, pop, bob }
+    enum Kind { case fup, fleft, tile, tick, chk, pop }
     let kind: Kind
     let delay: Double
     @State private var on = false
@@ -292,16 +297,15 @@ private struct PlanMotion: ViewModifier {
         case .tick: .easeOut(duration: 0.4).delay(delay)
         case .chk: .timingCurve(0.3, 1.5, 0.5, 1, duration: 0.5).delay(delay)
         case .pop: .spring(duration: 0.5, bounce: 0.3).delay(delay)
-        case .bob: .easeInOut(duration: 1.7).repeatForever(autoreverses: true).delay(delay)
         }
     }
 
     func body(content: Content) -> some View {
         let shown = on || reduceMotion
         return content
-            .opacity([.tick, .bob].contains(kind) || shown ? 1 : 0)
+            .opacity(kind == .tick || shown ? 1 : 0)
             .offset(x: kind == .fleft && !shown ? -16 : 0,
-                    y: kind == .fup && !shown ? 14 : kind == .tile && !shown ? 18 : kind == .bob && on && !reduceMotion ? -3 : 0)
+                    y: kind == .fup && !shown ? 14 : kind == .tile && !shown ? 18 : 0)
             .scaleEffect(x: kind == .tick && !shown ? 0 : 1, y: 1, anchor: .leading)
             .scaleEffect(kind == .chk && !shown ? 0 : kind == .tile && !shown ? 0.94 : kind == .pop && !shown ? 0.88 : 1)
             .animation(curve, value: on)

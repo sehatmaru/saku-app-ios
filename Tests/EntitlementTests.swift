@@ -101,3 +101,31 @@ final class PlusPhaseTests: XCTestCase {
         XCTAssertNotNil(PlusBanner.pick(for: trial1, now: now, dismissed: [key]), "the next day is a new banner")
     }
 }
+
+final class PlusBarsTests: XCTestCase {
+    private let now = Date(timeIntervalSince1970: 1_800_000_000)
+    private func at(_ days: Double) -> Date { now.addingTimeInterval(days * 86_400) }
+
+    func testTrialHasSevenBarsLitByDaysLeft() {
+        let bars = Entitlement(status: .trial, until: at(4)).bars(at: now)
+        XCTAssertEqual(bars?.total, 7); XCTAssertEqual(bars?.filled, 4)
+    }
+
+    func testYearlyHasTwelveBarsOneAMonth() {
+        let bars = Entitlement(status: .active, until: at(120), plan: .yearly).bars(at: now)
+        XCTAssertEqual(bars?.total, 12); XCTAssertEqual(bars?.filled, 4)
+        XCTAssertEqual(Entitlement(status: .active, until: at(365), plan: .yearly).bars(at: now)?.filled, 12)
+    }
+
+    func testMonthlyHasTenBarsOneEveryThreeDays() {
+        let bars = Entitlement(status: .active, until: at(10), plan: .monthly).bars(at: now)
+        XCTAssertEqual(bars?.total, 10); XCTAssertEqual(bars?.filled, 4)
+        XCTAssertEqual(Entitlement(status: .active, until: at(30), plan: .monthly).bars(at: now)?.filled, 10)
+    }
+
+    func testGraceLightsOneAndFreeHasNone() {
+        XCTAssertEqual(Entitlement(status: .active, until: at(-1)).bars(at: now)?.filled, 0, "ended is all dim")
+        XCTAssertEqual(Entitlement(status: .grace, until: at(3)).bars(at: now)?.filled, 1)
+        XCTAssertNil(Entitlement.free.bars(at: now))
+    }
+}

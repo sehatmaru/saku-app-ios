@@ -229,8 +229,8 @@ struct ProfileView: View {
                     .font(.app(15))
                     .foregroundStyle(.white)
             }
+            VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                if trial { trialRing(daysLeft: daysLeft) }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(trial ? L("Sisa %lld hari", daysLeft) : L("Saku Plus aktif")).font(.app(16, weight: .semibold))
                     Text(trial ? L("Uji coba Plus s.d. %@", shortUntil) : L("s.d. %@", longUntil))
@@ -243,6 +243,17 @@ struct ProfileView: View {
                     Text(L("Kelola")).font(.app(15, weight: .medium)).foregroundStyle(Color.appPrimary)
                         .frame(height: 34).padding(.horizontal, 16).background(.white, in: Capsule())
                 }
+            }
+            // same bars and rules as Paket Saku: trial 7, yearly 12, monthly 10, grace 1 lit
+            if let bars = plus.entitlement.bars() {
+                HStack(spacing: 3) {
+                    ForEach(0..<bars.total, id: \.self) { i in
+                        Capsule().fill(i < bars.filled ? Color.white : Color.white.opacity(0.3)).frame(height: 5)
+                            .scaleEffect(x: ringGrown ? 1 : 0, y: 1, anchor: .leading)
+                            .animation(.easeOut(duration: 0.4).delay(0.3 + Double(i) * 0.045), value: ringGrown)
+                    }
+                }
+            }
             }
             .padding(.top, 14)
             .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.28)).frame(height: 1) }
@@ -269,19 +280,6 @@ struct ProfileView: View {
         .onAppear { heroIn = true; floating = true; ringGrown = true }
     }
 
-    /// The trial's ring fills 7 of 14 days when the card opens (design: ring, 1.4s).
-    private func trialRing(daysLeft: Int) -> some View {
-        ZStack {
-            Circle().stroke(.white.opacity(0.25), lineWidth: 6)
-            Circle()
-                .trim(from: 0, to: ringGrown ? min(1, Double(daysLeft) / 14) : 0)
-                .stroke(.white, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .animation(.easeOut(duration: 1.4).delay(0.3), value: ringGrown)
-            Text("\(daysLeft)").font(.app(20, weight: .light))
-        }
-        .frame(width: 52, height: 52)
-    }
 
     /// Free accounts: the quiet invitation with three benefits and one button.
     private var freePlusCard: some View {
