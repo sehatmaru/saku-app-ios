@@ -45,6 +45,13 @@ struct Draft: Identifiable, Codable, Hashable {
 
     var expiresAt: Date { Calendar.current.date(byAdding: .day, value: 30, to: createdAt) ?? createdAt }
 
+    /// The name that goes into the transaction. Empty means the user cleared it, so the save
+    /// keeps it empty instead of filling a default back in (BUG-38).
+    var savedTitle: String? {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
     /// What still blocks saving, in the order the editor asks for it.
     enum Missing: Equatable { case amount, account, counterparty, category }
 

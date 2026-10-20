@@ -364,12 +364,12 @@ final class DraftStore: ObservableObject {
         case .expense, .income:
             created = try await repo.createTransaction(
                 accountId: accountId, categoryId: draft.categoryId, amount: amount,
-                type: draft.kind == .income ? .income : .expense, description: draft.title, note: nil,
+                type: draft.kind == .income ? .income : .expense, description: draft.savedTitle, note: nil,
                 date: draft.date, userId: userId, isCreditAccount: account?.isCreditCard ?? false)
         case .transfer, .cardPayment:
             guard let counterparty = draft.counterpartyAccountId else { throw SaveError.incomplete }
             created = try await repo.createTransfer(primaryAccountId: accountId, counterpartyAccountId: counterparty, amount: amount,
-                                              description: draft.title, note: nil, date: draft.date)
+                                              description: draft.savedTitle, note: nil, date: draft.date)
         }
         if remember { learn(from: draft) }
         discard(draft.id)
@@ -385,7 +385,7 @@ final class DraftStore: ObservableObject {
     /// A card bill paid from outside Saku (no source wallet named): lowers the card's debt only.
     func saveOutsideCardPayment(_ draft: Draft) async throws {
         guard let amount = draft.amount, let card = draft.counterpartyAccountId else { throw SaveError.incomplete }
-        try await SupabaseRepository.shared.createCardPayment(cardId: card, amount: amount, note: draft.title, date: draft.date)
+        try await SupabaseRepository.shared.createCardPayment(cardId: card, amount: amount, note: draft.savedTitle, date: draft.date)
         discard(draft.id)
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
     }

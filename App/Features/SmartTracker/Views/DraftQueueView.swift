@@ -580,12 +580,6 @@ struct DraftQueueView: View {
 
     // MARK: Actions
 
-    private func filled(_ d: Draft) -> Draft {
-        var copy = d
-        if copy.title.isEmpty { copy.title = copy.kindTitle }
-        return copy
-    }
-
     private func save(_ d: Draft) {
         guard d.isComplete else { openFirstMissing(d); return }
         guard !saving.contains(d.id) else { return }
@@ -594,7 +588,7 @@ struct DraftQueueView: View {
         failures[d.id] = nil
         Task {
             do {
-                let transactionId = try await store.save(filled(d), userId: userId)
+                let transactionId = try await store.save(d, userId: userId)
                 saving.remove(d.id)
                 saved += 1
                 show(Toast(text: Self.savedText(d.kind), drafts: [d], transactionIds: transactionId.map { [$0] } ?? [], kind: .saved))
@@ -614,7 +608,7 @@ struct DraftQueueView: View {
             for d in items {
                 saving.insert(d.id)
                 do {
-                    if let id = try await store.save(filled(d), userId: userId) { ids.append(id) }
+                    if let id = try await store.save(d, userId: userId) { ids.append(id) }
                     done.append(d)
                     saved += 1
                 } catch {
