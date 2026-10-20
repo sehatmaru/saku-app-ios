@@ -38,6 +38,11 @@ enum SupabaseSDK {
         return try ReferralSummary.decode(response.data)
     }
 
+    /// The "Cek" button: the same rules as `redeemReferralCode`, but nothing is used. Throws the server's error code.
+    static func checkReferralCode(_ code: String) async throws {
+        try await client.rpc("check_referral_code", params: ["p_code": AnyJSON.string(code)]).execute()
+    }
+
     /// Uses a friend's code (a real account only, once, never its own). Throws the server's plain error code.
     static func redeemReferralCode(_ code: String) async throws {
         try await client.rpc("redeem_referral_code", params: ["p_code": AnyJSON.string(code)]).execute()

@@ -3953,6 +3953,16 @@
         }
       }
     },
+    "Cek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check"
+          }
+        }
+      }
+    },
     "Cek dan simpan": {
       "localizations": {
         "en": {
@@ -8199,6 +8209,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Code not found. Check it or leave it empty to skip."
+          }
+        }
+      }
+    },
+    "Kode valid. Dipakai saat kamu menekan Lanjut.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code is valid. It is used when you tap Continue."
           }
         }
       }

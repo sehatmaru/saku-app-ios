@@ -29,6 +29,9 @@ struct SetupOnboardingView: View {
     /// Referral code of a friend, real accounts only (Fitur 2 K6: guests take no part).
     @State private var referralCode = ""
     @State private var referralAccepted = false
+    /// The code the "Cek" button found valid; typing anything else clears it.
+    @State private var referralChecked: String?
+    @State private var isTestingCode = false
     @State private var referralMessage: String?
     @State private var isCheckingCode = false
 
@@ -246,8 +249,21 @@ struct SetupOnboardingView: View {
                         let cleaned = String(value.uppercased().filter { $0.isLetter || $0.isNumber }.prefix(6))
                         if cleaned != value { referralCode = cleaned }
                         referralMessage = nil
+                        if referralChecked != cleaned { referralChecked = nil }
                     }
-                if referralAccepted { Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appPrimary) }
+                if referralAccepted || referralChecked != nil {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appPrimary)
+                } else {
+                    Button { checkReferralCode() } label: {
+                        Group {
+                            if isTestingCode { ProgressView() } else { Text("Cek").font(.app(15, weight: .semibold)) }
+                        }
+                        .foregroundStyle(referralCode.count == 6 ? Color.appPrimary : Color.appTextTertiary)
+                        .frame(minWidth: 44, minHeight: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(referralCode.count != 6 || isTestingCode)
+                }
             }
             .padding(.horizontal, 14).frame(height: 48)
             .background(Color.appFill, in: RoundedRectangle(cornerRadius: 12))
@@ -256,9 +272,29 @@ struct SetupOnboardingView: View {
             } else if referralAccepted {
                 Text("Kode diterima. Temanmu dapat hadiah setelah kamu mencatat transaksi pertama.")
                     .font(.app(13)).foregroundStyle(Color.appPrimary).fixedSize(horizontal: false, vertical: true)
+            } else if referralChecked != nil {
+                Text("Kode valid. Dipakai saat kamu menekan Lanjut.")
+                    .font(.app(13)).foregroundStyle(Color.appPrimary).fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.top, 28).padding(.horizontal, 24)
+    }
+
+    /// The "Cek" button: finds out whether the code works, without using it or leaving the step.
+    private func checkReferralCode() {
+        let code = referralCode.trimmingCharacters(in: .whitespaces)
+        guard code.count == 6, !isTestingCode else { return }
+        isTestingCode = true
+        referralMessage = nil
+        Task {
+            defer { isTestingCode = false }
+            do {
+                try await SupabaseSDK.checkReferralCode(code)
+                referralChecked = code
+            } catch {
+                referralMessage = ReferralFailure.message(for: error)
+            }
+        }
     }
 
     /// Goes to step 2; a typed code is checked first and a wrong one keeps the user here with the reason.

@@ -1003,5 +1003,7 @@
   "Temanmu mencatat transaksi pertama. +%lld jatah AI masuk.": "Your friend recorded their first transaction. +%lld AI help added.",
   "Punya kode dari teman?": "Have a code from a friend?",
   "Kode hanya bisa dipakai sekali, oleh akun baru yang belum mencatat transaksi.": "A code can be used once, by a new account that hasn't recorded a transaction yet.",
-  "Pakai kode": "Use code"
+  "Pakai kode": "Use code",
+  "Cek": "Check",
+  "Kode valid. Dipakai saat kamu menekan Lanjut.": "Code is valid. It is used when you tap Continue."
 }
