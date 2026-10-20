@@ -484,10 +484,10 @@ struct QuickResultSheet: View {
 
     // MARK: Saving
 
-    private func filled(_ d: Draft) -> Draft {
-        var copy = d
-        if copy.title.isEmpty { copy.title = copy.kindTitle }
-        return copy
+    /// What the notice calls the saved row; the transaction itself keeps an empty name empty.
+    private func displayName(_ d: Draft) -> String {
+        if let title = d.savedTitle { return title }
+        return store.categories.first { $0.id == d.categoryId }?.name ?? d.kindTitle
     }
 
     private func saveSingle() {
@@ -496,10 +496,10 @@ struct QuickResultSheet: View {
         failure = nil
         Task {
             do {
-                try await store.saveImmediately(filled(d), userId: userId)
+                try await store.saveImmediately(d, userId: userId)
                 saving = false
                 dismiss()
-                onSaved("\(filled(d).title) \(amountText(d)) " + L("tersimpan"))
+                onSaved("\(displayName(d)) \(amountText(d)) " + L("tersimpan"))
             } catch {
                 saving = false
                 failure = DraftQueueView.Failure(error)
@@ -514,9 +514,9 @@ struct QuickResultSheet: View {
         failure = nil
         Task {
             do {
-                try await store.saveImmediately(filled(d), userId: userId)
+                try await store.saveImmediately(d, userId: userId)
                 saving = false
-                let title = filled(d).title
+                let title = displayName(d)
                 withAnimation(.settle(0.3)) {
                     if openId == d.id { openId = nil }
                     drafts.removeAll { $0.id == d.id }
@@ -542,7 +542,7 @@ struct QuickResultSheet: View {
             var saved = 0
             for d in items {
                 do {
-                    try await store.saveImmediately(filled(d), userId: userId)
+                    try await store.saveImmediately(d, userId: userId)
                     saved += 1
                     withAnimation(.settle(0.3)) { drafts.removeAll { $0.id == d.id } }
                 } catch {
