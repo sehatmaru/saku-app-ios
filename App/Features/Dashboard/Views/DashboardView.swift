@@ -11,7 +11,7 @@ struct DashboardView: View {
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
 @AppStorage(SmartTrackerWays.quickKey) private var smartQuickOn = true
-@ObservedObject private var smartGate = SmartButtonGate.shared
+@StateObject private var tabAvatar = TabAvatarCache()
 @ObservedObject private var draftStore = DraftStore.shared
 @State private var showsConsent = false
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
@@ -103,10 +103,13 @@ struct DashboardView: View {
             }
         }
         .overlay {
-            if selectedTab != .home || homePath.isEmpty, smartGate.hiders == 0, viewModel.hasLoadedOnce, smartQuickOn, let userId = authViewModel.currentUser?.id {
-                SmartTrackerHomeOverlay(userId: userId, isFresh: viewModel.recentTransactions.isEmpty, onOpenQueue: { openDraftsPage() }) { text in
-                    toastText = text
-                    isToastShown = true
+            if selectedTab != .home || homePath.isEmpty, viewModel.hasLoadedOnce, smartQuickOn, let userId = authViewModel.currentUser?.id {
+                // the gate is watched inside, so a page opening or closing does not re-run this whole screen
+                SmartButtonGated {
+                    SmartTrackerHomeOverlay(userId: userId, isFresh: viewModel.recentTransactions.isEmpty, onOpenQueue: { openDraftsPage() }) { text in
+                        toastText = text
+                        isToastShown = true
+                    }
                 }
             }
         }
@@ -225,13 +228,11 @@ struct DashboardView: View {
     }
 
     /// The initials avatar drawn as a bitmap, since tab items only take images.
+    /// Drawn again only when the initials or the photo change: this runs on every pass over the tabs, and a push
+    /// or pop of a page triggers several.
     @MainActor
     private var avatarImage: UIImage {
-        let renderer = ImageRenderer(content: InitialsAvatar(initials: authViewModel.currentUser?.initials ?? "U",
-                                                             size: 28, fontSize: 11,
-                                                             image: authViewModel.avatarImage))
-        renderer.scale = UITraitCollection.current.displayScale
-        return renderer.uiImage?.withRenderingMode(.alwaysOriginal) ?? UIImage()
+        tabAvatar.image(initials: authViewModel.currentUser?.initials ?? "U", photo: authViewModel.avatarImage)
     }
 
     // MARK: - Beranda
@@ -1078,5 +1079,24 @@ private struct WalletsMark: View {
             try? await Task.sleep(for: .seconds(0.6))
             isFanned = true
         }
+    }
+}
+
+/// The Profil tab's avatar bitmap, kept until the initials or the photo change.
+@MainActor
+final class TabAvatarCache: ObservableObject {
+    private var key = ""
+    private var photo: UIImage?
+    private var cached: UIImage?
+
+    func image(initials: String, photo: UIImage?) -> UIImage {
+        if let cached, key == initials, self.photo === photo { return cached }
+        let renderer = ImageRenderer(content: InitialsAvatar(initials: initials, size: 28, fontSize: 11, image: photo))
+        renderer.scale = UITraitCollection.current.displayScale
+        let image = renderer.uiImage?.withRenderingMode(.alwaysOriginal) ?? UIImage()
+        key = initials
+        self.photo = photo
+        cached = image
+        return image
     }
 }

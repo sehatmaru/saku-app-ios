@@ -516,6 +516,17 @@ final class SmartButtonGate: ObservableObject {
     func show() { hiders = max(0, hiders - 1) }
 }
 
+/// Shows its content only while no page hides the button. It watches the gate itself, so the screen that holds it is
+/// not re-evaluated each time a page opens or closes.
+struct SmartButtonGated<Content: View>: View {
+    @ObservedObject private var gate = SmartButtonGate.shared
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        if gate.hiders == 0 { content() }
+    }
+}
+
 extension View {
     func hidesSmartButton() -> some View {
         onAppear { SmartButtonGate.shared.hide() }.onDisappear { SmartButtonGate.shared.show() }
