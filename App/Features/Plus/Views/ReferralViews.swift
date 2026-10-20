@@ -8,6 +8,7 @@ struct ReferralView: View {
     @State private var summary: ReferralSummary?
     @State private var failed = false
     @State private var copied = false
+    @State private var entersCode = false
 
     private var shareText: String {
         guard let summary else { return "" }
@@ -53,6 +54,7 @@ struct ReferralView: View {
         .background(Color.appBackground)
         .hidesSmartButton()
         .task { await load() }
+        .sheet(isPresented: $entersCode) { ReferralRedeemSheet { Task { await load() } } }
     }
 
     @ViewBuilder
@@ -73,6 +75,12 @@ struct ReferralView: View {
         .frame(maxWidth: .infinity).padding(20)
         .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
         .padding(.top, 22).stEnter(0)
+
+        // an account that skipped the code at sign-up (or signed up before this existed) may still enter one
+        if summary.canRedeem {
+            Button { entersCode = true } label: { linkRow(L("Punya kode dari teman?"), trailing: "") }
+                .buttonStyle(.plain).padding(.top, 14)
+        }
 
         if !plus.isPlus {
             VStack(alignment: .leading, spacing: 10) {
@@ -234,5 +242,58 @@ struct ReferralHowView: View {
         .scrollIndicators(.hidden)
         .background(Color.appBackground)
         .hidesSmartButton()
+    }
+}
+
+/// "Punya kode dari teman?" from Ajak teman: for an account that did not enter a code at sign-up.
+struct ReferralRedeemSheet: View {
+    let onDone: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var code = ""
+    @State private var message: String?
+    @State private var isChecking = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Color.clear.frame(height: 24)
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Punya kode dari teman?").font(.app(22, weight: .bold)).tracking(-0.3)
+                Text("Kode hanya bisa dipakai sekali, oleh akun baru yang belum mencatat transaksi.")
+                    .font(.app(14)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
+                TextField("", text: $code, prompt: Text("Kode").foregroundStyle(Color.appTextTertiary))
+                    .font(.app(22, weight: .medium)).tracking(3)
+                    .textInputAutocapitalization(.characters).autocorrectionDisabled()
+                    .padding(.horizontal, 14).frame(height: 52)
+                    .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
+                    .onChange(of: code) { _, value in
+                        let cleaned = String(value.uppercased().filter { $0.isLetter || $0.isNumber }.prefix(6))
+                        if cleaned != value { code = cleaned }
+                        message = nil
+                    }
+                if let message { Text(message).font(.app(13)).foregroundStyle(Color.appError).fixedSize(horizontal: false, vertical: true) }
+                PrimaryButton(title: L("Pakai kode"), isLoading: isChecking, isEnabled: code.count == 6) { redeem() }
+            }
+            .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 24)
+            Spacer(minLength: 0)
+        }
+        .presentationDetents([.height(400)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .presentationBackground(Color.appBackground)
+    }
+
+    private func redeem() {
+        guard !isChecking else { return }
+        isChecking = true
+        Task {
+            defer { isChecking = false }
+            do {
+                try await SupabaseSDK.redeemReferralCode(code)
+                onDone()
+                dismiss()
+            } catch {
+                message = ReferralFailure.message(for: error)
+            }
+        }
     }
 }

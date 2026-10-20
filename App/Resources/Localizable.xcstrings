@@ -8173,6 +8173,16 @@
         }
       }
     },
+    "Kode hanya bisa dipakai sekali, oleh akun baru yang belum mencatat transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A code can be used once, by a new account that hasn't recorded a transaction yet."
+          }
+        }
+      }
+    },
     "Kode kamu": {
       "localizations": {
         "en": {
@@ -10173,6 +10183,16 @@
         }
       }
     },
+    "Pakai kode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use code"
+          }
+        }
+      }
+    },
     "Pakai uang aset? Catat Tarik dari aset": {
       "localizations": {
         "en": {
@@ -11369,6 +11389,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Have a code from a friend? (optional)"
+          }
+        }
+      }
+    },
+    "Punya kode dari teman?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Have a code from a friend?"
           }
         }
       }

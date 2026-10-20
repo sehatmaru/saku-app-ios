@@ -1000,5 +1000,8 @@
   "Kode hanya bisa dipakai oleh akun baru yang belum mencatat transaksi.": "A code can only be used by a new account that hasn't recorded a transaction yet.",
   "Akun tamu belum bisa memakai kode ajak.": "Guest accounts can't use referral codes yet.",
   "Kode belum bisa diperiksa. Periksa koneksimu lalu coba lagi.": "The code couldn't be checked. Check your connection and try again.",
-  "Temanmu mencatat transaksi pertama. +%lld jatah AI masuk.": "Your friend recorded their first transaction. +%lld AI help added."
+  "Temanmu mencatat transaksi pertama. +%lld jatah AI masuk.": "Your friend recorded their first transaction. +%lld AI help added.",
+  "Punya kode dari teman?": "Have a code from a friend?",
+  "Kode hanya bisa dipakai sekali, oleh akun baru yang belum mencatat transaksi.": "A code can be used once, by a new account that hasn't recorded a transaction yet.",
+  "Pakai kode": "Use code"
 }

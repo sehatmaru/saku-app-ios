@@ -180,6 +180,15 @@ struct SetupOnboardingView: View {
     // MARK: - 1 · Name
 
     private var nameStep: some View {
+        // scrolls, so the code field below the name is never cut off by the keyboard on a short screen
+        ScrollView {
+            nameStepContent
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private var nameStepContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             heading(L("Siapa namamu?"), L("Tampil di Profil. Bisa diubah kapan saja."), size: 34)
 
@@ -220,6 +229,7 @@ struct SetupOnboardingView: View {
             }
         }
         .padding(.top, 40)
+        .padding(.bottom, 24)
         .onAppear { isNameFocused = true }
     }
 

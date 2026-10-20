@@ -59,6 +59,8 @@ struct ReferralSummary: Equatable {
     var friends: [Friend]
     var thisMonth: Int
     var reward: Int
+    /// This account has not used a friend's code and has no records yet: it can still enter one.
+    var canRedeem = false
 
     var isMaxed: Bool { thisMonth >= Self.monthlyLimit }
     var waiting: Int { friends.filter { $0.joined == nil }.count }
@@ -86,6 +88,7 @@ struct ReferralSummary: Equatable {
             let counts: Bool
         }
         let code: String?
+        let can_redeem: Bool?
         let this_month: Int
         let bonus: Int
         let friends: [FriendDTO]
@@ -103,7 +106,8 @@ struct ReferralSummary: Equatable {
             return Friend(id: f.id, name: f.name ?? L("Teman"), joined: done.map { day.string(from: $0) },
                           month: month.string(from: when), counts: f.counts)
         }
-        return ReferralSummary(code: code, friends: friends, thisMonth: dto.this_month, reward: dto.bonus)
+        return ReferralSummary(code: code, friends: friends, thisMonth: dto.this_month, reward: dto.bonus,
+                               canRedeem: dto.can_redeem ?? false)
     }
 
     private static func parse(_ text: String) -> Date? {
