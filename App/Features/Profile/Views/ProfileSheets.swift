@@ -358,6 +358,8 @@ struct ExportSheet: View {
     @ObservedObject private var plus = PlusStore.shared
     /// Free accounts get a preview of the PDF instead of the file (Fitur 8, US4).
     @State private var showsPdfPreview = false
+    /// "Sembunyikan saldo dan nama dompet" for the PDF; off unless asked (Fitur 8 US3).
+    @State private var hidesBalances = false
     /// The sheet is as tall as its content (design), up to a cap where it scrolls.
     @State private var contentHeight: CGFloat = 560
 
@@ -383,6 +385,14 @@ struct ExportSheet: View {
         if selectsAll { return L("Semua data") }
         if selectedPeriods.isEmpty { return L("Pilih periode") }
         return L("%lld periode dipilih", selectedPeriods.count)
+    }
+
+    /// The report covers one period: the most recent one picked, or the running one for "Semua data".
+    private var reportPeriodIndex: Int { selectsAll ? 0 : (selectedPeriods.min() ?? 0) }
+    private var reportPeriod: DateInterval { periods.indices.contains(reportPeriodIndex) ? periods[reportPeriodIndex].interval : cycle.period(offset: 0) }
+    private var reportPeriodNote: String {
+        let label = periods.indices.contains(reportPeriodIndex) ? periods[reportPeriodIndex].label : cycle.label(for: Date())
+        return (!selectsAll && selectedPeriods.count > 1) ? L("Laporan memakai periode terbaru yang dipilih: %@", label) : L("Laporan periode %@", label)
     }
 
     private var periodLabel: String {
@@ -556,10 +566,18 @@ struct ExportSheet: View {
                     .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(L("Laporan PDF")).font(.app(17, weight: .semibold)).foregroundStyle(.white)
-                    Text(L("Ringkasan dan analisis, siap dibagikan"))
+                    Text(L("Ringkasan satu periode, siap dibagikan"))
                         .font(.app(13)).foregroundStyle(.white.opacity(0.7))
                 }
             }
+
+            Toggle(isOn: $hidesBalances) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(L("Sembunyikan saldo dan nama dompet")).font(.app(14, weight: .medium)).foregroundStyle(.white)
+                    Text(reportPeriodNote).font(.app(12)).foregroundStyle(.white.opacity(0.6))
+                }
+            }
+            .tint(Color.appPrimary)
 
             exportButton(title: L("Buat laporan PDF"), icon: "chart.pie", style: .onDark, enabled: !isBuilding) {
                 exportPdf()
@@ -626,10 +644,9 @@ struct ExportSheet: View {
         guard plus.isPlus else { showsPdfPreview = true; return }
         isBuilding = true
         defer { isBuilding = false }
-        if let url = PdfReport.write(transactions: viewModel.transactions, accounts: viewModel.accounts,
-                                     categories: viewModel.categories, budgets: viewModel.budgets,
-                                     intervals: selectedIntervals, periodLabel: periodLabel,
-                                     name: "saku-laporan-\(CsvExport.date(Date())).pdf") {
+        let model = viewModel.reportModel(interval: reportPeriod, cycle: cycle,
+                                          userName: authViewModel.currentUser?.displayName ?? "", isPrivate: hidesBalances)
+        if let url = PdfReport.write(model) {
             sharing = ExportFile(urls: [url])
         } else {
             showsFailure = true

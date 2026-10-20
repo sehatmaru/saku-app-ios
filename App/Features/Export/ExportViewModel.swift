@@ -10,6 +10,9 @@ final class ExportViewModel: ObservableObject {
     @Published private(set) var accounts: [Account] = []
     @Published private(set) var categories: [Category] = []
     @Published private(set) var budgets: [Budget] = []
+    /// Budgets as they were in past periods, for the PDF report's budget table (Fitur 8 US3).
+    @Published private(set) var historyBudgets: [BudgetHistoryBudget] = []
+    @Published private(set) var amountChanges: [BudgetAmountChange] = []
 
     func load(userId: String?) async {
         guard let userId, !isReady else { return }
@@ -17,6 +20,8 @@ final class ExportViewModel: ObservableObject {
         async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
         async let categoriesTask = SupabaseRepository.shared.fetchCategories()
         async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)
+        async let historyTask = SupabaseRepository.shared.fetchBudgetsForHistory()
+        async let changesTask = SupabaseRepository.shared.fetchBudgetAmountChanges()
         var failed = false
         do { transactions = try await transactionsTask } catch { failed = true }
         do { accounts = try await accountsTask } catch { failed = true }
@@ -29,8 +34,21 @@ final class ExportViewModel: ObservableObject {
             }
             budgets = fetched
         } catch { failed = true }
+        do { historyBudgets = try await historyTask } catch { failed = true }
+        do { amountChanges = try await changesTask } catch { failed = true }
         loadFailed = failed
         isReady = !failed
+    }
+
+    /// The report of one payday period: flow, categories, wallets and the budgets as they were then.
+    func reportModel(interval: DateInterval, cycle: PaydayCycle, userName: String, isPrivate: Bool,
+                     isPreview: Bool = false) -> ReportModel {
+        let expenseIds = Set(categories.filter { $0.type == .expense }.map(\.id))
+        let period = BudgetHistory.period(interval, budgets: historyBudgets, changes: amountChanges, transactions: transactions,
+                                          shownCategoryIds: expenseIds)
+        return ReportModel.make(interval: interval, cycle: cycle, userName: userName, transactions: transactions,
+                                accounts: accounts, categories: categories, period: period, isPrivate: isPrivate,
+                                isPreview: isPreview)
     }
 
     func transactionsCsv(interval: DateInterval?, delimiter: CsvExport.Delimiter) -> String {

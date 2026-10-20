@@ -21,6 +21,16 @@
         }
       }
     },
+    " dari pemasukan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " of your income."
+          }
+        }
+      }
+    },
     " untuk %lld hari tersisa.": {
       "localizations": {
         "en": {
@@ -1043,12 +1053,32 @@
         }
       }
     },
+    "+%lld dompet lain di halaman 2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld more wallets on page 2"
+          }
+        }
+      }
+    },
     "+%lld jatah AI": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "+%lld AI quota"
+          }
+        }
+      }
+    },
+    "+%lld kategori lain di halaman 2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld more categories on page 2"
           }
         }
       }
@@ -1149,6 +1179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": ". If "
+          }
+        }
+      }
+    },
+    ". Kamu menyisihkan ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ". You saved "
           }
         }
       }
@@ -2473,6 +2513,16 @@
         }
       }
     },
+    "Belum ada pemasukan atau pengeluaran di periode ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No income or spending in this period yet."
+          }
+        }
+      }
+    },
     "Belum ada pemasukan tercatat, tapi ada pengeluaran.": {
       "localizations": {
         "en": {
@@ -3049,6 +3099,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Optional. Your answer helps us improve Saku."
+          }
+        }
+      }
+    },
+    "Buat budget di Saku": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make a budget in Saku"
           }
         }
       }
@@ -4229,6 +4289,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Raw data to work with yourself"
+          }
+        }
+      }
+    },
+    "Data pendukung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supporting data"
           }
         }
       }
@@ -6023,6 +6093,16 @@
         }
       }
     },
+    "Halaman %lld dari %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page %lld of %lld"
+          }
+        }
+      }
+    },
     "Halaman %lld dari 3": {
       "localizations": {
         "en": {
@@ -7123,6 +7203,16 @@
         }
       }
     },
+    "Kamu menyisihkan ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You saved "
+          }
+        }
+      }
+    },
     "Kamu menyisihkan %lld%% dari pemasukan %lld bulan terakhir.": {
       "localizations": {
         "en": {
@@ -8173,6 +8263,16 @@
         }
       }
     },
+    "Lanjutan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continued"
+          }
+        }
+      }
+    },
     "Lanjutkan": {
       "localizations": {
         "en": {
@@ -8269,6 +8369,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Full PDF report"
+          }
+        }
+      }
+    },
+    "Laporan memakai periode terbaru yang dipilih: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The report uses the latest period picked: %@"
+          }
+        }
+      }
+    },
+    "Laporan periode %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report for %@"
           }
         }
       }
@@ -9223,6 +9343,16 @@
         }
       }
     },
+    "Mode privasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy mode"
+          }
+        }
+      }
+    },
     "Mode tamu": {
       "localizations": {
         "en": {
@@ -9443,12 +9573,42 @@
         }
       }
     },
+    "Net = pemasukan − pengeluaran. Transfer antar akun dan pembayaran kartu tidak dihitung.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net = income − spending. Transfers between accounts and card payments are not counted."
+          }
+        }
+      }
+    },
+    "Net = pemasukan − pengeluaran. Transfer antar dompet dan pembayaran kartu tidak dihitung.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net = income − spending. Transfers between wallets and card payments are not counted."
+          }
+        }
+      }
+    },
     "Net cashflow %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Net cash flow %@"
+          }
+        }
+      }
+    },
+    "Net positif ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net positive "
           }
         }
       }
@@ -9913,6 +10073,16 @@
         }
       }
     },
+    "Pemasukan dan pengeluaran seimbang.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Income and spending are even."
+          }
+        }
+      }
+    },
     "Pemasukan dan pengeluaran yang kamu catat di %@ akan muncul di sini.": {
       "localizations": {
         "en": {
@@ -10103,6 +10273,16 @@
         }
       }
     },
+    "Pengeluaran melebihi pemasukan ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending exceeded income by "
+          }
+        }
+      }
+    },
     "Pengeluaran melebihi pemasukan. Kurangi pos terbesarmu dan tunda belanja yang tidak mendesak.": {
       "localizations": {
         "en": {
@@ -10119,6 +10299,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spending exceeds income. Cut your biggest category, %@, and put off non-urgent purchases."
+          }
+        }
+      }
+    },
+    "Pengeluaran per kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending by category"
           }
         }
       }
@@ -10409,6 +10599,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Budget period updated"
+          }
+        }
+      }
+    },
+    "Periode bulanan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly period"
+          }
+        }
+      }
+    },
+    "Periode gajian · gajian tanggal %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payday period · payday on the %lld"
           }
         }
       }
@@ -11083,6 +11293,16 @@
         }
       }
     },
+    "Ringkasan satu periode, siap dibagikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One-period summary, ready to share"
+          }
+        }
+      }
+    },
     "Riwayat": {
       "localizations": {
         "en": {
@@ -11543,6 +11763,16 @@
         }
       }
     },
+    "Saldo dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet balances"
+          }
+        }
+      }
+    },
     "Saldo kas": {
       "localizations": {
         "en": {
@@ -11559,6 +11789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cash balance now Rp%@ · not income"
+          }
+        }
+      }
+    },
+    "Saldo per %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance as of %@"
           }
         }
       }
@@ -11689,6 +11929,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Partial"
+          }
+        }
+      }
+    },
+    "Sebagian angka pada periode ini merupakan perkiraan karena riwayat nominal budget belum lengkap.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some numbers in this period are estimates because the budget amount history is incomplete."
           }
         }
       }
@@ -11899,6 +12149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hide balance"
+          }
+        }
+      }
+    },
+    "Sembunyikan saldo dan nama dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide balances and wallet names"
           }
         }
       }
@@ -14053,6 +14313,16 @@
         }
       }
     },
+    "Terpakai / budget · status": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spent / budget · status"
+          }
+        }
+      }
+    },
     "Terpakai bulan ini": {
       "localizations": {
         "en": {
@@ -14599,6 +14869,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Top ups and cash withdrawals"
+          }
+        }
+      }
+    },
+    "Total": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
           }
         }
       }
@@ -15531,6 +15811,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kept on this phone"
+          }
+        }
+      }
+    },
+    "agar laporan berikutnya menampilkan status Aman, Mendekati, atau Lewat per kategori.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "so the next report shows Safe, Near limit or Over for each category."
           }
         }
       }
