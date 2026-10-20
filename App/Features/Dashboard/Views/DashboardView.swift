@@ -220,7 +220,7 @@ struct DashboardView: View {
             .onChange(of: homePath.count) { _, count in if count == 0 { addsWalletOnOpen = false } }
         } label: { tabLabel(L("Beranda"), "house.fill") }
         Tab(value: AppTab.transactions) {
-            TransactionListView { showAddSheet = true }
+            TransactionListView(isActive: selectedTab == .transactions) { showAddSheet = true }
         } label: { tabLabel(L("Transaksi"), "list.bullet") }
         Tab(value: AppTab.add) {
             Color.clear

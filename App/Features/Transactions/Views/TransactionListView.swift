@@ -4,11 +4,15 @@ struct TransactionListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: TransactionListViewModel
 
+    /// True while the Transaksi tab is showing; leaving it folds the list back (BUG-6).
+    private let isActive: Bool
     /// Opens the add-transaction form from the empty state.
     private let onAdd: () -> Void
 
-    init(viewModel: TransactionListViewModel = TransactionListViewModel(), onAdd: @escaping () -> Void = {}) {
+    init(viewModel: TransactionListViewModel = TransactionListViewModel(), isActive: Bool = true,
+         onAdd: @escaping () -> Void = {}) {
         _viewModel = StateObject(wrappedValue: viewModel)
+        self.isActive = isActive
         self.onAdd = onAdd
     }
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
@@ -110,6 +114,7 @@ struct TransactionListView: View {
                 .onAppear { expandInitialMonths(); isBalanceVisible = isBalanceVisibleStorage }
                 .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
                 .onChange(of: viewModel.allTransactions.count) { _, _ in expandInitialMonths() }
+                .onChange(of: isActive) { _, active in if !active { collapseExpandedList() } }
                 .task {
                     guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }
                     await viewModel.loadTransactions(userId: userId)
@@ -164,6 +169,18 @@ struct TransactionListView: View {
         guard let first = sections.first else { return }
         expandedMonths = [first.id]
         hasInitialExpanded = true
+    }
+
+    /// BUG-6: switching tabs and coming back shows the list folded like a fresh visit —
+    /// only the newest month open, with the short preview — instead of every month and
+    /// "N lainnya" the user had opened before.
+    private func collapseExpandedList() {
+        guard !expandedMonths.isEmpty || !fullyShownMonths.isEmpty else { return }
+        fullyShownMonths.removeAll()
+        let first = viewModel.sections(for: filteredTransactions).first
+        withAnimation(.easeOut(duration: 0.2)) {
+            expandedMonths = first.map { [$0.id] } ?? []
+        }
     }
 
     /// 13e: the summary label stays; the amount, chips and rows shimmer.
