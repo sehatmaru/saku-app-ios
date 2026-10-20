@@ -18,6 +18,8 @@ struct ProfileView: View {
     }
 
     @State private var showLogoutAlert = false
+    /// The ✦ button would sit on top of the pop-up's Batal button, so it steps aside while the pop-up is open.
+    @State private var smartButtonHold = SmartButtonHold()
     @State private var showsPayday = false
     @State private var isCancellingPayday = false
     @State private var isPaydayToastShown = false
@@ -157,16 +159,16 @@ struct ProfileView: View {
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
-            .alert("Keluar", isPresented: $showLogoutAlert) {
-                Button("Batal", role: .cancel) {}
-                Button("Keluar", role: .destructive) {
-                    authViewModel.logout()
-                }
-            } message: {
-                Text(authViewModel.currentUser?.isGuest == true
-                     ? L("Kamu masuk sebagai tamu. Setelah keluar, data di akun tamu ini tidak bisa dibuka lagi.")
-                     : L("Kamu akan keluar. Datamu tetap tersimpan."))
+            .onChange(of: showLogoutAlert) { _, isOpen in
+                if isOpen { smartButtonHold.hold() } else { smartButtonHold.release() }
             }
+            // the same pop-up as "Matikan Smart Tracker?" (BUG-36)
+            .confirmDialog(isPresented: $showLogoutAlert, icon: "rectangle.portrait.and.arrow.right", destructive: true,
+                           title: L("Keluar dari Saku?"),
+                           message: authViewModel.currentUser?.isGuest == true
+                               ? L("Kamu masuk sebagai tamu. Setelah keluar, data di akun tamu ini tidak bisa dibuka lagi.")
+                               : L("Kamu akan keluar. Datamu tetap tersimpan."),
+                           confirmTitle: L("Keluar")) { showLogoutAlert = false; authViewModel.logout() }
         }
     }
 

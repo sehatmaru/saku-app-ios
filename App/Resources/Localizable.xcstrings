@@ -7523,6 +7523,16 @@
         }
       }
     },
+    "Keluar dari Saku?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out of Saku?"
+          }
+        }
+      }
+    },
     "Kemarin": {
       "localizations": {
         "en": {
