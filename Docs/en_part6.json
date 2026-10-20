@@ -976,5 +976,10 @@
   "Ringkasan satu periode, siap dibagikan": "One-period summary, ready to share",
   "Sembunyikan saldo dan nama dompet": "Hide balances and wallet names",
   "Laporan memakai periode terbaru yang dipilih: %@": "The report uses the latest period picked: %@",
-  "Laporan periode %@": "Report for %@"
+  "Laporan periode %@": "Report for %@",
+  "Bagikan laporan": "Share report",
+  "Laporan PDF periode %@": "PDF report for %@",
+  "Semua nominal rupiah jadi titik-titik. Persentase dan status tetap terlihat.": "Every rupiah amount becomes dots. Percentages and statuses stay visible.",
+  "Datamu belum bisa dimuat. Periksa koneksi lalu coba lagi.": "Your data couldn't be loaded. Check your connection and try again.",
+  "Laporan belum bisa dibuat": "The report couldn't be made"
 }

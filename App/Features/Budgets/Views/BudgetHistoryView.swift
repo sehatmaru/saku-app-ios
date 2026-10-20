@@ -129,6 +129,7 @@ struct BudgetHistoryPeriodView: View {
     let period: BudgetHistoryPeriod
     @ObservedObject var viewModel: BudgetListViewModel
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
+    @State private var sharesReport = false
 
     private func money(_ amount: Double) -> String {
         isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
@@ -165,6 +166,7 @@ struct BudgetHistoryPeriodView: View {
         .background(Color.appBackground)
         .navigationTitle(PaydayCycle.current.rangeLabel(for: period.interval.start))
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $sharesReport) { ShareReportSheet(interval: period.interval) }
     }
 
     private var summary: some View {
@@ -205,6 +207,17 @@ struct BudgetHistoryPeriodView: View {
                 .font(.app(13))
                 .foregroundStyle(Color.appTextTertiary)
                 .padding(.top, 8)
+
+            // Fitur 8 US5: the PDF of this period, after a privacy choice
+            Button { sharesReport = true } label: {
+                Label(L("Bagikan laporan"), systemImage: "square.and.arrow.up")
+                    .font(.app(15, weight: .medium))
+                    .foregroundStyle(Color.appPrimary)
+                    .frame(maxWidth: .infinity).frame(height: 46)
+                    .background(Color.appPrimary.opacity(0.12), in: Capsule())
+            }
+            .buttonStyle(PressScaleStyle())
+            .padding(.top, 18)
         }
         .padding(.horizontal, 24)
         .padding(.top, 16)

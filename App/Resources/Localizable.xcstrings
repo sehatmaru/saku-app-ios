@@ -1863,6 +1863,16 @@
         }
       }
     },
+    "Bagikan laporan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share report"
+          }
+        }
+      }
+    },
     "Bagikan teks": {
       "localizations": {
         "en": {
@@ -4339,6 +4349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Data above the limit stays safe and keeps working. Only new additions are held back."
+          }
+        }
+      }
+    },
+    "Datamu belum bisa dimuat. Periksa koneksi lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data couldn't be loaded. Check your connection and try again."
           }
         }
       }
@@ -8373,6 +8393,26 @@
         }
       }
     },
+    "Laporan PDF periode %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF report for %@"
+          }
+        }
+      }
+    },
+    "Laporan belum bisa dibuat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The report couldn't be made"
+          }
+        }
+      }
+    },
     "Laporan memakai periode terbaru yang dipilih: %@": {
       "localizations": {
         "en": {
@@ -12379,6 +12419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "All categories already have a budget."
+          }
+        }
+      }
+    },
+    "Semua nominal rupiah jadi titik-titik. Persentase dan status tetap terlihat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every rupiah amount becomes dots. Percentages and statuses stay visible."
           }
         }
       }

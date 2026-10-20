@@ -667,13 +667,13 @@ struct ExportSheet: View {
 }
 
 /// The file waiting to be shared.
-private struct ExportFile: Identifiable {
+struct ExportFile: Identifiable {
     let id = UUID()
     let urls: [URL]
 }
 
 /// The system share sheet for a file made on the device.
-private struct ExportShareSheet: UIViewControllerRepresentable {
+struct ExportShareSheet: UIViewControllerRepresentable {
     let urls: [URL]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
