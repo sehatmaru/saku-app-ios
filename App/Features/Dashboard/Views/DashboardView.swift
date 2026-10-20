@@ -113,8 +113,8 @@ struct DashboardView: View {
                 }
             }
         }
-        .onAppear { openDraftsIfRequested(); askConsentForSharedText() }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in askConsentForSharedText() }
+        .onAppear { openDraftsIfRequested(); askConsentForSharedText(); announceReferralReward() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in askConsentForSharedText(); announceReferralReward() }
         .sheet(isPresented: $showsConsent) {
             SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) {
                 showsConsent = false
@@ -137,6 +137,23 @@ struct DashboardView: View {
                     }
                 )
             }
+        }
+    }
+
+    /// A small notice when a friend's first transaction made this account's AI help grow (Fitur 2 US3). Free real
+    /// accounts only: guests take no part and Plus has unlimited help, so no promise is made to them.
+    private func announceReferralReward() {
+        guard authViewModel.currentUser?.isGuest == false, !PlusStore.shared.isPlus else { return }
+        Task {
+            guard let summary = try? await SupabaseSDK.fetchReferralSummary() else { return }
+            let format = DateFormatter(); format.locale = Locale(identifier: "en_US_POSIX"); format.dateFormat = "yyyy-MM"
+            let defaults = UserDefaults.standard
+            let result = ReferralSummary.rewardDelta(thisMonth: summary.thisMonth, monthKey: format.string(from: Date()),
+                                                     stored: defaults.string(forKey: "referralRewardSeen"))
+            defaults.set(result.stored, forKey: "referralRewardSeen")
+            guard result.newFriends > 0 else { return }
+            toastText = L("Temanmu mencatat transaksi pertama. +%lld jatah AI masuk.", result.newFriends * ReferralSummary.perFriend)
+            isToastShown = true
         }
     }
 

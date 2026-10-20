@@ -26,6 +26,11 @@ struct SetupOnboardingView: View {
     @State private var amounts: [String: Double] = [:]
     @State private var focusedCard: String?
     @FocusState private var isNameFocused: Bool
+    /// Referral code of a friend, real accounts only (Fitur 2 K6: guests take no part).
+    @State private var referralCode = ""
+    @State private var referralAccepted = false
+    @State private var referralMessage: String?
+    @State private var isCheckingCode = false
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var pickedWallets: [GuestWallet] { picked.compactMap { id in GuestWallet.all.first { $0.id == id } } }
@@ -120,7 +125,7 @@ struct SetupOnboardingView: View {
         Group {
             switch step {
             case 1:
-                PrimaryButton(title: L("Lanjut"), isEnabled: !trimmedName.isEmpty) { move(to: 2) }
+                PrimaryButton(title: L("Lanjut"), isLoading: isCheckingCode, isEnabled: !trimmedName.isEmpty) { continueFromName() }
             case 2:
                 PrimaryButton(title: picked.isEmpty ? L("Pilih minimal 1") : L("Lanjut · %lld dipilih", picked.count),
                               isEnabled: !picked.isEmpty) { move(to: 3) }
@@ -186,7 +191,7 @@ struct SetupOnboardingView: View {
                 .autocorrectionDisabled()
                 .submitLabel(.next)
                 .focused($isNameFocused)
-                .onSubmit { if !trimmedName.isEmpty { move(to: 2) } }
+                .onSubmit { if !trimmedName.isEmpty { continueFromName() } }
                 .frame(height: 60)
                 .overlay(alignment: .bottom) {
                     Rectangle().fill(Color.appPrimary).frame(height: 2)
@@ -210,10 +215,58 @@ struct SetupOnboardingView: View {
                 .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
                 .padding(.top, 32)
                 .padding(.horizontal, 24)
+            } else {
+                referralField
             }
         }
         .padding(.top, 40)
         .onAppear { isNameFocused = true }
+    }
+
+    /// "Punya kode ajak?": optional, checked when the user goes on, with a clear message if it is wrong.
+    private var referralField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Punya kode ajak dari teman? (opsional)").font(.app(14)).foregroundStyle(Color.appTextSecondary)
+            HStack {
+                TextField("", text: $referralCode, prompt: Text("Kode").foregroundStyle(Color.appTextTertiary))
+                    .font(.app(20, weight: .medium)).tracking(2)
+                    .textInputAutocapitalization(.characters).autocorrectionDisabled()
+                    .disabled(referralAccepted)
+                    .onChange(of: referralCode) { _, value in
+                        let cleaned = String(value.uppercased().filter { $0.isLetter || $0.isNumber }.prefix(6))
+                        if cleaned != value { referralCode = cleaned }
+                        referralMessage = nil
+                    }
+                if referralAccepted { Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appPrimary) }
+            }
+            .padding(.horizontal, 14).frame(height: 48)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 12))
+            if let referralMessage {
+                Text(referralMessage).font(.app(13)).foregroundStyle(Color.appError).fixedSize(horizontal: false, vertical: true)
+            } else if referralAccepted {
+                Text("Kode diterima. Temanmu dapat hadiah setelah kamu mencatat transaksi pertama.")
+                    .font(.app(13)).foregroundStyle(Color.appPrimary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.top, 28).padding(.horizontal, 24)
+    }
+
+    /// Goes to step 2; a typed code is checked first and a wrong one keeps the user here with the reason.
+    private func continueFromName() {
+        guard !isCheckingCode else { return }
+        let code = referralCode.trimmingCharacters(in: .whitespaces)
+        guard onBack == nil, !code.isEmpty, !referralAccepted else { move(to: 2); return }
+        isCheckingCode = true
+        Task {
+            defer { isCheckingCode = false }
+            do {
+                try await SupabaseSDK.redeemReferralCode(code)
+                referralAccepted = true
+                move(to: 2)
+            } catch {
+                referralMessage = ReferralFailure.message(for: error)
+            }
+        }
     }
 
     // MARK: - 2 · Wallets

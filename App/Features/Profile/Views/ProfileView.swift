@@ -86,10 +86,11 @@ struct ProfileView: View {
                         }
                     }
                     VStack(alignment: .leading, spacing: 0) {
-                        if PlusStore.isInternalBuild {
-                            // referral codes need the server; the page runs on sample data and stays out of the App Store build
+                        // guests take no part in referrals: no menu, no code (K6)
+                        if authViewModel.currentUser?.isGuest == false {
                             NavigationLink(destination: ReferralView().detailPage()) {
-                                row(icon: "person.2", title: L("Ajak teman"), subtitle: L("Dapat +5 bantuan AI per teman")) { chevron }
+                                row(icon: "person.2", title: L("Ajak teman"),
+                                    subtitle: plus.isPlus ? L("Bagikan kodemu ke teman") : L("Dapat +5 bantuan AI per teman")) { chevron }
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(RowPressStyle())

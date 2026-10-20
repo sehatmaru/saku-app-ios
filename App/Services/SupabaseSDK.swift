@@ -30,6 +30,19 @@ enum SupabaseSDK {
         try await client.rpc("set_test_plus_state", params: ["p_state": AnyJSON.string(state)]).execute()
     }
 
+    // MARK: Referral (Fitur 2)
+
+    /// The "Ajak teman" page's data: code, this month's progress and the friends.
+    static func fetchReferralSummary() async throws -> ReferralSummary {
+        let response = try await client.rpc("referral_summary").execute()
+        return try ReferralSummary.decode(response.data)
+    }
+
+    /// Uses a friend's code (a real account only, once, never its own). Throws the server's plain error code.
+    static func redeemReferralCode(_ code: String) async throws {
+        try await client.rpc("redeem_referral_code", params: ["p_code": AnyJSON.string(code)]).execute()
+    }
+
     /// The profile decides. If this device agreed but saving failed earlier, the agreement is saved now.
     static func syncSmartTrackerConsent(_ profile: UserProfile) async {
         if let stamp = profile.smartTrackerConsentAt {

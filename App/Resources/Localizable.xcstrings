@@ -953,6 +953,16 @@
         }
       }
     },
+    "%lld teman menunggu transaksi pertama. Bisa tambah +%lld lagi bulan ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld friends are waiting for their first transaction. You can add +%lld more this month."
+          }
+        }
+      }
+    },
     "%lld transaksi": {
       "localizations": {
         "en": {
@@ -1453,6 +1463,16 @@
         }
       }
     },
+    "Aku pakai Saku buat catat keuangan. Pakai kodeku %@ waktu daftar: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I use Saku to track my money. Use my code %@ when you sign up: %@"
+          }
+        }
+      }
+    },
     "Aku pakai Saku buat catat keuangan. Pakai kodeku %@ waktu daftar: saku.app/u/%@": {
       "localizations": {
         "en": {
@@ -1469,6 +1489,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your account and all data are deleted permanently, and you start over. This can't be undone."
+          }
+        }
+      }
+    },
+    "Akun tamu belum bisa memakai kode ajak.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guest accounts can't use referral codes yet."
           }
         }
       }
@@ -1499,6 +1529,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your account is scheduled to be deleted permanently on %@. Until then you can cancel it by signing in to Saku again."
+          }
+        }
+      }
+    },
+    "Akunmu sudah memakai satu kode. Satu akun hanya bisa memakai satu kode.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account already used a code. One account can use only one code."
           }
         }
       }
@@ -1863,6 +1903,26 @@
         }
       }
     },
+    "Bagikan kodemu ke teman": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share your code with friends"
+          }
+        }
+      }
+    },
+    "Bagikan kodemu ke temanmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share your code with your friends."
+          }
+        }
+      }
+    },
     "Bagikan laporan": {
       "localizations": {
         "en": {
@@ -2099,6 +2159,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel now if you change your mind: your account is active again and all your data is intact."
+          }
+        }
+      }
+    },
+    "Batas +20 bulan ini sudah tercapai. Teman tetap bisa memakai kodemu; hadiah berikutnya mulai %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month's +20 limit is reached. Friends can still use your code; rewards start again on %@."
           }
         }
       }
@@ -2623,6 +2693,16 @@
         }
       }
     },
+    "Belum ada teman yang memakai kodemu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No friends have used your code yet."
+          }
+        }
+      }
+    },
     "Belum ada transaksi": {
       "localizations": {
         "en": {
@@ -3099,6 +3179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You can show it again any time from Manage categories."
+          }
+        }
+      }
+    },
+    "Bisa tambah +%lld lagi bulan ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can add +%lld more this month."
           }
         }
       }
@@ -4469,6 +4559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "In that action, fill Source app with the bank's name. For Title, Subtitle and Body, pick the variable "
+          }
+        }
+      }
+    },
+    "Di atas batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over the limit"
           }
         }
       }
@@ -6133,6 +6233,16 @@
         }
       }
     },
+    "Halaman ini belum bisa dimuat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This page couldn't be loaded."
+          }
+        }
+      }
+    },
     "Hampir habis": {
       "localizations": {
         "en": {
@@ -7283,6 +7393,16 @@
         }
       }
     },
+    "Kamu tidak bisa memakai kodemu sendiri.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can't use your own code."
+          }
+        }
+      }
+    },
     "Kamu yang menentukan": {
       "localizations": {
         "en": {
@@ -8013,12 +8133,62 @@
         }
       }
     },
+    "Kode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code"
+          }
+        }
+      }
+    },
+    "Kode belum bisa diperiksa. Periksa koneksimu lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The code couldn't be checked. Check your connection and try again."
+          }
+        }
+      }
+    },
+    "Kode diterima. Temanmu dapat hadiah setelah kamu mencatat transaksi pertama.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code accepted. Your friend gets the reward after you record your first transaction."
+          }
+        }
+      }
+    },
+    "Kode hanya bisa dipakai oleh akun baru yang belum mencatat transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A code can only be used by a new account that hasn't recorded a transaction yet."
+          }
+        }
+      }
+    },
     "Kode kamu": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Your code"
+          }
+        }
+      }
+    },
+    "Kode tidak ditemukan. Periksa lagi atau kosongkan untuk melewati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code not found. Check it or leave it empty to skip."
           }
         }
       }
@@ -11193,6 +11363,16 @@
         }
       }
     },
+    "Punya kode ajak dari teman? (opsional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Have a code from a friend? (optional)"
+          }
+        }
+      }
+    },
     "Rab": {
       "localizations": {
         "en": {
@@ -14139,6 +14319,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Theme"
+          }
+        }
+      }
+    },
+    "Temanmu mencatat transaksi pertama. +%lld jatah AI masuk.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your friend recorded their first transaction. +%lld AI help added."
           }
         }
       }
