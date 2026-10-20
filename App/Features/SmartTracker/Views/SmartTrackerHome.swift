@@ -527,8 +527,27 @@ struct SmartButtonGated<Content: View>: View {
     }
 }
 
-extension View {
-    func hidesSmartButton() -> some View {
-        onAppear { SmartButtonGate.shared.hide() }.onDisappear { SmartButtonGate.shared.show() }
+/// One page's hold on the button. Idempotent, so releasing early (when the pop begins) and again when the page is
+/// gone does not count twice.
+@MainActor
+final class SmartButtonHold {
+    private var holding = false
+    func hold() { guard !holding else { return }; holding = true; SmartButtonGate.shared.hide() }
+    func release() { guard holding else { return }; holding = false; SmartButtonGate.shared.show() }
+}
+
+private struct HidesSmartButton: ViewModifier {
+    @State private var hold = SmartButtonHold()
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { hold.hold() }
+            .onDisappear { hold.release() }
+            // a pushed page lets go as soon as the pop begins, so the button comes back with the tab bar
+            .background(PopWatcher(onPopBegins: { hold.release() }, onPopCancelled: { hold.hold() }))
     }
+}
+
+extension View {
+    func hidesSmartButton() -> some View { modifier(HidesSmartButton()) }
 }

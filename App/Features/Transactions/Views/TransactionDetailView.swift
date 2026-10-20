@@ -88,7 +88,7 @@ struct TransactionDetailView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbar(.hidden, for: .tabBar)
+        .hidesTabBarWhilePushed()
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             // Balance adjustments have no form to edit them in.

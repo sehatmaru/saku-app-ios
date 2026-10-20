@@ -55,6 +55,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         NotificationManager.shared.registerCategories()
+        _ = UIViewController.sakuWatchesPops
         return true
     }
 }

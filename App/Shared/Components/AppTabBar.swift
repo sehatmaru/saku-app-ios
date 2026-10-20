@@ -40,7 +40,7 @@ private struct DetailPageChrome: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .toolbar(.hidden, for: .tabBar)
+            .hidesTabBarWhilePushed()
             // A pushed page is not a tab root: the Smart Tracker button belongs to the tab pages only.
             .hidesSmartButton()
             .onPreferenceChange(HidesDetailAddButton.self) { hidden in
@@ -79,6 +79,99 @@ extension View {
             background(.regularMaterial, in: Circle())
                 .shadow(color: .black.opacity(0.14), radius: 12, y: 6)
         }
+    }
+}
+
+// MARK: - Tab bar and sparkle button move with the push and the pop
+
+extension View {
+    /// Hides the tab bar while the page is pushed, and brings it back the moment the pop begins. Hiding it only
+    /// through `.toolbar(.hidden, for: .tabBar)` let the bar return after the pop had finished, about half a second
+    /// late, because SwiftUI drops that setting when the page is removed.
+    func hidesTabBarWhilePushed() -> some View { modifier(HidesTabBarWhilePushed()) }
+}
+
+private struct HidesTabBarWhilePushed: ViewModifier {
+    @State private var isPopping = false
+
+    func body(content: Content) -> some View {
+        content
+            .toolbar(isPopping ? .visible : .hidden, for: .tabBar)
+            .background(PopWatcher(onPopBegins: { isPopping = true }, onPopCancelled: { isPopping = false }))
+    }
+}
+
+extension Notification.Name {
+    /// A page in a navigation stack starts to be popped (object: its view controller).
+    static let pagePopBegins = Notification.Name("sakuPagePopBegins")
+    /// A swipe back was let go halfway and the page stays.
+    static let pagePopCancelled = Notification.Name("sakuPagePopCancelled")
+}
+
+extension UIViewController {
+    /// Installed once at launch. UIKit calls `viewWillDisappear` on a page the moment its pop begins; SwiftUI's own
+    /// `onDisappear` (and the SwiftUI side of the page) only hears about it when the pop is over.
+    static let sakuWatchesPops: Void = {
+        guard let original = class_getInstanceMethod(UIViewController.self, #selector(UIViewController.viewWillDisappear(_:))),
+              let replacement = class_getInstanceMethod(UIViewController.self, #selector(UIViewController.saku_viewWillDisappear(_:))) else { return }
+        method_exchangeImplementations(original, replacement)
+    }()
+
+    // After the exchange this name runs UIKit's own implementation.
+    @objc fileprivate func saku_viewWillDisappear(_ animated: Bool) {
+        saku_viewWillDisappear(animated)
+        guard animated, isMovingFromParent, parent is UINavigationController else { return }
+        NotificationCenter.default.post(name: .pagePopBegins, object: self)
+        transitionCoordinator?.notifyWhenInteractionChanges { [weak self] context in
+            if context.isCancelled { NotificationCenter.default.post(name: .pagePopCancelled, object: self) }
+        }
+    }
+}
+
+/// Tells when the page it sits in starts to be popped, which is when UIKit starts to bring the tab bar back.
+struct PopWatcher: UIViewControllerRepresentable {
+    let onPopBegins: () -> Void
+    let onPopCancelled: () -> Void
+
+    func makeUIViewController(context: Context) -> PopWatcherController {
+        let controller = PopWatcherController()
+        controller.onPopBegins = onPopBegins
+        controller.onPopCancelled = onPopCancelled
+        return controller
+    }
+
+    func updateUIViewController(_ controller: PopWatcherController, context: Context) {
+        controller.onPopBegins = onPopBegins
+        controller.onPopCancelled = onPopCancelled
+    }
+}
+
+final class PopWatcherController: UIViewController {
+    var onPopBegins: (() -> Void)?
+    var onPopCancelled: (() -> Void)?
+    private var tokens: [NSObjectProtocol] = []
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // the page's own controller is the one sitting directly in the navigation stack
+        var page: UIViewController = self
+        while let parent = page.parent, !(parent is UINavigationController) { page = parent }
+        guard page.parent is UINavigationController else { return }
+        tokens.forEach(NotificationCenter.default.removeObserver)
+        tokens = [
+            NotificationCenter.default.addObserver(forName: .pagePopBegins, object: page, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.onPopBegins?() }
+            },
+            NotificationCenter.default.addObserver(forName: .pagePopCancelled, object: page, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.onPopCancelled?() }
+            },
+        ]
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        tokens.forEach(NotificationCenter.default.removeObserver)
+        tokens = []
     }
 }
 
