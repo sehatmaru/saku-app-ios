@@ -20,6 +20,16 @@ final class PeriodFindingsTests: XCTestCase {
             activeDays: 25, topExpenseCategory: "Makan", hasTransactions: true))
     }
 
+    private func analysisInput(current: PeriodAnalysis.Totals? = nil, previous: [PeriodAnalysis.Totals], budgets: [ReportModel.BudgetLine] = [],
+                               isPrivate: Bool = false) -> PeriodAnalysis.Input {
+        .init(current: current ?? totals(expense: 6_600_000, ["Makan": 3_000_000]), previous: previous,
+              health: .init(monthlyIncome: [10_000_000, 10_000_000, 10_000_000], monthlyExpense: [7_000_000, 7_000_000, 7_000_000],
+                            liquidBalance: 50_000_000, creditDebt: 0, creditLimit: 0, hasCreditCard: false,
+                            budgetTotal: budgets.isEmpty ? 0 : 5_000_000, budgetSpent: 2_000_000, monthProgress: 0.5,
+                            activeDays: 25, topExpenseCategory: "Makan", hasTransactions: true),
+              budgets: budgets, charges: [], billsTotal: 0, flexibleCategories: [], isPrivate: isPrivate)
+    }
+
     // TC 29
     func testNetRatioRiseNamesThePercentagePoints() throws {
         let before = Array(repeating: totals(expense: 7_900_000), count: 3) // Net 21%
@@ -27,7 +37,7 @@ final class PeriodFindingsTests: XCTestCase {
         XCTAssertEqual(finding.group, .comparison)
         XCTAssertEqual(finding.evidence, "+13 poin")
         XCTAssertTrue(finding.body.contains("13 poin persentase"))
-        XCTAssertEqual(finding.bars.map(\.value), [34, 21])
+        XCTAssertEqual(finding.bars.map(\.text), ["34%", "21%"])
     }
 
     func testSmallShiftsAreNotFindings() {
@@ -84,10 +94,9 @@ final class PeriodFindingsTests: XCTestCase {
         XCTAssertEqual(finding.evidence, "40%")
     }
 
-    func testFindingsKeepGroupOrderAndSkipGroupsWithoutCandidates() {
-        let result = PeriodAnalysis.findings(current: totals(expense: 6_600_000, ["Makan": 3_000_000]),
-                                             previous: Array(repeating: totals(expense: 7_900_000), count: 3),
-                                             health: health(), budgets: [], charges: [], billsTotal: 0)
-        XCTAssertEqual(result.map(\.group), [.comparison, .pattern]) // the score is full: nothing holds it back
+    func testFindingsAreAlwaysThreeInGroupOrder() {
+        // The score is full, nothing moved enough and there is no subscription: every group falls back.
+        let result = PeriodAnalysis.findings(analysisInput(previous: []))
+        XCTAssertEqual(result.map(\.group), [.comparison, .holdingBack, .pattern])
     }
 }

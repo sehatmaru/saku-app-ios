@@ -5,6 +5,8 @@ import SwiftUI
 struct PdfPreviewView: View {
     let summary: PdfReport.Summary
     let periodLabel: String
+    /// The real analysis of the period: the score and the finding titles show, everything else stays hidden.
+    var result: PeriodAnalysis.Analysis? = nil
     @ObservedObject private var plus = PlusStore.shared
     @Environment(\.dismiss) private var dismiss
     @State private var paywall: PlusReason?
@@ -82,6 +84,21 @@ struct PdfPreviewView: View {
     private var analysis: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Analisis dan saran").font(.app(15, weight: .semibold))
+            if let result {
+                if let score = result.score {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("Skor kesehatan").font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                        Text("\(score.value)").font(.app(28, weight: .light)).tracking(-1)
+                        Text(score.label ?? L("Sementara")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                    }
+                }
+                ForEach(result.findings.indices, id: \.self) { index in
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(result.findings[index].kicker).font(.app(11)).foregroundStyle(Color.appTextSecondary)
+                        Text(result.findings[index].title).font(.app(14, weight: .semibold))
+                    }
+                }
+            }
             ZStack {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(["Pengeluaranmu periode ini naik dibanding periode sebelumnya, terutama di satu kategori.",

@@ -55,7 +55,8 @@ struct ShareReportSheet: View {
         .sheet(item: $sharing) { ExportShareSheet(urls: $0.urls) }
         .sheet(isPresented: $showsPreview) {
             PdfPreviewView(summary: PdfReport.summary(transactions: viewModel.transactions, categories: viewModel.categories,
-                                                      intervals: [interval]), periodLabel: periodLabel)
+                                                      intervals: [interval]), periodLabel: periodLabel,
+                           result: viewModel.reportModel(interval: interval, cycle: cycle, userName: "", isPrivate: false, isPreview: true).analysis)
         }
         .alert(L("Laporan belum bisa dibuat"), isPresented: $failed) { Button(L("Tutup"), role: .cancel) {} }
     }

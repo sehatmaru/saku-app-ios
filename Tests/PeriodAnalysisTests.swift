@@ -26,14 +26,14 @@ final class PeriodAnalysisTests: XCTestCase {
     // TC 27
     func testDeficitHeadlineIsHelpfulAndNeverSaysMenyisihkan() {
         let text = PeriodAnalysis.headline(income: 10_000_000, expense: 11_200_000)
-        XCTAssertTrue(text.hasPrefix("Net negatif -Rp1.200.000."))
+        XCTAssertTrue(text.hasPrefix("Net negatif −Rp1.200.000."))
         XCTAssertTrue(text.contains("112%"))
         XCTAssertFalse(text.lowercased().contains("menyisihkan"))
     }
 
     func testNoIncomeHeadlineHasNoPercentage() {
         let text = PeriodAnalysis.headline(income: 0, expense: 500_000)
-        XCTAssertEqual(text, "Net negatif -Rp500.000. Belum ada pemasukan tercatat di periode ini.")
+        XCTAssertEqual(text, "Net negatif −Rp500.000. Belum ada pemasukan tercatat di periode ini.")
     }
 
     func testBalancedPeriod() {

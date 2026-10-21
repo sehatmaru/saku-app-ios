@@ -427,7 +427,8 @@ struct ExportSheet: View {
         .sheet(item: $sharing) { ExportShareSheet(urls: $0.urls) }
         .sheet(isPresented: $showsPdfPreview) {
             PdfPreviewView(summary: PdfReport.summary(transactions: viewModel.transactions, categories: viewModel.categories,
-                                                      intervals: selectedIntervals), periodLabel: periodLabel)
+                                                      intervals: selectedIntervals), periodLabel: periodLabel,
+                           result: viewModel.reportModel(interval: reportPeriod, cycle: cycle, userName: "", isPrivate: false, isPreview: true).analysis)
         }
         .alert(L("Gagal membuat file. Coba lagi."), isPresented: $showsFailure) {
             Button(L("Tutup"), role: .cancel) {}

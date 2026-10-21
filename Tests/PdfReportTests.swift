@@ -56,7 +56,7 @@ final class PdfReportTests: XCTestCase {
         XCTAssertTrue(positive.hasPrefix("Net positif +Rp6.000.000"), positive)
         XCTAssertTrue(positive.contains("60%"), "saving rate: net / income")
         let deficit = model([txn("a", .income, 1_000_000), txn("b", .expense, 2_100_000)]).headline.map(\.text).joined()
-        XCTAssertEqual(deficit, "Pengeluaran melebihi pemasukan Rp1.100.000.")
+        XCTAssertEqual(deficit, "Net negatif −Rp1.100.000. Pengeluaran periode ini 210% dari pemasukan. Yuk cari pos yang bisa ditekan.")
         XCTAssertTrue(model([]).headline.map(\.text).joined().hasPrefix("Belum ada"))
     }
 

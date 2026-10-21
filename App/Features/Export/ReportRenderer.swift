@@ -3,8 +3,9 @@ import UIKit
 
 /// Draws the PDF report of design "Laporan Keuangan v3" (Fitur 8 US3): A4 portrait, 595 × 842 pt, margins 36 / 34.5 pt,
 /// every size taken from the design's SwiftUI specification (px × 0.75). Page 1 never changes layout; page 2 only
-/// carries the full budget and wallet tables when page 1 had to cut them. The analysis and the three suggestions are
-/// not drawn yet: they come with Analisis Periode (Fitur 7).
+/// carries the full budget and wallet tables when page 1 had to cut them. The analysis and the three suggestions
+/// (Fitur 7) are always three of each and never run onto page 2; in the free preview their detail is left out of the
+/// file entirely (drawn as bars), so it cannot be copied.
 @MainActor
 enum ReportRenderer {
     // MARK: Page and palette
@@ -23,6 +24,8 @@ enum ReportRenderer {
     private static let warningText = color(0xA8520A), dangerText = color(0xC22F2F)
     private static let warningBar = color(0xC4610A), dangerBar = color(0xD93636)
     private static let investment = color(0x946200), tagLine = color(0xD2D2D7)
+    private static let stripFill = color(0xFAFAFB), scoreTint = color(0xBFE3D1), compareBar = color(0xA1A1A6)
+    private static let skeleton = color(0xE5E5EA)
     private static let palette = [color(0x16875A), color(0x1A1F71), color(0xD9A93A), color(0x472B91), color(0xA1A1A6)]
 
     // MARK: Entry
@@ -48,6 +51,9 @@ enum ReportRenderer {
         y = periodLine(model, y: y)
         y += 4.5
         y = headline(model, y: y)
+        y += 12
+
+        y = analysisBlock(model, y: y)
         y += 12
 
         y = section(L("Data pendukung"), caption: model.showsWallets ? L("Saldo per %@", shortDate(model.createdAt)) : nil, y: y)
@@ -319,15 +325,245 @@ enum ReportRenderer {
         }
     }
 
+    // MARK: Analysis and suggestions (Fitur 7)
+
+    private static func tone(_ tone: ReportModel.Tone) -> UIColor {
+        switch tone {
+        case .neutral: ink
+        case .positive: green
+        case .warning: warningText
+        case .danger: dangerText
+        }
+    }
+
+    private static func barTone(_ tone: ReportModel.Tone) -> UIColor {
+        switch tone {
+        case .neutral, .positive: green
+        case .warning: warningBar
+        case .danger: dangerBar
+        }
+    }
+
+    /// A section title the size the analysis uses (the supporting data uses a smaller one).
+    private static func analysisHeader(_ title: String, caption: String, y: CGFloat) -> CGFloat {
+        fill(rule, CGRect(x: marginX, y: y, width: width, height: 0.75))
+        let top = y + 7.5
+        text(title, font: .systemFont(ofSize: 11.25, weight: .semibold), color: ink, x: marginX, y: top, width: 300, kern: -0.15)
+        let font = UIFont.systemFont(ofSize: 8.25)
+        text(caption, font: font, color: secondary, x: marginX + width - textWidth(caption, font: font), y: top + 2.5, width: 300)
+        return top + 15
+    }
+
+    /// Widths of each laid-out line, so hidden text can be drawn as bars of the same size and never as text.
+    private static func lineWidths(_ string: NSAttributedString, width w: CGFloat) -> [CGFloat] {
+        let storage = NSTextStorage(attributedString: string)
+        let container = NSTextContainer(size: CGSize(width: w, height: .greatestFiniteMagnitude))
+        container.lineFragmentPadding = 0
+        let layout = NSLayoutManager()
+        layout.addTextContainer(container)
+        storage.addLayoutManager(layout)
+        var widths: [CGFloat] = []
+        layout.enumerateLineFragments(forGlyphRange: layout.glyphRange(for: container)) { _, used, _, _, _ in widths.append(ceil(used.width)) }
+        return widths
+    }
+
+    private static func attributed(_ string: String, font: UIFont, color: UIColor, lineHeight: CGFloat, highlights: [String] = [],
+                                   highlight: UIFont? = nil) -> NSAttributedString {
+        let style = NSMutableParagraphStyle()
+        style.minimumLineHeight = lineHeight; style.maximumLineHeight = lineHeight
+        let result = NSMutableAttributedString(string: string, attributes: [.font: font, .foregroundColor: color, .paragraphStyle: style])
+        for token in highlights where !token.isEmpty {
+            var range = NSRange(location: 0, length: result.length)
+            while let found = (result.string as NSString).range(of: token, options: [], range: range) as NSRange?, found.location != NSNotFound {
+                result.addAttribute(.font, value: highlight ?? font, range: found)
+                let next = found.location + found.length
+                range = NSRange(location: next, length: result.length - next)
+            }
+        }
+        return result
+    }
+
+    /// Draws `string` in at most `maxLines` lines, or hidden as bars (free preview). Returns the bottom.
+    @discardableResult
+    private static func block(_ string: NSAttributedString, x: CGFloat, y: CGFloat, width w: CGFloat, lineHeight: CGFloat,
+                              maxLines: Int, hidden: Bool, align: NSTextAlignment = .left) -> CGFloat {
+        let widths = lineWidths(string, width: w)
+        let shown = min(widths.count, maxLines)
+        if hidden {
+            skeleton.setFill()
+            for index in 0..<shown {
+                UIBezierPath(roundedRect: CGRect(x: x, y: y + CGFloat(index) * lineHeight + lineHeight * 0.2,
+                                                 width: max(8, widths[index]), height: lineHeight * 0.6), cornerRadius: lineHeight * 0.3).fill()
+            }
+        } else {
+            string.draw(with: CGRect(x: x, y: y, width: w, height: lineHeight * CGFloat(shown)),
+                        options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], context: nil)
+        }
+        return y + lineHeight * CGFloat(shown)
+    }
+
+    /// The long text, or the short one when the long one runs past `maxLines`: the font is never made smaller.
+    private static func fitted(_ long: String, _ short: String, font: UIFont, color: UIColor, lineHeight: CGFloat, width w: CGFloat,
+                               maxLines: Int, highlights: [String] = [], highlight: UIFont? = nil) -> NSAttributedString {
+        let first = attributed(long, font: font, color: color, lineHeight: lineHeight, highlights: highlights, highlight: highlight)
+        if lineWidths(first, width: w).count <= maxLines { return first }
+        return attributed(short, font: font, color: color, lineHeight: lineHeight, highlights: highlights, highlight: highlight)
+    }
+
+    private static func analysisBlock(_ model: ReportModel, y: CGFloat) -> CGFloat {
+        var y = analysisHeader(L("Analisis"), caption: L("Analisis otomatis dari catatanmu"), y: y)
+        guard let analysis = model.analysis else {
+            return text(PeriodAnalysis.noDataMessage, font: .systemFont(ofSize: 9), color: body, x: marginX, y: y + 4.5, width: width)
+        }
+        let hidden = model.hidesAnalysisDetail
+        if let note = analysis.note {
+            y = draw(attributed(note, font: .systemFont(ofSize: 8.25), color: body, lineHeight: 11.5), x: marginX, y: y + 2.25, width: width)
+        }
+        if let score = analysis.score { y = scoreStrip(score, y: y + 7.5, hidden: hidden) }
+        y += 10.5
+        let gap: CGFloat = 21
+        let columnWidth = (width - gap * 2) / 3
+        var bottom = y
+        for (index, finding) in analysis.findings.enumerated() {
+            bottom = max(bottom, findingColumn(finding, x: marginX + CGFloat(index) * (columnWidth + gap), y: y, width: columnWidth, hidden: hidden))
+        }
+        y = bottom + 12
+        return adviceBlock(analysis.suggestions, y: y, hidden: hidden)
+    }
+
+    private static func scoreStrip(_ score: PeriodAnalysis.Analysis.Score, y: CGFloat, hidden: Bool) -> CGFloat {
+        let height: CGFloat = 44
+        stripFill.setFill()
+        UIBezierPath(roundedRect: CGRect(x: marginX, y: y, width: width, height: height), cornerRadius: 9).fill()
+        let (textColor, barColor): (UIColor, UIColor) = score.value >= 60 ? (green, green) : score.value >= 40 ? (warningText, warningBar) : (dangerText, dangerBar)
+        let small = UIFont.systemFont(ofSize: 8.25)
+        text(L("Skor kesehatan"), font: small, color: secondary, x: marginX + 12, y: y + 8, width: 120)
+        text("\(score.value)", font: .systemFont(ofSize: 25.5, weight: .light), color: ink, x: marginX + 12, y: y + 14, width: 60, kern: -1)
+        let scoreWidth = textWidth("\(score.value)", font: .systemFont(ofSize: 25.5, weight: .light))
+        if hidden {
+            skeleton.setFill()
+            UIBezierPath(roundedRect: CGRect(x: marginX + 12 + scoreWidth + 14, y: y + 22, width: 40, height: 10), cornerRadius: 5).fill()
+        } else {
+            text("→", font: small, color: secondary, x: marginX + 12 + scoreWidth + 5, y: y + 24, width: 14)
+            text("±\(score.projected)", font: .systemFont(ofSize: 16.5, weight: .light), color: textColor,
+                 x: marginX + 12 + scoreWidth + 18, y: y + 20, width: 60, kern: -0.6)
+        }
+        let barX = marginX + 12 + 170, barWidth = width - 24 - 170
+        rule.setFill()
+        UIBezierPath(roundedRect: CGRect(x: barX, y: y + 11, width: barWidth, height: 4.5), cornerRadius: 2.25).fill()
+        if !hidden {
+            scoreTint.setFill()
+            UIBezierPath(roundedRect: CGRect(x: barX, y: y + 11, width: barWidth * CGFloat(min(score.projected, 100)) / 100, height: 4.5), cornerRadius: 2.25).fill()
+        }
+        barColor.setFill()
+        UIBezierPath(roundedRect: CGRect(x: barX, y: y + 11, width: barWidth * CGFloat(min(score.value, 100)) / 100, height: 4.5), cornerRadius: 2.25).fill()
+        let caption = L("Menjadi sekitar %lld jika ketiga saran diterapkan", score.projected)
+        let label = score.label ?? L("Sementara")
+        text(label, font: .systemFont(ofSize: 8.25, weight: .semibold), color: textColor, x: barX, y: y + 22, width: barWidth / 2)
+        if hidden {
+            let w = textWidth(caption, font: small)
+            skeleton.setFill()
+            UIBezierPath(roundedRect: CGRect(x: barX + barWidth - w, y: y + 24, width: w, height: 6), cornerRadius: 3).fill()
+        } else {
+            text(caption, font: small, color: body, x: barX + barWidth - textWidth(caption, font: small), y: y + 22, width: barWidth)
+        }
+        return y + height
+    }
+
+    private static func findingColumn(_ finding: PeriodAnalysis.Finding, x: CGFloat, y: CGFloat, width w: CGFloat, hidden: Bool) -> CGFloat {
+        var y = y
+        y = text(finding.kicker, font: .systemFont(ofSize: 8.25), color: secondary, x: x, y: y, width: w)
+        y += 3
+        let evidenceFont = UIFont.systemFont(ofSize: 18, weight: .light)
+        if hidden {
+            skeleton.setFill()
+            UIBezierPath(roundedRect: CGRect(x: x, y: y + 3, width: min(w * 0.55, 70), height: 14), cornerRadius: 7).fill()
+            y += 20
+        } else {
+            y = text(finding.evidence, font: evidenceFont, color: tone(finding.tone), x: x, y: y, width: w, kern: -0.6)
+        }
+        y += 1.5
+        y = block(attributed(finding.caption, font: .systemFont(ofSize: 7.9), color: secondary, lineHeight: 10), x: x, y: y, width: w,
+                  lineHeight: 10, maxLines: 2, hidden: hidden)
+        y += 6
+        for (index, bar) in finding.bars.enumerated() {
+            let font = UIFont.systemFont(ofSize: 7.5)
+            if hidden {
+                skeleton.setFill()
+                UIBezierPath(roundedRect: CGRect(x: x, y: y + 2, width: min(w * 0.4, textWidth(bar.label, font: font)), height: 6), cornerRadius: 3).fill()
+                UIBezierPath(roundedRect: CGRect(x: x + w - 24, y: y + 2, width: 24, height: 6), cornerRadius: 3).fill()
+            } else {
+                text(bar.label, font: font, color: secondary, x: x, y: y, width: w * 0.62)
+                text(bar.text, font: font, color: secondary, x: x + w * 0.4, y: y, width: w * 0.6, align: .right)
+            }
+            y += 10
+            rowRule.setFill()
+            UIBezierPath(roundedRect: CGRect(x: x, y: y, width: w, height: 3), cornerRadius: 1.5).fill()
+            if !hidden {
+                (index == 0 ? barTone(finding.tone) : compareBar).setFill()
+                UIBezierPath(roundedRect: CGRect(x: x, y: y, width: max(2, w * CGFloat(bar.fraction)), height: 3), cornerRadius: 1.5).fill()
+            }
+            y += 3 + 4
+        }
+        y += 4
+        let title = fitted(finding.title, finding.title, font: .systemFont(ofSize: 11.25, weight: .semibold), color: ink,
+                           lineHeight: 14.6, width: w, maxLines: 2)
+        y = block(title, x: x, y: y, width: w, lineHeight: 14.6, maxLines: 2, hidden: false)
+        y += 3
+        let bodyText = fitted(finding.body, finding.shortBody, font: .systemFont(ofSize: 9), color: body, lineHeight: 13.5, width: w,
+                              maxLines: 4, highlights: finding.highlights, highlight: .systemFont(ofSize: 9, weight: .semibold))
+        return block(bodyText, x: x, y: y, width: w, lineHeight: 13.5, maxLines: 4, hidden: hidden)
+    }
+
+    private static func adviceBlock(_ suggestions: [PeriodAnalysis.Suggestion], y: CGFloat, hidden: Bool) -> CGFloat {
+        var y = analysisHeader(L("Saran"), caption: L("Perkiraan dampak untuk periode berikutnya"), y: y)
+        y += 3
+        let numberWidth: CGFloat = 21, impactWidth: CGFloat = 105, scoreWidth: CGFloat = 42, gap: CGFloat = 10.5
+        let textWidthAvailable = width - numberWidth - impactWidth - scoreWidth - gap * 3
+        let textX = marginX + numberWidth + gap
+        for (index, suggestion) in suggestions.enumerated() {
+            let top = y + 3.75
+            text("\(index + 1)", font: .systemFont(ofSize: 15, weight: .light), color: green, x: marginX, y: top, width: numberWidth)
+            let action = fitted(suggestion.action, suggestion.shortAction, font: .systemFont(ofSize: 10.1, weight: .semibold), color: ink,
+                                lineHeight: 13.6, width: textWidthAvailable, maxLines: 2)
+            var bottom = block(action, x: textX, y: top, width: textWidthAvailable, lineHeight: 13.6, maxLines: 2, hidden: hidden)
+            let reason = fitted(suggestion.reason, suggestion.shortReason, font: .systemFont(ofSize: 8.6), color: secondary,
+                                lineHeight: 12.5, width: textWidthAvailable, maxLines: 2)
+            bottom = block(reason, x: textX, y: bottom + 1.5, width: textWidthAvailable, lineHeight: 12.5, maxLines: 2, hidden: hidden)
+            let impactX = textX + textWidthAvailable + gap
+            if !suggestion.impact.isEmpty {
+                let font = UIFont.systemFont(ofSize: 9.4, weight: .semibold)
+                if hidden {
+                    skeleton.setFill()
+                    UIBezierPath(roundedRect: CGRect(x: impactX + impactWidth - 52, y: top + 3, width: 52, height: 7), cornerRadius: 3.5).fill()
+                } else {
+                    text(suggestion.impact, font: font, color: green, x: impactX + impactWidth - textWidth(suggestion.impact, font: font),
+                         y: top + 1, width: impactWidth)
+                }
+            }
+            if suggestion.scoreImpact >= 1, !hidden {
+                let label = L("+%lld skor", suggestion.scoreImpact), font = UIFont.systemFont(ofSize: 8.25)
+                text(label, font: font, color: secondary, x: impactX + impactWidth + gap + scoreWidth - textWidth(label, font: font), y: top + 1.5, width: scoreWidth)
+            }
+            y = bottom + 3.75
+            fill(rowRule, CGRect(x: marginX, y: y, width: width, height: 0.75))
+        }
+        return y
+    }
+
     // MARK: Footnote and footer
 
     private static func footnote(_ model: ReportModel) {
         let font = UIFont.systemFont(ofSize: 7.5)
         let string = NSAttributedString(string: model.footnote, attributes: [.font: font, .foregroundColor: secondary])
-        let height = ceil(string.boundingRect(with: CGSize(width: width, height: .greatestFiniteMagnitude),
-                                              options: .usesLineFragmentOrigin, context: nil).height)
+        let disclaimer = NSAttributedString(string: PeriodAnalysis.disclaimer, attributes: [.font: font, .foregroundColor: body])
+        func height(_ text: NSAttributedString) -> CGFloat {
+            ceil(text.boundingRect(with: CGSize(width: width, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin, context: nil).height)
+        }
         let footerTop = page.height - marginY - 7.5 - 6.75 - 11
-        draw(string, x: marginX, y: footerTop - 7.5 - height, width: width, lineHeight: 11.25)
+        let disclaimerTop = footerTop - 7.5 - height(disclaimer)
+        draw(disclaimer, x: marginX, y: disclaimerTop, width: width, lineHeight: 11.25)
+        draw(string, x: marginX, y: disclaimerTop - 3 - height(string), width: width, lineHeight: 11.25)
     }
 
     private static func footer(page number: Int, of count: Int) {
