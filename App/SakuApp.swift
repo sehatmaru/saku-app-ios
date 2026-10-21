@@ -50,9 +50,7 @@ struct RootView: View {
     var body: some View {
         ZStack {
             if authViewModel.showSplash {
-                SplashView {
-                    Task { await authViewModel.checkSession() }
-                }
+                SplashView { authViewModel.splashAnimationFinished() }
                 .transition(.opacity)
             } else if let date = authViewModel.pendingDeletion {
                 PendingDeletionView(date: date, authViewModel: authViewModel)
@@ -78,6 +76,7 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.4), value: hasSeenOnboarding)
         .animation(.easeInOut(duration: 0.4), value: authViewModel.needsSetup)
         .animation(.easeInOut(duration: 0.4), value: authViewModel.pendingDeletion)
+        .task { await authViewModel.checkSession() }
         .preferredColorScheme(appTheme.colorScheme)
         .environment(\.locale, AppLanguage.locale)
         .id(appLanguage)

@@ -50,9 +50,30 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Session Check (called after splash)
+    // MARK: - Session Check (runs while the splash animates)
+
+    private var sessionCheckStarted = false
+    private var sessionChecked = false
+    private var splashAnimationDone = false
+
+    /// The splash leaves once both its animation and the session check are done, so the two overlap
+    /// instead of adding up.
+    private func dismissSplashIfReady() {
+        guard sessionChecked, splashAnimationDone else { return }
+        withAnimation(.easeInOut(duration: 0.5)) {
+            showSplash = false
+        }
+    }
+
+    func splashAnimationFinished() {
+        splashAnimationDone = true
+        dismissSplashIfReady()
+    }
 
     func checkSession() async {
+        // RootView's .task can run again (e.g. language change re-creates the view): check only once.
+        guard !sessionCheckStarted else { return }
+        sessionCheckStarted = true
         do {
             let session = try await SupabaseSDK.client.auth.session
             try await fetchProfileAndSetUser(authUserId: session.user.id, email: session.user.email ?? "", displayName: session.user.userMetadata["full_name"]?.stringValue ?? session.user.userMetadata["name"]?.stringValue)
@@ -61,9 +82,8 @@ final class AuthViewModel: ObservableObject {
         } catch {
             isAuthenticated = false
         }
-        withAnimation(.easeInOut(duration: 0.5)) {
-            showSplash = false
-        }
+        sessionChecked = true
+        dismissSplashIfReady()
     }
 
     /// Turns an auth user into the app's user: profile, avatar, deletion state, and whether setup is needed.

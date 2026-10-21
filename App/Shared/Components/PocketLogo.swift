@@ -68,6 +68,8 @@ struct PocketLogo: View {
     var isFanned: Bool?
     var stagger = 0.12
     var duration = 0.9
+    /// Curve of the card motion for a given duration; the splash passes a springy one.
+    var motion: (Double) -> Animation = { .settle($0) }
     var pocketColor: Color = .white
     /// Plain cards and pocket without chip, stripe, stitching or shadow, for small sizes.
     var isPlain = false
@@ -90,9 +92,9 @@ struct PocketLogo: View {
                             .frame(width: c.width * s, height: 90 * s)
                             .rotationEffect(.degrees(fanned ? c.angle : 0), anchor: .bottom)
                             .offset(x: fanned ? c.x * s : 0)
-                            .animation(.settle(duration * 0.9), value: fanned)
+                            .animation(motion(duration * 0.9), value: fanned)
                             .offset(y: (c.top + (isOpen ? 0 : 84)) * s)
-                            .animation(.settle(duration).delay(Double(i) * stagger), value: isOpen)
+                            .animation(motion(duration).delay(Double(i) * stagger), value: isOpen)
                     }
                 }
                 .frame(width: 180 * s, height: 180 * s, alignment: .top)
