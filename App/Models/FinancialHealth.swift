@@ -98,8 +98,8 @@ struct FinancialHealth {
         if isProvisional { return nil }
         return switch score {
         case 80...: L("Sehat")
-        case 60..<80: L("Cukup")
-        case 40..<60: L("Kurang")
+        case 60..<80: L("Cukup sehat")
+        case 40..<60: L("Perlu perhatian")
         default: L("Perlu perbaikan")
         }
     }

@@ -211,6 +211,16 @@
         }
       }
     },
+    "%@ dibanding rata-rata 3 periode %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ versus a 3-period average of %@."
+          }
+        }
+      }
+    },
     "%@ dilewati karena belum lengkap. Tetap ada di sini untuk dicek.": {
       "localizations": {
         "en": {
@@ -281,12 +291,72 @@
         }
       }
     },
+    "%@ melewati budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is over budget"
+          }
+        }
+      }
+    },
+    "%@ melewati budget, %@ di atas %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is over budget, %@ above %@."
+          }
+        }
+      }
+    },
+    "%@ melonjak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ jumped"
+          }
+        }
+      }
+    },
+    "%@ memakai %lld%% pengeluaranmu periode ini, sebesar %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ takes %lld%% of your spending this period, %@."
+          }
+        }
+      }
+    },
     "%@ paling menahan skormu. Perbaiki itu dulu untuk menambah hingga %lld poin.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ is holding your score back most. Fix that first to gain up to %lld points."
+          }
+        }
+      }
+    },
+    "%@ periode ini %@, %@ %lld%% dari rata-rata 3 periode sebelumnya (%@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ this period is %@, %@ %lld%% from the previous 3-period average (%@)."
+          }
+        }
+      }
+    },
+    "%@ pos terbesar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is the biggest item"
           }
         }
       }
@@ -873,6 +943,16 @@
         }
       }
     },
+    "%lld langganan streaming berjumlah %@, %lld%% dari Tagihan & Langganan %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld streaming subscriptions add up to %@, %lld%% of Bills & Subscriptions %@."
+          }
+        }
+      }
+    },
     "%lld periode": {
       "localizations": {
         "en": {
@@ -909,6 +989,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld percent"
+          }
+        }
+      }
+    },
+    "%lld poin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld points"
           }
         }
       }
@@ -1019,6 +1109,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld incomplete ones go to Confirm transactions"
+          }
+        }
+      }
+    },
+    "%lld%% dari Tagihan & Langganan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% of Bills & Subscriptions"
           }
         }
       }
@@ -4173,6 +4273,16 @@
         }
       }
     },
+    "Cukup sehat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fairly healthy"
+          }
+        }
+      }
+    },
     "Dampak ke budget": {
       "localizations": {
         "en": {
@@ -4649,6 +4759,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Shared"
+          }
+        }
+      }
+    },
+    "Dibanding 3 periode sebelumnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versus the previous 3 periods"
           }
         }
       }
@@ -8383,6 +8503,16 @@
         }
       }
     },
+    "Langganan streaming menumpuk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streaming subscriptions are piling up"
+          }
+        }
+      }
+    },
     "Langganan · Saku Plus": {
       "localizations": {
         "en": {
@@ -10543,6 +10673,16 @@
         }
       }
     },
+    "Pengeluaran %@ naik %lld%% dibanding rata-rata 3 periode sebelumnya, dari %@ menjadi %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ spending is up %lld%% against the previous 3-period average, from %@ to %@."
+          }
+        }
+      }
+    },
     "Pengeluaran bulan ini": {
       "localizations": {
         "en": {
@@ -10973,6 +11113,16 @@
         }
       }
     },
+    "Perlu perhatian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs attention"
+          }
+        }
+      }
+    },
     "Perlu tindakan": {
       "localizations": {
         "en": {
@@ -11353,6 +11503,36 @@
         }
       }
     },
+    "Poin didapat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Points earned"
+          }
+        }
+      }
+    },
+    "Poin penuh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full points"
+          }
+        }
+      }
+    },
+    "Pola pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending pattern"
+          }
+        }
+      }
+    },
     "Pratinjau": {
       "localizations": {
         "en": {
@@ -11499,6 +11679,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Last 3 months average Rp%@"
+          }
+        }
+      }
+    },
+    "Rata-rata 3 periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3-period average"
           }
         }
       }
@@ -13283,6 +13473,56 @@
         }
       }
     },
+    "Sisa periode %lld%% dari pemasukan, rata-rata 3 periode %lld%%.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's left is %lld%% of income, 3-period average %lld%%."
+          }
+        }
+      }
+    },
+    "Sisa periode ini naik %lld poin persentase, dari rata-rata %lld%% menjadi %lld%% dari pemasukan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's left this period is up %lld percentage points, from an average of %lld%% to %lld%% of income."
+          }
+        }
+      }
+    },
+    "Sisa periode ini turun %lld poin persentase, dari rata-rata %lld%% menjadi %lld%% dari pemasukan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's left this period is down %lld percentage points, from an average of %lld%% to %lld%% of income."
+          }
+        }
+      }
+    },
+    "Sisa periode naik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's left is up"
+          }
+        }
+      }
+    },
+    "Sisa periode turun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's left is down"
+          }
+        }
+      }
+    },
     "Sisa tagihan": {
       "localizations": {
         "en": {
@@ -13439,6 +13679,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Status"
+          }
+        }
+      }
+    },
+    "Streaming": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streaming"
           }
         }
       }
@@ -13689,6 +13939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Statement %@ · pay by %@"
+          }
+        }
+      }
+    },
+    "Tagihan & Langganan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bills & Subscriptions"
           }
         }
       }
@@ -14619,6 +14879,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ used"
+          }
+        }
+      }
+    },
+    "Terpakai %@ dari budget %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ spent of a %@ budget."
           }
         }
       }
@@ -16125,6 +16395,16 @@
         }
       }
     },
+    "Yang menahan skor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What holds your score back"
+          }
+        }
+      }
+    },
     "Yang terbuka": {
       "localizations": {
         "en": {
@@ -16405,6 +16685,16 @@
         }
       }
     },
+    "naik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "up"
+          }
+        }
+      }
+    },
     "nominal": {
       "localizations": {
         "en": {
@@ -16611,6 +16901,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "transactions"
+          }
+        }
+      }
+    },
+    "turun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "down"
           }
         }
       }
