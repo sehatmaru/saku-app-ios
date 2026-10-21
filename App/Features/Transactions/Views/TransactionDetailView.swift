@@ -68,8 +68,11 @@ struct TransactionDetailView: View {
                     }
                     .padding(.top, 12)
                     .padding(.bottom, 96)
+                    // exactly as wide as the screen: a long note or amount can no longer make the detail scroll sideways
+                    .containerRelativeFrame(.horizontal)
                 }
                 .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             }
             .opacity(isDeleted ? 0.3 : 1)
             .allowsHitTesting(!isDeleted)
