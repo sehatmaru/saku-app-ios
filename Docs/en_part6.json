@@ -1005,5 +1005,9 @@
   "Kode hanya bisa dipakai sekali, oleh akun baru yang belum mencatat transaksi.": "A code can be used once, by a new account that hasn't recorded a transaction yet.",
   "Pakai kode": "Use code",
   "Cek": "Check",
-  "Kode valid. Dipakai saat kamu menekan Lanjut.": "Code is valid. It is used when you tap Continue."
+  "Kode valid. Dipakai saat kamu menekan Lanjut.": "Code is valid. It is used when you tap Continue.",
+"Net seimbang. Pemasukan dan pengeluaran periode ini sama besar.": "Net is even. Income and spending were equal this period.",
+"Net negatif -%@. Belum ada pemasukan tercatat di periode ini.": "Net negative -%@. No income recorded this period.",
+"Net positif +%@. Sisa periode ini %lld%% dari pemasukan.": "Net positive +%@. What's left this period is %lld%% of income.",
+"Net negatif -%@. Pengeluaran periode ini %lld%% dari pemasukan. Yuk cari pos yang bisa ditekan.": "Net negative -%@. Spending this period is %lld%% of income. Let's find what can be trimmed."
 }

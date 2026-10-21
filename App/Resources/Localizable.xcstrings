@@ -9843,12 +9843,52 @@
         }
       }
     },
+    "Net negatif -%@. Belum ada pemasukan tercatat di periode ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net negative -%@. No income recorded this period."
+          }
+        }
+      }
+    },
+    "Net negatif -%@. Pengeluaran periode ini %lld%% dari pemasukan. Yuk cari pos yang bisa ditekan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net negative -%@. Spending this period is %lld%% of income. Let's find what can be trimmed."
+          }
+        }
+      }
+    },
     "Net positif ": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Net positive "
+          }
+        }
+      }
+    },
+    "Net positif +%@. Sisa periode ini %lld%% dari pemasukan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net positive +%@. What's left this period is %lld%% of income."
+          }
+        }
+      }
+    },
+    "Net seimbang. Pemasukan dan pengeluaran periode ini sama besar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net is even. Income and spending were equal this period."
           }
         }
       }
