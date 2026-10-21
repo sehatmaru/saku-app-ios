@@ -3,6 +3,9 @@ import SwiftUI
 /// Statistik (Enhancement 1, Epic 8): the whole payday period on one page, free for everyone. It replaces the old
 /// Analitik page and follows the "Beranda" privacy switch. All figures are worked out on the device by `PeriodStatistics`.
 struct StatistikView: View {
+    /// "Buat budget": the Budget tab, with this page closed behind it.
+    var onOpenBudget: () -> Void = {}
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var data = ExportViewModel()
     @AppStorage("isBalanceVisible") private var isVisible = true
@@ -41,7 +44,8 @@ struct StatistikView: View {
                     StatistikPage(result: result, isVisible: isVisible, canGoBack: canGoBack, canGoForward: offset < 0,
                                   onBack: { withAnimation(.smooth) { offset -= 1 } },
                                   onForward: { withAnimation(.smooth) { offset += 1 } },
-                                  onAdd: { showsAdd = true })
+                                  onAdd: { showsAdd = true },
+                                  onOpenBudget: { onOpenBudget(); dismiss() })
                         .id(offset)
                 }
                 .scrollIndicators(.hidden)
@@ -94,6 +98,7 @@ struct StatistikPage: View {
     var onBack: () -> Void = {}
     var onForward: () -> Void = {}
     var onAdd: () -> Void = {}
+    var onOpenBudget: () -> Void = {}
     @State private var appeared = false
 
     // Layout A of the design ("padat").
@@ -581,7 +586,13 @@ struct StatistikPage: View {
                     }
                 }
             } else {
-                emptyLine(L("Belum ada budget aktif. Atur batas per kategori di tab Budget supaya pengeluaranmu terpantau."))
+                VStack(alignment: .leading, spacing: 10) {
+                    emptyLine(L("Belum ada budget aktif. Atur batas per kategori supaya pengeluaranmu terpantau."))
+                    Button(action: onOpenBudget) {
+                        Text("Buat budget").font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                            .padding(.horizontal, 22).frame(height: 40).background(Color.appPrimary.opacity(0.12), in: Capsule())
+                    }
+                }
             }
         }
     }

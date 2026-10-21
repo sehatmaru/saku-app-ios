@@ -2823,12 +2823,12 @@
         }
       }
     },
-    "Belum ada budget aktif. Atur batas per kategori di tab Budget supaya pengeluaranmu terpantau.": {
+    "Belum ada budget aktif. Atur batas per kategori supaya pengeluaranmu terpantau.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No active budget. Set a limit per category in the Budget tab to keep your spending in check."
+            "value": "No active budget. Set a limit per category to keep your spending in check."
           }
         }
       }

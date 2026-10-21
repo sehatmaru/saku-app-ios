@@ -124,9 +124,33 @@ final class PeriodStatisticsTests: XCTestCase {
         XCTAssertEqual(r.calendar.peakAmount, 1_500_000)
         XCTAssertEqual(r.calendar.peakDate, calendar.startOfDay(for: date(2026, 10, 2)))
         XCTAssertEqual(r.calendar.zeroDays, 27 - 4, "27 days passed, spending on 4 of them")
-        XCTAssertEqual(r.calendar.days[0].level, 2, "500k of a 1,5jt peak is a third: under 35% is level 2")
+        // spending days: 200k, 300k, 500k, 1,5jt -> quartiles 200k / 300k / 500k
+        XCTAssertEqual(r.calendar.days[0].level, 3, "500k")
         XCTAssertEqual(r.calendar.days[7].level, 4, "the peak day")
+        XCTAssertEqual(r.calendar.days[10].level, 2, "300k")
+        XCTAssertEqual(r.calendar.days[11].level, 1, "200k")
+        XCTAssertEqual(r.calendar.days[1].level, 0, "a day without spending")
         XCTAssertNil(r.calendar.days[29].amount, "days to come have no amount")
+    }
+
+    /// One huge day must not flatten the others into the palest shade (reported on a real account: 4jt against 100-300k).
+    func testAnOutlierDoesNotMakeEveryOtherDayLookTheSame() {
+        var f = fixture()
+        f.transactions = [txn(.income, 12_000_000, "gaji", date(2026, 9, 25))]
+        let amounts: [Double] = [100_000, 150_000, 200_000, 250_000, 300_000, 120_000, 180_000, 4_000_000]
+        for (offset, amount) in amounts.enumerated() {
+            f.transactions.append(txn(.expense, amount, "makan", date(2026, 9, 26 + offset)))
+        }
+        let levels = Set(make(f).calendar.days.compactMap { $0.amount }.enumerated().filter { $0.element > 0 }.map { make(f).calendar.days[$0.offset].level })
+        XCTAssertEqual(levels, [1, 2, 3, 4])
+        XCTAssertEqual(make(f).calendar.days[8].level, 4, "the 4jt day is the darkest")
+    }
+
+    func testEqualSpendingDaysShareTheMiddleShade() {
+        var f = fixture()
+        f.transactions = [txn(.income, 1_000_000, "gaji", date(2026, 9, 25)), txn(.expense, 100_000, "makan", date(2026, 9, 26)),
+                          txn(.expense, 100_000, "makan", date(2026, 9, 27))]
+        XCTAssertEqual(make(f).calendar.days.filter { ($0.amount ?? 0) > 0 }.map(\.level), [3, 3])
     }
 
     // US3, TC 4

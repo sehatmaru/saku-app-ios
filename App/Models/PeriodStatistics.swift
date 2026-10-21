@@ -153,11 +153,16 @@ enum PeriodStatistics {
     static let walletLimit = 4
     static let trendPeriods = 5
 
-    /// Level thresholds of the calendar heat, as a share of the biggest day.
-    private static func level(_ amount: Double, max peak: Double) -> Int {
-        guard amount > 0, peak > 0 else { return 0 }
-        let ratio = amount / peak
-        return ratio < 0.15 ? 1 : ratio < 0.35 ? 2 : ratio < 0.6 ? 3 : 4
+    /// The calendar heat of a day among the days that had spending: quartiles of those days, so one huge day does not
+    /// flatten all the others into the palest shade. Level 4 is the top quarter, 1 the bottom quarter; a day without
+    /// spending is 0. When every spending day is the same, they all get the middle shade.
+    private static func heatLevels(for amounts: [Double]) -> (Double) -> Int {
+        let sorted = amounts.filter { $0 > 0 }.sorted()
+        guard let low = sorted.first, let high = sorted.last else { return { _ in 0 } }
+        if low == high { return { $0 > 0 ? 3 : 0 } }
+        func quantile(_ p: Double) -> Double { sorted[max(Int((p * Double(sorted.count)).rounded(.up)) - 1, 0)] }
+        let q1 = quantile(0.25), q2 = quantile(0.5), q3 = quantile(0.75)
+        return { $0 <= 0 ? 0 : $0 > q3 ? 4 : $0 > q2 ? 3 : $0 > q1 ? 2 : 1 }
     }
 
     private static func change(_ now: Double, _ previous: Double) -> Double? {
@@ -217,9 +222,10 @@ enum PeriodStatistics {
         let weekday = calendar.component(.weekday, from: startOfPeriod)
         let peak = spent.max() ?? 0
         let peakIndex = spent.firstIndex(of: peak)
+        let heat = heatLevels(for: spent)
         let cells = (0..<totalDays).map { index -> CalendarDay in
             let day = calendar.component(.day, from: calendar.date(byAdding: .day, value: index, to: startOfPeriod) ?? startOfPeriod)
-            return index < elapsed ? CalendarDay(day: day, amount: daily[index], level: level(daily[index], max: peak))
+            return index < elapsed ? CalendarDay(day: day, amount: daily[index], level: heat(daily[index]))
                                    : CalendarDay(day: day, amount: nil, level: 0)
         }
         let spendingCalendar = SpendingCalendar(

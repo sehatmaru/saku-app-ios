@@ -1171,12 +1171,12 @@
   "Hemat beruntun": "Saving streak",
   "hari tanpa pengeluaran": "days without spending",
   "Sisa budget periode": "Budget left this period",
-  "Belum ada budget aktif. Atur batas per kategori di tab Budget supaya pengeluaranmu terpantau.": "No active budget. Set a limit per category in the Budget tab to keep your spending in check.",
   "Sorotan": "Highlights",
   "Transaksi terbesar": "Biggest transactions",
   "Kategori paling sering": "Most frequent category",
   "Dibanding periode sama bulan lalu": "Versus the same stretch last month",
   "Perbandingan muncul setelah satu periode penuh tercatat.": "The comparison appears after one full period is on record.",
   "Statistik belum bisa dimuat. Periksa koneksi lalu coba lagi.": "Statistics couldn't be loaded. Check your connection and try again.",
-  "Statistik": "Statistics"
+  "Statistik": "Statistics",
+  "Belum ada budget aktif. Atur batas per kategori supaya pengeluaranmu terpantau.": "No active budget. Set a limit per category to keep your spending in check."
 }

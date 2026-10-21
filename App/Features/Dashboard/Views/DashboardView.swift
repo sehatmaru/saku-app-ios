@@ -488,7 +488,7 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 SectionHeader(title: L("Arus kas %@", PaydayCycle.current.label()))
-                NavigationLink("Statistik") { StatistikView().detailPage() }
+                NavigationLink("Statistik") { StatistikView(onOpenBudget: { selectedTab = .budget }).detailPage() }
                     .font(.app(15))
                     .foregroundStyle(Color.appPrimary)
             }
@@ -732,7 +732,7 @@ struct DashboardView: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 SectionHeader(title: L("Bulan ini"))
-                NavigationLink("Statistik") { StatistikView().detailPage() }
+                NavigationLink("Statistik") { StatistikView(onOpenBudget: { selectedTab = .budget }).detailPage() }
                     .font(.app(15))
                     .foregroundStyle(Color.appPrimary)
             }
