@@ -1122,5 +1122,9 @@
   "Menjadi sekitar %lld jika ketiga saran diterapkan": "Becomes about %lld if all three suggestions are followed",
   "Saran": "Suggestions",
   "Perkiraan dampak untuk periode berikutnya": "Estimated impact for the next period",
-  "+%lld skor": "+%lld score"
+  "+%lld skor": "+%lld score",
+  "Tutup selisih dengan menunda belanja yang tidak mendesak": "Close the gap by putting off purchases that aren't urgent",
+  "Tutup selisih, tunda belanja": "Close the gap, put off purchases",
+  "Lunasi penuh begitu kasmu cukup, supaya tagihan tidak menumpuk.": "Pay it in full as soon as your cash allows, so the bill doesn't pile up.",
+  "Lunasi begitu kas cukup.": "Pay as soon as cash allows."
 }

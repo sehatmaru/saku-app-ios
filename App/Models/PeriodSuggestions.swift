@@ -38,10 +38,9 @@ extension PeriodAnalysis {
         let edit: Edit
     }
 
-    /// Estimates are rounded so they do not pretend to be exact.
+    /// Estimates are rounded to Rp50.000 so they do not pretend to be exact.
     static func rounded(_ value: Double) -> Double {
-        let step = value >= 1_000_000 ? 50_000.0 : 10_000.0
-        return max((value / step).rounded() * step, step)
+        max((value / 50_000).rounded() * 50_000, 50_000)
     }
 
     private static func spendLess(_ amount: Double) -> Edit {
@@ -69,8 +68,9 @@ extension PeriodAnalysis {
         }
 
         if income > 0 {
-            let target = min(max(Rule.healthyNetRatio - (input.current.netRatio ?? 0), 0.05), Rule.healthyNetRatio)
-            let amount = income * target
+            // A tenth of the average income (this period and the ones before), the habit worth building first.
+            let incomes = ([income] + input.previous.map(\.income)).filter { $0 > 0 }
+            let amount = incomes.reduce(0, +) / Double(incomes.count) * 0.10
             found.append(Candidate(
                 kind: .setAsideOnPayday,
                 action: L("Sisihkan sebagian pemasukan di hari gajian"),
@@ -102,24 +102,29 @@ extension PeriodAnalysis {
         // Without a known discretionary category, ease off the biggest one a little.
         let delayBase = flexible > 0 ? flexible : (input.current.categories.values.max() ?? 0)
         if delayBase > 0 {
-            let amount = delayBase * (flexible > 0 ? 0.2 : 0.1)
+            let deficit = expense - income
+            // In a deficit the first step is closing the gap; otherwise a fifth of what can wait (a tenth of the biggest category).
+            let amount = deficit > 0 ? min(deficit, delayBase) : delayBase * (flexible > 0 ? 0.2 : 0.1)
             found.append(Candidate(
                 kind: .delayFlexible,
-                action: L("Tunda belanja yang tidak mendesak"),
+                action: deficit > 0 ? L("Tutup selisih dengan menunda belanja yang tidak mendesak") : L("Tunda belanja yang tidak mendesak"),
                 reason: L("Pengeluaran fleksibel periode ini %@. Menundanya sebagian memberi ruang di periode berikutnya.", money(delayBase, isPrivate: isPrivate)),
-                shortAction: L("Tunda belanja tidak mendesak"),
+                shortAction: deficit > 0 ? L("Tutup selisih, tunda belanja") : L("Tunda belanja tidak mendesak"),
                 shortReason: L("Fleksibel: %@ periode ini.", money(delayBase, isPrivate: isPrivate)),
                 amount: rounded(amount), isEstimate: true, edit: spendLess(amount)))
         }
 
         let health = input.health
-        if health.creditDebt > 0, health.liquidBalance >= health.creditDebt {
+        if health.creditDebt > 0 {
             let debt = health.creditDebt
+            let covered = health.liquidBalance >= debt
             found.append(Candidate(
                 kind: .payCardInFull,
                 action: L("Bayar penuh tagihan kartu kredit"),
-                reason: L("Kasmu cukup untuk melunasinya sekarang, jadi tagihan tidak menumpuk."),
-                shortAction: L("Bayar penuh tagihan kartu"), shortReason: L("Kas cukup untuk melunasi."),
+                reason: covered ? L("Kasmu cukup untuk melunasinya sekarang, jadi tagihan tidak menumpuk.")
+                                : L("Lunasi penuh begitu kasmu cukup, supaya tagihan tidak menumpuk."),
+                shortAction: L("Bayar penuh tagihan kartu"),
+                shortReason: covered ? L("Kas cukup untuk melunasi.") : L("Lunasi begitu kas cukup."),
                 amount: debt, isEstimate: false,
                 edit: { $0.creditDebt = 0; $0.liquidBalance -= debt; $0.overdueBills = [] }))
         }
@@ -152,15 +157,24 @@ extension PeriodAnalysis {
             if $0.gain != $1.gain { return $0.gain > $1.gain }
             let (a, b) = ($0.candidate.amount ?? 0, $1.candidate.amount ?? 0)
             return a != b ? a > b : $0.index < $1.index
-        }.prefix(3)
+        }
+        // In a deficit, closing the gap and an open card bill come first even when the score does not move for them:
+        // they are the urgent ones. The rest fill up to three by effect.
+        let urgent: Set<Suggestion.Kind> = expense > income ? [.delayFlexible, .payCardInFull] : []
+        let chosen = (ranked.filter { urgent.contains($0.candidate.kind) } + ranked.filter { !urgent.contains($0.candidate.kind) })
+            .prefix(3).sorted {
+                if $0.gain != $1.gain { return $0.gain > $1.gain }
+                let (a, b) = ($0.candidate.amount ?? 0, $1.candidate.amount ?? 0)
+                return a != b ? a > b : $0.index < $1.index
+            }
 
-        let suggestions = ranked.map { item -> Suggestion in
+        let suggestions = chosen.map { item -> Suggestion in
             let c = item.candidate
             let impact = c.amount.map { (c.isEstimate ? "±" : "") + money($0, isPrivate: isPrivate) } ?? ""
             return Suggestion(kind: c.kind, action: c.action, reason: c.reason, shortAction: c.shortAction,
                               shortReason: c.shortReason, impact: impact, scoreImpact: item.gain)
         }
         return Advice(suggestions: suggestions,
-                      projectedScore: projectedScore(health, applying: ranked.map(\.candidate.edit)))
+                      projectedScore: projectedScore(health, applying: chosen.map(\.candidate.edit)))
     }
 }

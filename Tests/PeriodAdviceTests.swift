@@ -65,13 +65,29 @@ final class PeriodAdviceTests: XCTestCase {
         }
     }
 
-    func testCardPaymentIsOnlySuggestedWhenCashCoversIt() {
-        let covered = PeriodAnalysis.Suggestion.Kind.payCardInFull
-        let kinds = { (i: PeriodAnalysis.Input) in PeriodAnalysis.advice(i).suggestions.map(\.kind) }
-        // Not every candidate makes the top three, so check the one that would: a big debt the cash covers.
-        let big = input(debt: 12_000_000, liquid: 20_000_000)
-        XCTAssertTrue(kinds(big).contains(covered))
-        XCTAssertFalse(kinds(input(debt: 12_000_000, liquid: 1_000_000)).contains(covered))
+    // TC 34
+    func testSetAsideIsATenthOfTheAverageIncomeRoundedToFiftyThousand() throws {
+        var scenario = input()
+        scenario.current = totals(income: 10_000_000, expense: 9_000_000)
+        scenario.previous = Array(repeating: totals(income: 10_000_000, expense: 9_000_000), count: 3)
+        scenario.health.budgetTotal = 0 // keep other candidates from crowding it out
+        let advice = PeriodAnalysis.advice(scenario)
+        let setAside = try XCTUnwrap(advice.suggestions.first { $0.kind == .setAsideOnPayday })
+        XCTAssertEqual(setAside.impact, "±Rp1.000.000")
+    }
+
+    // TC 35
+    func testDeficitWithAnOpenCardBillClosesTheGapAndPaysTheCardWithoutInterest() throws {
+        var scenario = input(debt: 12_000_000, liquid: 20_000_000, income: 8_000_000)
+        scenario.health.monthlyIncome = [8_000_000, 8_000_000, 8_000_000]
+        let advice = PeriodAnalysis.advice(scenario)
+        let kinds = advice.suggestions.map(\.kind)
+        XCTAssertTrue(kinds.contains(.payCardInFull), "\(kinds)")
+        let gap = try XCTUnwrap(advice.suggestions.first { $0.kind == .delayFlexible })
+        XCTAssertTrue(gap.action.hasPrefix("Tutup selisih"), gap.action)
+        for suggestion in advice.suggestions {
+            XCTAssertNil((suggestion.action + suggestion.reason).lowercased().range(of: #"\bbunga\b"#, options: .regularExpression))
+        }
     }
 
     // US4
@@ -188,5 +204,6 @@ final class PeriodAdviceTests: XCTestCase {
             if finding.evidence.count > 4 { XCTAssertFalse(text.contains(finding.evidence), "evidence must not be in the file") }
         }
         for suggestion in analysis.suggestions { XCTAssertFalse(text.contains(suggestion.action), "advice must not be in the file") }
+        XCTAssertTrue(text.contains("xxxx xxxx"), "what can be copied is a same-length replacement (TC 41)")
     }
 }

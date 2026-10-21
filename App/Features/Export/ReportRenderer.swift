@@ -5,7 +5,7 @@ import UIKit
 /// every size taken from the design's SwiftUI specification (px × 0.75). Page 1 never changes layout; page 2 only
 /// carries the full budget and wallet tables when page 1 had to cut them. The analysis and the three suggestions
 /// (Fitur 7) are always three of each and never run onto page 2; in the free preview their detail is left out of the
-/// file entirely (drawn as bars), so it cannot be copied.
+/// file entirely (a same-length replacement is drawn in pale grey), so what can be copied is the replacement.
 @MainActor
 enum ReportRenderer {
     // MARK: Page and palette
@@ -354,17 +354,10 @@ enum ReportRenderer {
         return top + 15
     }
 
-    /// Widths of each laid-out line, so hidden text can be drawn as bars of the same size and never as text.
-    private static func lineWidths(_ string: NSAttributedString, width w: CGFloat) -> [CGFloat] {
-        let storage = NSTextStorage(attributedString: string)
-        let container = NSTextContainer(size: CGSize(width: w, height: .greatestFiniteMagnitude))
-        container.lineFragmentPadding = 0
-        let layout = NSLayoutManager()
-        layout.addTextContainer(container)
-        storage.addLayoutManager(layout)
-        var widths: [CGFloat] = []
-        layout.enumerateLineFragments(forGlyphRange: layout.glyphRange(for: container)) { _, used, _, _, _ in widths.append(ceil(used.width)) }
-        return widths
+    /// Same length and layout, nothing readable: letters become "x" and digits "0". The free preview draws this in pale
+    /// grey instead of the real text, so what can be copied out of the file is the replacement.
+    private static func masked(_ string: String) -> String {
+        String(string.map { $0.isLetter ? "x" : ($0.isNumber ? "0" : $0) })
     }
 
     private static func attributed(_ string: String, font: UIFont, color: UIColor, lineHeight: CGFloat, highlights: [String] = [],
@@ -374,7 +367,9 @@ enum ReportRenderer {
         let result = NSMutableAttributedString(string: string, attributes: [.font: font, .foregroundColor: color, .paragraphStyle: style])
         for token in highlights where !token.isEmpty {
             var range = NSRange(location: 0, length: result.length)
-            while let found = (result.string as NSString).range(of: token, options: [], range: range) as NSRange?, found.location != NSNotFound {
+            while true {
+                let found = (result.string as NSString).range(of: token, options: [], range: range)
+                if found.location == NSNotFound { break }
                 result.addAttribute(.font, value: highlight ?? font, range: found)
                 let next = found.location + found.length
                 range = NSRange(location: next, length: result.length - next)
@@ -383,30 +378,49 @@ enum ReportRenderer {
         return result
     }
 
-    /// Draws `string` in at most `maxLines` lines, or hidden as bars (free preview). Returns the bottom.
+    private static func lineCount(_ string: NSAttributedString, width w: CGFloat) -> Int {
+        let storage = NSTextStorage(attributedString: string)
+        let container = NSTextContainer(size: CGSize(width: w, height: .greatestFiniteMagnitude))
+        container.lineFragmentPadding = 0
+        let layout = NSLayoutManager()
+        layout.addTextContainer(container)
+        storage.addLayoutManager(layout)
+        var count = 0
+        layout.enumerateLineFragments(forGlyphRange: layout.glyphRange(for: container)) { _, _, _, _, _ in count += 1 }
+        return count
+    }
+
+    /// Draws `string` in at most `maxLines` lines. Hidden (free preview): the masked text in pale grey.
     @discardableResult
     private static func block(_ string: NSAttributedString, x: CGFloat, y: CGFloat, width w: CGFloat, lineHeight: CGFloat,
-                              maxLines: Int, hidden: Bool, align: NSTextAlignment = .left) -> CGFloat {
-        let widths = lineWidths(string, width: w)
-        let shown = min(widths.count, maxLines)
+                              maxLines: Int, hidden: Bool) -> CGFloat {
+        let drawn: NSAttributedString
         if hidden {
-            skeleton.setFill()
-            for index in 0..<shown {
-                UIBezierPath(roundedRect: CGRect(x: x, y: y + CGFloat(index) * lineHeight + lineHeight * 0.2,
-                                                 width: max(8, widths[index]), height: lineHeight * 0.6), cornerRadius: lineHeight * 0.3).fill()
-            }
+            let copy = NSMutableAttributedString(attributedString: string)
+            copy.mutableString.setString(masked(string.string))
+            copy.addAttribute(.foregroundColor, value: skeleton, range: NSRange(location: 0, length: copy.length))
+            drawn = copy
         } else {
-            string.draw(with: CGRect(x: x, y: y, width: w, height: lineHeight * CGFloat(shown)),
-                        options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], context: nil)
+            drawn = string
         }
+        let shown = min(lineCount(drawn, width: w), maxLines)
+        drawn.draw(with: CGRect(x: x, y: y, width: w, height: lineHeight * CGFloat(shown)),
+                   options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], context: nil)
         return y + lineHeight * CGFloat(shown)
+    }
+
+    /// One line of text, masked in pale grey when hidden.
+    @discardableResult
+    private static func line(_ string: String, font: UIFont, color: UIColor, x: CGFloat, y: CGFloat, width w: CGFloat, hidden: Bool,
+                             align: NSTextAlignment = .left, kern: CGFloat = 0) -> CGFloat {
+        text(hidden ? masked(string) : string, font: font, color: hidden ? skeleton : color, x: x, y: y, width: w, align: align, kern: kern)
     }
 
     /// The long text, or the short one when the long one runs past `maxLines`: the font is never made smaller.
     private static func fitted(_ long: String, _ short: String, font: UIFont, color: UIColor, lineHeight: CGFloat, width w: CGFloat,
                                maxLines: Int, highlights: [String] = [], highlight: UIFont? = nil) -> NSAttributedString {
         let first = attributed(long, font: font, color: color, lineHeight: lineHeight, highlights: highlights, highlight: highlight)
-        if lineWidths(first, width: w).count <= maxLines { return first }
+        if lineCount(first, width: w) <= maxLines { return first }
         return attributed(short, font: font, color: color, lineHeight: lineHeight, highlights: highlights, highlight: highlight)
     }
 
@@ -438,16 +452,12 @@ enum ReportRenderer {
         let (textColor, barColor): (UIColor, UIColor) = score.value >= 60 ? (green, green) : score.value >= 40 ? (warningText, warningBar) : (dangerText, dangerBar)
         let small = UIFont.systemFont(ofSize: 8.25)
         text(L("Skor kesehatan"), font: small, color: secondary, x: marginX + 12, y: y + 8, width: 120)
-        text("\(score.value)", font: .systemFont(ofSize: 25.5, weight: .light), color: ink, x: marginX + 12, y: y + 14, width: 60, kern: -1)
-        let scoreWidth = textWidth("\(score.value)", font: .systemFont(ofSize: 25.5, weight: .light))
-        if hidden {
-            skeleton.setFill()
-            UIBezierPath(roundedRect: CGRect(x: marginX + 12 + scoreWidth + 14, y: y + 22, width: 40, height: 10), cornerRadius: 5).fill()
-        } else {
-            text("→", font: small, color: secondary, x: marginX + 12 + scoreWidth + 5, y: y + 24, width: 14)
-            text("±\(score.projected)", font: .systemFont(ofSize: 16.5, weight: .light), color: textColor,
-                 x: marginX + 12 + scoreWidth + 18, y: y + 20, width: 60, kern: -0.6)
-        }
+        let scoreFont = UIFont.systemFont(ofSize: 25.5, weight: .light)
+        text("\(score.value)", font: scoreFont, color: ink, x: marginX + 12, y: y + 14, width: 60, kern: -1)
+        let scoreWidth = textWidth("\(score.value)", font: scoreFont)
+        text("→", font: small, color: secondary, x: marginX + 12 + scoreWidth + 5, y: y + 24, width: 14)
+        line("±\(score.projected)", font: .systemFont(ofSize: 16.5, weight: .light), color: textColor, x: marginX + 12 + scoreWidth + 18, y: y + 20,
+             width: 60, hidden: hidden, kern: -0.6)
         let barX = marginX + 12 + 170, barWidth = width - 24 - 170
         rule.setFill()
         UIBezierPath(roundedRect: CGRect(x: barX, y: y + 11, width: barWidth, height: 4.5), cornerRadius: 2.25).fill()
@@ -457,16 +467,10 @@ enum ReportRenderer {
         }
         barColor.setFill()
         UIBezierPath(roundedRect: CGRect(x: barX, y: y + 11, width: barWidth * CGFloat(min(score.value, 100)) / 100, height: 4.5), cornerRadius: 2.25).fill()
+        text(score.label ?? L("Sementara"), font: .systemFont(ofSize: 8.25, weight: .semibold), color: textColor, x: barX, y: y + 22, width: barWidth / 2)
         let caption = L("Menjadi sekitar %lld jika ketiga saran diterapkan", score.projected)
-        let label = score.label ?? L("Sementara")
-        text(label, font: .systemFont(ofSize: 8.25, weight: .semibold), color: textColor, x: barX, y: y + 22, width: barWidth / 2)
-        if hidden {
-            let w = textWidth(caption, font: small)
-            skeleton.setFill()
-            UIBezierPath(roundedRect: CGRect(x: barX + barWidth - w, y: y + 24, width: w, height: 6), cornerRadius: 3).fill()
-        } else {
-            text(caption, font: small, color: body, x: barX + barWidth - textWidth(caption, font: small), y: y + 22, width: barWidth)
-        }
+        let shownCaption = hidden ? masked(caption) : caption
+        line(caption, font: small, color: body, x: barX + barWidth - textWidth(shownCaption, font: small), y: y + 22, width: barWidth, hidden: hidden)
         return y + height
     }
 
@@ -474,28 +478,15 @@ enum ReportRenderer {
         var y = y
         y = text(finding.kicker, font: .systemFont(ofSize: 8.25), color: secondary, x: x, y: y, width: w)
         y += 3
-        let evidenceFont = UIFont.systemFont(ofSize: 18, weight: .light)
-        if hidden {
-            skeleton.setFill()
-            UIBezierPath(roundedRect: CGRect(x: x, y: y + 3, width: min(w * 0.55, 70), height: 14), cornerRadius: 7).fill()
-            y += 20
-        } else {
-            y = text(finding.evidence, font: evidenceFont, color: tone(finding.tone), x: x, y: y, width: w, kern: -0.6)
-        }
+        y = line(finding.evidence, font: .systemFont(ofSize: 18, weight: .light), color: tone(finding.tone), x: x, y: y, width: w, hidden: hidden, kern: -0.6)
         y += 1.5
         y = block(attributed(finding.caption, font: .systemFont(ofSize: 7.9), color: secondary, lineHeight: 10), x: x, y: y, width: w,
                   lineHeight: 10, maxLines: 2, hidden: hidden)
         y += 6
+        let font = UIFont.systemFont(ofSize: 7.5)
         for (index, bar) in finding.bars.enumerated() {
-            let font = UIFont.systemFont(ofSize: 7.5)
-            if hidden {
-                skeleton.setFill()
-                UIBezierPath(roundedRect: CGRect(x: x, y: y + 2, width: min(w * 0.4, textWidth(bar.label, font: font)), height: 6), cornerRadius: 3).fill()
-                UIBezierPath(roundedRect: CGRect(x: x + w - 24, y: y + 2, width: 24, height: 6), cornerRadius: 3).fill()
-            } else {
-                text(bar.label, font: font, color: secondary, x: x, y: y, width: w * 0.62)
-                text(bar.text, font: font, color: secondary, x: x + w * 0.4, y: y, width: w * 0.6, align: .right)
-            }
+            line(bar.label, font: font, color: secondary, x: x, y: y, width: w * 0.62, hidden: hidden)
+            line(bar.text, font: font, color: secondary, x: x + w * 0.4, y: y, width: w * 0.6, hidden: hidden, align: .right)
             y += 10
             rowRule.setFill()
             UIBezierPath(roundedRect: CGRect(x: x, y: y, width: w, height: 3), cornerRadius: 1.5).fill()
@@ -532,18 +523,12 @@ enum ReportRenderer {
             bottom = block(reason, x: textX, y: bottom + 1.5, width: textWidthAvailable, lineHeight: 12.5, maxLines: 2, hidden: hidden)
             let impactX = textX + textWidthAvailable + gap
             if !suggestion.impact.isEmpty {
-                let font = UIFont.systemFont(ofSize: 9.4, weight: .semibold)
-                if hidden {
-                    skeleton.setFill()
-                    UIBezierPath(roundedRect: CGRect(x: impactX + impactWidth - 52, y: top + 3, width: 52, height: 7), cornerRadius: 3.5).fill()
-                } else {
-                    text(suggestion.impact, font: font, color: green, x: impactX + impactWidth - textWidth(suggestion.impact, font: font),
-                         y: top + 1, width: impactWidth)
-                }
+                line(suggestion.impact, font: .systemFont(ofSize: 9.4, weight: .semibold), color: green, x: impactX, y: top + 1,
+                     width: impactWidth, hidden: hidden, align: .right)
             }
-            if suggestion.scoreImpact >= 1, !hidden {
-                let label = L("+%lld skor", suggestion.scoreImpact), font = UIFont.systemFont(ofSize: 8.25)
-                text(label, font: font, color: secondary, x: impactX + impactWidth + gap + scoreWidth - textWidth(label, font: font), y: top + 1.5, width: scoreWidth)
+            if suggestion.scoreImpact >= 1 {
+                line(L("+%lld skor", suggestion.scoreImpact), font: .systemFont(ofSize: 8.25), color: secondary, x: impactX + impactWidth + gap,
+                     y: top + 1.5, width: scoreWidth, hidden: hidden, align: .right)
             }
             y = bottom + 3.75
             fill(rowRule, CGRect(x: marginX, y: y, width: width, height: 0.75))

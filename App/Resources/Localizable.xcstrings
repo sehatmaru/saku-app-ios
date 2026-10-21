@@ -9463,6 +9463,26 @@
         }
       }
     },
+    "Lunasi begitu kas cukup.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay as soon as cash allows."
+          }
+        }
+      }
+    },
+    "Lunasi penuh begitu kasmu cukup, supaya tagihan tidak menumpuk.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay it in full as soon as your cash allows, so the bill doesn't pile up."
+          }
+        }
+      }
+    },
     "Lupakan": {
       "localizations": {
         "en": {
@@ -16761,6 +16781,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Close details"
+          }
+        }
+      }
+    },
+    "Tutup selisih dengan menunda belanja yang tidak mendesak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close the gap by putting off purchases that aren't urgent"
+          }
+        }
+      }
+    },
+    "Tutup selisih, tunda belanja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close the gap, put off purchases"
           }
         }
       }
