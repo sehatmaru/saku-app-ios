@@ -66,9 +66,8 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    /// `createdAt` of the auth user when this is a fresh sign-in (not a restored session).
-    /// `offersSetup: false` when setup was just done (guests do it before signing in).
-    private func fetchProfileAndSetUser(authUserId: UUID, email: String, displayName: String?, createdAt: Date? = nil, offersSetup: Bool = true) async throws {
+    /// Turns an auth user into the app's user: profile, avatar, deletion state, and whether setup is needed.
+    private func fetchProfileAndSetUser(authUserId: UUID, email: String, displayName: String?) async throws {
         var profile: UserProfile
         if let existing = try? await SupabaseSDK.fetchProfile(authUserId: authUserId) {
             if existing.displayName == nil, let displayName {
@@ -92,17 +91,26 @@ final class AuthViewModel: ObservableObject {
             needsSetup = false
             return
         }
-        // Accounts made in the last 10 minutes count as a sign-up; existing users never see setup.
-        let isNewAccount = createdAt.map { Date().timeIntervalSince($0) < 600 } ?? false
-        if offersSetup, isNewAccount {
-            let accounts = try? await SupabaseRepository.shared.fetchAccounts(userId: profile.id.uuidString)
-            needsSetup = accounts?.isEmpty ?? false
-        } else {
-            needsSetup = false
-        }
+        await resolveSetupState(authUserId: authUserId, profileId: profile.id)
         withAnimation(.easeInOut(duration: 0.4)) {
             isAuthenticated = true
         }
+    }
+
+    /// Setup is the last step before a new account has any data. When the app is closed
+    /// mid-onboarding the restored session still has a profile but no wallets, so show
+    /// setup again instead of opening an empty app (BUG-43).
+    private func resolveSetupState(authUserId: UUID, profileId: UUID) async {
+        if OnboardingProgress.isComplete(authUserId: authUserId) {
+            needsSetup = false
+            return
+        }
+        let accounts = try? await SupabaseRepository.shared.fetchAccounts(userId: profileId.uuidString)
+        if accounts?.isEmpty == false {
+            // An existing account on a new device has wallets: setup already happened.
+            OnboardingProgress.markComplete(authUserId: authUserId)
+        }
+        needsSetup = OnboardingProgress.needsSetup(markedComplete: false, accountCount: accounts?.count)
     }
 
     // MARK: - Google Sign-In
@@ -134,7 +142,7 @@ final class AuthViewModel: ObservableObject {
                 )
 
                 let name = authResponse.user.userMetadata["full_name"]?.stringValue ?? authResponse.user.userMetadata["name"]?.stringValue
-                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name, createdAt: authResponse.user.createdAt)
+                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name)
             } catch is CancellationError {
                 return
             } catch {
@@ -158,7 +166,7 @@ final class AuthViewModel: ObservableObject {
                 }
 
                 let name = authResponse.user.userMetadata["full_name"]?.stringValue ?? authResponse.user.userMetadata["name"]?.stringValue
-                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name, createdAt: authResponse.user.createdAt)
+                try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name)
             } catch is CancellationError {
                 return
             } catch {
@@ -189,8 +197,7 @@ final class AuthViewModel: ObservableObject {
                 profile = try await SupabaseSDK.upsertProfile(authUserId: session.user.id, displayName: setup.name)
             }
             try await applySetup(setup, profileId: profile.id)
-            try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: setup.name,
-                                             createdAt: session.user.createdAt, offersSetup: false)
+            try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: setup.name)
         } catch is CancellationError {
             return
         } catch {
@@ -200,7 +207,9 @@ final class AuthViewModel: ObservableObject {
 
     /// Google/Apple users set up right after signing up: same steps, applied to the account they have.
     func completeSetup(_ setup: OnboardingSetup) async {
-        guard let profileId = currentUser.flatMap({ UUID(uuidString: $0.id) }) else { return }
+        guard let user = currentUser,
+              let profileId = UUID(uuidString: user.id),
+              let authUserId = UUID(uuidString: user.authUserId) else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -208,6 +217,7 @@ final class AuthViewModel: ObservableObject {
             try await SupabaseSDK.updateProfile(id: profileId, displayName: setup.name)
             try await applySetup(setup, profileId: profileId)
             currentUser?.displayName = setup.name
+            OnboardingProgress.markComplete(authUserId: authUserId)
             withAnimation(.easeInOut(duration: 0.4)) { needsSetup = false }
         } catch is CancellationError {
             return
