@@ -201,6 +201,16 @@
         }
       }
     },
+    "%@ dari total": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of the total"
+          }
+        }
+      }
+    },
     "%@ dengan limit Rp%@ siap dipakai.": {
       "localizations": {
         "en": {
@@ -417,6 +427,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ has %lld transactions."
+          }
+        }
+      }
+    },
+    "%@ rata-rata": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ on average"
           }
         }
       }
@@ -899,6 +919,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld incomplete drafts stay in the list so you can check them later."
+          }
+        }
+      }
+    },
+    "%lld hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days"
           }
         }
       }
@@ -1519,6 +1549,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "2 transactions read"
+          }
+        }
+      }
+    },
+    "3 hari puncak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top 3 days"
           }
         }
       }
@@ -2363,6 +2403,16 @@
         }
       }
     },
+    "Baru satu periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only one period so far"
+          }
+        }
+      }
+    },
     "Batal": {
       "localizations": {
         "en": {
@@ -2773,6 +2823,16 @@
         }
       }
     },
+    "Belum ada budget aktif. Atur batas per kategori di tab Budget supaya pengeluaranmu terpantau.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No active budget. Set a limit per category in the Budget tab to keep your spending in check."
+          }
+        }
+      }
+    },
     "Belum ada budget bulan ini": {
       "localizations": {
         "en": {
@@ -2943,6 +3003,16 @@
         }
       }
     },
+    "Belum ada pemasukan di periode ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No income this period."
+          }
+        }
+      }
+    },
     "Belum ada pemasukan tercatat, tapi ada pengeluaran.": {
       "localizations": {
         "en": {
@@ -2979,6 +3049,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No spending this month yet"
+          }
+        }
+      }
+    },
+    "Belum ada pengeluaran di periode ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No spending this period."
           }
         }
       }
@@ -3069,6 +3149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No transactions yet"
+          }
+        }
+      }
+    },
+    "Belum ada transaksi di dompet mana pun.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions in any wallet yet."
           }
         }
       }
@@ -4043,6 +4133,16 @@
         }
       }
     },
+    "Butuh minimal 1 periode data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs at least 1 period of data"
+          }
+        }
+      }
+    },
     "CSV · semua transaksi": {
       "localizations": {
         "en": {
@@ -4793,6 +4893,16 @@
         }
       }
     },
+    "Dari rata-rata %@/hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From an average of %@/day"
+          }
+        }
+      }
+    },
     "Dari suaramu": {
       "localizations": {
         "en": {
@@ -5149,6 +5259,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Versus the previous 3 periods"
+          }
+        }
+      }
+    },
+    "Dibanding periode sama bulan lalu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versus the same stretch last month"
           }
         }
       }
@@ -7203,6 +7323,26 @@
         }
       }
     },
+    "Hari terboros": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biggest day"
+          }
+        }
+      }
+    },
+    "Hemat beruntun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving streak"
+          }
+        }
+      }
+    },
     "Hijau aman, oranye hampir habis, merah lewat batas.": {
       "localizations": {
         "en": {
@@ -7713,6 +7853,16 @@
         }
       }
     },
+    "Kalender pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending calendar"
+          }
+        }
+      }
+    },
     "Kalimat asli": {
       "localizations": {
         "en": {
@@ -8113,6 +8263,16 @@
         }
       }
     },
+    "Kategori paling sering": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Most frequent category"
+          }
+        }
+      }
+    },
     "Kategori pemasukan": {
       "localizations": {
         "en": {
@@ -8299,6 +8459,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sign out of Saku?"
+          }
+        }
+      }
+    },
+    "Keluar sejauh ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Out so far"
+          }
+        }
+      }
+    },
+    "Keluar vs periode lalu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Out vs last period"
           }
         }
       }
@@ -8769,6 +8949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Comma"
+          }
+        }
+      }
+    },
+    "Komposisi dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallet breakdown"
           }
         }
       }
@@ -9589,6 +9779,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Received %@ %@"
+          }
+        }
+      }
+    },
+    "Masuk %@ · %@ dari pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In %@ · %@ of spending"
           }
         }
       }
@@ -10443,6 +10643,16 @@
         }
       }
     },
+    "Net periode ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net this period"
+          }
+        }
+      }
+    },
     "Net positif ": {
       "localizations": {
         "en": {
@@ -10459,6 +10669,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Net is even. Income and spending were equal this period."
+          }
+        }
+      }
+    },
+    "Net vs periode lalu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net vs last period"
           }
         }
       }
@@ -10883,12 +11103,32 @@
         }
       }
     },
+    "Paling boros: ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biggest spender: "
+          }
+        }
+      }
+    },
     "Paling hemat": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Best value"
+          }
+        }
+      }
+    },
+    "Paling sering dipakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Most used"
           }
         }
       }
@@ -10969,6 +11209,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Income and expenses you record in %@ will show up here."
+          }
+        }
+      }
+    },
+    "Pemasukan per kategori": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Income by category"
           }
         }
       }
@@ -11373,6 +11623,16 @@
         }
       }
     },
+    "Perbandingan muncul setelah satu periode penuh tercatat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The comparison appears after one full period is on record."
+          }
+        }
+      }
+    },
     "Perbarui nilai": {
       "localizations": {
         "en": {
@@ -11533,6 +11793,26 @@
         }
       }
     },
+    "Periode gajian · hari ke-%lld dari %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay period · day %lld of %lld"
+          }
+        }
+      }
+    },
+    "Periode gajian · selesai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay period · finished"
+          }
+        }
+      }
+    },
     "Periode ini": {
       "localizations": {
         "en": {
@@ -11559,6 +11839,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "This period only"
+          }
+        }
+      }
+    },
+    "Periode sebelumnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous period"
+          }
+        }
+      }
+    },
+    "Periode sudah selesai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This period is over"
           }
         }
       }
@@ -11649,6 +11949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Renew Saku Plus"
+          }
+        }
+      }
+    },
+    "Persentase muncul periode depan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Percentages appear next period"
           }
         }
       }
@@ -12053,6 +12363,16 @@
         }
       }
     },
+    "Pola waktu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time pattern"
+          }
+        }
+      }
+    },
     "Pratinjau": {
       "localizations": {
         "en": {
@@ -12109,6 +12429,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Profile saved"
+          }
+        }
+      }
+    },
+    "Proyeksi pengeluaran akhir periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projected spending at period end"
           }
         }
       }
@@ -12183,6 +12513,16 @@
         }
       }
     },
+    "Rasio tabungan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Savings rate"
+          }
+        }
+      }
+    },
     "Rata-rata 3 bulan %@": {
       "localizations": {
         "en": {
@@ -12219,6 +12559,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "3-period average %lld%%."
+          }
+        }
+      }
+    },
+    "Rata-rata Keluar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average Out"
+          }
+        }
+      }
+    },
+    "Rata-rata Masuk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average In"
+          }
+        }
+      }
+    },
+    "Rata-rata per hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average per day"
+          }
+        }
+      }
+    },
+    "Rata-rata per transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average per transaction"
           }
         }
       }
@@ -12273,6 +12653,16 @@
         }
       }
     },
+    "Rendah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low"
+          }
+        }
+      }
+    },
     "Rentang": {
       "localizations": {
         "en": {
@@ -12319,6 +12709,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Summary and analysis, ready to share"
+          }
+        }
+      }
+    },
+    "Ringkasan periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period summary"
           }
         }
       }
@@ -12869,6 +13269,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copy code"
+          }
+        }
+      }
+    },
+    "Sama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Same"
           }
         }
       }
@@ -14013,6 +14423,16 @@
         }
       }
     },
+    "Sisa budget periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget left this period"
+          }
+        }
+      }
+    },
     "Sisa budget terlihat jelas.": {
       "localizations": {
         "en": {
@@ -14379,6 +14799,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "About your data"
+          }
+        }
+      }
+    },
+    "Sorotan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highlights"
+          }
+        }
+      }
+    },
+    "Statistik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics"
+          }
+        }
+      }
+    },
+    "Statistik belum bisa dimuat. Periksa koneksi lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics couldn't be loaded. Check your connection and try again."
           }
         }
       }
@@ -15353,6 +15803,16 @@
         }
       }
     },
+    "Tanpa pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No spending"
+          }
+        }
+      }
+    },
     "Tanya Sebelum Menjalankan": {
       "localizations": {
         "en": {
@@ -15549,6 +16009,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "2 transactions read"
+          }
+        }
+      }
+    },
+    "Terbesar: ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biggest: "
           }
         }
       }
@@ -16213,6 +16683,16 @@
         }
       }
     },
+    "Tinggi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High"
+          }
+        }
+      }
+    },
     "Tinjau langganan streaming": {
       "localizations": {
         "en": {
@@ -16413,6 +16893,16 @@
         }
       }
     },
+    "Total periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period total"
+          }
+        }
+      }
+    },
     "Total saldo": {
       "localizations": {
         "en": {
@@ -16545,6 +17035,16 @@
         }
       }
     },
+    "Transaksi terbesar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biggest transactions"
+          }
+        }
+      }
+    },
     "Transaksi tidak ikut terhapus. Riwayat periode sebelumnya tetap tersimpan.": {
       "localizations": {
         "en": {
@@ -16671,6 +17171,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transfer saved"
+          }
+        }
+      }
+    },
+    "Tren %lld periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld-period trend"
           }
         }
       }
@@ -17451,6 +17961,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "days left"
+          }
+        }
+      }
+    },
+    "hari tanpa pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "days without spending"
           }
         }
       }
