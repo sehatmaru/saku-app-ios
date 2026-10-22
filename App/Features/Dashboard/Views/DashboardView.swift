@@ -123,6 +123,7 @@ struct DashboardView: View {
             }
         }
         .onChange(of: viewModel.overdueBills.map(\.id)) { _, _ in openPendingRecord() }
+        .onReceive(NotificationCenter.default.publisher(for: .openFirstEntry)) { _ in openFirstEntry() }
         .toast(toastText, isShown: $isToastShown)
         .fullScreenCover(isPresented: $showAddSheet) {
             if let userId = authViewModel.currentUser?.id {
@@ -169,6 +170,17 @@ struct DashboardView: View {
         notificationRouter.opensDrafts = false
         DraftStore.shared.ingestSharedText()
         openDraftsPage()
+    }
+
+    /// "Catat pengeluaran pertamamu": the Smart Tracker bar when it is on, the add form when it is not.
+    private func openFirstEntry() {
+        guard SmartTrackerConsent.isGranted, smartQuickOn else { showAddSheet = true; return }
+        selectedTab = .home
+        if viewModel.hasLoadedOnce {
+            NotificationCenter.default.post(name: .openSmartTrackerBar, object: nil)
+        } else {
+            SmartButtonGate.shared.opensBarOnShow = true
+        }
     }
 
     /// Konfirmasi transaksi is a page on the Beranda stack, not a sheet.
@@ -270,6 +282,7 @@ struct DashboardView: View {
                     }
                     PlusBannerView()
                     summarySection
+                    TrySmartTrackerCard()
                     if !viewModel.overdueBills.isEmpty {
                         OverdueBillBanner(bills: viewModel.overdueBills, isBalanceVisible: isBalanceVisible) { bill in
                             recordCard = bill

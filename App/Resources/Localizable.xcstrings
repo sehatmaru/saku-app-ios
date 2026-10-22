@@ -21,6 +21,16 @@
         }
       }
     },
+    " dari %lld. ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " of %lld. "
+          }
+        }
+      }
+    },
     " dari pemasukan.": {
       "localizations": {
         "en": {
@@ -37,6 +47,16 @@
           "stringUnit": {
             "state": "translated",
             "value": " of income. Let's find what can be trimmed."
+          }
+        }
+      }
+    },
+    " sampai gajian berikutnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " until the next payday."
           }
         }
       }
@@ -1383,6 +1403,16 @@
         }
       }
     },
+    "+500 rb": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+500 k"
+          }
+        }
+      }
+    },
     ", jatuh tempo": {
       "localizations": {
         "en": {
@@ -1679,6 +1709,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Upcoming"
+          }
+        }
+      }
+    },
+    "Akhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End"
           }
         }
       }
@@ -2443,6 +2483,16 @@
         }
       }
     },
+    "Batalkan kapan saja sebelum itu, tanpa biaya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel any time before then, at no cost."
+          }
+        }
+      }
+    },
     "Batalkan langganan": {
       "localizations": {
         "en": {
@@ -2969,6 +3019,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No categories yet"
+          }
+        }
+      }
+    },
+    "Belum ada kategori. Pilih di langkah 4 untuk mengisi budget.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No categories yet. Pick some in step 4 to fill in a budget."
           }
         }
       }
@@ -3823,6 +3883,16 @@
         }
       }
     },
+    "Budget awal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First budget"
+          }
+        }
+      }
+    },
     "Budget bulan ini sudah habis.": {
       "localizations": {
         "en": {
@@ -3859,6 +3929,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your budget and monthly summary start when your pay arrives, not on the 1st. You can skip this and set it later in Profile."
+          }
+        }
+      }
+    },
+    "Budget dan ringkasanmu dimulai saat gaji masuk, bukan tanggal 1. Boleh dilewati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your budget and summary start when your pay arrives, not on the 1st. You can skip this."
           }
         }
       }
@@ -3979,6 +4059,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Saku and agree to Quick add first, then try again."
+          }
+        }
+      }
+    },
+    "Buka Sakumu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open your Saku"
           }
         }
       }
@@ -4383,6 +4473,16 @@
         }
       }
     },
+    "Catat otomatis dari notifikasi bank dan e-wallet. Kamu tetap yang mengonfirmasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record automatically from bank and e-wallet notifications. You still confirm each one."
+          }
+        }
+      }
+    },
     "Catat pakai satu kalimat": {
       "localizations": {
         "en": {
@@ -4433,6 +4533,16 @@
         }
       }
     },
+    "Catat pengeluaran pertamamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record your first expense"
+          }
+        }
+      }
+    },
     "Catat sekarang": {
       "localizations": {
         "en": {
@@ -4469,6 +4579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Record transactions more regularly"
+          }
+        }
+      }
+    },
+    "Catat transaksi otomatis dari notifikasi bank dan e-wallet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record transactions automatically from bank and e-wallet notifications."
           }
         }
       }
@@ -4603,6 +4723,16 @@
         }
       }
     },
+    "Coba 7 hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try 7 days"
+          }
+        }
+      }
+    },
     "Coba Lagi": {
       "localizations": {
         "en": {
@@ -4613,12 +4743,32 @@
         }
       }
     },
+    "Coba Plus gratis 7 hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Plus free for 7 days"
+          }
+        }
+      }
+    },
     "Coba Saku Plus": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Try Saku Plus"
+          }
+        }
+      }
+    },
+    "Coba Smart Tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Smart Tracker"
           }
         }
       }
@@ -5193,6 +5343,16 @@
         }
       }
     },
+    "Di bulan yang lebih pendek, dipakai ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In shorter months, the "
+          }
+        }
+      }
+    },
     "Diabaikan": {
       "localizations": {
         "en": {
@@ -5683,6 +5843,16 @@
         }
       }
     },
+    "Ditolak. Aktifkan di Pengaturan iPhone untuk pengingat tagihan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Declined. Turn it on in iPhone Settings for bill reminders."
+          }
+        }
+      }
+    },
     "Diversifikasi": {
       "localizations": {
         "en": {
@@ -6069,6 +6239,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Two taps, no fee"
+          }
+        }
+      }
+    },
+    "Dua pilihan, terpisah. Keduanya boleh dilewati.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Two choices, separate. You can skip both."
           }
         }
       }
@@ -6623,6 +6803,16 @@
         }
       }
     },
+    "Gajian %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payday %@"
+          }
+        }
+      }
+    },
     "Gajian pindah ke tanggal %lld mulai %@.": {
       "localizations": {
         "en": {
@@ -6993,6 +7183,16 @@
         }
       }
     },
+    "Hanya transaksi yang kamu konfirmasi. Isi notifikasi lain tidak disimpan dan tidak dikirim.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the transactions you confirm. Other notification content is not stored or sent."
+          }
+        }
+      }
+    },
     "Hanya uji coba: hapus akun dan data": {
       "localizations": {
         "en": {
@@ -7293,6 +7493,56 @@
         }
       }
     },
+    "Hari %lld · Pakai sepuasnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day %lld · Use it freely"
+          }
+        }
+      }
+    },
+    "Hari 1 · Mulai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day 1 · Start"
+          }
+        }
+      }
+    },
+    "Hari 5 · Pengingat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day 5 · Reminder"
+          }
+        }
+      }
+    },
+    "Hari 6 · Besok berakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day 6 · Ends tomorrow"
+          }
+        }
+      }
+    },
+    "Hari 7 · Uji coba berakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day 7 · Trial ends"
+          }
+        }
+      }
+    },
     "Hari Ini": {
       "localizations": {
         "en": {
@@ -7309,6 +7559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Today"
+          }
+        }
+      }
+    },
+    "Hari ke-": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day "
           }
         }
       }
@@ -7593,6 +7853,16 @@
         }
       }
     },
+    "Isi nominal per kategori. Boleh dikosongkan, bisa diubah nanti.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter an amount per category. You can leave them empty and change them later."
+          }
+        }
+      }
+    },
     "Izin mikrofon atau pengenalan suara belum diberikan. Aktifkan di Pengaturan, atau ketik saja.": {
       "localizations": {
         "en": {
@@ -7843,6 +8113,16 @@
         }
       }
     },
+    "KODE AJAK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "INVITE CODE"
+          }
+        }
+      }
+    },
     "Kalau kalimatnya sulit dipahami, Saku mengirim teksnya saja, tanpa saldo atau nomor rekening. Teks itu tidak disimpan dan tidak dipakai melatih AI.": {
       "localizations": {
         "en": {
@@ -7943,12 +8223,32 @@
         }
       }
     },
+    "Kami kirim pengingat sebelum uji coba berakhir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We send a reminder before the trial ends."
+          }
+        }
+      }
+    },
     "Kami pakai tanggal ini supaya budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "We use this date so your budget and monthly summary start when your pay arrives, not on the 1st."
+          }
+        }
+      }
+    },
+    "Kami pakai untuk menyapamu di Beranda.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We use it to greet you on Beranda."
           }
         }
       }
@@ -7979,6 +8279,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You can restore it from Wallets › Archived."
+          }
+        }
+      }
+    },
+    "Kamu masih bisa batal kapan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can still cancel any time."
           }
         }
       }
@@ -8363,6 +8673,16 @@
         }
       }
     },
+    "Kebiasaan kategori dan toko supaya tebakan makin pas. Opsional.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category and shop habits so the guesses get better. Optional."
+          }
+        }
+      }
+    },
     "Kebiasaan mencatat": {
       "localizations": {
         "en": {
@@ -8573,6 +8893,26 @@
         }
       }
     },
+    "Kembali ke nama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to name"
+          }
+        }
+      }
+    },
+    "Kembali ke setup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to setup"
+          }
+        }
+      }
+    },
     "Kenapa kamu pergi?": {
       "localizations": {
         "en": {
@@ -8619,6 +8959,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Terms of Service"
+          }
+        }
+      }
+    },
+    "Ketik 6 karakter dari temanmu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type the 6 characters from your friend"
           }
         }
       }
@@ -8743,12 +9093,42 @@
         }
       }
     },
+    "Ketuk hari untuk melihat apa yang terjadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a day to see what happens"
+          }
+        }
+      }
+    },
     "Ketuk judul untuk memasukkannya ke daftar.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Tap a title to add it to a list."
+          }
+        }
+      }
+    },
+    "Ketuk kantong untuk mengetik namamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the pocket to type your name"
+          }
+        }
+      }
+    },
+    "Ketuk kartu untuk mengubah nominal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a card to change the amount"
           }
         }
       }
@@ -8873,6 +9253,16 @@
         }
       }
     },
+    "Kode diterima. Kamu dan temanmu dapat bonus setelah transaksi pertama.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code accepted. You and your friend get a bonus after your first transaction."
+          }
+        }
+      }
+    },
     "Kode diterima. Temanmu dapat hadiah setelah kamu mencatat transaksi pertama.": {
       "localizations": {
         "en": {
@@ -8969,6 +9359,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Connection lost. Try again, or save it for later in Confirm transactions."
+          }
+        }
+      }
+    },
+    "Koneksi terputus. Jawabanmu masih ada di iPhone ini, jadi tidak perlu mengisi ulang.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection dropped. Your answers are still on this iPhone, so you don't need to fill them in again."
           }
         }
       }
@@ -9129,6 +9529,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Subscription: %@"
+          }
+        }
+      }
+    },
+    "Langkah %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step %lld"
           }
         }
       }
@@ -9499,6 +9909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skip"
+          }
+        }
+      }
+    },
+    "Lewati semua": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip all"
           }
         }
       }
@@ -10253,12 +10673,32 @@
         }
       }
     },
+    "Menunggu konfirmasimu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for your confirmation"
+          }
+        }
+      }
+    },
     "Menunggu transaksi pertama": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Waiting for first transaction"
+          }
+        }
+      }
+    },
+    "Menyimpan setup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving your setup"
           }
         }
       }
@@ -10459,6 +10899,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Start setting money aside for an emergency fund, however small."
+          }
+        }
+      }
+    },
+    "NAMAMU": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YOUR NAME"
           }
         }
       }
@@ -10893,6 +11343,16 @@
         }
       }
     },
+    "Notifikasi GoPay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GoPay notification"
+          }
+        }
+      }
+    },
     "Notifikasi aplikasi": {
       "localizations": {
         "en": {
@@ -11049,6 +11509,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Using asset money? Record a withdrawal first"
+          }
+        }
+      }
+    },
+    "Paket Gratis: %lld dompet uang, %lld budget, %lld kategori pengeluaran.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free plan: %lld money wallets, %lld budgets, %lld expense categories."
           }
         }
       }
@@ -11249,6 +11719,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "QRIS and card payments"
+          }
+        }
+      }
+    },
+    "Pembayaran Rp18.000 di Gojek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payment of Rp18.000 at Gojek"
           }
         }
       }
@@ -11553,6 +12033,26 @@
         }
       }
     },
+    "Pengingat menjelang gajian ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder before payday "
+          }
+        }
+      }
+    },
+    "Pengingat tagihan dan konfirmasi transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bill reminders and transaction confirmations."
+          }
+        }
+      }
+    },
     "Penyesuaian": {
       "localizations": {
         "en": {
@@ -11849,6 +12349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Previous period"
+          }
+        }
+      }
+    },
+    "Periode sekarang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current period"
           }
         }
       }
@@ -12473,6 +12983,16 @@
         }
       }
     },
+    "Punya kode ajak dari teman?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got an invite code from a friend?"
+          }
+        }
+      }
+    },
     "Punya kode ajak dari teman? (opsional)": {
       "localizations": {
         "en": {
@@ -12873,6 +13393,16 @@
         }
       }
     },
+    "SAKU PLUS AKTIF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SAKU PLUS ACTIVE"
+          }
+        }
+      }
+    },
     "SIMPAN": {
       "localizations": {
         "en": {
@@ -13069,6 +13599,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saku version %@"
+          }
+        }
+      }
+    },
+    "Sakumu sudah siap dipakai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Saku is ready to use."
           }
         }
       }
@@ -13373,6 +13913,16 @@
         }
       }
     },
+    "Sebagai tamu, semua data tetap di iPhone ini. Ingatan di server tersedia setelah kamu masuk.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As a guest, all your data stays on this iPhone. Memory on the server is available once you sign in."
+          }
+        }
+      }
+    },
     "Sebagian": {
       "localizations": {
         "en": {
@@ -13493,12 +14043,32 @@
         }
       }
     },
+    "Selamat datang di Plus, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Plus, %@"
+          }
+        }
+      }
+    },
     "Selamat datang di Saku Plus": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Welcome to Saku Plus"
+          }
+        }
+      }
+    },
+    "Selamat datang, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome, %@"
           }
         }
       }
@@ -13799,6 +14369,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Every factor of your score is good. Keep this up next period."
+          }
+        }
+      }
+    },
+    "Semua fitur Plus terbuka. Belum ada tagihan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every Plus feature is open. Nothing is charged yet."
           }
         }
       }
@@ -14163,6 +14743,16 @@
         }
       }
     },
+    "Setup belum tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setup not saved"
+          }
+        }
+      }
+    },
     "Sheet %lld": {
       "localizations": {
         "en": {
@@ -14249,6 +14839,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save %lld, complete %lld later"
+          }
+        }
+      }
+    },
+    "Simpan Ingatan di server": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Memory on the server"
           }
         }
       }
@@ -14709,6 +15309,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Provisional score. The full score appears after 3 months of use."
+          }
+        }
+      }
+    },
+    "Smart Tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Tracker"
           }
         }
       }
@@ -15813,6 +16423,16 @@
         }
       }
     },
+    "Tanya AI, ekspor laporan, dan lihat analisis tanpa batas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask the AI, export reports and see analysis without limits."
+          }
+        }
+      }
+    },
     "Tanya Sebelum Menjalankan": {
       "localizations": {
         "en": {
@@ -15899,6 +16519,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Icon text"
+          }
+        }
+      }
+    },
+    "Teks notifikasi dari aplikasi bank dan e-wallet yang kamu pilih: nominal, nama toko, dan waktu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The notification text from the bank and e-wallet apps you choose: amount, shop name and time."
           }
         }
       }
@@ -16269,6 +16899,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Day %lld"
+          }
+        }
+      }
+    },
+    "Tgl 1": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The 1st"
           }
         }
       }
@@ -16823,6 +17463,16 @@
         }
       }
     },
+    "Total budget per periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total budget per period"
+          }
+        }
+      }
+    },
     "Total jadi %@/bulan": {
       "localizations": {
         "en": {
@@ -17175,6 +17825,16 @@
         }
       }
     },
+    "Transport": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transport"
+          }
+        }
+      }
+    },
     "Tren %lld periode": {
       "localizations": {
         "en": {
@@ -17475,12 +18135,32 @@
         }
       }
     },
+    "Uji coba Plus aktif sampai %@. Batalkan kapan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Plus trial is active until %@. Cancel any time."
+          }
+        }
+      }
+    },
     "Uji coba Plus s.d. %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Plus trial until %@"
+          }
+        }
+      }
+    },
+    "Uji coba mulai saat kamu memilih bergabung. Batalkan kapan saja sebelum berakhir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The trial starts when you choose to join. Cancel any time before it ends."
           }
         }
       }
@@ -17815,6 +18495,16 @@
         }
       }
     },
+    "budget per periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "budget per period"
+          }
+        }
+      }
+    },
     "budget periode ini.": {
       "localizations": {
         "en": {
@@ -17831,6 +18521,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "month"
+          }
+        }
+      }
+    },
+    "bulan, tanggal gajian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of the month, payday"
           }
         }
       }
@@ -17941,6 +18641,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "day"
+          }
+        }
+      }
+    },
+    "hari Plus gratis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "free Plus days"
           }
         }
       }
@@ -18211,6 +18921,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "year"
+          }
+        }
+      }
+    },
+    "tanggal gajian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "payday date"
+          }
+        }
+      }
+    },
+    "tanggal mulai periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "period start date"
           }
         }
       }

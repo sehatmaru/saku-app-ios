@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// Setup for every new user, in five steps: name, wallets, rough starting balances,
-/// categories, payday. Guests run it before their account exists (`onBack` returns to
-/// sign-in); Google/Apple users run it right after signing up, with the name prefilled.
+/// Setup for every new user: name, wallets, rough starting balances, categories, a first budget, how to record
+/// (Smart Tracker and notifications), payday and, for real accounts, the Saku Plus trial offer (Enhancement 2).
+/// Guests run it before their account exists (`onBack` returns to sign-in) and skip the Plus offer; Google/Apple
+/// users run it right after signing up, with the name prefilled.
 struct SetupOnboardingView: View {
-    private static let stepCount = 5
+    /// Where the saving of the setup stands: the steps, the wait, or a failure with a retry.
+    private enum Phase { case steps, saving, failed }
 
     var initialName = ""
     /// Nil after sign-in: there's nothing to go back to.
@@ -34,17 +36,34 @@ struct SetupOnboardingView: View {
     @State private var isTestingCode = false
     @State private var referralMessage: String?
     @State private var isCheckingCode = false
+    /// Monthly budget per expense category, by key (step 5).
+    @State private var budgets: [String: Double] = [:]
+    @State private var focusedBudget: String?
+    @State private var trackerOn = false
+    @State private var memorySync = false
+    @State private var notification: SetupNotificationState = .idle
+    @State private var joinsPlus = false
+    @State private var phase: Phase = .steps
+    @State private var plusUnavailable = false
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var pickedWallets: [GuestWallet] { picked.compactMap { id in GuestWallet.all.first { $0.id == id } } }
     private var total: Double { picked.reduce(0) { $0 + (amounts[$1] ?? 0) } }
+
+    private var isGuest: Bool { onBack != nil }
+    private var stepCount: Int { isGuest ? 7 : 8 }
+    private var budgetCategories: [OnboardingCategory] { OnboardingCategory.expense.filter { selectedCategories.contains($0.key) } }
 
     private var setup: OnboardingSetup {
         OnboardingSetup(
             name: trimmedName,
             wallets: pickedWallets.map { .init(name: $0.name, type: $0.type, icon: $0.iconId, balance: amounts[$0.id] ?? 0) },
             hiddenCategoryKeys: Set(OnboardingCategory.all.map(\.key)).subtracting(selectedCategories),
-            paydayDay: payday
+            paydayDay: payday,
+            budgets: budgets.filter { selectedCategories.contains($0.key) && $0.value > 0 },
+            smartTrackerConsent: trackerOn,
+            memorySync: trackerOn && memorySync && !isGuest,
+            joinsPlus: joinsPlus && !isGuest
         )
     }
 
@@ -59,73 +78,101 @@ struct SetupOnboardingView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
+        ZStack {
+            VStack(spacing: 0) {
+                topBar
 
-            ZStack {
-                switch step {
-                case 1: nameStep
-                case 2: walletStep
-                case 3: balanceStep
-                case 4: categoryStep
-                default: paydayStep
+                ZStack {
+                    switch step {
+                    case 1: nameStep
+                    case 2: walletStep
+                    case 3: balanceStep
+                    case 4: categoryStep
+                    case 5: SetupBudgetStep(categories: budgetCategories, amounts: $budgets, focused: $focusedBudget)
+                    case 6: SetupTrackingStep(isGuest: isGuest, tracker: $trackerOn, memorySync: $memorySync, notification: $notification)
+                    case 7: SetupPaydayStep(payday: $payday)
+                    default: SetupPlusStep()
+                    }
                 }
-            }
-            .id(step)
-            .transition(.asymmetric(
-                insertion: .move(edge: isForward ? .trailing : .leading),
-                removal: .move(edge: isForward ? .leading : .trailing)
-            ))
-            .frame(maxHeight: .infinity, alignment: .top)
-            .clipped()
+                .id(step)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .offset(x: isForward ? 36 : -36)),
+                    removal: .opacity.combined(with: .offset(x: isForward ? -24 : 24))
+                ))
+                .frame(maxHeight: .infinity, alignment: .top)
+                .clipped()
 
-            cta
+                cta
+            }
+            .background(Color.appBackground)
+
+            if phase == .saving { savingScreen.transition(.opacity).zIndex(2) }
+            if phase == .failed { failedScreen.transition(.opacity).zIndex(3) }
         }
-        .background(Color.appBackground)
+        .animation(.easeOut(duration: 0.2), value: phase)
         .onAppear {
             authViewModel.errorMessage = nil
             if name.isEmpty { name = initialName }
+        }
+        .alert(L("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka."), isPresented: $plusUnavailable) {
+            Button("OK", role: .cancel) {}
         }
     }
 
     private func move(to newStep: Int) {
         isForward = newStep > step
         isNameFocused = false
+        focusedBudget = nil
         withAnimation(.settle(0.5)) { step = newStep }
     }
 
     // MARK: - Chrome
 
     private var topBar: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 0) {
             Button {
                 if step > 1 { move(to: step - 1) } else { onBack?() }
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 22))
                     .foregroundStyle(Color.appPrimary)
-                    .frame(width: 24, height: 44)
+                    .frame(width: 44, height: 44)
             }
             .opacity(step == 1 && onBack == nil ? 0 : 1)
             .disabled(step == 1 && onBack == nil)
             .accessibilityLabel("Kembali")
 
-            SegmentTrack(count: Self.stepCount, filled: step, gap: 4, duration: 0.3)
-                .frame(height: 6)
+            HStack(spacing: 6) {
+                ForEach(1...stepCount, id: \.self) { index in
+                    Button { if index < step { move(to: index) } } label: {
+                        Capsule()
+                            .fill(index <= step ? Color.appPrimary : Color.appBorder.opacity(0.5))
+                            .frame(width: index == step ? 26 : 8, height: 8)
+                            .animation(.settle(0.45), value: step)
+                            .frame(height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(index >= step)
+                    .accessibilityLabel(L("Langkah %lld", index))
+                }
+            }
+            .frame(maxWidth: .infinity)
 
-            Text("\(step)/\(Self.stepCount)")
+            Text("\(step)/\(stepCount)")
                 .font(.app(13))
                 .foregroundStyle(Color.appTextSecondary)
                 .monospacedDigit()
-                .frame(width: 28, alignment: .trailing)
+                .frame(width: 44, alignment: .trailing)
+                .padding(.trailing, 12)
         }
         .frame(height: 44)
         .padding(.leading, 12)
-        .padding(.trailing, 16)
+        .padding(.trailing, 4)
     }
 
     private var cta: some View {
-        Group {
+        VStack(spacing: 4) {
             switch step {
             case 1:
                 PrimaryButton(title: L("Lanjut"), isLoading: isCheckingCode, isEnabled: !trimmedName.isEmpty) { continueFromName() }
@@ -136,17 +183,23 @@ struct SetupOnboardingView: View {
                 PrimaryButton(title: L("Lanjut")) { move(to: 4) }
             case 4:
                 PrimaryButton(title: categoryCTA, isEnabled: categoriesValid) { move(to: 5) }
+            case 5:
+                PrimaryButton(title: L("Lanjut")) { move(to: 6) }
+            case 6:
+                PrimaryButton(title: L("Lanjut")) { move(to: 7) }
+                skipButton
+            case 7:
+                if isGuest {
+                    PrimaryButton(title: L("Mulai pakai Saku")) { finish() }
+                } else {
+                    PrimaryButton(title: L("Lanjut")) { move(to: 8) }
+                }
+                if !isGuest { skipButton }
             default:
-                VStack(spacing: 10) {
-                    if let error = authViewModel.errorMessage {
-                        Text(error)
-                            .font(.app(13))
-                            .foregroundStyle(Color.appError)
-                            .multilineTextAlignment(.center)
-                    }
-                    PrimaryButton(title: L("Mulai pakai Saku"), isLoading: authViewModel.isLoading) {
-                        Task { await onFinish(setup) }
-                    }
+                PrimaryButton(title: L("Coba 7 hari")) { joinPlus() }
+                Button { finish() } label: {
+                    Text("Nanti saja").font(.app(17, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                        .frame(maxWidth: .infinity).frame(height: 48)
                 }
             }
         }
@@ -160,6 +213,72 @@ struct SetupOnboardingView: View {
                 .offset(y: -32)
                 .allowsHitTesting(false)
         }
+    }
+
+    /// Steps 6 to 8 are all optional: this saves the setup as it stands.
+    private var skipButton: some View {
+        Button { finish() } label: {
+            Text("Lewati semua").font(.app(15, weight: .medium)).foregroundStyle(Color.appTextSecondary)
+                .frame(maxWidth: .infinity).frame(height: 40)
+        }
+    }
+
+    private func joinPlus() {
+        guard PlusStore.isInternalBuild else { plusUnavailable = true; return }
+        finish(joiningPlus: true)
+    }
+
+    /// Saves everything; success replaces this view (the welcome screen takes over), failure shows the retry screen.
+    private func finish(joiningPlus: Bool = false) {
+        joinsPlus = joiningPlus
+        authViewModel.errorMessage = nil
+        phase = .saving
+        Task {
+            await onFinish(setup)
+            if authViewModel.errorMessage != nil { phase = .failed }
+        }
+    }
+
+    private var savingScreen: some View {
+        VStack(spacing: 18) {
+            HStack(spacing: 4) {
+                ForEach(0..<4, id: \.self) { index in
+                    PulsingSegment(delay: Double(index) * 0.15)
+                }
+            }
+            .frame(width: 120)
+            Text("Menyimpan setup").font(.app(17)).foregroundStyle(Color.appTextSecondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.appBackground)
+    }
+
+    private var failedScreen: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer()
+            ShakingBadge()
+                .padding(.bottom, 24)
+            Text("Setup belum tersimpan")
+                .font(.app(28, weight: .bold)).tracking(-0.3)
+                .rise(true, y: 16, delay: 0)
+            Text("Koneksi terputus. Jawabanmu masih ada di iPhone ini, jadi tidak perlu mengisi ulang.")
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(3)
+                .padding(.top, 10)
+                .rise(true, y: 16, delay: 0.08)
+            Spacer()
+            PrimaryButton(title: L("Coba lagi")) { finish(joiningPlus: joinsPlus) }
+            Button {
+                authViewModel.errorMessage = nil
+                phase = .steps
+            } label: {
+                Text("Kembali ke setup").font(.app(15, weight: .medium)).foregroundStyle(Color.appTextSecondary)
+                    .frame(maxWidth: .infinity).frame(height: 48)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.appBackground)
     }
 
     private func heading(_ title: String, _ subtitle: String?, size: CGFloat) -> some View {
@@ -182,105 +301,24 @@ struct SetupOnboardingView: View {
 
     // MARK: - 1 · Name
 
+    private var referralState: SetupCodeState {
+        if referralAccepted || referralChecked != nil { return .ok }
+        return referralMessage != nil ? .bad : .idle
+    }
+
     private var nameStep: some View {
-        // scrolls, so the code field below the name is never cut off by the keyboard on a short screen
-        ScrollView {
-            nameStepContent
-        }
-        .scrollDismissesKeyboard(.interactively)
-        .scrollBounceBehavior(.basedOnSize)
+        SetupNameStep(name: $name, referralCode: $referralCode, isGuest: isGuest, codeState: referralState,
+                      message: referralMessage, isFocused: $isNameFocused,
+                      onCodeComplete: { checkReferralCode() },
+                      onBadCodeShown: { referralCode = "" })
+            .onChange(of: referralCode) { _, value in
+                referralMessage = nil
+                if referralChecked != value { referralChecked = nil }
+            }
+            .onAppear { isNameFocused = true }
     }
 
-    private var nameStepContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            heading(L("Siapa namamu?"), L("Tampil di Profil. Bisa diubah kapan saja."), size: 34)
-
-            TextField("", text: $name, prompt: Text("Nama").foregroundStyle(Color.appTextTertiary))
-                .font(.app(28, weight: .medium))
-                .foregroundStyle(Color.appText)
-                .tint(.appPrimary)
-                .textContentType(.givenName)
-                .autocorrectionDisabled()
-                .submitLabel(.next)
-                .focused($isNameFocused)
-                .onSubmit { if !trimmedName.isEmpty { continueFromName() } }
-                .frame(height: 60)
-                .overlay(alignment: .bottom) {
-                    Rectangle().fill(Color.appPrimary).frame(height: 2)
-                }
-                .padding(.top, 40)
-                .padding(.horizontal, 24)
-
-            if onBack != nil {
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: "iphone")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Color.appTextSecondary)
-                    Text("Akun tamu hanya ada di iPhone ini. Jika keluar atau app dihapus, datanya tidak bisa dibuka lagi.")
-                        .font(.app(14))
-                        .lineSpacing(3)
-                        .foregroundStyle(Color.appBody)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.top, 32)
-                .padding(.horizontal, 24)
-            } else {
-                referralField
-            }
-        }
-        .padding(.top, 40)
-        .padding(.bottom, 24)
-        .onAppear { isNameFocused = true }
-    }
-
-    /// "Punya kode ajak?": optional, checked when the user goes on, with a clear message if it is wrong.
-    private var referralField: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Punya kode ajak dari teman? (opsional)").font(.app(14)).foregroundStyle(Color.appTextSecondary)
-            HStack {
-                TextField("", text: $referralCode, prompt: Text("Kode").foregroundStyle(Color.appTextTertiary))
-                    .font(.app(20, weight: .medium)).tracking(2)
-                    .textInputAutocapitalization(.characters).autocorrectionDisabled()
-                    .disabled(referralAccepted)
-                    .onChange(of: referralCode) { _, value in
-                        let cleaned = String(value.uppercased().filter { $0.isLetter || $0.isNumber }.prefix(6))
-                        if cleaned != value { referralCode = cleaned }
-                        referralMessage = nil
-                        if referralChecked != cleaned { referralChecked = nil }
-                    }
-                if referralAccepted || referralChecked != nil {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appPrimary)
-                } else {
-                    Button { checkReferralCode() } label: {
-                        Group {
-                            if isTestingCode { ProgressView() } else { Text("Cek").font(.app(15, weight: .semibold)) }
-                        }
-                        .foregroundStyle(referralCode.count == 6 ? Color.appPrimary : Color.appTextTertiary)
-                        .frame(minWidth: 44, minHeight: 36)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(referralCode.count != 6 || isTestingCode)
-                }
-            }
-            .padding(.horizontal, 14).frame(height: 48)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 12))
-            if let referralMessage {
-                Text(referralMessage).font(.app(13)).foregroundStyle(Color.appError).fixedSize(horizontal: false, vertical: true)
-            } else if referralAccepted {
-                Text("Kode diterima. Temanmu dapat hadiah setelah kamu mencatat transaksi pertama.")
-                    .font(.app(13)).foregroundStyle(Color.appPrimary).fixedSize(horizontal: false, vertical: true)
-            } else if referralChecked != nil {
-                Text("Kode valid. Dipakai saat kamu menekan Lanjut.")
-                    .font(.app(13)).foregroundStyle(Color.appPrimary).fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.top, 28).padding(.horizontal, 24)
-    }
-
-    /// The "Cek" button: finds out whether the code works, without using it or leaving the step.
+    /// Finds out whether the code works, without using it or leaving the step.
     private func checkReferralCode() {
         let code = referralCode.trimmingCharacters(in: .whitespaces)
         guard code.count == 6, !isTestingCode else { return }
@@ -747,28 +785,6 @@ extension SetupOnboardingView {
         .buttonStyle(.plain)
         .accessibilityAddTraits(on ? .isSelected : [])
     }
-
-    /// Optional: skipping leaves the payday unset, and Budget asks again later.
-    fileprivate var paydayStep: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                heading(L("Kapan kamu gajian?"),
-                        L("Budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1. Boleh dilewati, bisa diatur nanti di Profil."),
-                        size: 30)
-                    .padding(.top, 20)
-                    .padding(.bottom, 18)
-
-                PaydayDayPicker(selection: $payday)
-
-                PaydayPreview(day: payday ?? 1)
-                    .opacity(payday == nil ? 0.5 : 1)
-                    .animation(.easeInOut(duration: 0.26), value: payday == nil)
-                    .padding(.top, 12)
-            }
-            .padding(.bottom, 28)
-        }
-        .scrollIndicators(.hidden)
-    }
 }
 
 /// Wallet offered in guest setup; `iconId` maps onto `WalletIcon` so the saved
@@ -803,4 +819,33 @@ private struct GuestWallet: Identifiable {
     ]
 
     static let all = groups.flatMap(\.items)
+}
+
+/// One of the four bars on the saving screen, fading in and out.
+private struct PulsingSegment: View {
+    let delay: Double
+    @State private var lit = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 2).fill(Color.appPrimary)
+            .frame(height: 4)
+            .opacity(lit ? 1 : 0.25)
+            .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(delay), value: lit)
+            .onAppear { lit = true }
+    }
+}
+
+/// The red cross on the failure screen, shaking once.
+private struct ShakingBadge: View {
+    @State private var shakes = 0
+
+    var body: some View {
+        Image(systemName: "xmark")
+            .font(.system(size: 30, weight: .semibold))
+            .foregroundStyle(Color.appError)
+            .frame(width: 72, height: 72)
+            .background(Color.appError.opacity(0.12), in: Circle())
+            .modifier(ShakeEffect(shakes: CGFloat(shakes)))
+            .onAppear { withAnimation(.settle(0.5).delay(0.15)) { shakes = 1 } }
+    }
 }

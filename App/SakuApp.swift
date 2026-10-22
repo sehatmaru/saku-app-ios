@@ -76,6 +76,22 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.4), value: hasSeenOnboarding)
         .animation(.easeInOut(duration: 0.4), value: authViewModel.needsSetup)
         .animation(.easeInOut(duration: 0.4), value: authViewModel.pendingDeletion)
+        .overlay {
+            // setup was just saved: the welcome screen sits over Beranda until "Buka Sakumu" lets it slide away
+            if let welcome = authViewModel.welcome {
+                SetupWelcomeView(welcome: welcome) { startsEntry in
+                    withAnimation(.settle(0.4)) { authViewModel.welcome = nil }
+                    if startsEntry {
+                        Task {
+                            try? await Task.sleep(for: .milliseconds(450))
+                            NotificationCenter.default.post(name: .openFirstEntry, object: nil)
+                        }
+                    }
+                }
+                .transition(.asymmetric(insertion: .identity, removal: .opacity.combined(with: .offset(y: -24))))
+                .zIndex(10)
+            }
+        }
         .task { await authViewModel.checkSession() }
         .preferredColorScheme(appTheme.colorScheme)
         .environment(\.locale, AppLanguage.locale)

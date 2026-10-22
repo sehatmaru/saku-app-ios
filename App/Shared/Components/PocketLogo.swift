@@ -71,6 +71,8 @@ struct PocketLogo: View {
     /// Curve of the card motion for a given duration; the splash passes a springy one.
     var motion: (Double) -> Animation = { .settle($0) }
     var pocketColor: Color = .white
+    /// The dashed seam across the pocket; pale on a green pocket.
+    var stitchColor: Color = Color.appBrand.opacity(0.45)
     /// Plain cards and pocket without chip, stripe, stitching or shadow, for small sizes.
     var isPlain = false
 
@@ -122,7 +124,7 @@ struct PocketLogo: View {
 
     private func stitching(_ s: CGFloat) -> some View {
         DashedLine()
-            .stroke(Color.appBrand.opacity(0.45), style: StrokeStyle(lineWidth: 2.5 * s, dash: [6 * s, 4 * s]))
+            .stroke(stitchColor, style: StrokeStyle(lineWidth: 2.5 * s, dash: [6 * s, 4 * s]))
             .frame(height: 2.5 * s)
             .padding(.horizontal, 20 * s)
             .padding(.top, 21 * s)

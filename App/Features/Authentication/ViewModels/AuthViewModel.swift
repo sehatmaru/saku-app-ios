@@ -25,6 +25,8 @@ final class AuthViewModel: ObservableObject {
     @Published var isAppleLoading = false
     @Published var errorMessage: String?
     @Published var showSplash = true
+    /// Set when setup has just been saved: RootView shows the welcome screen over Beranda until "Buka Sakumu".
+    @Published var welcome: SetupWelcome?
     /// Just signed up with Google/Apple and nothing set up yet: RootView shows SetupOnboardingView.
     @Published var needsSetup = false
     /// Signed in on an account that is waiting to be deleted: RootView shows PendingDeletionView until the user
@@ -216,8 +218,9 @@ final class AuthViewModel: ObservableObject {
             } else {
                 profile = try await SupabaseSDK.upsertProfile(authUserId: session.user.id, displayName: setup.name)
             }
-            try await applySetup(setup, profileId: profile.id)
+            let summary = try await applySetup(setup, profileId: profile.id, isGuest: true)
             try await fetchProfileAndSetUser(authUserId: session.user.id, email: "", displayName: setup.name)
+            welcome = summary
         } catch is CancellationError {
             return
         } catch {
@@ -235,9 +238,10 @@ final class AuthViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             try await SupabaseSDK.updateProfile(id: profileId, displayName: setup.name)
-            try await applySetup(setup, profileId: profileId)
+            let summary = try await applySetup(setup, profileId: profileId, isGuest: false)
             currentUser?.displayName = setup.name
             OnboardingProgress.markComplete(authUserId: authUserId)
+            welcome = summary
             withAnimation(.easeInOut(duration: 0.4)) { needsSetup = false }
         } catch is CancellationError {
             return
@@ -247,8 +251,9 @@ final class AuthViewModel: ObservableObject {
     }
 
     /// Wallets first (the dashboard opens with them there), then the best-effort extras:
-    /// a failed category or payday write is not worth blocking sign-up, both can be set in Profil.
-    private func applySetup(_ setup: OnboardingSetup, profileId: UUID) async throws {
+    /// a failed category, payday, budget, agreement or trial write is not worth blocking sign-up, all of them
+    /// can be done later in the app. Returns what the welcome screen shows.
+    private func applySetup(_ setup: OnboardingSetup, profileId: UUID, isGuest: Bool) async throws -> SetupWelcome {
         let repo = SupabaseRepository.shared
         // A retry after a partial failure must not duplicate wallets.
         if try await repo.fetchAccounts(userId: profileId.uuidString).isEmpty {
@@ -266,6 +271,49 @@ final class AuthViewModel: ObservableObject {
         if let day = setup.paydayDay {
             try? await SupabaseSDK.updatePayday(day: day)
         }
+        let budgetTotal = await createBudgets(setup.budgets, userId: profileId.uuidString)
+        if setup.smartTrackerConsent {
+            try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
+            if setup.memorySync, !isGuest {
+                try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
+                await DraftStore.shared.syncMemory()
+            }
+        }
+        var joinedPlus = false
+        if setup.joinsPlus, PlusStore.isInternalBuild {
+            // Until StoreKit exists the trial starts on the server through the internal test switch, like the paywall.
+            if (try? await SupabaseSDK.setTestPlusState("trial7")) != nil,
+               let session = try? await SupabaseSDK.client.auth.session {
+                _ = try? await SupabaseSDK.fetchProfile(authUserId: session.user.id)
+                joinedPlus = PlusStore.shared.isPlus
+            }
+        }
+        return SetupWelcome(name: setup.name, wallets: setup.wallets.count,
+                            categories: OnboardingCategory.all.count - setup.hiddenCategoryKeys.count,
+                            paydayDay: setup.paydayDay, budgetTotal: budgetTotal,
+                            joinedPlus: joinedPlus, plusUntil: joinedPlus ? PlusStore.shared.entitlement.until : nil)
+    }
+
+    /// One monthly budget per category that was given an amount; a retry skips the ones already saved.
+    /// Returns the total of what exists afterwards.
+    private func createBudgets(_ budgets: [String: Double], userId: String) async -> Double {
+        let amounts = budgets.filter { $0.value > 0 }
+        guard !amounts.isEmpty else { return 0 }
+        let repo = SupabaseRepository.shared
+        guard let categories = try? await repo.fetchCategories() else { return 0 }
+        let existing = Set(((try? await repo.fetchBudgets(userId: userId)) ?? []).map(\.categoryId))
+        let start = ISO8601DateFormatter().string(from: PaydayCycle.current.period(containing: Date()).start)
+        var total = 0.0
+        for key in amounts.keys.sorted() {
+            guard let amount = amounts[key], let category = categories.first(where: { $0.systemKey == key }) else { continue }
+            if existing.contains(category.id) { total += amount; continue }
+            if (try? await repo.createBudget(categoryId: category.id, name: category.name, amount: amount, periodUnit: "month",
+                                             periodInterval: 1, startDate: start, endDate: nil, userId: userId)) != nil {
+                total += amount
+            }
+        }
+        NotificationCenter.default.post(name: .dataDidChange, object: nil)
+        return total
     }
 
     // MARK: - Hapus akun
