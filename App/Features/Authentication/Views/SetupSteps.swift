@@ -214,7 +214,7 @@ struct SetupNameStep: View {
                 Text("NAMAMU").font(.system(size: 26, weight: .heavy)).kerning(1).opacity(0.6).engraved()
             }
             HStack(spacing: 0) {
-                ForEach(Array(name.uppercased().enumerated()), id: \.offset) { _, character in
+                ForEach(Array(name.enumerated()), id: \.offset) { _, character in
                     EngravedCharacter(character: character, size: nameSize, kerning: 1)
                 }
             }
@@ -228,7 +228,7 @@ struct SetupNameStep: View {
                 .tint(.white)
                 .textContentType(.givenName)
                 .autocorrectionDisabled()
-                .textInputAutocapitalization(.characters)
+                .textInputAutocapitalization(.words)
                 .accessibilityLabel("Nama panggilan")
                 .onChange(of: name) { _, value in if value.count > 12 { name = String(value.prefix(12)) } }
         }
