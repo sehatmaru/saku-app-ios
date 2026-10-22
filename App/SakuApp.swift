@@ -64,16 +64,17 @@ struct RootView: View {
                 DashboardView()
                     .transition(.opacity)
             } else if !hasSeenOnboarding {
+                // the intro melts away while the sign-in screen rises
                 OnboardingView { hasSeenOnboarding = true }
-                    .transition(.opacity)
+                    .transition(.asymmetric(insertion: .opacity, removal: .opacity.combined(with: .offset(y: -70))))
             } else {
                 SignInView()
-                    .transition(.opacity)
+                    .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.4), value: authViewModel.isAuthenticated)
         .animation(.easeInOut(duration: 0.5), value: authViewModel.showSplash)
-        .animation(.easeInOut(duration: 0.4), value: hasSeenOnboarding)
+        .animation(.settle(0.6), value: hasSeenOnboarding)
         .animation(.easeInOut(duration: 0.4), value: authViewModel.needsSetup)
         .animation(.easeInOut(duration: 0.4), value: authViewModel.pendingDeletion)
         .overlay {

@@ -2373,6 +2373,16 @@
         }
       }
     },
+    "Bank, e-wallet, tunai, sampai kartu kredit. Sisa budget kelihatan jelas, dari hijau sampai merah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banks, e-wallets, cash, even credit cards. Your remaining budget is easy to see, from green to red."
+          }
+        }
+      }
+    },
     "Bantuan AI bulan ini": {
       "localizations": {
         "en": {
@@ -2789,6 +2799,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "As soon as your friend records their first transaction, +5 AI help goes into your account."
+          }
+        }
+      }
+    },
+    "Belanja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shopping"
           }
         }
       }
@@ -3463,6 +3483,16 @@
         }
       }
     },
+    "Bensin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fuel"
+          }
+        }
+      }
+    },
     "Berakhir": {
       "localizations": {
         "en": {
@@ -3859,6 +3889,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The %@ budget is stopped."
+          }
+        }
+      }
+    },
+    "Budget Makan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Food budget"
           }
         }
       }
@@ -4403,6 +4443,16 @@
         }
       }
     },
+    "Catat cukup satu kalimat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log it in one sentence."
+          }
+        }
+      }
+    },
     "Catat dari foto struk": {
       "localizations": {
         "en": {
@@ -4799,6 +4849,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Try another word like “deposit”, “withdraw”, or a wallet name."
+          }
+        }
+      }
+    },
+    "Coba ketuk salah satu:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try tapping one:"
           }
         }
       }
@@ -6103,6 +6163,16 @@
         }
       }
     },
+    "Draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft"
+          }
+        }
+      }
+    },
     "Draf belum tersimpan. Coba lagi, atau pilih Simpan nanti.": {
       "localizations": {
         "en": {
@@ -6789,6 +6859,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't save:"
+          }
+        }
+      }
+    },
+    "Gaji": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salary"
           }
         }
       }
@@ -7603,6 +7683,16 @@
         }
       }
     },
+    "Hiburan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entertainment"
+          }
+        }
+      }
+    },
     "Hijau aman, oranye hampir habis, merah lewat batas.": {
       "localizations": {
         "en": {
@@ -8393,6 +8483,16 @@
         }
       }
     },
+    "Kamu yang pegang kendali.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're in control."
+          }
+        }
+      }
+    },
     "Kapan kamu gajian?": {
       "localizations": {
         "en": {
@@ -8983,6 +9083,26 @@
         }
       }
     },
+    "Ketik atau ucapkan, misalnya “kopi 25rb gopay”. Sisanya Saku yang rapikan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type or say it, for example “kopi 25rb gopay”. Saku tidies up the rest."
+          }
+        }
+      }
+    },
+    "Ketik atau ucapkan…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type or speak…"
+          }
+        }
+      }
+    },
     "Ketik nama di atas": {
       "localizations": {
         "en": {
@@ -9419,6 +9539,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Correct the category or wallet on a draft and Saku will remember it for next time."
+          }
+        }
+      }
+    },
+    "Kredit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Credit"
           }
         }
       }
@@ -9863,6 +9993,16 @@
         }
       }
     },
+    "Lewat Rp120.000": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp120,000 over"
+          }
+        }
+      }
+    },
     "Lewat Rp20.000": {
       "localizations": {
         "en": {
@@ -10139,6 +10279,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Food"
+          }
+        }
+      }
+    },
+    "Makan & minum": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Food & drink"
           }
         }
       }
@@ -10679,6 +10829,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Becomes about %lld if all three suggestions are followed"
+          }
+        }
+      }
+    },
+    "Menunggu kamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for you"
           }
         }
       }
@@ -14313,6 +14473,16 @@
         }
       }
     },
+    "Semua dompet dan budgetmu, satu layar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All your wallets and budgets, on one screen."
+          }
+        }
+      }
+    },
     "Semua dompet, satu kantong.": {
       "localizations": {
         "en": {
@@ -15003,6 +15173,26 @@
         }
       }
     },
+    "Sisa Rp1.225.000": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp1,225,000 left"
+          }
+        }
+      }
+    },
+    "Sisa Rp1.250.000": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp1,250,000 left"
+          }
+        }
+      }
+    },
     "Sisa Rp420.000": {
       "localizations": {
         "en": {
@@ -15579,6 +15769,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deleted: you deleted this budget, but it is shown because it was active in this period."
+          }
+        }
+      }
+    },
+    "Sudah masuk catatan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added to your records"
           }
         }
       }
@@ -16953,6 +17153,16 @@
         }
       }
     },
+    "Tiap catatan kamu cek dulu sebelum tersimpan. Datamu bisa kamu hapus kapan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You check every entry before it's saved. You can delete your data any time."
+          }
+        }
+      }
+    },
     "Tiap kali kamu mengoreksi draf, Saku ingat pilihanmu. Jadi lain kali kamu tulis “kopi”, kategorinya langsung Jajan & Kopi.": {
       "localizations": {
         "en": {
@@ -17855,6 +18065,16 @@
         }
       }
     },
+    "Transportasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transport"
+          }
+        }
+      }
+    },
     "Tren %lld periode": {
       "localizations": {
         "en": {
@@ -18481,6 +18701,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kept on this phone"
+          }
+        }
+      }
+    },
+    "Yuk, masuk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let's sign in"
           }
         }
       }
