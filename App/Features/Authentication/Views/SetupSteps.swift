@@ -53,10 +53,25 @@ struct SetupNameStep: View {
     var onBadCodeShown: () -> Void
     @State private var flipped = false
     @State private var shakes = 0
+    /// The keyboard is up: the pocket shrinks so the switch button stays in the room left above it.
+    @State private var compact = false
 
     private static let engraveInk = Color(hex: "032A1B")
 
     var body: some View {
+        ScrollViewReader { proxy in
+            scroll
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                    withAnimation(.settle(0.3)) { compact = true }
+                    Task { try? await Task.sleep(for: .milliseconds(350)); withAnimation { proxy.scrollTo("switch", anchor: .bottom) } }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                    withAnimation(.settle(0.3)) { compact = false }
+                }
+        }
+    }
+
+    private var scroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 SetupHeading(title: L("Siapa namamu?"), subtitle: L("Kami pakai untuk menyapamu di Beranda."), size: 34)
@@ -73,7 +88,9 @@ struct SetupNameStep: View {
                         .allowsHitTesting(flipped)
                 }
                 .frame(width: 240, height: 256)
+                .scaleEffect(compact ? 0.7 : 1, anchor: .top)
                 .frame(maxWidth: .infinity)
+                .frame(height: compact ? 256 * 0.7 : 256, alignment: .top)
                 .padding(.top, 4)
 
                 Text(flipped ? L("Ketik 6 karakter dari temanmu") : L("Ketuk kantong untuk mengetik namamu"))
@@ -96,6 +113,7 @@ struct SetupNameStep: View {
                     .buttonStyle(PressScaleStyle())
                     .frame(maxWidth: .infinity)
                     .padding(.top, 10)
+                    .id("switch")
 
                     status
                 }
@@ -215,9 +233,10 @@ struct SetupNameStep: View {
                 .onChange(of: name) { _, value in if value.count > 12 { name = String(value.prefix(12)) } }
         }
         .frame(width: 172, height: 46)
-        .offset(x: 34, y: 158)
-        .contentShape(Rectangle())
+        // the tap area is set before the offset so it moves with the text, and is a bit bigger than it
+        .contentShape(Rectangle().inset(by: -14))
         .onTapGesture { isFocused.wrappedValue = true }
+        .offset(x: 34, y: 158)
     }
 
     private var codeEngraving: some View {
@@ -253,9 +272,9 @@ struct SetupNameStep: View {
 private extension View {
     /// The pressed-into-the-metal look of the engraved line.
     func engraved() -> some View {
-        foregroundStyle(Color(hex: "032A1B"))
-            .shadow(color: .white.opacity(0.55), radius: 0, y: 1.5)
-            .shadow(color: .black.opacity(0.4), radius: 1, y: -1)
+        // pressed into the green: darker than the pocket, shaded inside along the top edge, lit along the bottom edge
+        foregroundStyle(Color(hex: "0B5C3C").shadow(.inner(color: .black.opacity(0.55), radius: 1.2, x: 0, y: 1.6)))
+            .shadow(color: .white.opacity(0.4), radius: 0, x: 0, y: 1)
     }
 }
 

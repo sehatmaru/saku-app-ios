@@ -327,7 +327,7 @@ struct SetupOnboardingView: View {
                 referralMessage = nil
                 if referralChecked != value { referralChecked = nil }
             }
-            .onAppear { isNameFocused = true }
+            .onAppear { Task { try? await Task.sleep(for: .milliseconds(450)); isNameFocused = true } }
     }
 
     /// Finds out whether the code works, without using it or leaving the step.
