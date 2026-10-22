@@ -48,7 +48,19 @@ struct SetupOnboardingView: View {
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var pickedWallets: [GuestWallet] { picked.compactMap { id in GuestWallet.all.first { $0.id == id } } }
-    private var total: Double { picked.reduce(0) { $0 + (amounts[$1] ?? 0) } }
+    /// Credit cards start at 0, so Saldo only lists the other wallets.
+    private var balanceWallets: [GuestWallet] { pickedWallets.filter { $0.type != .credit } }
+    private var total: Double { balanceWallets.reduce(0) { $0 + (amounts[$1.id] ?? 0) } }
+    /// What the Free plan will actually create: the first picks up to its limits (5 money wallets, 1 investment).
+    private var createdWallets: [GuestWallet] {
+        var money = 0, investments = 0
+        return pickedWallets.filter { w in
+            if w.type == .investment { investments += 1; return investments <= FreeLimits.investmentWallets }
+            money += 1
+            return money <= FreeLimits.moneyWallets
+        }
+    }
+    private var isOverFreeLimit: Bool { createdWallets.count < pickedWallets.count }
 
     private var isGuest: Bool { onBack != nil }
     private var stepCount: Int { isGuest ? 7 : 8 }
@@ -57,7 +69,7 @@ struct SetupOnboardingView: View {
     private var setup: OnboardingSetup {
         OnboardingSetup(
             name: trimmedName,
-            wallets: pickedWallets.map { .init(name: $0.name, type: $0.type, icon: $0.iconId, balance: amounts[$0.id] ?? 0) },
+            wallets: createdWallets.map { .init(name: $0.name, type: $0.type, icon: $0.iconId, balance: $0.type == .credit ? 0 : amounts[$0.id] ?? 0) },
             hiddenCategoryKeys: Set(OnboardingCategory.all.map(\.key)).subtracting(selectedCategories),
             paydayDay: payday,
             budgets: budgets.filter { selectedCategories.contains($0.key) && $0.value > 0 },
@@ -131,7 +143,7 @@ struct SetupOnboardingView: View {
     private var topBar: some View {
         HStack(spacing: 0) {
             Button {
-                if step > 1 { move(to: step - 1) } else { onBack?() }
+                if step == 4, balanceWallets.isEmpty { move(to: 2) } else if step > 1 { move(to: step - 1) } else { onBack?() }
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 22))
@@ -178,7 +190,7 @@ struct SetupOnboardingView: View {
                 PrimaryButton(title: L("Lanjut"), isLoading: isCheckingCode, isEnabled: !trimmedName.isEmpty) { continueFromName() }
             case 2:
                 PrimaryButton(title: picked.isEmpty ? L("Pilih minimal 1") : L("Lanjut · %lld dipilih", picked.count),
-                              isEnabled: !picked.isEmpty) { move(to: 3) }
+                              isEnabled: !picked.isEmpty) { move(to: balanceWallets.isEmpty ? 4 : 3) }
             case 3:
                 PrimaryButton(title: L("Lanjut")) { move(to: 4) }
             case 4:
@@ -371,10 +383,20 @@ struct SetupOnboardingView: View {
                     .animation(.easeInOut(duration: 0.2), value: picked.count)
                     .padding(.top, 12)
 
+                if let note = walletNote {
+                    Text(note)
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 6)
+                        .transition(.opacity)
+                }
+
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(GuestWallet.groups, id: \.name) { group in
                         VStack(alignment: .leading, spacing: 10) {
-                            Text(group.name)
+                            Text(L(group.name))
                                 .font(.app(13))
                                 .tracking(0.2)
                                 .foregroundStyle(Color.appTextSecondary)
@@ -390,6 +412,15 @@ struct SetupOnboardingView: View {
             .padding(.bottom, 28)
         }
         .scrollIndicators(.hidden)
+    }
+
+    /// One line under the count: the Free plan limit when it cuts picks off, else where to finish a card.
+    private var walletNote: String? {
+        if isOverFreeLimit {
+            return L("Paket Gratis: maksimal %lld dompet uang dan %lld Dompet Investasi, sisanya tidak dibuat.",
+                     FreeLimits.moneyWallets, FreeLimits.investmentWallets)
+        }
+        return picked.contains("credit") ? L("Lengkapi detailnya di Dompet") : nil
     }
 
     /// The three latest picks fan out of a green pocket; the rest fade away inside it.
@@ -450,7 +481,7 @@ struct SetupOnboardingView: View {
                     .fill(on ? Color.white.opacity(0.35) : w.color)
                     .frame(width: 22, height: 14)
                 Spacer(minLength: 0)
-                Text(w.name)
+                Text(w.type == .credit ? L(w.name) : w.name)
                     .font(.app(14, weight: .semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -503,7 +534,7 @@ struct SetupOnboardingView: View {
                     .padding(.top, 20)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Total saldo · \(picked.count) akun")
+                    Text("Total saldo · \(balanceWallets.count) akun")
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
                     HStack(alignment: .top, spacing: 4) {
@@ -525,7 +556,7 @@ struct SetupOnboardingView: View {
                 .padding(.top, 26)
 
                 VStack(spacing: 0) {
-                    ForEach(Array(pickedWallets.enumerated()), id: \.element.id) { i, w in
+                    ForEach(Array(balanceWallets.enumerated()), id: \.element.id) { i, w in
                         balanceCard(w)
                             .padding(.top, i == 0 ? 0 : -10)
                             .zIndex(Double(i))
@@ -796,8 +827,9 @@ private struct GuestWallet: Identifiable {
     let type: Account.AccountType
 
     var color: Color { Color(hex: hex) }
-    var short: String { type == .cash ? "CASH" : name.uppercased() }
-    var iconId: String { id == "shopeepay" ? WalletIcon.customIconId(text: "ShopeePay", colorName: "jingga") : id }
+    var short: String { type == .cash ? "CASH" : type == .credit ? "KARTU" : name.uppercased() }
+    /// Empty for a card: it has no brand until its details are filled in under Dompet.
+    var iconId: String { id == "credit" ? "" : id == "shopeepay" ? WalletIcon.customIconId(text: "ShopeePay", colorName: "jingga") : id }
 
     static let groups: [(name: String, items: [GuestWallet])] = [
         ("Bank", [
@@ -815,6 +847,14 @@ private struct GuestWallet: Identifiable {
         ]),
         ("Cash", [
             GuestWallet(id: "cash", name: "Dompet tunai", hex: "616161", type: .cash),
+        ]),
+        ("Kartu kredit", [
+            GuestWallet(id: "credit", name: "Kartu kredit", hex: "1A1F71", type: .credit),
+        ]),
+        ("Investasi", [
+            GuestWallet(id: "bibit", name: "Bibit", hex: "00875A", type: .investment),
+            GuestWallet(id: "stockbit", name: "Stockbit", hex: "2E3A46", type: .investment),
+            GuestWallet(id: "emas", name: "Emas", hex: "946200", type: .investment),
         ]),
     ]
 

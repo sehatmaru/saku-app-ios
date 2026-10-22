@@ -74,4 +74,24 @@ final class SetupOnboardingTests: XCTestCase {
         XCTAssertFalse(setup.memorySync)
         XCTAssertFalse(setup.joinsPlus)
     }
+
+    // US1: a card made in setup has a name only, so it has no bill until limit and due day are filled in
+    private func card(limit: Double?, due: String?) -> Account {
+        Account(id: "c", name: "Kartu kredit", type: .credit, icon: nil, isArchived: false, isDefault: false,
+                openingBalance: 0, currentBalance: 0, creditLimit: limit, dueDate: due)
+    }
+
+    func testCardFromSetupHasNoBillUntilDetailsAreFilled() {
+        let bare = card(limit: nil, due: nil)
+        XCTAssertTrue(bare.needsCardDetails)
+        XCTAssertNil(CreditStatement(card: bare, transactions: [], installments: []))
+        XCTAssertTrue(card(limit: 5_000_000, due: nil).needsCardDetails)
+        XCTAssertTrue(card(limit: nil, due: "20").needsCardDetails)
+    }
+
+    func testCompleteCardKeepsItsBill() {
+        let full = card(limit: 5_000_000, due: "20")
+        XCTAssertFalse(full.needsCardDetails)
+        XCTAssertNotNil(CreditStatement(card: full, transactions: [], installments: []))
+    }
 }

@@ -173,9 +173,11 @@ final class DashboardViewModel: ObservableObject {
                 .map { $0 }
             totalMonthlySubscriptions = activeSubs.reduce(0) { $0 + $1.monthlyAmount }
 
-            let statements = cards.compactMap { CreditStatement(card: $0, transactions: transactions, installments: installments) }
-            cardDueTotal = statements.reduce(0) { $0 + $1.remaining + $1.currentPeriod }
-            overdueBills = zip(cards, statements)
+            let billed = cards.compactMap { card in
+                CreditStatement(card: card, transactions: transactions, installments: installments).map { (card, $0) }
+            }
+            cardDueTotal = billed.reduce(0) { $0 + $1.1.remaining + $1.1.currentPeriod }
+            overdueBills = billed
                 .filter { $0.1.status == .overdue }
                 .map { OverdueCardBill(card: $0.0, statement: $0.1) }
                 .sorted { $0.statement.daysOverdue > $1.statement.daysOverdue }
@@ -186,7 +188,7 @@ final class DashboardViewModel: ObservableObject {
                 .filter { !cardIds.contains($0.accountId) }
                 .filter { sub in sub.nextBillingDateAsDate.map { $0 >= todayStart && $0 < monthEnd } ?? false }
                 .reduce(0) { $0 + $1.amount }
-            await NotificationManager.shared.resyncCardDue(cards: cards, statements: statements)
+            await NotificationManager.shared.resyncCardDue(cards: billed.map(\.0), statements: billed.map(\.1))
 
             // Archived wallets leave the totals, same as on Dompet.
             balance = WealthSummary(accounts: activeAccounts).cash

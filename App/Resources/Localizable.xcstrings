@@ -9793,6 +9793,16 @@
         }
       }
     },
+    "Lengkapi detailnya di Dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish the details later in Wallets"
+          }
+        }
+      }
+    },
     "Lengkapi di Konfirmasi transaksi": {
       "localizations": {
         "en": {
@@ -11519,6 +11529,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Free plan: %lld money wallets, %lld budgets, %lld expense categories."
+          }
+        }
+      }
+    },
+    "Paket Gratis: maksimal %lld dompet uang dan %lld Dompet Investasi, sisanya tidak dibuat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free plan: up to %lld money wallets and %lld Investment wallet, the rest won't be created."
           }
         }
       }

@@ -27,6 +27,8 @@ struct Account: Identifiable, Codable, Hashable {
     var isCreditCard: Bool { type == .credit }
     var balance: Double { currentBalance ?? openingBalance }
     var dueDay: Int? { dueDate.flatMap { Int($0) } }
+    /// A card made in setup has only a name: no bill until its limit and due day are filled in.
+    var needsCardDetails: Bool { isCreditCard && ((creditLimit ?? 0) <= 0 || dueDay == nil) }
 
     var availableCredit: Double? {
         isCreditCard ? creditLimit.map { $0 - (currentBalance ?? 0) } : nil

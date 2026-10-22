@@ -257,10 +257,12 @@ final class AuthViewModel: ObservableObject {
         let repo = SupabaseRepository.shared
         // A retry after a partial failure must not duplicate wallets.
         if try await repo.fetchAccounts(userId: profileId.uuidString).isEmpty {
+            // The main wallet is the first one that holds money: not a card, not an investment.
+            let mainIndex = setup.wallets.firstIndex { $0.type != .credit && $0.type != .investment }
             for (i, w) in setup.wallets.enumerated() {
                 _ = try await repo.createAccount(
-                    name: w.name, type: w.type, openingBalance: w.balance, icon: w.icon,
-                    userId: profileId.uuidString, isDefault: i == 0
+                    name: w.name, type: w.type, openingBalance: w.balance, icon: w.icon.isEmpty ? nil : w.icon,
+                    userId: profileId.uuidString, isDefault: i == mainIndex
                 )
             }
         }

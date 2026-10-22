@@ -48,7 +48,7 @@ struct CreditStatement {
 
     init?(card: Account, transactions: [Transaction], installments: [CardInstallment],
           today: Date = Date(), calendar: Calendar = .current) {
-        guard card.isCreditCard else { return nil }
+        guard card.isCreditCard, !card.needsCardDetails else { return nil }
         let cycle = Cycle(card: card, calendar: calendar)
         let todayStart = calendar.startOfDay(for: today)
 

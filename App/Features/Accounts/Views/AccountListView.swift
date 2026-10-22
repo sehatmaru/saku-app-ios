@@ -1297,6 +1297,7 @@ struct WalletCard: View {
     var investmentPill: (symbol: String, text: String)?
 
     private var amountText: String {
+        if account.needsCardDetails { return "—" }
         let value = account.isCreditCard ? (account.availableCredit ?? 0) : account.balance
         return isBalanceVisible ? value.formattedAsCurrency() : "Rp" + hiddenAmount
     }
@@ -1365,12 +1366,20 @@ struct WalletCard: View {
                                 if let network = account.networkId {
                                     CardNetworkBadge(network: network).padding(.bottom, 6)
                                 }
-                                Text("Jatuh tempo")
-                                    .font(.app(12))
-                                    .foregroundStyle(.white.opacity(0.8))
-                                Text(account.dueDay.map { L("Tgl %lld", $0) } ?? "—")
-                                    .font(.app(15, weight: .semibold))
-                                    .monospacedDigit()
+                                if account.needsCardDetails {
+                                    Label(L("Lengkapi"), systemImage: "pencil")
+                                        .font(.app(13, weight: .semibold))
+                                        .padding(.horizontal, 11)
+                                        .frame(height: 28)
+                                        .background(.white.opacity(0.2), in: Capsule())
+                                } else {
+                                    Text("Jatuh tempo")
+                                        .font(.app(12))
+                                        .foregroundStyle(.white.opacity(0.8))
+                                    Text(account.dueDay.map { L("Tgl %lld", $0) } ?? "—")
+                                        .font(.app(15, weight: .semibold))
+                                        .monospacedDigit()
+                                }
                             }
                             .padding(.bottom, 3)
                         } else if let pill = investmentPill {

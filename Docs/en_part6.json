@@ -1251,5 +1251,8 @@
   "Menyimpan setup": "Saving your setup",
   "Setup belum tersimpan": "Setup not saved",
   "Koneksi terputus. Jawabanmu masih ada di iPhone ini, jadi tidak perlu mengisi ulang.": "The connection dropped. Your answers are still on this iPhone, so you don't need to fill them in again.",
-  "Kembali ke setup": "Back to setup"
+  "Kembali ke setup": "Back to setup",
+  "Lengkapi": "Complete",
+  "Lengkapi detailnya di Dompet": "Finish the details later in Wallets",
+  "Paket Gratis: maksimal %lld dompet uang dan %lld Dompet Investasi, sisanya tidak dibuat.": "Free plan: up to %lld money wallets and %lld Investment wallet, the rest won't be created."
 }
