@@ -9873,6 +9873,16 @@
         }
       }
     },
+    "Langganan Saku Plus di App Store tetap berjalan dan ditagih sampai kamu membatalkannya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Saku Plus subscription on the App Store keeps running and is billed until you cancel it."
+          }
+        }
+      }
+    },
     "Langganan bulan ini": {
       "localizations": {
         "en": {
@@ -9919,6 +9929,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Subscription: %@"
+          }
+        }
+      }
+    },
+    "Langgananmu tidak ikut berhenti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your subscription doesn't stop with this"
           }
         }
       }

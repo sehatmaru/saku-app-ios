@@ -6,6 +6,8 @@ import SwiftUI
 struct DeleteAccountView: View {
     @ObservedObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @ObservedObject private var plus = PlusStore.shared
     @State private var step = 1
 @State private var showsExport = false
     @State private var reason: AccountDeletion.Reason?
@@ -84,6 +86,7 @@ struct DeleteAccountView: View {
             .padding(18).background(Color.appFill, in: RoundedRectangle(cornerRadius: 16)).padding(.top, 18)
             Text("Sampai tanggal itu kamu bisa membatalkannya dengan masuk lagi ke Saku.")
                 .font(.app(16)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.top, 14)
+            if plus.isPlus { subscriptionNotice }
             Text("Yang ikut terhapus").font(.app(20, weight: .semibold)).padding(.top, 28)
             VStack(spacing: 0) {
                 point("wallet.bifold", L("Semua dompet, transaksi, budget, dan kategorimu"))
@@ -93,6 +96,28 @@ struct DeleteAccountView: View {
             }
             .padding(.top, 8)
         }
+    }
+
+    /// Deleting the account does not stop the App Store subscription, so a Plus user is told and can open it (US2).
+    private var subscriptionNotice: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "creditcard").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary).padding(.top, 1)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Langgananmu tidak ikut berhenti").font(.app(14, weight: .semibold))
+                Text("Langganan Saku Plus di App Store tetap berjalan dan ditagih sampai kamu membatalkannya.")
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
+                Button {
+                    if let url = URL(string: "https://apps.apple.com/account/subscriptions") { openURL(url) }
+                } label: {
+                    Text("Kelola langganan").font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                }
+                .buttonStyle(.plain).padding(.top, 5)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(Color.stChip, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.top, 20)
     }
 
     private func point(_ icon: String, _ text: String) -> some View {
