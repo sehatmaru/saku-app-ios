@@ -100,9 +100,7 @@ struct ProfileView: View {
                             .padding(.top, 14).stEnter(2)
                         dataSection.stEnter(3)
                         appearanceSection.stEnter(4)
-                        if authViewModel.currentUser?.isGuest == false {
-                            logoutButton.stEnter(6)
-                        }
+                        logoutButton.stEnter(6)
                         Text(authViewModel.currentUser?.isGuest == true
                              ? L("Saku versi %@", appVersion)
                              : L("Bergabung sejak %@ · Saku versi %@", memberSinceDate, appVersion))
