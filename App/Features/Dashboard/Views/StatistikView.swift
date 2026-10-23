@@ -101,15 +101,15 @@ struct StatistikPage: View {
     var onOpenBudget: () -> Void = {}
     @State private var appeared = false
 
-    // Layout A of the design ("padat").
-    private let pad: CGFloat = 16, gap: CGFloat = 10, radius: CGFloat = 16, titleSize: CGFloat = 17, heroSize: CGFloat = 40
+    // Flat sections: hairlines instead of cards, so numbers get the full width of the page.
+    private let titleSize: CGFloat = 17, heroSize: CGFloat = 40
 
     private var money: StatistikMoney { StatistikMoney(isVisible: isVisible) }
     private var isShown: Bool { appeared || !animated }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: gap) {
-            Text("Statistik").font(.app(34, weight: .bold)).tracking(-0.7).padding(.bottom, 2)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Statistik").font(.app(34, weight: .bold)).tracking(-0.7).padding(.bottom, 6)
             periodPicker
             if result.isEmpty {
                 emptyState
@@ -127,7 +127,7 @@ struct StatistikPage: View {
                 highlightsCard.rise(isShown, y: 14, delay: 0.54)
             }
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 100)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -147,9 +147,9 @@ struct StatistikPage: View {
             }
             content()
         }
-        .padding(pad)
+        .padding(.vertical, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: radius))
+        .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
     }
 
     private func label(_ text: String) -> some View { Text(text).font(.app(12)).foregroundStyle(Color.appTextSecondary) }
@@ -173,8 +173,7 @@ struct StatistikPage: View {
             Spacer()
             stepButton("chevron.right", enabled: canGoForward, action: onForward)
         }
-        .padding(6)
-        .background(Color.appFill, in: Capsule())
+        .padding(.bottom, 12)
         .rise(isShown, y: 14, delay: 0)
     }
 
@@ -245,7 +244,7 @@ struct StatistikPage: View {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     label(L("Proyeksi pengeluaran akhir periode"))
-                    Text(projectionNote(s.projectionNote)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                    Text(projectionNote(s.projectionNote)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
                 }
                 Spacer(minLength: 12)
                 Text(s.projection.map { money.full($0) } ?? "—").font(.app(17, weight: .medium)).monospacedDigit().lineLimit(1)
@@ -271,9 +270,9 @@ struct StatistikPage: View {
             VStack(alignment: .leading, spacing: 0) {
                 label(L("Kas dan investasi")).font(.app(13))
                 HStack(alignment: .top, spacing: 4) {
-                    Text("Rp").font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, heroSize * 0.12)
+                    Text("Rp").font(.app(14)).foregroundStyle(Color.appTextSecondary).padding(.top, (heroSize - 10) * 0.12)
                     Text(isVisible ? assets.total.formattedAsDigits() : hiddenAmount)
-                        .font(.app(heroSize, weight: .light)).tracking(-1.2).monospacedDigit()
+                        .font(.app(heroSize - 10, weight: .light)).tracking(-1.0).monospacedDigit()
                         .lineLimit(1).minimumScaleFactor(0.5)
                 }
             }
@@ -304,8 +303,6 @@ struct StatistikPage: View {
                         Text(investment.lastUpdated.map { StatistikMoney.dayLabel($0) } ?? "—").font(.app(14))
                     }
                 }
-                .padding(14)
-                .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 12))
             }
             Divider().overlay(Color.appDivider)
             VStack(spacing: 12) {
@@ -317,7 +314,7 @@ struct StatistikPage: View {
                             HStack(spacing: 8) {
                                 Circle().fill(color).frame(width: 8, height: 8)
                                 Text(row.name).lineLimit(1)
-                                Text("\(row.count)").font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                                Text("\(row.count)").font(.app(12)).foregroundStyle(Color.appTextSecondary)
                             }
                             Spacer(minLength: 8)
                             Text(money.full(row.amount)).monospacedDigit()
@@ -509,9 +506,7 @@ struct StatistikPage: View {
                             Text(used.name).font(.app(17, weight: .semibold)).lineLimit(1)
                             label(L("%lld transaksi", used.count))
                         }
-                        .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 12))
                     }
                 }
                 VStack(spacing: 12) {
@@ -565,7 +560,7 @@ struct StatistikPage: View {
                         + Text(" · " + L("%@ rata-rata", money.full(t.weekdays[peak].average))))
                         .font(.app(13)).foregroundStyle(Color.appTextSecondary)
                 }
-                HStack(alignment: .top, spacing: 10) {
+                HStack(alignment: .top, spacing: 14) {
                     VStack(alignment: .leading, spacing: 8) {
                         label(L("3 hari puncak"))
                         ForEach(t.topDays.indices, id: \.self) { index in
@@ -577,16 +572,16 @@ struct StatistikPage: View {
                             .font(.app(13)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
                         }
                     }
-                    .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 12))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Rectangle().fill(Color.appDivider).frame(width: 1)
                     VStack(alignment: .leading, spacing: 4) {
                         label(L("Hemat beruntun"))
                         Text("\(t.longestZeroStreak)").font(.app(28, weight: .light)).tracking(-0.6)
                         label(L("hari tanpa pengeluaran"))
                     }
-                    .padding(12).frame(width: 124, alignment: .leading)
-                    .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 12))
+                    .frame(width: 112, alignment: .leading)
                 }
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -653,7 +648,7 @@ struct StatistikPage: View {
                 }
                 ForEach(h.biggest.indices, id: \.self) { index in
                     HStack(spacing: 12) {
-                        Text("\(index + 1)").font(.app(13)).foregroundStyle(Color.appTextTertiary).monospacedDigit().frame(width: 22, alignment: .leading)
+                        Text("\(index + 1)").font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit().frame(width: 22, alignment: .leading)
                         VStack(alignment: .leading, spacing: 0) {
                             Text(h.biggest[index].name).font(.app(14)).lineLimit(1)
                             label(StatistikMoney.dayLabel(h.biggest[index].date))
@@ -672,8 +667,6 @@ struct StatistikPage: View {
                     Spacer(minLength: 8)
                     Text(L("%lld transaksi", frequent.count)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
                 }
-                .padding(12)
-                .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 12))
             }
             Divider().overlay(Color.appDivider)
             VStack(alignment: .leading, spacing: 10) {
