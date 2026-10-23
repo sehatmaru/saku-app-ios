@@ -36,6 +36,8 @@ struct InvestmentDetailContent: View {
     let onWithdraw: () -> Void
     let onUpdateValue: () -> Void
     let onHistory: () -> Void
+    @State private var showsReminder = false
+    @State private var reminder = InvestmentReminder.off
 
     var body: some View {
         let summary = InvestmentSummary(account: account, transactions: transactions)
@@ -54,6 +56,7 @@ struct InvestmentDetailContent: View {
                     Text(summary.lastUpdated.map { InvestmentUI.shortDate($0) + " · " + InvestmentUI.daysAgo($0) } ?? "—")
                         .font(.app(15))
                 }
+                reminderRow
             }
             .padding(16)
             .background(InvestmentUI.box, in: RoundedRectangle(cornerRadius: 18))
@@ -77,6 +80,28 @@ struct InvestmentDetailContent: View {
                 action(L("Riwayat"), "clock.arrow.circlepath", onHistory)
             }
             .padding(.top, 18)
+        }
+    }
+
+    private var reminderRow: some View {
+        Button { showsReminder = true } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Pengingat").font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    if reminder != .off {
+                        Text("Diingatkan pukul 09.00").font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                    }
+                }
+                Spacer(minLength: 8)
+                Text(reminder.title).font(.app(15)).foregroundStyle(Color.appText)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onAppear { reminder = InvestmentReminderStore().interval(for: account.id) }
+        .sheet(isPresented: $showsReminder, onDismiss: { reminder = InvestmentReminderStore().interval(for: account.id) }) {
+            InvestmentReminderSheet(account: account, transactions: transactions, offer: false)
         }
     }
 
@@ -275,6 +300,150 @@ struct InvestmentAllocationView: View {
                 .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 8)
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Pengingat (Fitur 7 US3)
+
+/// Pick how often to be reminded to update the value (Mati, Mingguan, Dua mingguan, Bulanan), or the one-time
+/// "Mau diingatkan?" offer after the first investment wallet. Turning one on asks for notification permission;
+/// when it is denied the reminder is still saved and the sheet says where to allow it.
+struct InvestmentReminderSheet: View {
+    let account: Account
+    let transactions: [Transaction]
+    let offer: Bool
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @State private var chosen = InvestmentReminder.off
+    @State private var denied = false
+    @State private var height: CGFloat = 380
+
+    private let store = InvestmentReminderStore()
+    private var choices: [InvestmentReminder] { InvestmentReminder.allCases.filter { $0 != .off } }
+
+    var body: some View {
+        Group {
+            if denied { deniedView } else if offer { offerView } else { optionsView }
+        }
+        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(GeometryReader { geo in
+            Color.clear.onAppear { height = geo.size.height }.onChange(of: geo.size.height) { _, new in height = new }
+        })
+        .presentationDetents([.height(height + 16)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .presentationBackground(Color.appBackground)
+        .onAppear {
+            chosen = offer ? .monthly : store.interval(for: account.id)
+            if offer { store.wasOffered = true }
+        }
+    }
+
+    private func apply(_ interval: InvestmentReminder) {
+        store.set(interval, for: account.id)
+        Task {
+            if interval != .off {
+                await NotificationManager.shared.requestPermissionIfNeeded()
+                if await NotificationManager.shared.notificationsDenied() {
+                    withAnimation(.settle(0.3)) { denied = true }
+                }
+            }
+            await NotificationManager.shared.scheduleInvestmentReminder(account: account, transactions: transactions)
+        }
+    }
+
+    private func primary(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.app(17, weight: .semibold)).foregroundStyle(.white)
+                .frame(maxWidth: .infinity).frame(height: 52).background(Color.appPrimary, in: Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+    }
+
+    private func secondary(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
+                .frame(maxWidth: .infinity).frame(height: 48)
+                .overlay(Capsule().stroke(Color.appBorder, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var optionsView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Pengingat").font(.app(20, weight: .semibold))
+            Text(L("Diingatkan memperbarui nilai %@.", account.name)).font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 4)
+            VStack(spacing: 0) {
+                ForEach(InvestmentReminder.allCases) { item in
+                    Button { chosen = item; apply(item) } label: {
+                        HStack {
+                            Text(item.title).font(.app(17)).foregroundStyle(Color.appText)
+                            Spacer()
+                            if chosen == item { Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(Color.appPrimary) }
+                        }
+                        .frame(height: 52).contentShape(Rectangle())
+                        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.top, 14)
+            Label("Diingatkan pukul 09.00", systemImage: "clock").font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
+            primary(L("Selesai")) { dismiss() }.padding(.top, 18)
+        }
+    }
+
+    private var offerView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                Image(systemName: "bell").font(.system(size: 30)).foregroundStyle(Color.appPrimary)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 15, weight: .bold)).foregroundStyle(Color.appTextSecondary)
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel(L("Tutup"))
+            }
+            Text("Mau diingatkan?").font(.app(22, weight: .semibold)).padding(.top, 4)
+            Text(L("Nilai %@ hanya berubah saat kamu memperbaruinya. Kami bisa mengingatkanmu pukul 09.00.", account.name))
+                .font(.app(15)).foregroundStyle(Color.appBody).lineSpacing(2).padding(.top, 6).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                ForEach(choices) { item in
+                    Button { chosen = item } label: {
+                        Text(item.title).font(.app(14, weight: chosen == item ? .medium : .regular))
+                            .foregroundStyle(chosen == item ? Color.appBackground : Color.appText)
+                            .frame(maxWidth: .infinity).frame(height: 36)
+                            .background(chosen == item ? Color.appText : Color.clear, in: Capsule())
+                            .overlay(Capsule().stroke(chosen == item ? Color.clear : Color.appBorder, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.top, 18)
+            primary(L("Ingatkan aku")) { apply(chosen); if !denied { Task { try? await Task.sleep(for: .milliseconds(350)); if !denied { dismiss() } } } }
+                .padding(.top, 20)
+            secondary(L("Tidak perlu")) { dismiss() }.padding(.top, 6)
+            Text("Tidak akan ditanyakan lagi. Bisa diatur di detail dompet.")
+                .font(.app(12)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 10)
+        }
+    }
+
+    private var deniedView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image(systemName: "bell.slash").font(.system(size: 30)).foregroundStyle(Color.appTextSecondary)
+            Text("Notifikasi belum diizinkan").font(.app(20, weight: .semibold)).padding(.top, 12)
+            Text(L("Pengingat %@ sudah kami simpan, tapi baru berjalan setelah kamu mengizinkan notifikasi Saku di Pengaturan iPhone.", chosen.title))
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2).padding(.top, 6).fixedSize(horizontal: false, vertical: true)
+            primary(L("Buka Pengaturan")) {
+                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+            }
+            .padding(.top, 22)
+            Button { dismiss() } label: {
+                Text("Nanti saja").font(.app(16)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).frame(height: 48)
+            }
+            .buttonStyle(.plain).padding(.top, 6)
+        }
     }
 }
 

@@ -37,6 +37,9 @@ struct AccountListView: View {
     @State private var transferFrom: Account?
     /// Perbarui nilai for an investment wallet.
     @State private var updatingValue: Account?
+    /// "Mau diingatkan?", once, after the first investment wallet is made.
+    @State private var reminderOffer: Account?
+    @ObservedObject private var notificationRouter = NotificationRouter.shared
     /// Setor ke aset / Tarik dari aset, started from an investment wallet.
     @State private var assetTransfer: AssetTransferRoute?
 
@@ -224,10 +227,20 @@ struct AccountListView: View {
                 UpdateValueView(account: account,
                                 capital: InvestmentSummary(account: account, transactions: accountTransactions[account.id] ?? []).capital) { value, date, note in
                     let ok = await viewModel.updateInvestmentValue(account: account, newValue: value, date: date, note: note)
-                    if ok, let userId = authViewModel.currentUser?.id { await syncAccountTransactions(userId: userId, forceRefresh: true) }
+                    if ok, let userId = authViewModel.currentUser?.id {
+                        await syncAccountTransactions(userId: userId, forceRefresh: true)
+                        // the next reminder counts from this update
+                        await NotificationManager.shared.resyncInvestmentReminders(accounts: viewModel.accounts, transactions: accountTransactions.values.flatMap { $0 })
+                    }
                     return ok
                 }
             }
+            .sheet(item: $reminderOffer) { account in
+                InvestmentReminderSheet(account: account, transactions: accountTransactions[account.id] ?? [], offer: true)
+            }
+            .onChange(of: notificationRouter.pendingInvestmentId) { _, _ in openReminderTarget() }
+            .onChange(of: viewModel.accounts.count) { _, _ in openReminderTarget() }
+            .onAppear { openReminderTarget() }
             .fullScreenCover(item: $assetTransfer) { route in
                 if let userId = authViewModel.currentUser?.id {
                     AddTransactionView(categories: categories, accounts: viewModel.accounts, userId: userId, onSave: {},
@@ -250,6 +263,7 @@ struct AccountListView: View {
             .fullScreenCover(isPresented: $showAddWallet) {
                 if let userId = authViewModel.currentUser?.id {
                     AddWalletView(isLimited: { FreeLimits.isWalletLimited($0, in: viewModel.accounts, isPlus: plus.isPlus) }) { wallet in
+                        let firstInvestment = wallet.type == .investment && !viewModel.accounts.contains(where: \.isInvestment)
                         let success = await viewModel.addAccount(
                             name: wallet.name, type: wallet.type, openingBalance: wallet.balance, icon: wallet.icon,
                             userId: userId, creditLimit: wallet.creditLimit, dueDate: wallet.dueDate,
@@ -258,6 +272,10 @@ struct AccountListView: View {
                             makeDefault: wallet.isDefault)
                         if success {
                             await syncAccountTransactions(userId: userId)
+                            if firstInvestment, !InvestmentReminderStore().wasOffered, let created = viewModel.accounts.last(where: \.isInvestment) {
+                                // after the Tambah dompet screen has closed
+                                Task { try? await Task.sleep(for: .milliseconds(700)); reminderOffer = created }
+                            }
                         }
                         return success
                     }
@@ -628,6 +646,14 @@ struct AccountListView: View {
         }
         .padding(.horizontal, 24)
         .padding(.top, group.type == groups.first?.type ? 12 : 26)
+    }
+
+    /// Tapping the reminder opens Perbarui nilai of that wallet, once the wallets have loaded.
+    private func openReminderTarget() {
+        guard let id = notificationRouter.pendingInvestmentId,
+              let account = viewModel.accounts.first(where: { $0.id == id && $0.isInvestment && $0.isActive }) else { return }
+        notificationRouter.pendingInvestmentId = nil
+        updatingValue = account
     }
 
     private func setGroup(_ type: Account.AccountType, open: Bool) {

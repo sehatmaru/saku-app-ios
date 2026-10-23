@@ -92,6 +92,7 @@ struct DashboardView: View {
         }
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
+        .onChange(of: notificationRouter.pendingInvestmentId) { _, id in if id != nil { openWalletsPage() } }
         .onChange(of: draftStore.drafts.count) { old, new in
             // "Baru masuk" on the tray pill right after drafts land (design 1a)
             guard new > old else { return }
@@ -181,6 +182,14 @@ struct DashboardView: View {
         } else {
             SmartButtonGate.shared.opensBarOnShow = true
         }
+    }
+
+    /// A value reminder was tapped: Dompet opens on the Beranda stack and shows Perbarui nilai there.
+    private func openWalletsPage() {
+        selectedTab = .home
+        var path = NavigationPath()
+        path.append(HomeRoute.wallets)
+        homePath = path
     }
 
     /// Konfirmasi transaksi is a page on the Beranda stack, not a sheet.

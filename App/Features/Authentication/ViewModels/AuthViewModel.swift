@@ -533,6 +533,7 @@ final class AuthViewModel: ObservableObject {
         DraftStore.shared.reset()
         PlusStore.shared.reset()
         GuestCardPolicy.resetCounters()
+        Task { await NotificationManager.shared.removeInvestmentReminders() }
     }
 
     func logout() {

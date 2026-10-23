@@ -501,6 +501,16 @@
         }
       }
     },
+    "%@ terakhir diperbarui %lld hari lalu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ was last updated %lld days ago"
+          }
+        }
+      }
+    },
     "%@ tersimpan": {
       "localizations": {
         "en": {
@@ -4273,6 +4283,16 @@
         }
       }
     },
+    "Buka Pengaturan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        }
+      }
+    },
     "Buka Saku dan setujui Catat cepat dulu, lalu coba lagi.": {
       "localizations": {
         "en": {
@@ -5963,6 +5983,26 @@
         }
       }
     },
+    "Diingatkan memperbarui nilai %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder to update the value of %@."
+          }
+        }
+      }
+    },
+    "Diingatkan pukul 09.00": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder at 09:00"
+          }
+        }
+      }
+    },
     "Dijeda": {
       "localizations": {
         "en": {
@@ -6529,6 +6569,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Two taps, no fee"
+          }
+        }
+      }
+    },
+    "Dua mingguan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every two weeks"
           }
         }
       }
@@ -8139,6 +8189,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Memory, notifications, and data"
+          }
+        }
+      }
+    },
+    "Ingatkan aku": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remind me"
           }
         }
       }
@@ -10963,6 +11023,16 @@
         }
       }
     },
+    "Mau diingatkan?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Want a reminder?"
+          }
+        }
+      }
+    },
     "Melebihi limit": {
       "localizations": {
         "en": {
@@ -11319,6 +11389,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sunday"
+          }
+        }
+      }
+    },
+    "Mingguan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly"
           }
         }
       }
@@ -11723,6 +11803,16 @@
         }
       }
     },
+    "Nilai %@ hanya berubah saat kamu memperbaruinya. Kami bisa mengingatkanmu pukul 09.00.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The value of %@ only changes when you update it. We can remind you at 09:00."
+          }
+        }
+      }
+    },
     "Nilai Rp0 berarti rugi 100% dari modal. Perbarui nilai jika ini keliru.": {
       "localizations": {
         "en": {
@@ -11969,6 +12059,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bank notifications become drafts, just save"
+          }
+        }
+      }
+    },
+    "Notifikasi belum diizinkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications not allowed yet"
           }
         }
       }
@@ -12619,6 +12719,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Speech recognition for this language isn't available on this device. Just type."
+          }
+        }
+      }
+    },
+    "Pengingat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder"
+          }
+        }
+      }
+    },
+    "Pengingat %@ sudah kami simpan, tapi baru berjalan setelah kamu mengizinkan notifikasi Saku di Pengaturan iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %@ reminder is saved, but it only starts once you allow Saku notifications in iPhone Settings."
           }
         }
       }
@@ -17853,6 +17973,16 @@
         }
       }
     },
+    "Tidak akan ditanyakan lagi. Bisa diatur di detail dompet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We won't ask again. You can set it in the wallet's details."
+          }
+        }
+      }
+    },
     "Tidak berubah": {
       "localizations": {
         "en": {
@@ -17999,6 +18129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Doesn't appear when recording · %lld transactions"
+          }
+        }
+      }
+    },
+    "Tidak perlu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No need"
           }
         }
       }
@@ -19041,6 +19181,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Verify this Google account's email first, then try again. Your data is still safe on this iPhone."
+          }
+        }
+      }
+    },
+    "Waktunya memperbarui nilai %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time to update the value of %@"
           }
         }
       }

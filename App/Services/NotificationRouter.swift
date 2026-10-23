@@ -11,6 +11,8 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
     @Published var pendingCardId: String?
     /// Set when the user taps the "new drafts" notification; Beranda opens Konfirmasi transaksi and clears it.
     @Published var opensDrafts = false
+    /// The investment wallet whose "Perbarui nilai" the user was reminded of; Dompet opens it and clears this.
+    @Published var pendingInvestmentId: String?
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
@@ -26,6 +28,7 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
         let route = content.userInfo["route"] as? String
         let category = content.categoryIdentifier
         let cardId = content.userInfo["cardId"] as? String
+        let investmentId = content.userInfo["accountId"] as? String
         let statementTime = content.userInfo["statementDate"] as? Double ?? 0
         let action = response.actionIdentifier
         let title = content.title
@@ -36,6 +39,10 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
             defer { finish() }
             if route == DraftNotifier.route {
                 NotificationRouter.shared.opensDrafts = true
+                return
+            }
+            if route == NotificationManager.investmentRoute, let investmentId {
+                NotificationRouter.shared.pendingInvestmentId = investmentId
                 return
             }
             guard category == NotificationManager.lateCategory, let cardId else { return }

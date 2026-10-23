@@ -84,3 +84,51 @@ final class InvestmentSeriesTests: XCTestCase {
         XCTAssertEqual(allocation.total, 100)
     }
 }
+
+final class InvestmentReminderTests: XCTestCase {
+    private let cal = Calendar.current
+    private func at(_ m: Int, _ d: Int, _ h: Int = 12) -> Date { cal.date(from: DateComponents(year: 2026, month: m, day: d, hour: h))! }
+
+    func testOffNeverFires() {
+        XCTAssertNil(InvestmentReminder.off.nextFire(lastUpdated: at(10, 1), now: at(10, 2)))
+    }
+
+    func testWeeklyFiresAtNineOneWeekAfterTheUpdate() {
+        let fire = InvestmentReminder.weekly.nextFire(lastUpdated: at(10, 1), now: at(10, 2))
+        XCTAssertEqual(fire, at(10, 8, 9))
+    }
+
+    func testMonthlyFollowsTheCalendarMonth() {
+        XCTAssertEqual(InvestmentReminder.monthly.nextFire(lastUpdated: at(9, 30), now: at(10, 1)), at(10, 30, 9))
+    }
+
+    func testBiweeklyIsFourteenDays() {
+        XCTAssertEqual(InvestmentReminder.biweekly.nextFire(lastUpdated: at(10, 1), now: at(10, 2)), at(10, 15, 9))
+    }
+
+    func testAStaleValueFiresAtTheComingNine() {
+        // last updated long ago: tomorrow 09:00 when today's 09:00 has passed, today's when it has not
+        XCTAssertEqual(InvestmentReminder.weekly.nextFire(lastUpdated: at(1, 1), now: at(10, 20, 12)), at(10, 21, 9))
+        XCTAssertEqual(InvestmentReminder.weekly.nextFire(lastUpdated: at(1, 1), now: at(10, 20, 7)), at(10, 20, 9))
+    }
+
+    func testNeverUpdatedCountsFromNow() {
+        XCTAssertEqual(InvestmentReminder.weekly.nextFire(lastUpdated: nil, now: at(10, 1)), at(10, 8, 9))
+    }
+
+    func testStoreKeepsOneSettingPerWalletAndClears() {
+        let defaults = UserDefaults(suiteName: "InvestmentReminderTests")!
+        defaults.removePersistentDomain(forName: "InvestmentReminderTests")
+        let store = InvestmentReminderStore(defaults: defaults)
+        XCTAssertEqual(store.interval(for: "a"), .off)
+        store.set(.weekly, for: "a"); store.set(.monthly, for: "b")
+        XCTAssertEqual(store.interval(for: "a"), .weekly)
+        XCTAssertEqual(store.interval(for: "b"), .monthly)
+        store.set(.off, for: "a")
+        XCTAssertEqual(store.interval(for: "a"), .off)
+        store.wasOffered = true
+        store.clearAll()
+        XCTAssertEqual(store.interval(for: "b"), .off)
+        XCTAssertFalse(store.wasOffered)
+    }
+}

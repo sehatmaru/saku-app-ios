@@ -97,6 +97,53 @@ final class NotificationManager: @unchecked Sendable {
         UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 
+    // MARK: Investment value reminders (Fitur 7 US3)
+
+    static let investmentPrefix = "investment-update-"
+    static let investmentRoute = "investment-update"
+
+    /// Whether the system will show notifications: .notDetermined is asked for when the user turns a reminder on.
+    func notificationsDenied() async -> Bool {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .denied
+    }
+
+    /// One reminder for one wallet, replacing the one waiting. No amounts in the text.
+    func scheduleInvestmentReminder(account: Account, transactions: [Transaction]) async {
+        let center = UNUserNotificationCenter.current()
+        let id = Self.investmentPrefix + account.id
+        center.removePendingNotificationRequests(withIdentifiers: [id])
+        let interval = InvestmentReminderStore().interval(for: account.id)
+        guard account.isInvestment, account.isActive else { return }
+        let last = InvestmentSummary(account: account, transactions: transactions).lastUpdated
+        guard let fire = interval.nextFire(lastUpdated: last) else { return }
+        let age = last.map { max(0, Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: $0),
+                                                                    to: Calendar.current.startOfDay(for: fire)).day ?? 0) }
+        let body = age.map { L("%@ terakhir diperbarui %lld hari lalu", account.name, $0) } ?? L("Waktunya memperbarui nilai %@", account.name)
+        await add(id: id, title: account.name, body: body, daysBefore: 0, date: fire,
+                  userInfo: ["route": Self.investmentRoute, "accountId": account.id])
+    }
+
+    /// Every investment wallet's reminder follows its last update; wallets that were archived or deleted lose theirs.
+    func resyncInvestmentReminders(accounts: [Account], transactions: [Transaction]) async {
+        let center = UNUserNotificationCenter.current()
+        let live = Set(accounts.filter { $0.isInvestment && $0.isActive }.map { Self.investmentPrefix + $0.id })
+        let stale = await center.pendingNotificationRequests().map(\.identifier)
+            .filter { $0.hasPrefix(Self.investmentPrefix) && !live.contains($0) }
+        center.removePendingNotificationRequests(withIdentifiers: stale)
+        for account in accounts where account.isInvestment && account.isActive {
+            await scheduleInvestmentReminder(account: account, transactions: transactions.filter {
+                $0.accountId == account.id || $0.counterpartyAccountId == account.id })
+        }
+    }
+
+    /// Signing out or deleting the account.
+    func removeInvestmentReminders() async {
+        let center = UNUserNotificationCenter.current()
+        let ids = await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix(Self.investmentPrefix) }
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        InvestmentReminderStore().clearAll()
+    }
+
     /// A one-off reminder at 09:00, `daysBefore` days before `date`; skipped once that's past.
     private func add(id: String, title: String, body: String, daysBefore: Int, date: Date,
                      category: String? = nil, userInfo: [String: Any] = [:]) async {

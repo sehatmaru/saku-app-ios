@@ -1325,5 +1325,20 @@
   "Grafik muncul setelah ada 2 titik data. Isi lewat Perbarui nilai, setor, atau tarik.": "The chart appears once there are 2 data points. Add them with Update value, deposit or withdraw.",
   "Angka berdasarkan pembaruanmu, bukan harga pasar": "Figures are based on your updates, not market prices",
   "Grafik nilai dan modal": "Value and capital chart",
-  "Porsi dari total aset investasi. Angka berdasarkan pembaruanmu, bukan harga pasar": "Share of total investment assets. Figures are based on your updates, not market prices"
+  "Porsi dari total aset investasi. Angka berdasarkan pembaruanmu, bukan harga pasar": "Share of total investment assets. Figures are based on your updates, not market prices",
+  "Pengingat": "Reminder",
+  "Mingguan": "Weekly",
+  "Dua mingguan": "Every two weeks",
+  "%@ terakhir diperbarui %lld hari lalu": "%@ was last updated %lld days ago",
+  "Waktunya memperbarui nilai %@": "Time to update the value of %@",
+  "Diingatkan pukul 09.00": "Reminder at 09:00",
+  "Diingatkan memperbarui nilai %@.": "Reminder to update the value of %@.",
+  "Mau diingatkan?": "Want a reminder?",
+  "Nilai %@ hanya berubah saat kamu memperbaruinya. Kami bisa mengingatkanmu pukul 09.00.": "The value of %@ only changes when you update it. We can remind you at 09:00.",
+  "Ingatkan aku": "Remind me",
+  "Tidak perlu": "No need",
+  "Tidak akan ditanyakan lagi. Bisa diatur di detail dompet.": "We won't ask again. You can set it in the wallet's details.",
+  "Notifikasi belum diizinkan": "Notifications not allowed yet",
+  "Pengingat %@ sudah kami simpan, tapi baru berjalan setelah kamu mengizinkan notifikasi Saku di Pengaturan iPhone.": "Your %@ reminder is saved, but it only starts once you allow Saku notifications in iPhone Settings.",
+  "Buka Pengaturan": "Open Settings"
 }
