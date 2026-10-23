@@ -281,6 +281,32 @@ struct StatistikPage: View {
                 stat(L("Kas"), money.full(assets.cash)).frame(maxWidth: .infinity, alignment: .leading)
                 stat(L("Investasi"), money.full(assets.invested)).frame(maxWidth: .infinity, alignment: .leading)
             }
+            InvestmentChartView(seriesFor: { assets.history.series(range: $0) }, isBalanceVisible: isVisible,
+                                valueLabel: L("Total aset"), capitalLabel: L("Investasi"),
+                                emptyText: L("Grafik muncul setelah ada catatan di 2 hari yang berbeda."), showsDots: false)
+            if let investment = assets.investment {
+                VStack(spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
+                        label(L("Untung/rugi investasi")).font(.app(14))
+                        Spacer(minLength: 8)
+                        Text(gainText(investment)).font(.app(15, weight: .semibold)).monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.7)
+                            .foregroundStyle(investment.gain > 0 ? Color.appPrimary : investment.gain < 0 ? Color.appError : Color.appTextSecondary)
+                    }
+                    HStack(alignment: .firstTextBaseline) {
+                        label(L("Modal disetor")).font(.app(14))
+                        Spacer(minLength: 8)
+                        Text(money.full(investment.capital)).font(.app(14)).monospacedDigit()
+                    }
+                    HStack(alignment: .firstTextBaseline) {
+                        label(L("Terakhir diperbarui")).font(.app(14))
+                        Spacer(minLength: 8)
+                        Text(investment.lastUpdated.map { StatistikMoney.dayLabel($0) } ?? "—").font(.app(14))
+                    }
+                }
+                .padding(14)
+                .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 12))
+            }
             Divider().overlay(Color.appDivider)
             VStack(spacing: 12) {
                 ForEach(assets.rows.indices, id: \.self) { index in
@@ -304,6 +330,13 @@ struct StatistikPage: View {
             }
             label(L("Saldo dompet aktif hari ini. Kartu kredit tidak dihitung."))
         }
+    }
+
+    private func gainText(_ investment: PeriodStatistics.InvestmentTotals) -> String {
+        guard isVisible else { return "••••" }
+        let sign = investment.gain > 0 ? "+" : investment.gain < 0 ? "−" : ""
+        let rupiah = sign + abs(investment.gain).formattedAsCurrency()
+        return investment.percent.map { rupiah + " · " + InvestmentSummary.percentText($0, signed: true) } ?? rupiah
     }
 
     // MARK: B. Kalender

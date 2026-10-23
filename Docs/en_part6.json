@@ -1360,5 +1360,7 @@
   "Per hari ini": "As of today",
   "Kas dan investasi": "Cash and investments",
   "%@ dari total aset": "%@ of total assets",
-  "Saldo dompet aktif hari ini. Kartu kredit tidak dihitung.": "Balance of active wallets today. Credit cards are not counted."
+  "Saldo dompet aktif hari ini. Kartu kredit tidak dihitung.": "Balance of active wallets today. Credit cards are not counted.",
+  "Untung/rugi investasi": "Investment gain/loss",
+  "Grafik muncul setelah ada catatan di 2 hari yang berbeda.": "The chart appears once there are records on 2 different days."
 }

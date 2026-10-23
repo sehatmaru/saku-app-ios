@@ -66,6 +66,11 @@ struct InvestmentSeries: Equatable {
             all.append(Point(date: txn.date, value: value, capital: capital, isChange: true))
         }
 
+        self.init(all: all, range: range, now: now)
+    }
+
+    /// The part of a full history that a range shows, oldest first.
+    init(all: [Point], range: Range, now: Date = Date()) {
         guard let start = range.start(from: now), let first = all.first(where: { $0.date >= start }) else {
             points = range.start(from: now) == nil ? all : []
             return

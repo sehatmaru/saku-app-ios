@@ -135,6 +135,17 @@ enum PeriodStatistics {
         let invested: Double
         /// Biggest first.
         let rows: [Row]
+        /// All investment wallets together, like the detail of one wallet; nil without any.
+        let investment: InvestmentTotals?
+        let history: WealthHistory
+    }
+
+    struct InvestmentTotals: Equatable {
+        let value: Double
+        let capital: Double
+        let lastUpdated: Date?
+        var gain: Double { value - capital }
+        var percent: Double? { capital > 0 ? gain / capital : nil }
     }
 
     struct Result {
@@ -208,7 +219,7 @@ enum PeriodStatistics {
     }
 
     /// Total kekayaan by wallet type; nil when there is nothing positive to show.
-    static func assets(accounts: [Account]) -> Assets? {
+    static func assets(accounts: [Account], transactions: [Transaction] = []) -> Assets? {
         let held = accounts.filter { $0.isActive && !$0.isCreditCard }
         let order: [Account.AccountType] = [.bank, .ewallet, .cash, .investment]
         let titles: [Account.AccountType: String] = [.bank: L("Bank"), .ewallet: L("E-Wallet"), .cash: L("Cash"), .investment: L("Investasi")]
@@ -220,8 +231,16 @@ enum PeriodStatistics {
             guard !wallets.isEmpty, amount > 0 else { return nil }
             return Assets.Row(type: type, name: titles[type] ?? type.rawValue, count: wallets.count, amount: amount, share: amount / total)
         }.sorted { $0.amount > $1.amount }
+        let investments = held.filter(\.isInvestment)
+        let summaries = investments.map { account in
+            InvestmentSummary(account: account, transactions: transactions.filter { $0.accountId == account.id || $0.counterpartyAccountId == account.id })
+        }
+        let totals: InvestmentTotals? = investments.isEmpty ? nil : InvestmentTotals(
+            value: summaries.reduce(0) { $0 + $1.value }, capital: summaries.reduce(0) { $0 + $1.capital },
+            lastUpdated: summaries.compactMap(\.lastUpdated).max())
         return Assets(total: total, cash: rows.filter { $0.type != .investment }.reduce(0) { $0 + $1.amount },
-                      invested: rows.filter { $0.type == .investment }.reduce(0) { $0 + $1.amount }, rows: rows)
+                      invested: rows.filter { $0.type == .investment }.reduce(0) { $0 + $1.amount }, rows: rows,
+                      investment: totals, history: WealthHistory(accounts: accounts, transactions: transactions))
     }
 
     static func make(transactions: [Transaction], categories: [Category], accounts: [Account], budgetLines: [ReportModel.BudgetLine],
@@ -382,7 +401,7 @@ enum PeriodStatistics {
             budgets: Array(topBudgets), budgetRemaining: max(0, budgetRows.reduce(0) { $0 + $1.amount } - budgetRows.reduce(0) { $0 + $1.spent }),
             hasBudget: !budgetRows.isEmpty,
             highlights: Highlights(biggest: Array(biggest), frequent: frequent, comparison: comparison),
-            assets: assets(accounts: accounts))
+            assets: assets(accounts: accounts, transactions: transactions))
     }
 
     /// "25 Agu – 20 Sep" for a stretch whose end is exclusive.

@@ -7433,6 +7433,16 @@
         }
       }
     },
+    "Grafik muncul setelah ada catatan di 2 hari yang berbeda.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The chart appears once there are records on 2 different days."
+          }
+        }
+      }
+    },
     "Grafik naik": {
       "localizations": {
         "en": {
@@ -19311,6 +19321,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gain/loss"
+          }
+        }
+      }
+    },
+    "Untung/rugi investasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Investment gain/loss"
           }
         }
       }

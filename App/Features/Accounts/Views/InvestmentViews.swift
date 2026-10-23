@@ -147,13 +147,33 @@ struct InvestmentDetailContent: View {
 
 /// Value (solid) and capital (dashed) over time, a dot at every change. Plain numbers only: no judgement words.
 struct InvestmentChartView: View {
-    let account: Account
-    let transactions: [Transaction]
+    let seriesFor: (InvestmentSeries.Range) -> InvestmentSeries
     let isBalanceVisible: Bool
+    var valueLabel = L("Nilai")
+    var capitalLabel = L("Modal disetor")
+    var emptyText = L("Grafik muncul setelah ada 2 titik data. Isi lewat Perbarui nilai, setor, atau tarik.")
+    /// A dot at every change; off for a long daily history.
+    var showsDots = true
     @State private var range = InvestmentSeries.Range.months6
 
+    /// One investment wallet: its value and capital.
+    init(account: Account, transactions: [Transaction], isBalanceVisible: Bool) {
+        seriesFor = { InvestmentSeries(account: account, transactions: transactions, range: $0) }
+        self.isBalanceVisible = isBalanceVisible
+    }
+
+    init(seriesFor: @escaping (InvestmentSeries.Range) -> InvestmentSeries, isBalanceVisible: Bool,
+         valueLabel: String, capitalLabel: String, emptyText: String, showsDots: Bool) {
+        self.seriesFor = seriesFor
+        self.isBalanceVisible = isBalanceVisible
+        self.valueLabel = valueLabel
+        self.capitalLabel = capitalLabel
+        self.emptyText = emptyText
+        self.showsDots = showsDots
+    }
+
     var body: some View {
-        let series = InvestmentSeries(account: account, transactions: transactions, range: range)
+        let series = seriesFor(range)
         VStack(alignment: .leading, spacing: 0) {
             if !isBalanceVisible {
                 placeholder(icon: "eye.slash", title: L("Grafik disembunyikan"), text: nil)
@@ -161,8 +181,7 @@ struct InvestmentChartView: View {
                 legend
                 chart(series).padding(.top, 8)
             } else {
-                placeholder(icon: "chart.line.uptrend.xyaxis", title: L("Grafik belum tersedia"),
-                            text: L("Grafik muncul setelah ada 2 titik data. Isi lewat Perbarui nilai, setor, atau tarik."))
+                placeholder(icon: "chart.line.uptrend.xyaxis", title: L("Grafik belum tersedia"), text: emptyText)
             }
             ranges.padding(.top, 14).opacity(series.hasLine || !isBalanceVisible ? 1 : 0.4)
             Text("Angka berdasarkan pembaruanmu, bukan harga pasar")
@@ -174,11 +193,11 @@ struct InvestmentChartView: View {
         HStack(spacing: 16) {
             HStack(spacing: 6) {
                 Capsule().fill(Color.appText).frame(width: 14, height: 2)
-                Text("Nilai")
+                Text(valueLabel)
             }
             HStack(spacing: 6) {
                 Capsule().stroke(Color.appTextTertiary, style: StrokeStyle(lineWidth: 2, dash: [3, 2])).frame(width: 14, height: 2)
-                Text("Modal disetor")
+                Text(capitalLabel)
             }
         }
         .font(.app(12)).foregroundStyle(Color.appTextSecondary)
@@ -194,7 +213,7 @@ struct InvestmentChartView: View {
                     .foregroundStyle(Color.appText)
                     .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             }
-            ForEach(Array(series.points.enumerated()).filter { $0.element.isChange }, id: \.offset) { index, point in
+            ForEach(Array(series.points.enumerated()).filter { showsDots ? $0.element.isChange : $0.offset == series.points.count - 1 }, id: \.offset) { index, point in
                 PointMark(x: .value("t", point.date), y: .value("nilai", point.value))
                     .symbolSize(index == series.points.count - 1 ? 60 : 28)
                     .foregroundStyle(Color.appText)
