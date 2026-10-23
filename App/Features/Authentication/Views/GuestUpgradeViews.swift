@@ -274,6 +274,8 @@ struct GuestLinkPresentation: ViewModifier {
                     .presentationDetents([.height(sheetHeight + 16)])
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(28)
+                    // solid white as in the design, not the system's translucent sheet
+                    .presentationBackground(Color.appBackground)
                     .interactiveDismissDisabled(isWorking)
             }
             .toast(L("Akun tertaut"), isShown: Binding(
