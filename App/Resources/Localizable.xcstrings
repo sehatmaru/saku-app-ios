@@ -6533,6 +6533,16 @@
         }
       }
     },
+    "Email akun Google ini belum diverifikasi oleh Google, jadi belum bisa dipakai. Verifikasi emailnya di Google lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google hasn't verified this account's email, so it can't be used yet. Verify the email with Google and try again."
+          }
+        }
+      }
+    },
     "Email dipakai untuk masuk dan tidak bisa diubah di sini.": {
       "localizations": {
         "en": {

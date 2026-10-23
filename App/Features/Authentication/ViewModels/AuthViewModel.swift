@@ -48,6 +48,8 @@ final class AuthViewModel: ObservableObject {
     @Published var isLinking = false
     /// Shown as an alert when linking or switching fails; the guest account is untouched.
     @Published var linkErrorMessage: String?
+    /// The Google address of the account the guest would switch to, partly hidden, for the question's text.
+    @Published var switchTargetEmail: String?
 
     private var authListener: Any?
     /// The Google sign-in that was refused as already registered; kept to sign in to that account if the guest agrees.
@@ -158,6 +160,10 @@ final class AuthViewModel: ObservableObject {
 
     /// Google's own sign-in sheet, turned into the credentials Supabase understands.
     private func googleCredentials() async throws -> OpenIDConnectCredentials {
+        try await googleLogin().credentials
+    }
+
+    private func googleLogin() async throws -> (credentials: OpenIDConnectCredentials, email: String?) {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
         else {
@@ -167,7 +173,8 @@ final class AuthViewModel: ObservableObject {
         guard let idToken = result.user.idToken?.tokenString else {
             throw AuthPresentationError.noGoogleIdToken
         }
-        return OpenIDConnectCredentials(provider: .google, idToken: idToken, accessToken: result.user.accessToken.tokenString)
+        let credentials = OpenIDConnectCredentials(provider: .google, idToken: idToken, accessToken: result.user.accessToken.tokenString)
+        return (credentials, result.user.profile?.email)
     }
 
     func signInWithGoogle() {
@@ -393,12 +400,19 @@ final class AuthViewModel: ObservableObject {
         Task {
             defer { isLinking = false }
             do {
-                let credentials = try await googleCredentials()
+                let login = try await googleLogin()
+                let credentials = login.credentials
+                // only an address the provider has verified is accepted; nothing is linked or switched otherwise
+                guard IdentityToken.emailIsVerified(credentials.idToken) else {
+                    linkErrorMessage = L("Email akun Google ini belum diverifikasi oleh Google, jadi belum bisa dipakai. Verifikasi emailnya di Google lalu coba lagi.")
+                    return
+                }
                 do {
                     let session = try await SupabaseSDK.client.auth.linkIdentityWithIdToken(credentials: credentials)
                     try await finishLinking(session.user)
                 } catch let error as AuthError where error.errorCode == .identityAlreadyExists {
                     pendingGoogleCredentials = credentials
+                    switchTargetEmail = login.email.map(EmailMask.masked)
                     guestLinkStep = .askSwitch
                 }
             } catch is CancellationError {
@@ -433,6 +447,7 @@ final class AuthViewModel: ObservableObject {
     func cancelSwitch() {
         guestLinkStep = .none
         pendingGoogleCredentials = nil
+        switchTargetEmail = nil
     }
 
     /// "Beralih ke akun itu": signs in to the existing account. The guest account is marked first (the server removes
@@ -440,6 +455,7 @@ final class AuthViewModel: ObservableObject {
     func switchToExistingAccount() {
         guard let credentials = pendingGoogleCredentials, !isLinking else { return }
         guestLinkStep = .none
+        switchTargetEmail = nil
         isLinking = true
         Task {
             defer { isLinking = false }

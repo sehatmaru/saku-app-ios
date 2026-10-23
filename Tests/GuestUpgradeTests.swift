@@ -36,3 +36,27 @@ final class GuestUpgradeTests: XCTestCase {
         XCTAssertFalse(shows(isGuest: false, transactions: 50, signedUp: days(30)))
     }
 }
+
+/// Enhancement 3 US2 (K10): the email in the switch question is partly hidden, and only a verified email is accepted.
+final class IdentityChecksTests: XCTestCase {
+    func testEmailIsPartlyHidden() {
+        XCTAssertEqual(EmailMask.masked("budi@gmail.com"), "bu••@gmail.com")
+        XCTAssertEqual(EmailMask.masked("bu@gmail.com"), "b••@gmail.com")
+        XCTAssertEqual(EmailMask.masked("a@x.id"), "a••@x.id")
+        XCTAssertEqual(EmailMask.masked("bukan email"), "••")
+    }
+
+    private func token(_ claims: [String: Any]) -> String {
+        let data = try! JSONSerialization.data(withJSONObject: claims)
+        let payload = data.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+        return "e30.\(payload).sig"
+    }
+
+    func testOnlyAVerifiedEmailIsAccepted() {
+        XCTAssertTrue(IdentityToken.emailIsVerified(token(["email": "a@b.id", "email_verified": true])))
+        XCTAssertTrue(IdentityToken.emailIsVerified(token(["email_verified": "true"])))
+        XCTAssertFalse(IdentityToken.emailIsVerified(token(["email": "a@b.id", "email_verified": false])))
+        XCTAssertFalse(IdentityToken.emailIsVerified(token(["email": "a@b.id"])))
+        XCTAssertFalse(IdentityToken.emailIsVerified("bukan-token"))
+    }
+}

@@ -1291,5 +1291,6 @@
   "Belum berhasil": "Didn't work",
   "Belum bisa menautkan akun. Cek koneksimu lalu coba lagi. Datamu tidak berubah.": "Couldn't link the account. Check your connection and try again. Your data hasn't changed.",
   "Belum bisa beralih ke akun itu. Kamu masih di akun tamu dan datamu utuh. Coba lagi nanti.": "Couldn't switch to that account. You're still a guest and your data is intact. Try again later.",
-  "OK": "OK"
+  "OK": "OK",
+  "Email akun Google ini belum diverifikasi oleh Google, jadi belum bisa dipakai. Verifikasi emailnya di Google lalu coba lagi.": "Google hasn't verified this account's email, so it can't be used yet. Verify the email with Google and try again."
 }

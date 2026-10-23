@@ -132,7 +132,7 @@ struct GuestLinkDialogs: ViewModifier {
                 Button(L("Beralih ke akun itu")) { authViewModel.askSwitchConfirmation() }
                 Button(L("Batal"), role: .cancel) { authViewModel.cancelSwitch() }
             } message: {
-                Text("Akun Google ini sudah terdaftar. Mau beralih ke akun itu?")
+                Text(L("Akun Google ini sudah terdaftar. Mau beralih ke akun itu?") + (authViewModel.switchTargetEmail.map { "\n\n" + $0 } ?? ""))
             }
             .alert(L("Beralih ke akun itu?"), isPresented: Binding(
                 get: { authViewModel.guestLinkStep == .confirmSwitch },
