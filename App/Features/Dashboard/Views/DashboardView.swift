@@ -17,7 +17,6 @@ struct DashboardView: View {
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
     @State private var isChartShown = false
     /// Day index picked in the "Bulan ini" chart; nil means today.
-    @State private var selectedDay: Int?
     @State private var showAllBudgets = false
     @State private var selectedTab: AppTab = .home
     /// Beranda's stack; Dompet is pushed here from the hero's pill.
@@ -751,7 +750,9 @@ struct DashboardView: View {
     private var monthSection: some View {
         let days = viewModel.dailyExpenses
         let average = days.isEmpty ? 0 : days.reduce(0, +) / Double(days.count)
-        let peak = max(days.max() ?? 0, average, 1) * 1.05
+        let period = PaydayCycle.current.period(containing: Date())
+        let totalDays = max(Calendar.current.dateComponents([.day], from: period.start, to: period.end).day ?? days.count, days.count)
+        let spendingCalendar = PeriodStatistics.spendingCalendar(daily: days, totalDays: totalDays, startOfPeriod: period.start)
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 SectionHeader(title: L("Bulan ini"))
@@ -768,17 +769,8 @@ struct DashboardView: View {
             }
             .padding(.top, 14)
 
-            dailyChart(days, average: average, peak: peak)
+            SpendingCalendarGrid(calendar: spendingCalendar, money: StatistikMoney(isVisible: isBalanceVisible))
                 .padding(.top, 18)
-
-            HStack {
-                Text(Self.dayMonthFormatter.string(from: PaydayCycle.current.period(containing: Date()).start))
-                Spacer()
-                Text("Hari ini")
-            }
-            .font(.app(12))
-            .foregroundStyle(Color.appTextSecondary)
-            .padding(.top, 8)
 
             let slices = categorySlices
             if !slices.isEmpty {
@@ -810,83 +802,6 @@ struct DashboardView: View {
         }
     }
 
-    /// One bar per day so far with a dashed daily-average line. Tap a bar to see that day's spending.
-    private func dailyChart(_ days: [Double], average: Double, peak: Double) -> some View {
-        let height: CGFloat = 96
-        let selected = min(selectedDay ?? days.count - 1, days.count - 1)
-        return VStack(spacing: 4) {
-            if selected >= 0 {
-                dayLabel(days, selected: selected)
-            }
-            HStack(alignment: .bottom, spacing: 3) {
-                ForEach(days.indices, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(i == selected ? Color.appPrimary : Self.barGray)
-                        .animation(.easeInOut(duration: 0.2), value: selected)
-                        .frame(height: isChartShown ? max(2, height * days[i] / peak) : 2)
-                        .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.7).delay(Double(i) * 0.022), value: isChartShown)
-                        .frame(maxHeight: .infinity, alignment: .bottom)
-                        .contentShape(Rectangle())
-                        .onTapGesture { selectedDay = i }
-                        .accessibilityElement()
-                        .accessibilityLabel(dayTitle(i, of: days.count))
-                        .accessibilityValue(isBalanceVisible ? "Rp" + days[i].formattedAsDigits() : L("tersembunyi"))
-                        .accessibilityAddTraits(i == selected ? [.isButton, .isSelected] : .isButton)
-                }
-            }
-            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .bottom)
-            .overlay(alignment: .bottom) {
-                if average > 0 {
-                    DashedLine()
-                        .stroke(Color.appTextSecondary, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                        .frame(height: 1)
-                        .offset(y: -height * average / peak)
-                        .opacity(isChartShown ? 1 : 0)
-                        .animation(.easeOut(duration: 0.4).delay(isChartShown ? 0.9 : 0), value: isChartShown)
-                        .allowsHitTesting(false)
-                }
-            }
-        }
-    }
-
-    /// Black pill above the chart naming the selected day and its spending; follows the bar.
-    private func dayLabel(_ days: [Double], selected: Int) -> some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let x = (CGFloat(selected) + 0.5) * w / CGFloat(days.count)
-            HStack(spacing: 6) {
-                Text(dayTitle(selected, of: days.count))
-                    .foregroundStyle(Color.appBackground.opacity(0.7))
-                Text(isBalanceVisible ? "−Rp" + days[selected].formattedAsDigits() : "Rp" + hiddenAmount)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.appBackground)
-                    .contentTransition(.numericText())
-            }
-            .font(.app(13))
-            .monospacedDigit()
-            .lineLimit(1)
-            .fixedSize()
-            .padding(.horizontal, 10)
-            .frame(height: 28)
-            .background(Color.appText, in: Capsule())
-            .position(x: min(max(x, 78), max(w - 78, 78)), y: 14)
-            .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.26), value: selected)
-            .opacity(isChartShown ? 1 : 0)
-            .animation(.easeInOut(duration: 0.3).delay(isChartShown ? 0.7 : 0), value: isChartShown)
-        }
-        .frame(height: 30)
-        .accessibilityHidden(true)
-    }
-
-    /// "Hari ini" for the last bar, otherwise e.g. "Sel, 15 Sep".
-    private func dayTitle(_ index: Int, of count: Int) -> String {
-        guard index != count - 1 else { return L("Hari ini") }
-        let calendar = Calendar.current
-        let start = PaydayCycle.current.period(containing: Date(), calendar: calendar).start
-        let date = calendar.date(byAdding: .day, value: index, to: start) ?? start
-        return Self.weekdayDayFormatter.string(from: date)
-    }
-
     /// Plays the first time Beranda shows the chart; coming back from another tab or page keeps it as is.
     private func replayChart() {
         guard !isChartShown else { return }
@@ -894,7 +809,6 @@ struct DashboardView: View {
         reset.disablesAnimations = true
         withTransaction(reset) {
             isChartShown = false
-            selectedDay = nil
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { isChartShown = true }
     }
@@ -956,7 +870,6 @@ struct DashboardView: View {
         }
     }
 
-    private static let barGray = Color(light: 0xD9D9DE, dark: 0x3A3A3C)
     private static let slicePalette: [Color] = [
         .appPrimary,
         Color(light: 0x3A3A3C, dark: 0xD1D1D6),
@@ -1066,8 +979,6 @@ struct DashboardView: View {
     }
 
     private static var shortDayFormatter: DateFormatter { formatter("EEEE, d MMM") }
-    private static var dayMonthFormatter: DateFormatter { formatter("d MMM") }
-    private static var weekdayDayFormatter: DateFormatter { formatter("EEE, d MMM") }
 }
 
 /// The Dompet pill's mark: the pocket pops in, then the cards rise and fan.

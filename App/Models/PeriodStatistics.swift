@@ -120,6 +120,23 @@ enum PeriodStatistics {
         let comparison: Comparison?
     }
 
+    /// Total kekayaan: cash plus investment assets over the active wallets, split by wallet type. Cards stay out, as on Dompet.
+    struct Assets: Equatable {
+        struct Row: Equatable {
+            let type: Account.AccountType
+            let name: String
+            let count: Int
+            let amount: Double
+            /// 0...1 of the total.
+            let share: Double
+        }
+        let total: Double
+        let cash: Double
+        let invested: Double
+        /// Biggest first.
+        let rows: [Row]
+    }
+
     struct Result {
         let interval: DateInterval
         let label: String
@@ -143,6 +160,8 @@ enum PeriodStatistics {
         let budgetRemaining: Double
         let hasBudget: Bool
         let highlights: Highlights
+        /// What the wallets hold today (not at the end of this period); nil without anything to show.
+        let assets: Assets?
     }
 
     // MARK: Build
@@ -170,6 +189,41 @@ enum PeriodStatistics {
     }
 
     /// `interval` is the payday period shown; `budgetLines` are that period's budgets as they stood then.
+    /// The calendar of one payday period: `daily` is the spending of each day so far, the rest of `totalDays` is still to come.
+    /// Also drawn on Beranda from the running period.
+    static func spendingCalendar(daily spent: [Double], totalDays: Int, startOfPeriod: Date, calendar: Calendar = .current) -> SpendingCalendar {
+        let weekday = calendar.component(.weekday, from: startOfPeriod)
+        let peak = spent.max() ?? 0
+        let peakIndex = spent.firstIndex(of: peak)
+        let heat = heatLevels(for: spent)
+        let cells = (0..<totalDays).map { index -> CalendarDay in
+            let day = calendar.component(.day, from: calendar.date(byAdding: .day, value: index, to: startOfPeriod) ?? startOfPeriod)
+            return index < spent.count ? CalendarDay(day: day, amount: spent[index], level: heat(spent[index]))
+                                       : CalendarDay(day: day, amount: nil, level: 0)
+        }
+        return SpendingCalendar(
+            leadingBlanks: (weekday + 5) % 7, days: cells, total: spent.reduce(0, +),
+            peakDate: peak > 0 ? peakIndex.flatMap { calendar.date(byAdding: .day, value: $0, to: startOfPeriod) } : nil,
+            peakAmount: peak, zeroDays: spent.filter { $0 == 0 }.count)
+    }
+
+    /// Total kekayaan by wallet type; nil when there is nothing positive to show.
+    static func assets(accounts: [Account]) -> Assets? {
+        let held = accounts.filter { $0.isActive && !$0.isCreditCard }
+        let order: [Account.AccountType] = [.bank, .ewallet, .cash, .investment]
+        let titles: [Account.AccountType: String] = [.bank: L("Bank"), .ewallet: L("E-Wallet"), .cash: L("Cash"), .investment: L("Investasi")]
+        let total = held.reduce(0) { $0 + max($1.balance, 0) }
+        guard total > 0 else { return nil }
+        let rows = order.compactMap { type -> Assets.Row? in
+            let wallets = held.filter { $0.type == type }
+            let amount = wallets.reduce(0) { $0 + max($1.balance, 0) }
+            guard !wallets.isEmpty, amount > 0 else { return nil }
+            return Assets.Row(type: type, name: titles[type] ?? type.rawValue, count: wallets.count, amount: amount, share: amount / total)
+        }.sorted { $0.amount > $1.amount }
+        return Assets(total: total, cash: rows.filter { $0.type != .investment }.reduce(0) { $0 + $1.amount },
+                      invested: rows.filter { $0.type == .investment }.reduce(0) { $0 + $1.amount }, rows: rows)
+    }
+
     static func make(transactions: [Transaction], categories: [Category], accounts: [Account], budgetLines: [ReportModel.BudgetLine],
                      cycle: PaydayCycle, interval: DateInterval, now: Date = Date(), calendar: Calendar = .current) -> Result {
         let counted = transactions.filter { $0.type == .income || $0.type == .expense }
@@ -219,19 +273,7 @@ enum PeriodStatistics {
             projectionNote: !isCurrent ? .finished : isFirstPeriod ? .needsHistory : .fromAverage(perDay), remaining: remaining)
 
         // Calendar
-        let weekday = calendar.component(.weekday, from: startOfPeriod)
-        let peak = spent.max() ?? 0
-        let peakIndex = spent.firstIndex(of: peak)
-        let heat = heatLevels(for: spent)
-        let cells = (0..<totalDays).map { index -> CalendarDay in
-            let day = calendar.component(.day, from: calendar.date(byAdding: .day, value: index, to: startOfPeriod) ?? startOfPeriod)
-            return index < elapsed ? CalendarDay(day: day, amount: daily[index], level: heat(daily[index]))
-                                   : CalendarDay(day: day, amount: nil, level: 0)
-        }
-        let spendingCalendar = SpendingCalendar(
-            leadingBlanks: (weekday + 5) % 7, days: cells, total: expense,
-            peakDate: peak > 0 ? peakIndex.flatMap { calendar.date(byAdding: .day, value: $0, to: startOfPeriod) } : nil,
-            peakAmount: peak, zeroDays: spent.filter { $0 == 0 }.count)
+        let spendingCalendar = spendingCalendar(daily: spent, totalDays: totalDays, startOfPeriod: startOfPeriod, calendar: calendar)
 
         // Trend: the periods up to this one that could hold records
         let monthFormat = DateFormatter()
@@ -303,7 +345,7 @@ enum PeriodStatistics {
         // Weekday pattern
         var weekdayTotals = [Double](repeating: 0, count: 7), weekdayDays = [Int](repeating: 0, count: 7)
         for index in 0..<elapsed {
-            let slot = (weekday + 5 + index) % 7
+            let slot = (calendar.component(.weekday, from: startOfPeriod) + 5 + index) % 7
             weekdayTotals[slot] += daily[index]
             weekdayDays[slot] += 1
         }
@@ -339,7 +381,8 @@ enum PeriodStatistics {
             trend: trend, expenseSlices: expenseSlices, incomeSlices: incomeSlices, wallets: wallets, mostUsedWallet: mostUsed, time: time,
             budgets: Array(topBudgets), budgetRemaining: max(0, budgetRows.reduce(0) { $0 + $1.amount } - budgetRows.reduce(0) { $0 + $1.spent }),
             hasBudget: !budgetRows.isEmpty,
-            highlights: Highlights(biggest: Array(biggest), frequent: frequent, comparison: comparison))
+            highlights: Highlights(biggest: Array(biggest), frequent: frequent, comparison: comparison),
+            assets: assets(accounts: accounts))
     }
 
     /// "25 Agu – 20 Sep" for a stretch whose end is exclusive.

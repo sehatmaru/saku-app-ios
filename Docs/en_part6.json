@@ -1356,5 +1356,9 @@
   "Total nilai": "Total value",
   "Dana tersedia": "Available funds",
   "Kamera belum diizinkan": "Camera not allowed",
-  "Saku belum boleh memakai kamera. Kamu masih bisa memilih gambar dari Galeri atau mengetik nilainya.": "Saku isn't allowed to use the camera. You can still pick an image from the Gallery or type the value."
+  "Saku belum boleh memakai kamera. Kamu masih bisa memilih gambar dari Galeri atau mengetik nilainya.": "Saku isn't allowed to use the camera. You can still pick an image from the Gallery or type the value.",
+  "Per hari ini": "As of today",
+  "Kas dan investasi": "Cash and investments",
+  "%@ dari total aset": "%@ of total assets",
+  "Saldo dompet aktif hari ini. Kartu kredit tidak dihitung.": "Balance of active wallets today. Credit cards are not counted."
 }

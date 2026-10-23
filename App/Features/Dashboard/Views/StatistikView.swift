@@ -113,8 +113,10 @@ struct StatistikPage: View {
             periodPicker
             if result.isEmpty {
                 emptyState
+                if let assets = result.assets { assetsCard(assets) }
             } else {
                 summaryCard.rise(isShown, y: 14, delay: 0.06)
+                if let assets = result.assets { assetsCard(assets).rise(isShown, y: 14, delay: 0.09) }
                 calendarCard.rise(isShown, y: 14, delay: 0.12)
                 trendCard.rise(isShown, y: 14, delay: 0.18)
                 expenseCard.rise(isShown, y: 14, delay: 0.24)
@@ -259,48 +261,57 @@ struct StatistikPage: View {
         }
     }
 
+    // MARK: Total aset
+
+    /// What the wallets hold today, split by wallet type. It is the balance now, whichever period is open.
+    private func assetsCard(_ assets: PeriodStatistics.Assets) -> some View {
+        let shades: [Double] = [1, 0.7, 0.45, 0.25]
+        let topShare = assets.rows.map(\.share).max() ?? 1
+        return card(L("Total aset"), trailing: L("Per hari ini")) {
+            VStack(alignment: .leading, spacing: 0) {
+                label(L("Kas dan investasi")).font(.app(13))
+                HStack(alignment: .top, spacing: 4) {
+                    Text("Rp").font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, heroSize * 0.12)
+                    Text(isVisible ? assets.total.formattedAsDigits() : hiddenAmount)
+                        .font(.app(heroSize, weight: .light)).tracking(-1.2).monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.5)
+                }
+            }
+            HStack(alignment: .top, spacing: 12) {
+                stat(L("Kas"), money.full(assets.cash)).frame(maxWidth: .infinity, alignment: .leading)
+                stat(L("Investasi"), money.full(assets.invested)).frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Divider().overlay(Color.appDivider)
+            VStack(spacing: 12) {
+                ForEach(assets.rows.indices, id: \.self) { index in
+                    let row = assets.rows[index]
+                    let color = Color.appText.opacity(shades[min(index, 3)])
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            HStack(spacing: 8) {
+                                Circle().fill(color).frame(width: 8, height: 8)
+                                Text(row.name).lineLimit(1)
+                                Text("\(row.count)").font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                            }
+                            Spacer(minLength: 8)
+                            Text(money.full(row.amount)).monospacedDigit()
+                        }
+                        .font(.app(14))
+                        ProgressTrack(fraction: topShare > 0 ? row.share / topShare : 0, color: color, shown: isShown)
+                        label(L("%@ dari total aset", StatistikMoney.percent(row.share))).monospacedDigit()
+                    }
+                }
+            }
+            label(L("Saldo dompet aktif hari ini. Kartu kredit tidak dihitung."))
+        }
+    }
+
     // MARK: B. Kalender
 
     private var calendarCard: some View {
         let c = result.calendar
-        let heat: [Double] = [0.04, 0.12, 0.24, 0.38, 0.80]
-        // Rows of seven, Monday first: the leading blanks, then the days, padded to a full last row.
-        let cells: [PeriodStatistics.CalendarDay?] = Array(repeating: nil, count: c.leadingBlanks) + c.days.map { Optional($0) }
-        let rows = stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0..<min($0 + 7, cells.count)]) }
         return card(L("Kalender pengeluaran"), trailing: result.label) {
-            Grid(horizontalSpacing: 3, verticalSpacing: 3) {
-                GridRow {
-                    ForEach(StatistikMoney.weekdays.indices, id: \.self) { index in
-                        Text(StatistikMoney.weekdays[index].short).font(.app(11)).foregroundStyle(Color.appTextSecondary).padding(.bottom, 2)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                ForEach(rows.indices, id: \.self) { row in
-                    GridRow {
-                        ForEach(0..<7, id: \.self) { column in
-                            if column < rows[row].count, let day = rows[row][column] {
-                                VStack(spacing: 1) {
-                                    Text("\(day.day)").font(.app(10, weight: .semibold))
-                                    Text(day.amount.flatMap { $0 > 0 ? money.cell($0) : nil } ?? " ").font(.app(9.5)).lineLimit(1).minimumScaleFactor(0.6)
-                                }
-                                .monospacedDigit()
-                                .foregroundStyle(day.amount == nil ? Color.appTextTertiary : day.level >= 4 ? Color.appBackground : Color.appText)
-                                .frame(maxWidth: .infinity, minHeight: 42, maxHeight: 42)
-                                .background(day.amount == nil ? Color.clear : Color.appText.opacity(heat[day.level]), in: RoundedRectangle(cornerRadius: 7))
-                            } else {
-                                Color.clear.frame(maxWidth: .infinity, minHeight: 42, maxHeight: 42)
-                            }
-                        }
-                    }
-                }
-            }
-            HStack(spacing: 6) {
-                label(L("Rendah"))
-                ForEach(1..<5, id: \.self) { level in
-                    RoundedRectangle(cornerRadius: 2).fill(Color.appText.opacity(heat[level])).frame(width: 14, height: 8)
-                }
-                label(L("Tinggi"))
-            }
+            SpendingCalendarGrid(calendar: c, money: money)
             Divider().overlay(Color.appDivider)
             HStack(alignment: .top, spacing: 12) {
                 stat(L("Total periode"), money.full(c.total), bold: true).frame(maxWidth: .infinity, alignment: .leading)

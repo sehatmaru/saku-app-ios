@@ -231,6 +231,16 @@
         }
       }
     },
+    "%@ dari total aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of total assets"
+          }
+        }
+      }
+    },
     "%@ dengan limit Rp%@ siap dipakai.": {
       "localizations": {
         "en": {
@@ -9023,6 +9033,16 @@
         }
       }
     },
+    "Kas dan investasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash and investments"
+          }
+        }
+      }
+    },
     "Kas saja": {
       "localizations": {
         "en": {
@@ -12933,6 +12953,16 @@
         }
       }
     },
+    "Per hari ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As of today"
+          }
+        }
+      }
+    },
     "Per kategori": {
       "localizations": {
         "en": {
@@ -14639,6 +14669,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallet balances"
+          }
+        }
+      }
+    },
+    "Saldo dompet aktif hari ini. Kartu kredit tidak dihitung.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balance of active wallets today. Credit cards are not counted."
           }
         }
       }
