@@ -234,6 +234,50 @@ struct InvestmentChartView: View {
     }
 }
 
+// MARK: - Alokasi (Fitur 7 US2)
+
+/// One thin segmented bar under "Total aset" and each wallet's share. Colours are the app's own, none of them
+/// red, so a share never reads as a verdict.
+struct InvestmentAllocationView: View {
+    let allocation: InvestmentAllocation
+    let isBalanceVisible: Bool
+
+    private static let palette: [Color] = [.appInvestment, .appPrimary, .appText, .appTextTertiary, .appSecondary, .appWarning]
+    private func color(_ index: Int) -> Color { Self.palette[index % Self.palette.count] }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    if isBalanceVisible {
+                        ForEach(Array(allocation.slices.enumerated()), id: \.element.id) { index, slice in
+                            RoundedRectangle(cornerRadius: 2).fill(color(index))
+                                .frame(width: max(2, (geo.size.width - CGFloat(allocation.slices.count - 1) * 2) * slice.fraction))
+                        }
+                    } else {
+                        RoundedRectangle(cornerRadius: 2).fill(Color.appDivider)
+                    }
+                }
+            }
+            .frame(height: 8)
+            FlowLayout(spacing: 14) {
+                ForEach(Array(allocation.slices.enumerated()), id: \.element.id) { index, slice in
+                    HStack(spacing: 6) {
+                        Circle().fill(isBalanceVisible ? color(index) : Color.appTextTertiary).frame(width: 8, height: 8)
+                        Text(slice.name).font(.app(13)).foregroundStyle(Color.appText).lineLimit(1)
+                        Text(isBalanceVisible ? InvestmentSummary.percentText(slice.fraction) : "••%")
+                            .font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
+                    }
+                }
+            }
+            .padding(.top, 10)
+            Text("Porsi dari total aset investasi. Angka berdasarkan pembaruanmu, bukan harga pasar")
+                .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 8)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
 // MARK: - Perbarui nilai (design 5)
 
 /// The investment's new worth, typed on the number pad. Applies straight away: the difference is logged as an

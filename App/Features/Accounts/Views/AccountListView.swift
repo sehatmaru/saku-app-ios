@@ -597,7 +597,12 @@ struct AccountListView: View {
             .buttonStyle(.plain)
             .disabled(group.accounts.count < 2)
             .accessibilityHint(group.accounts.count < 2 ? "" : isOpen ? L("Tutup tumpukan") : L("Buka tumpukan"))
-            .padding(.bottom, 12)
+            .padding(.bottom, group.type == .investment && InvestmentAllocation(accounts: group.accounts) != nil ? 4 : 12)
+
+            if group.type == .investment, let allocation = InvestmentAllocation(accounts: group.accounts) {
+                InvestmentAllocationView(allocation: allocation, isBalanceVisible: isBalanceVisible)
+                    .padding(.bottom, 14)
+            }
 
             VStack(spacing: 0) {
                 ForEach(Array(group.accounts.enumerated()), id: \.element.id) { index, account in

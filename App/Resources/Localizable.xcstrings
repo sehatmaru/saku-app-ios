@@ -13493,6 +13493,16 @@
         }
       }
     },
+    "Porsi dari total aset investasi. Angka berdasarkan pembaruanmu, bukan harga pasar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share of total investment assets. Figures are based on your updates, not market prices"
+          }
+        }
+      }
+    },
     "Pratinjau": {
       "localizations": {
         "en": {

@@ -64,4 +64,23 @@ final class InvestmentSeriesTests: XCTestCase {
         XCTAssertLessThan(s.valueBounds.lowerBound, 100)
         XCTAssertGreaterThan(s.valueBounds.upperBound, 100)
     }
+
+    private func wallet(_ id: String, _ balance: Double, archived: Bool = false, type: Account.AccountType = .investment) -> Account {
+        Account(id: id, name: id, type: type, icon: nil, isArchived: archived, isDefault: false,
+                openingBalance: balance, currentBalance: balance, creditLimit: nil, dueDate: nil)
+    }
+
+    func testAllocationNeedsTwoActiveInvestmentWallets() {
+        XCTAssertNil(InvestmentAllocation(accounts: [wallet("a", 100)]))
+        XCTAssertNil(InvestmentAllocation(accounts: [wallet("a", 100), wallet("b", 50, archived: true)]))
+        XCTAssertNil(InvestmentAllocation(accounts: [wallet("a", 100), wallet("bca", 50, type: .bank)]))
+        XCTAssertNil(InvestmentAllocation(accounts: [wallet("a", 0), wallet("b", 0)]))
+    }
+
+    func testAllocationSharesAddUpAndBiggestComesFirst() throws {
+        let allocation = try XCTUnwrap(InvestmentAllocation(accounts: [wallet("small", 25), wallet("big", 75), wallet("gone", 500, archived: true)]))
+        XCTAssertEqual(allocation.slices.map(\.id), ["big", "small"])
+        XCTAssertEqual(allocation.slices.map(\.fraction), [0.75, 0.25])
+        XCTAssertEqual(allocation.total, 100)
+    }
 }

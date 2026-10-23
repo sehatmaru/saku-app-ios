@@ -1324,5 +1324,6 @@
   "Grafik belum tersedia": "Chart not available yet",
   "Grafik muncul setelah ada 2 titik data. Isi lewat Perbarui nilai, setor, atau tarik.": "The chart appears once there are 2 data points. Add them with Update value, deposit or withdraw.",
   "Angka berdasarkan pembaruanmu, bukan harga pasar": "Figures are based on your updates, not market prices",
-  "Grafik nilai dan modal": "Value and capital chart"
+  "Grafik nilai dan modal": "Value and capital chart",
+  "Porsi dari total aset investasi. Angka berdasarkan pembaruanmu, bukan harga pasar": "Share of total investment assets. Figures are based on your updates, not market prices"
 }
