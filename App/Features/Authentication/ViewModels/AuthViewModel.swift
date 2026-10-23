@@ -14,15 +14,16 @@ enum AuthPresentationError: LocalizedError {
     }
 }
 
-/// The question a guest is asked when the Google account they chose already has a Saku account.
+/// What the guest-upgrade sheet shows (Enhancement 3): the question about an account that already exists, the
+/// second warning, the wait, or a failure that leaves the guest account as it was.
 enum GuestLinkStep: Equatable {
     case none
     /// "Akun Google ini sudah terdaftar. Mau beralih ke akun itu?"
     case askSwitch
-    /// The first alert is closing; the second one follows (two alerts cannot swap in the same instant).
-    case betweenQuestions
     /// "Data tamu di iPhone ini tidak akan ikut dan tidak bisa dipulihkan."
     case confirmSwitch
+    case working(String)
+    case failed(String)
 }
 
 @MainActor
@@ -46,8 +47,10 @@ final class AuthViewModel: ObservableObject {
     /// Guest upgrade (Enhancement 3): where the "this Google account already exists" question stands.
     @Published var guestLinkStep: GuestLinkStep = .none
     @Published var isLinking = false
-    /// Shown as an alert when linking or switching fails; the guest account is untouched.
-    @Published var linkErrorMessage: String?
+    /// "Akun tertaut": the toast after a guest saved their account.
+    @Published var linkSucceeded = false
+    private enum LinkAction { case link, switchAccount }
+    private var lastLinkAction = LinkAction.link
     /// The Google address of the account the guest would switch to, partly hidden, for the question's text.
     @Published var switchTargetEmail: String?
 
@@ -396,7 +399,7 @@ final class AuthViewModel: ObservableObject {
     func linkGoogleToGuest() {
         guard currentUser?.isGuest == true, !isLinking else { return }
         isLinking = true
-        linkErrorMessage = nil
+        lastLinkAction = .link
         Task {
             defer { isLinking = false }
             do {
@@ -404,9 +407,10 @@ final class AuthViewModel: ObservableObject {
                 let credentials = login.credentials
                 // only an address the provider has verified is accepted; nothing is linked or switched otherwise
                 guard IdentityToken.emailIsVerified(credentials.idToken) else {
-                    linkErrorMessage = L("Email akun Google ini belum diverifikasi oleh Google, jadi belum bisa dipakai. Verifikasi emailnya di Google lalu coba lagi.")
+                    guestLinkStep = .failed(L("Email akun Google ini belum diverifikasi oleh Google, jadi belum bisa dipakai. Verifikasi emailnya di Google lalu coba lagi."))
                     return
                 }
+                guestLinkStep = .working(L("Menautkan akun…"))
                 do {
                     let session = try await SupabaseSDK.client.auth.linkIdentityWithIdToken(credentials: credentials)
                     try await finishLinking(session.user)
@@ -416,11 +420,11 @@ final class AuthViewModel: ObservableObject {
                     guestLinkStep = .askSwitch
                 }
             } catch is CancellationError {
-                return
+                guestLinkStep = .none
             } catch let error as NSError where error.domain == kGIDSignInErrorDomain && error.code == GIDSignInError.canceled.rawValue {
-                return
+                guestLinkStep = .none
             } catch {
-                linkErrorMessage = L("Belum bisa menautkan akun. Cek koneksimu lalu coba lagi. Datamu tidak berubah.")
+                guestLinkStep = .failed(L("Koneksi terputus. Datamu masih aman di iPhone ini. Coba lagi sebentar lagi."))
             }
         }
     }
@@ -433,29 +437,38 @@ final class AuthViewModel: ObservableObject {
         }
         try await fetchProfileAndSetUser(authUserId: user.id, email: user.email ?? "", displayName: providerName)
         DraftStore.shared.isGuest = false
+        guestLinkStep = .none
+        linkSucceeded = true
         Haptics.welcome()
     }
 
     func askSwitchConfirmation() {
-        guestLinkStep = .betweenQuestions
-        Task {
-            try? await Task.sleep(for: .milliseconds(350))
-            if guestLinkStep == .betweenQuestions { guestLinkStep = .confirmSwitch }
-        }
+        guestLinkStep = .confirmSwitch
     }
 
+    /// Closing the sheet (Batal, Tutup, swipe): the guest stays a guest with everything as it was.
     func cancelSwitch() {
+        guard !isLinking else { return }
         guestLinkStep = .none
         pendingGoogleCredentials = nil
         switchTargetEmail = nil
+    }
+
+    /// "Coba lagi" on the failure sheet.
+    func retryLink() {
+        guestLinkStep = .none
+        switch lastLinkAction {
+        case .link: linkGoogleToGuest()
+        case .switchAccount: switchToExistingAccount()
+        }
     }
 
     /// "Beralih ke akun itu": signs in to the existing account. The guest account is marked first (the server removes
     /// it after 30 days); if signing in fails the mark is taken back and the guest carries on.
     func switchToExistingAccount() {
         guard let credentials = pendingGoogleCredentials, !isLinking else { return }
-        guestLinkStep = .none
-        switchTargetEmail = nil
+        lastLinkAction = .switchAccount
+        guestLinkStep = .working(L("Beralih ke akun itu…"))
         isLinking = true
         Task {
             defer { isLinking = false }
@@ -465,14 +478,16 @@ final class AuthViewModel: ObservableObject {
                     let response = try await SupabaseSDK.client.auth.signInWithIdToken(credentials: credentials)
                     resetLocalAccountState()
                     pendingGoogleCredentials = nil
+                    switchTargetEmail = nil
                     let name = response.user.userMetadata["full_name"]?.stringValue ?? response.user.userMetadata["name"]?.stringValue
                     try await fetchProfileAndSetUser(authUserId: response.user.id, email: response.user.email ?? "", displayName: name)
+                    guestLinkStep = .none
                 } catch {
                     try? await SupabaseSDK.clearGuestAbandoned()
                     throw error
                 }
             } catch {
-                linkErrorMessage = L("Belum bisa beralih ke akun itu. Kamu masih di akun tamu dan datamu utuh. Coba lagi nanti.")
+                guestLinkStep = .failed(L("Koneksi terputus. Kamu masih di akun tamu dan datamu utuh. Coba lagi sebentar lagi."))
             }
         }
     }

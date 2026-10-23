@@ -1863,6 +1863,26 @@
         }
       }
     },
+    "Akun tertaut": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account linked"
+          }
+        }
+      }
+    },
+    "Akun tujuan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destination account"
+          }
+        }
+      }
+    },
     "Akunmu dijadwalkan dihapus": {
       "localizations": {
         "en": {
@@ -3333,6 +3353,16 @@
         }
       }
     },
+    "Belum berhasil menautkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't link yet"
+          }
+        }
+      }
+    },
     "Belum berhasil mengubah. Coba lagi sebentar lagi.": {
       "localizations": {
         "en": {
@@ -3609,6 +3639,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Switch to that account?"
+          }
+        }
+      }
+    },
+    "Beralih ke akun itu…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switching to that account…"
           }
         }
       }
@@ -5339,6 +5379,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your data couldn't be loaded. Check your connection and try again."
+          }
+        }
+      }
+    },
+    "Datamu tersimpan aman": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data is saved safely"
           }
         }
       }
@@ -8473,6 +8523,16 @@
         }
       }
     },
+    "Kamu akan masuk ke %@ dengan datanya sendiri.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You'll sign in to %@ with its own data."
+          }
+        }
+      }
+    },
     "Kamu bisa memulihkannya dari Dompet › Diarsipkan.": {
       "localizations": {
         "en": {
@@ -8619,6 +8679,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Card"
+          }
+        }
+      }
+    },
+    "Kartu ditutup. Kamu bisa masuk kapan saja dari Profil. ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card closed. You can sign in any time from Profile. "
           }
         }
       }
@@ -9593,12 +9663,32 @@
         }
       }
     },
+    "Koneksi terputus. Datamu masih aman di iPhone ini. Coba lagi sebentar lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection dropped. Your data is still safe on this iPhone. Try again in a moment."
+          }
+        }
+      }
+    },
     "Koneksi terputus. Jawabanmu masih ada di iPhone ini, jadi tidak perlu mengisi ulang.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The connection dropped. Your answers are still on this iPhone, so you don't need to fill them in again."
+          }
+        }
+      }
+    },
+    "Koneksi terputus. Kamu masih di akun tamu dan datamu utuh. Coba lagi sebentar lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection dropped. You're still a guest and your data is intact. Try again in a moment."
           }
         }
       }
@@ -10593,6 +10683,26 @@
         }
       }
     },
+    "Masuk supaya datamu tetap ada kalau ganti iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in so your data stays if you change iPhone."
+          }
+        }
+      }
+    },
+    "Masuk supaya datamu tetap ada saat ganti iPhone atau menginstal ulang Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in so your data stays when you change iPhone or reinstall Saku."
+          }
+        }
+      }
+    },
     "Masuk untuk menyimpan data dengan aman dan membukanya di perangkat lain.": {
       "localizations": {
         "en": {
@@ -10839,6 +10949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Loading"
+          }
+        }
+      }
+    },
+    "Menautkan akun…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linking your account…"
           }
         }
       }
@@ -14273,6 +14393,16 @@
         }
       }
     },
+    "Sebelum beralih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before you switch"
+          }
+        }
+      }
+    },
     "Sebelumnya %@": {
       "localizations": {
         "en": {
@@ -14289,6 +14419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Before: Rp%@ · budget %@/day"
+          }
+        }
+      }
+    },
+    "Sebentar ya, jangan tutup Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One moment, please keep Saku open."
           }
         }
       }

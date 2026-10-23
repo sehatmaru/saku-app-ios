@@ -189,6 +189,10 @@ struct ProfileView: View {
                 Text(isGuest ? L("Data hanya di perangkat ini") : authViewModel.currentUser?.email ?? "")
                     .font(.app(14))
                     .foregroundStyle(Color.appTextSecondary)
+                if !isGuest {
+                    Label(L("Datamu tersimpan aman"), systemImage: "checkmark.circle.fill")
+                        .font(.app(13)).foregroundStyle(Color.appPrimary)
+                }
             }
             .lineLimit(1)
             Spacer(minLength: 8)
@@ -321,18 +325,20 @@ struct ProfileView: View {
         }
     }
 
-    /// Guests cannot buy Plus yet: the honest ask is saving their data by signing in.
+    /// Guests cannot buy Plus yet: the honest ask is saving their data by signing in (design "Tautkan akun" 1a).
     private var guestCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(L("Amankan datamu")).font(.app(17, weight: .semibold))
-                Text(L("Masuk agar datamu tersimpan di semua perangkat. Saku Plus tersedia setelah masuk."))
-                    .font(.app(14)).foregroundStyle(Color.appTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "checkmark.shield").font(.system(size: 22)).foregroundStyle(Color.appPrimary)
+                Text(L("Amankan datamu")).font(.app(20, weight: .semibold))
             }
-            GuestUpgradeButtons()
+            Text(L("Masuk supaya datamu tetap ada saat ganti iPhone atau menginstal ulang Saku."))
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
+            GuestUpgradeButtons().padding(.top, 18)
         }
-        .padding(16)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
         .padding(.horizontal, 24)

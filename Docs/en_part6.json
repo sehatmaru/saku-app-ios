@@ -1292,5 +1292,19 @@
   "Belum bisa menautkan akun. Cek koneksimu lalu coba lagi. Datamu tidak berubah.": "Couldn't link the account. Check your connection and try again. Your data hasn't changed.",
   "Belum bisa beralih ke akun itu. Kamu masih di akun tamu dan datamu utuh. Coba lagi nanti.": "Couldn't switch to that account. You're still a guest and your data is intact. Try again later.",
   "OK": "OK",
-  "Email akun Google ini belum diverifikasi oleh Google, jadi belum bisa dipakai. Verifikasi emailnya di Google lalu coba lagi.": "Google hasn't verified this account's email, so it can't be used yet. Verify the email with Google and try again."
+  "Email akun Google ini belum diverifikasi oleh Google, jadi belum bisa dipakai. Verifikasi emailnya di Google lalu coba lagi.": "Google hasn't verified this account's email, so it can't be used yet. Verify the email with Google and try again.",
+  "Masuk supaya datamu tetap ada saat ganti iPhone atau menginstal ulang Saku.": "Sign in so your data stays when you change iPhone or reinstall Saku.",
+  "Masuk supaya datamu tetap ada kalau ganti iPhone.": "Sign in so your data stays if you change iPhone.",
+  "Kartu ditutup. Kamu bisa masuk kapan saja dari Profil. ": "Card closed. You can sign in any time from Profile. ",
+  "Akun tujuan": "Destination account",
+  "Sebelum beralih": "Before you switch",
+  "Kamu akan masuk ke %@ dengan datanya sendiri.": "You'll sign in to %@ with its own data.",
+  "Menautkan akun…": "Linking your account…",
+  "Sebentar ya, jangan tutup Saku.": "One moment, please keep Saku open.",
+  "Beralih ke akun itu…": "Switching to that account…",
+  "Belum berhasil menautkan": "Couldn't link yet",
+  "Koneksi terputus. Datamu masih aman di iPhone ini. Coba lagi sebentar lagi.": "The connection dropped. Your data is still safe on this iPhone. Try again in a moment.",
+  "Koneksi terputus. Kamu masih di akun tamu dan datamu utuh. Coba lagi sebentar lagi.": "The connection dropped. You're still a guest and your data is intact. Try again in a moment.",
+  "Akun tertaut": "Account linked",
+  "Datamu tersimpan aman": "Your data is saved safely"
 }
