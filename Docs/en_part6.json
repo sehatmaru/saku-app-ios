@@ -1316,5 +1316,13 @@
   "Verifikasi email akun Google ini dulu, lalu coba lagi. Datamu masih aman di iPhone ini.": "Verify this Google account's email first, then try again. Your data is still safe on this iPhone.",
   "Kalau akun Google/Apple ini sudah punya akun Saku, kamu bisa beralih ke akun itu.": "If this Google/Apple account already has a Saku account, you can switch to it.",
   "Langgananmu tidak ikut berhenti": "Your subscription doesn't stop with this",
-  "Langganan Saku Plus di App Store tetap berjalan dan ditagih sampai kamu membatalkannya.": "Your Saku Plus subscription on the App Store keeps running and is billed until you cancel it."
+  "Langganan Saku Plus di App Store tetap berjalan dan ditagih sampai kamu membatalkannya.": "Your Saku Plus subscription on the App Store keeps running and is billed until you cancel it.",
+  "3 bulan": "3 months",
+  "6 bulan": "6 months",
+  "Nilai": "Value",
+  "Grafik disembunyikan": "Chart hidden",
+  "Grafik belum tersedia": "Chart not available yet",
+  "Grafik muncul setelah ada 2 titik data. Isi lewat Perbarui nilai, setor, atau tarik.": "The chart appears once there are 2 data points. Add them with Update value, deposit or withdraw.",
+  "Angka berdasarkan pembaruanmu, bukan harga pasar": "Figures are based on your updates, not market prices",
+  "Grafik nilai dan modal": "Value and capital chart"
 }

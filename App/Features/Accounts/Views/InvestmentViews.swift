@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 private enum InvestmentUI {
     static let box = Color(light: 0xF7F7F8, dark: 0x1C1C1E)
@@ -66,6 +67,9 @@ struct InvestmentDetailContent: View {
                 .padding(.top, 10)
             }
 
+            InvestmentChartView(account: account, transactions: transactions, isBalanceVisible: isBalanceVisible)
+                .padding(.top, 18)
+
             HStack(spacing: 0) {
                 action(L("Setor"), "tray.and.arrow.down", onDeposit)
                 action(L("Tarik"), "tray.and.arrow.up", onWithdraw)
@@ -110,6 +114,123 @@ struct InvestmentDetailContent: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(PressScaleStyle())
+    }
+}
+
+// MARK: - Grafik performa (Fitur 7 US1)
+
+/// Value (solid) and capital (dashed) over time, a dot at every change. Plain numbers only: no judgement words.
+struct InvestmentChartView: View {
+    let account: Account
+    let transactions: [Transaction]
+    let isBalanceVisible: Bool
+    @State private var range = InvestmentSeries.Range.months6
+
+    var body: some View {
+        let series = InvestmentSeries(account: account, transactions: transactions, range: range)
+        VStack(alignment: .leading, spacing: 0) {
+            if !isBalanceVisible {
+                placeholder(icon: "eye.slash", title: L("Grafik disembunyikan"), text: nil)
+            } else if series.hasLine {
+                legend
+                chart(series).padding(.top, 8)
+            } else {
+                placeholder(icon: "chart.line.uptrend.xyaxis", title: L("Grafik belum tersedia"),
+                            text: L("Grafik muncul setelah ada 2 titik data. Isi lewat Perbarui nilai, setor, atau tarik."))
+            }
+            ranges.padding(.top, 14).opacity(series.hasLine || !isBalanceVisible ? 1 : 0.4)
+            Text("Angka berdasarkan pembaruanmu, bukan harga pasar")
+                .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
+        }
+    }
+
+    private var legend: some View {
+        HStack(spacing: 16) {
+            HStack(spacing: 6) {
+                Capsule().fill(Color.appText).frame(width: 14, height: 2)
+                Text("Nilai")
+            }
+            HStack(spacing: 6) {
+                Capsule().stroke(Color.appTextTertiary, style: StrokeStyle(lineWidth: 2, dash: [3, 2])).frame(width: 14, height: 2)
+                Text("Modal disetor")
+            }
+        }
+        .font(.app(12)).foregroundStyle(Color.appTextSecondary)
+    }
+
+    private func chart(_ series: InvestmentSeries) -> some View {
+        Chart {
+            ForEach(Array(series.points.enumerated()), id: \.offset) { _, point in
+                LineMark(x: .value("t", point.date), y: .value("modal", point.capital), series: .value("s", "modal"))
+                    .foregroundStyle(Color.appTextTertiary)
+                    .lineStyle(StrokeStyle(lineWidth: 1.75, dash: [5, 4]))
+                LineMark(x: .value("t", point.date), y: .value("nilai", point.value), series: .value("s", "nilai"))
+                    .foregroundStyle(Color.appText)
+                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            }
+            ForEach(Array(series.points.enumerated()).filter { $0.element.isChange }, id: \.offset) { index, point in
+                PointMark(x: .value("t", point.date), y: .value("nilai", point.value))
+                    .symbolSize(index == series.points.count - 1 ? 60 : 28)
+                    .foregroundStyle(Color.appText)
+            }
+        }
+        .chartYScale(domain: series.valueBounds)
+        .chartYAxis {
+            AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { value in
+                AxisGridLine().foregroundStyle(Color.appDivider)
+                AxisValueLabel {
+                    if let amount = value.as(Double.self) { Text(Self.axisText(amount)).font(.app(11)).foregroundStyle(Color.appTextTertiary) }
+                }
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+                AxisValueLabel(format: .dateTime.month(.abbreviated).locale(AppLanguage.locale), anchor: .top)
+                    .font(.app(11)).foregroundStyle(Color.appTextTertiary)
+            }
+        }
+        .frame(height: 150)
+        .accessibilityLabel(L("Grafik nilai dan modal"))
+    }
+
+    private func placeholder(icon: String, title: String, text: String?) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon).font(.system(size: 26)).foregroundStyle(Color.appTextTertiary)
+            Text(title).font(.app(15, weight: .semibold))
+            if let text {
+                Text(text).font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity).frame(height: 150).padding(.horizontal, 28)
+        .background(InvestmentUI.box, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var ranges: some View {
+        HStack(spacing: 8) {
+            ForEach(InvestmentSeries.Range.allCases, id: \.self) { item in
+                Button { withAnimation(.settle(0.3)) { range = item } } label: {
+                    Text(item.title).font(.app(14, weight: range == item ? .medium : .regular))
+                        .foregroundStyle(range == item ? Color.appBackground : Color.appText)
+                        .frame(maxWidth: .infinity).frame(height: 32)
+                        .background(range == item ? Color.appText : Color.clear, in: Capsule())
+                        .overlay(Capsule().stroke(range == item ? Color.clear : Color.appBorder, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// "52 jt", "1,2 M": short, for the value axis.
+    static func axisText(_ value: Double) -> String {
+        let f = NumberFormatter()
+        f.locale = AppLanguage.locale
+        f.maximumFractionDigits = 1
+        let size = abs(value)
+        let (scaled, unit): (Double, String) = size >= 1e9 ? (value / 1e9, Lx("M", en: "B"))
+            : size >= 1e6 ? (value / 1e6, Lx("jt", en: "M"))
+            : size >= 1e3 ? (value / 1e3, Lx("rb", en: "K")) : (value, "")
+        return (f.string(from: NSNumber(value: scaled)) ?? "0") + (unit.isEmpty ? "" : " " + unit)
     }
 }
 

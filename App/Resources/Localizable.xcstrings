@@ -1583,6 +1583,16 @@
         }
       }
     },
+    "3 bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 months"
+          }
+        }
+      }
+    },
     "3 hari puncak": {
       "localizations": {
         "en": {
@@ -1599,6 +1609,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "30 days"
+          }
+        }
+      }
+    },
+    "6 bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 months"
           }
         }
       }
@@ -2019,6 +2039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Analytics"
+          }
+        }
+      }
+    },
+    "Angka berdasarkan pembaruanmu, bukan harga pasar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Figures are based on your updates, not market prices"
           }
         }
       }
@@ -7253,12 +7283,52 @@
         }
       }
     },
+    "Grafik belum tersedia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chart not available yet"
+          }
+        }
+      }
+    },
+    "Grafik disembunyikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chart hidden"
+          }
+        }
+      }
+    },
+    "Grafik muncul setelah ada 2 titik data. Isi lewat Perbarui nilai, setor, atau tarik.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The chart appears once there are 2 data points. Add them with Update value, deposit or withdraw."
+          }
+        }
+      }
+    },
     "Grafik naik": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Trend up"
+          }
+        }
+      }
+    },
+    "Grafik nilai dan modal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Value and capital chart"
           }
         }
       }
@@ -11639,6 +11709,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Net vs last period"
+          }
+        }
+      }
+    },
+    "Nilai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Value"
           }
         }
       }
