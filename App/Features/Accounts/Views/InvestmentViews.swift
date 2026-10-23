@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import PhotosUI
 
 private enum InvestmentUI {
     static let box = Color(light: 0xF7F7F8, dark: 0x1C1C1E)
@@ -470,6 +471,18 @@ struct UpdateValueView: View {
     @State private var done: (value: Double, delta: Double)?
     @State private var failed = false
     @FocusState private var noteFocused: Bool
+    // Isi dari gambar (Fitur 7 US4): the picture is read on the device and only an amount comes out of it
+    private enum ImageStep: Equatable { case none, reading, result(String), candidates([InvestmentValueReader.Candidate]), unreadable }
+    @State private var imageStep = ImageStep.none
+    @State private var showsSource = false
+    @State private var showsCamera = false
+    @State private var showsLibrary = false
+    @State private var pickedPhoto: PhotosPickerItem?
+    @State private var showsImageConsent = false
+    @State private var showsTrackerConsent = false
+    @State private var afterConsent: (() -> Void)?
+    @State private var cameraOff = false
+    @State private var chosenCandidate: InvestmentValueReader.Candidate?
 
     private static let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "neg", "0", "del"]
 
@@ -489,7 +502,7 @@ struct UpdateValueView: View {
     var body: some View {
         VStack(spacing: 0) {
             panel
-            hint
+            statusArea
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
             rows
@@ -509,6 +522,234 @@ struct UpdateValueView: View {
             }
         }
         .alert(L("Gagal memperbarui nilai"), isPresented: $failed) { Button("OK", role: .cancel) {} }
+        .alert(L("Kamera belum diizinkan"), isPresented: $cameraOff) { Button("OK", role: .cancel) {} } message: {
+            Text("Saku belum boleh memakai kamera. Kamu masih bisa memilih gambar dari Galeri atau mengetik nilainya.")
+        }
+        .sheet(isPresented: $showsSource) { sourceSheet }
+        .sheet(isPresented: $showsImageConsent) {
+            ImageConsentSheet(profileId: SupabaseSDK.client.auth.currentUser?.id) {
+                afterConsent?()
+                afterConsent = nil
+            } onDetails: {
+                showsImageConsent = false
+                showsTrackerConsent = true
+            }
+        }
+        .sheet(isPresented: $showsTrackerConsent) {
+            SmartTrackerConsentSheet(profileId: SupabaseSDK.client.auth.currentUser?.id) {
+                showsTrackerConsent = false
+                afterConsent?()
+                afterConsent = nil
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { if case .candidates = imageStep { return true } else { return false } },
+            set: { if !$0, case .candidates = imageStep { imageStep = .none } }
+        )) { candidatesSheet }
+        .fullScreenCover(isPresented: $showsCamera) { CameraPicker { read($0) }.ignoresSafeArea() }
+        .photosPicker(isPresented: $showsLibrary, selection: $pickedPhoto, matching: .images)
+        .onChange(of: pickedPhoto) { _, item in
+            guard let item else { return }
+            pickedPhoto = nil
+            Task { if let data = try? await item.loadTransferable(type: Data.self) { read(data) } }
+        }
+    }
+
+    // MARK: Isi dari gambar
+
+    private var isReading: Bool { imageStep == .reading }
+
+    @ViewBuilder private var statusArea: some View {
+        switch imageStep {
+        case .reading:
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 8).fill(Color.appDivider).frame(width: 36, height: 36)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Membaca gambar…").font(.app(15, weight: .semibold))
+                    Text("Diproses di iPhone-mu").font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                }
+                Spacer(minLength: 0)
+                ProgressView()
+            }
+            .padding(.horizontal, 14).frame(height: 56)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
+        case .result(let label):
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    HStack(spacing: 10) {
+                        Image(systemName: "photo").font(.system(size: 14)).foregroundStyle(Color.appTextSecondary)
+                            .frame(width: 28, height: 28).background(Color.appDivider, in: RoundedRectangle(cornerRadius: 6))
+                        Text(L("Dari gambar · %@", L(label))).font(.app(14))
+                    }
+                    Spacer(minLength: 8)
+                    Button { showsSource = true } label: {
+                        Text("Ganti").font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 14).frame(height: 44)
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
+                Text("Periksa angkanya. Kamu bisa mengubahnya sebelum menyimpan; belum ada yang tersimpan.")
+                    .font(.app(12)).foregroundStyle(Color.appTextSecondary)
+            }
+        case .unreadable:
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "viewfinder").font(.system(size: 22)).foregroundStyle(Color.appTextSecondary).padding(.top, 1)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Angka tidak terbaca").font(.app(15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                        Spacer(minLength: 8)
+                        Button { showsSource = true } label: {
+                            Text("Pilih gambar lain").font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary).fixedSize()
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Text("Coba gambar yang lebih jelas, atau ketik angkanya sendiri di bawah.")
+                        .font(.app(13)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        default:
+            VStack(alignment: .leading, spacing: 4) {
+                hint
+                if !isError {
+                    Label("Gambar tidak disimpan dan tidak dikirim keluar perangkat.", systemImage: "lock")
+                        .font(.app(12)).foregroundStyle(Color.appTextSecondary).labelStyle(.titleAndIcon)
+                }
+            }
+        }
+    }
+
+    private var sourceSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Isi dari gambar").font(.app(20, weight: .semibold))
+            Text("Pilih tangkapan layar atau foto dari aplikasi investasimu.")
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 4).padding(.bottom, 10)
+            sourceRow("camera", L("Kamera")) { pickSource(camera: true) }
+            sourceRow("photo", L("Galeri")) { pickSource(camera: false) }
+            Label("Gambar tidak disimpan dan tidak dikirim keluar perangkat.", systemImage: "lock")
+                .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.vertical, 12)
+            Button { showsSource = false } label: {
+                Text("Batal").font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
+                    .frame(maxWidth: .infinity).frame(height: 48).overlay(Capsule().stroke(Color.appBorder, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .presentationDetents([.height(330)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .presentationBackground(Color.appBackground)
+    }
+
+    private func sourceRow(_ icon: String, _ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+                Text(title).font(.app(17)).foregroundStyle(Color.appText)
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+            }
+            .frame(height: 56).contentShape(Rectangle())
+            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var candidatesSheet: some View {
+        let list: [InvestmentValueReader.Candidate] = { if case .candidates(let items) = imageStep { return items } else { return [] } }()
+        let selected = chosenCandidate ?? list.first
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("Pilih angka").font(.app(20, weight: .semibold))
+            Text("Kami menemukan beberapa angka di gambar.").font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 4).padding(.bottom, 8)
+            ForEach(list) { item in
+                Button { chosenCandidate = item } label: {
+                    HStack(spacing: 14) {
+                        Circle().strokeBorder(selected == item ? Color.appPrimary : Color.appBorder, lineWidth: selected == item ? 6 : 1.5)
+                            .frame(width: 22, height: 22)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(L(item.label)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                            Text(item.amount.formattedAsCurrency()).font(.app(19, weight: .light)).monospacedDigit().foregroundStyle(Color.appText)
+                        }
+                        Spacer()
+                    }
+                    .frame(height: 62).contentShape(Rectangle())
+                    .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+                }
+                .buttonStyle(.plain)
+            }
+            Button { imageStep = .none; chosenCandidate = nil; noteFocused = false } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "keyboard").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 22)
+                    Text("Ketik sendiri").font(.app(16)).foregroundStyle(Color.appBody)
+                    Spacer()
+                }
+                .frame(height: 52).contentShape(Rectangle())
+                .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+            }
+            .buttonStyle(.plain)
+            Button {
+                if let selected { use(selected) }
+                chosenCandidate = nil
+            } label: {
+                Text("Pakai angka ini").font(.app(17, weight: .semibold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity).frame(height: 52).background(Color.appPrimary, in: Capsule())
+            }
+            .buttonStyle(PressScaleStyle()).padding(.top, 12)
+        }
+        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .presentationDetents([.height(CGFloat(list.count) * 62 + 250)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .presentationBackground(Color.appBackground)
+    }
+
+    /// Camera or gallery. Reading pictures needs the short agreement (asked once, the same as Catat dari gambar).
+    private func pickSource(camera: Bool) {
+        showsSource = false
+        let go = {
+            if camera {
+                guard CameraPicker.isAllowed else { cameraOff = true; return }
+                showsCamera = true
+            } else {
+                showsLibrary = true
+            }
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(450)) // the sheet is closing
+            guard SmartTrackerImageConsent.isGranted else { afterConsent = go; showsImageConsent = true; return }
+            go()
+        }
+    }
+
+    /// Reads the picture on the device and lands on one of: the amount, a choice of amounts, or "tidak terbaca".
+    private func read(_ data: Data) {
+        noteFocused = false
+        withAnimation(.settle(0.3)) { imageStep = .reading }
+        Task {
+            let lines: [String]
+            if let image = ImageReader.downscaled(data) { lines = await ImageReader.lines(in: image) } else { lines = [] }
+            let found = InvestmentValueReader.candidates(lines: lines)
+            withAnimation(.settle(0.3)) {
+                switch found.count {
+                case 0: imageStep = .unreadable
+                case 1: use(found[0])
+                default: chosenCandidate = found[0]; imageStep = .candidates(found)
+                }
+            }
+        }
+    }
+
+    /// The amount only fills the number: nothing is saved until Terapkan.
+    private func use(_ candidate: InvestmentValueReader.Candidate) {
+        negative = false
+        digits = String(Int(candidate.amount.rounded()).description.prefix(11))
+        fresh = false
+        imageStep = .result(candidate.label)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     // MARK: Panel
@@ -518,8 +759,19 @@ struct UpdateValueView: View {
             HStack {
                 Button("Batal") { dismiss() }.font(.app(17)).disabled(isSaving)
                 Spacer()
+                Button { noteFocused = false; showsSource = true } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "camera").font(.system(size: 14))
+                        Text("Isi dari gambar")
+                    }
+                    .font(.app(12, weight: .semibold))
+                    .padding(.horizontal, 10).frame(height: 30)
+                    .background(.white.opacity(0.2), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(isSaving || isReading || done != nil)
             }
-            .overlay { Text("Perbarui nilai").font(.app(17, weight: .semibold)) }
+            .overlay { Text("Perbarui nilai").font(.app(17, weight: .semibold)).offset(x: -18) }
             .frame(height: 44)
             .padding(.horizontal, 20)
 
@@ -534,12 +786,17 @@ struct UpdateValueView: View {
 
                     HStack(alignment: .top, spacing: 4) {
                         Text(negative ? "−Rp" : "Rp").font(.app(22)).opacity(0.8).padding(.top, 8)
-                        Text(Double(magnitude).formattedAsDigits())
-                            .font(.app(56, weight: .light))
-                            .tracking(-2)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
-                            .contentTransition(.numericText())
+                        if isReading {
+                            RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.22)).frame(width: 210, height: 44).padding(.top, 6)
+                                .frame(height: 68, alignment: .top)
+                        } else {
+                            Text(Double(magnitude).formattedAsDigits())
+                                .font(.app(56, weight: .light))
+                                .tracking(-2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                                .contentTransition(.numericText())
+                        }
                     }
                     .monospacedDigit()
                     .opacity(fresh ? 0.7 : 1)
@@ -556,6 +813,7 @@ struct UpdateValueView: View {
                             Label(isError ? "—" : InvestmentUI.signed(delta) + money(abs(delta)),
                                   systemImage: isError ? "xmark" : delta > 0 ? "chart.line.uptrend.xyaxis" : delta < 0 ? "chart.line.downtrend.xyaxis" : "equal")
                                 .font(.app(14, weight: .bold))
+                                .minimumScaleFactor(0.7)
                                 .foregroundStyle(Color.appInvestmentPanel)
                                 .padding(.horizontal, 9)
                                 .frame(height: 24)
@@ -703,7 +961,7 @@ struct UpdateValueView: View {
                     }
                 }
                 .frame(width: geo.size.width - side - 6)
-                SaveKey(color: Color.appInvestmentPanel, isEnabled: !isError && !isSaving, isSaving: isSaving, title: "Terapkan", action: apply)
+                SaveKey(color: Color.appInvestmentPanel, isEnabled: !isError && !isSaving && !isReading && imageStep != .unreadable, isSaving: isSaving, title: "Terapkan", action: apply)
                     .frame(width: side)
                     .offset(x: shake == 0 ? 0 : 0)
             }
@@ -712,7 +970,8 @@ struct UpdateValueView: View {
     }
 
     private func press(_ key: String) {
-        guard done == nil, !isSaving else { return }
+        guard done == nil, !isSaving, !isReading else { return }
+        if imageStep != .none { imageStep = .none }
         switch key {
         case "neg": negative.toggle(); fresh = false
         case "del": digits = fresh ? "" : String(digits.dropLast()); fresh = false

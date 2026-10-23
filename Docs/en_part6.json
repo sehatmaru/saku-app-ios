@@ -1340,5 +1340,21 @@
   "Tidak akan ditanyakan lagi. Bisa diatur di detail dompet.": "We won't ask again. You can set it in the wallet's details.",
   "Notifikasi belum diizinkan": "Notifications not allowed yet",
   "Pengingat %@ sudah kami simpan, tapi baru berjalan setelah kamu mengizinkan notifikasi Saku di Pengaturan iPhone.": "Your %@ reminder is saved, but it only starts once you allow Saku notifications in iPhone Settings.",
-  "Buka Pengaturan": "Open Settings"
+  "Buka Pengaturan": "Open Settings",
+  "Isi dari gambar": "Fill from image",
+  "Pilih tangkapan layar atau foto dari aplikasi investasimu.": "Choose a screenshot or photo from your investment app.",
+  "Gambar tidak disimpan dan tidak dikirim keluar perangkat.": "The image is not saved and does not leave your device.",
+  "Diproses di iPhone-mu": "Processed on your iPhone",
+  "Dari gambar · %@": "From image · %@",
+  "Periksa angkanya. Kamu bisa mengubahnya sebelum menyimpan; belum ada yang tersimpan.": "Check the number. You can change it before saving; nothing is saved yet.",
+  "Angka tidak terbaca": "Number not readable",
+  "Coba gambar yang lebih jelas, atau ketik angkanya sendiri di bawah.": "Try a clearer image, or type the number yourself below.",
+  "Pilih angka": "Choose a number",
+  "Kami menemukan beberapa angka di gambar.": "We found several numbers in the image.",
+  "Ketik sendiri": "Type it yourself",
+  "Pakai angka ini": "Use this number",
+  "Total nilai": "Total value",
+  "Dana tersedia": "Available funds",
+  "Kamera belum diizinkan": "Camera not allowed",
+  "Saku belum boleh memakai kamera. Kamu masih bisa memilih gambar dari Galeri atau mengetik nilainya.": "Saku isn't allowed to use the camera. You can still pick an image from the Gallery or type the value."
 }

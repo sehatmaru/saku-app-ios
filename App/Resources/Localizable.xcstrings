@@ -2073,6 +2073,16 @@
         }
       }
     },
+    "Angka tidak terbaca": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Number not readable"
+          }
+        }
+      }
+    },
     "Antar dompet": {
       "localizations": {
         "en": {
@@ -5033,6 +5043,16 @@
         }
       }
     },
+    "Coba gambar yang lebih jelas, atau ketik angkanya sendiri di bawah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try a clearer image, or type the number yourself below."
+          }
+        }
+      }
+    },
     "Coba gratis 7 hari": {
       "localizations": {
         "en": {
@@ -5173,6 +5193,16 @@
         }
       }
     },
+    "Dana tersedia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available funds"
+          }
+        }
+      }
+    },
     "Dapat +5 bantuan AI per teman": {
       "localizations": {
         "en": {
@@ -5239,6 +5269,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "From wallet"
+          }
+        }
+      }
+    },
+    "Dari gambar · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From image · %@"
           }
         }
       }
@@ -6059,6 +6099,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Processed on your phone"
+          }
+        }
+      }
+    },
+    "Diproses di iPhone-mu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processed on your iPhone"
           }
         }
       }
@@ -7233,6 +7283,16 @@
         }
       }
     },
+    "Gambar tidak disimpan dan tidak dikirim keluar perangkat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The image is not saved and does not leave your device."
+          }
+        }
+      }
+    },
     "Gambarnya tidak terbaca. Coba foto ulang atau pilih gambar yang lebih jelas.": {
       "localizations": {
         "en": {
@@ -8243,6 +8303,16 @@
         }
       }
     },
+    "Isi dari gambar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill from image"
+          }
+        }
+      }
+    },
     "Isi jumlah": {
       "localizations": {
         "en": {
@@ -8653,6 +8723,16 @@
         }
       }
     },
+    "Kamera belum diizinkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera not allowed"
+          }
+        }
+      }
+    },
     "Kamera tidak bisa dipakai. Pilih dari galeri atau ketik saja.": {
       "localizations": {
         "en": {
@@ -8669,6 +8749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "We send a reminder before the trial ends."
+          }
+        }
+      }
+    },
+    "Kami menemukan beberapa angka di gambar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We found several numbers in the image."
           }
         }
       }
@@ -9509,6 +9599,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Just type"
+          }
+        }
+      }
+    },
+    "Ketik sendiri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type it yourself"
           }
         }
       }
@@ -12193,6 +12293,16 @@
         }
       }
     },
+    "Pakai angka ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use this number"
+          }
+        }
+      }
+    },
     "Pakai kode": {
       "localizations": {
         "en": {
@@ -12893,6 +13003,16 @@
         }
       }
     },
+    "Periksa angkanya. Kamu bisa mengubahnya sebelum menyimpan; belum ada yang tersimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the number. You can change it before saving; nothing is saved yet."
+          }
+        }
+      }
+    },
     "Periksa koneksi internetmu lalu coba lagi. Pengaturanmu belum berubah.": {
       "localizations": {
         "en": {
@@ -13253,6 +13373,16 @@
         }
       }
     },
+    "Pilih angka": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a number"
+          }
+        }
+      }
+    },
     "Pilih aplikasi bank atau e-wallet-mu, lalu aktifkan ": {
       "localizations": {
         "en": {
@@ -13459,6 +13589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pick a date…"
+          }
+        }
+      }
+    },
+    "Pilih tangkapan layar atau foto dari aplikasi investasimu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a screenshot or photo from your investment app."
           }
         }
       }
@@ -14259,6 +14399,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saku will keep what it remembers on the server, so your favourite categories and wallets stay filled in when you switch phones or use Saku on another device."
+          }
+        }
+      }
+    },
+    "Saku belum boleh memakai kamera. Kamu masih bisa memilih gambar dari Galeri atau mengetik nilainya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku isn't allowed to use the camera. You can still pick an image from the Gallery or type the value."
           }
         }
       }
@@ -18349,6 +18499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Not sure about the total. Please check."
+          }
+        }
+      }
+    },
+    "Total nilai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total value"
           }
         }
       }
