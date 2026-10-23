@@ -330,7 +330,7 @@ struct ProfileView: View {
                     .font(.app(14)).foregroundStyle(Color.appTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            PrimaryButton(title: L("Masuk atau daftar")) { authViewModel.logout() }
+            GuestUpgradeButtons()
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -24,6 +24,16 @@ enum SupabaseSDK {
         return profile
     }
 
+    /// Enhancement 3 US5: the guest session is about to be left for an existing account; the server deletes the
+    /// guest's data 30 days later unless it is used again (`clearGuestAbandoned`).
+    static func markGuestAbandoned() async throws {
+        try await client.rpc("mark_guest_abandoned").execute()
+    }
+
+    static func clearGuestAbandoned() async throws {
+        try await client.rpc("clear_guest_abandoned").execute()
+    }
+
     /// US8: puts the account in one Plus state (free, trial, active, grace, ended) for testing; the server
     /// only allows it while its test switch is on (`test_plus_off`).
     static func setTestPlusState(_ state: String) async throws {

@@ -61,7 +61,9 @@ struct RootView: View {
                 }
                 .transition(.opacity)
             } else if authViewModel.isAuthenticated {
+                // another account (switched from a guest) starts Beranda over
                 DashboardView()
+                    .id(authViewModel.currentUser?.id)
                     .transition(.opacity)
             } else if !hasSeenOnboarding {
                 // the intro melts away while the sign-in screen rises
@@ -93,6 +95,9 @@ struct RootView: View {
                 .zIndex(10)
             }
         }
+        .guestLinkDialogs()
+        // a guest who saved their account is no longer a guest: Ingatan on the server and the rest open up
+        .onChange(of: authViewModel.currentUser?.isGuest) { _, isGuest in DraftStore.shared.isGuest = isGuest == true }
         .task { await authViewModel.checkSession() }
         .preferredColorScheme(appTheme.colorScheme)
         .environment(\.locale, AppLanguage.locale)

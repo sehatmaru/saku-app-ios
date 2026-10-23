@@ -1277,5 +1277,19 @@
   "Belanja": "Shopping",
   "Hiburan": "Entertainment",
   "Budget Makan": "Food budget",
-  "Sisa Rp1.225.000": "Rp1,225,000 left"
+  "Sisa Rp1.225.000": "Rp1,225,000 left",
+  "Masuk dengan Google": "Sign in with Google",
+  "Masuk dengan Apple": "Sign in with Apple",
+  "Belum tersedia": "Not available yet",
+  "Masuk dengan Google agar datamu tersimpan dan ikut ke perangkat lain.": "Sign in with Google so your data is saved and follows you to other devices.",
+  "Akun Google ini sudah terdaftar": "This Google account is already registered",
+  "Beralih ke akun itu": "Switch to that account",
+  "Beralih ke akun itu?": "Switch to that account?",
+  "Akun Google ini sudah terdaftar. Mau beralih ke akun itu?": "This Google account is already registered. Switch to that account?",
+  "Data tamu di iPhone ini tidak akan ikut dan tidak bisa dipulihkan.": "The guest data on this iPhone won't come along and can't be recovered.",
+  "Beralih": "Switch",
+  "Belum berhasil": "Didn't work",
+  "Belum bisa menautkan akun. Cek koneksimu lalu coba lagi. Datamu tidak berubah.": "Couldn't link the account. Check your connection and try again. Your data hasn't changed.",
+  "Belum bisa beralih ke akun itu. Kamu masih di akun tamu dan datamu utuh. Coba lagi nanti.": "Couldn't switch to that account. You're still a guest and your data is intact. Try again later.",
+  "OK": "OK"
 }

@@ -1813,6 +1813,26 @@
         }
       }
     },
+    "Akun Google ini sudah terdaftar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Google account is already registered"
+          }
+        }
+      }
+    },
+    "Akun Google ini sudah terdaftar. Mau beralih ke akun itu?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Google account is already registered. Switch to that account?"
+          }
+        }
+      }
+    },
     "Akun dan semua datamu dihapus permanen, lalu kamu kembali ke awal. Tidak bisa dibatalkan.": {
       "localizations": {
         "en": {
@@ -3293,6 +3313,16 @@
         }
       }
     },
+    "Belum berhasil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Didn't work"
+          }
+        }
+      }
+    },
     "Belum berhasil dibatalkan dan akunmu belum berubah. Coba lagi sebentar lagi.": {
       "localizations": {
         "en": {
@@ -3309,6 +3339,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't change it. Try again in a moment."
+          }
+        }
+      }
+    },
+    "Belum bisa beralih ke akun itu. Kamu masih di akun tamu dan datamu utuh. Coba lagi nanti.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't switch to that account. You're still a guest and your data is intact. Try again later."
+          }
+        }
+      }
+    },
+    "Belum bisa menautkan akun. Cek koneksimu lalu coba lagi. Datamu tidak berubah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't link the account. Check your connection and try again. Your data hasn't changed."
           }
         }
       }
@@ -3473,6 +3523,16 @@
         }
       }
     },
+    "Belum tersedia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not available yet"
+          }
+        }
+      }
+    },
     "Belum tersedia di iOS-mu": {
       "localizations": {
         "en": {
@@ -3519,6 +3579,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ended %@. Your data is safe."
+          }
+        }
+      }
+    },
+    "Beralih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch"
+          }
+        }
+      }
+    },
+    "Beralih ke akun itu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to that account"
+          }
+        }
+      }
+    },
+    "Beralih ke akun itu?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to that account?"
           }
         }
       }
@@ -5189,6 +5279,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Supporting data"
+          }
+        }
+      }
+    },
+    "Data tamu di iPhone ini tidak akan ikut dan tidak bisa dipulihkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The guest data on this iPhone won't come along and can't be recovered."
           }
         }
       }
@@ -10413,6 +10513,36 @@
         }
       }
     },
+    "Masuk dengan Apple": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in with Apple"
+          }
+        }
+      }
+    },
+    "Masuk dengan Google": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in with Google"
+          }
+        }
+      }
+    },
+    "Masuk dengan Google agar datamu tersimpan dan ikut ke perangkat lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in with Google so your data is saved and follows you to other devices."
+          }
+        }
+      }
+    },
     "Masuk ke": {
       "localizations": {
         "en": {
@@ -11609,6 +11739,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Turn on Smart Tracker"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
           }
         }
       }

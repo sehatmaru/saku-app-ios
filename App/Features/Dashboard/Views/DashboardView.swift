@@ -283,6 +283,7 @@ struct DashboardView: View {
                     PlusBannerView()
                     summarySection
                     TrySmartTrackerCard()
+                    GuestSaveCard(transactionCount: viewModel.currentMonthTransactionCount)
                     if !viewModel.overdueBills.isEmpty {
                         OverdueBillBanner(bills: viewModel.overdueBills, isBalanceVisible: isBalanceVisible) { bill in
                             recordCard = bill

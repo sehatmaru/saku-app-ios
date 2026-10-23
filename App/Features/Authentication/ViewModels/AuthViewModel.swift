@@ -14,6 +14,17 @@ enum AuthPresentationError: LocalizedError {
     }
 }
 
+/// The question a guest is asked when the Google account they chose already has a Saku account.
+enum GuestLinkStep: Equatable {
+    case none
+    /// "Akun Google ini sudah terdaftar. Mau beralih ke akun itu?"
+    case askSwitch
+    /// The first alert is closing; the second one follows (two alerts cannot swap in the same instant).
+    case betweenQuestions
+    /// "Data tamu di iPhone ini tidak akan ikut dan tidak bisa dipulihkan."
+    case confirmSwitch
+}
+
 @MainActor
 final class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
@@ -32,8 +43,15 @@ final class AuthViewModel: ObservableObject {
     /// Signed in on an account that is waiting to be deleted: RootView shows PendingDeletionView until the user
     /// cancels the deletion or signs out.
     @Published var pendingDeletion: Date?
+    /// Guest upgrade (Enhancement 3): where the "this Google account already exists" question stands.
+    @Published var guestLinkStep: GuestLinkStep = .none
+    @Published var isLinking = false
+    /// Shown as an alert when linking or switching fails; the guest account is untouched.
+    @Published var linkErrorMessage: String?
 
     private var authListener: Any?
+    /// The Google sign-in that was refused as already registered; kept to sign in to that account if the guest agrees.
+    private var pendingGoogleCredentials: OpenIDConnectCredentials?
 
     init() {
         Task {
@@ -108,6 +126,7 @@ final class AuthViewModel: ObservableObject {
             avatarURL: profile.avatarUrl
         )
         await loadAvatar()
+        await clearAbandonedMarkIfGuest()
         if let raw = profile.deletionScheduledFor, let date = AccountDeletion.parse(raw) {
             pendingDeletion = date
             needsSetup = false
@@ -137,32 +156,26 @@ final class AuthViewModel: ObservableObject {
 
     // MARK: - Google Sign-In
 
+    /// Google's own sign-in sheet, turned into the credentials Supabase understands.
+    private func googleCredentials() async throws -> OpenIDConnectCredentials {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+        else {
+            throw AuthPresentationError.noWindowScene
+        }
+        let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootVC)
+        guard let idToken = result.user.idToken?.tokenString else {
+            throw AuthPresentationError.noGoogleIdToken
+        }
+        return OpenIDConnectCredentials(provider: .google, idToken: idToken, accessToken: result.user.accessToken.tokenString)
+    }
+
     func signInWithGoogle() {
         isGoogleLoading = true
         errorMessage = nil
         Task {
             do {
-                guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                      let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
-                else {
-                    throw AuthPresentationError.noWindowScene
-                }
-
-                let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootVC)
-
-                guard let idToken = result.user.idToken?.tokenString else {
-                    throw AuthPresentationError.noGoogleIdToken
-                }
-
-                let accessToken = result.user.accessToken.tokenString
-                let authResponse = try await SupabaseSDK.client.auth.signInWithIdToken(
-                    credentials: OpenIDConnectCredentials(
-                        provider: .google,
-                        idToken: idToken,
-                        accessToken: accessToken
-                    )
-                )
-
+                let authResponse = try await SupabaseSDK.client.auth.signInWithIdToken(credentials: try await googleCredentials())
                 let name = authResponse.user.userMetadata["full_name"]?.stringValue ?? authResponse.user.userMetadata["name"]?.stringValue
                 try await fetchProfileAndSetUser(authUserId: authResponse.user.id, email: authResponse.user.email ?? "", displayName: name)
             } catch is CancellationError {
@@ -369,16 +382,107 @@ final class AuthViewModel: ObservableObject {
 
     // MARK: - Logout
 
+    // MARK: - Guest upgrade (Enhancement 3)
+
+    /// Links the Google account to the guest account that is signed in: same account id, so every wallet,
+    /// transaction and budget stays. If that Google account already has a Saku account, asks what to do.
+    func linkGoogleToGuest() {
+        guard currentUser?.isGuest == true, !isLinking else { return }
+        isLinking = true
+        linkErrorMessage = nil
+        Task {
+            defer { isLinking = false }
+            do {
+                let credentials = try await googleCredentials()
+                do {
+                    let session = try await SupabaseSDK.client.auth.linkIdentityWithIdToken(credentials: credentials)
+                    try await finishLinking(session.user)
+                } catch let error as AuthError where error.errorCode == .identityAlreadyExists {
+                    pendingGoogleCredentials = credentials
+                    guestLinkStep = .askSwitch
+                }
+            } catch is CancellationError {
+                return
+            } catch let error as NSError where error.domain == kGIDSignInErrorDomain && error.code == GIDSignInError.canceled.rawValue {
+                return
+            } catch {
+                linkErrorMessage = L("Belum bisa menautkan akun. Cek koneksimu lalu coba lagi. Datamu tidak berubah.")
+            }
+        }
+    }
+
+    /// The account is the same one, now with an email: refresh what the app shows, no sign-out needed.
+    private func finishLinking(_ user: Supabase.User) async throws {
+        let providerName = user.userMetadata["full_name"]?.stringValue ?? user.userMetadata["name"]?.stringValue
+        if let providerName, let profileId = currentUser.flatMap({ UUID(uuidString: $0.id) }) {
+            try? await SupabaseSDK.updateProfile(id: profileId, displayName: providerName)
+        }
+        try await fetchProfileAndSetUser(authUserId: user.id, email: user.email ?? "", displayName: providerName)
+        DraftStore.shared.isGuest = false
+        Haptics.welcome()
+    }
+
+    func askSwitchConfirmation() {
+        guestLinkStep = .betweenQuestions
+        Task {
+            try? await Task.sleep(for: .milliseconds(350))
+            if guestLinkStep == .betweenQuestions { guestLinkStep = .confirmSwitch }
+        }
+    }
+
+    func cancelSwitch() {
+        guestLinkStep = .none
+        pendingGoogleCredentials = nil
+    }
+
+    /// "Beralih ke akun itu": signs in to the existing account. The guest account is marked first (the server removes
+    /// it after 30 days); if signing in fails the mark is taken back and the guest carries on.
+    func switchToExistingAccount() {
+        guard let credentials = pendingGoogleCredentials, !isLinking else { return }
+        guestLinkStep = .none
+        isLinking = true
+        Task {
+            defer { isLinking = false }
+            do {
+                try await SupabaseSDK.markGuestAbandoned()
+                do {
+                    let response = try await SupabaseSDK.client.auth.signInWithIdToken(credentials: credentials)
+                    resetLocalAccountState()
+                    pendingGoogleCredentials = nil
+                    let name = response.user.userMetadata["full_name"]?.stringValue ?? response.user.userMetadata["name"]?.stringValue
+                    try await fetchProfileAndSetUser(authUserId: response.user.id, email: response.user.email ?? "", displayName: name)
+                } catch {
+                    try? await SupabaseSDK.clearGuestAbandoned()
+                    throw error
+                }
+            } catch {
+                linkErrorMessage = L("Belum bisa beralih ke akun itu. Kamu masih di akun tamu dan datamu utuh. Coba lagi nanti.")
+            }
+        }
+    }
+
+    /// A guest session that is back in use (app opened again) is not abandoned.
+    private func clearAbandonedMarkIfGuest() async {
+        guard currentUser?.isGuest == true else { return }
+        try? await SupabaseSDK.clearGuestAbandoned()
+    }
+
+    /// What lives on this device for one account: the agreement, drafts, what Saku learned, the Plus state, and
+    /// the guest card's own counters.
+    private func resetLocalAccountState() {
+        SmartTrackerConsent.isGranted = false
+        SmartTrackerMemorySync.isGranted = false
+        SmartTrackerMemorySync.declinedAt = nil
+        DraftStore.shared.reset()
+        PlusStore.shared.reset()
+        GuestCardPolicy.resetCounters()
+    }
+
     func logout() {
         Haptics.logout()
         Task {
             try? await SupabaseSDK.client.auth.signOut()
-            // drafts and what Saku learned belong to this account, and so does the agreement
-            SmartTrackerConsent.isGranted = false
-            SmartTrackerMemorySync.isGranted = false
-            SmartTrackerMemorySync.declinedAt = nil
-            DraftStore.shared.reset()
-            PlusStore.shared.reset()
+            resetLocalAccountState()
             currentUser = nil
             pendingDeletion = nil
             withAnimation(.easeInOut(duration: 0.4)) {
