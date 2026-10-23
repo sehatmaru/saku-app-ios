@@ -45,7 +45,7 @@ struct GuestUpgradeButtons: View {
             .accessibilityAddTraits(.isButton)
             .accessibilityHint(L("Belum tersedia"))
 
-            Button { authViewModel.linkGoogleToGuest() } label: {
+            Button { authViewModel.startGuestLink() } label: {
                 HStack(spacing: 10) {
                     if authViewModel.isLinking {
                         ProgressView().tint(Color.appText)
@@ -61,6 +61,11 @@ struct GuestUpgradeButtons: View {
             }
             .buttonStyle(.plain)
             .disabled(authViewModel.isLinking)
+
+            Text("Kalau akun Google/Apple ini sudah punya akun Saku, kamu bisa beralih ke akun itu.")
+                .font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 2)
         }
     }
 }
@@ -152,6 +157,8 @@ struct GuestLinkSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             switch authViewModel.guestLinkStep {
+            case .beforeLogin: beforeLogin
+            case .emailUnverified: emailUnverified
             case .askSwitch: ask
             case .confirmSwitch: confirm
             case .working(let text): working(text)
@@ -190,25 +197,94 @@ struct GuestLinkSheet: View {
         .disabled(!enabled)
     }
 
+    private func chip(_ symbol: String, _ text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbol).font(.system(size: 13)).foregroundStyle(Color.appTextSecondary)
+            Text(text).font(.app(14, weight: .medium))
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .background(Color.appFill, in: Capsule())
+    }
+
+    private func chips(_ summary: (wallets: Int, transactions: Int)) -> some View {
+        HStack(spacing: 8) {
+            chip("wallet.bifold", Lx("\(summary.wallets) dompet", en: "\(summary.wallets) wallet\(summary.wallets == 1 ? "" : "s")"))
+            chip("receipt", Lx("\(summary.transactions) transaksi", en: "\(summary.transactions) transaction\(summary.transactions == 1 ? "" : "s")"))
+        }
+    }
+
+    /// "Data tamu yang akan ditinggalkan": what the guest gives up, so the choice is an informed one.
+    private var leaving: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Data tamu yang akan ditinggalkan").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            if let summary = authViewModel.switchSummary {
+                chips(summary)
+                if summary.wallets == 0 && summary.transactions == 0 {
+                    Text("Belum ada data di akun tamu ini.").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                }
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "info.circle").font(.system(size: 16))
+                    Text("Ringkasan data tamu belum tersedia")
+                }
+                .font(.app(14)).foregroundStyle(Color.appTextSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.appBorder, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+    }
+
+    /// Before the Google screen opens. The text is the same for every account, so it never says whether one exists.
+    private var beforeLogin: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            badge("icloud.and.arrow.up", tint: .appPrimary, fill: Color.appPrimary.opacity(0.12))
+            Text("Simpan datamu ke akun ini?").font(.app(22, weight: .semibold)).lineSpacing(2).padding(.top, 16)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Datamu di sini akan tersimpan ke akun ini. Kalau akun Google/Apple ini sudah punya akun Saku, kamu akan ditanya apakah mau beralih ke akun itu (data tamu di iPhone ini tidak ikut).")
+                .font(.app(16)).foregroundStyle(Color.appTextSecondary).lineSpacing(3).padding(.top, 8)
+                .fixedSize(horizontal: false, vertical: true)
+            primary(L("Lanjut")) { authViewModel.continueGuestLink() }.padding(.top, 24)
+            plain(L("Batal")) { authViewModel.cancelSwitch() }.padding(.top, 6)
+        }
+    }
+
+    private var emailUnverified: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            badge("envelope", tint: .appTextSecondary, fill: Color.appFill)
+            Text("Email belum terverifikasi").font(.app(22, weight: .semibold)).padding(.top, 16)
+            Text("Verifikasi email akun Google ini dulu, lalu coba lagi. Datamu masih aman di iPhone ini.")
+                .font(.app(16)).foregroundStyle(Color.appTextSecondary).lineSpacing(3).padding(.top, 8)
+                .fixedSize(horizontal: false, vertical: true)
+            primary(L("Coba lagi")) { authViewModel.retryLink() }.padding(.top, 28)
+            plain(L("Tutup")) { authViewModel.cancelSwitch() }.padding(.top, 6)
+        }
+    }
+
     private var ask: some View {
         VStack(alignment: .leading, spacing: 0) {
             badge("arrow.left.arrow.right", tint: .appPrimary, fill: Color.appPrimary.opacity(0.12))
             Text("Akun Google ini sudah terdaftar. Mau beralih ke akun itu?")
                 .font(.app(22, weight: .semibold)).lineSpacing(2).padding(.top, 16)
                 .fixedSize(horizontal: false, vertical: true)
-            if let email = authViewModel.switchTargetEmail {
+            VStack(spacing: 0) {
+                leaving
+                Image(systemName: "arrow.down").font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color.appTextSecondary).padding(.vertical, 4)
+                if let email = authViewModel.switchTargetEmail {
                 HStack(spacing: 12) {
                     Image("GoogleLogo").resizable().scaledToFit().frame(width: 20, height: 20)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Akun tujuan").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                        Text("Akun tujuan · kamu akan masuk ke").font(.app(13)).foregroundStyle(Color.appTextSecondary)
                         Text(email).font(.app(16, weight: .semibold))
                     }
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 14)
                 .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.top, 18)
+                }
             }
+            .padding(.top, 18)
             primary(L("Beralih ke akun itu")) { authViewModel.askSwitchConfirmation() }.padding(.top, 24)
             plain(L("Batal")) { authViewModel.cancelSwitch() }.padding(.top, 6)
         }
@@ -218,10 +294,10 @@ struct GuestLinkSheet: View {
         VStack(alignment: .leading, spacing: 0) {
             badge("exclamationmark.triangle", tint: .appError, fill: Color(light: 0xFDECEC, dark: 0x3A1D1F))
             Text("Sebelum beralih").font(.app(22, weight: .semibold)).padding(.top, 16)
-            Text(L("Data tamu di iPhone ini tidak akan ikut dan tidak bisa dipulihkan.")
-                 + (authViewModel.switchTargetEmail.map { " " + L("Kamu akan masuk ke %@ dengan datanya sendiri.", $0) } ?? ""))
-                .font(.app(16)).foregroundStyle(Color.appBody).lineSpacing(3).padding(.top, 8)
+            Text("Data tamu di iPhone ini tidak akan ikut dan tidak bisa dipulihkan.")
+                .font(.app(16)).foregroundStyle(Color.appTextSecondary).lineSpacing(3).padding(.top, 8)
                 .fixedSize(horizontal: false, vertical: true)
+            if let summary = authViewModel.switchSummary { chips(summary).padding(.top, 16) }
             primary(L("Beralih"), color: .appError) { authViewModel.switchToExistingAccount() }.padding(.top, 28)
             plain(L("Batal")) { authViewModel.cancelSwitch() }.padding(.top, 6)
         }

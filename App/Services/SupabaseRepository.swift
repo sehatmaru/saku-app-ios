@@ -100,6 +100,15 @@ final class SupabaseRepository: @unchecked Sendable {
             .execute()
     }
 
+    /// How many wallets and transactions an account holds, for the guest switch question (Enhancement 3 US2).
+    func dataCounts(userId: String) async throws -> (wallets: Int, transactions: Int) {
+        async let wallets = client.from("accounts").select("id", head: true, count: .exact)
+            .eq("user_id", value: userId).is("deleted_at", value: nil).execute().count
+        async let transactions = client.from("transactions").select("id", head: true, count: .exact)
+            .eq("user_id", value: userId).is("deleted_at", value: nil).execute().count
+        return try await (wallets ?? 0, transactions ?? 0)
+    }
+
     // MARK: - Transactions
 
     func fetchTransactions(userId: String) async throws -> [Transaction] {

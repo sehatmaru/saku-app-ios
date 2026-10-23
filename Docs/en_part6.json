@@ -1252,7 +1252,6 @@
   "Setup belum tersimpan": "Setup not saved",
   "Koneksi terputus. Jawabanmu masih ada di iPhone ini, jadi tidak perlu mengisi ulang.": "The connection dropped. Your answers are still on this iPhone, so you don't need to fill them in again.",
   "Kembali ke setup": "Back to setup",
-  "Lengkapi": "Complete",
   "Lengkapi detailnya di Dompet": "Finish the details later in Wallets",
   "Paket Gratis: maksimal %lld dompet uang dan %lld Dompet Investasi, sisanya tidak dibuat.": "Free plan: up to %lld money wallets and %lld Investment wallet, the rest won't be created.",
   "Catat cukup satu kalimat.": "Log it in one sentence.",
@@ -1306,5 +1305,14 @@
   "Koneksi terputus. Datamu masih aman di iPhone ini. Coba lagi sebentar lagi.": "The connection dropped. Your data is still safe on this iPhone. Try again in a moment.",
   "Koneksi terputus. Kamu masih di akun tamu dan datamu utuh. Coba lagi sebentar lagi.": "The connection dropped. You're still a guest and your data is intact. Try again in a moment.",
   "Akun tertaut": "Account linked",
-  "Datamu tersimpan aman": "Your data is saved safely"
+  "Datamu tersimpan aman": "Your data is saved safely",
+  "Simpan datamu ke akun ini?": "Save your data to this account?",
+  "Datamu di sini akan tersimpan ke akun ini. Kalau akun Google/Apple ini sudah punya akun Saku, kamu akan ditanya apakah mau beralih ke akun itu (data tamu di iPhone ini tidak ikut).": "Your data here will be saved to this account. If this Google/Apple account already has a Saku account, you'll be asked whether to switch to it (the guest data on this iPhone won't come along).",
+  "Data tamu yang akan ditinggalkan": "Guest data that will be left behind",
+  "Belum ada data di akun tamu ini.": "There's no data in this guest account yet.",
+  "Ringkasan data tamu belum tersedia": "The guest data summary isn't available yet",
+  "Akun tujuan · kamu akan masuk ke": "Destination account · you'll sign in to",
+  "Email belum terverifikasi": "Email not verified",
+  "Verifikasi email akun Google ini dulu, lalu coba lagi. Datamu masih aman di iPhone ini.": "Verify this Google account's email first, then try again. Your data is still safe on this iPhone.",
+  "Kalau akun Google/Apple ini sudah punya akun Saku, kamu bisa beralih ke akun itu.": "If this Google/Apple account already has a Saku account, you can switch to it."
 }

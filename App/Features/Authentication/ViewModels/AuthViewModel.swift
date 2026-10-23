@@ -18,6 +18,10 @@ enum AuthPresentationError: LocalizedError {
 /// second warning, the wait, or a failure that leaves the guest account as it was.
 enum GuestLinkStep: Equatable {
     case none
+    /// "Simpan datamu ke akun ini?": shown before the Google sign-in opens, the same for every account.
+    case beforeLogin
+    /// The provider says the email is not verified; nothing was linked.
+    case emailUnverified
     /// "Akun Google ini sudah terdaftar. Mau beralih ke akun itu?"
     case askSwitch
     /// "Data tamu di iPhone ini tidak akan ikut dan tidak bisa dipulihkan."
@@ -53,6 +57,8 @@ final class AuthViewModel: ObservableObject {
     private var lastLinkAction = LinkAction.link
     /// The Google address of the account the guest would switch to, partly hidden, for the question's text.
     @Published var switchTargetEmail: String?
+    /// What the guest would leave behind; nil when it could not be read ("Ringkasan data tamu belum tersedia").
+    @Published var switchSummary: (wallets: Int, transactions: Int)?
 
     private var authListener: Any?
     /// The Google sign-in that was refused as already registered; kept to sign in to that account if the guest agrees.
@@ -396,6 +402,20 @@ final class AuthViewModel: ObservableObject {
 
     /// Links the Google account to the guest account that is signed in: same account id, so every wallet,
     /// transaction and budget stays. If that Google account already has a Saku account, asks what to do.
+    func startGuestLink() {
+        guard currentUser?.isGuest == true, !isLinking else { return }
+        guestLinkStep = .beforeLogin
+    }
+
+    /// "Lanjut" on the notice: the sheet closes first so the Google screen has a free window to open over.
+    func continueGuestLink() {
+        guestLinkStep = .none
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            linkGoogleToGuest()
+        }
+    }
+
     func linkGoogleToGuest() {
         guard currentUser?.isGuest == true, !isLinking else { return }
         isLinking = true
@@ -407,7 +427,7 @@ final class AuthViewModel: ObservableObject {
                 let credentials = login.credentials
                 // only an address the provider has verified is accepted; nothing is linked or switched otherwise
                 guard IdentityToken.emailIsVerified(credentials.idToken) else {
-                    guestLinkStep = .failed(L("Email akun Google ini belum diverifikasi oleh Google, jadi belum bisa dipakai. Verifikasi emailnya di Google lalu coba lagi."))
+                    guestLinkStep = .emailUnverified
                     return
                 }
                 guestLinkStep = .working(L("Menautkan akun…"))
@@ -417,6 +437,11 @@ final class AuthViewModel: ObservableObject {
                 } catch let error as AuthError where error.errorCode == .identityAlreadyExists {
                     pendingGoogleCredentials = credentials
                     switchTargetEmail = login.email.map(EmailMask.masked)
+                    if let guestId = currentUser?.id {
+                        switchSummary = try? await SupabaseRepository.shared.dataCounts(userId: guestId)
+                    } else {
+                        switchSummary = nil
+                    }
                     guestLinkStep = .askSwitch
                 }
             } catch is CancellationError {
@@ -452,6 +477,7 @@ final class AuthViewModel: ObservableObject {
         guestLinkStep = .none
         pendingGoogleCredentials = nil
         switchTargetEmail = nil
+        switchSummary = nil
     }
 
     /// "Coba lagi" on the failure sheet.

@@ -1883,6 +1883,16 @@
         }
       }
     },
+    "Akun tujuan · kamu akan masuk ke": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destination account · you'll sign in to"
+          }
+        }
+      }
+    },
     "Akunmu dijadwalkan dihapus": {
       "localizations": {
         "en": {
@@ -2999,6 +3009,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nothing is recorded this period, so no analysis can be made yet."
+          }
+        }
+      }
+    },
+    "Belum ada data di akun tamu ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There's no data in this guest account yet."
           }
         }
       }
@@ -5333,6 +5353,16 @@
         }
       }
     },
+    "Data tamu yang akan ditinggalkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guest data that will be left behind"
+          }
+        }
+      }
+    },
     "Data tersedia sejak %@. Geser untuk periode lainnya.": {
       "localizations": {
         "en": {
@@ -5379,6 +5409,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your data couldn't be loaded. Check your connection and try again."
+          }
+        }
+      }
+    },
+    "Datamu di sini akan tersimpan ke akun ini. Kalau akun Google/Apple ini sudah punya akun Saku, kamu akan ditanya apakah mau beralih ke akun itu (data tamu di iPhone ini tidak ikut).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data here will be saved to this account. If this Google/Apple account already has a Saku account, you'll be asked whether to switch to it (the guest data on this iPhone won't come along)."
           }
         }
       }
@@ -6589,6 +6629,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Google hasn't verified this account's email, so it can't be used yet. Verify the email with Google and try again."
+          }
+        }
+      }
+    },
+    "Email belum terverifikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email not verified"
           }
         }
       }
@@ -8369,6 +8419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "INVITE CODE"
+          }
+        }
+      }
+    },
+    "Kalau akun Google/Apple ini sudah punya akun Saku, kamu bisa beralih ke akun itu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If this Google/Apple account already has a Saku account, you can switch to it."
           }
         }
       }
@@ -13683,6 +13743,16 @@
         }
       }
     },
+    "Ringkasan data tamu belum tersedia": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The guest data summary isn't available yet"
+          }
+        }
+      }
+    },
     "Ringkasan periode": {
       "localizations": {
         "en": {
@@ -15329,6 +15399,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Keep Memory on the server"
+          }
+        }
+      }
+    },
+    "Simpan datamu ke akun ini?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save your data to this account?"
           }
         }
       }
@@ -18841,6 +18921,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Card debt equals %lld%% of monthly income, %@."
+          }
+        }
+      }
+    },
+    "Verifikasi email akun Google ini dulu, lalu coba lagi. Datamu masih aman di iPhone ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify this Google account's email first, then try again. Your data is still safe on this iPhone."
           }
         }
       }
