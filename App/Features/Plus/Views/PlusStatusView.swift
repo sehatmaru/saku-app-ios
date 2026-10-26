@@ -6,8 +6,7 @@ struct PlusStatusView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.openURL) private var openURL
     @State private var paywall: PlusReason?
-    @State private var showsSoon = false
-    @State private var isSwitching = false
+        @State private var isSwitching = false
     @State private var failure: String?
 
     private var phase: PlusPhase { plus.entitlement.phase() }
@@ -57,9 +56,6 @@ struct PlusStatusView: View {
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
         .plusOffer($paywall)
-        .alert(L("Pembelian segera hadir"), isPresented: $showsSoon) { Button("OK", role: .cancel) {} } message: {
-            Text("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka.")
-        }
         .alert(failure ?? "", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
             Button("Tutup", role: .cancel) {}
         }
@@ -131,10 +127,11 @@ struct PlusStatusView: View {
         switch phase {
         case .trial:
             big = "\(left)"; unit = L("hari lagi"); tag = nil
-            caption = L("Ditagih %@ · %@ per tahun", until, PlusPricing.yearly)
+            let trialPlan = plus.entitlement.plan
+            caption = L("Ditagih %@ · %@ per %@", until, PlusPricing.price(trialPlan), trialPlan == .monthly ? L("bulan") : L("tahun"))
         case .active:
             let monthly = plus.entitlement.plan == .monthly
-            big = monthly ? PlusPricing.monthly : PlusPricing.yearly; unit = monthly ? L("per bulan") : L("per tahun"); tag = L("Aktif")
+            big = PlusPricing.price(monthly ? .monthly : .yearly); unit = monthly ? L("per bulan") : L("per tahun"); tag = L("Aktif")
 
             caption = L("Ditagih berikutnya %@", until)
         case .grace:
@@ -227,7 +224,11 @@ struct PlusStatusView: View {
     }
 
     private func manageTapped() {
-        if onPlus, let subscriptionsURL { openURL(subscriptionsURL) } else { showsSoon = true }
+        if onPlus, let subscriptionsURL { openURL(subscriptionsURL); return }
+        Task {
+            if await PlusPurchases.shared.restore() { return }
+            failure = L("Tidak ada langganan Saku Plus di Apple ID ini.")
+        }
     }
 
     // MARK: Internal test picker (US8)

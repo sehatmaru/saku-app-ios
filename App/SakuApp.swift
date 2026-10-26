@@ -15,6 +15,8 @@ struct SakuApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
                     DraftStore.shared.ingestSharedText()
+                    PlusPurchases.shared.startListening()
+                    Task { await PlusPurchases.shared.refresh() }
                 }
         }
     }

@@ -49,6 +49,12 @@ enum PlusReason: Identifiable, Equatable {
     }
 }
 
+/// The pages the App Store asks for next to a subscription. Placeholders until the site pages exist.
+enum PlusLinks {
+    static let terms = URL(string: "https://saku.id/syarat")!
+    static let privacy = URL(string: "https://saku.id/privasi")!
+}
+
 /// Sample prices until the App Store products exist (Epic 11 US3). Not final.
 enum PlusPricing {
     static let yearly = "Rp149.000"
@@ -56,15 +62,19 @@ enum PlusPricing {
     static let yearlyPerMonth = "Rp12.417"
     static let monthly = "Rp19.000"
     static let launchUntil = "31 Okt 2026"
+
+    /// The App Store's price for a plan when the products loaded, else the sample.
+    @MainActor static func price(_ plan: PlusPlan) -> String {
+        PlusPurchases.shared.products[plan]?.displayPrice ?? (plan == .monthly ? monthly : yearly)
+    }
 }
 
-/// Full-screen paywall (design 1g). Buying needs StoreKit, so the button says it is coming; the loading,
-/// failed and buying states and the result screens come with US3.
+/// Full-screen paywall (design 1g). Buying goes through StoreKit 2 (`PlusPurchases`).
 struct PlusPaywallView: View {
     let reason: PlusReason
     @Environment(\.dismiss) private var dismiss
     @State private var yearly = true
-    /// The purchase went through (for now the button succeeds right away; StoreKit comes with US3).
+    /// The purchase went through.
     @State private var purchased = false
     @State private var isBuying = false
     @State private var purchaseError: String?
@@ -72,8 +82,17 @@ struct PlusPaywallView: View {
     @State private var pulse = 0
     /// A sheet at its short height: the same content, smaller (design 1h).
     @State private var compact = false
+    @ObservedObject private var purchases = PlusPurchases.shared
+    @State private var restoring = false
 
-    private var price: String { yearly ? "\(PlusPricing.yearly)/\(L("tahun"))" : "\(PlusPricing.monthly)/\(L("bulan"))" }
+    /// The App Store's own price when the products loaded; the sample prices until then (US3).
+    private var yearlyPrice: String { purchases.products[.yearly]?.displayPrice ?? PlusPricing.yearly }
+    private var monthlyPrice: String { purchases.products[.monthly]?.displayPrice ?? PlusPricing.monthly }
+    private var yearlyPerMonth: String {
+        guard let p = purchases.products[.yearly] else { return PlusPricing.yearlyPerMonth }
+        return (p.price / 12).formatted(p.priceFormatStyle)
+    }
+    private var price: String { yearly ? "\(yearlyPrice)/\(L("tahun"))" : "\(monthlyPrice)/\(L("bulan"))" }
 
     var body: some View {
         ScrollView {
@@ -115,9 +134,9 @@ struct PlusPaywallView: View {
                 }
 
                 HStack(spacing: 10) {
-                    planCard(name: L("1 tahun"), strike: PlusPricing.yearlyStrike, price: PlusPricing.yearly,
-                             per: L("Setara %@/bln", PlusPricing.yearlyPerMonth), best: true, selected: yearly) { yearly = true; pulse += 1 }
-                    planCard(name: L("Bulanan"), strike: nil, price: PlusPricing.monthly, per: L("per bulan"), best: false, selected: !yearly) { yearly = false; pulse += 1 }
+                    planCard(name: L("1 tahun"), strike: PlusPricing.yearlyStrike, price: yearlyPrice,
+                             per: L("Setara %@/bln", yearlyPerMonth), best: true, selected: yearly) { yearly = true; pulse += 1 }
+                    planCard(name: L("Bulanan"), strike: nil, price: monthlyPrice, per: L("per bulan"), best: false, selected: !yearly) { yearly = false; pulse += 1 }
                 }
                 .padding(.top, PlusStore.isInternalBuild ? 12 : (compact ? 16 : 28)).stEnter(3)
                 Text(L("Harga peluncuran sampai %@", PlusPricing.launchUntil))
@@ -137,11 +156,13 @@ struct PlusPaywallView: View {
                 }
 
                 Text(L("Langganan diperpanjang otomatis %@ kecuali dimatikan minimal 24 jam sebelum periode berakhir. Pembayaran ditagih ke Apple ID. Kelola atau batalkan di Pengaturan App Store.",
-                       yearly ? L("setiap tahun sebesar %@", PlusPricing.yearly) : L("setiap bulan sebesar %@", PlusPricing.monthly)))
+                       yearly ? L("setiap tahun sebesar %@", yearlyPrice) : L("setiap bulan sebesar %@", monthlyPrice)))
                     .font(.app(11)).foregroundStyle(Color.appTextTertiary).multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.top, 12)
                 HStack(spacing: 16) {
-                    Text("Syarat"); Text("Kebijakan Privasi"); Text("Pulihkan pembelian")
+                    Link("Syarat", destination: PlusLinks.terms)
+                    Link("Kebijakan Privasi", destination: PlusLinks.privacy)
+                    Button { restore() } label: { Text(restoring ? L("Memeriksa...") : L("Pulihkan pembelian")) }.disabled(restoring || isBuying)
                 }
                 .font(.app(12, weight: .medium)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).padding(.top, 8)
             }
@@ -165,23 +186,44 @@ struct PlusPaywallView: View {
         }
     }
 
-    /// Until StoreKit exists (US3) the trial is started on the server through the internal test switch, so the
-    /// account really becomes Plus; builds without that switch say buying is not open yet.
+    /// US3: the purchase goes through the App Store. Cancelling or failing leaves the user where they were; a
+    /// pending purchase (Ask to Buy) says so. Internal builds with no products fall back to the test switch.
     private func startTrial() {
-        guard PlusStore.isInternalBuild else { purchaseError = L("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka."); return }
         isBuying = true
         Task {
             defer { isBuying = false }
-            do {
-                try await SupabaseSDK.setTestPlusState("trial7")
-                let session = try await SupabaseSDK.client.auth.session
-                _ = try await SupabaseSDK.fetchProfile(authUserId: session.user.id)
-                withAnimation(.easeOut(duration: 0.3)) { purchased = true }
-            } catch {
-                purchaseError = "\(error)".contains("test_plus_off")
-                    ? L("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka.")
-                    : L("Pembelian belum berhasil. Kamu belum ditagih apa pun. Coba lagi sebentar lagi.")
+            await purchases.loadProducts()
+            if purchases.products.isEmpty, PlusStore.isInternalBuild { await startTestTrial(); return }
+            switch await purchases.purchase(yearly ? .yearly : .monthly) {
+            case .success: withAnimation(.easeOut(duration: 0.3)) { purchased = true }
+            case .cancelled: break
+            case .pending: purchaseError = L("Pembelian menunggu persetujuan. Plus terbuka begitu disetujui.")
+            case .failed: purchaseError = purchases.productsFailed
+                ? L("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka.")
+                : L("Pembelian belum berhasil. Kamu belum ditagih apa pun. Coba lagi sebentar lagi.")
             }
+        }
+    }
+
+    private func restore() {
+        restoring = true
+        Task {
+            defer { restoring = false }
+            if await purchases.restore() { withAnimation(.easeOut(duration: 0.3)) { purchased = true } }
+            else { purchaseError = L("Tidak ada langganan Saku Plus di Apple ID ini.") }
+        }
+    }
+
+    private func startTestTrial() async {
+        do {
+            try await SupabaseSDK.setTestPlusState("trial7")
+            let session = try await SupabaseSDK.client.auth.session
+            _ = try await SupabaseSDK.fetchProfile(authUserId: session.user.id)
+            withAnimation(.easeOut(duration: 0.3)) { purchased = true }
+        } catch {
+            purchaseError = "\(error)".contains("test_plus_off")
+                ? L("Saku Plus belum bisa dibeli. Kami kabari saat sudah dibuka.")
+                : L("Pembelian belum berhasil. Kamu belum ditagih apa pun. Coba lagi sebentar lagi.")
         }
     }
 

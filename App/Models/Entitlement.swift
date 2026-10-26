@@ -47,6 +47,9 @@ final class PlusStore: ObservableObject {
     private nonisolated static let untilKey = "plusUntil"
     private nonisolated static let testerKey = "plusIsTester"
     private nonisolated static let planKey = "plusPlan"
+    private nonisolated static let storeUntilKey = "plusStoreUntil"
+    private nonisolated static let wasTrialKey = "plusWasTrial"
+    private nonisolated static let trialEndedSeenKey = "plusTrialEndedSeen"
 
     @Published private(set) var entitlement: Entitlement
     /// Tester accounts may use the internal switch (US8); the server checks it again.
@@ -61,8 +64,20 @@ final class PlusStore: ObservableObject {
 
     func apply(_ profile: UserProfile) {
         var new = Entitlement(status: profile.plusStatus, until: profile.plusUntil)
-        new.plan = entitlement.plan
+        new.plan = profile.plusPlan.flatMap(PlusPlan.init(rawValue:)) ?? entitlement.plan
+        // The server may not have heard of a purchase yet (offline, or the notification is late): until it has,
+        // a free profile does not take away Plus that the App Store confirmed on this device.
+        if !new.isPlus(), let until = storeUntil, until > Date() {
+            isTester = profile.isTester ?? false
+            return
+        }
         apply(new, isTester: profile.isTester ?? false)
+    }
+
+    /// The end of the Plus the App Store confirmed on this device; nil when it did not.
+    var storeUntil: Date? {
+        get { UserDefaults.standard.object(forKey: Self.storeUntilKey) as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: Self.storeUntilKey) }
     }
 
     /// Test builds only: the server does not know the plan yet.
@@ -80,10 +95,25 @@ final class PlusStore: ObservableObject {
         defaults.set(tester, forKey: Self.testerKey)
         defaults.set(new.plan.rawValue, forKey: Self.planKey)
         ShareInbox.isPlus = new.isPlus()
+        if new.status == .trial {
+            defaults.set(true, forKey: Self.wasTrialKey)
+            defaults.set(false, forKey: Self.trialEndedSeenKey)
+        } else if new.isPlus() {
+            defaults.set(false, forKey: Self.wasTrialKey)
+        }
+        Task { await NotificationManager.shared.syncPlusTrialReminder(new) }
     }
 
+    /// US5: a trial ended without a subscription and the summary has not been shown yet.
+    var trialEndedSummaryDue: Bool {
+        let defaults = UserDefaults.standard
+        return defaults.bool(forKey: Self.wasTrialKey) && !defaults.bool(forKey: Self.trialEndedSeenKey) && !entitlement.isPlus()
+    }
+
+    func markTrialEndedSeen() { UserDefaults.standard.set(true, forKey: Self.trialEndedSeenKey) }
+
     /// Signing out: the next account starts from free.
-    func reset() { apply(.free, isTester: false) }
+    func reset() { storeUntil = nil; apply(.free, isTester: false) }
 
     /// For code that cannot reach the main actor (Shortcuts intents).
     nonisolated static var cachedIsPlus: Bool { cached.isPlus() }
@@ -154,5 +184,31 @@ extension Entitlement {
     /// Whole days until the end date, counting a started day as a day; nil without an end date.
     func daysLeft(at now: Date = Date()) -> Int? {
         until.map { max(0, Int(ceil($0.timeIntervalSince(now) / 86_400))) }
+    }
+}
+
+/// What an App Store subscription means for Saku Plus (US3, US4). The server maps the same fields the same way
+/// (`entitlementFrom` in the `apple-iap` Edge Function), so a device offline reads what the server would.
+extension Entitlement {
+    static let monthlyProductID = "id.saku.plus.monthly"
+    static let yearlyProductID = "id.saku.plus.yearly"
+
+    static func plan(forProduct id: String) -> PlusPlan? {
+        switch id {
+        case yearlyProductID: .yearly
+        case monthlyProductID: .monthly
+        default: nil
+        }
+    }
+
+    /// `graceUntil` is the end of the grace period when the renewal failed; a refund or revocation is free at once.
+    static func fromStore(productID: String, expiresAt: Date?, isFreeTrial: Bool, isRevoked: Bool,
+                          graceUntil: Date?, now: Date = Date()) -> Entitlement {
+        guard let plan = plan(forProduct: productID), !isRevoked else { return .free }
+        if let expiresAt, expiresAt > now {
+            return Entitlement(status: isFreeTrial ? .trial : .active, until: expiresAt, plan: plan)
+        }
+        if let graceUntil, graceUntil > now { return Entitlement(status: .grace, until: graceUntil, plan: plan) }
+        return .free
     }
 }

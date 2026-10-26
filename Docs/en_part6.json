@@ -1362,5 +1362,22 @@
   "%@ dari total aset": "%@ of total assets",
   "Saldo dompet aktif hari ini. Kartu kredit tidak dihitung.": "Balance of active wallets today. Credit cards are not counted.",
   "Untung/rugi investasi": "Investment gain/loss",
-  "Grafik muncul setelah ada catatan di 2 hari yang berbeda.": "The chart appears once there are records on 2 different days."
+  "Grafik muncul setelah ada catatan di 2 hari yang berbeda.": "The chart appears once there are records on 2 different days.",
+  "Pembelian menunggu persetujuan. Plus terbuka begitu disetujui.": "The purchase is waiting for approval. Plus opens as soon as it is approved.",
+  "Tidak ada langganan Saku Plus di Apple ID ini.": "There is no Saku Plus subscription on this Apple ID.",
+  "Memeriksa...": "Checking...",
+  "Trial Saku Plus berakhir 2 hari lagi": "Your Saku Plus trial ends in 2 days",
+  "Setelah itu ditagih %@ per %@. Batalkan kapan saja di Pengaturan iPhone › Apple ID.": "After that you are charged %@ per %@. Cancel any time in iPhone Settings › Apple ID.",
+  "Trial Saku Plus sudah berakhir": "Your Saku Plus trial has ended",
+  "Terima kasih sudah mencoba. Ini yang terjadi sekarang.": "Thanks for trying it. Here is what happens now.",
+  "Tetap aman": "Stays safe",
+  "Berhenti dulu": "Paused",
+  "%lld dompet, %lld kategori, dan %lld budget tetap ada dan tetap dipakai.": "Your %lld wallets, %lld categories and %lld budgets stay and keep working.",
+  "Saldomu tetap masuk Total saldo.": "Your balances still count in Total saldo.",
+  "PDF yang sudah kamu unduh tetap milikmu.": "PDFs you already downloaded stay yours.",
+  "Menambah dompet, kategori, atau budget di atas batas gratis.": "Adding wallets, categories or budgets above the free limit.",
+  "Catat dari notifikasi, foto struk, dan penerusan email. Draf yang sudah ada tetap bisa disimpan.": "Logging from notifications, receipt photos and forwarded email. Drafts you already have can still be saved.",
+  "Laporan PDF baru. Bantuan AI kembali 10 per bulan.": "New PDF reports. AI help goes back to 10 a month.",
+  "Lihat Saku Plus": "See Saku Plus",
+  "Ditagih %@ · %@ per %@": "Billed %@ · %@ per %@"
 }

@@ -88,6 +88,7 @@ schemes:
         Saku: all
     run:
       config: Debug
+      storeKitConfiguration: Tests/Saku.storekit
     test:
       config: Debug
       targets:

@@ -144,6 +144,21 @@ final class NotificationManager: @unchecked Sendable {
         InvestmentReminderStore().clearAll()
     }
 
+    // MARK: Saku Plus trial (Epic 11 US5)
+
+    static let plusTrialID = "plus-trial-ending"
+
+    /// Two days before a trial ends (day 5 of 7) at 09:00; gone as soon as it is not a trial any more.
+    func syncPlusTrialReminder(_ entitlement: Entitlement) async {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [Self.plusTrialID])
+        guard entitlement.status == .trial, let until = entitlement.until else { return }
+        let price = await MainActor.run { PlusPricing.price(entitlement.plan) }
+        let per = entitlement.plan == .monthly ? L("bulan") : L("tahun")
+        await add(id: Self.plusTrialID, title: L("Trial Saku Plus berakhir 2 hari lagi"),
+                  body: L("Setelah itu ditagih %@ per %@. Batalkan kapan saja di Pengaturan iPhone › Apple ID.", price, per),
+                  daysBefore: 2, date: until)
+    }
+
     /// A one-off reminder at 09:00, `daysBefore` days before `date`; skipped once that's past.
     private func add(id: String, title: String, body: String, daysBefore: Int, date: Date,
                      category: String? = nil, userInfo: [String: Any] = [:]) async {

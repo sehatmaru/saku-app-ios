@@ -310,6 +310,7 @@ struct UserProfile: Codable, Identifiable {
     /// Saku Plus: free, trial, active or grace; nil until the server has the columns.
     var plusStatus: String? = nil
     var plusUntil: String? = nil
+    var plusPlan: String? = nil
     /// Tester accounts may use the internal Plus switch.
     var isTester: Bool? = nil
 
@@ -328,6 +329,7 @@ struct UserProfile: Codable, Identifiable {
         case deletionScheduledFor = "deletion_scheduled_for"
         case plusStatus = "plus_status"
         case plusUntil = "plus_until"
+        case plusPlan = "plus_plan"
         case isTester = "is_tester"
     }
 }

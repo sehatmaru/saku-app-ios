@@ -14,6 +14,9 @@ struct DashboardView: View {
 @StateObject private var tabAvatar = TabAvatarCache()
 @ObservedObject private var draftStore = DraftStore.shared
 @State private var showsConsent = false
+@ObservedObject private var plusStore = PlusStore.shared
+@State private var showsTrialEnded = false
+@State private var trialEndedOffer: PlusReason?
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
     @State private var isChartShown = false
     /// Day index picked in the "Bulan ini" chart; nil means today.
@@ -122,6 +125,13 @@ struct DashboardView: View {
                 openDraftsPage()
             }
         }
+        .onAppear { showsTrialEnded = plusStore.trialEndedSummaryDue }
+        .onChange(of: plusStore.entitlement) { _, _ in showsTrialEnded = plusStore.trialEndedSummaryDue }
+        .sheet(isPresented: $showsTrialEnded) {
+            TrialEndedSheet(wallets: viewModel.accounts.filter(\.isActive).count, categories: viewModel.categories.count,
+                            budgets: viewModel.budgets.count) { trialEndedOffer = .general }
+        }
+        .plusOffer($trialEndedOffer)
         .onChange(of: viewModel.overdueBills.map(\.id)) { _, _ in openPendingRecord() }
         .onReceive(NotificationCenter.default.publisher(for: .openFirstEntry)) { _ in openFirstEntry() }
         .toast(toastText, isShown: $isToastShown)
