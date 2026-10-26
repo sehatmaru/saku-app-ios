@@ -270,6 +270,7 @@ struct PlusStatusView: View {
             defer { isSwitching = false }
             do {
                 try await SupabaseSDK.setTestPlusState(key == "monthly" ? "active" : key)
+                PlusStore.shared.useTestSwitch()
                 PlusStore.shared.setPlan(key == "monthly" ? .monthly : .yearly)
                 _ = try await SupabaseSDK.fetchProfile(authUserId: authId)
                             } catch {

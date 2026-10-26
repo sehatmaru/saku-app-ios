@@ -48,6 +48,7 @@ final class PlusStore: ObservableObject {
     private nonisolated static let testerKey = "plusIsTester"
     private nonisolated static let planKey = "plusPlan"
     private nonisolated static let storeUntilKey = "plusStoreUntil"
+    private nonisolated static let testOverrideKey = "plusTestOverride"
     private nonisolated static let wasTrialKey = "plusWasTrial"
     private nonisolated static let trialEndedSeenKey = "plusTrialEndedSeen"
 
@@ -73,6 +74,17 @@ final class PlusStore: ObservableObject {
         }
         apply(new, isTester: profile.isTester ?? false)
     }
+
+    /// Internal builds: once the test switch has been used, a leftover App Store test purchase on the device no
+    /// longer overrides it. A real purchase through the paywall hands control back to the App Store.
+    var testSwitchOverrides: Bool { Self.isInternalBuild && UserDefaults.standard.bool(forKey: Self.testOverrideKey) }
+
+    func useTestSwitch() {
+        UserDefaults.standard.set(true, forKey: Self.testOverrideKey)
+        storeUntil = nil
+    }
+
+    func useAppStore() { UserDefaults.standard.set(false, forKey: Self.testOverrideKey) }
 
     /// The end of the Plus the App Store confirmed on this device; nil when it did not.
     var storeUntil: Date? {

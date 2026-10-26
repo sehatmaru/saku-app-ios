@@ -40,6 +40,7 @@ final class PlusPurchases: ObservableObject {
             switch try await product.purchase(options: [.appAccountToken(userId)]) {
             case .success(let verification):
                 guard case .verified(let tx) = verification else { return .failed }
+                PlusStore.shared.useAppStore()
                 await adopt(tx, jws: verification.jwsRepresentation, userId: userId)
                 await tx.finish()
                 return PlusStore.shared.isPlus ? .success : .failed
@@ -88,7 +89,8 @@ final class PlusPurchases: ObservableObject {
     // MARK: Applying
 
     private func adopt(_ tx: StoreKit.Transaction, jws: String, userId: UUID) async {
-        guard tx.appAccountToken == userId, Entitlement.plan(forProduct: tx.productID) != nil else { return }
+        guard !PlusStore.shared.testSwitchOverrides,
+              tx.appAccountToken == userId, Entitlement.plan(forProduct: tx.productID) != nil else { return }
         let status = await subscriptionStatus(for: tx.productID)
         let renewal = status?.renewalInfo
         var grace: Date?

@@ -46,3 +46,26 @@ final class EntitlementStoreTests: XCTestCase {
         XCTAssertEqual(e.status, .free)
     }
 }
+
+@MainActor
+final class PlusTestSwitchTests: XCTestCase {
+    private func profile(_ status: String) throws -> UserProfile {
+        let id = "6a7d662a-c9b6-4445-a24b-2f3524da8fd3"
+        let json = "{\"id\":\"\(id)\",\"auth_user_id\":\"\(id)\",\"default_currency_code\":\"IDR\",\"locale\":\"id\",\"timezone\":\"Asia/Jakarta\",\"plus_status\":\"\(status)\"}"
+        return try JSONDecoder().decode(UserProfile.self, from: Data(json.utf8))
+    }
+
+    func testAStorePurchaseHoldsPlusUntilTheTestSwitchIsUsed() throws {
+        let store = PlusStore.shared
+        store.reset()
+        store.storeUntil = Date().addingTimeInterval(86_400)
+        store.apply(Entitlement(status: .trial, until: Date().addingTimeInterval(86_400)), isTester: false)
+        store.apply(try profile("free"))
+        XCTAssertTrue(store.isPlus, "the server has not heard of the purchase yet")
+        store.useTestSwitch()
+        store.apply(try profile("free"))
+        XCTAssertFalse(store.isPlus)
+        store.useAppStore()
+        store.reset()
+    }
+}
