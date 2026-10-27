@@ -1379,5 +1379,14 @@
   "Catat dari notifikasi, foto struk, dan penerusan email. Draf yang sudah ada tetap bisa disimpan.": "Logging from notifications, receipt photos and forwarded email. Drafts you already have can still be saved.",
   "Laporan PDF baru. Bantuan AI kembali 10 per bulan.": "New PDF reports. AI help goes back to 10 a month.",
   "Lihat Saku Plus": "See Saku Plus",
-  "Ditagih %@ · %@ per %@": "Billed %@ · %@ per %@"
+  "Ditagih %@ · %@ per %@": "Billed %@ · %@ per %@",
+  "%lld kategori · %lld dipakai · %lld punya budget": "%lld categories · %lld in use · %lld with a budget",
+  "%lld kategori · %lld dipakai": "%lld categories · %lld in use",
+  "Tampilkan lagi dari bagian Disembunyikan di bawah.": "Show them again from the Hidden section below.",
+  "Kategori pengeluaran yang kamu tambah akan muncul di sini.": "Expense categories you add will show up here.",
+  "Kategori pemasukan yang kamu tambah akan muncul di sini.": "Income categories you add will show up here.",
+  "Kategori ditambahkan": "Category added",
+  "Lihat semua ikon": "See all icons",
+  "Lebih sedikit": "Show fewer",
+  "%lld transaksi · rata-rata %@ per periode": "%lld transactions · average %@ per period"
 }

@@ -56,10 +56,10 @@ struct AddBudgetView: View {
             .animation(.settle(0.48), value: step)
         }
         .background(Color.appBackground)
-        .fullScreenCover(isPresented: $showsNewCategory) {
+        .sheet(isPresented: $showsNewCategory) {
             CategoryFormView(mode: .new(.expense), categories: viewModel.categories, hiddenIds: [],
                              userId: userId) { outcome in
-                guard case .saved(let created) = outcome else { return }
+                guard case .saved(let created, _) = outcome else { return }
                 Task { await continueWith(created) }
             }
         }

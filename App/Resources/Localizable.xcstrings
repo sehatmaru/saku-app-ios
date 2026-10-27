@@ -1073,6 +1073,26 @@
         }
       }
     },
+    "%lld kategori · %lld dipakai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld categories · %lld in use"
+          }
+        }
+      }
+    },
+    "%lld kategori · %lld dipakai · %lld punya budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld categories · %lld in use · %lld with a budget"
+          }
+        }
+      }
+    },
     "%lld ke Konfirmasi": {
       "localizations": {
         "en": {
@@ -1269,6 +1289,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld transactions saved"
+          }
+        }
+      }
+    },
+    "%lld transaksi · rata-rata %@ per periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld transactions · average %@ per period"
           }
         }
       }
@@ -9203,6 +9233,16 @@
         }
       }
     },
+    "Kategori ditambahkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category added"
+          }
+        }
+      }
+    },
     "Kategori paling sering": {
       "localizations": {
         "en": {
@@ -9223,12 +9263,32 @@
         }
       }
     },
+    "Kategori pemasukan yang kamu tambah akan muncul di sini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Income categories you add will show up here."
+          }
+        }
+      }
+    },
     "Kategori pengeluaran": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Expense categories"
+          }
+        }
+      }
+    },
+    "Kategori pengeluaran yang kamu tambah akan muncul di sini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expense categories you add will show up here."
           }
         }
       }
@@ -10503,6 +10563,16 @@
         }
       }
     },
+    "Lebih sedikit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show fewer"
+          }
+        }
+      }
+    },
     "Lengkapi": {
       "localizations": {
         "en": {
@@ -10759,6 +10829,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "See all (%lld)"
+          }
+        }
+      }
+    },
+    "Lihat semua ikon": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See all icons"
           }
         }
       }
@@ -17289,6 +17369,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Show again"
+          }
+        }
+      }
+    },
+    "Tampilkan lagi dari bagian Disembunyikan di bawah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show them again from the Hidden section below."
           }
         }
       }
