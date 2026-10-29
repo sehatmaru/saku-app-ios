@@ -14,6 +14,7 @@ struct DashboardView: View {
 @StateObject private var tabAvatar = TabAvatarCache()
 @ObservedObject private var draftStore = DraftStore.shared
 @State private var showsConsent = false
+@State private var showsImageConsent = false
 @ObservedObject private var plusStore = PlusStore.shared
 @State private var showsTrialEnded = false
 @State private var trialEndedOffer: PlusReason?
@@ -94,6 +95,7 @@ struct DashboardView: View {
         }
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
+        .onChange(of: notificationRouter.opensImageConsent) { _, _ in openImageConsentIfRequested() }
         .onChange(of: notificationRouter.pendingInvestmentId) { _, id in if id != nil { openWalletsPage() } }
         .onChange(of: draftStore.drafts.count) { old, new in
             // "Baru masuk" on the tray pill right after drafts land (design 1a)
@@ -116,8 +118,16 @@ struct DashboardView: View {
                 }
             }
         }
-        .onAppear { openDraftsIfRequested(); askConsentForSharedText(); announceReferralReward() }
+        .onAppear { openDraftsIfRequested(); openImageConsentIfRequested(); askConsentForSharedText(); announceReferralReward() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in askConsentForSharedText(); announceReferralReward() }
+        .sheet(isPresented: $showsImageConsent) {
+            ImageConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) {
+                showsImageConsent = false
+            } onDetails: {
+                showsImageConsent = false
+                showsConsent = true
+            }
+        }
         .sheet(isPresented: $showsConsent) {
             SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) {
                 showsConsent = false
@@ -172,6 +182,13 @@ struct DashboardView: View {
     private func askConsentForSharedText() {
         guard !SmartTrackerConsent.isGranted, ShareInbox.hasItems, authViewModel.isAuthenticated else { return }
         showsConsent = true
+    }
+
+    /// Tapping "setujui baca gambar" from the share extension: the agreement sheet opens right away.
+    private func openImageConsentIfRequested() {
+        guard notificationRouter.opensImageConsent else { return }
+        notificationRouter.opensImageConsent = false
+        showsImageConsent = true
     }
 
     /// Tapping the "new drafts" notification: read what was shared, then show Konfirmasi transaksi.

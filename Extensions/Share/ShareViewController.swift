@@ -20,14 +20,14 @@ final class ShareViewController: UIViewController {
     }
 
     /// Tells the user right away; tapping it opens Saku on Konfirmasi transaksi. Works once the app has notification permission.
-    private func announce(_ body: String = "Teksnya masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya.") async {
+    private func announce(_ body: String = "Teksnya masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya.", route: String = "drafts") async {
         let center = UNUserNotificationCenter.current()
         guard await center.notificationSettings().authorizationStatus == .authorized else { return }
         let content = UNMutableNotificationContent()
         content.title = "Dikirim ke Saku"
         content.body = body
         content.sound = .default
-        content.userInfo = ["route": "drafts"]
+        content.userInfo = ["route": route]
         try? await center.add(UNNotificationRequest(identifier: "share-\(UUID().uuidString)", content: content,
                                                     trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)))
     }
@@ -73,12 +73,12 @@ final class ShareViewController: UIViewController {
         // say what happened on screen too: the notification only shows when the app has permission
         let message: String
         if needsPlus && added == 0 { message = "Membaca gambar butuh Saku Plus. Teks tetap bisa dibagikan ke Saku." }
-        else if imagesRefused && added == 0 { message = "Setujui dulu baca gambar di Saku (Catat dari gambar), lalu bagikan lagi." }
+        else if imagesRefused && added == 0 { message = "Ketuk untuk menyetujui baca gambar, lalu bagikan lagi." }
         else if imagesSeen > 0 && added == 0 { message = "Tidak ada tulisan yang terbaca di gambarnya, jadi belum ada yang masuk ke Konfirmasi transaksi." }
         else if added == 0 { message = "Tidak ada yang bisa dikirim ke Saku." }
         else { message = "Masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya." }
         label.text = message
-        await announce(message)
+        await announce(message, route: imagesRefused && added == 0 ? "imageConsent" : "drafts")
         if added == 0 { try? await Task.sleep(for: .seconds(3)) }
         extensionContext?.completeRequest(returningItems: nil)
     }

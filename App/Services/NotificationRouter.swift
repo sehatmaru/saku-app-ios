@@ -11,6 +11,8 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
     @Published var pendingCardId: String?
     /// Set when the user taps the "new drafts" notification; Beranda opens Konfirmasi transaksi and clears it.
     @Published var opensDrafts = false
+    /// Set when the user taps "setujui baca gambar" from the share extension; Beranda opens the agreement sheet and clears it.
+    @Published var opensImageConsent = false
     /// The investment wallet whose "Perbarui nilai" the user was reminded of; Dompet opens it and clears this.
     @Published var pendingInvestmentId: String?
 
@@ -37,6 +39,10 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
 
         Task { @MainActor in
             defer { finish() }
+            if route == "imageConsent" {
+                NotificationRouter.shared.opensImageConsent = true
+                return
+            }
             if route == DraftNotifier.route {
                 NotificationRouter.shared.opensDrafts = true
                 return
