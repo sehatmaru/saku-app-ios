@@ -27,12 +27,12 @@ enum FreeLimits {
     }
 
     static func categoryMessage(_ type: CategoryType) -> String {
-        L("Paket gratis maksimal %lld kategori %@ aktif. Sembunyikan kategori yang tidak kamu pakai untuk memberi ruang. Saku Plus tanpa batas segera hadir.",
+        L("Paket gratis maksimal %lld kategori %@ aktif. Sembunyikan kategori yang tidak kamu pakai untuk memberi ruang. Saku Plus menghapus batas ini.",
           categories(type), type == .income ? L("pemasukan") : L("pengeluaran"))
     }
 
     static func budgetMessage() -> String {
-        L("Paket gratis maksimal %lld budget. Budget yang sudah ada tetap aman. Saku Plus tanpa batas segera hadir.", budgets)
+        L("Paket gratis maksimal %lld budget. Budget yang sudah ada tetap aman. Saku Plus menghapus batas ini.", budgets)
     }
 
     /// The server's refusal (`category_limit_*`, `budget_limit`) as a readable error; any other error is returned as is.

@@ -12563,12 +12563,12 @@
         }
       }
     },
-    "Paket gratis maksimal %lld budget. Budget yang sudah ada tetap aman. Saku Plus tanpa batas segera hadir.": {
+    "Paket gratis maksimal %lld budget. Budget yang sudah ada tetap aman. Saku Plus menghapus batas ini.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The free plan allows up to %lld budgets. Your existing budgets are safe. Saku Plus with no limits is coming soon."
+            "value": "The free plan allows up to %lld budgets. Your existing budgets are safe. Saku Plus removes this limit."
           }
         }
       }
@@ -12583,12 +12583,12 @@
         }
       }
     },
-    "Paket gratis maksimal %lld kategori %@ aktif. Sembunyikan kategori yang tidak kamu pakai untuk memberi ruang. Saku Plus tanpa batas segera hadir.": {
+    "Paket gratis maksimal %lld kategori %@ aktif. Sembunyikan kategori yang tidak kamu pakai untuk memberi ruang. Saku Plus menghapus batas ini.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The free plan allows up to %lld active %@ categories. Hide categories you don't use to make room. Saku Plus with no limits is coming soon."
+            "value": "The free plan allows up to %lld active %@ categories. Hide categories you don't use to make room. Saku Plus removes this limit."
           }
         }
       }
