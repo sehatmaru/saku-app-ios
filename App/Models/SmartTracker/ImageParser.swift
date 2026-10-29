@@ -67,10 +67,7 @@ enum ImageParser {
     // MARK: Building
 
     private static func makeDraft(kindText: String, amount: Double, title: String, date: Date, app: String, context: SmartParser.Context) -> Draft {
-        let kindWord: String
-        if has(kindText, ["top up", "topup", "isi saldo"]) { kindWord = "top up" }
-        else if has(kindText, ["diterima", "terima", "masuk", "kredit", " cr ", "cashback", "refund", "received"]) { kindWord = "terima" }
-        else { kindWord = "bayar" }
+        let kindWord = Self.kindWord(for: kindText)
         let sentence = [kindWord == "bayar" ? "" : kindWord, String(Int(amount)), app].filter { !$0.isEmpty }.joined(separator: " ")
         var draft = SmartParser.parse(sentence, source: .photo, context: context).first ?? Draft()
         draft.source = .photo
@@ -83,6 +80,17 @@ enum ImageParser {
             if (draft.kind == .expense || draft.kind == .income), draft.categoryId == nil { draft.categoryId = hint?.categoryId }
         }
         return draft
+    }
+
+    /// "top up", "terima" (money in) or "bayar". The sign-off on a receipt ("Terima kasih telah berbelanja") and a bare "masuk"
+    /// ("pintu masuk") say nothing about direction, so only phrases that really mean money arriving count.
+    static func kindWord(for text: String) -> String {
+        let lower = text.lowercased()
+            .replacingOccurrences(of: "terima kasih", with: " ").replacingOccurrences(of: "terimakasih", with: " ")
+            .replacingOccurrences(of: "thank you", with: " ")
+        if has(lower, ["top up", "topup", "isi saldo"]) { return "top up" }
+        if has(lower, ["diterima", "terima dari", "uang masuk", "dana masuk", "transfer masuk", "kredit", " cr ", "cashback", "refund", "received"]) { return "terima" }
+        return "bayar"
     }
 
     private static func has(_ text: String, _ words: [String]) -> Bool { words.contains { text.contains($0) } }

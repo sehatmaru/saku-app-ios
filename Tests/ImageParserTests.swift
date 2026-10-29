@@ -45,6 +45,21 @@ final class ImageParserTests: XCTestCase {
         XCTAssertEqual(r.drafts[0].amount, 40_000)
     }
 
+    /// SAKU-868: the sign-off on a shop receipt is not money coming in.
+    func testShopReceiptWithThankYouIsAnExpense() {
+        let r = ImageParser.parse(lines: ["INDOMARET", "12/10/2026", "Subtotal 90.000", "Total 99.900", "Tunai 100.000", "Terima kasih telah berbelanja"], context: context)
+        XCTAssertEqual(r.drafts.first?.kind, .expense)
+    }
+
+    func testKindWordKeepsRealIncomeAndIgnoresGreetingsAndEntrances() {
+        XCTAssertEqual(ImageParser.kindWord(for: "Terima kasih telah berbelanja"), "bayar")
+        XCTAssertEqual(ImageParser.kindWord(for: "Karcis pintu masuk parkir"), "bayar")
+        XCTAssertEqual(ImageParser.kindWord(for: "Dana masuk dari Budi"), "terima")
+        XCTAssertEqual(ImageParser.kindWord(for: "Transfer diterima BCA"), "terima")
+        XCTAssertEqual(ImageParser.kindWord(for: "Top up GoPay berhasil"), "top up")
+        XCTAssertEqual(ImageParser.kindWord(for: "Pembayaran berhasil, terima kasih"), "bayar")
+    }
+
     func testReceiptTakesTotalNotSubtotalOrTax() {
         let r = ImageParser.parse(lines: ["INDOMARET", "12/10/2026", "Subtotal 90.000", "PPN 9.900", "Total 99.900", "Tunai 100.000"], context: context)
         XCTAssertEqual(r.drafts.first?.amount, 99_900)
