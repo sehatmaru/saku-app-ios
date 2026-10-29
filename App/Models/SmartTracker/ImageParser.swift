@@ -40,6 +40,19 @@ enum ImageParser {
             return reading
         }
 
+        // a history whose date is stacked over several lines (28 / Oct / 2026) and whose rows each end on an amount line
+        let stacked = amountClosedBlocks(lines, calendar: context.calendar)
+        if stacked.count >= 2 {
+            var reading = Reading()
+            reading.totalRows = stacked.count
+            reading.truncated = stacked.count > limit
+            reading.drafts = stacked.prefix(limit).map { row in
+                makeDraft(kindText: row.lines.joined(separator: " ").lowercased(), amount: row.amount, title: rowTitle(row.lines),
+                          date: row.date, app: app, context: context)
+            }
+            return reading
+        }
+
         // one proof or receipt
         var uncertain = false
         guard let total = total(in: lines, uncertain: &uncertain) else { return Reading() }
@@ -95,6 +108,58 @@ enum ImageParser {
             else if !blocks.isEmpty { blocks[blocks.count - 1].lines.append(line) }
         }
         return blocks
+    }
+
+    private struct AmountBlock { var date: Date; var amount: Double; var lines: [String] }
+
+    /// Rows closed by a line that is only "IDR 50,000.00" / "Rp 25.000". Only rows that have a date count, so a receipt
+    /// with several "Rp" item lines is not taken for a history.
+    private static func amountClosedBlocks(_ lines: [String], calendar: Calendar) -> [AmountBlock] {
+        var blocks: [AmountBlock] = []
+        var current: [String] = []
+        for line in lines {
+            current.append(line)
+            guard line.range(of: #"(?i)(?:rp|idr)\.?\s*[\d.,]*\d\s*$"#, options: .regularExpression) != nil,
+                  let value = amount(in: line) else { continue }
+            if let date = looseDate(in: current, calendar: calendar) { blocks.append(AmountBlock(date: date, amount: value, lines: current)) }
+            current = []
+        }
+        return blocks
+    }
+
+    private static let monthWord = try! NSRegularExpression(pattern: #"(?i)\b(jan|feb|mar|apr|mei|may|jun|jul|agu|ags|aug|sep|okt|oct|nov|des|dec)[a-z]{0,6}\b"#)
+
+    /// A date whose day, month and year sit on different lines: the last lone number before the month name, and a year after it.
+    private static func looseDate(in lines: [String], calendar: Calendar) -> Date? {
+        let text = lines.joined(separator: " ")
+        let whole = NSRange(text.startIndex..., in: text)
+        guard let m = monthWord.firstMatch(in: text, range: whole), let monthRange = Range(m.range(at: 1), in: text),
+              let month = months[text[monthRange].lowercased()], let end = Range(m.range, in: text)?.upperBound else { return nil }
+        let before = String(text[..<monthRange.lowerBound]), after = String(text[end...])
+        guard let day = lastMatch(#"(?<![\w/.,:-])(\d{1,2})(?![\w/.,:-])"#, in: before).flatMap({ Int($0) }), (1...31).contains(day),
+              let year = firstMatch(#"(?<!\d)(20\d{2})(?!\d)"#, in: after).flatMap({ Int($0) }) else { return nil }
+        return calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12))
+    }
+
+    private static func firstMatch(_ pattern: String, in text: String) -> String? { matches(pattern, in: text).first }
+    private static func lastMatch(_ pattern: String, in text: String) -> String? { matches(pattern, in: text).last }
+    private static func matches(_ pattern: String, in text: String) -> [String] {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { Range($0.range(at: 1), in: text).map { String(text[$0]) } }
+    }
+
+    private static let bankNoise: Set<String> = ["tgl", "qr", "trsf", "e-banking", "db", "cr", "transaksi", "debit", "kredit", "idr", "rp"]
+
+    /// The name in a bank row: words only, without reference numbers, the day, month and year or the bank's own labels.
+    private static func rowTitle(_ lines: [String]) -> String {
+        let words = lines.joined(separator: " ").split(separator: " ").compactMap { token -> String? in
+            let t = String(token)
+            if let suffix = firstMatch(#"^[\d.,]+([A-Za-z]{2,})$"#, in: t) { return suffix }      // 00000.00XL -> XL
+            if t.contains(where: \.isNumber) || bankNoise.contains(t.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ":"))) { return nil }
+            if monthWord.firstMatch(in: t, range: NSRange(t.startIndex..., in: t)) != nil, t.count <= 4 { return nil }
+            return t
+        }
+        return clean(words.joined(separator: " "))
     }
 
     // MARK: Fields

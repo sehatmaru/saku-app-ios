@@ -27,6 +27,24 @@ final class ImageParserTests: XCTestCase {
         XCTAssertNil(r.drafts[0].note)
     }
 
+    /// A bank history whose date is stacked over three lines, as Vision reads it (28 / Oct / 2026).
+    func testHistoryWithStackedDatesBecomesOneDraftPerRow() {
+        let lines = ["2810/FTSCY/WS95271 50000.00 OJAK", "28", "HOTMATUA SINA", "Oct  TRSF E-BANKING DB", "2026  IDR 50,000.00",
+                     "28  TGL: 1028 QR 848 00000.00XL Priorit", "Oct  TRANSAKSI DEBIT", "2026  IDR 65,000.00",
+                     "28  TGL: 1028 QR 899 00000.00Fore Coffe", "Oct  TRANSAKSI DEBIT", "2026  IDR 69,250.00"]
+        let r = ImageParser.parse(lines: lines, context: context)
+        XCTAssertEqual(r.drafts.map(\.amount), [50_000, 65_000, 69_250])
+        XCTAssertEqual(r.drafts.map(\.title), ["Ojak Hotmatua Sina", "Xl Priorit", "Fore Coffe"])
+        let day = calendar.dateComponents([.year, .month, .day], from: r.drafts[0].date)
+        XCTAssertEqual([day.year, day.month, day.day], [2026, 10, 28])
+    }
+
+    func testReceiptWithSeveralRpLinesIsStillOneDraft() {
+        let r = ImageParser.parse(lines: ["Warung Bu Tini", "14 Okt 2026", "Nasi goreng  Rp 32.000", "Es teh  Rp 8.000", "Total  Rp 40.000"], context: context)
+        XCTAssertEqual(r.drafts.count, 1)
+        XCTAssertEqual(r.drafts[0].amount, 40_000)
+    }
+
     func testReceiptTakesTotalNotSubtotalOrTax() {
         let r = ImageParser.parse(lines: ["INDOMARET", "12/10/2026", "Subtotal 90.000", "PPN 9.900", "Total 99.900", "Tunai 100.000"], context: context)
         XCTAssertEqual(r.drafts.first?.amount, 99_900)
