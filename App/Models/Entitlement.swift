@@ -51,6 +51,7 @@ final class PlusStore: ObservableObject {
     private nonisolated static let testOverrideKey = "plusTestOverride"
     private nonisolated static let wasTrialKey = "plusWasTrial"
     private nonisolated static let trialEndedSeenKey = "plusTrialEndedSeen"
+    private nonisolated static let flagsOwnerKey = "plusTrialFlagsOwner"
 
     @Published private(set) var entitlement: Entitlement
     /// Tester accounts may use the internal switch (US8); the server checks it again.
@@ -64,6 +65,7 @@ final class PlusStore: ObservableObject {
     }
 
     func apply(_ profile: UserProfile) {
+        forgetTrialFlagsOfAnotherAccount(profile.id.uuidString)
         var new = Entitlement(status: profile.plusStatus, until: profile.plusUntil)
         new.plan = profile.plusPlan.flatMap(PlusPlan.init(rawValue:)) ?? entitlement.plan
         // The server may not have heard of a purchase yet (offline, or the notification is late): until it has,
@@ -114,6 +116,16 @@ final class PlusStore: ObservableObject {
             defaults.set(false, forKey: Self.wasTrialKey)
         }
         Task { await NotificationManager.shared.syncPlusTrialReminder(new) }
+    }
+
+    /// The "trial was on / summary seen" flags belong to one account. A different account on this device (signed in after a
+    /// deleted account, or a new sign-up) must not inherit them, or a brand-new free account is told its trial ended.
+    private func forgetTrialFlagsOfAnotherAccount(_ profileId: String) {
+        let defaults = UserDefaults.standard
+        guard defaults.string(forKey: Self.flagsOwnerKey) != profileId else { return }
+        defaults.set(profileId, forKey: Self.flagsOwnerKey)
+        defaults.set(false, forKey: Self.wasTrialKey)
+        defaults.set(false, forKey: Self.trialEndedSeenKey)
     }
 
     /// US5: a trial ended without a subscription and the summary has not been shown yet.
