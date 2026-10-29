@@ -1388,5 +1388,6 @@
   "Kategori ditambahkan": "Category added",
   "Lihat semua ikon": "See all icons",
   "Lebih sedikit": "Show fewer",
-  "%lld transaksi · rata-rata %@ per periode": "%lld transactions · average %@ per period"
+  "%lld transaksi · rata-rata %@ per periode": "%lld transactions · average %@ per period",
+  "Jatah bantuan AI bulan ini habis. Isi manual.": "This month's AI help is used up. Fill it in by hand."
 }

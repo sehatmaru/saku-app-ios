@@ -5,6 +5,16 @@ import Supabase
 /// Sends only the sentence, wallet and category names and today's date. Any failure just returns nil and the
 /// draft stays as the rules made it (the user's own words in the note), so offline and errors are never fatal.
 enum RemoteSmartParser {
+    /// What the server answered: drafts, "this month's AI help is used up" (HTTP 402), or nothing usable.
+    enum Outcome: Equatable {
+        case drafts([Draft])
+        case outOfQuota
+        case unavailable
+    }
+
+    /// Shown on the draft the user fills in by hand when the monthly AI help is used up.
+    static var outOfQuotaNote: String { L("Jatah bantuan AI bulan ini habis. Isi manual.") }
+
     private struct Reply: Decodable {
         struct Item: Decodable {
             let kind: String
@@ -18,15 +28,21 @@ enum RemoteSmartParser {
         let drafts: [Item]
     }
 
-    static func parse(_ text: String, source: Draft.Source, context: SmartParser.Context) async -> [Draft]? {
+    static func parse(_ text: String, source: Draft.Source, context: SmartParser.Context) async -> Outcome {
         let payload: [String: AnyJSON] = [
             "text": .string(text),
             "wallets": .array(context.accounts.filter(\.isActive).map { .string($0.name) }),
             "categories": .array(context.categories.filter { !CategoryCatalog.isSystem($0) }.map { .string($0.name) }),
             "today": .string(ISO8601DateFormatter().string(from: context.now)),
         ]
-        guard let reply: Reply = try? await SupabaseSDK.client.functions.invoke(
-            "smart-parse", options: FunctionInvokeOptions(body: payload)) else { return nil }
+        let reply: Reply
+        do {
+            reply = try await SupabaseSDK.client.functions.invoke("smart-parse", options: FunctionInvokeOptions(body: payload))
+        } catch FunctionsError.httpError(let code, _) where code == 402 {
+            return .outOfQuota
+        } catch {
+            return .unavailable
+        }
         let drafts = reply.drafts.compactMap { item -> Draft? in
             guard let amount = item.amount, amount > 0, let kind = Draft.Kind(rawValue: item.kind) else { return nil }
             var draft = Draft()
@@ -40,6 +56,6 @@ enum RemoteSmartParser {
             draft.date = Calendar.current.date(byAdding: .day, value: -(item.daysAgo ?? 0), to: context.now) ?? context.now
             return draft
         }
-        return drafts.isEmpty ? nil : drafts
+        return drafts.isEmpty ? .unavailable : .drafts(drafts)
     }
 }

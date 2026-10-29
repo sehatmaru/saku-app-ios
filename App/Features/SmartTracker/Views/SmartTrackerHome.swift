@@ -408,8 +408,17 @@ struct SmartTrackerHomeOverlay: View {
             let lines = ImageReader.downscaled(data) == nil ? [] : await ImageReader.lines(in: ImageReader.downscaled(data)!)
             var reading = ImageParser.parse(lines: lines, context: store.context)
             // hard case: only the text goes to the language model, when agreed, online and available
-            if reading.drafts.isEmpty, !lines.isEmpty, let remote = await store.refined(lines.joined(separator: "\n"), source: .photo) {
-                reading.drafts = remote
+            if reading.drafts.isEmpty, !lines.isEmpty {
+                switch await store.refined(lines.joined(separator: "\n"), source: .photo) {
+                case .drafts(let remote): reading.drafts = remote
+                case .outOfQuota:
+                    // the AI help is used up: an empty draft to fill in by hand, with the reason
+                    var manual = Draft()
+                    manual.source = .photo
+                    manual.note = RemoteSmartParser.outOfQuotaNote
+                    reading.drafts = [manual]
+                case .unavailable: break
+                }
             }
             isThinking = false
             guard !reading.drafts.isEmpty else {
@@ -440,10 +449,15 @@ struct SmartTrackerHomeOverlay: View {
         isThinking = true
         Task {
             let drafts = SmartTrackerHomeOverlay.parse(sentence, source: source, store: store)
-            let refined = drafts.count == 1 && (drafts[0].isUnreadable || drafts[0].amount == nil)
-                ? await store.refined(sentence, source: source) : nil
+            var final = drafts
+            if drafts.count == 1 && (drafts[0].isUnreadable || drafts[0].amount == nil) {
+                switch await store.refined(sentence, source: source) {
+                case .drafts(let remote): final = remote
+                case .outOfQuota: final[0].note = RemoteSmartParser.outOfQuotaNote
+                case .unavailable: break
+                }
+            }
             isThinking = false
-            let final = refined ?? drafts
             text = ""
             guard !final.isEmpty else { return }
             close()

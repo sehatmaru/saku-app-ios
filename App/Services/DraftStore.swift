@@ -196,14 +196,20 @@ final class DraftStore: ObservableObject {
     func addRefined(text: String, source: Draft.Source) async -> [Draft] {
         let parsed = SmartParser.parse(text, source: source, context: context)
         // the language model (server) is only used with the user's agreement
-        guard SmartTrackerConsent.isGranted, parsed.count == 1, parsed[0].isUnreadable || parsed[0].amount == nil,
-              let remote = await RemoteSmartParser.parse(text, source: source, context: context) else { return add(parsed) }
-        return add(remote)
+        guard SmartTrackerConsent.isGranted, parsed.count == 1, parsed[0].isUnreadable || parsed[0].amount == nil else { return add(parsed) }
+        switch await RemoteSmartParser.parse(text, source: source, context: context) {
+        case .drafts(let remote): return add(remote)
+        case .outOfQuota:
+            var manual = parsed
+            manual[0].note = RemoteSmartParser.outOfQuotaNote
+            return add(manual)
+        case .unavailable: return add(parsed)
+        }
     }
 
-    /// The language model's reading of a sentence the rules could not read; nil when not agreed, offline or no answer.
-    func refined(_ text: String, source: Draft.Source) async -> [Draft]? {
-        guard SmartTrackerConsent.isGranted else { return nil }
+    /// The language model's reading of a sentence the rules could not read; `.unavailable` when not agreed, offline or no answer.
+    func refined(_ text: String, source: Draft.Source) async -> RemoteSmartParser.Outcome {
+        guard SmartTrackerConsent.isGranted else { return .unavailable }
         return await RemoteSmartParser.parse(text, source: source, context: context)
     }
 

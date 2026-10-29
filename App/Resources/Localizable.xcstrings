@@ -8533,6 +8533,16 @@
         }
       }
     },
+    "Jatah bantuan AI bulan ini habis. Isi manual.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month's AI help is used up. Fill it in by hand."
+          }
+        }
+      }
+    },
     "Jatuh tempo": {
       "localizations": {
         "en": {
