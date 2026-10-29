@@ -300,15 +300,27 @@ final class DraftStore: ObservableObject {
         guard SmartTrackerWays.share else { _ = ShareInbox.drain(); return }
         let texts = ShareInbox.drain()
         guard !texts.isEmpty else { return }
+        var hard: [String] = []
         let added = texts.flatMap { text -> [Draft] in
             guard text.hasPrefix(ShareInbox.photoMark) else { return SmartParser.parse(text, source: .share, context: context) }
             // text read from a shared picture (the picture itself never reached the app)
             guard SmartTrackerImageConsent.isGranted, PlusStore.cachedIsPlus else { return [] }
             let lines = text.dropFirst(ShareInbox.photoMark.count).components(separatedBy: "\n")
-            return ImageParser.parse(lines: lines, context: context).drafts
+            let drafts = ImageParser.parse(lines: lines, context: context).drafts
+            // a hard picture: the rules read nothing, so the language model gets the text (Saku Plus only, so no allowance to check)
+            if drafts.isEmpty, !lines.isEmpty { hard.append(lines.joined(separator: "\n")) }
+            return drafts
         }
         // the share extension already told the user; no second notification here
         add(added)
+        if !hard.isEmpty { Task { await refineSharedPictures(hard) } }
+    }
+
+    /// The model's reading of shared pictures the rules could not read; they land in the queue when it answers.
+    private func refineSharedPictures(_ texts: [String]) async {
+        for text in texts {
+            if case .drafts(let remote) = await refined(text, source: .photo) { add(remote) }
+        }
     }
 
     // MARK: Duplicates
