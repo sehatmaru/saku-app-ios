@@ -8543,6 +8543,16 @@
         }
       }
     },
+    "Jatah bantuan AI gratis bulan ini habis. Dengan Plus, Saku terus membantu membaca kalimat dan gambar yang sulit.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month's free AI help is used up. With Plus, Saku keeps helping you read hard sentences and pictures."
+          }
+        }
+      }
+    },
     "Jatuh tempo": {
       "localizations": {
         "en": {

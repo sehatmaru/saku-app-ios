@@ -21,6 +21,7 @@ struct SmartTrackerHomeOverlay: View {
     @State private var showsCamera = false
     @State private var showsLibrary = false
     @State private var plusReason: PlusReason?
+@State private var afterOffer: QuickInput?
     @ObservedObject private var plus = PlusStore.shared
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var showsImageConsent = false
@@ -73,6 +74,12 @@ struct SmartTrackerHomeOverlay: View {
         }
         .fullScreenCover(isPresented: $showsCamera) { CameraPicker { read(imageData: $0) }.ignoresSafeArea() }
         .plusOffer($plusReason)
+        .onChange(of: plusReason) { _, new in
+            // the draft to fill in by hand opens once the Plus offer is closed
+            guard new == nil, let input = afterOffer else { return }
+            afterOffer = nil
+            result = input
+        }
         .photosPicker(isPresented: $showsLibrary, selection: $pickedPhoto, matching: .images)
         .onChange(of: pickedPhoto) { _, item in
             guard let item else { return }
@@ -406,6 +413,7 @@ struct SmartTrackerHomeOverlay: View {
         isThinking = true
         Task {
             let lines = ImageReader.downscaled(data) == nil ? [] : await ImageReader.lines(in: ImageReader.downscaled(data)!)
+            var outOfQuota = false
             var reading = ImageParser.parse(lines: lines, context: store.context)
             // hard case: only the text goes to the language model, when agreed, online and available
             if reading.drafts.isEmpty, !lines.isEmpty {
@@ -413,6 +421,7 @@ struct SmartTrackerHomeOverlay: View {
                 case .drafts(let remote): reading.drafts = remote
                 case .outOfQuota:
                     // the AI help is used up: an empty draft to fill in by hand, with the reason
+                    outOfQuota = true
                     var manual = Draft()
                     manual.source = .photo
                     manual.note = RemoteSmartParser.outOfQuotaNote
@@ -433,7 +442,8 @@ struct SmartTrackerHomeOverlay: View {
             }
             thumbnail = nil
             close()
-            result = QuickInput(sentence: "", source: .photo, drafts: reading.drafts)
+            let input = QuickInput(sentence: "", source: .photo, drafts: reading.drafts)
+            if outOfQuota { afterOffer = input; plusReason = .aiHelp } else { result = input }
         }
     }
 
@@ -450,10 +460,13 @@ struct SmartTrackerHomeOverlay: View {
         Task {
             let drafts = SmartTrackerHomeOverlay.parse(sentence, source: source, store: store)
             var final = drafts
+            var outOfQuota = false
             if drafts.count == 1 && (drafts[0].isUnreadable || drafts[0].amount == nil) {
                 switch await store.refined(sentence, source: source) {
                 case .drafts(let remote): final = remote
-                case .outOfQuota: final[0].note = RemoteSmartParser.outOfQuotaNote
+                case .outOfQuota:
+                    outOfQuota = true
+                    final[0].note = RemoteSmartParser.outOfQuotaNote
                 case .unavailable: break
                 }
             }
@@ -461,7 +474,8 @@ struct SmartTrackerHomeOverlay: View {
             text = ""
             guard !final.isEmpty else { return }
             close()
-            result = QuickInput(sentence: sentence, source: source, drafts: final)
+            let input = QuickInput(sentence: sentence, source: source, drafts: final)
+            if outOfQuota { afterOffer = input; plusReason = .aiHelp } else { result = input }
         }
     }
 

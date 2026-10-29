@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Why the paywall is shown: a limit reached or a Plus feature tapped (design "Plus A Penawaran", TC 1, 23, 24).
 enum PlusReason: Identifiable, Equatable {
-    case moneyWallets, investmentWallets, categories(CategoryType), budgets, notifications, receiptPhoto, pdfReport, general
+    case moneyWallets, investmentWallets, categories(CategoryType), budgets, notifications, receiptPhoto, pdfReport, aiHelp, general
 
     var id: String {
         switch self {
@@ -21,6 +21,7 @@ enum PlusReason: Identifiable, Equatable {
         case .notifications: L("Catat dari notifikasi")
         case .receiptPhoto: L("Catat dari foto struk")
         case .pdfReport: L("Laporan PDF lengkap")
+        case .aiHelp: L("Bantuan AI tanpa batas")
         case .general: L("Catat lebih sedikit")
         }
     }
@@ -34,6 +35,7 @@ enum PlusReason: Identifiable, Equatable {
         case .notifications: L("Notifikasi BCA, GoPay, dan lainnya langsung jadi draf. Kamu tinggal periksa dan simpan.")
         case .receiptPhoto: L("Ambil foto struk atau screenshot, Saku mengisi jumlah, toko, dan tanggalnya.")
         case .pdfReport: L("Dengan Plus, laporan PDF memuat analisis dan saran untuk periodemu, siap dibagikan.")
+        case .aiHelp: L("Jatah bantuan AI gratis bulan ini habis. Dengan Plus, Saku terus membantu membaca kalimat dan gambar yang sulit.")
         case .general: L("Saku Plus membuka semua batas dan mencatat otomatis dari bank, struk, dan email.")
         }
     }
