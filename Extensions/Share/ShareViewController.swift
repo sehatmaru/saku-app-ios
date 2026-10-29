@@ -73,7 +73,7 @@ final class ShareViewController: UIViewController {
         // say what happened on screen too: the notification only shows when the app has permission
         let message: String
         if needsPlus && added == 0 { message = "Membaca gambar butuh Saku Plus. Teks tetap bisa dibagikan ke Saku." }
-        else if imagesRefused && added == 0 { message = "Buka Saku dan setujui membaca gambar dulu (Konfirmasi transaksi › Catat dari gambar), lalu bagikan lagi." }
+        else if imagesRefused && added == 0 { message = "Persetujuan membaca gambar belum ada di perangkat ini, bukan izin galeri. Buka Saku › Konfirmasi transaksi › Catat dari gambar, setujui sekali, lalu bagikan lagi." }
         else if imagesSeen > 0 && added == 0 { message = "Tidak ada tulisan yang terbaca di gambarnya, jadi belum ada yang masuk ke Konfirmasi transaksi." }
         else if added == 0 { message = "Tidak ada yang bisa dikirim ke Saku." }
         else { message = "Masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya." }
