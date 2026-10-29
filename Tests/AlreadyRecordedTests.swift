@@ -283,4 +283,13 @@ final class AlreadyRecordedTests: XCTestCase {
         XCTAssertEqual(result.added, 1)
         XCTAssertNotNil(store.drafts.first?.duplicateNote)
     }
+
+    func testNoticeExpiresWhenTheDayOfTheNotificationIsOver() {
+        var draft = Draft()
+        draft.date = Date()
+        let notice = SkippedNotice(draft: draft, match: .bill(name: "XL Satu"))
+        XCTAssertTrue(notice.expiresAt > Date())
+        draft.date = calendar.date(byAdding: .day, value: -1, to: Date())!
+        XCTAssertTrue(SkippedNotice(draft: draft, match: .bill(name: "XL Satu")).expiresAt <= Date())
+    }
 }

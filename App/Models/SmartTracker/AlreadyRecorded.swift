@@ -2,7 +2,7 @@ import Foundation
 
 /// A notification that was not turned into a draft because it is already recorded in Saku: the
 /// monthly part of a running installment or an active recurring bill (Enhancement 3, K1, K5).
-/// Kept for 7 days so the queue can show it and the user can undo it (K10).
+/// Kept until the day of the notification is over, so the queue can show it and the user can undo it (K10).
 struct SkippedNotice: Identifiable, Codable, Hashable {
     var id = UUID()
     /// What the notification would have become; Batalkan hands it back as a normal draft.
@@ -10,7 +10,10 @@ struct SkippedNotice: Identifiable, Codable, Hashable {
     var match: AlreadyRecorded.Match
     var at = Date()
 
-    var expiresAt: Date { Calendar.current.date(byAdding: .day, value: 7, to: at) ?? at }
+    var expiresAt: Date {
+        let calendar = Calendar.current
+        return calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: draft.date)) ?? at
+    }
 }
 
 /// Matches a notification draft against what is already recorded: running installment parts and

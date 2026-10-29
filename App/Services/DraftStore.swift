@@ -92,7 +92,7 @@ final class DraftStore: ObservableObject {
         updateBadge()
     }
 
-    /// Drafts the user never handled are dropped after 30 days; skipped notices after 7 (K10).
+    /// Drafts the user never handled are dropped after 30 days; skipped notices once their day is over (K10).
     func purgeExpired(now: Date = Date()) {
         let kept = drafts.filter { $0.expiresAt > now }
         let keptNotices = notices.filter { $0.expiresAt > now }
