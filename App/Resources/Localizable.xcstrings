@@ -7303,6 +7303,16 @@
         }
       }
     },
+    "Gaji dicatat %@. Biasanya gajian tanggal %lld.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salary recorded on %@. Payday is usually the %lld."
+          }
+        }
+      }
+    },
     "Gaji masuk lebih awal": {
       "localizations": {
         "en": {
@@ -11873,6 +11883,16 @@
         }
       }
     },
+    "Mulai periode baru di tanggal ini?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a new period on this date?"
+          }
+        }
+      }
+    },
     "Mulai periode baru di tanggal ini? Gaji kamu masuk %@, sebelum tanggal gajian.": {
       "localizations": {
         "en": {
@@ -13343,6 +13363,16 @@
         }
       }
     },
+    "Periode baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New period"
+          }
+        }
+      }
+    },
     "Periode berikutnya": {
       "localizations": {
         "en": {
@@ -13359,6 +13389,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Current period"
+          }
+        }
+      }
+    },
+    "Periode berjalan berakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running period ends"
           }
         }
       }
@@ -13499,6 +13539,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This period is over"
+          }
+        }
+      }
+    },
+    "Periode tetap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period stays"
           }
         }
       }
@@ -15859,6 +15909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "After that you are charged %@ per %@. Cancel any time in iPhone Settings › Apple ID."
+          }
+        }
+      }
+    },
+    "Setelah itu, %@ kembali normal.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After that, %@ is back to normal."
           }
         }
       }
@@ -19651,6 +19711,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "To undo"
+          }
+        }
+      }
+    },
+    "Untuk membatalkan, hapus transaksi gaji ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To undo, delete this salary transaction."
           }
         }
       }

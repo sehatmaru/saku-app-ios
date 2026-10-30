@@ -1399,5 +1399,12 @@
   "Untuk membatalkan": "To undo",
   "Periode berjalan berakhir sehari sebelumnya. Periode baru mulai di tanggal ini.": "The running period ends the day before. The new period starts on this date.",
   "Periode tetap seperti biasa.": "The period stays as usual.",
-  "Hapus transaksi gaji ini.": "Delete this salary transaction."
+  "Hapus transaksi gaji ini.": "Delete this salary transaction.",
+  "Mulai periode baru di tanggal ini?": "Start a new period on this date?",
+  "Gaji dicatat %@. Biasanya gajian tanggal %lld.": "Salary recorded on %@. Payday is usually the %lld.",
+  "Periode berjalan berakhir": "Running period ends",
+  "Periode baru": "New period",
+  "Periode tetap": "Period stays",
+  "Setelah itu, %@ kembali normal.": "After that, %@ is back to normal.",
+  "Untuk membatalkan, hapus transaksi gaji ini.": "To undo, delete this salary transaction."
 }
