@@ -412,7 +412,6 @@ struct ProfileView: View {
 
             Button { showsExport = true } label: {
                 row(icon: "square.and.arrow.up", title: L("Ekspor data")) {
-                    Text(verbatim: "CSV").font(.app(15)).foregroundStyle(Color.appTextSecondary)
                     chevron
                 }
                 .contentShape(Rectangle())

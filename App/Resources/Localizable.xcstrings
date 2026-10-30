@@ -5453,6 +5453,16 @@
         }
       }
     },
+    "Data belum dimuat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data not loaded"
+          }
+        }
+      }
+    },
     "Data belum lengkap dimuat. Periksa koneksi lalu coba lagi.": {
       "localizations": {
         "en": {
@@ -5609,6 +5619,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your data stays afterwards"
+          }
+        }
+      }
+    },
+    "Datamu tidak berubah. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data is unchanged. Try again."
           }
         }
       }
@@ -5939,6 +5959,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Made with Saku"
+          }
+        }
+      }
+    },
+    "Dibuat di perangkatmu, dibagikan lewat menu bagikan iOS.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made on your device, shared through the iOS share sheet."
           }
         }
       }
@@ -6383,6 +6413,26 @@
         }
       }
     },
+    "Dompet dan budget selalu disertakan lengkap.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets and budgets are always included in full."
+          }
+        }
+      }
+    },
+    "Dompet dan budget selalu seluruh data.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets and budgets always include all data."
+          }
+        }
+      }
+    },
     "Dompet dihapus": {
       "localizations": {
         "en": {
@@ -6809,6 +6859,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Export your data first"
+          }
+        }
+      }
+    },
+    "Ekspor gagal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export failed"
           }
         }
       }
@@ -7799,6 +7859,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "New accounts only. One account can use only one code."
+          }
+        }
+      }
+    },
+    "Hanya untuk laporan PDF.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For the PDF report only."
           }
         }
       }
@@ -10553,6 +10623,16 @@
         }
       }
     },
+    "Laporan PDF khusus Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF reports are a Saku Plus feature"
+          }
+        }
+      }
+    },
     "Laporan PDF lengkap": {
       "localizations": {
         "en": {
@@ -10849,6 +10929,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "See older"
+          }
+        }
+      }
+    },
+    "Lihat pratinjau PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview PDF"
+          }
+        }
+      }
+    },
+    "Lihat pratinjau dulu, lalu putuskan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview it first, then decide."
           }
         }
       }
@@ -11683,6 +11783,16 @@
         }
       }
     },
+    "Menyiapkan…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing…"
+          }
+        }
+      }
+    },
     "Menyimpan setup": {
       "localizations": {
         "en": {
@@ -11839,6 +11949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Guest mode: this phone only"
+          }
+        }
+      }
+    },
+    "Muat ulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reload"
           }
         }
       }
@@ -12499,6 +12619,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "Opsi lanjutan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced options"
           }
         }
       }
@@ -13513,6 +13643,16 @@
         }
       }
     },
+    "Periode laporan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report period"
+          }
+        }
+      }
+    },
     "Periode sebelumnya": {
       "localizations": {
         "en": {
@@ -13903,6 +14043,16 @@
         }
       }
     },
+    "Pilih satu periode. Daftar bisa digulir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose one period. The list scrolls."
+          }
+        }
+      }
+    },
     "Pilih sekarang, atau lengkapi nanti di Konfirmasi transaksi.": {
       "localizations": {
         "en": {
@@ -13913,12 +14063,32 @@
         }
       }
     },
+    "Pilih semua data, tanggal sendiri, atau satu periode atau lebih. Daftar bisa digulir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose all data, custom dates, or one or more periods. The list scrolls."
+          }
+        }
+      }
+    },
     "Pilih tanggal": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Choose date"
+          }
+        }
+      }
+    },
+    "Pilih tanggal awal dan akhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a start and end date"
           }
         }
       }
@@ -14419,6 +14589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Date range"
+          }
+        }
+      }
+    },
+    "Rentang transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction range"
           }
         }
       }
@@ -15163,6 +15343,16 @@
         }
       }
     },
+    "Satu file ZIP berisi CSV, untuk diolah sendiri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One ZIP file with CSVs, to work with yourself"
+          }
+        }
+      }
+    },
     "Saya mengerti, lanjutkan": {
       "localizations": {
         "en": {
@@ -15399,6 +15589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The full amount uses up the card limit right away, but each bill only charges one part."
+          }
+        }
+      }
+    },
+    "Seluruh riwayat transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entire transaction history"
           }
         }
       }
@@ -17653,6 +17853,16 @@
         }
       }
     },
+    "Tanggal sendiri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom dates"
+          }
+        }
+      }
+    },
     "Tanggal tagih": {
       "localizations": {
         "en": {
@@ -18513,6 +18723,26 @@
         }
       }
     },
+    "Tidak ada transaksi di rentang ini. CSV transaksi hanya berisi judul kolom.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions in this range. The transactions CSV will only have the column headers."
+          }
+        }
+      }
+    },
+    "Tidak ada transaksi di rentang ini. File Transaksi hanya berisi judul kolom.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions in this range. The Transactions file will only hold column headers."
+          }
+        }
+      }
+    },
     "Tidak ada utang kartu kredit.": {
       "localizations": {
         "en": {
@@ -18813,6 +19043,16 @@
         }
       }
     },
+    "Titik koma cocok untuk Excel berbahasa Indonesia.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semicolon works with Indonesian-language Excel."
+          }
+        }
+      }
+    },
     "Tombol uji sedang dimatikan di server.": {
       "localizations": {
         "en": {
@@ -19091,6 +19331,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This month's transactions"
+          }
+        }
+      }
+    },
+    "Transaksi dari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions from"
           }
         }
       }
@@ -19401,6 +19651,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Put off purchases that aren't urgent"
+          }
+        }
+      }
+    },
+    "Tunggu data selesai dimuat, lalu ekspor.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wait for your data to load, then export."
           }
         }
       }

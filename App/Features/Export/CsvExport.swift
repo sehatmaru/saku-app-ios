@@ -7,6 +7,7 @@ enum CsvExport {
     enum Delimiter: String, CaseIterable {
         case comma = ","
         case semicolon = ";"
+        case pipe = "|"
     }
 
     /// UTF-8 with BOM, so spreadsheets read the text right away (US1).

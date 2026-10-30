@@ -74,4 +74,28 @@ final class ExportViewModel: ObservableObject {
             return nil
         }
     }
+
+    /// Packs the CSVs in one ZIP in the temporary folder. The system zips a folder read "for uploading"; nothing leaves the device.
+    func zip(_ files: [(name: String, csv: String)], name: String) -> URL? {
+        let fileManager = FileManager.default
+        let folder = fileManager.temporaryDirectory.appendingPathComponent("saku-ekspor-\(UUID().uuidString)", isDirectory: true)
+        let output = fileManager.temporaryDirectory.appendingPathComponent(name)
+        defer { try? fileManager.removeItem(at: folder) }
+        do {
+            try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+            for file in files {
+                guard let data = file.csv.data(using: .utf8) else { return nil }
+                try data.write(to: folder.appendingPathComponent(file.name), options: .atomic)
+            }
+            var coordinationError: NSError?
+            var result: URL?
+            NSFileCoordinator().coordinate(readingItemAt: folder, options: .forUploading, error: &coordinationError) { zipped in
+                try? fileManager.removeItem(at: output)
+                if (try? fileManager.copyItem(at: zipped, to: output)) != nil { result = output }
+            }
+            return coordinationError == nil ? result : nil
+        } catch {
+            return nil
+        }
+    }
 }

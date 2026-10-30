@@ -86,10 +86,9 @@ struct ThemeSheet: View {
 
             Spacer(minLength: 0)
         }
-        .presentationDetents([.height(338)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .filterSheet()
+
+        .background(Color.appBackground)
     }
 
     /// A mini screen: header line, big line, second line and a green button (design mock).
@@ -212,10 +211,9 @@ struct LanguageSheet: View {
 
             Spacer(minLength: 0)
         }
-        .presentationDetents([.height(358)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .filterSheet()
+
+        .background(Color.appBackground)
     }
 }
 
@@ -319,49 +317,44 @@ struct BalanceSheet: View {
 
             Spacer(minLength: 0)
         }
-        .presentationDetents([.height(448)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .filterSheet()
+
+        .background(Color.appBackground)
     }
 }
 
 // MARK: - Ekspor data
 
-/// Periode chips over the CSV and PDF cards (design "Sheet Pengaturan", section Data).
+/// Ekspor data (Enhancement 2, design "Ekspor Data" option B): one sheet, a CSV | PDF segment, defaults already chosen,
+/// and a period list that opens in place so the two formats never share a choice.
 struct ExportSheet: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel = ExportViewModel()
+    @ObservedObject private var plus = PlusStore.shared
     @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
 
-    /// Which CSV files are made.
-    enum XlsPart: String, CaseIterable, Hashable {
-        case transactions, wallets, budgets
+    /// The sheet is dark grey in dark mode, so the usual fill would vanish into it: a lighter grey there.
+    private static let fill = Color(light: 0xF2F2F4, dark: 0x2C2C2E)
 
-        var label: String {
-            switch self {
-            case .transactions: L("Transaksi")
-            case .wallets: L("Dompet")
-            case .budgets: L("Budget")
-            }
-        }
-    }
+    enum Format: Identifiable { case csv, pdf; var id: Self { self } }
 
-    /// Everything, or the periods picked by hand (indices into `periods`).
+    @State private var format: Format = .csv
+    /// The period list that is open in place of the sheet's body, if any.
+    @State private var picking: Format?
+    /// CSV: everything, the periods picked by hand (indices into `periods`), or a date range. Only the transactions use it.
     @State private var selectsAll = false
     @State private var selectedPeriods: Set<Int> = [0]
-    @State private var parts: Set<XlsPart> = [.transactions, .wallets]
+    @State private var usesCustomRange = false
+    @State private var customStart = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var customEnd = Date()
+    /// PDF: the one payday period of the report (index into `periods`), and "Sembunyikan saldo dan nama dompet" (off unless asked).
+    @State private var pdfPeriodIndex = 0
+    @State private var hidesBalances = false
     @State private var sharing: ExportFile?
     @State private var isBuilding = false
     @State private var showsFailure = false
-    @State private var showsLoadFailure = false
-    @ObservedObject private var plus = PlusStore.shared
     /// Free accounts get a preview of the PDF instead of the file (Fitur 8, US4).
     @State private var showsPdfPreview = false
-    /// "Sembunyikan saldo dan nama dompet" for the PDF; off unless asked (Fitur 8 US3).
-    @State private var hidesBalances = false
-    /// The sheet is as tall as its content (design), up to a cap where it scrolls.
-    @State private var contentHeight: CGFloat = 560
 
     private var cycle: PaydayCycle { PaydayCycle.current }
 
@@ -377,293 +370,334 @@ struct ExportSheet: View {
         return list
     }
 
+    /// The range of the transactions CSV; nil = all data.
     private var selectedIntervals: [DateInterval]? {
-        selectsAll ? nil : selectedPeriods.sorted().compactMap { periods.indices.contains($0) ? periods[$0].interval : nil }
+        if usesCustomRange {
+            let calendar = Calendar.current
+            let start = calendar.startOfDay(for: min(customStart, customEnd))
+            let end = calendar.startOfDay(for: max(customStart, customEnd))
+            return [DateInterval(start: start, end: calendar.date(byAdding: .day, value: 1, to: end) ?? end)]
+        }
+        return selectsAll ? nil : selectedPeriods.sorted().compactMap { periods.indices.contains($0) ? periods[$0].interval : nil }
     }
 
-    private var countLabel: String {
+    private var rangeText: String {
         if selectsAll { return L("Semua data") }
-        if selectedPeriods.isEmpty { return L("Pilih periode") }
-        return L("%lld periode dipilih", selectedPeriods.count)
-    }
-
-    /// The report covers one period: the most recent one picked, or the running one for "Semua data".
-    private var reportPeriodIndex: Int { selectsAll ? 0 : (selectedPeriods.min() ?? 0) }
-    private var reportPeriod: DateInterval { periods.indices.contains(reportPeriodIndex) ? periods[reportPeriodIndex].interval : cycle.period(offset: 0) }
-    private var reportPeriodNote: String {
-        let label = periods.indices.contains(reportPeriodIndex) ? periods[reportPeriodIndex].label : cycle.label(for: Date())
-        return (!selectsAll && selectedPeriods.count > 1) ? L("Laporan memakai periode terbaru yang dipilih: %@", label) : L("Laporan periode %@", label)
-    }
-
-    private var periodLabel: String {
-        if selectsAll { return L("Semua data") }
+        if usesCustomRange { return L("Tanggal sendiri") }
         let labels = selectedPeriods.sorted().compactMap { periods.indices.contains($0) ? periods[$0].label : nil }
         if labels.count == 1 { return labels[0] }
-        return L("%lld periode", labels.count)
+        return labels.isEmpty ? L("Pilih periode") : L("%lld periode", labels.count)
     }
+
+    private var pickCount: String {
+        if selectsAll { return L("Semua data") }
+        if usesCustomRange { return L("Tanggal sendiri") }
+        return selectedPeriods.isEmpty ? L("Pilih periode") : L("%lld periode dipilih", selectedPeriods.count)
+    }
+
+    /// The transactions file would hold no row (Enhancement 2 US2): the sheet says so before sharing.
+    private var rangeIsEmpty: Bool {
+        guard viewModel.isReady else { return false }
+        return !viewModel.transactions.contains { txn in
+            selectedIntervals.map { $0.contains { txn.date >= $0.start && txn.date < $0.end } } ?? true
+        }
+    }
+
+    private var reportPeriod: DateInterval { periods.indices.contains(pdfPeriodIndex) ? periods[pdfPeriodIndex].interval : cycle.period(offset: 0) }
+    private var periodLabel: String { periods.indices.contains(pdfPeriodIndex) ? periods[pdfPeriodIndex].label : cycle.label(for: Date()) }
+    private var canExport: Bool { viewModel.isReady && !isBuilding && (format == .pdf || !(selectedIntervals?.isEmpty ?? false)) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Color.clear.frame(height: 24)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    periodSection
-                    csvCard
-                    pdfCard
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 18)
-                .padding(.bottom, 34)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
-            }
-            .scrollIndicators(.hidden)
+        VStack(alignment: .leading, spacing: 16) {
+            mainBody
         }
-        .presentationDetents([.height(min(contentHeight + 42, 720))])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 8)
+        .filterSheet { exportFooter }
         .task { await viewModel.load(userId: authViewModel.currentUser?.id) }
         .sheet(item: $sharing) { ExportShareSheet(urls: $0.urls) }
+        .sheet(item: $picking) { list in
+            pickerBody(list).filterSheet { pickerFooter(list) }
+        }
         .sheet(isPresented: $showsPdfPreview) {
             PdfPreviewView(summary: PdfReport.summary(transactions: viewModel.transactions, categories: viewModel.categories,
-                                                      intervals: selectedIntervals), periodLabel: periodLabel,
+                                                      intervals: [reportPeriod]), periodLabel: periodLabel,
                            result: viewModel.reportModel(interval: reportPeriod, cycle: cycle, userName: "", isPrivate: false, isPreview: true).analysis)
         }
-        .alert(L("Gagal membuat file. Coba lagi."), isPresented: $showsFailure) {
-            Button(L("Tutup"), role: .cancel) {}
-        }
-        .alert(L("Data belum lengkap dimuat. Periksa koneksi lalu coba lagi."), isPresented: $showsLoadFailure) {
-            Button(L("Tutup"), role: .cancel) {}
-        }
+        .alert(L("Ekspor gagal"), isPresented: $showsFailure) {
+            Button(L("Batal"), role: .cancel) {}
+            Button(L("Coba lagi")) { export() }
+        } message: { Text(L("Datamu tidak berubah. Coba lagi.")) }
     }
 
-    // MARK: Periode
+    // MARK: Main
 
-    private var periodSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(L("Periode")).font(.app(13, weight: .semibold)).tracking(0.2)
-                    .foregroundStyle(Color.appTextSecondary)
+    private var mainBody: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(L("Ekspor data")).font(.app(20, weight: .semibold))
                 Spacer()
-                Text(countLabel).font(.app(13, weight: .medium)).foregroundStyle(Color.appPrimary)
-                    .contentTransition(.opacity)
             }
+            .frame(minHeight: 44)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    periodChip(L("Semua data"), isSelected: selectsAll) {
-                        selectsAll.toggle()
-                        if selectsAll { selectedPeriods = [] }
-                    }
-                    ForEach(periods.indices, id: \.self) { index in
-                        let label = periods[index].label
-                        periodChip(label, isSelected: selectsAll || selectedPeriods.contains(index)) {
-                            if selectsAll {
-                                selectsAll = false
-                                selectedPeriods = [index]
-                            } else if selectedPeriods.contains(index) {
-                                selectedPeriods.remove(index)
-                            } else {
-                                selectedPeriods.insert(index)
-                            }
-                        }
-                    }
-                }
-                .padding(.vertical, 1)
-                .padding(.horizontal, 24)
-            }
-            .padding(.horizontal, -24)
-            .overlay(alignment: .trailing) {
-                LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .leading, endPoint: .trailing)
-                    .frame(width: 40).padding(.trailing, -24).allowsHitTesting(false)
-            }
+            segment
 
-            Text(L("Data tersedia sejak %@. Geser untuk periode lainnya.",
-                   monthYear(Date(timeIntervalSince1970: memberSince))))
-                .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            if viewModel.loadFailed { notLoaded }
+            if format == .csv { csvBody } else { pdfBody }
         }
     }
 
-    private func periodChip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private var exportFooter: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if format == .csv, rangeIsEmpty {
+                Label {
+                    Text(L("Tidak ada transaksi di rentang ini. File Transaksi hanya berisi judul kolom."))
+                        .font(.app(13)).fixedSize(horizontal: false, vertical: true)
+                } icon: { Image(systemName: "exclamationmark.circle.fill") }
+                .foregroundStyle(Color.appError)
+            }
+            exportButton
+        }
+    }
+
+    private var segment: some View {
+        HStack(spacing: 4) {
+            segmentItem("CSV", plusBadge: false, isOn: format == .csv) { format = .csv }
+            segmentItem("PDF", plusBadge: true, isOn: format == .pdf) { format = .pdf }
+        }
+        .padding(4)
+        .background(Self.fill, in: Capsule())
+    }
+
+    private func segmentItem(_ title: String, plusBadge: Bool, isOn: Bool, action: @escaping () -> Void) -> some View {
         Button {
             UISelectionFeedbackGenerator().selectionChanged()
             withAnimation(.easeOut(duration: 0.18)) { action() }
         } label: {
             HStack(spacing: 6) {
-                if isSelected {
-                    Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
-                }
-                Text(title).font(.app(14, weight: .medium)).monospacedDigit()
+                Text(title).font(.app(15, weight: .semibold))
+                if plusBadge { plusPill }
             }
-            .foregroundStyle(isSelected ? Color.appPrimary : Color.appText)
-            .padding(.horizontal, 14)
-            .frame(height: 36)
-            .background(isSelected ? Color.appPrimary.opacity(0.10) : Color.appBackground, in: Capsule())
-            .overlay(Capsule().strokeBorder(isSelected ? Color.appPrimary : Color.appBorder, lineWidth: 1))
+            .foregroundStyle(isOn ? Color.appText : Color.appTextSecondary)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(isOn ? Color.appBackground : Color.clear, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(PressScaleStyle())
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+
+    private var plusPill: some View {
+        Text("Plus").font(.app(11, weight: .bold)).foregroundStyle(Color.appPrimary)
+            .padding(.horizontal, 8).padding(.vertical, 2)
+            .background(Color.appPrimary.opacity(0.10), in: Capsule())
+    }
+
+    private var notLoaded: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "wifi.slash").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L("Data belum dimuat")).font(.app(15, weight: .semibold))
+                Text(L("Tunggu data selesai dimuat, lalu ekspor.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Button(L("Muat ulang")) { Task { await viewModel.load(userId: authViewModel.currentUser?.id) } }
+                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary).frame(minHeight: 44)
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Self.fill, in: RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: CSV
 
-    private var csvCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
-                Image(systemName: "tablecells")
-                    .font(.system(size: 22))
-                    .foregroundStyle(Color.appPrimary)
-                    .frame(width: 44, height: 44)
-                    .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 14))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(L("Ekspor ke CSV")).font(.app(17, weight: .semibold))
-                    Text(L("Data mentah untuk diolah sendiri")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                }
+    private var csvBody: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L("Transaksi dari")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                changeRow(rangeText) { picking = .csv }
+                Text(L("Dompet dan budget selalu disertakan lengkap.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
             }
 
-            HStack(spacing: 8) {
-                ForEach(XlsPart.allCases, id: \.self) { part in
-                    let on = parts.contains(part)
-                    Button {
-                        UISelectionFeedbackGenerator().selectionChanged()
-                        withAnimation(.easeOut(duration: 0.18)) {
-                            if on { parts.remove(part) } else { parts.insert(part) }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            if on { Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)) }
-                            Text(part.label).font(.app(14, weight: .medium))
-                        }
-                        .foregroundStyle(on ? .white : Color.appText)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(on ? Color.appPrimary : Color.appBackground, in: Capsule())
-                        .contentShape(Capsule())
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
-            }
-
-            exportButton(title: L("Ekspor CSV"), icon: "arrow.down", style: .primary, enabled: !parts.isEmpty && !isBuilding) {
-                exportCsv()
-            }
         }
-        .padding(16)
-        .background(Color.appPrimary.opacity(0.10), in: RoundedRectangle(cornerRadius: 24))
+    }
+
+    private func changeRow(_ text: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(text).font(.app(15)).foregroundStyle(Color.appText).multilineTextAlignment(.leading)
+                Spacer(minLength: 8)
+                HStack(spacing: 8) {
+                    Text(L("Ubah"))
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+                }
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary)
+            }
+            .padding(.horizontal, 16).frame(minHeight: 52)
+            .background(Self.fill, in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressScaleStyle())
     }
 
     // MARK: PDF
 
-    private var pdfCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
-                Image(systemName: "doc.richtext")
-                    .font(.system(size: 22))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(L("Laporan PDF")).font(.app(17, weight: .semibold)).foregroundStyle(.white)
-                    Text(L("Ringkasan satu periode, siap dibagikan"))
-                        .font(.app(13)).foregroundStyle(.white.opacity(0.7))
-                }
+    private var pdfBody: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L("Periode laporan")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                changeRow(periodLabel) { picking = .pdf }
             }
-
             Toggle(isOn: $hidesBalances) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(L("Sembunyikan saldo dan nama dompet")).font(.app(14, weight: .medium)).foregroundStyle(.white)
-                    Text(reportPeriodNote).font(.app(12)).foregroundStyle(.white.opacity(0.6))
-                }
+                Text(L("Sembunyikan saldo dan nama dompet")).font(.app(15))
             }
             .tint(Color.appPrimary)
+            .frame(minHeight: 44)
 
-            exportButton(title: L("Buat laporan PDF"), icon: "chart.pie", style: .onDark, enabled: !isBuilding) {
-                exportPdf()
+            if !plus.isPlus {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 8) {
+                        plusPill
+                        Text(L("Laporan PDF khusus Saku Plus")).font(.app(15, weight: .semibold))
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        RoundedRectangle(cornerRadius: 4).fill(Color.appBorder).frame(height: 8).frame(maxWidth: 140, alignment: .leading)
+                        RoundedRectangle(cornerRadius: 4).fill(Color.appBorder.opacity(0.5)).frame(height: 8)
+                        RoundedRectangle(cornerRadius: 4).fill(Color.appBorder.opacity(0.5)).frame(height: 8).padding(.trailing, 50)
+                    }
+                    .padding(14)
+                    .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
+                    Text(L("Lihat pratinjau dulu, lalu putuskan.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                }
+                .padding(16)
+                .background(Self.fill, in: RoundedRectangle(cornerRadius: 24))
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(light: 0x111214, dark: 0x111214), in: RoundedRectangle(cornerRadius: 24))
     }
 
-    private enum ExportButtonStyle { case primary, onDark }
+    // MARK: Period list
 
-    private func exportButton(title: String, icon: String, style: ExportButtonStyle, enabled: Bool,
-                              action: @escaping () -> Void) -> some View {
+    private func pickerBody(_ list: Format) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(list == .csv ? L("Transaksi dari") : L("Pilih periode")).font(.app(20, weight: .semibold))
+                .frame(minHeight: 44).padding(.top, 20)
+
+            Text(list == .csv ? L("Pilih semua data, tanggal sendiri, atau satu periode atau lebih. Daftar bisa digulir.")
+                              : L("Pilih satu periode. Daftar bisa digulir."))
+                .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    if list == .csv {
+                        pickRow(L("Semua data"), detail: L("Seluruh riwayat transaksi"), isOn: selectsAll) {
+                            selectsAll = true; usesCustomRange = false; selectedPeriods = []
+                        }
+                        pickRow(L("Tanggal sendiri"), detail: L("Pilih tanggal awal dan akhir"), isOn: usesCustomRange) {
+                            usesCustomRange = true; selectsAll = false; selectedPeriods = []
+                        }
+                        if usesCustomRange {
+                            HStack(spacing: 12) {
+                                DatePicker(L("Dari"), selection: $customStart, displayedComponents: .date)
+                                DatePicker(L("Sampai"), selection: $customEnd, displayedComponents: .date)
+                            }
+                            .datePickerStyle(.compact).font(.app(14)).padding(.vertical, 8)
+                        }
+                    }
+                    ForEach(periods.indices, id: \.self) { index in
+                        let count = viewModel.transactions.filter { $0.date >= periods[index].interval.start && $0.date < periods[index].interval.end }.count
+                        pickRow(periods[index].label, detail: L("%lld transaksi", count),
+                                isOn: list == .pdf ? pdfPeriodIndex == index : (!selectsAll && !usesCustomRange && selectedPeriods.contains(index))) {
+                            if list == .pdf { pdfPeriodIndex = index; return }
+                            if selectsAll || usesCustomRange { selectsAll = false; usesCustomRange = false; selectedPeriods = [index] }
+                            else if selectedPeriods.contains(index) { selectedPeriods.remove(index) }
+                            else { selectedPeriods.insert(index) }
+                        }
+                    }
+                }
+            }
+            .frame(height: 380)
+            .scrollIndicators(.hidden)
+        }
+        .padding(.horizontal, 24).padding(.bottom, 8)
+    }
+
+    private func pickerFooter(_ list: Format) -> some View {
+        VStack(spacing: 12) {
+            Text(list == .csv ? pickCount : periodLabel).font(.app(15))
+            PrimaryButton(title: L("Selesai"), isEnabled: list == .pdf || !(selectedIntervals?.isEmpty ?? false)) {
+                picking = nil
+            }
+        }
+    }
+
+    private func pickRow(_ title: String, detail: String, isOn: Bool, action: @escaping () -> Void) -> some View {
         Button {
+            UISelectionFeedbackGenerator().selectionChanged()
             action()
         } label: {
-            HStack(spacing: 8) {
-                if isBuilding {
-                    ProgressView().tint(style == .onDark ? Color(light: 0x111214, dark: 0x111214) : .white)
-                } else {
-                    Image(systemName: icon).font(.system(size: 16, weight: .bold))
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title).font(.app(17)).foregroundStyle(Color.appText).monospacedDigit()
+                    Text(detail).font(.app(13)).foregroundStyle(Color.appTextSecondary)
                 }
-                Text(title).font(.app(16, weight: .medium))
+                Spacer()
+                Image(systemName: "checkmark").font(.system(size: 17, weight: .semibold)).foregroundStyle(Color.appPrimary).opacity(isOn ? 1 : 0)
             }
-            .foregroundStyle(style == .onDark ? Color(light: 0x111214, dark: 0x111214) : .white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 46)
-            .background(style == .onDark ? Color(light: 0xFFFFFF, dark: 0xFFFFFF) : Color.appPrimary, in: Capsule())
-            .contentShape(Capsule())
+            .frame(minHeight: 52).contentShape(Rectangle())
         }
-        .buttonStyle(PressScaleStyle())
-        .disabled(!enabled)
-        .opacity(enabled ? 1 : 0.5)
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.appBorder).frame(height: 0.5) }
+        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     // MARK: Building
 
-    /// One CSV file per picked part, shared together (a comma or a semicolon: Indonesian Excel wants the semicolon).
+    private var exportButton: some View {
+        Button { export() } label: {
+            HStack(spacing: 10) {
+                if isBuilding { ProgressView().tint(.white) }
+                Text(isBuilding ? L("Menyiapkan…")
+                     : format == .csv ? L("Ekspor CSV")
+                     : plus.isPlus ? L("Buat laporan PDF") : L("Lihat pratinjau PDF"))
+                    .font(.app(17, weight: .semibold))
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(Color.appPrimary, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+        .disabled(!canExport)
+        .opacity(canExport || isBuilding ? (isBuilding ? 0.6 : 1) : 0.4)
+    }
+
+    private func export() {
+        guard viewModel.isReady else { return }
+        if format == .csv { exportCsv() } else { exportPdf() }
+    }
+
+    /// One CSV per part, packed in a single ZIP made on the device (Enhancement 2 K2, K6).
     private func exportCsv() {
-        guard !viewModel.loadFailed else { retryLoad(); return }
         isBuilding = true
         defer { isBuilding = false }
-        let delimiter: CsvExport.Delimiter = AppLanguage.locale.language.languageCode?.identifier == "id" ? .semicolon : .comma
         let stamp = CsvExport.date(Date())
-        var urls: [URL] = []
-        if parts.contains(.transactions) {
-            let csv = CsvExport.transactions(viewModel.transactions, accounts: viewModel.accounts, categories: viewModel.categories,
-                                             intervals: selectedIntervals, delimiter: delimiter)
-            if let url = viewModel.write(csv, name: "saku-transaksi-\(stamp).csv") { urls.append(url) }
-        }
-        if parts.contains(.wallets) {
-            if let url = viewModel.write(CsvExport.wallets(viewModel.accounts, delimiter: delimiter), name: "saku-dompet-\(stamp).csv") { urls.append(url) }
-        }
-        if parts.contains(.budgets) {
-            let csv = CsvExport.budgets(viewModel.budgets, categories: viewModel.categories, delimiter: delimiter)
-            if let url = viewModel.write(csv, name: "saku-budget-\(stamp).csv") { urls.append(url) }
-        }
-        if urls.isEmpty { showsFailure = true } else { sharing = ExportFile(urls: urls) }
+        let files: [(name: String, csv: String)] = [
+            ("saku-transaksi-\(stamp).csv", CsvExport.transactions(viewModel.transactions, accounts: viewModel.accounts,
+                                                                    categories: viewModel.categories,
+                                                                    intervals: selectedIntervals, delimiter: .pipe)),
+            ("saku-dompet-\(stamp).csv", CsvExport.wallets(viewModel.accounts, delimiter: .pipe)),
+            ("saku-budget-\(stamp).csv", CsvExport.budgets(viewModel.budgets, categories: viewModel.categories, delimiter: .pipe))
+        ]
+        if let url = viewModel.zip(files, name: "saku-ekspor-\(stamp).zip") { sharing = ExportFile(urls: [url]) } else { showsFailure = true }
     }
 
     private func exportPdf() {
-        guard !viewModel.loadFailed else { retryLoad(); return }
         guard plus.isPlus else { showsPdfPreview = true; return }
         isBuilding = true
         defer { isBuilding = false }
         let model = viewModel.reportModel(interval: reportPeriod, cycle: cycle,
                                           userName: authViewModel.currentUser?.displayName ?? "", isPrivate: hidesBalances)
-        if let url = PdfReport.write(model) {
-            sharing = ExportFile(urls: [url])
-        } else {
-            showsFailure = true
-        }
-    }
-
-    private func retryLoad() {
-        showsLoadFailure = true
-        Task { await viewModel.load(userId: authViewModel.currentUser?.id) }
-    }
-
-    private func monthYear(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = AppLanguage.locale
-        formatter.dateFormat = "MMM yyyy"
-        return formatter.string(from: date)
+        if let url = PdfReport.write(model) { sharing = ExportFile(urls: [url]) } else { showsFailure = true }
     }
 }
 
