@@ -9,19 +9,24 @@ struct PaydayCycle: Equatable {
     /// Payday history, oldest first: from `from` on, the payday is `day`. Empty = `day` always.
     /// A change takes effect at a period boundary, so past and running periods keep their dates.
     let schedule: [PaydayEntry]
+    /// Dates a salary arrived early and the user chose to start the period there (Enhancement "Gaji masuk lebih awal").
+    /// Each one removes the next normal boundary and starts the period on its own date instead.
+    let shifts: [Date]
 
-    init(day: Int, schedule: [PaydayEntry] = []) {
+    init(day: Int, schedule: [PaydayEntry] = [], shifts: [Date] = []) {
         self.day = min(max(day, 1), 31)
         self.schedule = schedule.sorted { $0.from < $1.from }
+        self.shifts = shifts.sorted()
     }
 
     /// The user's cycle: the payday history saved for them, else the payday on their profile, else the 1st.
     static var current: PaydayCycle {
         let schedule = PaydaySetting.schedule
-        guard !schedule.isEmpty else { return PaydayCycle(day: PaydaySetting.day ?? 1) }
+        let shifts = PaydaySetting.shifts
+        guard !schedule.isEmpty else { return PaydayCycle(day: PaydaySetting.day ?? 1, shifts: shifts) }
         let today = Calendar.current.startOfDay(for: Date())
         let inForce = schedule.last { $0.from <= today } ?? schedule[0]
-        return PaydayCycle(day: inForce.day, schedule: schedule)
+        return PaydayCycle(day: inForce.day, schedule: schedule, shifts: shifts)
     }
 
     /// A payday change that has not taken effect yet, if any.
@@ -32,6 +37,31 @@ struct PaydayCycle: Equatable {
 
     /// The period that contains `date`: start of its first day up to (not including) the next start.
     func period(containing date: Date, calendar: Calendar = .current) -> DateInterval {
+        let base = basePeriod(containing: date, calendar: calendar)
+        guard !shifts.isEmpty else { return base }
+        return applyingShifts(to: base, on: calendar.startOfDay(for: date), calendar: calendar)
+    }
+
+    /// An early salary on `O` ends the running period on `O - 1` and starts the next one on `O`. It lasts until the normal
+    /// boundary after the one that was removed (20 Okt, payday 25: 20 Okt – 24 Nov, then 25 Nov as usual), so no short
+    /// period of its own appears. Only the earliest shift counts for one boundary, and periods before `O` stay as they were.
+    private func applyingShifts(to base: DateInterval, on day: Date, calendar: Calendar) -> DateInterval {
+        var removed: [Date: Date] = [:]   // normal boundary -> earliest shift that replaces it
+        for raw in shifts {
+            let shift = calendar.startOfDay(for: raw)
+            let home = basePeriod(containing: shift, calendar: calendar)
+            guard shift > home.start else { continue }
+            if removed[home.end].map({ shift < $0 }) ?? true { removed[home.end] = shift }
+        }
+        if let shift = removed[base.end] {
+            return day >= shift ? DateInterval(start: shift, end: basePeriod(containing: base.end, calendar: calendar).end)
+                                : DateInterval(start: base.start, end: shift)
+        }
+        if let shift = removed[base.start] { return DateInterval(start: shift, end: base.end) }
+        return base
+    }
+
+    private func basePeriod(containing date: Date, calendar: Calendar) -> DateInterval {
         let day = calendar.startOfDay(for: date)
         guard !schedule.isEmpty else { return naivePeriod(containing: day, payday: self.day, calendar: calendar) }
         let index = schedule.lastIndex { $0.from <= day } ?? 0
@@ -120,6 +150,14 @@ enum PaydaySetting {
             return value == 0 ? nil : value
         }
         set { UserDefaults.standard.set(newValue ?? 0, forKey: key) }
+    }
+
+    private static let shiftsKey = "paydayShifts"
+
+    /// Early-salary dates the user chose to start a period on, mirrored from the transactions that carry them.
+    static var shifts: [Date] {
+        get { (UserDefaults.standard.array(forKey: shiftsKey) as? [Date]) ?? [] }
+        set { UserDefaults.standard.set(newValue, forKey: shiftsKey) }
     }
 
     private static let scheduleKey = "paydaySchedule"
