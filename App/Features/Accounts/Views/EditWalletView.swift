@@ -202,7 +202,7 @@ struct EditWalletView: View {
         .background(Color.appBackground.ignoresSafeArea())
         .foregroundStyle(Color.appText)
         .toast(toastText, isShown: $toast)
-        .overlay { deleteDialog }
+        .sheet(isPresented: $isConfirmingDelete) { deleteDialog }
         .overlay(alignment: .bottom) { undoToast }
         .overlay { endScreen }
         .onDisappear {
@@ -766,7 +766,6 @@ struct EditWalletView: View {
 
     // MARK: Delete
 
-    private static let dialogBackground = Color(light: 0xFFFFFF, dark: 0x1C1C1E)
 
     /// What deleting does, in the same voice as the transaction dialog.
     private var deleteSubtitle: String {
@@ -781,83 +780,75 @@ struct EditWalletView: View {
             : L("%@ akan dihapus dari daftar dompet.", orig.name)
     }
 
-    /// Bottom dialog: trash badge, title, what happens, a red Hapus and Batal. A wallet with
+    /// The delete sheet: trash badge, title, what happens, a red Hapus and Batal. A wallet with
     /// transactions can't be deleted, so it offers Arsipkan saja instead.
     private var deleteDialog: some View {
         let blocked = transactionCount > 0
-        return ZStack(alignment: .bottom) {
-            Color.black.opacity(isConfirmingDelete ? 0.3 : 0)
-                .ignoresSafeArea()
-                .onTapGesture { isConfirmingDelete = false }
-                .allowsHitTesting(isConfirmingDelete)
-
-            VStack(spacing: 6) {
-                Circle()
-                    .fill(blocked ? Color.appFill : Color(light: 0xFDECEC, dark: 0x3A1D1F))
-                    .frame(width: 52, height: 52)
-                    .overlay {
-                        Image(systemName: blocked ? "archivebox" : "trash")
-                            .font(.system(size: 22))
-                            .foregroundStyle(blocked ? Color.appText : Color(light: 0xD1343A, dark: 0xFF6B6B))
-                    }
-                Text(blocked ? L("Dompet ini tidak bisa dihapus") : L("Hapus dompet ini?"))
-                    .font(.app(17, weight: .semibold))
-                    .padding(.top, 8)
-                Text(blocked
-                     ? L("%@ punya %lld transaksi.", orig.name, transactionCount) + " "
-                        + (isArchived ? L("Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan.")
-                           : L("Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan."))
-                     : deleteSubtitle)
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                if !blocked { assetWarning(destructive: true).padding(.vertical, 6) }
-                VStack(spacing: 8) {
-                    if !blocked {
-                        Button { startDelete() } label: {
-                            Text("Hapus")
-                                .font(.app(16, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color(hex: "D93636"), in: Capsule())
-                        }
-                    } else if !isArchived {
-                        Button {
-                            isConfirmingDelete = false
-                            Task { await archive() }
-                        } label: {
-                            Text("Arsipkan saja")
-                                .font(.app(16, weight: .semibold))
-                                .foregroundStyle(Color.appBackground)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color.appText, in: Capsule())
-                        }
-                    }
-                    Button { isConfirmingDelete = false } label: {
-                        Text(blocked && isArchived ? L("Tutup") : L("Batal"))
-                            .font(.app(16, weight: .medium))
-                            .foregroundStyle(Color.appText)
+        return VStack(spacing: 6) {
+            Circle()
+                .fill(blocked ? Color.appFill : Color(light: 0xFDECEC, dark: 0x3A1D1F))
+                .frame(width: 52, height: 52)
+                .overlay {
+                    Image(systemName: blocked ? "archivebox" : "trash")
+                        .font(.system(size: 22))
+                        .foregroundStyle(blocked ? Color.appText : Color(light: 0xD1343A, dark: 0xFF6B6B))
+                }
+            Text(blocked ? L("Dompet ini tidak bisa dihapus") : L("Hapus dompet ini?"))
+                .font(.app(17, weight: .semibold))
+                .multilineTextAlignment(.center)
+                .padding(.top, 8)
+            Text(blocked
+                 ? L("%@ punya %lld transaksi.", orig.name, transactionCount) + " "
+                    + (isArchived ? L("Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan.")
+                       : L("Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan."))
+                 : deleteSubtitle)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+            if !blocked { assetWarning(destructive: true).padding(.vertical, 6) }
+        }
+        .foregroundStyle(Color.appText)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.top, 32)
+        .padding(.bottom, 24)
+        .filterSheet {
+            VStack(spacing: 8) {
+                if !blocked {
+                    Button { startDelete() } label: {
+                        Text("Hapus")
+                            .font(.app(16, weight: .semibold))
+                            .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
-                            .background(Color(light: 0xF2F2F4, dark: 0x2C2C2E), in: Capsule())
+                            .background(Color(hex: "D93636"), in: Capsule())
+                    }
+                } else if !isArchived {
+                    Button {
+                        isConfirmingDelete = false
+                        Task { await archive() }
+                    } label: {
+                        Text("Arsipkan saja")
+                            .font(.app(16, weight: .semibold))
+                            .foregroundStyle(Color.appBackground)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.appText, in: Capsule())
                     }
                 }
-                .buttonStyle(PressScaleStyle())
-                .padding(.top, 14)
+                Button { isConfirmingDelete = false } label: {
+                    Text(blocked && isArchived ? L("Tutup") : L("Batal"))
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(Color.appText)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color(light: 0xF2F2F4, dark: 0x2C2C2E), in: Capsule())
+                }
             }
-            .foregroundStyle(Color.appText)
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            .padding(.bottom, 20)
-            .background(Self.dialogBackground, in: UnevenRoundedRectangle(topLeadingRadius: 28, bottomLeadingRadius: 38, bottomTrailingRadius: 38, topTrailingRadius: 28))
-            .padding(.horizontal, 8)
-            .offset(y: isConfirmingDelete ? 0 : 760)
+            .buttonStyle(PressScaleStyle())
         }
-        .animation(.settle(0.44), value: isConfirmingDelete)
     }
 
     /// "Dompet dihapus · Urungkan" for the few seconds before the delete really happens.

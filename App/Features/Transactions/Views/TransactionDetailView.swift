@@ -85,9 +85,11 @@ struct TransactionDetailView: View {
             }
 
             toastView
-            confirmDelete
         }
         .background(Color.appBackground)
+        .confirmDialog(isPresented: $isConfirmingDelete, icon: "trash", destructive: true,
+                       title: L("Hapus transaksi ini?"), message: deleteSubtitle,
+                       confirmTitle: L("Hapus")) { isConfirmingDelete = false; startDelete() }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -464,66 +466,6 @@ struct TransactionDetailView: View {
         return L("%@.", base)
     }
 
-    private var confirmDelete: some View {
-        ZStack(alignment: .bottom) {
-            Color.black.opacity(isConfirmingDelete ? 0.3 : 0)
-                .ignoresSafeArea()
-                .onTapGesture { isConfirmingDelete = false }
-                .allowsHitTesting(isConfirmingDelete)
-
-            VStack(spacing: 6) {
-                Circle()
-                    .fill(Color(light: 0xFDECEC, dark: 0x3A1D1F))
-                    .frame(width: 52, height: 52)
-                    .overlay {
-                        Image(systemName: "trash")
-                            .font(.system(size: 22))
-                            .foregroundStyle(Color(light: 0xD1343A, dark: 0xFF6B6B))
-                    }
-                Text("Hapus transaksi ini?")
-                    .font(.app(17, weight: .semibold))
-                    .padding(.top, 8)
-                Text(deleteSubtitle)
-                    .font(.app(15))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                VStack(spacing: 8) {
-                    Button {
-                        isConfirmingDelete = false
-                        startDelete()
-                    } label: {
-                        Text("Hapus")
-                            .font(.app(16, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color(hex: "D93636"), in: Capsule())
-                    }
-                    Button { isConfirmingDelete = false } label: {
-                        Text("Batal")
-                            .font(.app(16, weight: .medium))
-                            .foregroundStyle(Color.appText)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color(light: 0xF2F2F4, dark: 0x2C2C2E), in: Capsule())
-                    }
-                }
-                .buttonStyle(PressScaleStyle())
-                .padding(.top, 14)
-            }
-            .foregroundStyle(Color.appText)
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            .padding(.bottom, 20)
-            .background(Self.dialogBackground, in: UnevenRoundedRectangle(topLeadingRadius: 28, bottomLeadingRadius: 38, bottomTrailingRadius: 38, topTrailingRadius: 28))
-            .padding(.horizontal, 8)
-            .offset(y: isConfirmingDelete ? 0 : 420)
-        }
-        .animation(.settle(0.44), value: isConfirmingDelete)
-    }
-
     /// Hides the transaction and offers Urungkan; the real delete runs when the toast ends.
     private func startDelete() {
         show(Toast(message: L("Transaksi dihapus"), icon: "trash.fill", canUndo: true), duration: 3.8)
@@ -591,7 +533,6 @@ struct TransactionDetailView: View {
     }
 
     /// Card surface that stays distinct from the black page in dark mode.
-    private static let dialogBackground = Color(light: 0xFFFFFF, dark: 0x1C1C1E)
 
     /// "Rp1.450.000", or "−Rp…" for a negative balance.
     private func rupiah(_ value: Double) -> String {
