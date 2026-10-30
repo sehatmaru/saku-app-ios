@@ -147,7 +147,9 @@ struct BudgetListView: View {
 
     /// "25 Sep – 24 Okt", days left, and one tick per day of the period.
     private var periodHeader: some View {
-        let cycle = PaydayCycle(day: headerPayday ?? 1)
+        // the user's real cycle (payday history and early-salary shifts); only while the payday picker is animating
+        // does the header show the frozen day on its own
+        let cycle = frozenPayday == nil ? PaydayCycle.current : PaydayCycle(day: headerPayday ?? 1)
         let days = cycle.days()
         let dayNumber = days.total - days.left
         return VStack(alignment: .leading, spacing: 0) {
