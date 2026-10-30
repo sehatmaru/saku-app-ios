@@ -82,4 +82,13 @@ final class PeriodShiftTests: XCTestCase {
         let cycle = PaydayCycle(day: 25, shifts: [day(2026, 10, 18)])
         XCTAssertFalse(cycle.isEarlySalary(day(2026, 10, 22), calendar: calendar))
     }
+
+    /// US3: deleting the salary transaction drops its date from the shifts, and the usual periods come back.
+    func testDeletingTheSalaryBringsTheUsualPeriodsBack() {
+        let before = shifted.period(containing: day(2026, 10, 22), calendar: calendar)
+        XCTAssertEqual(range(before), "2026-10-20 to 2026-11-25")
+        let afterDelete = PaydayCycle(day: 25, shifts: [])
+        XCTAssertEqual(range(afterDelete.period(containing: day(2026, 10, 22), calendar: calendar)), "2026-09-25 to 2026-10-25")
+        XCTAssertEqual(range(afterDelete.period(containing: day(2026, 10, 26), calendar: calendar)), "2026-10-25 to 2026-11-25")
+    }
 }

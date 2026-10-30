@@ -312,6 +312,8 @@ final class SupabaseRepository: @unchecked Sendable {
             ]).execute()
         }
 
+        // an edited early salary: its date may have moved, so the period dates are read again
+        if updated.startsPeriod == true { await refreshShiftsAndAnnounce() }
         return updated
     }
 
@@ -378,6 +380,13 @@ final class SupabaseRepository: @unchecked Sendable {
             .update(["deleted_at": AnyJSON.string("now()")] as [String: AnyJSON])
             .eq("id", value: id)
             .execute()
+        // deleting an early salary that moved the period brings the usual period back (K4)
+        if txn.startsPeriod == true { await refreshShiftsAndAnnounce() }
+    }
+
+    private func refreshShiftsAndAnnounce() async {
+        await SupabaseSDK.refreshPaydayShifts()
+        await MainActor.run { NotificationCenter.default.post(name: .dataDidChange, object: nil) }
     }
 
     // MARK: - Card Subscriptions

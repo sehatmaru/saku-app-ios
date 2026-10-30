@@ -13,6 +13,8 @@ struct Transaction: Identifiable, Codable {
     let delta: Double?
     /// The client operation id; recurring bills post as `sub_<subscription>_<date>`.
     var clientReferenceId: String? = nil
+    /// An early salary that started a new period on its date; deleting the transaction takes the shift away.
+    var startsPeriod: Bool? = nil
 
     enum TransactionType: String, Codable {
         case income = "income"
@@ -35,6 +37,7 @@ struct Transaction: Identifiable, Codable {
         case date = "occurred_at"
         case delta
         case clientReferenceId = "client_reference_id"
+        case startsPeriod = "starts_period"
     }
 
     /// The "Catatan" the user typed (saved as `description`), else the system `note`.
