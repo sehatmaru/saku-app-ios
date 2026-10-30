@@ -244,18 +244,9 @@ struct PaydaySheet: View {
                     .padding(.top, 10)
             }
 
-            Spacer(minLength: 12)
-
-            PrimaryButton(title: L("Simpan"), isLoading: isSaving, action: done)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
         }
-        .background(Color.appBackground)
         .disabled(isSaving)
-        .presentationDetents([.height(context == .settings ? 642 : 622)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .filterSheet { PrimaryButton(title: L("Simpan"), isLoading: isSaving, action: done).disabled(isSaving) }
         .onDisappear { if !didFinish { onDone(nil) } }
     }
 

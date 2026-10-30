@@ -144,11 +144,6 @@ struct PlusPaywallView: View {
                 Text(L("Harga peluncuran sampai %@", PlusPricing.launchUntil))
                     .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
 
-                PrimaryButton(title: L("Coba gratis 7 hari"), isLoading: isBuying) { startTrial() }.padding(.top, compact ? 12 : 16).stEnter(4)
-                Text(L("Gratis 7 hari, lalu %@. Batalkan kapan saja di Pengaturan iPhone › Apple ID.", price))
-                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.top, 10)
-
                 if let second = reason.makeRoomTitle {
                     Button { dismiss() } label: {
                         Text(second).font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
@@ -171,11 +166,20 @@ struct PlusPaywallView: View {
             .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 10) {
+                PrimaryButton(title: L("Coba gratis 7 hari"), isLoading: isBuying) { startTrial() }
+                Text(L("Gratis 7 hari, lalu %@. Batalkan kapan saja di Pengaturan iPhone › Apple ID.", price))
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 24).padding(.top, 10).padding(.bottom, 8)
+            .background(Color.paywallSurface)
+        }
         .background(Color.paywallSurface)
         .presentationBackground(Color.paywallSurface)
         .onGeometryChange(for: Bool.self) { $0.size.height < 650 } action: { compact = $0 }
-        .presentationDetents([.fraction(0.56), .large])
-        .presentationDragIndicator(.visible)
+        .presentationDetents([.medium, .large])
         .overlay {
             if purchased {
                 PlusSuccessView(reason: reason) { dismiss() }

@@ -130,6 +130,6 @@ struct CustomIconSheet: View {
             Text("Masukkan teks untuk icon.")
         }
         .presentationDetents([.medium])
-        .presentationBackground(Color.appBackground)
+        .background(Color.appBackground)
     }
 }

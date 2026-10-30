@@ -25,9 +25,8 @@ struct PdfPreviewView: View {
             .scrollIndicators(.hidden)
         }
         .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+
+        .background(Color.appBackground)
         .plusOffer($paywall)
         // bought from here: the preview has done its job
         .onChange(of: plus.isPlus) { _, isPlus in if isPlus { dismiss() } }

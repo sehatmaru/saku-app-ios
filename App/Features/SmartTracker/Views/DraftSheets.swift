@@ -168,10 +168,9 @@ struct DraftAmountSheet: View {
         }
         .foregroundStyle(Color.appText)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
-        .presentationDetents([.height(height + 34)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .filterSheet()
+
+        .background(Color.appBackground)
     }
 
     private func press(_ key: String) {

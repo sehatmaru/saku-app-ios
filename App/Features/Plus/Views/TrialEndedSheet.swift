@@ -36,7 +36,6 @@ struct TrialEndedSheet: View {
         .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 16)
         .background(Color.appBackground)
         .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
         .onDisappear { PlusStore.shared.markTrialEndedSeen() }
     }
 

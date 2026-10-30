@@ -170,9 +170,8 @@ struct SmartTrackerConsentSheet: View {
         }
         .background(Color.appBackground)
         .presentationDetents([.large])
-        .presentationBackground(Color.appBackground)
-        .presentationCornerRadius(38)
-        .presentationDragIndicator(.visible)
+        .background(Color.appBackground)
+
     }
 }
 
@@ -219,35 +218,36 @@ struct MemorySyncConsentSheet: View {
             Text("Ingatan ikut ke semua perangkatmu").font(.app(24, weight: .bold)).padding(.top, 20)
             Text(L("Saku menyimpan pasangan seperti di atas, bukan kalimat atau nominalnya. Bisa dimatikan di Profil › Smart Tracker."))
                 .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
-            Spacer(minLength: 20)
-            Button {
-                guard let profileId else { dismiss(); return }
-                isSaving = true
-                Task {
-                    try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
-                    await DraftStore.shared.syncMemory()
-                    isSaving = false
-                    dismiss()
-                }
-            } label: {
-                ZStack {
-                    if isSaving { ProgressView().tint(.white) } else { Text(L("Aktifkan")) }
-                }
-                .font(.app(17, weight: .semibold)).foregroundStyle(.white)
-                .frame(maxWidth: .infinity).frame(height: 52).background(Color.appPrimary, in: Capsule())
-            }
-            .buttonStyle(PressScaleStyle())
-            Button(L("Nanti saja")) {
-                SmartTrackerMemorySync.declinedAt = Date()
-                dismiss()
-            }
-            .font(.app(16)).foregroundStyle(Color.appTextSecondary)
-            .frame(maxWidth: .infinity).frame(height: 44)
         }
         .padding(.horizontal, 24).padding(.bottom, 12)
-        .presentationDetents([.height(500)])
-        .presentationBackground(Color.appBackground)
-        .presentationCornerRadius(30)
-        .presentationDragIndicator(.visible)
+        .filterSheet {
+            VStack(spacing: 8) {
+                Button {
+                    guard let profileId else { dismiss(); return }
+                    isSaving = true
+                    Task {
+                        try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
+                        await DraftStore.shared.syncMemory()
+                        isSaving = false
+                        dismiss()
+                    }
+                } label: {
+                    ZStack {
+                        if isSaving { ProgressView().tint(.white) } else { Text(L("Aktifkan")) }
+                    }
+                    .font(.app(17, weight: .semibold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity).frame(height: 52).background(Color.appPrimary, in: Capsule())
+                }
+                .buttonStyle(PressScaleStyle())
+                Button(L("Nanti saja")) {
+                    SmartTrackerMemorySync.declinedAt = Date()
+                    dismiss()
+                }
+                .font(.app(16)).foregroundStyle(Color.appTextSecondary)
+                .frame(maxWidth: .infinity).frame(height: 44)
+            }
+        }
+        .background(Color.appBackground)
+
     }
 }

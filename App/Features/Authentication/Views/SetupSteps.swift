@@ -670,20 +670,21 @@ struct SetupTrackerConsentSheet: View {
                 .padding(.top, 18)
                 .rise(shown, y: 12, delay: 0.26)
             }
-            Spacer(minLength: 20)
-            PrimaryButton(title: L("Setuju dan aktifkan")) { onAgree() }
-            Button(action: onCancel) {
-                Text("Batal").font(.app(17)).foregroundStyle(Color.appTextSecondary)
-                    .frame(maxWidth: .infinity).frame(height: 48)
-            }
         }
         .padding(.horizontal, 24)
         .padding(.top, 28)
         .padding(.bottom, 12)
-        .presentationDetents([.height(isGuest ? 470 : 540)])
-        .presentationBackground(Color.appBackground)
-        .presentationCornerRadius(28)
-        .presentationDragIndicator(.visible)
+        .filterSheet {
+            VStack(spacing: 0) {
+                PrimaryButton(title: L("Setuju dan aktifkan")) { onAgree() }
+                Button(action: onCancel) {
+                    Text("Batal").font(.app(17)).foregroundStyle(Color.appTextSecondary)
+                        .frame(maxWidth: .infinity).frame(height: 48)
+                }
+            }
+        }
+        .background(Color.appBackground)
+
         .onAppear { shown = true }
     }
 

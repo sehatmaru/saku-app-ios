@@ -350,10 +350,9 @@ struct InvestmentReminderSheet: View {
         .background(GeometryReader { geo in
             Color.clear.onAppear { height = geo.size.height }.onChange(of: geo.size.height) { _, new in height = new }
         })
-        .presentationDetents([.height(height + 16)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .filterSheet()
+
+        .background(Color.appBackground)
         .onAppear {
             chosen = offer ? .monthly : store.interval(for: account.id)
             if offer { store.wasOffered = true }
@@ -649,18 +648,18 @@ struct UpdateValueView: View {
             sourceRow("photo", L("Galeri")) { pickSource(camera: false) }
             Label("Gambar tidak disimpan dan tidak dikirim keluar perangkat.", systemImage: "lock")
                 .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.vertical, 12)
+        }
+        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .filterSheet {
             Button { showsSource = false } label: {
                 Text("Batal").font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
                     .frame(maxWidth: .infinity).frame(height: 48).overlay(Capsule().stroke(Color.appBorder, lineWidth: 1))
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .presentationDetents([.height(330)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+
+        .background(Color.appBackground)
     }
 
     private func sourceRow(_ icon: String, _ title: String, action: @escaping () -> Void) -> some View {
@@ -709,6 +708,10 @@ struct UpdateValueView: View {
                 .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
             }
             .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .filterSheet {
             Button {
                 if let selected { use(selected) }
                 chosenCandidate = nil
@@ -716,14 +719,10 @@ struct UpdateValueView: View {
                 Text("Pakai angka ini").font(.app(17, weight: .semibold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).frame(height: 52).background(Color.appPrimary, in: Capsule())
             }
-            .buttonStyle(PressScaleStyle()).padding(.top, 12)
+            .buttonStyle(PressScaleStyle())
         }
-        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .presentationDetents([.height(CGFloat(list.count) * 62 + 250)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+
+        .background(Color.appBackground)
     }
 
     /// Camera or gallery. Reading pictures needs the short agreement (asked once, the same as Catat dari gambar).

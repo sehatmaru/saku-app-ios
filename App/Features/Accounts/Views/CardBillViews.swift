@@ -656,9 +656,8 @@ struct PayCardBillSheet: View {
             }
         }
         .background(Color.appBackground)
-        .presentationDetents([.height(min(CGFloat((sources.count + 1) / 2) * 108 + 110 + (isRecord ? 120 : 0), 700)), .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Color.appBackground)
+        .presentationDetents([.medium, .large])
+        .background(Color.appBackground)
     }
 
     /// Paid from an account outside Saku, or before the user started using it: no wallet moves.

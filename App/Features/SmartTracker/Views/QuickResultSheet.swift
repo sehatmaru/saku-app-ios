@@ -58,21 +58,15 @@ struct QuickResultSheet: View {
                 unclearBody
             } else if isMulti {
                 multiBody
-                footer
             } else if let draft = drafts.first {
                 singleBody(draft)
-                footer
             }
         }
         .padding(.top, 22)
-        .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { contentHeight = $0 }
-        .fixedSize(horizontal: false, vertical: true)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color.appBackground)
-        .presentationDetents([.height(contentHeight + 6)])
-        .presentationBackground(Color.appBackground)
-        .presentationCornerRadius(30)
-        .presentationDragIndicator(.visible)
+        .filterSheet {
+            if !isUnclear { footer }
+        }
+
         .sheet(item: $periodChoice) { d in
     EarlySalarySheet(date: d.date) { choice in
         guard let i = drafts.firstIndex(where: { $0.id == d.id }) else { return }
@@ -436,8 +430,6 @@ struct QuickResultSheet: View {
                 .disabled(saving)
             }
         }
-        .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 4)
-        .overlay(alignment: .top) { if isMulti { Rectangle().fill(Color.appSeparator).frame(height: 1) } }
     }
 
     private func failureBox(_ failure: DraftQueueView.Failure) -> some View {

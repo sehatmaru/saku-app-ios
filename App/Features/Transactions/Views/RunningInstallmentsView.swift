@@ -93,10 +93,9 @@ struct RunningInstallmentsSheet: View {
         }
         .scrollIndicators(.hidden)
         .foregroundStyle(Color.appText)
-        .presentationDetents([.height(min(contentHeight + 12, 720)), .large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .presentationDetents([.medium, .large])
+
+        .background(Color.appBackground)
     }
 
     private func row(_ item: RunningInstallment) -> some View {

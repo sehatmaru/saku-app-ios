@@ -496,8 +496,7 @@ struct AddSubscriptionView: View {
         }
         .background(Color.appBackground)
         .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Color.appBackground)
+        .background(Color.appBackground)
     }
 
     private var daySheet: some View {
@@ -542,9 +541,8 @@ struct AddSubscriptionView: View {
             Spacer(minLength: 0)
         }
         .background(Color.appBackground)
-        .presentationDetents([.height(420)])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Color.appBackground)
+        .filterSheet()
+        .background(Color.appBackground)
     }
 
     /// Closes a picker 200ms after the pick, then flashes the row it filled.

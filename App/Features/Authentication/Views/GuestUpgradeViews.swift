@@ -347,11 +347,10 @@ struct GuestLinkPresentation: ViewModifier {
                         Color.clear.onAppear { sheetHeight = geo.size.height }
                             .onChange(of: geo.size.height) { _, height in sheetHeight = height }
                     })
-                    .presentationDetents([.height(sheetHeight + 16)])
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(28)
+                    .filterSheet()
+
                     // solid white as in the design, not the system's translucent sheet
-                    .presentationBackground(Color.appBackground)
+                    .background(Color.appBackground)
                     .interactiveDismissDisabled(isWorking)
             }
             .toast(L("Akun tertaut"), isShown: Binding(

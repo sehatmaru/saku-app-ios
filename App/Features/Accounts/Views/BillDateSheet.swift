@@ -109,9 +109,8 @@ struct BillDateSheet: View {
             Spacer(minLength: 0)
         }
         .background(Color.appBackground)
-        .presentationDetents([.height(CGFloat((cells.count + 6) / 7) * 48 + 150)])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Color.appBackground)
+        .filterSheet()
+        .background(Color.appBackground)
     }
 
     private func shift(_ delta: Int) {

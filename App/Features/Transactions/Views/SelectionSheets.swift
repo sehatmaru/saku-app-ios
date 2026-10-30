@@ -50,10 +50,9 @@ struct SelectionSheet<Content: View>: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .foregroundStyle(Color.appText)
-        .presentationDetents([.height(452), .large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .presentationDetents([.medium, .large])
+
+        .background(Color.appBackground)
     }
 }
 

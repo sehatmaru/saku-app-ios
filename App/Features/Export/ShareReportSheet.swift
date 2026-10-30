@@ -41,16 +41,13 @@ struct ShareReportSheet: View {
                     Text("Datamu belum bisa dimuat. Periksa koneksi lalu coba lagi.")
                         .font(.app(14)).foregroundStyle(Color.appError)
                 }
-                PrimaryButton(title: viewModel.loadFailed ? L("Coba lagi") : L("Buat laporan PDF"),
-                              isLoading: !viewModel.isReady && !viewModel.loadFailed, isEnabled: true) { create() }
             }
             .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 28)
-            Spacer(minLength: 0)
         }
-        .presentationDetents([.height(400)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .filterSheet {
+            PrimaryButton(title: viewModel.loadFailed ? L("Coba lagi") : L("Buat laporan PDF"),
+                          isLoading: !viewModel.isReady && !viewModel.loadFailed, isEnabled: true) { create() }
+        }
         .task { await viewModel.load(userId: userId) }
         .sheet(item: $sharing) { ExportShareSheet(urls: $0.urls) }
         .sheet(isPresented: $showsPreview) {

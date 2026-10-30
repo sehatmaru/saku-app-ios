@@ -80,16 +80,17 @@ struct ImageConsentSheet: View {
                 .buttonStyle(.plain)
                 .padding(.top, 20)
             }
-            Spacer(minLength: 16)
-            PrimaryButton(title: L(needsTracker ? "Setuju dan aktifkan" : "Setuju")) { agree() }
-            Button("Nanti saja") { dismiss() }.font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
-                .frame(maxWidth: .infinity).frame(height: 44).padding(.top, 6)
         }
         .padding(.horizontal, 24).padding(.bottom, 12)
-        .presentationDetents([.height(needsTracker ? 640 : 560)])
-        .presentationDragIndicator(.visible)
+        .filterSheet {
+            VStack(spacing: 6) {
+                PrimaryButton(title: L(needsTracker ? "Setuju dan aktifkan" : "Setuju")) { agree() }
+                Button("Nanti saja") { dismiss() }.font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
+                    .frame(maxWidth: .infinity).frame(height: 44)
+            }
+        }
         // the design's dialog is opaque, not the system's liquid glass (same as the other sheets)
-        .presentationBackground(Color.appBackground)
+        .background(Color.appBackground)
     }
 
     /// Agreeing also switches Smart Tracker on when it was off; saved on the profile so it follows

@@ -169,9 +169,8 @@ struct CategoryFormView: View {
         .foregroundStyle(Color.appText)
         .background(Color.appBackground)
         .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+
+        .background(Color.appBackground)
         .sheet(isPresented: $showsBudget) {
             BudgetAmountSheet(amount: budgetAmount, average: average, cycle: cycle) { value in
                 budgetAmount = value

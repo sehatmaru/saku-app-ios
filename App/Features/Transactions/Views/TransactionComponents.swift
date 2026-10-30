@@ -61,10 +61,9 @@ struct PickerSheet<Content: View>: View {
                 .scrollIndicators(.hidden)
         }
         .foregroundStyle(Color.appText)
-        .presentationDetents([.height(470)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .presentationDetents([.medium, .large])
+
+        .background(Color.appBackground)
     }
 }
 

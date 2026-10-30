@@ -271,15 +271,14 @@ struct ReferralRedeemSheet: View {
                         message = nil
                     }
                 if let message { Text(message).font(.app(13)).foregroundStyle(Color.appError).fixedSize(horizontal: false, vertical: true) }
-                PrimaryButton(title: L("Pakai kode"), isLoading: isChecking, isEnabled: code.count == 6) { redeem() }
             }
             .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 24)
-            Spacer(minLength: 0)
         }
-        .presentationDetents([.height(400)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .filterSheet {
+            PrimaryButton(title: L("Pakai kode"), isLoading: isChecking, isEnabled: code.count == 6) { redeem() }
+        }
+
+        .background(Color.appBackground)
     }
 
     private func redeem() {

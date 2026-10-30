@@ -1121,10 +1121,9 @@ private struct SheetFrame<Content: View>: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         .frame(maxHeight: .infinity, alignment: .top)
         .foregroundStyle(Color.appText)
-        .presentationDetents([.height(height)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .filterSheet()
+
+        .background(Color.appBackground)
     }
 }
 

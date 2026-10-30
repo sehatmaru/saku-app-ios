@@ -1579,6 +1579,10 @@ private struct ArchiveWalletSheet: View {
                 .lineSpacing(3)
                 .foregroundStyle(Color.appBody)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
+        .filterSheet {
             Button(action: onArchive) {
                 Label("Arsipkan", systemImage: "archivebox")
                     .font(.app(17, weight: .semibold))
@@ -1589,10 +1593,6 @@ private struct ArchiveWalletSheet: View {
             }
             .buttonStyle(PressScaleStyle())
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
-        .presentationDetents([.height(250)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
+
     }
 }

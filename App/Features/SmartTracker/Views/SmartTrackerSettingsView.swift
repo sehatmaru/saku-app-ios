@@ -694,7 +694,7 @@ private struct FilterWordsSheet: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible).presentationCornerRadius(28).presentationBackground(Color.appBackground)
+        .background(Color.appBackground)
     }
 
     private func add() {
@@ -739,7 +739,7 @@ private struct RecentTitlesSheet: View {
             .padding(.horizontal, 24).padding(.bottom, 24)
         }
         .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible).presentationCornerRadius(28).presentationBackground(Color.appBackground)
+        .background(Color.appBackground)
     }
 
     private func status(_ title: String) -> (text: String, isDraft: Bool) {

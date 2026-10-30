@@ -42,46 +42,43 @@ struct EarlySalarySheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Gaji masuk lebih awal").font(.app(22, weight: .bold)).fixedSize(horizontal: false, vertical: true)
-                        Text("Mulai periode baru di tanggal ini?").font(.app(16)).foregroundStyle(Color.appTextSecondary)
-                        Text(contextText).font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.top, 6)
-                    VStack(spacing: 10) {
-                        option(true, title: "Ya, mulai periode baru",
-                               bars: [(days(preview.usual.start, preview.runningEnds), Color.appBorder),
-                                      (days(date, preview.moved.end), Color.appPrimary)],
-                               lines: [(L("Periode berjalan berakhir"), short(preview.runningEnds)),
-                                       (L("Periode baru"), short(preview.moved.start) + " – " + lastDay(preview.moved))],
-                               foot: L("Setelah itu, %@ kembali normal.", short(preview.moved.end)))
-                        option(false, title: "Tidak, pakai periode biasa",
-                               bars: [(1, Color.appBorder)],
-                               lines: [(L("Periode tetap"), short(preview.usual.start) + " – " + lastDay(preview.usual))],
-                               foot: nil)
-                    }
-                    Text("Untuk membatalkan, hapus transaksi gaji ini.").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Gaji masuk lebih awal").font(.app(22, weight: .bold)).fixedSize(horizontal: false, vertical: true)
+                    Text("Mulai periode baru di tanggal ini?").font(.app(16)).foregroundStyle(Color.appTextSecondary)
+                    Text(contextText).font(.app(15)).foregroundStyle(Color.appTextSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.horizontal, 24).padding(.top, 8)
-            }
-            VStack(spacing: 4) {
-                PrimaryButton(title: L("Simpan"), isEnabled: choice != nil) {
-                    guard let choice else { return }
-                    dismiss()
-                    onChoose(choice)
+                .padding(.top, 6)
+                VStack(spacing: 10) {
+                    option(true, title: "Ya, mulai periode baru",
+                           bars: [(days(preview.usual.start, preview.runningEnds), Color.appBorder),
+                                  (days(date, preview.moved.end), Color.appPrimary)],
+                           lines: [(L("Periode berjalan berakhir"), short(preview.runningEnds)),
+                                   (L("Periode baru"), short(preview.moved.start) + " – " + lastDay(preview.moved))],
+                           foot: L("Setelah itu, %@ kembali normal.", short(preview.moved.end)))
+                    option(false, title: "Tidak, pakai periode biasa",
+                           bars: [(1, Color.appBorder)],
+                           lines: [(L("Periode tetap"), short(preview.usual.start) + " – " + lastDay(preview.usual))],
+                           foot: nil)
                 }
-                Button("Batal") { dismiss() }.font(.app(17, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                    .frame(maxWidth: .infinity).frame(minHeight: 44)
+                Text("Untuk membatalkan, hapus transaksi gaji ini.").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 12)
+            .padding(.horizontal, 24).padding(.top, 8)
         }
-        .presentationDetents([.height(640), .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Color.appBackground)
+        .filterSheet {
+        VStack(spacing: 4) {
+            PrimaryButton(title: L("Simpan"), isEnabled: choice != nil) {
+                guard let choice else { return }
+                dismiss()
+                onChoose(choice)
+            }
+            Button("Batal") { dismiss() }.font(.app(17, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                .frame(maxWidth: .infinity).frame(minHeight: 44)
+        }
+        }
+        .background(Color.appBackground)
     }
 
     private func option(_ value: Bool, title: String, bars: [(Double, Color)], lines: [(String, String)], foot: String?) -> some View {

@@ -550,10 +550,9 @@ struct DraftQueueView: View {
             }
         }
         .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 16)
-        .presentationDetents([.fraction(0.6), .large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
-        .presentationBackground(Color.appBackground)
+        .presentationDetents([.medium, .large])
+
+        .background(Color.appBackground)
     }
 
     // MARK: Editing
