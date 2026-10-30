@@ -29,8 +29,41 @@ enum GuestCardPolicy {
 /// The sign-in screen's two buttons: Apple (dark; off until the Apple provider is configured) and Google (outlined).
 struct GuestUpgradeButtons: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
+    /// Two small pills side by side, for the card on Beranda.
+    var isCompact = false
 
     var body: some View {
+        if isCompact { compact } else { full }
+    }
+
+    private var compact: some View {
+        HStack(spacing: 8) {
+            NoticeButton(title: "Apple", icon: "apple.logo", style: .ink) {}
+                .opacity(0.5)
+                .disabled(true)
+                .accessibilityHint(L("Belum tersedia"))
+            Button { authViewModel.startGuestLink() } label: {
+                HStack(spacing: 6) {
+                    if authViewModel.isLinking {
+                        ProgressView().tint(Color.appText)
+                    } else {
+                        Image("GoogleLogo").resizable().scaledToFit().frame(width: 16, height: 16)
+                        Text(verbatim: "Google")
+                    }
+                }
+                .font(.app(15, weight: .semibold))
+                .foregroundStyle(Color.appText)
+                .padding(.horizontal, 20)
+                .frame(height: 44)
+                .background(Color.appBackground, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.appBorder, lineWidth: 1))
+            }
+            .buttonStyle(PressScaleStyle())
+            .disabled(authViewModel.isLinking)
+        }
+    }
+
+    private var full: some View {
         VStack(spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: "apple.logo").font(.system(size: 20))
@@ -77,12 +110,14 @@ struct GuestSaveCard: View {
     @AppStorage(GuestCardPolicy.countKey) private var dismissCount = 0
     @AppStorage(GuestCardPolicy.untilKey) private var hiddenUntil = 0.0
     let transactionCount: Int
-    @State private var shown = false
+    /// Test builds force the card or the note after closing it (HomePreview).
+    var preview: HomePreview.Kind?
     /// Closed just now: the card is replaced by a note until Beranda is left.
     @State private var justClosed = false
 
     private var isVisible: Bool {
-        authViewModel.welcome == nil && GuestCardPolicy.shows(
+        if let preview { return preview == .guest }
+        return authViewModel.welcome == nil && GuestCardPolicy.shows(
             isGuest: authViewModel.currentUser?.isGuest == true,
             transactionCount: transactionCount,
             signedUpAt: SupabaseSDK.client.auth.currentUser?.createdAt,
@@ -94,7 +129,7 @@ struct GuestSaveCard: View {
         Group {
             if isVisible {
                 card.transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
-            } else if justClosed, authViewModel.currentUser?.isGuest == true {
+            } else if preview == .guestClosed || (justClosed && authViewModel.currentUser?.isGuest == true) {
                 closedNote.transition(.opacity)
             }
         }
@@ -118,32 +153,15 @@ struct GuestSaveCard: View {
     }
 
     private var card: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Amankan datamu").font(.app(17, weight: .semibold)).padding(.trailing, 40)
-            Text("Masuk supaya datamu tetap ada kalau ganti iPhone.")
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                .padding(.top, 6).padding(.trailing, 24)
-            GuestUpgradeButtons().padding(.top, 16)
+        NoticeCard(icon: "checkmark.shield.fill", title: L("Amankan datamu"),
+                   message: L("Masuk supaya datamu tetap ada kalau ganti iPhone."),
+                   onClose: {
+            dismissCount += 1
+            hiddenUntil = Date().addingTimeInterval(Double(GuestCardPolicy.pauseDays) * 86_400).timeIntervalSince1970
+            justClosed = true
+        }) {
+            GuestUpgradeButtons(isCompact: true)
         }
-        .padding(.leading, 20).padding(.vertical, 20).padding(.trailing, 20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(alignment: .topTrailing) {
-            Button {
-                dismissCount += 1
-                hiddenUntil = Date().addingTimeInterval(Double(GuestCardPolicy.pauseDays) * 86_400).timeIntervalSince1970
-                justClosed = true
-            } label: {
-                Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityLabel(L("Tutup"))
-            .padding(4)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .rise(shown, y: 14, delay: 0.3, fade: 0.5, move: 0.6)
-        .onAppear { shown = true }
     }
 }
 

@@ -7,6 +7,7 @@ struct PlusStatusView: View {
     @Environment(\.openURL) private var openURL
     @State private var paywall: PlusReason?
         @State private var isSwitching = false
+    @ObservedObject private var homePreview = HomePreview.shared
     @State private var showsTrialEndedTest = false
     @State private var failure: String?
 
@@ -255,6 +256,22 @@ struct PlusStatusView: View {
                     .padding(.horizontal, 14).frame(height: 34).background(Color.stChip, in: Capsule())
             }
             .buttonStyle(.plain)
+            Text(verbatim: "Pratinjau Beranda").font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.top, 14)
+            Text(verbatim: "Ketuk satu, lalu buka tab Beranda. Ketuk lagi untuk mematikan. Kembali normal saat aplikasi dibuka ulang.")
+                .font(.app(12)).foregroundStyle(Color.appTextTertiary)
+            ForEach(HomePreview.Kind.allCases) { item in
+                Button { homePreview.toggle(item) } label: {
+                    HStack {
+                        Text(verbatim: item.title).font(.app(14, weight: .semibold))
+                        Spacer()
+                        if homePreview.kind == item { Image(systemName: "checkmark") }
+                    }
+                    .foregroundStyle(homePreview.kind == item ? Color.white : Color.appText)
+                    .padding(.horizontal, 14).frame(height: 38)
+                    .background(homePreview.kind == item ? Color.appPrimary : Color.stChip, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+            }
             Text("Hanya di build uji. Dihapus sebelum rilis App Store.").font(.app(12)).foregroundStyle(Color.appTextTertiary)
         }
         .sheet(isPresented: $showsTrialEndedTest) { TrialEndedSheet(wallets: 6, categories: 9, budgets: 4) {} }

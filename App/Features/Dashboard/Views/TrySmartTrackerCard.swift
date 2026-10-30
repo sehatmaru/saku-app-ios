@@ -12,11 +12,12 @@ struct TrySmartTrackerCard: View {
     @AppStorage(SmartTrackerConsent.key) private var consented = false
     @AppStorage("smartTrackerCardDismissed") private var dismissed = false
     @State private var showsConsent = false
-    @State private var shown = false
+    /// Test builds show the card whatever the account has done (HomePreview).
+    var isForced = false
 
     var body: some View {
         Group {
-            if !consented, !dismissed, authViewModel.currentUser != nil {
+            if isForced || (!consented && !dismissed && authViewModel.currentUser != nil) {
                 card
                     .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
             }
@@ -31,42 +32,10 @@ struct TrySmartTrackerCard: View {
     }
 
     private var card: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.appPrimary)
-                    .frame(width: 32, height: 32)
-                    .background(Color.appPrimary.opacity(0.12), in: Circle())
-                Text("Coba Smart Tracker").font(.app(17, weight: .semibold))
-                Spacer(minLength: 0)
-            }
-            .padding(.trailing, 40)
-            Text("Catat transaksi otomatis dari notifikasi bank dan e-wallet.")
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                .padding(.top, 8).padding(.trailing, 24)
-            Button { showsConsent = true } label: {
-                Text("Aktifkan").font(.app(15, weight: .semibold)).foregroundStyle(.white)
-                    .padding(.horizontal, 22).frame(height: 44)
-                    .background(Color.appPrimary, in: Capsule())
-            }
-            .buttonStyle(PressScaleStyle())
-            .padding(.top, 14)
+        NoticeCard(icon: "sparkle", title: L("Coba Smart Tracker"),
+                   message: L("Catat transaksi otomatis dari notifikasi bank dan e-wallet."),
+                   onClose: { dismissed = true }) {
+            NoticeButton(title: L("Aktifkan")) { showsConsent = true }
         }
-        .padding(.leading, 20).padding(.vertical, 18).padding(.trailing, 18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
-        .overlay(alignment: .topTrailing) {
-            Button { dismissed = true } label: {
-                Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityLabel(L("Tutup"))
-            .padding(4)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .rise(shown, y: 14, delay: 0.3, fade: 0.5, move: 0.6)
-        .onAppear { shown = true }
     }
 }

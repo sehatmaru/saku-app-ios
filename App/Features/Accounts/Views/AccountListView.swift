@@ -9,12 +9,16 @@ struct AccountListView: View {
 
     /// Opens the add-wallet sheet as soon as the page appears.
     private let startsAdding: Bool
+    /// Lifts this card to its detail as soon as the wallets have loaded (from the overdue bill on Beranda).
+    private let opensCardId: String?
+    @State private var didOpenCard = false
     /// Beranda's navigation path: Dompet is pushed onto it and pushes its own pages there too,
     /// so the system back button and edge swipe work like everywhere else.
     @Binding private var path: NavigationPath
 
-    init(viewModel: AccountListViewModel = AccountListViewModel(), startsAdding: Bool = false,
+    init(viewModel: AccountListViewModel = AccountListViewModel(), startsAdding: Bool = false, opensCardId: String? = nil,
          path: Binding<NavigationPath>) {
+        self.opensCardId = opensCardId
         _viewModel = StateObject(wrappedValue: viewModel)
         self.startsAdding = startsAdding
         _path = path
@@ -239,8 +243,8 @@ struct AccountListView: View {
                 InvestmentReminderSheet(account: account, transactions: accountTransactions[account.id] ?? [], offer: true)
             }
             .onChange(of: notificationRouter.pendingInvestmentId) { _, _ in openReminderTarget() }
-            .onChange(of: viewModel.accounts.count) { _, _ in openReminderTarget() }
-            .onAppear { openReminderTarget() }
+            .onChange(of: viewModel.accounts.count) { _, _ in openReminderTarget(); openRequestedCard() }
+            .onAppear { openReminderTarget(); openRequestedCard() }
             .fullScreenCover(item: $assetTransfer) { route in
                 if let userId = authViewModel.currentUser?.id {
                     AddTransactionView(categories: categories, accounts: viewModel.accounts, userId: userId, onSave: {},
@@ -646,6 +650,16 @@ struct AccountListView: View {
         }
         .padding(.horizontal, 24)
         .padding(.top, group.type == groups.first?.type ? 12 : 26)
+    }
+
+    /// The card Beranda asked for: lifted to its detail once, after the cards have settled in place.
+    private func openRequestedCard() {
+        guard !didOpenCard, let id = opensCardId, let account = allCards.first(where: { $0.id == id }) else { return }
+        didOpenCard = true
+        Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            openDetail(account)
+        }
     }
 
     /// Tapping the reminder opens Perbarui nilai of that wallet, once the wallets have loaded.

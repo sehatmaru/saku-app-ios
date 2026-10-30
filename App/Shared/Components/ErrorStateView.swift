@@ -5,39 +5,28 @@ struct ErrorStateView: View {
     let onRetry: () -> Void
 
     var body: some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(spacing: 16) {
             Spacer()
 
             Image(systemName: "wifi.slash")
-                .font(.system(size: 48))
-                .foregroundColor(.appTextSecondary)
+                .font(.system(size: 34))
+                .foregroundStyle(Color.appError)
+                .frame(width: 72, height: 72)
+                .background(Color.appError.opacity(0.12), in: Circle())
 
             Text("Gagal memuat data")
-                .font(.app(17, weight: .semibold))
-                .foregroundColor(.appText)
+                .font(.app(20, weight: .semibold))
+                .foregroundStyle(Color.appText)
 
             Text(message)
-                .font(.app(13))
-                .foregroundColor(.appTextSecondary)
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, Spacing.xxl)
+                .lineSpacing(3)
+                .padding(.horizontal, 32)
 
-            Button {
-                onRetry()
-            } label: {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.app(14, weight: .semibold))
-                    Text("Coba Lagi")
-                        .font(.app(14, weight: .semibold))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.appPrimary)
-                .foregroundColor(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-            .padding(.horizontal, Spacing.xxl)
+            NoticeButton(title: L("Coba lagi"), icon: "arrow.clockwise", action: onRetry)
+                .padding(.top, 8)
 
             Spacer()
         }

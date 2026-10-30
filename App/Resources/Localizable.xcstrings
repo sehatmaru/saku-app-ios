@@ -4448,7 +4448,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open wallets"
+            "value": "Open wallet"
           }
         }
       }
@@ -15769,6 +15769,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hide balances and wallet names"
+          }
+        }
+      }
+    },
+    "Sembunyikan semua": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide all"
           }
         }
       }

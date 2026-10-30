@@ -1450,5 +1450,6 @@
   "Tagihan mendatang": "Upcoming bills",
   "Jatuh tempo hari ini": "Due today",
   "Jatuh tempo %@ · %lld hari": "Due %@ · %lld days",
-  "untuk %lld hari sampai %@": "for %lld days until %@"
+  "untuk %lld hari sampai %@": "for %lld days until %@",
+  "Sembunyikan semua": "Hide all"
 }

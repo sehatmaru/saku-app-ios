@@ -16,6 +16,8 @@ struct DashboardView: View {
 @State private var showsConsent = false
 @State private var showsImageConsent = false
 @ObservedObject private var plusStore = PlusStore.shared
+/// Test builds can show any Beranda card or banner on demand.
+@ObservedObject private var homePreview = HomePreview.shared
 @State private var showsTrialEnded = false
 @State private var trialEndedOffer: PlusReason?
     /// Drives the "Bulan ini" grow-in; reset and set again to replay.
@@ -57,6 +59,8 @@ struct DashboardView: View {
     /// Pages pushed on Beranda by value.
     enum HomeRoute: Hashable {
         case wallets
+        /// Dompet with this card's detail open.
+        case card(String)
         case drafts
     }
 
@@ -267,6 +271,8 @@ struct DashboardView: View {
                         switch route {
                         case .wallets:
                             AccountListView(startsAdding: addsWalletOnOpen, path: $homePath)
+                        case .card(let id):
+                            AccountListView(opensCardId: id, path: $homePath)
                         case .drafts:
                             if let userId = authViewModel.currentUser?.id { DraftQueueView(userId: userId).detailPage() }
                         }
@@ -314,26 +320,36 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 0) {
                 homeHeader
 
-                if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
-                    errorStateView(message: error)
-                        .padding(24)
+                if fullErrorMessage != nil {
+                    // drawn over the page below, so it sits in the middle of the screen
+                    Color.clear.frame(height: 1)
                 } else if !viewModel.hasLoadedOnce {
                     homeSkeleton
                 } else {
-                    if let error = viewModel.errorMessage {
-                        ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
-                    }
-                    if !viewModel.overdueBills.isEmpty {
-                        OverdueBillBanner(bills: viewModel.overdueBills, isBalanceVisible: isBalanceVisible) { bill in
-                            recordCard = bill
-                        }
-                    }
                     summarySection
                     shortcutRow
-                    attentionSlot
-                    if hasNoWallets {
+                    if let bills = homePreview.bills {
+                        OverdueBillBanner(bills: bills, isBalanceVisible: isBalanceVisible) { _ in
+                            // a made-up bill has no wallet: open the detail of your first real credit card instead
+                            if let card = viewModel.accounts.first(where: { $0.isActive && $0.isCreditCard }) {
+                                homePath.append(HomeRoute.card(card.id))
+                            } else {
+                                toastText = "Contoh tagihan: belum ada kartu kredit untuk dibuka"
+                                isToastShown = true
+                            }
+                        }
+                        .id(homePreview.kind)
+                    } else if !viewModel.overdueBills.isEmpty {
+                        OverdueBillBanner(bills: viewModel.overdueBills, isBalanceVisible: isBalanceVisible) { bill in
+                            homePath.append(HomeRoute.card(bill.card.id))
+                        }
+                    }
+                    if !(hasNoWallets || homePreview.kind == .noWallet) { attentionSlot }
+                    if let error = viewModel.errorMessage ?? (homePreview.kind == .errorBanner ? HomePreview.errorMessage : nil) {
+                        NoticeLine(icon: "exclamationmark.icloud.fill", tone: .critical, text: error)
+                    }
+                    if hasNoWallets || homePreview.kind == .noWallet {
                         firstWalletCard
-                        emptyHealthSection
                             .padding(.bottom, 90)
                     } else {
                         recentSection
@@ -344,13 +360,7 @@ struct DashboardView: View {
                             SectionDivider()
                             billsSection
                         }
-                        if viewModel.health.isAvailable {
-                            Color.clear.frame(height: 90)
-                        } else {
-                            SectionDivider()
-                            emptyHealthSection
-                                .padding(.bottom, 90)
-                        }
+                        Color.clear.frame(height: 90)
                     }
                 }
             }
@@ -361,6 +371,12 @@ struct DashboardView: View {
         }
         .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .background(Color.appBackground)
+        .overlay {
+            if let message = fullErrorMessage {
+                errorStateView(message: message)
+                    .padding(24)
+            }
+        }
         .refreshable {
             if let userId = authViewModel.currentUser?.id {
                 await viewModel.loadDashboard(userId: userId, forceRefresh: true)
@@ -370,6 +386,12 @@ struct DashboardView: View {
     }
 
     /// The period and what is left of it on the left, the eye on the right.
+    /// The load failed before anything showed (or a test build asks for it): the whole page is the error.
+    private var fullErrorMessage: String? {
+        if homePreview.kind == .errorFull { return HomePreview.errorMessage }
+        return viewModel.hasLoadedOnce ? nil : viewModel.errorMessage
+    }
+
     private var homeHeader: some View {
         HStack {
             // as tall as the 34 pt title of Transaksi, so the eye sits at the same height there
@@ -447,40 +469,13 @@ struct DashboardView: View {
 
     /// 13b: a new user with no wallets gets one card pointing at the first wallet.
     private var firstWalletCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Tambah dompet pertamamu")
-                .font(.app(17, weight: .semibold))
-                .foregroundStyle(Color.appText)
-            Text("Masukkan saldo rekening bank, e-wallet, atau uang tunai supaya total saldo bisa dihitung.")
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-                .lineSpacing(3)
-            EmptyStateButton(title: L("Tambah dompet"), isFullWidth: true) {
+        NoticeCard(icon: "wallet.bifold.fill", title: L("Tambah dompet pertamamu"),
+                   message: L("Masukkan saldo rekening bank, e-wallet, atau uang tunai supaya total saldo bisa dihitung.")) {
+            NoticeButton(title: L("Tambah dompet")) {
                 addsWalletOnOpen = true
                 homePath.append(HomeRoute.wallets)
             }
-            .padding(.top, 12)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 22)
-        .padding(.bottom, 20)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
-        .padding(.horizontal, 24)
-    }
-
-    private var emptyHealthSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: L("Kesehatan finansial"))
-            SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
-                .padding(.top, 16)
-            Text("Skor muncul setelah kamu mencatat pemasukan atau pengeluaran.")
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-                .lineSpacing(3)
-                .padding(.top, 12)
-        }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 28)
     }
 
     private func errorStateView(message: String) -> some View {
@@ -530,29 +525,27 @@ struct DashboardView: View {
         }
     }
 
-    /// Kesehatan finansial, Dompet, and Draf while Smart Tracker is on. With a score the row is tighter.
+    /// Kesehatan finansial, Dompet, and Draf while Smart Tracker is on.
     private var shortcutRow: some View {
-        let health = viewModel.health
-        let compact = health.isAvailable
-        return HStack(spacing: compact ? 6 : 10) {
-            if compact { healthRing(health) }
-            walletsButton(compact: compact)
+        HStack(spacing: 6) {
+            healthRing(viewModel.health)
+            walletsButton(compact: true)
             if smartQuickOn, authViewModel.currentUser != nil {
-                DraftPill(count: draftStore.drafts.count, isFresh: isTrayFresh, landed: trayLanded, compact: compact) { openDraftsPage() }
+                DraftPill(count: draftStore.drafts.count, isFresh: isTrayFresh, landed: trayLanded, compact: true) { openDraftsPage() }
             }
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 4)
     }
 
-    /// The ring that opens Kesehatan finansial.
+    /// The ring that opens Kesehatan finansial; without a score yet it is an empty ring and the page says when one comes.
     private func healthRing(_ health: FinancialHealth) -> some View {
         NavigationLink { HealthDetailView(health: health).detailPage() } label: {
-            HealthRing(score: health.score)
+            HealthRing(score: health.isAvailable ? health.score : nil)
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityLabel(L("Kesehatan finansial"))
-        .accessibilityValue("\(health.score)")
+        .accessibilityValue(health.isAvailable ? "\(health.score)" : "")
     }
 
     // MARK: Attention
@@ -575,6 +568,18 @@ struct DashboardView: View {
     }
 
     @ViewBuilder private var attentionSlot: some View {
+        if let kind = homePreview.kind, [.grace, .trial2, .trial1, .guest, .guestClosed, .smart].contains(kind) {
+            switch kind {
+            case .smart: TrySmartTrackerCard(isForced: true)
+            case .guest, .guestClosed: GuestSaveCard(transactionCount: 0, preview: kind)
+            default: PlusBannerView(preview: homePreview.plusBanner)
+            }
+        } else {
+            realAttention
+        }
+    }
+
+    @ViewBuilder private var realAttention: some View {
         switch attention {
         case .plus: PlusBannerView()
         case .guest: GuestSaveCard(transactionCount: viewModel.currentMonthTransactionCount)
@@ -1072,18 +1077,31 @@ private struct WalletsMark: View {
 /// exclamation otherwise), and it settles back to the arc and the score. It plays once per launch; later it is
 /// only the settled ring.
 private struct HealthRing: View {
-    let score: Int
+    let score: Int?
 
     @MainActor private enum Intro { static var played = false }
     @State private var start: Date?
     @State private var done = Intro.played
 
     /// 80 and up is healthy (green check); below that an exclamation, amber from 60 and red under it.
-    private var isHealthy: Bool { score >= 80 }
-    private var color: Color { isHealthy ? .appPrimary : score >= 60 ? .appWarning : .appError }
+    private var value: Int { score ?? 0 }
+    private var isHealthy: Bool { value >= 80 }
+    private var color: Color { isHealthy ? .appPrimary : value >= 60 ? .appWarning : .appError }
     private let showsVerdict = true
 
     var body: some View {
+        if score == nil {
+            Circle().stroke(Color.primary.opacity(0.12), lineWidth: 5)
+                .frame(width: 32, height: 32)
+                .overlay { Text("–").font(.app(14, weight: .bold)).foregroundStyle(Color.appTextTertiary) }
+                .frame(width: 48, height: 48)
+                .background(Color.appFill, in: Circle())
+        } else {
+            animated
+        }
+    }
+
+    private var animated: some View {
         TimelineView(.animation(paused: done)) { context in
             let t = done ? 99 : start.map { context.date.timeIntervalSince($0) } ?? 0
             ring(t)
@@ -1118,8 +1136,8 @@ private struct HealthRing: View {
         let numberScale = at(t, [(0.4, 0.85), (0.9, 1), (2.1, 1), (2.5, 0.8), (4.8, 0.8), (5.2, 1)])
         return ZStack {
             arc(t)
-            Text("\(score)")
-                .font(.app(score >= 100 ? 11 : 14, weight: .bold))
+            Text("\(value)")
+                .font(.app(value >= 100 ? 11 : 14, weight: .bold))
                 .monospacedDigit()
                 .foregroundStyle(Color.appText)
                 .opacity(numberOn)
@@ -1130,7 +1148,7 @@ private struct HealthRing: View {
 
     /// The score as a round-capped arc on a light track, filling up from the top.
     private func arc(_ t: Double) -> some View {
-        let p = Double(min(max(score, 0), 100)) / 100
+        let p = Double(min(max(value, 0), 100)) / 100
         let fill = at(t, [(0.1, 0), (1.6, p), (2.4, p), (2.8, 0), (4.6, 0), (5.4, p)], out: true)
         let track = at(t, [(2.4, 1), (2.8, 0), (4.6, 0), (5.0, 1)])
         return ZStack {

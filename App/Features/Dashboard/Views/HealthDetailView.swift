@@ -7,12 +7,16 @@ struct HealthDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                hero
-                SectionDivider()
-                factorsSection
-                if !health.recommendations.isEmpty {
+                if health.isAvailable {
+                    hero
                     SectionDivider()
-                    recommendationsSection
+                    factorsSection
+                    if !health.recommendations.isEmpty {
+                        SectionDivider()
+                        recommendationsSection
+                    }
+                } else {
+                    emptyHero
                 }
                 Text("Dihitung dari pemasukan dan pengeluaran 3 bulan terakhir, saldo dompet, kartu kredit, dan budget bulan ini. Skor diperbarui setiap kamu mencatat transaksi.")
                     .font(.app(13))
@@ -30,6 +34,32 @@ struct HealthDetailView: View {
     }
 
     // MARK: Score
+
+    /// Before the first transaction there is no score to explain.
+    private var emptyHero: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("–")
+                    .font(.app(64, weight: .light))
+                    .tracking(-2.4)
+                    .foregroundStyle(Color.appTextTertiary)
+                Text("/ 100")
+                    .font(.app(17))
+                    .foregroundStyle(Color.appTextSecondary)
+            }
+            SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
+                .padding(.top, 16)
+            Text("Skor muncul setelah kamu mencatat pemasukan atau pengeluaran.")
+                .font(.app(15))
+                .foregroundStyle(Color.appBody)
+                .lineSpacing(3)
+                .padding(.top, 18)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
+        .padding(.bottom, 28)
+    }
+
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 0) {
