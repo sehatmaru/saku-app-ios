@@ -1432,5 +1432,14 @@
   "Tanggal sendiri": "Custom dates",
   "Pilih tanggal awal dan akhir": "Pick a start and end date",
   "Pilih semua data, tanggal sendiri, atau satu periode atau lebih. Daftar bisa digulir.": "Choose all data, custom dates, or one or more periods. The list scrolls.",
-  "Pilih satu periode. Daftar bisa digulir.": "Choose one period. The list scrolls."
+  "Pilih satu periode. Daftar bisa digulir.": "Choose one period. The list scrolls.",
+  "Trial %@ sudah berakhir": "Your %@ trial has ended",
+  "item tetap aktif": "items stay active",
+  "Dompet, kategori, dan budget kamu tetap ada dan berfungsi.": "Your wallets, categories and budgets stay and keep working.",
+  "Saldo tetap dihitung di Total saldo.": "Balances still count in Total saldo.",
+  "Tambah dompet, kategori, atau budget di atas batas gratis.": "Adding wallets, categories or budgets above the free limit.",
+  "Catat dari notifikasi, foto struk, dan email terusan. Draf yang sudah ada tetap bisa disimpan.": "Logging from notifications, receipt photos and forwarded email. Existing drafts can still be saved.",
+  "Laporan PDF baru. Bantuan AI kembali 10 kali per bulan.": "New PDF reports. AI help goes back to 10 a month.",
+  "Lihat ringkasan trial berakhir": "Preview trial ended summary",
+  "Terima kasih sudah mencoba.": "Thanks for trying it."
 }

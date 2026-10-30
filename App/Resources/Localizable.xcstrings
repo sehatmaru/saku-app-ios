@@ -4753,6 +4753,16 @@
         }
       }
     },
+    "Catat dari notifikasi, foto struk, dan email terusan. Draf yang sudah ada tetap bisa disimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logging from notifications, receipt photos and forwarded email. Existing drafts can still be saved."
+          }
+        }
+      }
+    },
     "Catat dari notifikasi, foto struk, dan penerusan email. Draf yang sudah ada tetap bisa disimpan.": {
       "localizations": {
         "en": {
@@ -6599,6 +6609,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallets, categories and budgets"
+          }
+        }
+      }
+    },
+    "Dompet, kategori, dan budget kamu tetap ada dan berfungsi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your wallets, categories and budgets stay and keep working."
           }
         }
       }
@@ -10603,6 +10623,16 @@
         }
       }
     },
+    "Laporan PDF baru. Bantuan AI kembali 10 kali per bulan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New PDF reports. AI help goes back to 10 a month."
+          }
+        }
+      }
+    },
     "Laporan PDF baru. Bantuan AI kembali 10 per bulan.": {
       "localizations": {
         "en": {
@@ -10959,6 +10989,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "See breakdown"
+          }
+        }
+      }
+    },
+    "Lihat ringkasan trial berakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview trial ended summary"
           }
         }
       }
@@ -15213,6 +15253,16 @@
         }
       }
     },
+    "Saldo tetap dihitung di Total saldo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balances still count in Total saldo."
+          }
+        }
+      }
+    },
     "Saldo tidak cukup": {
       "localizations": {
         "en": {
@@ -17593,6 +17643,16 @@
         }
       }
     },
+    "Tambah dompet, kategori, atau budget di atas batas gratis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adding wallets, categories or budgets above the free limit."
+          }
+        }
+      }
+    },
     "Tambah kata": {
       "localizations": {
         "en": {
@@ -18249,6 +18309,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Thank you"
+          }
+        }
+      }
+    },
+    "Terima kasih sudah mencoba.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thanks for trying it."
           }
         }
       }
@@ -19555,6 +19625,16 @@
         }
       }
     },
+    "Trial %@ sudah berakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %@ trial has ended"
+          }
+        }
+      }
+    },
     "Trial Saku Plus berakhir 2 hari lagi": {
       "localizations": {
         "en": {
@@ -20491,6 +20571,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "days without spending"
+          }
+        }
+      }
+    },
+    "item tetap aktif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "items stay active"
           }
         }
       }

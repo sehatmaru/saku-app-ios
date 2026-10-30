@@ -7,6 +7,7 @@ struct PlusStatusView: View {
     @Environment(\.openURL) private var openURL
     @State private var paywall: PlusReason?
         @State private var isSwitching = false
+    @State private var showsTrialEndedTest = false
     @State private var failure: String?
 
     private var phase: PlusPhase { plus.entitlement.phase() }
@@ -249,8 +250,14 @@ struct PlusStatusView: View {
                     }
                 }
             }
+            Button { showsTrialEndedTest = true } label: {
+                Text("Lihat ringkasan trial berakhir").font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
+                    .padding(.horizontal, 14).frame(height: 34).background(Color.stChip, in: Capsule())
+            }
+            .buttonStyle(.plain)
             Text("Hanya di build uji. Dihapus sebelum rilis App Store.").font(.app(12)).foregroundStyle(Color.appTextTertiary)
         }
+        .sheet(isPresented: $showsTrialEndedTest) { TrialEndedSheet(wallets: 6, categories: 9, budgets: 4) {} }
     }
 
     private func isCurrent(_ key: String) -> Bool {
