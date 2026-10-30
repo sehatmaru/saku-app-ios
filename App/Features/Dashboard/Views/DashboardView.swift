@@ -137,6 +137,7 @@ struct DashboardView: View {
         }
         .onAppear { showsTrialEnded = plusStore.trialEndedSummaryDue }
         .onChange(of: plusStore.entitlement) { _, _ in showsTrialEnded = plusStore.trialEndedSummaryDue }
+        .onChange(of: plusStore.profileApplied) { _, _ in showsTrialEnded = plusStore.trialEndedSummaryDue }
         .sheet(isPresented: $showsTrialEnded) {
             TrialEndedSheet(wallets: viewModel.accounts.filter(\.isActive).count, categories: viewModel.categories.count,
                             budgets: viewModel.budgets.count) { trialEndedOffer = .general }

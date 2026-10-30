@@ -56,6 +56,9 @@ final class PlusStore: ObservableObject {
     @Published private(set) var entitlement: Entitlement
     /// Tester accounts may use the internal switch (US8); the server checks it again.
     @Published private(set) var isTester: Bool
+    /// The signed-in account's profile and its App Store purchase have been read since sign-in. Until then the entitlement is
+    /// the signed-out "free" and the trial flags may belong to the previous account, so no "trial ended" summary is due.
+    @Published private(set) var profileApplied = false
 
     var isPlus: Bool { entitlement.isPlus() }
 
@@ -128,16 +131,18 @@ final class PlusStore: ObservableObject {
         defaults.set(false, forKey: Self.trialEndedSeenKey)
     }
 
+    func markProfileReady() { profileApplied = true }
+
     /// US5: a trial ended without a subscription and the summary has not been shown yet.
     var trialEndedSummaryDue: Bool {
         let defaults = UserDefaults.standard
-        return defaults.bool(forKey: Self.wasTrialKey) && !defaults.bool(forKey: Self.trialEndedSeenKey) && !entitlement.isPlus()
+        return profileApplied && defaults.bool(forKey: Self.wasTrialKey) && !defaults.bool(forKey: Self.trialEndedSeenKey) && !entitlement.isPlus()
     }
 
     func markTrialEndedSeen() { UserDefaults.standard.set(true, forKey: Self.trialEndedSeenKey) }
 
     /// Signing out: the next account starts from free.
-    func reset() { storeUntil = nil; apply(.free, isTester: false) }
+    func reset() { profileApplied = false; storeUntil = nil; apply(.free, isTester: false) }
 
     /// For code that cannot reach the main actor (Shortcuts intents).
     nonisolated static var cachedIsPlus: Bool { cached.isPlus() }

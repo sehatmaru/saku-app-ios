@@ -22,6 +22,9 @@ enum SupabaseSDK {
         await refreshPaydaySchedule()
         await refreshPaydayShifts()
         await PlusStore.shared.apply(profile)
+        // the server may still show an ended trial for a purchase the App Store confirms: read it before the summary can show
+        await PlusPurchases.shared.refresh()
+        await PlusStore.shared.markProfileReady()
         return profile
     }
 
