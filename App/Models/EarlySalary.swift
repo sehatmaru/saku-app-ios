@@ -10,12 +10,13 @@ enum EarlySalary {
     }
 
     /// Adds the chosen date to the shifts mirrored on the device, so periods change at once without waiting for a refresh.
+    /// It does not announce the change: the save is still adding the amount to the wallet, and the screen that saved
+    /// announces once everything is written. Announcing here made Beranda reload balances before that last step.
     @MainActor
     static func remember(_ date: Date) {
         var shifts = PaydaySetting.shifts
         if !shifts.contains(where: { Calendar.current.isDate($0, inSameDayAs: date) }) { shifts.append(date) }
         PaydaySetting.shifts = shifts
-        NotificationCenter.default.post(name: .dataDidChange, object: nil)
     }
 }
 
