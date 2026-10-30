@@ -117,18 +117,6 @@ struct SmartTrackerHomeOverlay: View {
                 .background(Color.stGreen, in: Circle())
                 .shadow(color: Color.stGreen.opacity(0.35), radius: 10, y: 8)
                 .background { if isFresh && !isOpen { STPulse(color: .stGreen) } }
-                .overlay(alignment: .topTrailing) {
-                    if !store.drafts.isEmpty {
-                        Text("\(store.drafts.count)")
-                            .font(.app(11, weight: .heavy))
-                            .foregroundStyle(Color.stGreen)
-                            .frame(minWidth: 20, minHeight: 20)
-                            .padding(.horizontal, 2)
-                            .background(.white, in: Capsule())
-                            .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
-                            .offset(x: 2, y: -2)
-                    }
-                }
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityLabel(L("Catat cepat"))
