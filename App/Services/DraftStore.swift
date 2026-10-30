@@ -383,7 +383,8 @@ final class DraftStore: ObservableObject {
             created = try await repo.createTransaction(
                 accountId: accountId, categoryId: draft.categoryId, amount: amount,
                 type: draft.kind == .income ? .income : .expense, description: draft.savedTitle, note: nil,
-                date: draft.date, userId: userId, isCreditAccount: account?.isCreditCard ?? false)
+                date: draft.date, userId: userId, isCreditAccount: account?.isCreditCard ?? false,
+                startsPeriod: draft.startsPeriod == true)
         case .transfer, .cardPayment:
             guard let counterparty = draft.counterpartyAccountId else { throw SaveError.incomplete }
             created = try await repo.createTransfer(primaryAccountId: accountId, counterpartyAccountId: counterparty, amount: amount,

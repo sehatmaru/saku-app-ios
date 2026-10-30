@@ -32,6 +32,8 @@ struct AddTransactionView: View {
     @State private var shakeX: CGFloat = 0
     @State private var categoryShakeX: CGFloat = 0
     @State private var category: Category?
+@State private var showsPeriodChoice = false
+@State private var startsPeriod: Bool?
     @State private var account: Account?
     @State private var target: Account?
     /// Starts at the current instant, not midnight, so the hour of the entry is recorded and
@@ -180,6 +182,11 @@ struct AddTransactionView: View {
         .onGeometryChange(for: Bool.self, of: { $0.size.height < 720 }) { isCompact = $0 }
         .simultaneousGesture(TapGesture().onEnded { hideRepeatTip() })
         .sheet(isPresented: $showsRepeatMenu) { repeatSheet }
+        .onChange(of: date) { _, _ in startsPeriod = nil }
+        .onChange(of: category?.id) { _, _ in startsPeriod = nil }
+        .sheet(isPresented: $showsPeriodChoice) {
+            EarlySalarySheet(date: date) { startsPeriod = $0; save() }
+        }
         .sheet(item: $sheet) { pickerSheet($0) }
     }
 
@@ -1060,6 +1067,11 @@ struct AddTransactionView: View {
             shake($shakeX)
             return
         }
+        // an early salary: the user says whether the new period starts on its date before anything is saved
+        if editing == nil, !isTransfer, startsPeriod == nil, EarlySalary.applies(type: style.type, category: category, date: date) {
+            showsPeriodChoice = true
+            return
+        }
         let value = Double(amount)
         let noteText = note.trimmingCharacters(in: .whitespacesAndNewlines)
         let description = noteText.isEmpty ? nil : noteText
@@ -1083,7 +1095,7 @@ struct AddTransactionView: View {
                     let created = try await SupabaseRepository.shared.createTransaction(
                         accountId: account.id, categoryId: category?.id,
                         amount: value, type: style.type, description: description, note: nil,
-                        date: date, userId: userId, isCreditAccount: account.isCreditCard
+                        date: date, userId: userId, isCreditAccount: account.isCreditCard, startsPeriod: startsPeriod == true
                     )
                     if planMonths > 0 {
                         do {

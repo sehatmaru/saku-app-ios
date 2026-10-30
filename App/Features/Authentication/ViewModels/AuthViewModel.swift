@@ -366,6 +366,7 @@ final class AuthViewModel: ObservableObject {
         PaydaySetting.day = nil
         PlusStore.shared.reset()
         PaydaySetting.schedule = []
+        PaydaySetting.shifts = []
         HomeBalanceSetting.mode = nil
         SmartTrackerConsent.isGranted = false
         SmartTrackerMemorySync.isGranted = false
@@ -527,6 +528,7 @@ final class AuthViewModel: ObservableObject {
     /// What lives on this device for one account: the agreement, drafts, what Saku learned, the Plus state, and
     /// the guest card's own counters.
     private func resetLocalAccountState() {
+        PaydaySetting.shifts = []
         SmartTrackerConsent.isGranted = false
         SmartTrackerMemorySync.isGranted = false
         SmartTrackerMemorySync.declinedAt = nil

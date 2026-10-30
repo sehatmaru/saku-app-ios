@@ -65,6 +65,7 @@ struct DraftQueueView: View {
     @State private var saved = 0
     @State private var ignored = 0
     @State private var saving: Set<UUID> = []
+@State private var periodChoice: Draft?
     @State private var failures: [UUID: Failure] = [:]
     @State private var sheet: DraftSheet?
     @State private var toast: Toast?
@@ -118,7 +119,7 @@ struct DraftQueueView: View {
         }
     }
 
-    private var ready: [Draft] { store.drafts.filter(\.isComplete) }
+    private var ready: [Draft] { store.drafts.filter { $0.isComplete && !store.needsPeriodChoice($0) } }
 
     // MARK: Body
 
@@ -150,6 +151,13 @@ struct DraftQueueView: View {
         .onChange(of: sheet?.id) { focusedId = nil }
         .sheet(item: $sheet) { item in sheetContent(item) }
         .sheet(isPresented: $showsSaveAll) { saveAllSheet }
+.sheet(item: $periodChoice) { d in
+    EarlySalarySheet(date: d.date) { choice in
+        var chosen = d
+        chosen.startsPeriod = choice
+        save(chosen)
+    }
+}
         .confirmDialog(isPresented: $showsDeleteAll, icon: "trash", destructive: true,
                        title: L("Hapus semua draf?"),
                        message: L("Semua %lld draf dari Smart Tracker akan dibuang. Transaksi yang sudah tersimpan tidak terpengaruh.", store.drafts.count),
@@ -583,6 +591,7 @@ struct DraftQueueView: View {
     private func save(_ d: Draft) {
         guard d.isComplete else { openFirstMissing(d); return }
         guard !saving.contains(d.id) else { return }
+        if store.needsPeriodChoice(d) { periodChoice = d; return }
         focusedId = nil
         saving.insert(d.id)
         failures[d.id] = nil

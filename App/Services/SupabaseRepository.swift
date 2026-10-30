@@ -136,7 +136,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func createTransaction(accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date, userId: String, isCreditAccount: Bool = false, clientOperationId: String? = nil) async throws -> Transaction {
+    func createTransaction(accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date, userId: String, isCreditAccount: Bool = false, clientOperationId: String? = nil, startsPeriod: Bool = false) async throws -> Transaction {
         let operationId = clientOperationId ?? UUID().uuidString
 
         let rpcType: String
@@ -161,6 +161,11 @@ final class SupabaseRepository: @unchecked Sendable {
         ]
 
         let transactionId: String = try await client.rpc("create_transaction", params: params).execute().value
+        // an early salary the user chose to start the period with; the flag lives on the transaction so deleting it undoes the shift
+        if startsPeriod {
+            try await client.from("transactions").update(["starts_period": true]).eq("id", value: transactionId).execute()
+            await MainActor.run { EarlySalary.remember(date) }
+        }
 
         var transaction: Transaction = try await client
             .from("transactions")

@@ -61,6 +61,17 @@ struct PaydayCycle: Equatable {
         return base
     }
 
+    /// A salary is early when it lands in the part of its period that is closer to the next payday than to the last one
+    /// (payday 25, salary on 20 Okt), and no other early salary has already moved that boundary. A salary a few days after
+    /// payday is just a late one and does not count.
+    func isEarlySalary(_ date: Date, calendar: Calendar = .current) -> Bool {
+        let day = calendar.startOfDay(for: date)
+        let base = basePeriod(containing: day, calendar: calendar)
+        guard day > base.start, day < base.end else { return false }
+        let moved = shifts.contains { let s = calendar.startOfDay(for: $0); return s > base.start && s < base.end }
+        return !moved && base.end.timeIntervalSince(day) < day.timeIntervalSince(base.start)
+    }
+
     private func basePeriod(containing date: Date, calendar: Calendar) -> DateInterval {
         let day = calendar.startOfDay(for: date)
         guard !schedule.isEmpty else { return naivePeriod(containing: day, payday: self.day, calendar: calendar) }

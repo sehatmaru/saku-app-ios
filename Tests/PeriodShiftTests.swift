@@ -63,4 +63,23 @@ final class PeriodShiftTests: XCTestCase {
     func testLabelShowsTheShiftedPeriod() {
         XCTAssertEqual(shifted.label(for: day(2026, 10, 22), calendar: calendar).replacingOccurrences(of: "Oct", with: "Okt"), "20 Okt – 24 Nov")
     }
+
+    func testSalaryCloserToTheNextPaydayIsEarly() {
+        let cycle = PaydayCycle(day: 25)
+        XCTAssertTrue(cycle.isEarlySalary(day(2026, 10, 20), calendar: calendar))
+        XCTAssertFalse(cycle.isEarlySalary(day(2026, 10, 3), calendar: calendar), "a few days after the last payday is a late salary")
+        XCTAssertFalse(cycle.isEarlySalary(day(2026, 10, 25), calendar: calendar), "on payday it is not early")
+        XCTAssertFalse(cycle.isEarlySalary(day(2026, 10, 28), calendar: calendar))
+    }
+
+    func testCalendarMonthPaydayAsksForTheLastDaysOfTheMonth() {
+        let cycle = PaydayCycle(day: 1)
+        XCTAssertTrue(cycle.isEarlySalary(day(2026, 10, 28), calendar: calendar))
+        XCTAssertFalse(cycle.isEarlySalary(day(2026, 10, 3), calendar: calendar))
+    }
+
+    func testNoSecondQuestionForABoundaryThatAlreadyMoved() {
+        let cycle = PaydayCycle(day: 25, shifts: [day(2026, 10, 18)])
+        XCTAssertFalse(cycle.isEarlySalary(day(2026, 10, 22), calendar: calendar))
+    }
 }

@@ -20,6 +20,7 @@ enum SupabaseSDK {
         await syncSmartTrackerConsent(profile)
         SmartTrackerMemorySync.isGranted = profile.smartTrackerMemoryConsentAt != nil
         await refreshPaydaySchedule()
+        await refreshPaydayShifts()
         await PlusStore.shared.apply(profile)
         return profile
     }
@@ -195,6 +196,18 @@ enum SupabaseSDK {
         }
     }
 
+    private struct ShiftRow: Decodable {
+        let occurredAt: Date
+        enum CodingKeys: String, CodingKey { case occurredAt = "occurred_at" }
+    }
+
+    /// Mirrors the early-salary dates (live transactions with `starts_period`) on the device. Keeps the old list when offline.
+    static func refreshPaydayShifts() async {
+        guard let rows: [ShiftRow] = try? await client.from("transactions").select("occurred_at")
+            .eq("starts_period", value: true).is("deleted_at", value: nil).order("occurred_at").execute().value else { return }
+        PaydaySetting.shifts = rows.map(\.occurredAt)
+    }
+
     /// Asks to delete the signed-in account. It is scheduled 30 days out (the server returns the date); `reason`
     /// and `note` are the optional survey answer and are stored without any link to the user.
     static func requestAccountDeletion(reason: String?, note: String?) async throws -> Date {
@@ -219,6 +232,7 @@ enum SupabaseSDK {
         let effective: String = try await client.rpc("set_payday", params: ["p_day": day]).execute().value
         PaydaySetting.day = day
         await refreshPaydaySchedule()
+        await refreshPaydayShifts()
         let format = DateFormatter()
         format.dateFormat = "yyyy-MM-dd"
         format.locale = Locale(identifier: "en_US_POSIX")
@@ -229,6 +243,7 @@ enum SupabaseSDK {
     static func cancelPendingPayday() async throws {
         try await client.rpc("cancel_pending_payday").execute()
         await refreshPaydaySchedule()
+        await refreshPaydayShifts()
         PaydaySetting.day = PaydayCycle.current.day
     }
 

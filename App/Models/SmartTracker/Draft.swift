@@ -42,6 +42,8 @@ struct Draft: Identifiable, Codable, Hashable {
     var isUnreadable = false
     /// Investment deposit wanted but no investment wallet to receive it.
     var needsInvestmentWallet = false
+    /// An early salary: nil = the user has not been asked yet, true = start the period on this date, false = keep it.
+    var startsPeriod: Bool?
 
     var expiresAt: Date { Calendar.current.date(byAdding: .day, value: 30, to: createdAt) ?? createdAt }
 

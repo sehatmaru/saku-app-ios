@@ -19,6 +19,7 @@ struct QuickResultSheet: View {
     @State private var isUnclear: Bool
     private let isMulti: Bool
     @State private var saving = false
+@State private var periodChoice: Draft?
     @State private var failure: DraftQueueView.Failure?
     /// Fields the user changed ("Diganti"), as "<draft id>-<field>".
     @State private var changed: Set<String> = []
@@ -46,7 +47,7 @@ struct QuickResultSheet: View {
         isMulti = drafts.count > 1
     }
 
-    private var ready: [Draft] { drafts.filter(\.isComplete) }
+    private var ready: [Draft] { drafts.filter { $0.isComplete && !store.needsPeriodChoice($0) } }
 
     // MARK: Body
 
@@ -72,7 +73,14 @@ struct QuickResultSheet: View {
         .presentationBackground(Color.appBackground)
         .presentationCornerRadius(30)
         .presentationDragIndicator(.visible)
-        .sheet(item: $picker) { item in
+        .sheet(item: $periodChoice) { d in
+    EarlySalarySheet(date: d.date) { choice in
+        guard let i = drafts.firstIndex(where: { $0.id == d.id }) else { return }
+        drafts[i].startsPeriod = choice
+        if drafts.count == 1 { saveSingle() } else { saveCard(drafts[i]) }
+    }
+}
+.sheet(item: $picker) { item in
             if let d = drafts.first(where: { $0.id == item.draftId }) {
                 DraftFieldSheet(draft: d, kind: item.kind, accounts: store.accounts, categories: store.categories,
                                 edit: { change in edit(d.id, change, field: item.kind) },
@@ -492,6 +500,7 @@ struct QuickResultSheet: View {
 
     private func saveSingle() {
         guard let d = drafts.first, d.isComplete, !saving else { return }
+        if store.needsPeriodChoice(d) { periodChoice = d; return }
         saving = true
         failure = nil
         Task {
@@ -510,6 +519,7 @@ struct QuickResultSheet: View {
     /// Saves a single row straight from an expanded card ("Simpan" in design 6).
     private func saveCard(_ d: Draft) {
         guard d.isComplete, !saving else { return }
+        if store.needsPeriodChoice(d) { periodChoice = d; return }
         saving = true
         failure = nil
         Task {

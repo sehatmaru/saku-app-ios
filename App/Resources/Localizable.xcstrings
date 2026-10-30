@@ -7303,6 +7303,16 @@
         }
       }
     },
+    "Gaji masuk lebih awal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salary arrived early"
+          }
+        }
+      }
+    },
     "Gajian %@": {
       "localizations": {
         "en": {
@@ -8029,6 +8039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete date %@"
+          }
+        }
+      }
+    },
+    "Hapus transaksi gaji ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this salary transaction."
           }
         }
       }
@@ -11853,6 +11873,16 @@
         }
       }
     },
+    "Mulai periode baru di tanggal ini? Gaji kamu masuk %@, sebelum tanggal gajian.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a new period on this date? Your salary arrived on %@, before payday."
+          }
+        }
+      }
+    },
     "Mulai periode ini, budget %@ kembali ke %@. Periode yang sudah lewat tidak berubah.": {
       "localizations": {
         "en": {
@@ -13333,6 +13363,16 @@
         }
       }
     },
+    "Periode berjalan berakhir sehari sebelumnya. Periode baru mulai di tanggal ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The running period ends the day before. The new period starts on this date."
+          }
+        }
+      }
+    },
     "Periode budget & ringkasan": {
       "localizations": {
         "en": {
@@ -13459,6 +13499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This period is over"
+          }
+        }
+      }
+    },
+    "Periode tetap seperti biasa.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The period stays as usual."
           }
         }
       }
@@ -18633,6 +18683,16 @@
         }
       }
     },
+    "Tidak, pakai periode biasa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No, keep the usual period"
+          }
+        }
+      }
+    },
     "Tinggi": {
       "localizations": {
         "en": {
@@ -19585,6 +19645,16 @@
         }
       }
     },
+    "Untuk membatalkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To undo"
+          }
+        }
+      }
+    },
     "Untung": {
       "localizations": {
         "en": {
@@ -19741,6 +19811,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Card color · type the name on the card"
+          }
+        }
+      }
+    },
+    "Ya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes"
+          }
+        }
+      }
+    },
+    "Ya, mulai periode baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes, start a new period"
           }
         }
       }

@@ -1390,5 +1390,14 @@
   "Lebih sedikit": "Show fewer",
   "%lld transaksi · rata-rata %@ per periode": "%lld transactions · average %@ per period",
   "Jatah bantuan AI bulan ini habis. Isi manual.": "This month's AI help is used up. Fill it in by hand.",
-  "Jatah bantuan AI gratis bulan ini habis. Dengan Plus, Saku terus membantu membaca kalimat dan gambar yang sulit.": "This month's free AI help is used up. With Plus, Saku keeps helping you read hard sentences and pictures."
+  "Jatah bantuan AI gratis bulan ini habis. Dengan Plus, Saku terus membantu membaca kalimat dan gambar yang sulit.": "This month's free AI help is used up. With Plus, Saku keeps helping you read hard sentences and pictures.",
+  "Gaji masuk lebih awal": "Salary arrived early",
+  "Mulai periode baru di tanggal ini? Gaji kamu masuk %@, sebelum tanggal gajian.": "Start a new period on this date? Your salary arrived on %@, before payday.",
+  "Ya, mulai periode baru": "Yes, start a new period",
+  "Tidak, pakai periode biasa": "No, keep the usual period",
+  "Ya": "Yes",
+  "Untuk membatalkan": "To undo",
+  "Periode berjalan berakhir sehari sebelumnya. Periode baru mulai di tanggal ini.": "The running period ends the day before. The new period starts on this date.",
+  "Periode tetap seperti biasa.": "The period stays as usual.",
+  "Hapus transaksi gaji ini.": "Delete this salary transaction."
 }
