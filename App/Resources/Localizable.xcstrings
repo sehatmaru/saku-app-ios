@@ -2803,6 +2803,16 @@
         }
       }
     },
+    "Batasi pengeluaran per kategori. Kamu akan tahu sisanya di tiap periode.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cap spending per category. You'll see what's left in every period."
+          }
+        }
+      }
+    },
     "Bayar": {
       "localizations": {
         "en": {
@@ -4019,6 +4029,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Make a budget in Saku"
+          }
+        }
+      }
+    },
+    "Buat budget pertama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make your first budget"
           }
         }
       }
@@ -8253,6 +8273,16 @@
         }
       }
     },
+    "Hari ke-%lld dari %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day %lld of %lld"
+          }
+        }
+      }
+    },
     "Hari terakhir: sisa ": {
       "localizations": {
         "en": {
@@ -8693,6 +8723,16 @@
         }
       }
     },
+    "Jatuh tempo %@ · %lld hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due %@ · %lld days"
+          }
+        }
+      }
+    },
     "Jatuh tempo %@. Kalau sudah kamu bayar di luar Saku, catat supaya terpakai dan status kartu tetap akurat.": {
       "localizations": {
         "en": {
@@ -8709,6 +8749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Due %@. Have you paid it?"
+          }
+        }
+      }
+    },
+    "Jatuh tempo hari ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due today"
           }
         }
       }
@@ -10299,6 +10349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Correct the category or wallet on a draft and Saku will remember it for next time."
+          }
+        }
+      }
+    },
+    "Kosong": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty"
           }
         }
       }
@@ -17493,6 +17553,16 @@
         }
       }
     },
+    "Tagihan mendatang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upcoming bills"
+          }
+        }
+      }
+    },
     "Tagihan naik %@": {
       "localizations": {
         "en": {
@@ -19445,6 +19515,16 @@
         }
       }
     },
+    "Transaksi terakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent transactions"
+          }
+        }
+      }
+    },
     "Transaksi terbesar": {
       "localizations": {
         "en": {
@@ -20931,6 +21011,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "down"
+          }
+        }
+      }
+    },
+    "untuk %lld hari sampai %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "for %lld days until %@"
           }
         }
       }

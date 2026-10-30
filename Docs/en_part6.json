@@ -1441,5 +1441,14 @@
   "Catat dari notifikasi, foto struk, dan email terusan. Draf yang sudah ada tetap bisa disimpan.": "Logging from notifications, receipt photos and forwarded email. Existing drafts can still be saved.",
   "Laporan PDF baru. Bantuan AI kembali 10 kali per bulan.": "New PDF reports. AI help goes back to 10 a month.",
   "Lihat ringkasan trial berakhir": "Preview trial ended summary",
-  "Terima kasih sudah mencoba.": "Thanks for trying it."
+  "Terima kasih sudah mencoba.": "Thanks for trying it.",
+  "Hari ke-%lld dari %lld": "Day %lld of %lld",
+  "Kosong": "Empty",
+  "Transaksi terakhir": "Recent transactions",
+  "Buat budget pertama": "Make your first budget",
+  "Batasi pengeluaran per kategori. Kamu akan tahu sisanya di tiap periode.": "Cap spending per category. You'll see what's left in every period.",
+  "Tagihan mendatang": "Upcoming bills",
+  "Jatuh tempo hari ini": "Due today",
+  "Jatuh tempo %@ · %lld hari": "Due %@ · %lld days",
+  "untuk %lld hari sampai %@": "for %lld days until %@"
 }
