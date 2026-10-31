@@ -417,6 +417,14 @@ struct ProfileView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(RowPressStyle())
+
+            if PlusStore.isInternalBuild {
+                NavigationLink(destination: TestMenuView().detailPage()) {
+                    row(icon: "hammer", title: "Menu uji") { chevron }
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(RowPressStyle())
+            }
         }
     }
 

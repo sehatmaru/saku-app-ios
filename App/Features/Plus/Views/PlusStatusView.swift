@@ -1,14 +1,11 @@
 import SwiftUI
 
-/// Profil › Paket Saku (design "Saku Gratis": 1a free, 2b trial, 3a active, 3b grace, 3c ended): the plan the account is on and where to manage it. Debug and TestFlight builds also get a picker for every state (US8).
+/// Profil › Paket Saku (design "Saku Gratis": 1a free, 2b trial, 3a active, 3b grace, 3c ended): the plan the account is on and where to manage it. The picker for every state lives in Profil › Menu uji.
 struct PlusStatusView: View {
     @ObservedObject private var plus = PlusStore.shared
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.openURL) private var openURL
     @State private var paywall: PlusReason?
-        @State private var isSwitching = false
-    @ObservedObject private var homePreview = HomePreview.shared
-    @State private var showsTrialEndedTest = false
     @State private var failure: String?
 
     private var phase: PlusPhase { plus.entitlement.phase() }
@@ -47,7 +44,6 @@ struct PlusStatusView: View {
                     Text("Bantuan AI memakai angka contoh sampai server siap.")
                         .font(.app(12)).foregroundStyle(Color.appTextTertiary).padding(.top, 6)
                 }
-                if PlusStore.isInternalBuild { testPicker }
             }
             .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 40)
             .id(phase)
@@ -230,76 +226,6 @@ struct PlusStatusView: View {
         Task {
             if await PlusPurchases.shared.restore() { return }
             failure = L("Tidak ada langganan Saku Plus di Apple ID ini.")
-        }
-    }
-
-    // MARK: Internal test picker (US8)
-
-    private var testPicker: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Uji internal").font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.top, 22)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach([("free", L("Gratis")), ("trial", L("Trial")), ("active", L("Aktif")), ("monthly", L("Bulanan")), ("grace", L("Tenggang")), ("ended", L("Berakhir"))], id: \.0) { key, title in
-                        Button { switchTo(key) } label: {
-                            Text(title).font(.app(14, weight: .semibold))
-                                .foregroundStyle(isCurrent(key) ? Color.white : Color.appText)
-                                .padding(.horizontal, 14).frame(height: 34)
-                                .background(isCurrent(key) ? Color.appPrimary : Color.stChip, in: Capsule())
-                        }
-                        .buttonStyle(.plain).disabled(isSwitching)
-                    }
-                }
-            }
-            Button { showsTrialEndedTest = true } label: {
-                Text("Lihat ringkasan trial berakhir").font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
-                    .padding(.horizontal, 14).frame(height: 34).background(Color.stChip, in: Capsule())
-            }
-            .buttonStyle(.plain)
-            Text(verbatim: "Pratinjau Beranda").font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.top, 14)
-            Text(verbatim: "Ketuk satu, lalu buka tab Beranda. Ketuk lagi untuk mematikan. Kembali normal saat aplikasi dibuka ulang.")
-                .font(.app(12)).foregroundStyle(Color.appTextTertiary)
-            ForEach(HomePreview.Kind.allCases) { item in
-                Button { homePreview.toggle(item) } label: {
-                    HStack {
-                        Text(verbatim: item.title).font(.app(14, weight: .semibold))
-                        Spacer()
-                        if homePreview.kind == item { Image(systemName: "checkmark") }
-                    }
-                    .foregroundStyle(homePreview.kind == item ? Color.white : Color.appText)
-                    .padding(.horizontal, 14).frame(height: 38)
-                    .background(homePreview.kind == item ? Color.appPrimary : Color.stChip, in: RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(.plain)
-            }
-            Text("Hanya di build uji. Dihapus sebelum rilis App Store.").font(.app(12)).foregroundStyle(Color.appTextTertiary)
-        }
-        .sheet(isPresented: $showsTrialEndedTest) { TrialEndedSheet(wallets: 6, categories: 9, budgets: 4) {} }
-    }
-
-    private func isCurrent(_ key: String) -> Bool {
-        switch (key, phase) {
-        case ("free", .free), ("trial", .trial), ("grace", .grace), ("ended", .ended): true
-        case ("active", .active): plus.entitlement.plan == .yearly
-        case ("monthly", .active): plus.entitlement.plan == .monthly
-        default: false
-        }
-    }
-
-    /// Changes the server's value, then reads the profile back: the app never sets Plus on its own (US8).
-    private func switchTo(_ key: String) {
-        guard let authId = UUID(uuidString: authViewModel.currentUser?.authUserId ?? "") else { return }
-        isSwitching = true
-        Task {
-            defer { isSwitching = false }
-            do {
-                try await SupabaseSDK.setTestPlusState(key == "monthly" ? "active" : key)
-                PlusStore.shared.useTestSwitch()
-                PlusStore.shared.setPlan(key == "monthly" ? .monthly : .yearly)
-                _ = try await SupabaseSDK.fetchProfile(authUserId: authId)
-                            } catch {
-                failure = "\(error)".contains("test_plus_off") ? L("Tombol uji sedang dimatikan di server.") : L("Belum berhasil mengubah. Coba lagi sebentar lagi.")
-            }
         }
     }
 }
