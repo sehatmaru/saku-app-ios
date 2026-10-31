@@ -1571,42 +1571,16 @@ struct WalletSubscriptionsRoute: Hashable {
     let account: Account
 }
 
-/// "Arsipkan <name>?" as a short sheet with one black button.
+/// "Arsipkan <name>?" on the shared sheet frame.
 private struct ArchiveWalletSheet: View {
     let name: String
     let onArchive: () -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack {
-                Text("Arsipkan \(name)?")
-                    .font(.app(17, weight: .semibold))
-                Spacer()
-                Button("Batal") { dismiss() }
-                    .font(.app(17))
-                    .foregroundStyle(Color.appPrimary)
-            }
-            .frame(height: 48)
-            Text("Dompet disembunyikan dari daftar dan total. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja.")
-                .font(.app(15))
-                .lineSpacing(3)
-                .foregroundStyle(Color.appBody)
-                .fixedSize(horizontal: false, vertical: true)
+        SmartSheet(tone: .neutral, icon: "archivebox", title: L("Arsipkan %@?", name),
+                   message: L("Dompet disembunyikan dari daftar dan total. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja.")) {
+            SmartSheetFooter(primary: L("Arsipkan"), secondary: L("Batal"), onPrimary: onArchive) { dismiss() }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
-        .filterSheet {
-            Button(action: onArchive) {
-                Label("Arsipkan", systemImage: "archivebox")
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(Color.appBackground)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(Color.appText, in: Capsule())
-            }
-            .buttonStyle(PressScaleStyle())
-        }
-
     }
 }

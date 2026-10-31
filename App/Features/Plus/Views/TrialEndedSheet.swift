@@ -49,14 +49,7 @@ struct TrialEndedSheet: View {
         .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .filterSheet {
-            VStack(spacing: 4) {
-                PrimaryButton(title: L("Lihat Saku Plus")) { dismiss(); onOffer() }
-                Button { dismiss() } label: {
-                    Text("Nanti saja").font(.app(17, weight: .medium)).foregroundStyle(Color.appPrimary)
-                        .frame(maxWidth: .infinity).frame(height: 44)
-                }
-                .buttonStyle(.plain)
-            }
+            SmartSheetFooter(primary: L("Lihat Saku Plus"), secondary: L("Nanti saja"), onPrimary: { dismiss(); onOffer() }) { dismiss() }
         }
         .onDisappear { PlusStore.shared.markTrialEndedSeen() }
         .task { ticksShown = true }

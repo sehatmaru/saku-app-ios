@@ -47,55 +47,46 @@ struct ImageConsentSheet: View {
     var onDetails: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
 
-    private var needsTracker: Bool { !SmartTrackerConsent.isGranted }
+    /// Menu uji: nothing is saved, and `previewNeedsTracker` forces either version of the sheet.
+    var isPreview = false
+    var previewNeedsTracker: Bool?
+
+    private var needsTracker: Bool { previewNeedsTracker ?? !SmartTrackerConsent.isGranted }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Image(systemName: "viewfinder").font(.system(size: 24)).foregroundStyle(Color.stGreen)
-                .frame(width: 48, height: 48).background(Color.stGreen.opacity(0.14), in: Circle()).padding(.top, 14)
-            Text("Catat dari gambar").font(.app(24, weight: .bold)).padding(.top, 16)
-            Text("Foto bukti bayar, struk, atau screenshot mutasi. Saku mengubahnya jadi draf transaksi.")
-                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
-            VStack(alignment: .leading, spacing: 16) {
-                point("iphone", "Dibaca di HP-mu", "Gambar tidak disimpan dan tidak dikirim ke mana pun.")
-                point("textformat", "Hanya teksnya yang diproses", "Dihapus setelah draf disimpan atau dibuang, paling lama 30 hari.")
-                point("eye.slash", "Saldo dan nomor rekening diabaikan", "Yang dicatat cuma transaksinya.")
-            }
-            .padding(.top, 22)
-            if needsTracker {
-                // Smart Tracker is off: agreeing here switches it on too (design 2, "belum disetujui")
-                Button { onDetails?() } label: {
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(Color.stGreen).padding(.top, 1)
-                        (Text(L("Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker."))
-                            + Text(" ") + Text(L("Lihat detail")).foregroundStyle(Color.stGreen).fontWeight(.semibold))
-                            .font(.app(14)).lineSpacing(2).foregroundStyle(Color.appBody)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 14).padding(.vertical, 12)
-                    .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 20)
-            }
+        SmartSheet(tone: .consent, icon: "viewfinder", title: L("Catat dari gambar"),
+                   message: L("Foto bukti bayar, struk, atau screenshot mutasi. Saku mengubahnya jadi draf transaksi."),
+                   promises: [SmartPromise(icon: "iphone", title: L("Dibaca di HP-mu"), detail: L("Gambar tidak disimpan dan tidak dikirim ke mana pun.")),
+                              SmartPromise(icon: "textformat", title: L("Hanya teksnya yang diproses"), detail: L("Dihapus setelah draf disimpan atau dibuang, paling lama 30 hari.")),
+                              SmartPromise(icon: "eye.slash", title: L("Saldo dan nomor rekening diabaikan"), detail: L("Yang dicatat cuma transaksinya."))],
+                   extra: { if needsTracker { trackerNote } }) {
+            SmartSheetFooter(primary: L(needsTracker ? "Setuju dan aktifkan" : "Setuju"), secondary: L("Nanti saja"),
+                             onPrimary: agree) { dismiss() }
         }
-        .padding(.horizontal, 24).padding(.bottom, 12)
-        .filterSheet {
-            VStack(spacing: 6) {
-                PrimaryButton(title: L(needsTracker ? "Setuju dan aktifkan" : "Setuju")) { agree() }
-                Button("Nanti saja") { dismiss() }.font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
-                    .frame(maxWidth: .infinity).frame(height: 44)
+    }
+
+    /// Smart Tracker is off: agreeing here switches it on too. The whole block opens the full agreement.
+    private var trackerNote: some View {
+        Button { onDetails?() } label: {
+            HStack(spacing: 8) {
+                (Text(L("Smart Tracker belum aktif. Dengan setuju, kamu juga mengaktifkan Smart Tracker."))
+                    + Text(" ") + Text(L("Lihat detail")).foregroundStyle(Color.stGreen).fontWeight(.semibold).underline())
+                    .font(.app(14)).lineSpacing(2).foregroundStyle(Color.appText)
+                    .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(Color.stGreen)
             }
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .background(Color.stSuccessBg, in: RoundedRectangle(cornerRadius: 16))
         }
-        // the design's dialog is opaque, not the system's liquid glass (same as the other sheets)
-        .background(Color.appBackground)
+        .buttonStyle(.plain)
+        .padding(.top, 12)
     }
 
     /// Agreeing also switches Smart Tracker on when it was off; saved on the profile so it follows
     /// the account to every device, like the full agreement does.
     private func agree() {
+        if isPreview { dismiss(); return }
         if needsTracker {
             SmartTrackerConsent.isGranted = true
             SmartTrackerConsent.since = Date()
@@ -113,15 +104,5 @@ struct ImageConsentSheet: View {
         ShareInbox.isImageAgreed = true
         dismiss()
         onAgree()
-    }
-
-    private func point(_ icon: String, _ title: String, _ detail: String) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icon).font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(L(title)).font(.app(15, weight: .semibold))
-                Text(L(detail)).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
-            }
-        }
     }
 }

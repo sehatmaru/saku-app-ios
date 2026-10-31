@@ -523,36 +523,13 @@ struct DraftQueueView: View {
     }
 
     private var saveAllSheet: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(L("Simpan %lld transaksi yang lengkap?", ready.count)).font(.app(20, weight: .semibold))
-                let rest = store.drafts.count - ready.count
-                Text(rest > 0 ? L("%lld draf yang belum lengkap tetap di daftar supaya bisa kamu cek nanti.", rest)
-                     : L("Semua draf akan disimpan ke transaksimu."))
-                    .font(.app(15)).foregroundStyle(Color.appTextSecondary)
-            }
-            ScrollView {
-                VStack(spacing: 14) {
-                    ForEach(ready) { d in
-                        HStack(spacing: 14) {
-                            Image(systemName: store.categories.first { $0.id == d.categoryId }?.icon ?? d.kindIcon)
-                                .font(.system(size: 18)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
-                            Text(d.title.isEmpty ? d.kindTitle : d.title).font(.app(16)).lineLimit(1)
-                            Spacer()
-                            Text((d.amount ?? 0).formattedAsCurrency()).font(.app(16)).monospacedDigit()
-                        }
-                    }
-                }
-            }
-            PrimaryButton(title: L("Simpan %lld transaksi", ready.count)) { saveAllComplete() }
-            Button { showsSaveAll = false } label: {
-                Text("Batal").font(.app(17, weight: .medium)).foregroundStyle(Color.appText).frame(maxWidth: .infinity).frame(height: 44)
-            }
+        let rest = store.drafts.count - ready.count
+        return SmartSheet(tone: .neutral, icon: "tray.and.arrow.down", title: L("Simpan %lld transaksi yang lengkap?", ready.count),
+                          message: rest > 0 ? L("%lld draf yang belum lengkap tetap di daftar supaya bisa kamu cek nanti.", rest)
+                              : L("Semua draf akan disimpan ke transaksimu.")) {
+            SmartSheetFooter(primary: L("Simpan %lld transaksi", ready.count), secondary: L("Batal"),
+                             onPrimary: { saveAllComplete() }) { showsSaveAll = false }
         }
-        .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 16)
-        .presentationDetents([.medium, .large])
-
-        .background(Color.appBackground)
     }
 
     // MARK: Editing

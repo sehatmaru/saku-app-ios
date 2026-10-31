@@ -26,7 +26,7 @@ enum SmartWay: CaseIterable {
 /// What Smart Tracker is and how data is used: the body of the first-time agreement and of
 /// Profil › Smart Tracker › Cara data diproses.
 struct SmartTrackerPrivacyContent: View {
-    private var points: [(String, String, String)] {
+    var points: [(String, String, String)] {
         [("iphone", L("Diproses di HP-mu"), L("Kalimat, notifikasi, dan tulisan di gambar dibaca langsung di perangkat ini. Gambarnya tidak disimpan.")),
          ("icloud.and.arrow.up", L("Server hanya bila perlu"),
           L("Kalau kalimatnya sulit dipahami, Saku mengirim teksnya saja, tanpa saldo atau nomor rekening. Teks itu tidak disimpan dan tidak dipakai melatih AI.")),
@@ -119,59 +119,38 @@ struct SmartTrackerConsentSheet: View {
     /// Whose agreement this is; it is saved on the profile so it follows the account to every device.
     let profileId: UUID?
     var onAgree: () -> Void
+    /// Menu uji: shows the sheet without saving an agreement.
+    var isPreview = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 26))
-                        .foregroundStyle(Color.stGreen)
-                        .frame(width: 52, height: 52)
-                        .background(Color.stSuccessBg, in: RoundedRectangle(cornerRadius: 16))
-                        .padding(.top, 20)
-                    Text("Smart Tracker").font(.app(28, weight: .bold)).tracking(-0.5).padding(.top, 14)
-                    SmartTrackerPrivacyContent().padding(.top, 6)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-            }
-            VStack(spacing: 4) {
-                Text(L("Bisa dimatikan kapan saja di Profil › Smart Tracker"))
-                    .font(.app(13)).foregroundStyle(Color.appTextTertiary).padding(.bottom, 8)
-                Button {
-                    // agree now (works offline); the profile is updated in the background and retried at next launch
-                    SmartTrackerConsent.isGranted = true
-                    SmartTrackerConsent.since = Date()
-                    if let profileId {
-                        Task {
-                            try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
-                            // the agreement above also covers Ingatan on the server; guests stay on the device
-                            if !DraftStore.shared.isGuest {
-                                try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
-                                await DraftStore.shared.syncMemory()
-                            }
-                        }
-                    }
-                    onAgree()
-                } label: {
-                    Text(L("Aktifkan Smart Tracker"))
-                        .font(.app(17, weight: .semibold)).foregroundStyle(Color.appBackground)
-                        .frame(maxWidth: .infinity).frame(height: 52).background(Color.appText, in: Capsule())
-                }
-                .buttonStyle(PressScaleStyle())
-                Button(L("Nanti saja")) { dismiss() }
-                    .font(.app(16)).foregroundStyle(Color.appTextSecondary)
-                    .frame(maxWidth: .infinity).frame(height: 44)
-            }
-            .padding(.horizontal, 24).padding(.bottom, 12).padding(.top, 12)
-            .background(Color.appBackground)
+        SmartSheet(tone: .consent, icon: "sparkles", title: "Smart Tracker",
+                   message: L("Cukup satu kalimat, Saku yang menyusun transaksinya. Kamu tinggal cek, lalu simpan."),
+                   promises: SmartTrackerPrivacyContent().points.map { SmartPromise(icon: $0.0, title: L($0.1), detail: L($0.2)) },
+                   extra: {
+                       Text(L("Bisa dimatikan kapan saja di Profil › Smart Tracker"))
+                           .font(.app(13)).foregroundStyle(Color.appTextTertiary).padding(.top, 14)
+                   }) {
+            SmartSheetFooter(primary: L("Aktifkan Smart Tracker"), secondary: L("Nanti saja"), onPrimary: agree) { dismiss() }
         }
-        .background(Color.appBackground)
-        .presentationDetents([.large])
-        .background(Color.appBackground)
+    }
 
+    private func agree() {
+        if isPreview { dismiss(); return }
+        // agree now (works offline); the profile is updated in the background and retried at next launch
+        SmartTrackerConsent.isGranted = true
+        SmartTrackerConsent.since = Date()
+        if let profileId {
+            Task {
+                try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
+                // the agreement above also covers Ingatan on the server; guests stay on the device
+                if !DraftStore.shared.isGuest {
+                    try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
+                    await DraftStore.shared.syncMemory()
+                }
+            }
+        }
+        onAgree()
     }
 }
 
@@ -179,75 +158,42 @@ struct SmartTrackerConsentSheet: View {
 /// if they choose "Nanti saja"). Until they agree, Ingatan stays on the device.
 struct MemorySyncConsentSheet: View {
     let profileId: UUID?
+    var isPreview = false
     @Environment(\.dismiss) private var dismiss
     @State private var isSaving = false
 
-    private func syncDots(reversed: Bool) -> some View {
-        HStack(spacing: 4) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle().fill(Color.appPrimary).frame(width: 5, height: 5)
-                    .opacity([1.0, 0.6, 0.3][reversed ? 2 - i : i])
+    var body: some View {
+        SmartSheet(tone: .consent, icon: "arrow.triangle.2.circlepath", title: L("Sinkron Ingatan"),
+                   message: L("Pilihan yang diingat Smart Tracker, contohnya:"),
+                   promises: [SmartPromise(icon: "icloud.and.arrow.up", title: L("Ingatan ikut ke semua perangkatmu"),
+                                           detail: L("Saku menyimpan pasangan seperti di atas, bukan kalimat atau nominalnya. Bisa dimatikan di Profil › Smart Tracker."))],
+                   extra: {
+                       HStack(spacing: 10) {
+                           Text("kopi").font(.app(15, weight: .semibold))
+                           Image(systemName: "arrow.right").font(.system(size: 12)).foregroundStyle(Color.appTextTertiary)
+                           Text("Jajan & Kopi · GoPay").font(.app(15)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                           Spacer(minLength: 0)
+                           Text("12×").font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                       }
+                       .padding(.horizontal, 16).padding(.vertical, 14)
+                       .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+                       .padding(.top, 12)
+                   }) {
+            SmartSheetFooter(primary: L("Aktifkan"), isBusy: isSaving, secondary: L("Nanti saja"), onPrimary: agree) {
+                SmartTrackerMemorySync.declinedAt = Date()
+                dismiss()
             }
         }
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(spacing: 14) {
-                HStack(spacing: 14) {
-                    Image(systemName: "iphone").font(.system(size: 28)).foregroundStyle(Color.appTextSecondary)
-                    syncDots(reversed: false)
-                    Image(systemName: "cloud").font(.system(size: 28)).foregroundStyle(Color.appPrimary)
-                    syncDots(reversed: true)
-                    Image(systemName: "iphone").font(.system(size: 28)).foregroundStyle(Color.appTextSecondary)
-                }
-                HStack(spacing: 10) {
-                    Text("kopi").font(.app(15, weight: .semibold))
-                    Image(systemName: "arrow.right").font(.system(size: 12)).foregroundStyle(Color.appTextTertiary)
-                    Text("Jajan & Kopi · GoPay").font(.app(15)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
-                    Spacer(minLength: 0)
-                    Text("12×").font(.app(12)).foregroundStyle(Color.appTextTertiary)
-                }
-                .padding(.horizontal, 14).padding(.vertical, 12)
-                .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20).padding(.horizontal, 18)
-            .background(Color.stChip, in: RoundedRectangle(cornerRadius: 24))
-            .padding(.top, 28)
-            Text("Ingatan ikut ke semua perangkatmu").font(.app(24, weight: .bold)).padding(.top, 20)
-            Text(L("Saku menyimpan pasangan seperti di atas, bukan kalimat atau nominalnya. Bisa dimatikan di Profil › Smart Tracker."))
-                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
+    private func agree() {
+        guard let profileId, !isPreview else { dismiss(); return }
+        isSaving = true
+        Task {
+            try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
+            await DraftStore.shared.syncMemory()
+            isSaving = false
+            dismiss()
         }
-        .padding(.horizontal, 24).padding(.bottom, 12)
-        .filterSheet {
-            VStack(spacing: 8) {
-                Button {
-                    guard let profileId else { dismiss(); return }
-                    isSaving = true
-                    Task {
-                        try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
-                        await DraftStore.shared.syncMemory()
-                        isSaving = false
-                        dismiss()
-                    }
-                } label: {
-                    ZStack {
-                        if isSaving { ProgressView().tint(.white) } else { Text(L("Aktifkan")) }
-                    }
-                    .font(.app(17, weight: .semibold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).frame(height: 52).background(Color.appPrimary, in: Capsule())
-                }
-                .buttonStyle(PressScaleStyle())
-                Button(L("Nanti saja")) {
-                    SmartTrackerMemorySync.declinedAt = Date()
-                    dismiss()
-                }
-                .font(.app(16)).foregroundStyle(Color.appTextSecondary)
-                .frame(maxWidth: .infinity).frame(height: 44)
-            }
-        }
-        .background(Color.appBackground)
-
     }
 }

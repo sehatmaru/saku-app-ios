@@ -68,15 +68,11 @@ struct EarlySalarySheet: View {
             .padding(.horizontal, 24).padding(.top, 8)
         }
         .filterSheet {
-        VStack(spacing: 4) {
-            PrimaryButton(title: L("Simpan"), isEnabled: choice != nil) {
+            SmartSheetFooter(primary: L("Simpan"), isEnabled: choice != nil, secondary: L("Batal"), onPrimary: {
                 guard let choice else { return }
                 dismiss()
                 onChoose(choice)
-            }
-            Button("Batal") { dismiss() }.font(.app(17, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                .frame(maxWidth: .infinity).frame(minHeight: 44)
-        }
+            }) { dismiss() }
         }
         .background(Color.appBackground)
     }

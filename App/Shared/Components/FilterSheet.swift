@@ -6,7 +6,7 @@ import SwiftUI
 extension View {
     /// The gap from the buttons to the bottom edge of the screen is the same 24 pt as on their sides. The home
     /// indicator's safe area is already part of that gap, so the difference is taken off (the buttons reach into it).
-    private static var footerBottomPadding: CGFloat {
+    static var footerBottomPadding: CGFloat {
         let safe = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
             .first?.keyWindow?.safeAreaInsets.bottom ?? 0
         return 24 - safe
@@ -20,12 +20,14 @@ extension View {
             .presentationDetents([.medium, .large])
     }
 
-    func filterSheet<Footer: View>(@ViewBuilder footer: () -> Footer) -> some View {
+    /// `showsMoreCue` adds a fade and a down arrow above the footer while there is more content below.
+    func filterSheet<Footer: View>(showsMoreCue: Bool = false, @ViewBuilder footer: () -> Footer) -> some View {
         let bar = footer()
         return ScrollView { self }
             .background(Color.appBackground)
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
+            .modifier(MoreCue(enabled: showsMoreCue))
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 bar
                     .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, Self.footerBottomPadding)
@@ -33,5 +35,34 @@ extension View {
                     .background(Color.appBackground)
             }
             .presentationDetents([.medium, .large])
+    }
+}
+
+private struct MoreCue: ViewModifier {
+    let enabled: Bool
+    @State private var hasMore = false
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .onScrollGeometryChange(for: Bool.self) { g in
+                    g.contentOffset.y + g.containerSize.height < g.contentSize.height - 1
+                } action: { _, more in hasMore = more }
+                .overlay(alignment: .bottom) {
+                    if hasMore {
+                        LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .center)
+                            .frame(height: 56).allowsHitTesting(false)
+                            .overlay(alignment: .bottom) {
+                                Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(Color.appTextSecondary)
+                                    .frame(width: 28, height: 28).background(Color.appFill, in: Circle()).padding(.bottom, 4)
+                            }
+                            .transition(.opacity)
+                    }
+                }
+                .animation(.easeOut(duration: 0.2), value: hasMore)
+        } else {
+            content
+        }
     }
 }

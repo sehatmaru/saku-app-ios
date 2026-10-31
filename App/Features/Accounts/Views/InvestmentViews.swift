@@ -652,11 +652,7 @@ struct UpdateValueView: View {
         .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .filterSheet {
-            Button { showsSource = false } label: {
-                Text("Batal").font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
-                    .frame(maxWidth: .infinity).frame(height: 48).overlay(Capsule().stroke(Color.appBorder, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
+            SmartSheetFooter(primary: nil, secondary: L("Batal")) { showsSource = false }
         }
 
         .background(Color.appBackground)

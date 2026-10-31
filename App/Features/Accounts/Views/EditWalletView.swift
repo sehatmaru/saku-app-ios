@@ -593,9 +593,11 @@ struct EditWalletView: View {
                 }
             }
         case .archive:
-            SheetFrame(title: L("Arsipkan %@?", orig.name), closeTitle: L("Batal"), onClose: closeSheet) {
-                confirm(text: L("Dompet disembunyikan dari daftar dan total saldo. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja."),
-                        button: L("Arsipkan"), icon: "archivebox", destructive: false) { await archive() }
+            SmartSheet(tone: .neutral, icon: "archivebox", title: L("Arsipkan %@?", orig.name),
+                       message: L("Dompet disembunyikan dari daftar dan total saldo. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja."),
+                       extra: { assetWarning(destructive: false).padding(.top, 12) }) {
+                SmartSheetFooter(primary: L("Arsipkan"), isBusy: isBusy, secondary: L("Batal"),
+                                 onPrimary: { Task { await archive() } }) { closeSheet() }
             }
         }
     }
@@ -784,70 +786,24 @@ struct EditWalletView: View {
     /// transactions can't be deleted, so it offers Arsipkan saja instead.
     private var deleteDialog: some View {
         let blocked = transactionCount > 0
-        return VStack(spacing: 6) {
-            Circle()
-                .fill(blocked ? Color.appFill : Color(light: 0xFDECEC, dark: 0x3A1D1F))
-                .frame(width: 52, height: 52)
-                .overlay {
-                    Image(systemName: blocked ? "archivebox" : "trash")
-                        .font(.system(size: 22))
-                        .foregroundStyle(blocked ? Color.appText : Color(light: 0xD1343A, dark: 0xFF6B6B))
-                }
-            Text(blocked ? L("Dompet ini tidak bisa dihapus") : L("Hapus dompet ini?"))
-                .font(.app(17, weight: .semibold))
-                .multilineTextAlignment(.center)
-                .padding(.top, 8)
-            Text(blocked
-                 ? L("%@ punya %lld transaksi.", orig.name, transactionCount) + " "
-                    + (isArchived ? L("Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan.")
-                       : L("Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan."))
-                 : deleteSubtitle)
-                .font(.app(15))
-                .foregroundStyle(Color.appTextSecondary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-            if !blocked { assetWarning(destructive: true).padding(.vertical, 6) }
-        }
-        .foregroundStyle(Color.appText)
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 24)
-        .padding(.top, 32)
-        .padding(.bottom, 24)
-        .filterSheet {
-            VStack(spacing: 8) {
-                if !blocked {
-                    Button { startDelete() } label: {
-                        Text("Hapus")
-                            .font(.app(16, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color(hex: "D93636"), in: Capsule())
-                    }
-                } else if !isArchived {
-                    Button {
-                        isConfirmingDelete = false
-                        Task { await archive() }
-                    } label: {
-                        Text("Arsipkan saja")
-                            .font(.app(16, weight: .semibold))
-                            .foregroundStyle(Color.appBackground)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color.appText, in: Capsule())
-                    }
-                }
-                Button { isConfirmingDelete = false } label: {
-                    Text(blocked && isArchived ? L("Tutup") : L("Batal"))
-                        .font(.app(16, weight: .medium))
-                        .foregroundStyle(Color.appText)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color(light: 0xF2F2F4, dark: 0x2C2C2E), in: Capsule())
-                }
+        let message = blocked
+            ? L("%@ punya %lld transaksi.", orig.name, transactionCount) + " "
+                + (isArchived ? L("Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan.")
+                   : L("Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan."))
+            : deleteSubtitle
+        return SmartSheet(tone: blocked ? .neutral : .destructive, icon: blocked ? "archivebox" : "trash",
+                          title: blocked ? L("Dompet ini tidak bisa dihapus") : L("Hapus dompet ini?"), message: message,
+                          extra: { if !blocked { assetWarning(destructive: true).padding(.top, 12) } }) {
+            if !blocked {
+                SmartSheetFooter(primary: L("Hapus"), destructive: true, secondary: L("Batal"), onPrimary: { startDelete() }) { isConfirmingDelete = false }
+            } else if !isArchived {
+                SmartSheetFooter(primary: L("Arsipkan saja"), secondary: L("Batal"), onPrimary: {
+                    isConfirmingDelete = false
+                    Task { await archive() }
+                }) { isConfirmingDelete = false }
+            } else {
+                SmartSheetFooter(primary: nil, secondary: L("Tutup")) { isConfirmingDelete = false }
             }
-            .buttonStyle(PressScaleStyle())
         }
     }
 

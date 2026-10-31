@@ -44,9 +44,6 @@ struct AdvancedSearchView: View {
                 .font(.app(17, weight: .semibold))
                 .foregroundStyle(Color.appText)
             HStack {
-                Button("Batal") { dismiss() }
-                    .font(.app(16))
-                    .foregroundStyle(Color.appTextSecondary)
                 Spacer()
                 Button("Reset") {
                     filter.reset()
@@ -348,13 +345,13 @@ struct AdvancedSearchView: View {
     }
 
     private var bottomBar: some View {
-        EmptyStateButton(title: L("Terapkan Filter"), icon: nil, isFullWidth: true) {
+        SmartSheetFooter(primary: L("Terapkan Filter"), secondary: L("Batal"), onPrimary: {
             filter = draft
             dismiss()
-        }
+        }) { dismiss() }
         .padding(.horizontal, 24)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
+        .padding(.top, 8)
+        .padding(.bottom, Self.footerBottomPadding)
         .background(Color.appBackground)
     }
 }

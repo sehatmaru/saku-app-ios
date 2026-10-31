@@ -675,13 +675,7 @@ struct SetupTrackerConsentSheet: View {
         .padding(.top, 28)
         .padding(.bottom, 12)
         .filterSheet {
-            VStack(spacing: 0) {
-                PrimaryButton(title: L("Setuju dan aktifkan")) { onAgree() }
-                Button(action: onCancel) {
-                    Text("Batal").font(.app(17)).foregroundStyle(Color.appTextSecondary)
-                        .frame(maxWidth: .infinity).frame(height: 48)
-                }
-            }
+            SmartSheetFooter(primary: L("Setuju dan aktifkan"), secondary: L("Batal"), onPrimary: { onAgree() }) { onCancel() }
         }
         .background(Color.appBackground)
 
