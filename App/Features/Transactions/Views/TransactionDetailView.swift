@@ -95,12 +95,6 @@ struct TransactionDetailView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .hidesTabBarWhilePushed()
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbar {
-            // Balance adjustments have no form to edit them in.
-            if isEditable && !isDeleted && !isAdjustment && txn.type != .cardPayment {
-                ToolbarItem(placement: .topBarTrailing) { editControl }
-            }
-        }
         .tint(.white)
         .task {
             try? await Task.sleep(for: .milliseconds(150))
@@ -214,10 +208,8 @@ struct TransactionDetailView: View {
         return category?.name ?? style.label
     }
 
-    private var editControl: some View {
-        Button("Edit") { showsForm = true }
-            .font(.app(17, weight: .semibold))
-    }
+    /// Balance adjustments and card payments have no form to edit them in.
+    private var canEdit: Bool { !isAdjustment && txn.type != .cardPayment }
 
     // MARK: - Rows
 
@@ -427,17 +419,27 @@ struct TransactionDetailView: View {
     // MARK: - Delete
 
     private var deleteButton: some View {
-        Button { isConfirmingDelete = true } label: {
-            Label("Hapus", systemImage: "trash")
-                .font(.app(16, weight: .semibold))
-                .foregroundStyle(Color(light: 0xD1343A, dark: 0xFF6B6B))
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(Color(light: 0xFDECEC, dark: 0x3A1D1F), in: Capsule())
+        HStack(spacing: 12) {
+            Button { isConfirmingDelete = true } label: {
+                Image(systemName: "trash").font(.system(size: 19, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 50, height: 50)
+                    .background(Color(hex: "D93636"), in: Circle())
+            }
+            .accessibilityLabel(L("Hapus"))
+            if canEdit {
+                Button { showsForm = true } label: {
+                    Label("Ubah", systemImage: "square.and.pencil")
+                        .font(.app(17, weight: .semibold))
+                        .foregroundStyle(Color.appBackground)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.appText, in: Capsule())
+                }
+            }
         }
         .buttonStyle(PressScaleStyle())
         .padding(.horizontal, 24)
-        .padding(.bottom, 12)
+        .padding(.bottom, Self.footerBottomPadding)
         .background(alignment: .bottom) {
             LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .bottom)
                 .frame(height: 90)

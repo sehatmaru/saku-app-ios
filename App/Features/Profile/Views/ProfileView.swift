@@ -538,7 +538,7 @@ struct ProfileView: View {
 
     // MARK: - Logout
 
-    /// Design "Profil Revamp": a soft error-tinted bar, not a bordered capsule.
+    /// The design system's destructive pill.
     private var logoutButton: some View {
         Button {
             showLogoutAlert = true
@@ -547,13 +547,12 @@ struct ProfileView: View {
                 Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 17))
                 Text("Keluar").font(.app(16, weight: .medium))
             }
-            .foregroundStyle(Color.appError)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(Color.appError.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
-            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .frame(height: 50)
+            .background(Color(hex: "D93636"), in: Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScaleStyle())
         .padding(.top, 28)
     }
 }
