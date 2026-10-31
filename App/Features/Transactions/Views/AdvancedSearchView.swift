@@ -31,9 +31,7 @@ struct AdvancedSearchView: View {
             }
         }
         .background(Color.appBackground)
-        .safeAreaInset(edge: .bottom) {
-            bottomBar
-        }
+        .pinnedFooter { bottomBar }
     }
 
     // MARK: Top bar
@@ -349,10 +347,6 @@ struct AdvancedSearchView: View {
             filter = draft
             dismiss()
         }) { dismiss() }
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
-        .padding(.bottom, Self.footerBottomPadding)
-        .background(Color.appBackground)
     }
 }
 

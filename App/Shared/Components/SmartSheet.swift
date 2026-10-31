@@ -128,19 +128,21 @@ private struct RatioRow: Layout {
 }
 
 /// Footer for every sheet with a choice: one row, a plain text button (1) and the pill (3). Without `primary` it is one
-/// text button across the width.
+/// text button across the width; without `secondary` it is one pill across the width.
 struct SmartSheetFooter: View {
     var primary: String?
     var destructive = false
+    /// Black pill (white in dark mode) for a calm action that is not the main green one.
+    var ink = false
     var isBusy = false
     var isEnabled = true
-    var secondary: String
+    var secondary: String?
     var onPrimary: () -> Void = {}
-    var onSecondary: () -> Void
+    var onSecondary: () -> Void = {}
 
     var body: some View {
         Group {
-            if let primary {
+            if let primary, let secondary {
                 RatioRow {
                     Button(action: onSecondary) {
                         Text(secondary).font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
@@ -152,16 +154,28 @@ struct SmartSheetFooter: View {
                             Text(primary).opacity(isBusy ? 0 : 1)
                             if isBusy { ProgressView().tint(.white) }
                         }
-                        .font(.app(17, weight: .semibold)).foregroundStyle(.white)
+                        .font(.app(17, weight: .semibold)).foregroundStyle(ink ? Color.appBackground : .white)
                         .lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, 8)
                         .frame(maxWidth: .infinity).frame(height: 50)
-                        .background(destructive ? Color(hex: "D93636") : Color.appPrimary, in: Capsule())
+                        .background(destructive ? Color(hex: "D93636") : ink ? Color.appText : Color.appPrimary, in: Capsule())
                         .opacity(isEnabled ? 1 : 0.4)
                     }
                     .disabled(!isEnabled)
                 }
                 .frame(height: 50)
-            } else {
+            } else if let primary {
+                Button(action: onPrimary) {
+                    ZStack {
+                        Text(primary).opacity(isBusy ? 0 : 1)
+                        if isBusy { ProgressView().tint(.white) }
+                    }
+                    .font(.app(17, weight: .semibold)).foregroundStyle(ink ? Color.appBackground : .white)
+                    .frame(maxWidth: .infinity).frame(height: 50)
+                    .background(destructive ? Color(hex: "D93636") : ink ? Color.appText : Color.appPrimary, in: Capsule())
+                    .opacity(isEnabled ? 1 : 0.4)
+                }
+                .disabled(!isEnabled)
+            } else if let secondary {
                 Button(action: onSecondary) {
                     Text(secondary).font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
                         .frame(maxWidth: .infinity).frame(height: 38)

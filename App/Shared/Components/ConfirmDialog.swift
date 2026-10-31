@@ -7,6 +7,7 @@ private struct ConfirmDialogModifier: ViewModifier {
     @Binding var isPresented: Bool
     let icon: String
     let destructive: Bool
+    let inkButton: Bool
     let title: String
     let message: String
     let confirmTitle: String?
@@ -17,7 +18,7 @@ private struct ConfirmDialogModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.sheet(isPresented: $isPresented) {
             SmartSheet(tone: destructive ? .destructive : .neutral, icon: icon, title: title, message: message) {
-                SmartSheetFooter(primary: confirmTitle, destructive: destructive, isBusy: isBusy, secondary: cancelTitle,
+                SmartSheetFooter(primary: confirmTitle, destructive: destructive, ink: inkButton, isBusy: isBusy, secondary: cancelTitle,
                                  onPrimary: onConfirm) { isPresented = false }
             }
             .interactiveDismissDisabled(isBusy)
@@ -27,10 +28,10 @@ private struct ConfirmDialogModifier: ViewModifier {
 
 extension View {
     /// `confirmTitle` nil makes it an info dialog with only the cancel button (use "Tutup").
-    func confirmDialog(isPresented: Binding<Bool>, icon: String, destructive: Bool = false, title: String,
+    func confirmDialog(isPresented: Binding<Bool>, icon: String, destructive: Bool = false, inkButton: Bool = false, title: String,
                        message: String, confirmTitle: String?, cancelTitle: String = L("Batal"),
                        isBusy: Bool = false, onConfirm: @escaping () -> Void = {}) -> some View {
-        modifier(ConfirmDialogModifier(isPresented: isPresented, icon: icon, destructive: destructive, title: title,
+        modifier(ConfirmDialogModifier(isPresented: isPresented, icon: icon, destructive: destructive, inkButton: inkButton, title: title,
                                        message: message, confirmTitle: confirmTitle, cancelTitle: cancelTitle,
                                        isBusy: isBusy, onConfirm: onConfirm))
     }

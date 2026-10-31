@@ -17,6 +17,8 @@ struct QuickResultSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var drafts: [Draft]
     @State private var isUnclear: Bool
+    /// Opens full height, or half for an unreadable sentence; the user can drag between the two.
+    @State private var detent: PresentationDetent
     private let isMulti: Bool
     @State private var saving = false
 @State private var periodChoice: Draft?
@@ -26,7 +28,6 @@ struct QuickResultSheet: View {
     @State private var picker: FieldPicker?
     @State private var openId: UUID?
     @State private var contentHeight: CGFloat = 420
-    @State private var listHeight: CGFloat = 0
 
     struct FieldPicker: Identifiable {
         let draftId: UUID
@@ -43,7 +44,9 @@ struct QuickResultSheet: View {
         self.onSaveLater = onSaveLater
         self.onRedo = onRedo
         _drafts = State(initialValue: drafts)
-        _isUnclear = State(initialValue: drafts.count == 1 && (drafts[0].isUnreadable || drafts[0].amount == nil))
+        let unclear = drafts.count == 1 && (drafts[0].isUnreadable || drafts[0].amount == nil)
+        _isUnclear = State(initialValue: unclear)
+        _detent = State(initialValue: unclear ? .medium : .large)
         isMulti = drafts.count > 1
     }
 
@@ -64,8 +67,19 @@ struct QuickResultSheet: View {
         }
         .padding(.top, 22)
         .filterSheet {
-            if !isUnclear { footer }
+            if isUnclear {
+                HStack(spacing: 12) {
+                    Button { dismiss(); onRedo(sentence) } label: {
+                        Image(systemName: "arrow.counterclockwise").font(.system(size: 20)).foregroundStyle(Color.appText)
+                            .frame(width: 50, height: 50).background(Color.appFill, in: Circle())
+                    }
+                    .accessibilityLabel(L("Ulang"))
+                    SmartSheetFooter(primary: L("Isi nominal"), secondary: nil, onPrimary: { fillManually() })
+                }
+                .buttonStyle(PressScaleStyle())
+            } else { footer }
         }
+        .presentationDetents([.medium, .large], selection: $detent)
 
         .sheet(item: $periodChoice) { d in
     EarlySalarySheet(date: d.date) { choice in
@@ -256,14 +270,11 @@ struct QuickResultSheet: View {
                 }
             }
             .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 10)
-            ScrollView {
-                VStack(spacing: 8) {
-                    ForEach(drafts) { d in card(d).transition(.asymmetric(insertion: .opacity, removal: .opacity.combined(with: .offset(x: -24)))) }
-                }
-                .padding(.horizontal, 16).padding(.bottom, 8)
-                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { listHeight = $0 }
+            // the sheet itself scrolls, so the list takes its full height
+            VStack(spacing: 8) {
+                ForEach(drafts) { d in card(d).transition(.asymmetric(insertion: .opacity, removal: .opacity.combined(with: .offset(x: -24)))) }
             }
-            .frame(height: min(max(listHeight, 1), 360))
+            .padding(.horizontal, 16).padding(.bottom, 8)
             .animation(.settle(0.35), value: drafts.map(\.id))
             if let failure { failureBox(failure).padding(.horizontal, 24).padding(.top, 6) }
         }
@@ -379,13 +390,8 @@ struct QuickResultSheet: View {
                 Text("Tulis nama dan jumlahnya dalam satu kalimat, mis. “sabun 18rb”.")
                     .font(.app(15)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
             }
-            PrimaryButton(title: L("Isi manual")) { fillManually() }
-            Button { dismiss(); onRedo(sentence) } label: {
-                Label(L("Ulang"), systemImage: "arrow.counterclockwise").font(.app(17, weight: .medium)).foregroundStyle(Color.appText)
-                    .frame(maxWidth: .infinity).frame(height: 44)
-            }
         }
-        .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 34)
+        .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 12)
     }
 
     // MARK: Footer
@@ -402,7 +408,7 @@ struct QuickResultSheet: View {
             title = saving ? L("Menyimpan…") : ready.isEmpty ? L("Belum ada yang lengkap") : rest > 0 ? L("Simpan %lld, lengkapi %lld nanti", ready.count, rest) : L("Simpan %lld yang lengkap", ready.count)
             action = saveReady
         } else if !complete {
-            title = L("Lengkapi di Konfirmasi transaksi")
+            title = L("Simpan draf")
             action = saveLater
         } else {
             title = saving ? L("Menyimpan…") : failure != nil ? L("Coba lagi") : L("Simpan")
@@ -412,11 +418,11 @@ struct QuickResultSheet: View {
             HStack(spacing: 10) {
                 Button { dismiss(); onRedo(sentence) } label: {
                     Image(systemName: "arrow.counterclockwise").font(.system(size: 20)).foregroundStyle(Color.appText)
-                        .frame(width: 52, height: 52).background(Color.appFill, in: Circle())
+                        .frame(width: 50, height: 50).background(Color.appFill, in: Circle())
                 }
                 .buttonStyle(PressScaleStyle())
                 .accessibilityLabel(L("Ulang"))
-                PrimaryButton(title: title, isLoading: saving, isEnabled: enabled, action: action)
+                SmartSheetFooter(primary: title, ink: !isMulti && !complete, isBusy: saving, isEnabled: enabled, secondary: nil, onPrimary: action)
             }
             if isMulti && rest > 0 {
                 Text(L("%lld yang belum lengkap masuk ke Konfirmasi transaksi", rest))
@@ -424,7 +430,7 @@ struct QuickResultSheet: View {
             }
             if isMulti || complete {
                 Button(action: saveLater) {
-                    Label(L("Simpan nanti"), systemImage: "tray.and.arrow.down").font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
+                    Label(L("Simpan draf"), systemImage: "tray.and.arrow.down").font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
                         .padding(.horizontal, 16).frame(height: 44)
                 }
                 .disabled(saving)
@@ -471,6 +477,7 @@ struct QuickResultSheet: View {
         withAnimation(.settle(0.4)) {
             drafts = [blank]
             isUnclear = false
+            detent = .large
         }
     }
 

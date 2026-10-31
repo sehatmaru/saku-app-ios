@@ -638,7 +638,7 @@ struct AddTransactionView: View {
     /// Bottom sheet from the ↻ icon (Pengingat Tagihan 4b): pick Tidak / Tiap bulan / Tiap tahun,
     /// see the next date, then Selesai.
     private var repeatSheet: some View {
-        PickerSheet(title: L("Tagihan berulang"), onDone: { showsRepeatMenu = false }) {
+        PickerSheet(title: L("Tagihan berulang"), actionTitle: L("Tutup"), onDone: { showsRepeatMenu = false }) {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(spacing: 0) {
                     ForEach(Self.repeatOptions, id: \.1) { option, title in
@@ -943,7 +943,7 @@ struct AddTransactionView: View {
 
     @ViewBuilder
     private func optionSheet(_ kind: PickerKind) -> some View {
-        PickerSheet(title: sheetTitle(kind), onDone: { sheet = nil }) {
+        PickerSheet(title: sheetTitle(kind), actionTitle: kind == .installment ? L("Selesai") : nil, onDone: { sheet = nil }) {
             switch kind {
             case .category, .account, .target:
                 EmptyView()
@@ -973,7 +973,7 @@ struct AddTransactionView: View {
                 ForEach(Self.installmentOptions, id: \.self) { months in
                     let isOn = months == installmentMonths
                     Button {
-                        pick(.installment) { installmentMonths = months }
+                        withAnimation(.settle(0.3)) { installmentMonths = months }
                     } label: {
                         Text(months == 0 ? L("Tidak") : L("%lld bulan", months))
                             .font(.app(15, weight: .medium))

@@ -1743,12 +1743,42 @@
         }
       }
     },
+    "Abaikan (%lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignore (%lld)"
+          }
+        }
+      }
+    },
     "Abaikan judul": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Ignore titles"
+          }
+        }
+      }
+    },
+    "Abaikan semua": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignore all"
+          }
+        }
+      }
+    },
+    "Abaikan semua draf?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignore all drafts?"
           }
         }
       }
@@ -16469,6 +16499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save %lld, complete %lld later"
+          }
+        }
+      }
+    },
+    "Simpan (%lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save (%lld)"
           }
         }
       }

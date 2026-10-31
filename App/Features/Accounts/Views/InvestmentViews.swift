@@ -350,8 +350,7 @@ struct InvestmentReminderSheet: View {
         .background(GeometryReader { geo in
             Color.clear.onAppear { height = geo.size.height }.onChange(of: geo.size.height) { _, new in height = new }
         })
-        .filterSheet()
-
+        .filterSheet { if !denied && !offer { SmartSheetFooter(primary: L("Tutup"), secondary: nil, onPrimary: { dismiss() }) } }
         .background(Color.appBackground)
         .onAppear {
             chosen = offer ? .monthly : store.interval(for: account.id)
@@ -391,8 +390,8 @@ struct InvestmentReminderSheet: View {
 
     private var optionsView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Pengingat").font(.app(20, weight: .semibold))
-            Text(L("Diingatkan memperbarui nilai %@.", account.name)).font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 4)
+            Text("Pengingat").font(.app(22, weight: .bold)).tracking(-0.3)
+            Text(L("Diingatkan memperbarui nilai %@.", account.name)).font(.app(14)).foregroundStyle(Color.appTextSecondary).padding(.top, 4)
             VStack(spacing: 0) {
                 ForEach(InvestmentReminder.allCases) { item in
                     Button { chosen = item; apply(item) } label: {
@@ -409,7 +408,6 @@ struct InvestmentReminderSheet: View {
             }
             .padding(.top, 14)
             Label("Diingatkan pukul 09.00", systemImage: "clock").font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
-            primary(L("Selesai")) { dismiss() }.padding(.top, 18)
         }
     }
 
@@ -535,7 +533,7 @@ struct UpdateValueView: View {
         .background(Color.appBackground)
         .foregroundStyle(Color.appText)
         .sheet(isPresented: $showsDate) {
-            PickerSheet(title: L("Tanggal"), onDone: { showsDate = false }) {
+            PickerSheet(title: L("Tanggal"), actionTitle: nil, onDone: { showsDate = false }) {
                 DayPicker(selected: date, color: .appInvestmentPanel) { day in date = day; showsDate = false }
             }
         }

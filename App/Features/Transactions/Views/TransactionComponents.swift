@@ -37,30 +37,25 @@ func walletColor(_ account: Account?) -> Color {
 
 // MARK: - Picker sheet
 
-/// Bottom sheet with a title, a Selesai button and scrolling content.
+/// Bottom sheet with a title, scrolling content and, unless `actionTitle` is nil, the action pinned at the bottom.
 struct PickerSheet<Content: View>: View {
     let title: String
-    var actionTitle = L("Selesai")
+    /// nil: no button, the choice closes the sheet or the sheet is dragged down.
+    var actionTitle: String? = L("Selesai")
     let onDone: () -> Void
     @ViewBuilder var content: Content
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text(title).font(.app(17, weight: .semibold))
-                Spacer()
-                Button(actionTitle, action: onDone)
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(Color.appPrimary)
-            }
-            .frame(height: 48)
-            .padding(.horizontal, 24)
-            .padding(.top, 14)
+            Text(title).font(.app(22, weight: .bold)).tracking(-0.3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 8)
 
             ScrollView { content }
                 .scrollIndicators(.hidden)
         }
         .foregroundStyle(Color.appText)
+        .pinnedFooter { if let actionTitle { SmartSheetFooter(primary: actionTitle, secondary: nil, onPrimary: onDone) } }
         .presentationDetents([.medium, .large])
 
         .background(Color.appBackground)

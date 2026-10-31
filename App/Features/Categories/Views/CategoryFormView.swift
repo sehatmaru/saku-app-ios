@@ -109,6 +109,8 @@ struct CategoryFormView: View {
     @State private var isBumped = false
     @State private var isSaving = false
     @State private var showsBudget = false
+    @State private var detent: PresentationDetent = .large
+    @State private var budgetOn: Bool
     @State private var errorMessage: String?
     @State private var outcomeAfterAlert: Outcome?
 
@@ -141,6 +143,7 @@ struct CategoryFormView: View {
             _showsAllIcons = State(initialValue: CategoryCatalog.needsAllIcons(for: category.icon ?? "tag"))
         }
         _budgetAmount = State(initialValue: budget?.amount ?? 0)
+        _budgetOn = State(initialValue: (budget?.amount ?? 0) > 0)
     }
 
     private var editing: Category? {
@@ -164,16 +167,17 @@ struct CategoryFormView: View {
             ScrollView { content }
                 .scrollIndicators(.hidden)
                 .scrollDismissesKeyboard(.interactively)
-            saveBar
         }
         .foregroundStyle(Color.appText)
+        .pinnedFooter { saveBar }
         .background(Color.appBackground)
-        .presentationDetents([.large])
+        .presentationDetents([.medium, .large], selection: $detent)
 
         .background(Color.appBackground)
         .sheet(isPresented: $showsBudget) {
             BudgetAmountSheet(amount: budgetAmount, average: average, cycle: cycle) { value in
                 budgetAmount = value
+                budgetOn = value > 0
                 showsBudget = false
             }
         }
@@ -190,32 +194,15 @@ struct CategoryFormView: View {
     // MARK: - Top bar and header
 
     private var topBar: some View {
-        HStack {
-            Button("Batal") { close(nil) }
-                .font(.app(16))
-                .foregroundStyle(Color.appTextSecondary)
-                .frame(width: 72, height: 44, alignment: .leading)
-            Spacer()
-            Text(editing == nil ? L("Kategori baru") : L("Ubah kategori"))
-                .font(.app(17, weight: .semibold))
-            Spacer()
-            Color.clear.frame(width: 72, height: 1)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 14)
-        .frame(height: 62)
+        Text(editing == nil ? L("Kategori baru") : L("Ubah kategori"))
+            .font(.app(22, weight: .bold)).tracking(-0.3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 4)
     }
 
     private var content: some View {
         VStack(spacing: 0) {
             preview
-            if editing == nil {
-                TypePill(options: [L("Pengeluaran"), L("Pemasukan")], selection: Binding(
-                    get: { type == .expense ? 0 : 1 },
-                    set: { type = $0 == 0 ? .expense : .income; if type == .income { budgetAmount = 0 } }
-                ), height: 40)
-                .padding(.top, 14)
-            }
             if isBuiltIn {
                 Label("Ikon dan warna kategori bawaan tidak bisa diubah", systemImage: "lock")
                     .font(.app(13))
@@ -347,35 +334,57 @@ struct CategoryFormView: View {
 
     // MARK: - Budget and hide
 
+    /// "Budget" switch; when on, "Atur budget" opens the amount sheet.
     private var budgetRow: some View {
-        Button { showsBudget = true } label: {
+        VStack(spacing: 0) {
             HStack(spacing: 14) {
                 Image(systemName: "chart.pie")
                     .font(.system(size: 19))
                     .foregroundStyle(Color.appTextSecondary)
                     .frame(width: 24)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Atur budget").font(.app(16))
-                    if budgetAmount > 0 {
-                        Text(L("≈Rp%@/hari", (budgetAmount / Double(max(cycle.days().total, 1))).formattedAsDigits()))
-                            .font(.app(13))
-                            .foregroundStyle(Color.appTextSecondary)
-                    }
-                }
+                Text("Budget").font(.app(16))
                 Spacer()
-                Text(budgetAmount > 0 ? "Rp" + budgetAmount.formattedAsDigits() : L("Atur"))
-                    .font(.app(15, weight: .medium))
-                    .foregroundStyle(budgetAmount > 0 ? Color.appText : Color.appPrimary)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color(light: 0xC7C7CC, dark: 0x48484A))
+                Toggle("Budget", isOn: Binding(get: { budgetOn }, set: setBudgetOn))
+                    .labelsHidden()
+                    .tint(.appPrimary)
             }
-            .monospacedDigit()
             .frame(minHeight: 60)
             .rowSeparator()
-            .contentShape(Rectangle())
+            if budgetOn {
+                Button { showsBudget = true } label: {
+                    HStack(spacing: 14) {
+                        Color.clear.frame(width: 24)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Atur budget").font(.app(16))
+                            if budgetAmount > 0 {
+                                Text(L("≈Rp%@/hari", (budgetAmount / Double(max(cycle.days().total, 1))).formattedAsDigits()))
+                                    .font(.app(13))
+                                    .foregroundStyle(Color.appTextSecondary)
+                            }
+                        }
+                        Spacer()
+                        Text(budgetAmount > 0 ? "Rp" + budgetAmount.formattedAsDigits() : L("Atur"))
+                            .font(.app(15, weight: .medium))
+                            .foregroundStyle(budgetAmount > 0 ? Color.appText : Color.appPrimary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(light: 0xC7C7CC, dark: 0x48484A))
+                    }
+                    .monospacedDigit()
+                    .frame(minHeight: 60)
+                    .rowSeparator()
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(RowPressStyle())
+                .transition(.opacity)
+            }
         }
-        .buttonStyle(RowPressStyle())
+        .animation(.settle(0.3), value: budgetOn)
+    }
+
+    private func setBudgetOn(_ on: Bool) {
+        budgetOn = on
+        if on { showsBudget = true } else { budgetAmount = 0 }
     }
 
     private var hideRow: some View {
@@ -418,24 +427,12 @@ struct CategoryFormView: View {
     }
 
     private var saveBar: some View {
-        // A plain button: tapping it while the form isn't valid shows why (shake + message).
+        // Tapping Simpan while the form isn't valid shows why (shake + message).
         let isValid = error == nil && !isSaving
-        return Button {
-            if isValid { save() } else if !isSaving { blocked() }
-        } label: {
-            ZStack {
-                if isSaving { ProgressView().tint(.white) } else { Text("Simpan").font(.app(17, weight: .semibold)) }
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(isValid ? Color.appPrimary : Color(light: 0xC7C7CC, dark: 0x48484A), in: Capsule())
+        return SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, isEnabled: true, secondary: L("Batal"),
+                                onPrimary: { if isValid { save() } else if !isSaving { blocked() } }) { close(nil) }
+            .opacity(isValid ? 1 : 0.55)
             .animation(.easeInOut(duration: 0.3), value: isValid)
-        }
-        .buttonStyle(PressScaleStyle())
-        .padding(.horizontal, 24)
-        .padding(.top, 10)
-        .padding(.bottom, 14)
     }
 
     // MARK: - Actions
@@ -544,6 +541,7 @@ private struct BudgetAmountSheet: View {
     @State private var amount: Int
     @State private var isFresh = true
     @State private var isBumped = false
+    @State private var detent: PresentationDetent = .medium
 
     init(amount: Double, average: Double, cycle: PaydayCycle, onDone: @escaping (Double) -> Void) {
         self.average = average
@@ -555,7 +553,7 @@ private struct BudgetAmountSheet: View {
     private var suggestion: Int { Int((average / 1000).rounded() * 1000) }
 
     var body: some View {
-        PickerSheet(title: L("Budget per periode"), onDone: { onDone(Double(amount)) }) {
+        VStack(spacing: 0) {
             VStack(spacing: 8) {
                 HStack(alignment: .top, spacing: 4) {
                     Text("Rp")
@@ -592,22 +590,20 @@ private struct BudgetAmountSheet: View {
                     .buttonStyle(PressScaleStyle())
                     .padding(.top, 6)
                 }
-                if amount > 0 {
-                    Button(L("Hapus budget")) { onDone(0) }
-                        .font(.app(14, weight: .semibold))
-                        .foregroundStyle(Color.appError)
-                        .frame(minHeight: 36)
-                }
             }
             .monospacedDigit()
             .padding(.horizontal, 24)
-            .padding(.top, 12)
+            .padding(.top, 28)
             .padding(.bottom, 18)
 
-            NumberPadKeys(onPress: press)
+            AmountPad(color: .appPrimary, isEnabled: amount > 0, onPress: press, onSave: { onDone(Double(amount)) })
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
         }
+        .foregroundStyle(Color.appText)
+        .filterSheet()
+        .background(Color.appBackground)
+        .presentationDetents([.medium, .large], selection: $detent)
     }
 
     private var info: String {

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The sheet shell for picking a wallet or category (design "Pilih Dompet Kategori" 6): title and
-/// Selesai, a search field, then scrolling content. Opens half-height; pull up for the full list.
+/// The sheet shell for picking a wallet or category (design "Pilih Dompet Kategori" 6): title,
+/// a search field, then scrolling content. Opens half-height; pull up for the full list.
 struct SelectionSheet<Content: View>: View {
     let title: String
     let searchPrompt: String
@@ -11,16 +11,9 @@ struct SelectionSheet<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text(title).font(.app(17, weight: .semibold))
-                Spacer()
-                Button("Selesai", action: onDone)
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(Color.appPrimary)
-            }
-            .frame(height: 48)
-            .padding(.horizontal, 24)
-            .padding(.top, 14)
+            Text(title).font(.app(22, weight: .bold)).tracking(-0.3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 10)
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").font(.system(size: 16))

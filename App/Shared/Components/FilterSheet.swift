@@ -28,13 +28,45 @@ extension View {
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
             .modifier(MoreCue(enabled: showsMoreCue))
+            .pinnedFooter { bar }
+            .presentationDetents([.medium, .large])
+    }
+
+    /// The footer pinned at the bottom of a sheet, 24 pt from the screen edge and from the sides.
+    func pinnedFooter<Footer: View>(separator: Bool = false, @ViewBuilder _ footer: () -> Footer) -> some View {
+        modifier(PinnedFooter(bar: footer(), separator: separator, initial: Self.footerBottomPadding))
+    }
+}
+
+/// The home indicator's safe area counts toward the 24 pt gap, so it is read from the sheet's own geometry: reading
+/// the window instead left the buttons off the screen whenever the sheet's inset differed from the window's.
+private struct PinnedFooter<Bar: View>: ViewModifier {
+    let bar: Bar
+    let separator: Bool
+    @State private var padding: CGFloat
+
+    init(bar: Bar, separator: Bool, initial: CGFloat) {
+        self.bar = bar
+        self.separator = separator
+        _padding = State(initialValue: initial)
+    }
+
+    func body(content: Content) -> some View {
+        content
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 bar
-                    .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, Self.footerBottomPadding)
+                    .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, padding)
                     .frame(maxWidth: .infinity)
                     .background(Color.appBackground)
+                    .overlay(alignment: .top) { if separator { Rectangle().fill(Color.appSeparator).frame(height: 1) } }
             }
-            .presentationDetents([.medium, .large])
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { padding = 24 - proxy.safeAreaInsets.bottom }
+                        .onChange(of: proxy.safeAreaInsets.bottom) { _, bottom in padding = 24 - bottom }
+                }
+            }
     }
 }
 

@@ -140,13 +140,6 @@ struct DraftQueueView: View {
         .background(Color.appBackground)
         .animation(.settle(0.4), value: store.drafts.map(\.id))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if !store.drafts.isEmpty {
-                    Button { showsDeleteAll = true } label: { Text("Hapus semua").foregroundStyle(Color.appText) }
-                }
-            }
-        }
         .hidesSmartButton()
         .onChange(of: sheet?.id) { focusedId = nil }
         .sheet(item: $sheet) { item in sheetContent(item) }
@@ -158,10 +151,10 @@ struct DraftQueueView: View {
         save(chosen)
     }
 }
-        .confirmDialog(isPresented: $showsDeleteAll, icon: "trash", destructive: true,
-                       title: L("Hapus semua draf?"),
+        .confirmDialog(isPresented: $showsDeleteAll, icon: "eye.slash", inkButton: true,
+                       title: L("Abaikan semua draf?"),
                        message: L("Semua %lld draf dari Smart Tracker akan dibuang. Transaksi yang sudah tersimpan tidak terpengaruh.", store.drafts.count),
-                       confirmTitle: L("Hapus semua")) { deleteAll() }
+                       confirmTitle: L("Abaikan semua")) { deleteAll() }
         .confirmDialog(isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } }),
                        icon: "exclamationmark.triangle", title: L("Gagal"),
                        message: errorMessage ?? "", confirmTitle: nil, cancelTitle: L("Tutup"))
@@ -222,23 +215,15 @@ struct DraftQueueView: View {
             }
         }
         .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .pinnedFooter(separator: true) {
             if store.drafts.count > 1 && focusedId == nil { bulkBar }
         }
     }
 
     private var bulkBar: some View {
-        VStack(spacing: 8) {
-            PrimaryButton(title: ready.isEmpty ? L("Belum ada yang lengkap") : L("Simpan %lld yang lengkap", ready.count),
-                          isEnabled: !ready.isEmpty) { showsSaveAll = true }
-            let rest = store.drafts.count - ready.count
-            Text(rest > 0 ? L("%lld draf yang belum lengkap tetap di daftar", rest) : L("Semua draf sudah lengkap"))
-                .font(.app(13)).foregroundStyle(Color.appTextSecondary)
-        }
-        .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 14)
-        .frame(maxWidth: .infinity)
-        .background(Color.appBackground)
-        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+        SmartSheetFooter(primary: L("Simpan (%lld)", ready.count), isEnabled: !ready.isEmpty,
+                         secondary: L("Abaikan (%lld)", store.drafts.count),
+                         onPrimary: { showsSaveAll = true }) { showsDeleteAll = true }
     }
 
     // MARK: Card
@@ -524,7 +509,7 @@ struct DraftQueueView: View {
 
     private var saveAllSheet: some View {
         let rest = store.drafts.count - ready.count
-        return SmartSheet(tone: .neutral, icon: "tray.and.arrow.down", title: L("Simpan %lld transaksi yang lengkap?", ready.count),
+        return SmartSheet(tone: .consent, icon: "checkmark.circle", title: L("Simpan %lld transaksi yang lengkap?", ready.count),
                           message: rest > 0 ? L("%lld draf yang belum lengkap tetap di daftar supaya bisa kamu cek nanti.", rest)
                               : L("Semua draf akan disimpan ke transaksimu.")) {
             SmartSheetFooter(primary: L("Simpan %lld transaksi", ready.count), secondary: L("Batal"),

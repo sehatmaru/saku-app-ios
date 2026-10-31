@@ -404,20 +404,21 @@ struct TypePill: View {
 
     var body: some View {
         GeometryReader { geo in
-            let width = (geo.size.width - 6) / CGFloat(max(options.count, 1))
+            let width = (geo.size.width - 8) / CGFloat(max(options.count, 1))
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.appFill)
+                // same segment as Ekspor data: a grey track, the chosen side in the sheet's own colour
+                Capsule().fill(Color(light: 0xF2F2F4, dark: 0x2C2C2E))
                 Capsule()
-                    .fill(Color.appText)
-                    .frame(width: width, height: geo.size.height - 6)
-                    .offset(x: 3 + CGFloat(selection) * width)
+                    .fill(Color.appBackground)
+                    .frame(width: width, height: geo.size.height - 8)
+                    .offset(x: 4 + CGFloat(selection) * width)
                     .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.26), value: selection)
                 HStack(spacing: 0) {
                     ForEach(options.indices, id: \.self) { i in
                         Button { selection = i } label: {
                             Text(options[i])
                                 .font(.app(height > 42 ? 15 : 14, weight: .semibold))
-                                .foregroundStyle(selection == i ? Color.appBackground : Color.appTextSecondary)
+                                .foregroundStyle(selection == i ? Color.appText : Color.appTextSecondary)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .contentShape(Rectangle())
                                 .animation(.easeInOut(duration: 0.2), value: selection)
@@ -426,7 +427,7 @@ struct TypePill: View {
                         .accessibilityAddTraits(selection == i ? [.isSelected, .isButton] : .isButton)
                     }
                 }
-                .padding(.horizontal, 3)
+                .padding(.horizontal, 4)
             }
         }
         .frame(height: height)

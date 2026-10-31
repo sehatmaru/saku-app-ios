@@ -1451,5 +1451,9 @@
   "Jatuh tempo hari ini": "Due today",
   "Jatuh tempo %@ · %lld hari": "Due %@ · %lld days",
   "untuk %lld hari sampai %@": "for %lld days until %@",
-  "Sembunyikan semua": "Hide all"
+  "Sembunyikan semua": "Hide all",
+  "Simpan (%lld)": "Save (%lld)",
+  "Abaikan (%lld)": "Ignore (%lld)",
+  "Abaikan semua": "Ignore all",
+  "Abaikan semua draf?": "Ignore all drafts?"
 }

@@ -62,7 +62,7 @@ struct DraftFieldSheet: View {
                 edit { $0.counterpartyAccountId = account.id; $0.needsInvestmentWallet = false }
             }
         case .date:
-            PickerSheet(title: L("Tanggal"), onDone: close) {
+            PickerSheet(title: L("Tanggal"), actionTitle: nil, onDone: close) {
                 DayPicker(selected: draft.date, color: .stGreen) { day in
                     edit { $0.date = Self.keepingTime(of: $0.date, on: day) }
                     close()
@@ -104,7 +104,7 @@ struct DraftTypeSheet: View {
         (.transfer, "Transfer", "Pindah uang antar dompet", "arrow.left.arrow.right", .stTransfer)]
 
     var body: some View {
-        PickerSheet(title: L("Tipe transaksi"), onDone: onDone) {
+        PickerSheet(title: L("Tipe transaksi"), actionTitle: nil, onDone: onDone) {
             VStack(spacing: 0) {
                 ForEach(kinds, id: \.kind) { item in
                     let isOn = item.kind == selected

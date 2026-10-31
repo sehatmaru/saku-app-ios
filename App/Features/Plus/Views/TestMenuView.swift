@@ -61,7 +61,7 @@ struct TestMenuView: View {
                 item("Matikan Smart Tracker?", selected: false) { confirm = .off }
                 item("Matikan Smart Tracker? (sibuk)", selected: false) { confirm = .offBusy }
                 item("Lupakan semua?", selected: false) { confirm = .forget }
-                item("Hapus semua draf?", selected: false) { confirm = .deleteAll }
+                item("Abaikan semua draf?", selected: false) { confirm = .deleteAll }
 
                 header("Smart Tracker · informasi")
                 item("Gagal mematikan Smart Tracker", selected: false) { confirm = .failedOff }
@@ -87,7 +87,7 @@ struct TestMenuView: View {
             case .imageNeedsTracker: ImageConsentSheet(profileId: nil, onAgree: {}, onDetails: nil, isPreview: true, previewNeedsTracker: true)
             case .memory: MemorySyncConsentSheet(profileId: nil, isPreview: true)
             case .saveAll:
-                SmartSheet(tone: .neutral, icon: "tray.and.arrow.down", title: L("Simpan %lld transaksi yang lengkap?", 5),
+                SmartSheet(tone: .consent, icon: "checkmark.circle", title: L("Simpan %lld transaksi yang lengkap?", 5),
                            message: L("%lld draf yang belum lengkap tetap di daftar supaya bisa kamu cek nanti.", 2)) {
                     SmartSheetFooter(primary: L("Simpan %lld transaksi", 5), secondary: L("Batal"), onPrimary: { sheet = nil }) { sheet = nil }
                 }
@@ -102,9 +102,9 @@ struct TestMenuView: View {
         .confirmDialog(isPresented: flag(.forget), icon: "brain", destructive: true, title: L("Lupakan semua?"),
                        message: L("Semua pilihan yang diingat dihapus. Transaksi yang sudah tersimpan tidak berubah."),
                        confirmTitle: L("Lupakan semua")) { confirm = nil }
-        .confirmDialog(isPresented: flag(.deleteAll), icon: "trash", destructive: true, title: L("Hapus semua draf?"),
+        .confirmDialog(isPresented: flag(.deleteAll), icon: "eye.slash", inkButton: true, title: L("Abaikan semua draf?"),
                        message: L("Semua %lld draf dari Smart Tracker akan dibuang. Transaksi yang sudah tersimpan tidak terpengaruh.", 3),
-                       confirmTitle: L("Hapus semua")) { confirm = nil }
+                       confirmTitle: L("Abaikan semua")) { confirm = nil }
         .confirmDialog(isPresented: flag(.failedOff), icon: "exclamationmark.triangle", title: L("Gagal mematikan Smart Tracker"),
                        message: L("Periksa koneksi internetmu lalu coba lagi. Pengaturanmu belum berubah."),
                        confirmTitle: nil, cancelTitle: L("Tutup"))
