@@ -28,10 +28,15 @@ struct AddWalletView: View {
     let onSave: (NewWallet) async -> Bool
     /// True for a type the free plan can no longer add (US9); the offer shows instead of the next step.
     let isLimited: (Account.AccountType) -> Bool
+    /// True when an active wallet of this type already has the name.
+    let nameTaken: (String, Account.AccountType) -> Bool
     @State private var plusReason: PlusReason?
 
-    init(isLimited: @escaping (Account.AccountType) -> Bool = { _ in false }, onSave: @escaping (NewWallet) async -> Bool) {
+    init(isLimited: @escaping (Account.AccountType) -> Bool = { _ in false },
+         nameTaken: @escaping (String, Account.AccountType) -> Bool = { _, _ in false },
+         onSave: @escaping (NewWallet) async -> Bool) {
         self.isLimited = isLimited
+        self.nameTaken = nameTaken
         self.onSave = onSave
     }
 
@@ -75,6 +80,7 @@ struct AddWalletView: View {
     @State private var isDefault = false
     @State private var isSaving = false
     @State private var saveFailed = false
+    @State private var saveMessage = ""
     /// Brief pulses: the amount grows a touch on each key, the logo pops on each pick.
     @State private var bump = false
     @State private var pop = false
@@ -184,7 +190,7 @@ struct AddWalletView: View {
         .alert("Gagal menyimpan dompet", isPresented: $saveFailed) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Periksa koneksi lalu coba lagi. Nama dompet juga tidak boleh sama dengan dompet lain.")
+            Text(saveMessage)
         }
     }
 
@@ -882,9 +888,15 @@ struct AddWalletView: View {
 
     private func save() {
         guard let type else { return }
+        let walletName = trimmedName.isEmpty ? "Dompet baru" : trimmedName
+        if nameTaken(walletName, type) {
+            saveMessage = L("Nama dompet ini sudah dipakai. Pakai nama lain.")
+            saveFailed = true
+            return
+        }
         isSaving = true
         let wallet = NewWallet(
-            name: trimmedName.isEmpty ? "Dompet baru" : trimmedName,
+            name: walletName,
             type: type,
             balance: Double(isCredit ? bill : balance),
             icon: isCash ? "cash" : chosenProvider?.id,
@@ -906,6 +918,7 @@ struct AddWalletView: View {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 step = .done
             } else {
+                saveMessage = L("Periksa koneksi lalu coba lagi.")
                 saveFailed = true
             }
         }

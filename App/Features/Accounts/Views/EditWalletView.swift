@@ -193,9 +193,7 @@ struct EditWalletView: View {
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !nameFocused { actionBar }
-        }
+        .pinnedFooter { if !nameFocused { saveBar } }
         .opacity(isDeleting ? 0.3 : 1)
         .allowsHitTesting(!isDeleting)
         .animation(.easeInOut(duration: 0.4), value: isDeleting)
@@ -210,7 +208,7 @@ struct EditWalletView: View {
             if pendingDelete != nil { finishDelete(dismissAfter: false) }
         }
         .navigationBarTitleDisplayMode(.inline)
-        // ponytail: hiding the back button drops the swipe-back gesture; Batal is the way out.
+        // hiding the system back button drops the swipe-back gesture; the chevron in the toolbar is the way back.
         .navigationBarBackButtonHidden(true)
         .toolbar(endShown ? .hidden : .visible, for: .navigationBar)
         .toolbar { toolbar }
@@ -226,32 +224,12 @@ struct EditWalletView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button("Batal") {
-                if isDirty {
-                    nameFocused = false
-                    withAnimation(.settle(0.42)) { cur = orig }
-                } else {
-                    dismiss()
-                }
-            }
-            .font(.app(17))
-            .foregroundStyle(Color.appPrimary)
+            Button { dismiss() } label: { Image(systemName: "chevron.left") }
+                .foregroundStyle(Color.appText)
+                .accessibilityLabel(L("Kembali"))
         }
         ToolbarItem(placement: .principal) {
             Text("Ubah dompet").font(.app(17, weight: .semibold))
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button(action: save) {
-                if isSaving {
-                    ProgressView()
-                } else {
-                    Text("Simpan")
-                        .font(.app(17, weight: .semibold))
-                        .foregroundStyle(canSave ? Color.appPrimary : Self.faint)
-                        .animation(.easeInOut(duration: 0.22), value: canSave)
-                }
-            }
-            .disabled(!canSave)
         }
     }
 
@@ -465,36 +443,18 @@ struct EditWalletView: View {
         }
     }
 
-    /// Arsipkan and Hapus: two pills pinned over a white fade, so they stay reachable while the form scrolls.
-    private var actionBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                if isArchived { Task { await unarchive(fromEnd: false) } } else { sheet = .archive }
-            } label: {
-                Label(isArchived ? L("Pulihkan") : L("Arsipkan"), systemImage: isArchived ? "arrow.uturn.backward" : "archivebox")
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(Color.appText)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(Color.appBackground, in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
-            }
-            .buttonStyle(PressScaleStyle())
-            .disabled(isBusy)
+    /// Batal and Simpan pinned at the bottom. Arsipkan and Hapus live on the wallet's detail page.
+    private var saveBar: some View {
+        SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, isEnabled: canSave, secondary: L("Batal"),
+                         onPrimary: save) { cancelEdit() }
+    }
 
-            Button { nameFocused = false; isConfirmingDelete = true } label: {
-                Label(L("Hapus"), systemImage: "trash")
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(Color.appError)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(Color.appError.opacity(0.1), in: Capsule())
-            }
-            .buttonStyle(PressScaleStyle())
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 40)
-        .padding(.bottom, 8)
-        .background {
-            LinearGradient(colors: [Color.appBackground.opacity(0), Color.appBackground], startPoint: .top, endPoint: .init(x: 0.5, y: 0.4))
+    private func cancelEdit() {
+        if isDirty {
+            nameFocused = false
+            withAnimation(.settle(0.42)) { cur = orig }
+        } else {
+            dismiss()
         }
     }
 

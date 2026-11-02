@@ -40,15 +40,6 @@ struct CardDetailContent: View {
             if let statement { billPanel(statement) }
             upcomingHeader.padding(.top, 26)
             upcomingRows
-            Button(action: onHistory) {
-                Label(L("Riwayat transaksi"), systemImage: "clock.arrow.circlepath")
-                    .font(.app(15, weight: .semibold))
-                    .foregroundStyle(Color.appText)
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .overlay(Capsule().strokeBorder(Color.appSeparator, lineWidth: 1))
-            }
-            .buttonStyle(PressScaleStyle())
-            .padding(.top, 12)
         }
     }
 

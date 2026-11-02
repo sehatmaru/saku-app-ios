@@ -28,15 +28,11 @@ private enum InvestmentUI {
 
 // MARK: - Detail (design 4)
 
-/// Under an open investment card: gain, capital, last update, and Setor, Tarik, Perbarui nilai, Riwayat.
+/// Under an open investment card: gain, capital, last update and the chart. The actions sit above, in the wallet's row.
 struct InvestmentDetailContent: View {
     let account: Account
     let transactions: [Transaction]
     let isBalanceVisible: Bool
-    let onDeposit: () -> Void
-    let onWithdraw: () -> Void
-    let onUpdateValue: () -> Void
-    let onHistory: () -> Void
     @State private var showsReminder = false
     @State private var reminder = InvestmentReminder.off
 
@@ -73,14 +69,6 @@ struct InvestmentDetailContent: View {
 
             InvestmentChartView(account: account, transactions: transactions, isBalanceVisible: isBalanceVisible)
                 .padding(.top, 18)
-
-            HStack(spacing: 0) {
-                action(L("Setor"), "tray.and.arrow.down", onDeposit)
-                action(L("Tarik"), "tray.and.arrow.up", onWithdraw)
-                action(L("Perbarui nilai"), "arrow.triangle.2.circlepath", onUpdateValue, tinted: true)
-                action(L("Riwayat"), "clock.arrow.circlepath", onHistory)
-            }
-            .padding(.top, 18)
         }
     }
 
@@ -125,21 +113,6 @@ struct InvestmentDetailContent: View {
             Spacer(minLength: 8)
             value().monospacedDigit()
         }
-    }
-
-    private func action(_ title: String, _ icon: String, _ perform: @escaping () -> Void, tinted: Bool = false) -> some View {
-        Button(action: perform) {
-            VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundStyle(tinted ? Color.appInvestment : Color.appText)
-                    .frame(width: 44, height: 44)
-                    .background(tinted ? Color.appInvestmentTint : Color.appFill, in: Circle())
-                Text(title).font(.app(12)).foregroundStyle(Color.appText).lineLimit(1).minimumScaleFactor(0.8)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(PressScaleStyle())
     }
 }
 

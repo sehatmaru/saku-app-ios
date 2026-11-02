@@ -35,6 +35,10 @@ struct AccountListView: View {
     @State private var isOverlayOn = false
     /// Card lifted to the top; nil while the overlay opens or closes.
     @State private var selectedID: String?
+    @State private var deleting: Account?
+    /// Scroll offset of the open card's detail; the card moves with it.
+    @State private var detailScrollY: CGFloat = 0
+    @State private var detailScrollPosition = ScrollPosition(edge: .top)
     /// Last opened card, keeps the detail content filled while it fades out.
     @State private var lastSelectedID: String?
     @State private var cardTops = CardTops()
@@ -206,6 +210,11 @@ struct AccountListView: View {
                 await syncCategories(userId: userId)
             }
             .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in reload() }
+            .sheet(item: $deleting) { account in
+                DeleteWalletSheet(account: account, transactionCount: accountTransactions[account.id]?.count ?? 0,
+                                  onDelete: { deleting = nil; remove(account) },
+                                  onArchiveInstead: { deleting = nil; archive(account) })
+            }
             .sheet(item: $archiving) { account in
                 ArchiveWalletSheet(name: account.name) {
                     archiving = nil
@@ -266,7 +275,8 @@ struct AccountListView: View {
             }
             .fullScreenCover(isPresented: $showAddWallet) {
                 if let userId = authViewModel.currentUser?.id {
-                    AddWalletView(isLimited: { FreeLimits.isWalletLimited($0, in: viewModel.accounts, isPlus: plus.isPlus) }) { wallet in
+                    AddWalletView(isLimited: { FreeLimits.isWalletLimited($0, in: viewModel.accounts, isPlus: plus.isPlus) },
+                                  nameTaken: { name, type in viewModel.accounts.contains { $0.name == name && $0.type == type && $0.isActive } }) { wallet in
                         let firstInvestment = wallet.type == .investment && !viewModel.accounts.contains(where: \.isInvestment)
                         let success = await viewModel.addAccount(
                             name: wallet.name, type: wallet.type, openingBalance: wallet.balance, icon: wallet.icon,
@@ -290,25 +300,15 @@ struct AccountListView: View {
 
     // MARK: Header
 
-    /// Archive and balance; while a card's detail is open, only "Selesai".
+    /// Archive and balance; while a card's detail is open, only the back chevron.
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         if selectedID != nil {
-            // Same top bar as the transaction detail: back on the left, Ubah on the right.
+            // Back on the left; Tutup and Edit are pinned at the bottom.
             ToolbarItem(placement: .topBarLeading) {
                 Button(action: closeDetail) { Image(systemName: "chevron.left") }
+                    .tint(Color.appText)
                     .accessibilityLabel("Kembali")
-            }
-            if let open = allCards.first(where: { $0.id == selectedID }), open.isCreditCard || open.isInvestment {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Ubah") { path.append(open) }
-                        .font(.app(17, weight: .semibold))
-                }
-            } else {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Selesai", action: closeDetail)
-                        .fontWeight(.semibold)
-                }
             }
         } else {
             ToolbarItemGroup(placement: .topBarTrailing) {
@@ -735,18 +735,31 @@ struct AccountListView: View {
 
                 if let account = cards.first(where: { $0.id == (selectedID ?? lastSelectedID) }) {
                     let contentTop = detailCardTop + cardHeight + 20
+                    // The whole page scrolls: the card is positioned over a spacer and follows the scroll offset.
                     ScrollView {
-                        detailContent(account, isOpen: shown)
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 24)
+                        VStack(spacing: 0) {
+                            // the card floats above this spacer with hit testing off, so a tap lands here and the page still scrolls
+                            Color.clear.frame(height: contentTop)
+                                .contentShape(Rectangle())
+                                .onTapGesture { if shown { select(account.id) } }
+                            detailContent(account, isOpen: shown)
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 122)
+                        }
                     }
                     .scrollIndicators(.hidden)
-                    .frame(height: max(pileTop - contentTop - 8, 0))
-                    .padding(.top, contentTop)
-                        .opacity(shown ? 1 : 0)
-                        .offset(y: shown ? 0 : 18)
-                        .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.46).delay(shown ? 0.2 : 0), value: selectedID)
-                        .allowsHitTesting(shown)
+                    .scrollBounceBehavior(.always)
+                    .scrollPosition($detailScrollPosition)
+                    .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
+                        detailScrollY = offset
+                    }
+                    .onChange(of: selectedID) { _, id in
+                        if id != nil { detailScrollPosition.scrollTo(edge: .top) }
+                    }
+                    .opacity(shown ? 1 : 0)
+                    .offset(y: shown ? 0 : 18)
+                    .animation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.46).delay(shown ? 0.2 : 0), value: selectedID)
+                    .allowsHitTesting(shown)
                 }
 
                 ForEach(Array(cards.enumerated()), id: \.element.id) { index, account in
@@ -763,16 +776,29 @@ struct AccountListView: View {
                     .frame(height: cardHeight)
                     .scaleEffect(layout.scale, anchor: .top)
                     .padding(.horizontal, 24)
-                    .offset(y: layout.y)
+                    .offset(y: layout.y - (shown && account.id == selectedID ? detailScrollY : 0))
+                    .opacity(shown && account.id != selectedID ? 0 : 1)
                     .zIndex(layout.z)
                     .animation(cardAnimation.delay(layout.delay), value: selectedID)
-                    .onTapGesture { if shown { select(account.id) } }
+                    .onTapGesture { if shown && account.id == selectedID { select(account.id) } }
+                    // an open card lets drags through, so the page scrolls from anywhere
+                    .allowsHitTesting(!shown)
                     .accessibilityAddTraits(.isButton)
                     .accessibilityHint(selectedID == account.id ? L("Tutup detail") : L("Buka dompet"))
                 }
+
+                if shown, let account = cards.first(where: { $0.id == selectedID }) {
+                    SmartSheetFooter(primary: L("Ubah"), ink: true, secondary: L("Tutup"),
+                                     onPrimary: { path.append(account) }) { closeDetail() }
+                        .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 24)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.appBackground)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
+                        .transition(.opacity)
+                }
             }
         }
-        // Span to the screen bottom so `safeAreaInsets.bottom` reports the tab bar height.
+        // Span to the screen bottom so the footer sits 24 pt from the screen edge.
         .ignoresSafeArea(.container, edges: .bottom)
         .onAppear { selectedID = lastSelectedID }
     }
@@ -782,34 +808,28 @@ struct AccountListView: View {
     private func detailContent(_ account: Account, isOpen: Bool) -> some View {
         let statement = viewModel.statement(for: account, transactions: accountTransactions[account.id] ?? [])
         if account.isInvestment {
-            return AnyView(InvestmentDetailContent(
-                account: account, transactions: accountTransactions[account.id] ?? [], isBalanceVisible: isBalanceVisible,
-                onDeposit: { assetTransfer = AssetTransferRoute(account: account, mode: .deposit) },
-                onWithdraw: { assetTransfer = AssetTransferRoute(account: account, mode: .withdraw) },
-                onUpdateValue: { updatingValue = account },
-                onHistory: { path.append(WalletHistoryRoute(account: account)) }))
+            return AnyView(VStack(alignment: .leading, spacing: 0) {
+                actionsRow(account, [.transfer, .history, .update, .archive, .delete])
+                    .padding(.bottom, 18)
+                InvestmentDetailContent(
+                    account: account, transactions: accountTransactions[account.id] ?? [], isBalanceVisible: isBalanceVisible)
+            })
         }
         if account.isCreditCard {
-            return AnyView(CardDetailContent(
-                card: account, statement: statement,
-                subscriptions: viewModel.subscriptions.filter { $0.accountId == account.id },
-                isBalanceVisible: isBalanceVisible,
-                onPay: { payCard = account }, onRecord: { recordCard = account },
-                onSubscriptions: { path.append(WalletSubscriptionsRoute(account: account)) },
-                onHistory: { path.append(WalletHistoryRoute(account: account)) }))
+            return AnyView(VStack(alignment: .leading, spacing: 0) {
+                actionsRow(account, [.history, .archive, .delete])
+                    .padding(.bottom, 18)
+                CardDetailContent(
+                    card: account, statement: statement,
+                    subscriptions: viewModel.subscriptions.filter { $0.accountId == account.id },
+                    isBalanceVisible: isBalanceVisible,
+                    onPay: { payCard = account }, onRecord: { recordCard = account },
+                    onSubscriptions: { path.append(WalletSubscriptionsRoute(account: account)) },
+                    onHistory: { path.append(WalletHistoryRoute(account: account)) })
+            })
         }
         return AnyView(VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 0) {
-                if account.isCreditCard {
-                    detailAction(L("Bayar"), icon: "creditcard", isPrimary: true) { payCard = account }
-                } else {
-                    detailAction(L("Transfer"), icon: "arrow.left.arrow.right") { transferFrom = account }
-                }
-                detailAction(L("Riwayat"), icon: "clock.arrow.circlepath") { path.append(WalletHistoryRoute(account: account)) }
-                detailAction(L("Ubah"), icon: "pencil") { path.append(account) }
-                detailAction(L("Arsipkan"), icon: "archivebox") { archiving = account }
-            }
-            .padding(.horizontal, -8)
+            actionsRow(account, [.transfer, .history, .archive, .delete])
 
             if let statement {
                 billBox(statement, card: account)
@@ -824,6 +844,29 @@ struct AccountListView: View {
                     .padding(.top, 6)
             }
         })
+    }
+
+    private enum DetailAction { case transfer, history, update, archive, delete }
+
+    /// The actions under the open card: icon over label, Hapus in red.
+    private func actionsRow(_ account: Account, _ items: [DetailAction]) -> some View {
+        HStack(spacing: 0) {
+            ForEach(items, id: \.self) { item in
+                switch item {
+                case .transfer:
+                    detailAction(L("Transfer"), icon: "arrow.left.arrow.right") { transferFrom = account }
+                case .history:
+                    detailAction(L("Riwayat"), icon: "clock.arrow.circlepath") { path.append(WalletHistoryRoute(account: account)) }
+                case .update:
+                    detailAction(L("Perbarui"), icon: "arrow.triangle.2.circlepath", isPrimary: true) { updatingValue = account }
+                case .archive:
+                    detailAction(L("Arsipkan"), icon: "archivebox") { archiving = account }
+                case .delete:
+                    detailAction(L("Hapus"), icon: "trash", isDestructive: true) { deleting = account }
+                }
+            }
+        }
+        .padding(.horizontal, -8)
     }
 
     /// The last statement: a warm question once it is overdue (Pengingat Tagihan 2f), a quiet
@@ -1048,6 +1091,17 @@ struct AccountListView: View {
         }
     }
 
+    /// Closes the detail, then deletes the wallet; a wallet with transactions is archived instead (the sheet offers it).
+    private func remove(_ account: Account) {
+        closeDetail()
+        Task {
+            try? await Task.sleep(for: .milliseconds(600))
+            if await viewModel.removeAccount(id: account.id) {
+                showToast(L("%@ dihapus", account.name))
+            }
+        }
+    }
+
     private func showToast(_ text: String) {
         toastText = text
         isToastShown = true
@@ -1063,15 +1117,15 @@ struct AccountListView: View {
         }
     }
 
-    private func detailAction(_ title: String, icon: String, isPrimary: Bool = false,
+    private func detailAction(_ title: String, icon: String, isPrimary: Bool = false, isDestructive: Bool = false,
                               perform: @escaping () -> Void) -> some View {
         Button(action: perform) {
             VStack(spacing: 7) {
                 Image(systemName: icon)
                     .font(.system(size: 20))
-                    .foregroundStyle(isPrimary ? .white : Color.appText)
+                    .foregroundStyle(isPrimary || isDestructive ? .white : Color.appText)
                     .frame(width: 52, height: 52)
-                    .background(isPrimary ? Color.appPrimary : Color.appFill, in: Circle())
+                    .background(isDestructive ? Color(hex: "D93636") : isPrimary ? Color.appPrimary : Color.appFill, in: Circle())
                 Text(title)
                     .font(.app(13))
                     .foregroundStyle(Color.appBody)
@@ -1581,6 +1635,54 @@ private struct ArchiveWalletSheet: View {
         SmartSheet(tone: .neutral, icon: "archivebox", title: L("Arsipkan %@?", name),
                    message: L("Dompet disembunyikan dari daftar dan total. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja.")) {
             SmartSheetFooter(primary: L("Arsipkan"), secondary: L("Batal"), onPrimary: onArchive) { dismiss() }
+        }
+    }
+}
+
+/// "Hapus dompet ini?" from the open card's detail. A wallet with transactions can't be deleted, so it offers
+/// Arsipkan saja instead.
+private struct DeleteWalletSheet: View {
+    let account: Account
+    let transactionCount: Int
+    let onDelete: () -> Void
+    let onArchiveInstead: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private var blocked: Bool { transactionCount > 0 }
+
+    private var message: String {
+        if blocked {
+            return L("%@ punya %lld transaksi.", account.name, transactionCount) + " "
+                + (account.isActive ? L("Arsipkan saja: dompet disembunyikan dari daftar dan total saldo, riwayatnya tetap tersimpan.")
+                   : L("Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan."))
+        }
+        let balance = account.balance
+        let rp = balance.formattedAsCurrency()
+        if account.isCreditCard {
+            return balance > 0 ? L("%@ dan utang %@ akan dihapus dari daftar dan total.", account.name, rp)
+                               : L("%@ akan dihapus dari daftar dompet.", account.name)
+        }
+        return balance != 0 ? L("%@ dan saldonya (%@) akan keluar dari total saldo.", account.name, rp)
+                            : L("%@ akan dihapus dari daftar dompet.", account.name)
+    }
+
+    var body: some View {
+        SmartSheet(tone: blocked ? .neutral : .destructive, icon: blocked ? "archivebox" : "trash",
+                   title: blocked ? L("Dompet ini tidak bisa dihapus") : L("Hapus dompet ini?"), message: message,
+                   extra: {
+                       if !blocked, account.isInvestment, account.balance > 0 {
+                           Text(L("Total aset akan berkurang %@", account.balance.formattedAsCurrency()))
+                               .font(.app(15, weight: .semibold)).foregroundStyle(Color.appError)
+                               .multilineTextAlignment(.center).padding(.top, 14)
+                       }
+                   }) {
+            if !blocked {
+                SmartSheetFooter(primary: L("Hapus"), destructive: true, secondary: L("Batal"), onPrimary: onDelete) { dismiss() }
+            } else if account.isActive {
+                SmartSheetFooter(primary: L("Arsipkan saja"), secondary: L("Batal"), onPrimary: onArchiveInstead) { dismiss() }
+            } else {
+                SmartSheetFooter(primary: nil, secondary: L("Tutup")) { dismiss() }
+            }
         }
     }
 }

@@ -1455,5 +1455,7 @@
   "Simpan (%lld)": "Save (%lld)",
   "Abaikan (%lld)": "Ignore (%lld)",
   "Abaikan semua": "Ignore all",
+  "Perbarui": "Update",
+  "Nama dompet ini sudah dipakai. Pakai nama lain.": "This wallet name is already used. Pick another.",
   "Abaikan semua draf?": "Ignore all drafts?"
 }
