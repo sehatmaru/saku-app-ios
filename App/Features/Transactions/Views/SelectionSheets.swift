@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// The dark sheet is itself 1C1C1E, so tiles and the search field need a lighter fill to show there.
+private let pickerFill = Color(light: 0xF2F2F4, dark: 0x2C2C2E)
+
 /// The sheet shell for picking a wallet or category (design "Pilih Dompet Kategori" 6): title,
 /// a search field, then scrolling content. Opens half-height; pull up for the full list.
 struct SelectionSheet<Content: View>: View {
@@ -30,7 +33,7 @@ struct SelectionSheet<Content: View>: View {
             .foregroundStyle(Color.appTextSecondary)
             .padding(.horizontal, 12)
             .frame(height: 38)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 10))
+            .background(pickerFill, in: RoundedRectangle(cornerRadius: 10))
             .padding(.horizontal, 20)
             .padding(.top, 2)
             .padding(.bottom, 4)
@@ -46,6 +49,25 @@ struct SelectionSheet<Content: View>: View {
         .presentationDetents([.medium, .large])
 
         .background(Color.appBackground)
+    }
+}
+
+/// A picked tile fills with its own colour, with a white tick, a coloured glow and a small lift, as on the onboarding wallet step.
+private extension View {
+    func pickedTile(_ isOn: Bool, color: Color, radius: CGFloat, base: Color = pickerFill) -> some View {
+        background(isOn ? color : base, in: RoundedRectangle(cornerRadius: radius))
+            .overlay(alignment: .topTrailing) {
+                Circle().fill(.white)
+                    .frame(width: 20, height: 20)
+                    .overlay { Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(color.isLight ? Color(hex: "1C1C1E") : color) }
+                    .padding(8)
+                    .opacity(isOn ? 1 : 0)
+                    .scaleEffect(isOn ? 1 : 0.3)
+                    .animation(.timingCurve(0.3, 1.5, 0.5, 1, duration: 0.32), value: isOn)
+            }
+            .shadow(color: isOn ? color.opacity(0.32) : .clear, radius: 9, y: 8)
+            .offset(y: isOn ? -2 : 0)
+            .animation(.timingCurve(0.3, 1.3, 0.5, 1, duration: 0.32), value: isOn)
     }
 }
 
@@ -122,11 +144,7 @@ struct WalletPickerSheet: View {
             } else {
                 if !recent.isEmpty {
                     sectionTitle(L("Terakhir dipakai"), top: 12)
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                        ForEach(recent) { bigTile($0) }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                    smallGrid(recent).padding(.top, 8)
                 }
                 ForEach(groups, id: \.title) { group in
                     if !group.items.isEmpty {
@@ -180,16 +198,6 @@ struct WalletPickerSheet: View {
         .padding(.horizontal, 20)
     }
 
-    private func logo(_ account: Account, width: CGFloat, height: CGFloat) -> some View {
-        Group {
-            if let name = Self.logoName(account) {
-                Image(name).resizable().scaledToFit().frame(maxWidth: width, maxHeight: height)
-            } else {
-                Image(systemName: "banknote.fill").font(.system(size: height + 2)).foregroundStyle(Color.appPrimary)
-            }
-        }
-    }
-
     static func logoName(_ account: Account) -> String? {
         if account.isCreditCard, let network = account.networkId, network != "gpn" { return network }
         return account.brandLogo
@@ -201,47 +209,6 @@ struct WalletPickerSheet: View {
         return account.isCreditCard
             ? L("Sisa Rp%@", (account.availableCredit ?? 0).formattedAsDigits())
             : "Rp" + account.balance.formattedAsDigits()
-    }
-
-    private func check(_ isOn: Bool, size: CGFloat) -> some View {
-        Image(systemName: "checkmark")
-            .font(.system(size: size * 0.55, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(Color.appPrimary, in: Circle())
-            .scaleEffect(isOn ? 1 : 0.001)
-            .animation(.spring(duration: 0.38, bounce: 0.5), value: isOn)
-    }
-
-    private func bigTile(_ account: Account) -> some View {
-        let isOn = account.id == selectedId
-        return Button { onPick(account) } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                logo(account, width: 52, height: 20).frame(height: 22, alignment: .leading)
-                Spacer(minLength: 0)
-                HStack(spacing: 5) {
-                    Text(account.name).font(.app(14, weight: .semibold)).lineLimit(1)
-                    if account.id == mainId { mainBadge }
-                }
-                Text(balance(account))
-                    .font(.app(12))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .padding(.top, 1)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 92)
-            .background(isOn ? Color.appBackground : Color.appFill, in: RoundedRectangle(cornerRadius: 14))
-            .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(Color.appPrimary, lineWidth: isOn ? 2 : 0) }
-            .overlay(alignment: .topTrailing) { check(isOn, size: 20).padding(8) }
-            .contentShape(RoundedRectangle(cornerRadius: 14))
-        }
-        .buttonStyle(PressScaleStyle())
-        .accessibilityLabel(account.name + (account.id == mainId ? L(", utama") : ""))
-        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     private func assetTag() -> some View {
@@ -257,29 +224,34 @@ struct WalletPickerSheet: View {
     private func smallTile(_ account: Account) -> some View {
         let isOn = account.id == selectedId
         let isDisabled = disabled[account.id] != nil
+        let color = account.walletColor
+        let ink: Color = isOn ? (color.isLight ? Color(hex: "1C1C1E") : .white) : Color.appText
         return Button { if !isDisabled { onPick(account) } } label: {
             VStack(alignment: .leading, spacing: 0) {
-                logo(account, width: 44, height: 16).frame(height: 18, alignment: .leading)
+                Group {
+                    if isOn {
+                        RoundedRectangle(cornerRadius: 4).fill(ink.opacity(0.35)).frame(width: 27, height: 18)
+                    } else {
+                        WalletSwatch(account: account, width: 27, height: 18)
+                    }
+                }
+                .frame(height: 18, alignment: .leading)
                 Spacer(minLength: 0)
                 Text(account.name).font(.app(13, weight: .semibold)).lineLimit(1)
                 Text(balance(account))
                     .font(.app(11.5))
-                    .foregroundStyle(Color.appTextSecondary)
+                    .foregroundStyle(isOn ? ink.opacity(0.85) : Color.appTextSecondary)
                     .monospacedDigit()
                     .lineLimit(1)
             }
+            .foregroundStyle(ink)
             .padding(.horizontal, 10)
             .padding(.vertical, 9)
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(height: 72)
-            .background(isOn ? Color.appBackground : Color.appFill, in: RoundedRectangle(cornerRadius: 12))
-            .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(Color.appPrimary, lineWidth: isOn ? 2 : 0) }
+            .pickedTile(isOn, color: color, radius: 12)
             .overlay(alignment: .topTrailing) {
-                HStack(spacing: 4) {
-                    if account.isInvestment { assetTag() }
-                    check(isOn, size: 18)
-                }
-                .padding(7)
+                if account.isInvestment && !isOn { assetTag().padding(7).padding(.trailing, 0) }
             }
             .opacity(isDisabled ? 0.45 : 1)
             .contentShape(RoundedRectangle(cornerRadius: 12))
@@ -354,36 +326,27 @@ struct CategoryPickerSheet: View {
 
     private func tile(_ category: Category) -> some View {
         let isOn = category.id == selectedId
+        let color = category.color.map { Color(hex: $0) } ?? Color.appPrimary
+        let ink: Color = isOn ? (color.isLight ? Color(hex: "1C1C1E") : .white) : Color.appText
         return Button { onPick(category) } label: {
             VStack(alignment: .leading, spacing: 0) {
                 Image(systemName: category.icon ?? "tag")
                     .font(.system(size: 22))
-                    .foregroundStyle(Color.appBody)
+                    .foregroundStyle(isOn ? ink : color)
                 Spacer(minLength: 0)
                 Text(category.name)
                     .font(.app(13, weight: .semibold))
-                    .foregroundStyle(Color.appText)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .foregroundStyle(ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 11)
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(height: 84)
-            .background(isOn ? Color.appBackground : Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-            .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(Color.appPrimary, lineWidth: isOn ? 2 : 0) }
-            .overlay(alignment: .topTrailing) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 22, height: 22)
-                    .background(Color.appPrimary, in: Circle())
-                    .scaleEffect(isOn ? 1 : 0.001)
-                    .animation(.spring(duration: 0.38, bounce: 0.5), value: isOn)
-                    .padding(9)
-            }
+            .pickedTile(isOn, color: color, radius: 16)
             .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(PressScaleStyle())
