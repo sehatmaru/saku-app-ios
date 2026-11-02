@@ -554,7 +554,8 @@ struct TransactionListView: View {
                     categories: viewModel.categories,
                     accounts: viewModel.accounts,
                     showBalance: isBalanceVisible,
-                    showDate: false
+                    showDate: false,
+                    showWalletChip: true
                 )
             }
             .buttonStyle(RowPressStyle())

@@ -10,6 +10,8 @@ struct TransactionRowView: View {
     /// Off inside lists that already group rows under day headers.
     var showDate: Bool = true
     var showArchivedBadge: Bool = false
+    /// Under the amount: the wallet's colour swatch and name, or "Sumber → Tujuan" for a transfer.
+    var showWalletChip: Bool = false
 
     private var category: Category? {
         transaction.categoryId.flatMap { cid in categories.first { $0.id == cid } }
@@ -70,6 +72,27 @@ struct TransactionRowView: View {
         return parts.joined(separator: " · ")
     }
 
+    private var chipWallets: [Account] {
+        var ids = [transaction.accountId]
+        if transaction.type == .transfer, let to = transaction.counterpartyAccountId { ids.append(to) }
+        return ids.compactMap { id in accounts.first { $0.id == id } }
+    }
+
+    @ViewBuilder
+    private var walletChip: some View {
+        if let source = chipWallets.first {
+            HStack(spacing: 5) {
+                WalletSwatch(account: source)
+                Text(chipWallets.map(\.name).joined(separator: " → "))
+                    .font(.app(12))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .frame(maxWidth: 168, alignment: .trailing)
+        }
+    }
+
     private var signedAmount: Double {
         switch transaction.type {
         case .income: transaction.amount
@@ -128,12 +151,15 @@ struct TransactionRowView: View {
 
             Spacer(minLength: 8)
 
-            Text(showBalance ? amountText : "Rp" + hiddenAmount)
-                .font(.app(16))
-                .monospacedDigit()
-                .foregroundStyle(signedAmount > 0 ? Color.appIncome : Color.appText)
-                .lineLimit(1)
-                .fixedSize()
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(showBalance ? amountText : "Rp" + hiddenAmount)
+                    .font(.app(16))
+                    .monospacedDigit()
+                    .foregroundStyle(signedAmount > 0 ? Color.appIncome : Color.appText)
+                    .lineLimit(1)
+                    .fixedSize()
+                if showWalletChip { walletChip }
+            }
         }
         .padding(.vertical, 14)
         .contentShape(Rectangle())
@@ -144,5 +170,26 @@ struct TransactionRowView: View {
         f.dateFormat = "d MMM yyyy"
         f.locale = AppLanguage.locale
         return f
+    }
+}
+
+/// The wallet's colour as a small card: a stripe for credit cards, a firm edge for cash.
+struct WalletSwatch: View {
+    let account: Account
+    var width: CGFloat = 18
+    var height: CGFloat = 12
+
+    var body: some View {
+        let ink: Color = account.walletColor.isLight ? .black.opacity(0.4) : .white.opacity(0.55)
+        RoundedRectangle(cornerRadius: height / 4)
+            .fill(account.walletColor)
+            .frame(width: width, height: height)
+            .overlay {
+                if account.isCreditCard {
+                    Rectangle().fill(ink).frame(height: height / 6).frame(maxHeight: .infinity, alignment: .top).padding(.top, height / 4)
+                }
+            }
+            .overlay(RoundedRectangle(cornerRadius: height / 4)
+                .strokeBorder(account.type == .cash ? Color.appTextSecondary : Color.gray.opacity(0.35), lineWidth: 1))
     }
 }
