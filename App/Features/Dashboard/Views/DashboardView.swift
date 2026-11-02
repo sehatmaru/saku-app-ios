@@ -352,7 +352,7 @@ struct DashboardView: View {
                         firstWalletCard
                             .padding(.bottom, 90)
                     } else {
-                        recentSection
+                        SectionDivider().padding(.top, 26)
                         periodSection
                         SectionDivider()
                         budgetSection
@@ -585,34 +585,6 @@ struct DashboardView: View {
         case .guest: GuestSaveCard(transactionCount: viewModel.currentMonthTransactionCount)
         case .smart: TrySmartTrackerCard()
         case nil: EmptyView()
-        }
-    }
-
-    // MARK: Recent
-
-    /// The last three transactions; "Lihat semua" opens the Transaksi tab.
-    @ViewBuilder private var recentSection: some View {
-        let rows = Array(viewModel.recentTransactions.prefix(3))
-        if !rows.isEmpty {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline) {
-                    SectionHeader(title: L("Transaksi terakhir"))
-                    Button(L("Lihat semua")) { selectedTab = .transactions }
-                        .font(.app(15))
-                        .foregroundStyle(Color.appPrimary)
-                }
-                VStack(spacing: 0) {
-                    ForEach(rows) { transaction in
-                        TransactionRowView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts,
-                                           showBalance: isBalanceVisible, showAccount: true)
-                    }
-                }
-                .padding(.top, 6)
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 20)
-            .padding(.bottom, 8)
-            SectionDivider()
         }
     }
 
