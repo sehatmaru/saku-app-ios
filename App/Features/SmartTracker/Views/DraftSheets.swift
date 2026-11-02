@@ -148,12 +148,6 @@ struct DraftAmountSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("Nominal").font(.app(17, weight: .semibold))
-                Spacer()
-                Button("Selesai", action: onDone).font(.app(17, weight: .semibold)).foregroundStyle(Color.appPrimary)
-            }
-            .frame(height: 48).padding(.horizontal, 24).padding(.top, 14)
             HStack(alignment: .top, spacing: 4) {
                 Text("Rp").font(.app(20)).foregroundStyle(Color.appTextSecondary).padding(.top, 7)
                 Text(Double(amount).formattedAsDigits())
@@ -162,7 +156,7 @@ struct DraftAmountSheet: View {
                     .lineLimit(1).minimumScaleFactor(0.6).contentTransition(.numericText())
             }
             .monospacedDigit()
-            .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 16)
+            .frame(maxWidth: .infinity).padding(.top, 28).padding(.bottom, 18)
             AmountPad(color: .stGreen, isEnabled: amount > 0, onPress: press, onSave: onDone, title: "Terapkan")
                 .padding(.horizontal, 12).padding(.bottom, 8)
         }

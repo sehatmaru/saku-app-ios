@@ -528,16 +528,16 @@ struct EditWalletView: View {
     private func sheetView(_ s: Sheet) -> some View {
         switch s {
         case .provider:
-            SheetFrame(title: isCredit ? L("Bank penerbit") : account.type == .bank ? L("Pilih bank") : L("Pilih e-wallet"),
-                       closeTitle: L("Selesai"), onClose: closeSheet) { providerGrid }
+            PickerSheet(title: isCredit ? L("Bank penerbit") : account.type == .bank ? L("Pilih bank") : L("Pilih e-wallet"),
+                        actionTitle: nil, onDone: closeSheet) { providerGrid }
         case .network:
-            SheetFrame(title: L("Jenis kartu"), closeTitle: L("Selesai"), onClose: closeSheet) { networkList }
+            PickerSheet(title: L("Jenis kartu"), actionTitle: nil, onDone: closeSheet) { networkList }
         case .due:
-            SheetFrame(title: L("Jatuh tempo"), closeTitle: L("Selesai"), onClose: closeSheet) {
+            PickerSheet(title: L("Jatuh tempo"), actionTitle: nil, onDone: closeSheet) {
                 dayGrid(\.dueDay, note: L("Tagihan dicatat sebagai utang dan tidak mengurangi total saldo."))
             }
         case .statement:
-            SheetFrame(title: L("Tanggal cetak tagihan"), closeTitle: L("Selesai"), onClose: closeSheet) {
+            PickerSheet(title: L("Tanggal cetak tagihan"), actionTitle: nil, onDone: closeSheet) {
                 dayGrid(\.statementDay, note: L("Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya."))
             }
         case .amount(let field):
@@ -998,39 +998,6 @@ struct EditWalletView: View {
             toastText = L("Dompet dipulihkan")
             toast = true
         }
-    }
-}
-
-/// Bottom sheet sized to its content: grabber, title on the left, Selesai/Batal on the right.
-private struct SheetFrame<Content: View>: View {
-    let title: String
-    let closeTitle: String
-    let onClose: () -> Void
-    @ViewBuilder var content: Content
-    @State private var height: CGFloat = 320
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Text(title).font(.app(17, weight: .semibold)).lineLimit(1)
-                Spacer(minLength: 0)
-                Button(closeTitle, action: onClose)
-                    .font(.app(17))
-                    .foregroundStyle(Color.appPrimary)
-            }
-            .frame(height: 48)
-            .padding(.horizontal, 24)
-            .padding(.top, 14)
-            content
-        }
-        .padding(.bottom, 12)
-        .fixedSize(horizontal: false, vertical: true)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
-        .frame(maxHeight: .infinity, alignment: .top)
-        .foregroundStyle(Color.appText)
-        .filterSheet()
-
-        .background(Color.appBackground)
     }
 }
 

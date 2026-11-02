@@ -288,28 +288,13 @@ struct AdvancedSearchView: View {
     }
 
     private func datePickerSheet(title: String, date: Binding<Date>, minimumDate: Date? = nil) -> some View {
-        NavigationStack {
+        // choosing a day sets the date and closes the sheet (see the bindings above)
+        PickerSheet(title: title, actionTitle: nil, onDone: { showStartPicker = false; showEndPicker = false }) {
             DatePicker(title, selection: date, in: minimumDate.map { $0... } ?? Date.distantPast..., displayedComponents: .date)
                 .datePickerStyle(.graphical)
                 .tint(.appPrimary)
                 .padding(.horizontal, 16)
-                .navigationTitle(title)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Selesai") {
-                            if title == L("Dari Tanggal") {
-                                showStartPicker = false
-                            } else {
-                                showEndPicker = false
-                            }
-                        }
-                        .font(.app(16, weight: .semibold))
-                        .foregroundStyle(Color.appPrimary)
-                    }
-                }
         }
-        .presentationDetents([.medium])
     }
 
     // MARK: Shared Components

@@ -613,18 +613,14 @@ private struct NotificationFilterSection: View {
     }
 }
 
-/// A sheet's title and the green "Selesai" on its right.
+/// A sheet's title, in the style of the picker sheets; the sheet closes from its pinned "Tutup".
 private struct FilterSheetHeader: View {
     let title: String
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(title).font(.app(20, weight: .semibold))
-            Spacer(minLength: 0)
-            Button(L("Selesai")) { dismiss() }.font(.app(16, weight: .semibold)).foregroundStyle(Color.appPrimary)
-        }
-        .padding(.top, 20)
+        Text(title).font(.app(22, weight: .bold)).tracking(-0.3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 22)
     }
 }
 
@@ -633,6 +629,7 @@ private struct FilterWordsSheet: View {
     let toOnly: Bool
     @State private var words: [String]
     @State private var input = ""
+    @Environment(\.dismiss) private var dismiss
 
     init(toOnly: Bool) {
         self.toOnly = toOnly
@@ -693,6 +690,7 @@ private struct FilterWordsSheet: View {
             .padding(.horizontal, 24).padding(.bottom, 24)
         }
         .scrollDismissesKeyboard(.interactively)
+        .pinnedFooter { SmartSheetFooter(primary: L("Tutup"), secondary: nil, onPrimary: { dismiss() }) }
         .presentationDetents([.medium, .large])
         .background(Color.appBackground)
     }
@@ -716,6 +714,7 @@ private struct RecentTitlesSheet: View {
     @State private var ignore = NotificationFilter.ignore
     @State private var only = NotificationFilter.only
     @State private var opened: String?
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ScrollView {
@@ -738,6 +737,7 @@ private struct RecentTitlesSheet: View {
             }
             .padding(.horizontal, 24).padding(.bottom, 24)
         }
+        .pinnedFooter { SmartSheetFooter(primary: L("Tutup"), secondary: nil, onPrimary: { dismiss() }) }
         .presentationDetents([.medium, .large])
         .background(Color.appBackground)
     }
