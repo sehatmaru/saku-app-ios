@@ -173,23 +173,29 @@ struct TransactionRowView: View {
     }
 }
 
-/// The wallet's colour as a small card: a stripe for credit cards, a firm edge for cash.
+/// The one drawing of a wallet's colour as a small card, used in every list, form row, picker and panel:
+/// a stripe for credit cards, a firm edge for cash. Change it here and every place follows.
+/// `onTile` draws it in that colour instead, for a tile already filled with the wallet's colour.
+/// With no wallet it shows `fallback`.
 struct WalletSwatch: View {
-    let account: Account
+    let account: Account?
     var width: CGFloat = 18
     var height: CGFloat = 12
+    var onTile: Color?
+    var fallback: Color = .appPrimary
 
     var body: some View {
-        let ink: Color = account.walletColor.isLight ? .black.opacity(0.4) : .white.opacity(0.55)
+        let base = account?.walletColor ?? fallback
+        let stripe: Color = onTile?.opacity(0.85) ?? (base.isLight ? .black.opacity(0.4) : .white.opacity(0.55))
         RoundedRectangle(cornerRadius: height / 4)
-            .fill(account.walletColor)
+            .fill(onTile.map { $0.opacity(0.35) } ?? base)
             .frame(width: width, height: height)
             .overlay {
-                if account.isCreditCard {
-                    Rectangle().fill(ink).frame(height: height / 6).frame(maxHeight: .infinity, alignment: .top).padding(.top, height / 4)
+                if account?.isCreditCard == true {
+                    Rectangle().fill(stripe).frame(height: height / 6).frame(maxHeight: .infinity, alignment: .top).padding(.top, height / 4)
                 }
             }
             .overlay(RoundedRectangle(cornerRadius: height / 4)
-                .strokeBorder(account.type == .cash ? Color.appTextSecondary : Color.gray.opacity(0.35), lineWidth: 1))
+                .strokeBorder(account?.type == .cash ? (onTile?.opacity(0.85) ?? Color.appTextSecondary) : (onTile == nil ? Color.gray.opacity(0.35) : .clear), lineWidth: 1))
     }
 }

@@ -453,10 +453,7 @@ struct AddTransactionView: View {
 
     private func walletChip(_ account: Account?) -> some View {
         HStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(walletColor(account))
-                .frame(width: 16, height: 11)
-                .overlay(RoundedRectangle(cornerRadius: 2).stroke(.white.opacity(0.5), lineWidth: 1))
+            WalletSwatch(account: account, width: 16, height: 11)
             Text(account?.name ?? L("Pilih"))
                 .lineLimit(1)
         }
@@ -730,14 +727,14 @@ struct AddTransactionView: View {
     private var rows: some View {
         VStack(spacing: 0) {
             if isTransfer {
-                row(.account, label: L("Dari"), value: account?.name ?? L("Pilih"), swatch: walletColor(account),
+                row(.account, label: L("Dari"), value: account?.name ?? L("Pilih"), wallet: account,
                     isLocked: assetMode == .withdraw, isAsset: account?.isInvestment == true, index: 0)
-                row(.target, label: L("Ke"), value: target?.name ?? L("Pilih"), swatch: walletColor(target),
+                row(.target, label: L("Ke"), value: target?.name ?? L("Pilih"), wallet: target,
                     isLocked: assetMode == .deposit, isAsset: target?.isInvestment == true, index: 1)
             } else {
                 row(.category, label: L("Kategori"), value: category?.name ?? L("Belum dipilih"),
                     icon: category?.icon, iconColor: style.color, isPlaceholder: category == nil, index: 0)
-                row(.account, label: L("Dompet"), value: account?.name ?? L("Pilih"), swatch: walletColor(account),
+                row(.account, label: L("Dompet"), value: account?.name ?? L("Pilih"), wallet: account,
                     sub: isCardExpense && planMonths == 0 ? account.map(billingText) : nil, index: 1)
                 if isCardExpense, let account, editing == nil {
                     row(.installment, label: L("Cicilan"), value: installmentMonths == 0 ? L("Tidak") : L("%lld bulan", installmentMonths),
@@ -768,13 +765,13 @@ struct AddTransactionView: View {
         .animation(.easeInOut(duration: 0.3), value: done == nil)
     }
 
-    private func row(_ kind: PickerKind, label: String, value: String, swatch: Color? = nil,
+    private func row(_ kind: PickerKind, label: String, value: String, wallet: Account? = nil,
                      icon: String? = nil, iconColor: Color = .appTextSecondary, sub: String? = nil,
                      isPlaceholder: Bool = false, isLocked: Bool = false, isAsset: Bool = false, index: Int) -> some View {
         Button {
             if done == nil { sheet = kind }
         } label: {
-            DetailRow(label: label, value: value, swatch: swatch, icon: icon, iconColor: iconColor, sub: sub,
+            DetailRow(label: label, value: value, wallet: wallet, icon: icon, iconColor: iconColor, sub: sub,
                       showsChevron: true, isLocked: isLocked, isAsset: isAsset, height: rowHeight, isPlaceholder: isPlaceholder)
                 .background(flashed.contains(kind) ? style.color.opacity(0.1) : .clear)
                 .animation(.easeInOut(duration: 0.45), value: flashed)
@@ -1203,7 +1200,7 @@ struct AddTransactionView: View {
 struct DetailRow: View {
     let label: String
     let value: String
-    var swatch: Color?
+    var wallet: Account?
     var icon: String?
     var iconColor: Color = .appTextSecondary
     /// A small grey line under the value.
@@ -1223,8 +1220,8 @@ struct DetailRow: View {
                 .foregroundStyle(Color.appTextSecondary)
                 .frame(width: 76, alignment: .leading)
             HStack(spacing: 8) {
-                if let swatch {
-                    RoundedRectangle(cornerRadius: 3).fill(swatch).frame(width: 20, height: 14)
+                if let wallet {
+                    WalletSwatch(account: wallet, width: 20, height: 14)
                 }
                 if let icon {
                     Image(systemName: icon)

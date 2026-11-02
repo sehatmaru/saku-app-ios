@@ -216,13 +216,13 @@ struct TransactionDetailView: View {
     private var rows: some View {
         VStack(spacing: 0) {
             if isTransfer {
-                row(label: L("Dari"), value: account?.name ?? "—", swatch: walletColor(account), index: 0)
-                row(label: L("Ke"), value: counterparty?.name ?? "—", swatch: walletColor(counterparty), index: 1)
+                row(label: L("Dari"), value: account?.name ?? "—", wallet: account, index: 0)
+                row(label: L("Ke"), value: counterparty?.name ?? "—", wallet: counterparty, index: 1)
             } else if isAdjustment {
-                row(label: L("Dompet"), value: account?.name ?? "—", swatch: walletColor(account), index: 0)
+                row(label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 0)
             } else {
                 row(label: L("Kategori"), value: category?.name ?? "—", icon: category?.icon ?? "tag", index: 0)
-                row(label: L("Dompet"), value: account?.name ?? "—", swatch: walletColor(account), index: 1)
+                row(label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 1)
                 if let installment, let card = account {
                     installmentRow(installment, card: card)
                 }
@@ -235,8 +235,8 @@ struct TransactionDetailView: View {
         }
     }
 
-    private func row(label: String, value: String, swatch: Color? = nil, icon: String? = nil, index: Int) -> some View {
-        DetailRow(label: label, value: value, swatch: swatch, icon: icon, height: 50)
+    private func row(label: String, value: String, wallet: Account? = nil, icon: String? = nil, index: Int) -> some View {
+        DetailRow(label: label, value: value, wallet: wallet, icon: icon, height: 50)
             .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
     }
 

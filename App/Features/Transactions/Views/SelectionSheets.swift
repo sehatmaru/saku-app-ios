@@ -228,14 +228,8 @@ struct WalletPickerSheet: View {
         let ink: Color = isOn ? (color.isLight ? Color(hex: "1C1C1E") : .white) : Color.appText
         return Button { if !isDisabled { onPick(account) } } label: {
             VStack(alignment: .leading, spacing: 0) {
-                Group {
-                    if isOn {
-                        RoundedRectangle(cornerRadius: 4).fill(ink.opacity(0.35)).frame(width: 27, height: 18)
-                    } else {
-                        WalletSwatch(account: account, width: 27, height: 18)
-                    }
-                }
-                .frame(height: 18, alignment: .leading)
+                WalletSwatch(account: account, width: 27, height: 18, onTile: isOn ? ink : nil)
+                    .frame(height: 18, alignment: .leading)
                 Spacer(minLength: 0)
                 Text(account.name).font(.app(13, weight: .semibold)).lineLimit(1)
                 Text(balance(account))

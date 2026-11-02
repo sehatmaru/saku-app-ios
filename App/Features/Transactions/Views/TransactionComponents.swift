@@ -30,11 +30,6 @@ struct TransactionStyle {
     }
 }
 
-/// Same colour as the wallet's card, falling back to the brand green.
-func walletColor(_ account: Account?) -> Color {
-    account?.walletColor ?? .appPrimary
-}
-
 // MARK: - Picker sheet
 
 /// Bottom sheet with a title, scrolling content and, unless `actionTitle` is nil, the action pinned at the bottom.

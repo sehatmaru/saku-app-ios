@@ -283,22 +283,15 @@ struct PayCardBillSheet: View {
         }
     }
 
-    private func swatch(_ fill: Color) -> some View {
-        RoundedRectangle(cornerRadius: 2)
-            .fill(fill)
-            .frame(width: 16, height: 11)
-            .overlay(RoundedRectangle(cornerRadius: 2).stroke(.white.opacity(0.6), lineWidth: 1))
-    }
-
     private var panelContent: some View {
         VStack(spacing: 0) {
             HStack(spacing: 7) {
-                swatch(color)
+                WalletSwatch(account: source, width: 16, height: 11, fallback: isOtherSource ? Color(hex: "48484A") : .appPrimary)
                 Text(isOtherSource ? L("Sumber lain") : source?.name ?? L("Pilih dompet")).lineLimit(1)
                 Image(systemName: "arrow.right")
                     .font(.system(size: 11, weight: .bold))
                     .opacity(0.7)
-                swatch(card.walletColor)
+                WalletSwatch(account: card, width: 16, height: 11)
                 Text(card.name).lineLimit(1)
             }
             .font(.app(13, weight: .medium))

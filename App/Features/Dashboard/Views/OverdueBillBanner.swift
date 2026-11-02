@@ -301,9 +301,7 @@ struct OverdueBillBanner: View {
             }
         } label: {
             HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(first.card.walletColor)
-                    .frame(width: 26, height: 17)
+                WalletSwatch(account: first.card, width: 26, height: 17)
                 Text(text)
                     .font(.app(14))
                     .foregroundStyle(Color.appBody)
