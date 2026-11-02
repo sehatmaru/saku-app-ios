@@ -1228,7 +1228,9 @@ struct AccountListView: View {
 // MARK: - Card
 
 extension Account {
+    /// A known bank, e-wallet, card issuer or platform keeps its brand colour; the saved colour is for wallets without one.
     var walletColor: Color {
+        if let icon, let brand = WalletIcon.allIcons.first(where: { $0.id == icon }) { return brand.color }
         if let color, !color.isEmpty { return Color(hex: color) }
         return WalletIcon.resolve(icon)?.color ?? .appPrimary
     }
@@ -1361,6 +1363,7 @@ struct CardNetworkBadge: View {
 struct CardUsageBar: View {
     let usedText: String
     let share: Double
+    var ink: Color = .white
 
     var body: some View {
         VStack(spacing: 6) {
@@ -1370,12 +1373,12 @@ struct CardUsageBar: View {
                 Text("\(Int((min(max(share, 0), 1) * 100).rounded()))%")
             }
             .font(.app(12))
-            .foregroundStyle(.white.opacity(0.82))
+            .foregroundStyle(ink.opacity(0.82))
             .monospacedDigit()
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.25))
-                    Capsule().fill(.white).frame(width: geo.size.width * min(max(share, 0), 1))
+                    Capsule().fill(ink.opacity(0.25))
+                    Capsule().fill(ink).frame(width: geo.size.width * min(max(share, 0), 1))
                 }
             }
             .frame(height: 4)
@@ -1394,6 +1397,9 @@ struct WalletCard: View {
     var isMain = false
     /// Investment wallets: the gain pill on the card ("+4%", or the rupiah gain while nothing was put in).
     var investmentPill: (symbol: String, text: String)?
+
+    /// Text on the card: white, or dark on a bright brand colour.
+    private var ink: Color { account.walletColor.isLight ? Color(hex: "1C1C1E") : .white }
 
     private var amountText: String {
         if account.needsCardDetails { return "—" }
@@ -1444,14 +1450,14 @@ struct WalletCard: View {
                 VStack(spacing: 10) {
                     if account.isCreditCard, showsUsage, let limit = account.creditLimit, limit > 0 {
                         CardUsageBar(usedText: isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp" + hiddenAmount,
-                                     share: account.balance / limit)
+                                     share: account.balance / limit, ink: ink)
                             .transition(.opacity)
                     }
                     HStack(alignment: .bottom, spacing: 10) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(account.isCreditCard ? L("Sisa limit") : account.isInvestment ? L("Nilai saat ini") : L("Saldo"))
                                 .font(.app(12))
-                                .foregroundStyle(.white.opacity(0.8))
+                                .foregroundStyle(ink.opacity(0.8))
                             Text(amountText)
                                 .font(.app(32))
                                 .tracking(-0.8)
@@ -1470,11 +1476,11 @@ struct WalletCard: View {
                                         .font(.app(13, weight: .semibold))
                                         .padding(.horizontal, 11)
                                         .frame(height: 28)
-                                        .background(.white.opacity(0.2), in: Capsule())
+                                        .background(ink.opacity(0.2), in: Capsule())
                                 } else {
                                     Text("Jatuh tempo")
                                         .font(.app(12))
-                                        .foregroundStyle(.white.opacity(0.8))
+                                        .foregroundStyle(ink.opacity(0.8))
                                     Text(account.dueDay.map { L("Tgl %lld", $0) } ?? "—")
                                         .font(.app(15, weight: .semibold))
                                         .monospacedDigit()
@@ -1488,12 +1494,12 @@ struct WalletCard: View {
                                 .lineLimit(1)
                                 .padding(.horizontal, 11)
                                 .frame(height: 28)
-                                .background(.white.opacity(0.2), in: Capsule())
+                                .background(ink.opacity(0.2), in: Capsule())
                                 .padding(.bottom, 4)
                         } else {
                             Text(account.typeLabel)
                                 .font(.app(12))
-                                .foregroundStyle(.white.opacity(0.82))
+                                .foregroundStyle(ink.opacity(0.82))
                                 .padding(.bottom, 5)
                         }
                     }
@@ -1502,7 +1508,7 @@ struct WalletCard: View {
                 .padding(.bottom, 18)
                 .animation(.easeInOut(duration: 0.25), value: showsUsage)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(ink)
             .contentShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .combine)
     }

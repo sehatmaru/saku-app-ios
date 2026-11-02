@@ -56,7 +56,7 @@ struct AddWalletView: View {
     static let investmentSwatches = ["946200", "0F6E5C", "5B3FA8", "0066AE", "9D174D", "616161"]
     /// Card issuers and the card colour each one gets.
     static let issuers: [(id: String, color: String)] = [
-        ("bca", "1A1F71"), ("mandiri", "0B2545"), ("bni", "C2410C"), ("bri", "1F3A93"),
+        ("bca", "0060AF"), ("mandiri", "003D79"), ("bni", "006885"), ("bri", "00529C"),
     ]
     static let networks: [(id: String, label: String)] = [
         ("visa", "Visa"), ("mastercard", "Mastercard"), ("jcb", "JCB"), ("amex", "Amex"), ("gpn", "GPN"),

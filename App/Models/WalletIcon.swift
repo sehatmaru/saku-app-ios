@@ -70,32 +70,42 @@ struct WalletIcon: Identifiable, Equatable {
     }
 
     static let allIcons: [WalletIcon] = [
-        WalletIcon(id: "cash", name: "Cash", shortName: "CASH", color: Color(red: 0/255, green: 168/255, blue: 107/255), category: .cash),
+        WalletIcon(id: "cash", name: "Cash", shortName: "CASH", color: Color(hex: "616161"), category: .cash),
 
-        WalletIcon(id: "bca", name: "BCA", shortName: "BCA", color: Color(red: 0/255, green: 102/255, blue: 174/255), category: .bank),
-        WalletIcon(id: "bni", name: "BNI", shortName: "BNI", color: Color(red: 0/255, green: 61/255, blue: 121/255), category: .bank),
-        WalletIcon(id: "mandiri", name: "Mandiri", shortName: "MNDR", color: Color(red: 0/255, green: 60/255, blue: 113/255), category: .bank),
-        WalletIcon(id: "bri", name: "BRI", shortName: "BRI", color: Color(red: 0/255, green: 75/255, blue: 147/255), category: .bank),
-        WalletIcon(id: "jago", name: "Jago", shortName: "JAGO", color: Color(red: 0/255, green: 168/255, blue: 107/255), category: .bank),
-        WalletIcon(id: "cimb", name: "CIMB Niaga", shortName: "CIMB", color: Color(red: 126/255, green: 45/255, blue: 142/255), category: .bank),
-        WalletIcon(id: "btn", name: "BTN", shortName: "BTN", color: Color(red: 0/255, green: 94/255, blue: 162/255), category: .bank),
-        WalletIcon(id: "bnc", name: "BNC", shortName: "BNC", color: Color(red: 0/255, green: 60/255, blue: 100/255), category: .bank),
-        WalletIcon(id: "danamon", name: "Danamon", shortName: "DNM", color: Color(red: 0/255, green: 122/255, blue: 61/255), category: .bank),
+        WalletIcon(id: "bca", name: "BCA", shortName: "BCA", color: Color(hex: "0060AF"), category: .bank),
+        WalletIcon(id: "bni", name: "BNI", shortName: "BNI", color: Color(hex: "006885"), category: .bank),
+        WalletIcon(id: "mandiri", name: "Mandiri", shortName: "MNDR", color: Color(hex: "003D79"), category: .bank),
+        WalletIcon(id: "bri", name: "BRI", shortName: "BRI", color: Color(hex: "00529C"), category: .bank),
+        WalletIcon(id: "jago", name: "Jago", shortName: "JAGO", color: Color(hex: "FEC302"), category: .bank),
+        WalletIcon(id: "cimb", name: "CIMB Niaga", shortName: "CIMB", color: Color(hex: "ED3024"), category: .bank),
+        WalletIcon(id: "btn", name: "BTN", shortName: "BTN", color: Color(hex: "015BFD"), category: .bank),
+        WalletIcon(id: "bnc", name: "BNC", shortName: "BNC", color: Color(hex: "FFBE00"), category: .bank),
+        WalletIcon(id: "danamon", name: "Danamon", shortName: "DNM", color: Color(hex: "F07523"), category: .bank),
 
-        WalletIcon(id: "gopay", name: "GoPay", shortName: "GOPAY", color: Color(red: 0/255, green: 170/255, blue: 68/255), category: .ewallet),
-        WalletIcon(id: "ovo", name: "OVO", shortName: "OVO", color: Color(red: 71/255, green: 43/255, blue: 145/255), category: .ewallet),
-        WalletIcon(id: "dana", name: "DANA", shortName: "DANA", color: Color(red: 0/255, green: 99/255, blue: 173/255), category: .ewallet),
-        WalletIcon(id: "linkaja", name: "LinkAja", shortName: "LINK", color: Color(red: 212/255, green: 32/255, blue: 39/255), category: .ewallet),
+        WalletIcon(id: "gopay", name: "GoPay", shortName: "GOPAY", color: Color(hex: "00AED6"), category: .ewallet),
+        WalletIcon(id: "ovo", name: "OVO", shortName: "OVO", color: Color(hex: "4B2489"), category: .ewallet),
+        WalletIcon(id: "dana", name: "DANA", shortName: "DANA", color: Color(hex: "108EE9"), category: .ewallet),
+        WalletIcon(id: "linkaja", name: "LinkAja", shortName: "LINK", color: Color(hex: "E9232A"), category: .ewallet),
 
         WalletIcon(id: "bibit", name: "Bibit", shortName: "BIBIT", color: Color(hex: "00875A"), category: .investment),
         WalletIcon(id: "stockbit", name: "Stockbit", shortName: "STOCK", color: Color(hex: "2E3A46"), category: .investment),
         WalletIcon(id: "emas", name: "Emas", shortName: "EMAS", color: Color(hex: "946200"), category: .investment),
         WalletIcon(id: "ajaib", name: "Ajaib", shortName: "AJAIB", color: Color(hex: "2F6FE4"), category: .investment),
-        WalletIcon(id: "binance", name: "Binance", shortName: "BNB", color: Color(hex: "1E2026"), category: .investment),
+        WalletIcon(id: "binance", name: "Binance", shortName: "BNB", color: Color(hex: "F0B90B"), category: .investment),
 
         WalletIcon(id: "visa", name: "Visa", shortName: "VISA", color: Color(red: 26/255, green: 31/255, blue: 113/255), category: .credit),
         WalletIcon(id: "mastercard", name: "Mastercard", shortName: "MC", color: Color(red: 235/255, green: 155/255, blue: 30/255), category: .credit),
         WalletIcon(id: "jcb", name: "JCB", shortName: "JCB", color: Color(red: 0/255, green: 51/255, blue: 153/255), category: .credit),
         WalletIcon(id: "amex", name: "American Express", shortName: "AMEX", color: Color(red: 46/255, green: 119/255, blue: 188/255), category: .credit),
     ]
+}
+
+extension Color {
+    /// Bright brand colours (the yellows) take dark text; white on them is hard to read.
+    var isLight: Bool {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
+        func lin(_ c: CGFloat) -> CGFloat { c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+        return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) > 0.4
+    }
 }

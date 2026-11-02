@@ -30,9 +30,9 @@ struct TransactionStyle {
     }
 }
 
-/// Wallet colour from its icon, falling back to the brand green.
+/// Same colour as the wallet's card, falling back to the brand green.
 func walletColor(_ account: Account?) -> Color {
-    account.flatMap { WalletIcon.resolve($0.icon)?.color } ?? .appPrimary
+    account?.walletColor ?? .appPrimary
 }
 
 // MARK: - Picker sheet
