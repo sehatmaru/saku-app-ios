@@ -108,6 +108,10 @@ final class DashboardViewModel: ObservableObject {
     private let calendar = Calendar.current
 
     func loadDashboard(userId: String, forceRefresh: Bool = false) async {
+        if forceRefresh {
+            isRefreshing = false
+            isLoading = false
+        }
         guard !isLoading, !isRefreshing else { return }
 
         if !forceRefresh, let cached = AppDataCache.shared.dashboardState(for: userId) {
@@ -157,6 +161,8 @@ final class DashboardViewModel: ObservableObject {
 
             let (fetchedAccounts, transactions, fetchedCategories, budgets) = try await (accountsTask, transactionsTask, categoriesTask, budgetsTask)
             accounts = fetchedAccounts
+            // Dompet and the pickers read this cache, so a Home refresh has to renew it too
+            AppDataCache.shared.setAccounts(fetchedAccounts, for: userId)
             categories = fetchedCategories
 
             // Subscriptions can sit on any active wallet.

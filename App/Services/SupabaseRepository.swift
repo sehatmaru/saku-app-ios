@@ -199,10 +199,18 @@ final class SupabaseRepository: @unchecked Sendable {
         case .cardPayment: delta = 0
         }
         if delta != 0 {
-            try await client.rpc("increment_account_balance", params: [
-                "p_account_id": AnyJSON.string(accountId),
-                "p_delta": AnyJSON.double(delta),
-            ]).execute()
+            do {
+                try await client.rpc("increment_account_balance", params: [
+                    "p_account_id": AnyJSON.string(accountId),
+                    "p_delta": AnyJSON.double(delta),
+                ]).execute()
+            } catch {
+                // the balance never moved, so hide the saved row instead of leaving a transaction the wallet doesn't reflect
+                _ = try? await client.from("transactions")
+                    .update(["deleted_at": AnyJSON.string("now()")] as [String: AnyJSON])
+                    .eq("id", value: transactionId).execute()
+                throw error
+            }
         }
 
         return transaction
