@@ -42,6 +42,7 @@ struct SmartTrackerHomeOverlay: View {
         ZStack(alignment: .bottom) {
             if isOpen { Color.black.opacity(0.001).ignoresSafeArea().onTapGesture { close() } }
             if isFresh && !tipSeen { tip }
+            draftFab
             fab
             bar
         }
@@ -127,6 +128,20 @@ struct SmartTrackerHomeOverlay: View {
         .opacity(isOpen ? 0 : 1)
         .scaleEffect(isOpen ? 0.6 : 1)
         .allowsHitTesting(!isOpen)
+    }
+
+    /// The Draf button stacked on the sparkle button: it rises out from behind it when drafts land and sinks back when none are left.
+    private var draftFab: some View {
+        ZStack {
+            if !store.drafts.isEmpty && !isOpen {
+                DraftFab(count: store.drafts.count, action: onOpenQueue)
+                    .transition(DraftFab.emerge)
+            }
+        }
+        .animation(.spring(duration: 0.9, bounce: 0.25), value: store.drafts.isEmpty)
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.trailing, 20)
+        .padding(.bottom, 62 + 56 + 12)
     }
 
     /// The speech bubble over the button in the empty Beranda (design 3a).

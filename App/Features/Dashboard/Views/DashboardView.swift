@@ -43,10 +43,6 @@ struct DashboardView: View {
     @State private var recordCard: OverdueCardBill?
     @State private var toastText = ""
     @State private var isToastShown = false
-    /// The tray pill says "Baru masuk" for a moment after drafts land (design 1a).
-    @State private var isTrayFresh = false
-    /// Counts the times drafts landed; the Draf pill plays its motion on each.
-    @State private var trayLanded = 0
     @ObservedObject private var notificationRouter = NotificationRouter.shared
     @Environment(\.scenePhase) private var scenePhase
 
@@ -108,16 +104,6 @@ struct DashboardView: View {
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
         .onChange(of: notificationRouter.opensImageConsent) { _, _ in openImageConsentIfRequested() }
         .onChange(of: notificationRouter.pendingInvestmentId) { _, id in if id != nil { openWalletsPage() } }
-        .onChange(of: draftStore.drafts.count) { old, new in
-            // "Baru masuk" on the tray pill right after drafts land (design 1a)
-            guard new > old else { return }
-            withAnimation(.settle(0.25)) { isTrayFresh = true }
-            trayLanded += 1
-            Task {
-                try? await Task.sleep(for: .seconds(2.8))
-                withAnimation(.settle(0.3)) { isTrayFresh = false }
-            }
-        }
         .overlay {
             if selectedTab != .home || homePath.isEmpty, viewModel.hasLoadedOnce, smartQuickOn, let userId = authViewModel.currentUser?.id {
                 // the gate is watched inside, so a page opening or closing does not re-run this whole screen
@@ -525,23 +511,20 @@ struct DashboardView: View {
         }
     }
 
-    /// Kesehatan finansial, Dompet, and Draf while Smart Tracker is on.
+    /// Kesehatan and Dompet, each half the width (design 2a).
     private var shortcutRow: some View {
-        HStack(spacing: 6) {
-            healthRing(viewModel.health)
-            walletsButton(compact: true)
-            if smartQuickOn, authViewModel.currentUser != nil {
-                DraftPill(count: draftStore.drafts.count, isFresh: isTrayFresh, landed: trayLanded, compact: true) { openDraftsPage() }
-            }
+        HStack(spacing: 10) {
+            healthPill(viewModel.health)
+            walletsButton(compact: false)
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 4)
     }
 
-    /// The ring that opens Kesehatan finansial; without a score yet it is an empty ring and the page says when one comes.
-    private func healthRing(_ health: FinancialHealth) -> some View {
+    /// The pill that opens Kesehatan finansial; without a score yet it is an empty ring and the page says when one comes.
+    private func healthPill(_ health: FinancialHealth) -> some View {
         NavigationLink { HealthDetailView(health: health).detailPage() } label: {
-            HealthRing(score: health.isAvailable ? health.score : nil)
+            HealthPill(score: health.isAvailable ? health.score : nil)
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityLabel(L("Kesehatan finansial"))
@@ -735,7 +718,7 @@ struct DashboardView: View {
                 }
             }
             .padding(.leading, compact ? 6 : 8)
-            .padding(.trailing, compact ? 10 : 12)
+            .padding(.trailing, compact ? 10 : 14)
             .frame(maxWidth: .infinity)
             .frame(height: 48)
             .background(Color.appFill, in: Capsule())
@@ -1044,12 +1027,60 @@ private struct WalletsMark: View {
     }
 }
 
+/// Kesehatan in the shortcut row: the score ring with its intro (arc fills, number, verdict) inside a pill as wide as Dompet.
+private struct HealthPill: View {
+    let score: Int?
+
+    private var value: Int { score ?? 0 }
+    private var color: Color { value >= 80 ? .appPrimary : value >= 60 ? .appWarning : .appError }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            HealthRing(score: score, plain: true)
+                .scaleEffect(42.0 / 48.0)
+                .frame(width: 42, height: 42)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Kesehatan")
+                    .font(.app(14, weight: .semibold))
+                    .foregroundStyle(Color.appText)
+                Text(subtitle)
+                    .font(.app(11, weight: .medium))
+                    .foregroundStyle(score == nil ? Color.appTextSecondary : color)
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(Color(light: 0x8E8E93, dark: 0x8E8E93))
+        }
+        .padding(.leading, 3)
+        .padding(.trailing, 14)
+        .frame(maxWidth: .infinity)
+        .frame(height: 48)
+        .background(Color.appFill, in: Capsule())
+    }
+
+    private var subtitle: String {
+        guard score != nil else { return L("Belum ada skor") }
+        // the verdict from the score, shown even while the score is provisional
+        return switch value {
+        case 80...: L("Sehat")
+        case 60..<80: L("Cukup sehat")
+        case 40..<60: L("Perlu perhatian")
+        default: L("Perlu perbaikan")
+        }
+    }
+}
+
 /// Kesehatan finansial in the shortcut row, timed like the design (5a/5b): the arc fills to the score, the number
 /// shows, the arc clears, then a disc with the verdict pops in (a check drawn when healthy, an
 /// exclamation otherwise), and it settles back to the arc and the score. It plays once per launch; later it is
 /// only the settled ring.
 private struct HealthRing: View {
     let score: Int?
+    /// Without its own disc, for the Kesehatan pill.
+    var plain = false
 
     @MainActor private enum Intro { static var played = false }
     @State private var start: Date?
@@ -1067,7 +1098,7 @@ private struct HealthRing: View {
                 .frame(width: 32, height: 32)
                 .overlay { Text("–").font(.app(14, weight: .bold)).foregroundStyle(Color.appTextTertiary) }
                 .frame(width: 48, height: 48)
-                .background(Color.appFill, in: Circle())
+                .background(plain ? Color.clear : Color.appFill, in: Circle())
         } else {
             animated
         }
@@ -1079,7 +1110,7 @@ private struct HealthRing: View {
             ring(t)
         }
         .frame(width: 48, height: 48)
-        .background(Color.appFill, in: Circle())
+        .background(plain ? Color.clear : Color.appFill, in: Circle())
         .task {
             guard !done else { return }
             Intro.played = true

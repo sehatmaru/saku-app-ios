@@ -1,163 +1,213 @@
 import SwiftUI
 
-/// The Draf pill beside Dompet on Beranda: the tray, "Draf" (over "Kosong" while empty), and on the right a circle
-/// with the number of drafts (a chevron while empty). When drafts land, a sheet drops into the tray, the tray gives,
-/// and the circle rings: it grows, wobbles and sends out a wave. While drafts wait the background breathes.
-struct DraftPill: View {
+/// The Draf button stacked on Smart Tracker's sparkle button (56pt). It rises out from behind the sparkle button
+/// when drafts land, shakes and sends out a ring, and its badge rolls when another draft lands.
+struct DraftFab: View {
     let count: Int
-    /// The green tint that follows a landing.
-    let isFresh: Bool
-    /// Changes every time drafts land; each change plays the motion once.
-    let landed: Int
-    let compact: Bool
     let action: () -> Void
 
-    @State private var start: Date?
-    @State private var running = false
+    @State private var landed = 0
+    /// True until a second draft lands: the first landing pops the badge in, later ones roll its number.
+    @State private var isNew = true
+    /// The number the badge shows; it rolls a beat after a draft lands, when the new sheet has dropped.
+    @State private var shown = 0
+    /// The second grey sheet: with two or more drafts it rests in the tray (filling the notch), as in design 3b.
+    @State private var sheetY = 11.0
+    @State private var sheetOpacity = 0.0
     @State private var breathe = false
-    @State private var previous = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Seconds the landing motion lasts.
-    private static let length = 2.6
+    private let bg = Color(light: 0x1C1C1E, dark: 0xE5E5EA)
+    private let fg = Color(light: 0xF2F2F4, dark: 0x1C1C1E)
+
+    private struct Beat { var scale = 1.0; var tilt = 0.0; var ring = 1.0; var ringOpacity = 0.0; var badge = 1.0 }
+
+    /// Rise from behind the sparkle button on insert, sink back (no overshoot, shorter) on removal.
+    static var emerge: AnyTransition {
+        .asymmetric(
+            insertion: .modifier(active: Hidden(), identity: Hidden(hidden: false)),
+            removal: .modifier(active: Hidden(), identity: Hidden(hidden: false)).animation(.easeIn(duration: 0.35)))
+    }
+
+    private struct Hidden: ViewModifier {
+        var hidden = true
+        func body(content: Content) -> some View {
+            content.offset(y: hidden ? 70 : 0).scaleEffect(hidden ? 0.45 : 1).opacity(hidden ? 0 : 1)
+        }
+    }
 
     var body: some View {
         Button(action: action) {
-            TimelineView(.animation(paused: !running)) { context in
-                content(start.map { context.date.timeIntervalSince($0) } ?? 99)
+            ZStack {
+                Circle().fill(bg)
+                Circle().fill(Color.appPrimary).opacity(breathe ? 0.2 : 0.05)
+                    .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: breathe)
+                tray.id(landed)
             }
-            .padding(.leading, compact ? 6 : 8)
-            .padding(.trailing, 10)
-            .frame(maxWidth: .infinity)
-            .frame(height: 48)
-            .background { background }
-            .clipShape(Capsule())
+            .frame(width: 56, height: 56)
+            .shadow(color: .black.opacity(0.25), radius: 12, y: 8)
+            .keyframeAnimator(initialValue: Beat(), trigger: landed) { view, beat in
+                view
+                    .overlay {
+                        Circle().strokeBorder(Color.appPrimary, lineWidth: 2)
+                            .scaleEffect(beat.ring).opacity(beat.ringOpacity)
+                    }
+                    .scaleEffect(beat.scale).rotationEffect(.degrees(beat.tilt))
+                    .overlay(alignment: .topTrailing) { CountBadge(count: shown, scale: beat.badge, bg: bg) }
+            } keyframes: { _ in
+                // design dgShake / dgRing / dgBadge: 1.08s in, the landing is felt
+                let settle = UnitCurve.bezier(startControlPoint: UnitPoint(x: 0.2, y: 0.9), endControlPoint: UnitPoint(x: 0.25, y: 1))
+                let full = !reduceMotion
+                KeyframeTrack(\.scale) {
+                    MoveKeyframe(1)
+                    LinearKeyframe(1, duration: 1.08)
+                    LinearKeyframe(full ? 1.2 : 1, duration: 0.144, timingCurve: settle)
+                    LinearKeyframe(full ? 1.12 : 1, duration: 0.18, timingCurve: settle)
+                    LinearKeyframe(full ? 1.06 : 1, duration: 0.18, timingCurve: settle)
+                    LinearKeyframe(full ? 1.03 : 1, duration: 0.18, timingCurve: settle)
+                    LinearKeyframe(1, duration: 0.252, timingCurve: settle)
+                }
+                KeyframeTrack(\.tilt) {
+                    MoveKeyframe(0)
+                    LinearKeyframe(0, duration: 1.08)
+                    LinearKeyframe(full ? -14 : 0, duration: 0.144, timingCurve: settle)
+                    LinearKeyframe(full ? 11 : 0, duration: 0.18, timingCurve: settle)
+                    LinearKeyframe(full ? -7 : 0, duration: 0.18, timingCurve: settle)
+                    LinearKeyframe(full ? 4 : 0, duration: 0.18, timingCurve: settle)
+                    LinearKeyframe(0, duration: 0.252, timingCurve: settle)
+                }
+                KeyframeTrack(\.ring) {
+                    MoveKeyframe(1)
+                    LinearKeyframe(1, duration: 1.224)
+                    LinearKeyframe(1.9, duration: 1.296, timingCurve: settle)
+                }
+                KeyframeTrack(\.ringOpacity) {
+                    MoveKeyframe(0)
+                    LinearKeyframe(0, duration: 1.224)
+                    LinearKeyframe(full ? 0.7 : 0, duration: 0.144, timingCurve: settle)
+                    LinearKeyframe(0, duration: 1.152, timingCurve: settle)
+                }
+                KeyframeTrack(\.badge) {
+                    MoveKeyframe(isNew && full ? 0 : 1)
+                    LinearKeyframe(isNew && full ? 0 : 1, duration: 1.08)
+                    LinearKeyframe(1.3, duration: 0.432)
+                    LinearKeyframe(1, duration: 0.36)
+                }
+            }
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityLabel(L("Konfirmasi transaksi"))
-        .accessibilityValue(count == 0 ? L("Kosong") : "\(count)")
-        .onAppear { breathe = true; previous = count }
-        .onChange(of: landed) { _, _ in
-            start = Date()
-            running = true
-            Task {
-                try? await Task.sleep(for: .seconds(Self.length + 0.1))
-                running = false
-                start = nil
+        .accessibilityValue("\(count)")
+        .onAppear { breathe = true; shown = count; sheetOpacity = count >= 2 ? 1 : 0; landed += 1 }
+        .onChange(of: count) { old, new in
+            guard new > old else {
+                shown = new
+                if new < 2 { sheetOpacity = 0 }
+                return
             }
-        }
-        .onChange(of: count) { old, _ in previous = old }
-    }
-
-    private var background: some View {
-        ZStack {
-            Capsule().fill(Color.appFill)
-            Capsule().fill(Color.appPrimary.opacity(isFresh ? 0.12 : 0))
-                .animation(.easeInOut(duration: 0.4), value: isFresh)
-            Capsule().fill(Color.appPrimary)
-                .opacity(count > 0 && !isFresh ? (breathe ? 0.2 : 0.05) : 0)
-                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: breathe)
+            isNew = false
+            landed += 1
+            Task { await drop(to: new) }
         }
     }
 
-    private func content(_ t: Double) -> some View {
-        HStack(spacing: compact ? 6 : 8) {
-            DraftTray(count: count, t: t)
-                .frame(width: 34, height: 34)
-                .scaleEffect(compact ? 0.88 : 1)
-                .frame(width: compact ? 30 : 34, height: compact ? 30 : 34)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Draf")
-                    .font(.app(14, weight: .semibold))
-                    .foregroundStyle(Color.appText)
-                if count == 0 {
-                    Text("Kosong")
-                        .font(.app(11))
-                        .foregroundStyle(Color.appTextSecondary)
+    /// Design 3a: a grey sheet falls into the tray and stays; the number rolls when it lands.
+    private func drop(to new: Int) async {
+        guard new >= 2, !reduceMotion else { shown = new; sheetY = 11; sheetOpacity = new >= 2 ? 1 : 0; return }
+        var reset = SwiftUI.Transaction()
+        reset.disablesAnimations = true
+        withTransaction(reset) { sheetY = -18; sheetOpacity = 0 }
+        try? await Task.sleep(for: .seconds(0.29))
+        withAnimation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 1.44)) { sheetY = 9 }
+        withAnimation(.linear(duration: 0.5)) { sheetOpacity = 1 }
+        try? await Task.sleep(for: .seconds(0.79))
+        withAnimation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.5)) { shown = new }
+        try? await Task.sleep(for: .seconds(0.94))
+        withAnimation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.288)) { sheetY = 11 }
+    }
+
+    private struct Life { var gold = 0.0; var grey = 0.0; var greyOpacity = 1.0; var trayX = 1.0; var trayY = 1.0 }
+
+    /// Design dgIcA / dgIcB / dgIcT, with 3s of rest between plays: the gold sheet bobs, a grey sheet drops in and lifts out, the tray gives.
+    private var tray: some View {
+        ZStack(alignment: .topLeading) {
+            // behind the gold sheet, grey sheet and tray, so it fills the notch of the tray
+            RoundedRectangle(cornerRadius: 3).fill(Color(light: 0x8E8E93, dark: 0x8E8E93))
+                .frame(width: 22, height: 14).offset(x: 6, y: 4 + sheetY).opacity(sheetOpacity)
+            Color.clear.frame(width: 34, height: 34)
+            .keyframeAnimator(initialValue: Life(), repeating: !reduceMotion) { [fg] _, l in
+                ZStack(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: 2.5).fill(Color(light: 0xD9A93A, dark: 0xD9A93A))
+                        .frame(width: 16, height: 16).offset(x: 9, y: 5 + l.gold)
+                    RoundedRectangle(cornerRadius: 2.5).fill(Color(light: 0x8E8E93, dark: 0x8E8E93))
+                        .frame(width: 22, height: 12).offset(x: 6, y: 9 + l.grey).opacity(l.greyOpacity)
+                    TrayShape().fill(fg)
+                        .scaleEffect(x: l.trayX, y: l.trayY, anchor: .bottom)
+                }
+                .frame(width: 34, height: 34, alignment: .topLeading)
+            } keyframes: { _ in
+                // Plays on every landing (the view restarts), then rests 3s and plays again, like the Dompet pile.
+                // Segments ease like the CSS keyframes: ease-in-out for dgIcA and dgIcT, cubic-bezier(.2,.9,.25,1) for dgIcB.
+                // A quick 0.2s lift-out comes first, so the grey sheet lands with the one that drops from above (design dpDrop).
+                let inOut = UnitCurve.easeInOut
+                let settle = UnitCurve.bezier(startControlPoint: UnitPoint(x: 0.2, y: 0.9), endControlPoint: UnitPoint(x: 0.25, y: 1))
+                KeyframeTrack(\.gold) {
+                    MoveKeyframe(0)
+                    LinearKeyframe(0, duration: 0.2)
+                    LinearKeyframe(-3, duration: 0.72, timingCurve: inOut)
+                    LinearKeyframe(1, duration: 0.6, timingCurve: inOut)
+                    LinearKeyframe(0, duration: 0.48, timingCurve: inOut)
+                    LinearKeyframe(0, duration: 3)
+                }
+                KeyframeTrack(\.grey) {
+                    MoveKeyframe(0)
+                    LinearKeyframe(-10, duration: 0.2, timingCurve: settle)
+                    LinearKeyframe(1.5, duration: 1.2, timingCurve: settle)
+                    LinearKeyframe(0, duration: 0.288, timingCurve: settle)
+                    LinearKeyframe(0, duration: 3.312)
+                }
+                KeyframeTrack(\.greyOpacity) {
+                    MoveKeyframe(1)
+                    LinearKeyframe(0, duration: 0.2, timingCurve: settle)
+                    LinearKeyframe(1, duration: 0.6, timingCurve: settle)
+                    LinearKeyframe(1, duration: 4.2)
+                }
+                KeyframeTrack(\.trayX) {
+                    LinearKeyframe(1, duration: 1.28)
+                    LinearKeyframe(1.06, duration: 0.24, timingCurve: inOut)
+                    LinearKeyframe(1, duration: 0.312, timingCurve: inOut)
+                    LinearKeyframe(1, duration: 3.168)
+                }
+                KeyframeTrack(\.trayY) {
+                    LinearKeyframe(1, duration: 1.28)
+                    LinearKeyframe(0.92, duration: 0.24, timingCurve: inOut)
+                    LinearKeyframe(1, duration: 0.312, timingCurve: inOut)
+                    LinearKeyframe(1, duration: 3.168)
                 }
             }
-            .lineLimit(1)
-            Spacer(minLength: 0)
-            if count > 0 {
-                countCircle(t)
-            } else {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Color(light: 0x8E8E93, dark: 0x8E8E93))
-            }
         }
-    }
-
-    /// The number in a green circle: it appears with the ring, or rolls up when one more draft lands.
-    private func countCircle(_ t: Double) -> some View {
-        let appearing = previous == 0 && t < Self.length
-        let ring = DraftMotion.at(t, [(1.25, 1), (1.35, 1.3), (1.46, 1.2), (1.56, 1.12), (1.66, 1.06), (1.77, 1.02), (1.93, 1)])
-        let tilt = DraftMotion.at(t, [(1.25, 0), (1.35, -16), (1.46, 13), (1.56, -10), (1.66, 6), (1.77, -3), (1.93, 0)])
-        let pop = appearing ? DraftMotion.at(t, [(1.2, 0), (1.35, 1)], out: true) : 1
-        let waveScale = DraftMotion.at(t, [(1.3, 1), (2.2, 2.1)], out: true)
-        let waveOpacity = DraftMotion.at(t, [(1.3, 0), (1.35, 0.7), (2.2, 0)])
-        return ZStack {
-            Circle().strokeBorder(Color.appPrimary, lineWidth: 2)
-                .scaleEffect(waveScale)
-                .opacity(waveOpacity)
-            Text(count > 99 ? "99+" : "\(count)")
-                .font(.app(count > 9 ? 11 : 13, weight: .bold))
-                .monospacedDigit()
-                .foregroundStyle(.white)
-                .contentTransition(.numericText())
-                .animation(.spring(duration: 0.5, bounce: 0.3), value: count)
-                .frame(width: 26, height: 26)
-                .background(Color.appPrimary, in: Circle())
-                .scaleEffect(ring * pop)
-                .rotationEffect(.degrees(tilt))
-                .opacity(appearing ? DraftMotion.at(t, [(1.2, 0), (1.3, 1)]) : 1)
-        }
-        .frame(width: 26, height: 26)
+        .frame(width: 34, height: 34, alignment: .topLeading)
     }
 }
 
-/// The tray with the sheets standing in it; the newest sheet drops in while `t` runs.
-private struct DraftTray: View {
+private struct CountBadge: View {
     let count: Int
-    let t: Double
-
-    private let gold = Color(light: 0xD9A93A, dark: 0xD9A93A)
-    private let purple = Color(light: 0x472B91, dark: 0x472B91)
+    let scale: Double
+    let bg: Color
 
     var body: some View {
-        let landing = t < 2.6
-        // the sheet that is falling now: the first one is gold, the next ones purple
-        let dropsGold = landing && count == 1
-        let dropsPurple = landing && count >= 2
-        let newOpacity = DraftMotion.at(t, [(1.4, 0), (1.5, 1)])
-        let dropY = DraftMotion.at(t, [(0.2, -18), (1.25, 9), (1.46, 11)], out: true)
-        let dropOpacity = DraftMotion.at(t, [(0.2, 0), (0.57, 1), (1.46, 1), (1.5, 0)])
-        let squishX = DraftMotion.at(t, [(1.25, 1), (1.46, 0.88), (1.77, 1.08), (2.08, 1)])
-        let squishY = DraftMotion.at(t, [(1.25, 1), (1.46, 0.94), (1.77, 1.08), (2.08, 1)])
-        return ZStack(alignment: .topLeading) {
-            if count >= 1 {
-                RoundedRectangle(cornerRadius: 2.5).fill(gold)
-                    .frame(width: 16, height: 16).offset(x: 9, y: 5)
-                    .opacity(dropsGold ? newOpacity : 1)
-            }
-            if count >= 2 {
-                RoundedRectangle(cornerRadius: 2.5).fill(purple)
-                    .frame(width: 22, height: 12).offset(x: 6, y: 9)
-                    .opacity(dropsPurple ? newOpacity : 1)
-            }
-            if dropsGold {
-                RoundedRectangle(cornerRadius: 3).fill(gold)
-                    .frame(width: 16, height: 16).offset(x: 9, y: 4 + dropY).opacity(dropOpacity)
-            }
-            if dropsPurple {
-                RoundedRectangle(cornerRadius: 3).fill(purple)
-                    .frame(width: 22, height: 14).offset(x: 6, y: 4 + dropY).opacity(dropOpacity)
-            }
-            TrayShape().fill(count > 0 ? Color.appPrimary : Color.appTextTertiary)
-                .animation(.easeInOut(duration: 0.4), value: count > 0)
-        }
-        .frame(width: 34, height: 34, alignment: .topLeading)
-        .scaleEffect(x: squishX, y: squishY)
-        .accessibilityHidden(true)
+        Text(count > 99 ? "99+" : "\(count)")
+            .font(.app(count > 9 ? 11 : 12, weight: .bold))
+            .monospacedDigit()
+            .foregroundStyle(.white)
+            .contentTransition(.numericText())
+            .animation(.spring(duration: 0.5, bounce: 0.3), value: count)
+            .frame(minWidth: 22, minHeight: 22)
+            .padding(.horizontal, count > 9 ? 3 : 0)
+            .background(Color.appPrimary, in: Capsule())
+            .overlay(Capsule().strokeBorder(bg, lineWidth: 2))
+            .scaleEffect(scale)
+            .offset(x: 4, y: -4)
     }
 }
 
@@ -180,18 +230,3 @@ struct TrayShape: Shape {
     }
 }
 
-/// Values over time, eased between keys like CSS keyframes. Before the first key and after the last, the end values hold.
-enum DraftMotion {
-    static func at(_ t: Double, _ keys: [(Double, Double)], out: Bool = false) -> Double {
-        guard let first = keys.first, let last = keys.last else { return 0 }
-        if t <= first.0 { return first.1 }
-        if t >= last.0 { return last.1 }
-        for i in 1..<keys.count where t <= keys[i].0 {
-            let (t0, v0) = keys[i - 1], (t1, v1) = keys[i]
-            let x = (t - t0) / (t1 - t0)
-            let eased = out ? 1 - pow(1 - x, 3) : x * x * (3 - 2 * x)
-            return v0 + (v1 - v0) * eased
-        }
-        return last.1
-    }
-}
