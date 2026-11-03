@@ -733,7 +733,7 @@ struct AddTransactionView: View {
                     isLocked: assetMode == .deposit, isAsset: target?.isInvestment == true, index: 1)
             } else {
                 row(.category, label: L("Kategori"), value: category?.name ?? L("Belum dipilih"),
-                    icon: category?.icon, iconColor: style.color, isPlaceholder: category == nil, index: 0)
+                    categoryMark: category, isPlaceholder: category == nil, index: 0)
                 row(.account, label: L("Dompet"), value: account?.name ?? L("Pilih"), wallet: account,
                     sub: isCardExpense && planMonths == 0 ? account.map(billingText) : nil, index: 1)
                 if isCardExpense, let account, editing == nil {
@@ -766,12 +766,12 @@ struct AddTransactionView: View {
     }
 
     private func row(_ kind: PickerKind, label: String, value: String, wallet: Account? = nil,
-                     icon: String? = nil, iconColor: Color = .appTextSecondary, sub: String? = nil,
+                     icon: String? = nil, iconColor: Color = .appTextSecondary, categoryMark: Category? = nil, sub: String? = nil,
                      isPlaceholder: Bool = false, isLocked: Bool = false, isAsset: Bool = false, index: Int) -> some View {
         Button {
             if done == nil { sheet = kind }
         } label: {
-            DetailRow(label: label, value: value, wallet: wallet, icon: icon, iconColor: iconColor, sub: sub,
+            DetailRow(label: label, value: value, wallet: wallet, categoryMark: categoryMark, icon: icon, iconColor: iconColor, sub: sub,
                       showsChevron: true, isLocked: isLocked, isAsset: isAsset, height: rowHeight, isPlaceholder: isPlaceholder)
                 .background(flashed.contains(kind) ? style.color.opacity(0.1) : .clear)
                 .animation(.easeInOut(duration: 0.45), value: flashed)
@@ -1201,6 +1201,8 @@ struct DetailRow: View {
     let label: String
     let value: String
     var wallet: Account?
+    /// A category shows as its colour chip with the icon inside.
+    var categoryMark: Category?
     var icon: String?
     var iconColor: Color = .appTextSecondary
     /// A small grey line under the value.
@@ -1221,7 +1223,10 @@ struct DetailRow: View {
                 .frame(width: 76, alignment: .leading)
             HStack(spacing: 8) {
                 if let wallet {
-                    WalletSwatch(account: wallet, width: 20, height: 14)
+                    WalletSwatch(account: wallet, width: 24, height: 17)
+                }
+                if let categoryMark {
+                    CategorySwatch(category: categoryMark, style: .chip)
                 }
                 if let icon {
                     Image(systemName: icon)

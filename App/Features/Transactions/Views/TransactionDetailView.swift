@@ -221,7 +221,7 @@ struct TransactionDetailView: View {
             } else if isAdjustment {
                 row(label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 0)
             } else {
-                row(label: L("Kategori"), value: category?.name ?? "—", icon: category?.icon ?? "tag", index: 0)
+                row(label: L("Kategori"), value: category?.name ?? "—", categoryMark: category, index: 0)
                 row(label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 1)
                 if let installment, let card = account {
                     installmentRow(installment, card: card)
@@ -235,8 +235,8 @@ struct TransactionDetailView: View {
         }
     }
 
-    private func row(label: String, value: String, wallet: Account? = nil, icon: String? = nil, index: Int) -> some View {
-        DetailRow(label: label, value: value, wallet: wallet, icon: icon, height: 50)
+    private func row(label: String, value: String, wallet: Account? = nil, categoryMark: Category? = nil, icon: String? = nil, index: Int) -> some View {
+        DetailRow(label: label, value: value, wallet: wallet, categoryMark: categoryMark, icon: icon, height: 50)
             .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
     }
 

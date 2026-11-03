@@ -183,6 +183,8 @@ struct QuickResultSheet: View {
         let icon: String
         let kind: DraftFieldSheet.Kind
         let origin: Origin?
+        var account: Account?
+        var categoryMark: Category?
     }
 
     private func fields(_ d: Draft, includeType: Bool) -> [Field] {
@@ -197,13 +199,13 @@ struct QuickResultSheet: View {
         if includeType { result.append(Field(key: "type", label: L("Tipe"), value: d.kindTitle, icon: d.kindIcon, kind: .type, origin: nil)) }
         if d.kind != .transfer {
             result.append(Field(key: "category", label: L("Kategori"), value: category?.name, icon: category?.icon ?? "tag",
-                                kind: .category, origin: nil))
+                                kind: .category, origin: nil, categoryMark: category))
         }
         result.append(Field(key: "wallet", label: d.kind == .transfer ? L("Dari dompet") : L("Dompet"), value: wallet?.name, icon: "wallet.bifold",
-                            kind: .wallet, origin: origin("wallet", present: wallet != nil)))
+                            kind: .wallet, origin: origin("wallet", present: wallet != nil), account: wallet))
         if d.kind == .transfer {
             result.append(Field(key: "target", label: L("Ke dompet"), value: target?.name, icon: "arrow.right", kind: .target,
-                                origin: origin("target", present: target != nil)))
+                                origin: origin("target", present: target != nil), account: target))
         }
         result.append(Field(key: "date", label: L("Tanggal"), value: Self.dateLabel(d.date), icon: "calendar", kind: .date,
                             origin: origin("date", present: true)))
@@ -218,8 +220,14 @@ struct QuickResultSheet: View {
         let missing = f.value == nil
         return Button { picker = FieldPicker(draftId: d.id, kind: f.kind) } label: {
             HStack(spacing: 14) {
-                Image(systemName: missing ? "plus.circle" : f.icon).font(.system(size: 18))
-                    .foregroundStyle(missing ? Color.stWarn : Color.appTextSecondary).frame(width: 24)
+                if !missing, let account = f.account {
+                    WalletSwatch(account: account, width: 24, height: 17).frame(width: 24)
+                } else if !missing, let category = f.categoryMark {
+                    CategorySwatch(category: category, style: .chip).frame(width: 24)
+                } else {
+                    Image(systemName: missing ? "plus.circle" : f.icon).font(.system(size: 18))
+                        .foregroundStyle(missing ? Color.stWarn : Color.appTextSecondary).frame(width: 24)
+                }
                 Text(f.label).font(.app(16)).foregroundStyle(missing ? Color.stWarn : Color.appTextSecondary)
                 Spacer()
                 VStack(alignment: .trailing, spacing: 1) {

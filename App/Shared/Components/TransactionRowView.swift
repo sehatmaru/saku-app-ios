@@ -80,16 +80,21 @@ struct TransactionRowView: View {
 
     @ViewBuilder
     private var walletChip: some View {
-        if let source = chipWallets.first {
+        if !chipWallets.isEmpty {
             HStack(spacing: 5) {
-                WalletSwatch(account: source)
-                Text(chipWallets.map(\.name).joined(separator: " → "))
-                    .font(.app(12))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                ForEach(Array(chipWallets.enumerated()), id: \.offset) { index, wallet in
+                    if index > 0 {
+                        Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                    }
+                    WalletSwatch(account: wallet)
+                    Text(wallet.name)
+                        .font(.app(12))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
             }
-            .frame(maxWidth: 168, alignment: .trailing)
+            .frame(maxWidth: 190, alignment: .trailing)
         }
     }
 
@@ -173,8 +178,9 @@ struct TransactionRowView: View {
     }
 }
 
-/// The one drawing of a wallet's colour as a small card, used in every list, form row, picker and panel:
-/// a stripe for credit cards, a firm edge for cash. Change it here and every place follows.
+/// The one drawing of a wallet's colour as a small card, used in every list, form row, picker and panel.
+/// Each wallet type has its own mark: a stripe for credit cards, a chip for banks, a dot for e-wallets,
+/// a firm edge for cash, a rising line for investments. Change it here and every place follows.
 /// `onTile` draws it in that colour instead, for a tile already filled with the wallet's colour.
 /// With no wallet it shows `fallback`.
 struct WalletSwatch: View {
@@ -184,18 +190,41 @@ struct WalletSwatch: View {
     var onTile: Color?
     var fallback: Color = .appPrimary
 
+    private var base: Color { account?.walletColor ?? fallback }
+    private var mark: Color { onTile?.opacity(0.85) ?? (base.isLight ? .black.opacity(0.4) : .white.opacity(0.55)) }
+
     var body: some View {
-        let base = account?.walletColor ?? fallback
-        let stripe: Color = onTile?.opacity(0.85) ?? (base.isLight ? .black.opacity(0.4) : .white.opacity(0.55))
         RoundedRectangle(cornerRadius: height / 4)
             .fill(onTile.map { $0.opacity(0.35) } ?? base)
             .frame(width: width, height: height)
-            .overlay {
-                if account?.isCreditCard == true {
-                    Rectangle().fill(stripe).frame(height: height / 6).frame(maxHeight: .infinity, alignment: .top).padding(.top, height / 4)
-                }
-            }
+            .overlay(alignment: .topLeading) { markView }
             .overlay(RoundedRectangle(cornerRadius: height / 4)
                 .strokeBorder(account?.type == .cash ? (onTile?.opacity(0.85) ?? Color.appTextSecondary) : (onTile == nil ? Color.gray.opacity(0.35) : .clear), lineWidth: 1))
+    }
+
+    @ViewBuilder
+    private var markView: some View {
+        switch account?.type {
+        case .credit:
+            Rectangle().fill(mark).frame(width: width, height: max(height / 6, 1.5)).offset(y: height / 4)
+        case .bank:
+            let w = max(width * 0.22, 6), h = max(height * 0.25, 4.5)
+            RoundedRectangle(cornerRadius: max(h / 4, 1)).fill(mark).frame(width: w, height: h)
+                .offset(x: width * 0.11, y: height - h - height * 0.17)
+        case .ewallet:
+            let d = max(height * 0.28, 4.5)
+            Circle().fill(mark).frame(width: d, height: d)
+                .offset(x: width - d - width * 0.11, y: height - d - height * 0.17)
+        case .investment:
+            Path { p in
+                p.move(to: CGPoint(x: width * 0.13, y: height * 0.75))
+                p.addLine(to: CGPoint(x: width * 0.37, y: height * 0.53))
+                p.addLine(to: CGPoint(x: width * 0.54, y: height * 0.64))
+                p.addLine(to: CGPoint(x: width * 0.87, y: height * 0.25))
+            }
+            .stroke(mark, style: StrokeStyle(lineWidth: max(height * 0.1, 1.2), lineCap: .round, lineJoin: .round))
+        default:
+            EmptyView()
+        }
     }
 }
