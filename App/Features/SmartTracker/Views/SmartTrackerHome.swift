@@ -386,18 +386,22 @@ struct SmartTrackerHomeOverlay: View {
             let lines = ImageReader.downscaled(data) == nil ? [] : await ImageReader.lines(in: ImageReader.downscaled(data)!)
             var outOfQuota = false
             var reading = ImageParser.parse(lines: lines, context: store.context)
-            // hard case: only the text goes to the language model, when agreed, online and available
-            if reading.drafts.isEmpty, !lines.isEmpty {
-                switch await store.refined(lines.joined(separator: "\n"), source: .photo) {
+            for i in reading.drafts.indices { reading.drafts[i].reader = .rules }
+            // AI first, with only the text from the picture; a bank history too long for one screenshot stays with the rules
+            if !reading.truncated, !lines.isEmpty, RemoteSmartParser.isAvailable {
+                switch await store.aiRead(lines.joined(separator: "\n"), source: .photo) {
                 case .drafts(let remote): reading.drafts = remote
                 case .outOfQuota:
-                    // the AI help is used up: an empty draft to fill in by hand, with the reason
+                    // the AI help is used up: the rules' reading stays, or an empty draft to fill in by hand
                     outOfQuota = true
-                    var manual = Draft()
-                    manual.source = .photo
-                    manual.note = RemoteSmartParser.outOfQuotaNote
-                    reading.drafts = [manual]
-                case .unavailable: break
+                    if reading.drafts.isEmpty {
+                        var manual = Draft()
+                        manual.source = .photo
+                        manual.note = RemoteSmartParser.outOfQuotaNote
+                        reading.drafts = [manual]
+                    }
+                    DraftStore.markFallback(&reading.drafts, .quota)
+                case .unavailable(let why): DraftStore.markFallback(&reading.drafts, why)
                 }
             }
             isThinking = false
@@ -428,16 +432,18 @@ struct SmartTrackerHomeOverlay: View {
         Haptics.add()
         isThinking = true
         Task {
-            let drafts = SmartTrackerHomeOverlay.parse(sentence, source: source, store: store)
-            var final = drafts
+            var final = SmartTrackerHomeOverlay.parse(sentence, source: source, store: store)
+            for i in final.indices { final[i].reader = .rules }
             var outOfQuota = false
-            if drafts.count == 1 && (drafts[0].isUnreadable || drafts[0].amount == nil) {
-                switch await store.refined(sentence, source: source) {
+            // AI first (4 s at most); the rules' reading is the fallback and says so
+            if RemoteSmartParser.isAvailable {
+                switch await store.aiRead(sentence, source: source) {
                 case .drafts(let remote): final = remote
                 case .outOfQuota:
                     outOfQuota = true
-                    final[0].note = RemoteSmartParser.outOfQuotaNote
-                case .unavailable: break
+                    if final.count == 1, final[0].isUnreadable || final[0].amount == nil { final[0].note = RemoteSmartParser.outOfQuotaNote }
+                    DraftStore.markFallback(&final, .quota)
+                case .unavailable(let why): DraftStore.markFallback(&final, why)
                 }
             }
             isThinking = false

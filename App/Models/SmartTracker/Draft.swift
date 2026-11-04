@@ -11,6 +11,8 @@ struct Draft: Identifiable, Codable, Hashable {
         case cardPayment
     }
 
+    enum Reader: String, Codable { case ai, rules }
+
     enum Source: String, Codable {
         case typed, voice, siri, share, notification, photo
     }
@@ -42,6 +44,13 @@ struct Draft: Identifiable, Codable, Hashable {
     var isUnreadable = false
     /// Investment deposit wanted but no investment wallet to receive it.
     var needsInvestmentWallet = false
+    /// Who read the text into this draft: the language model or the on-device rules. Nil for drafts from before AI-first.
+    var reader: Reader?
+    /// Why the rules read it when AI was expected ("tidak ada koneksi", "AI terlalu lama", ...); shown as "Dibaca tanpa AI".
+    var fallbackReason: String?
+    /// The original text of a notification or Siri draft, kept on this phone until the draft is saved or dropped (at most
+    /// 30 days), so "Pindai ulang dengan AI" can read it again.
+    var rawText: String?
     /// An early salary: nil = the user has not been asked yet, true = start the period on this date, false = keep it.
     var startsPeriod: Bool?
 

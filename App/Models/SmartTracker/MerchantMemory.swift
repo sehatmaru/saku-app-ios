@@ -61,6 +61,21 @@ enum MerchantMemory {
         entries.filter { $0.kind == kind && text.contains($0.keyword) }.max { $0.keyword.count < $1.keyword.count }
     }
 
+    /// Ingatan wins over the language model for category and wallet; amount, kind, title and date stay as read.
+    static func override(_ draft: inout Draft, text: String, context: SmartParser.Context) {
+        guard let hit = match(in: text.lowercased(), entries: context.memory, kind: draft.kind) else { return }
+        let wanted: CategoryType = draft.kind == .income ? .income : .expense
+        if let id = hit.categoryId, context.categories.contains(where: { $0.id == id && $0.type == wanted }) {
+            draft.categoryId = id
+            draft.fromMemory = true
+        }
+        if let id = hit.accountId, context.accounts.contains(where: { $0.id == id && $0.isActive }) {
+            draft.accountId = id
+            draft.fromMemory = true
+        }
+        draft.merchant = hit.keyword
+    }
+
     /// The keyword to remember for a saved draft: its title, lowercased.
     static func keyword(for draft: Draft) -> String? {
         let word = draft.title.lowercased().trimmingCharacters(in: .whitespaces)

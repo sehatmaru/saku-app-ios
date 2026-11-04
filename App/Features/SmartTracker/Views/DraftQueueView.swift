@@ -1,5 +1,18 @@
 import SwiftUI
 
+/// Who read the draft: "AI" or "Aturan" (the on-device rules).
+struct ReaderBadge: View {
+    let reader: Draft.Reader
+
+    var body: some View {
+        Label(reader == .ai ? "AI" : L("Aturan"), systemImage: reader == .ai ? "sparkles" : "list.bullet")
+            .font(.app(12, weight: .semibold))
+            .foregroundStyle(reader == .ai ? Color.appPrimary : Color.appTextSecondary)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(reader == .ai ? Color.appPrimary.opacity(0.12) : Color.appFill, in: Capsule())
+    }
+}
+
 extension Draft {
     /// Where it came from, in words ("Suara", "Notifikasi BCA").
     var sourceLabel: String {
@@ -119,6 +132,9 @@ struct DraftQueueView: View {
         }
     }
 
+    @State private var rescanning: Set<UUID> = []
+    @State private var rescanFailed: Set<UUID> = []
+    @State private var plusReason: PlusReason?
     @ObservedObject private var quotaStore = AIQuotaStore.shared
     @AppStorage(SmartTrackerConsent.key) private var aiOn = false
 
@@ -129,6 +145,42 @@ struct DraftQueueView: View {
         if left <= 3 { return L("Sisa %lld jatah AI. Setelah itu dibaca dengan aturan.", left) }
         if left <= 10 { return L("Sisa %lld jatah AI bulan ini", left) }
         return nil
+    }
+
+    /// Notification and Siri drafts start with the rules; AI reads them again on request (only while AI is on).
+    private func canRescan(_ d: Draft) -> Bool {
+        (d.source == .notification || d.source == .siri) && d.rawText != nil && d.reader != .ai && aiOn && RemoteSmartParser.isAvailable
+    }
+
+    private func rescanButton(_ d: Draft) -> some View {
+        let busy = rescanning.contains(d.id), failed = rescanFailed.contains(d.id)
+        return Button { rescan(d) } label: {
+            HStack(spacing: 6) {
+                if busy { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles") }
+                Text(busy ? L("Memindai ulang…") : failed ? L("Gagal. Ketuk untuk coba lagi") : L("Pindai ulang dengan AI"))
+            }
+            .font(.app(13, weight: .semibold))
+            .foregroundStyle(failed ? Color.appError : Color.appPrimary)
+            .padding(.horizontal, 12).frame(minHeight: 36)
+            .background(failed ? Color.clear : Color.appPrimary.opacity(0.12), in: Capsule())
+            .overlay(Capsule().strokeBorder(failed ? Color.appError : Color.clear))
+        }
+        .buttonStyle(.plain)
+        .disabled(busy)
+    }
+
+    private func rescan(_ d: Draft) {
+        rescanFailed.remove(d.id)
+        rescanning.insert(d.id)
+        Task {
+            let result = await store.rescan(d.id)
+            rescanning.remove(d.id)
+            switch result {
+            case .done: break
+            case .outOfQuota: plusReason = .aiHelp
+            case .failed: rescanFailed.insert(d.id)
+            }
+        }
     }
 
     private var ready: [Draft] { store.drafts.filter { $0.isComplete && !store.needsPeriodChoice($0) } }
@@ -154,6 +206,7 @@ struct DraftQueueView: View {
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
         .onChange(of: sheet?.id) { focusedId = nil }
+        .plusOffer($plusReason)
         .sheet(item: $sheet) { item in sheetContent(item) }
         .sheet(isPresented: $showsSaveAll) { saveAllSheet }
 .sheet(item: $periodChoice) { d in
@@ -265,10 +318,17 @@ struct DraftQueueView: View {
                     Spacer(minLength: 4)
                     Text(Self.arrival(d.createdAt)).font(.app(12)).foregroundStyle(Color.appTextTertiary).lineLimit(1)
                 }
-                Label(pillText, systemImage: pillIcon)
-                    .font(.app(12, weight: .semibold)).foregroundStyle(tint)
-                    .padding(.horizontal, 10).padding(.vertical, 4)
-                    .background(pillBg, in: Capsule())
+                HStack(spacing: 6) {
+                    Label(pillText, systemImage: pillIcon)
+                        .font(.app(12, weight: .semibold)).foregroundStyle(tint)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(pillBg, in: Capsule())
+                    if let reader = d.reader { ReaderBadge(reader: reader) }
+                }
+                if let why = d.fallbackReason {
+                    Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                }
+                if canRescan(d) { rescanButton(d) }
             }
 
             if d.isUnreadable {

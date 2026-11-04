@@ -188,34 +188,58 @@ final class DraftStore: ObservableObject {
     /// Reads a sentence and queues what it finds. Returns the new drafts.
     @discardableResult
     func add(text: String, source: Draft.Source) -> [Draft] {
-        add(SmartParser.parse(text, source: source, context: context))
+        // a Siri sentence keeps its words on the phone so "Pindai ulang dengan AI" can read it again
+        add(SmartParser.parse(text, source: source, context: context).map { draft in
+            var draft = draft
+            if source == .siri { draft.rawText = text }
+            return draft
+        })
     }
 
-    /// Like `add(text:)`, but a sentence the rules could not read is handed to the language model (server)
-    /// when the user agreed to it and there is a network; offline it stays as the user's own words.
-    func addRefined(text: String, source: Draft.Source) async -> [Draft] {
-        let parsed = SmartParser.parse(text, source: source, context: context)
-        // the language model (server) is only used with the user's agreement
-        guard SmartTrackerConsent.isGranted, parsed.count == 1, parsed[0].isUnreadable || parsed[0].amount == nil else { return add(parsed) }
-        switch await RemoteSmartParser.parse(text, source: source, context: context) {
-        case .drafts(let remote): return add(remote)
-        case .outOfQuota:
-            var manual = parsed
-            manual[0].note = RemoteSmartParser.outOfQuotaNote
-            return add(manual)
-        case .unavailable: return add(parsed)
-        }
-    }
-
-    /// The language model's reading of a sentence the rules could not read; `.unavailable` when not agreed, offline or no answer.
-    func refined(_ text: String, source: Draft.Source) async -> RemoteSmartParser.Outcome {
-        guard SmartTrackerConsent.isGranted else { return .unavailable }
+    /// The language model's reading of a text (the server checks the allowance); `.unavailable(.failed)` when AI is off or for a guest.
+    func aiRead(_ text: String, source: Draft.Source) async -> RemoteSmartParser.Outcome {
+        guard RemoteSmartParser.isAvailable else { return .unavailable(.failed) }
         return await RemoteSmartParser.parse(text, source: source, context: context)
+    }
+
+    enum RescanResult { case done, outOfQuota, failed }
+
+    /// Drafts the rules read because AI could not: marks why, for "Dibaca tanpa AI".
+    static func markFallback(_ drafts: inout [Draft], _ why: RemoteSmartParser.Fallback) {
+        for i in drafts.indices { drafts[i].reader = .rules; drafts[i].fallbackReason = why.reason }
+    }
+
+    /// "Pindai ulang dengan AI": the saved original text of a notification or Siri draft is read again; the draft takes
+    /// the AI's reading (more than one transaction in it adds the rest as new drafts). Nothing changes when AI fails.
+    func rescan(_ id: UUID) async -> RescanResult {
+        guard let index = drafts.firstIndex(where: { $0.id == id }), let text = drafts[index].rawText else { return .failed }
+        switch await aiRead(text, source: drafts[index].source) {
+        case .outOfQuota: return .outOfQuota
+        case .unavailable: return .failed
+        case .drafts(let read):
+            guard let slot = drafts.firstIndex(where: { $0.id == id }) else { return .failed }
+            var first = read[0]
+            let old = drafts[slot]
+            first.id = old.id
+            first.createdAt = old.createdAt
+            first.sourceName = old.sourceName
+            first.rawText = old.rawText
+            drafts[slot] = first
+            var extra = Array(read.dropFirst())
+            for i in extra.indices { extra[i].sourceName = old.sourceName; extra[i].rawText = old.rawText }
+            drafts.insert(contentsOf: extra, at: slot + 1)
+            persist()
+            return .done
+        }
     }
 
     @discardableResult
     func add(_ new: [Draft]) -> [Draft] {
-        let marked = new.map { withDuplicateNote($0) }
+        let marked = new.map { draft -> Draft in
+            var draft = withDuplicateNote(draft)
+            if draft.reader == nil { draft.reader = .rules }
+            return draft
+        }
         drafts.insert(contentsOf: marked, at: 0)
         persist()
         return marked
@@ -251,7 +275,9 @@ final class DraftStore: ObservableObject {
                 added.append(draft)
             }
         }
-        if !added.isEmpty { drafts.insert(contentsOf: added.map(withDuplicateNote), at: 0) }
+        if !added.isEmpty {
+            drafts.insert(contentsOf: added.map { var d = withDuplicateNote($0); if d.reader == nil { d.reader = .rules }; return d }, at: 0)
+        }
         persist()
         return (added.count, new.count - added.count)
     }
@@ -316,7 +342,7 @@ final class DraftStore: ObservableObject {
     /// The model's reading of shared pictures the rules could not read; they land in the queue when it answers.
     private func refineSharedPictures(_ texts: [String]) async {
         for text in texts {
-            if case .drafts(let remote) = await refined(text, source: .photo) { add(remote) }
+            if case .drafts(let remote) = await aiRead(text, source: .photo) { add(remote) }
         }
     }
 

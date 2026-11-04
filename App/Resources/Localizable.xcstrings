@@ -1703,6 +1703,16 @@
         }
       }
     },
+    "AI gagal membaca": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI could not read it"
+          }
+        }
+      }
+    },
     "AI lebih banyak": {
       "localizations": {
         "en": {
@@ -1729,6 +1739,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Unlimited AI"
+          }
+        }
+      }
+    },
+    "AI terlalu lama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI took too long"
           }
         }
       }
@@ -2409,6 +2429,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Manage money without the hassle."
+          }
+        }
+      }
+    },
+    "Aturan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rules"
           }
         }
       }
@@ -6043,6 +6073,16 @@
         }
       }
     },
+    "Dibaca tanpa AI · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read without AI · %@"
+          }
+        }
+      }
+    },
     "Dibagikan": {
       "localizations": {
         "en": {
@@ -7569,6 +7609,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't save:"
+          }
+        }
+      }
+    },
+    "Gagal. Ketuk untuk coba lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed. Tap to retry"
           }
         }
       }
@@ -11963,6 +12013,16 @@
         }
       }
     },
+    "Memindai ulang…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rescanning…"
+          }
+        }
+      }
+    },
     "Memuat": {
       "localizations": {
         "en": {
@@ -14589,6 +14649,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Move it to savings or investments as soon as your pay arrives, before it gets spent."
+          }
+        }
+      }
+    },
+    "Pindai ulang dengan AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rescan with AI"
           }
         }
       }
@@ -19985,12 +20055,12 @@
         }
       }
     },
-    "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli dihapus begitu draf jadi. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
+    "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli dihapus begitu draf jadi; teks notifikasi dan Siri tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence is deleted as soon as the draft is made. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save."
+            "value": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence is deleted as soon as the draft is made; notification and Siri text stays on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save."
           }
         }
       }
@@ -21105,6 +21175,16 @@
         }
       }
     },
+    "jatah habis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "quota used up"
+          }
+        }
+      }
+    },
     "kartu": {
       "localizations": {
         "en": {
@@ -21431,6 +21511,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "monthly on day %lld"
+          }
+        }
+      }
+    },
+    "tidak ada koneksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no connection"
           }
         }
       }

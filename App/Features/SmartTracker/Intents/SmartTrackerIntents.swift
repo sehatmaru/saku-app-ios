@@ -38,7 +38,8 @@ struct RecordFromNotificationIntent: AppIntent {
             let drafts = NotificationParser.parse(app: appName, title: notificationTitle, subtitle: subtitle, body: body,
                                                   context: store.context)
             if !drafts.isEmpty { store.noteConnected(app: appName) }
-            return store.addFromNotification(drafts, appName: appName)
+            let raw = [notificationTitle, subtitle, body].filter { !$0.isEmpty }.joined(separator: "\n")
+            return store.addFromNotification(drafts.map { var d = $0; d.rawText = raw; return d }, appName: appName)
         }
         if result.added > 0 { await DraftNotifier.announce(count: result.added) }
         // an empty body usually means the Shortcut's Body variable is not filled, which is worth saying

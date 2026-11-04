@@ -98,7 +98,7 @@ struct QuickResultSheet: View {
         }
     }
 
-    private var header: some View {
+    @ViewBuilder private var header: some View {
         HStack(spacing: 8) {
             Image(systemName: source == .voice ? "mic" : source == .photo ? "photo" : "keyboard").font(.system(size: 14))
             Text(source == .voice ? L("Dari suaramu") : source == .photo ? L("Dari gambarmu") : L("Dari ketikanmu")).layoutPriority(1)
@@ -106,9 +106,14 @@ struct QuickResultSheet: View {
                 Text("· “\(sentence)”").foregroundStyle(Color.appTextTertiary).lineLimit(1)
             }
             Spacer(minLength: 0)
+            if let reader = drafts.first?.reader { ReaderBadge(reader: reader) }
         }
         .font(.app(13)).foregroundStyle(Color.appTextSecondary)
         .padding(.horizontal, 24)
+        if let why = drafts.first?.fallbackReason {
+            Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                .padding(.horizontal, 24).padding(.top, 6)
+        }
     }
 
     // MARK: One transaction

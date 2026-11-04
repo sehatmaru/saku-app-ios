@@ -1474,7 +1474,6 @@
   "Apa yang dibuang di perangkat": "What is removed on your device",
   "Nomor panjang (rekening, kartu) dan kode OTP dihapus sebelum teks dikirim. Gambar mentah tidak pernah dikirim.": "Long numbers (accounts, cards) and OTP codes are removed before the text is sent. Raw images are never sent.",
   "Apa yang disimpan": "What is stored",
-  "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli dihapus begitu draf jadi. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence is deleted as soon as the draft is made. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save.",
   "Cara menghapus": "How to delete",
   "Buka Profil, lalu Hapus akun. Datamu ikut terhapus.": "Open Profile, then Delete account. Your data is deleted with it.",
   "Ubah notifikasi bank jadi draf": "Turn bank notifications into drafts",
@@ -1494,5 +1493,15 @@
   "AI mati. Jatah tidak terpakai.": "AI is off. No quota is used.",
   "Sisa %lld jatah AI bulan ini": "%lld AI reads left this month",
   "Sisa %lld jatah AI. Setelah itu dibaca dengan aturan.": "%lld AI reads left. After that, rules read it.",
-  "Laporan PDF baru. Bantuan AI kembali 50 kali per bulan.": "New PDF reports. AI help goes back to 50 a month."
+  "Laporan PDF baru. Bantuan AI kembali 50 kali per bulan.": "New PDF reports. AI help goes back to 50 a month.",
+  "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli dihapus begitu draf jadi; teks notifikasi dan Siri tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence is deleted as soon as the draft is made; notification and Siri text stays on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save.",
+  "Dibaca tanpa AI · %@": "Read without AI · %@",
+  "Aturan": "Rules",
+  "Pindai ulang dengan AI": "Rescan with AI",
+  "Memindai ulang…": "Rescanning…",
+  "Gagal. Ketuk untuk coba lagi": "Failed. Tap to retry",
+  "tidak ada koneksi": "no connection",
+  "AI gagal membaca": "AI could not read it",
+  "AI terlalu lama": "AI took too long",
+  "jatah habis": "quota used up"
 }
