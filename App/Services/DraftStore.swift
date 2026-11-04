@@ -328,19 +328,20 @@ final class DraftStore: ObservableObject {
     }
 
     /// Text read from a picture handed over by a Shortcut; returns how many drafts joined the queue.
-    func ingestPhoto(lines: [String]) async -> Int {
+    func ingestPhoto(lines: [String]) async -> (drafts: [Draft], outOfQuota: Bool) {
         let before = drafts.count
-        await ingestShared(ShareInbox.photoMark + lines.joined(separator: "\n"))
-        return max(0, drafts.count - before)
+        let out = await ingestShared(ShareInbox.photoMark + lines.joined(separator: "\n"))
+        return (Array(drafts.prefix(max(0, drafts.count - before))), out)
     }
 
-    private func ingestShared(_ text: String) async {
+    /// True when the AI allowance was used up while reading.
+    @discardableResult private func ingestShared(_ text: String) async -> Bool {
         let isPhoto = text.hasPrefix(ShareInbox.photoMark)
         var rules: [Draft]
         let body: String
         if isPhoto {
             // text read from a shared picture (the picture itself never reached the app); reading pictures is Saku Plus
-            guard PlusStore.cachedIsPlus else { return }
+            guard PlusStore.cachedIsPlus else { return false }
             let lines = text.dropFirst(ShareInbox.photoMark.count).components(separatedBy: "\n")
             rules = ImageParser.parse(lines: lines, context: context).drafts
             body = lines.joined(separator: "\n")
@@ -349,14 +350,16 @@ final class DraftStore: ObservableObject {
             body = text
         }
         for i in rules.indices { rules[i].reader = .rules }
+        var outOfQuota = false
         if RemoteSmartParser.isAvailable, !body.isEmpty {
             switch await aiRead(body, source: isPhoto ? .photo : .share) {
-            case .drafts(let remote): add(remote); return
-            case .outOfQuota: Self.markFallback(&rules, .quota)
+            case .drafts(let remote): add(remote); return false
+            case .outOfQuota: outOfQuota = true; Self.markFallback(&rules, .quota)
             case .unavailable(let why): Self.markFallback(&rules, why)
             }
         }
         if !rules.isEmpty { add(rules) }
+        return outOfQuota
     }
 
     // MARK: Duplicates

@@ -10,8 +10,9 @@ struct RecordTransactionIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard SmartTrackerWays.siri else { return .result(dialog: "Siri belum diaktifkan. Nyalakan di Profil > Smart Tracker.") }
-        let count = await MainActor.run { DraftStore.shared.add(text: text, source: .siri).count }
-        await DraftNotifier.announce(count: count)
+        let added = await MainActor.run { DraftStore.shared.add(text: text, source: .siri) }
+        let count = added.count
+        await DraftNotifier.announce(added)
         return .result(dialog: "\(count) draf masuk ke Konfirmasi transaksi di Saku.")
     }
 }
@@ -26,20 +27,32 @@ struct ReadImageIntent: AppIntent {
                inputConnectionBehavior: .connectToPreviousIntentResult)
     var image: IntentFile
 
-    private func why(_ text: String) async -> IntentDialog {
-        await DraftNotifier.explain(text)
-        return IntentDialog(stringLiteral: text)
+    /// Only what the owner can act on gets a notification: Plus, the AI allowance, and the Smart Tracker agreement.
+    /// A picture with no text or no amount stays quiet.
+    private func stop(_ title: String, _ body: String) async -> IntentDialog {
+        await DraftNotifier.explain(title: L(title), body: L(body))
+        return IntentDialog(stringLiteral: L(title))
     }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard PlusStore.cachedIsPlus else { return .result(dialog: await why("Membaca gambar butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.")) }
-        guard let cg = ImageReader.downscaled(image.data) else { return .result(dialog: await why("Gambar tidak bisa dibuka.")) }
+        guard PlusStore.cachedIsPlus else {
+            return .result(dialog: await stop("Baca gambar butuh Saku Plus", "Draf yang sudah ada tetap bisa diperiksa dan disimpan."))
+        }
+        guard SmartTrackerConsent.isGranted else {
+            return .result(dialog: await stop("Smart Tracker belum disetujui", "Buka Saku dan setujui Smart Tracker supaya gambar bisa dibaca."))
+        }
+        guard let cg = ImageReader.downscaled(image.data) else { return .result(dialog: "Gambar tidak bisa dibuka.") }
         let lines = await ImageReader.lines(in: cg)
-        guard !lines.isEmpty else { return .result(dialog: await why("Tidak ada teks di gambar ini.")) }
-        let count = await MainActor.run { DraftStore.shared }.ingestPhoto(lines: lines)
-        guard count > 0 else { return .result(dialog: await why("Tidak ada nominal di gambar ini, jadi tidak dibuat draf.")) }
-        await DraftNotifier.announce(count: count)
-        return .result(dialog: "\(count) draf masuk ke Konfirmasi transaksi di Saku.")
+        guard !lines.isEmpty else { return .result(dialog: "Tidak ada teks di gambar ini.") }
+        let read = await MainActor.run { DraftStore.shared }.ingestPhoto(lines: lines)
+        if read.drafts.isEmpty {
+            if read.outOfQuota {
+                return .result(dialog: await stop("Jatah AI bulan ini habis", "Gambar ini belum terbaca. Jatah terisi lagi bulan depan."))
+            }
+            return .result(dialog: "Tidak ada nominal di gambar ini, jadi tidak dibuat draf.")
+        }
+        await DraftNotifier.announce(read.drafts)
+        return .result(dialog: "\(read.drafts.count) draf masuk ke Konfirmasi transaksi di Saku.")
     }
 }
 
@@ -73,15 +86,17 @@ struct RecordFromNotificationIntent: AppIntent {
         guard NotificationFilter.allows(title: notificationTitle, subtitle: subtitle) else {
             return .result(dialog: "Notifikasi diabaikan sesuai pengaturan Notifikasi aplikasi.")
         }
-        let result = await MainActor.run { () -> (added: Int, skipped: Int) in
+        let result = await MainActor.run { () -> (added: Int, skipped: Int, drafts: [Draft]) in
             let store = DraftStore.shared
             let drafts = NotificationParser.parse(app: appName, title: notificationTitle, subtitle: subtitle, body: body,
                                                   context: store.context)
             if !drafts.isEmpty { store.noteConnected(app: appName) }
             let raw = [notificationTitle, subtitle, body].filter { !$0.isEmpty }.joined(separator: "\n")
-            return store.addFromNotification(drafts.map { var d = $0; d.rawText = raw; return d }, appName: appName)
+            let kept = drafts.map { var d = $0; d.rawText = raw; return d }
+            let counts = store.addFromNotification(kept, appName: appName)
+            return (counts.added, counts.skipped, Array(store.drafts.prefix(counts.added)))
         }
-        if result.added > 0 { await DraftNotifier.announce(count: result.added) }
+        if result.added > 0 { await DraftNotifier.announce(result.drafts) }
         // an empty body usually means the Shortcut's Body variable is not filled, which is worth saying
         let nothing = body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && subtitle.isEmpty
             ? "Isi notifikasi kosong. Cek variabel Isi di Shortcuts."

@@ -121,6 +121,16 @@
         }
       }
     },
+    "%@ - %@ tercatat!": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ - %@ recorded!"
+          }
+        }
+      }
+    },
     "%@ akan dihapus dari daftar dompet.": {
       "localizations": {
         "en": {
@@ -1299,6 +1309,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld past transactions stay recorded as %@."
+          }
+        }
+      }
+    },
+    "%lld transaksi tercatat!": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld transactions recorded!"
           }
         }
       }
@@ -2519,6 +2539,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Read image"
+          }
+        }
+      }
+    },
+    "Baca gambar butuh Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read image needs Saku Plus"
           }
         }
       }
@@ -4689,6 +4719,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Saku and agree to Quick add first, then try again."
+          }
+        }
+      }
+    },
+    "Buka Saku dan setujui Smart Tracker supaya gambar bisa dibaca.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Saku and agree to Smart Tracker so images can be read."
           }
         }
       }
@@ -7143,6 +7183,16 @@
         }
       }
     },
+    "Draf yang sudah ada tetap bisa diperiksa dan disimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drafts you already have can still be checked and saved."
+          }
+        }
+      }
+    },
     "Draf · BCA": {
       "localizations": {
         "en": {
@@ -7879,6 +7929,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Image"
+          }
+        }
+      }
+    },
+    "Gambar ini belum terbaca. Jatah terisi lagi bulan depan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This image was not read. The allowance refills next month."
           }
         }
       }
@@ -9169,6 +9229,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "AI quota this month"
+          }
+        }
+      }
+    },
+    "Jatah AI bulan ini habis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month's AI allowance is used up"
           }
         }
       }
@@ -11839,6 +11909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Grace period"
+          }
+        }
+      }
+    },
+    "Masih draf. Ketuk untuk memeriksa dan menyimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still a draft. Tap to check and save."
           }
         }
       }
@@ -17869,6 +17949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Smart Tracker isn't on yet. By agreeing, you switch it on too."
+          }
+        }
+      }
+    },
+    "Smart Tracker belum disetujui": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Tracker is not agreed yet"
           }
         }
       }

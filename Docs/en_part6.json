@@ -1549,5 +1549,14 @@
   "Tidak ada teks di gambar ini.": "There is no text in this image.",
   "Tidak ada nominal di gambar ini, jadi tidak dibuat draf.": "There is no amount in this image, so no draft was made.",
   "Lihat draf": "View drafts",
-  "Membuka Konfirmasi transaksi di Saku.": "Opens Confirm transactions in Saku."
+  "Membuka Konfirmasi transaksi di Saku.": "Opens Confirm transactions in Saku.",
+  "%@ - %@ tercatat!": "%@ - %@ recorded!",
+  "%lld transaksi tercatat!": "%lld transactions recorded!",
+  "Masih draf. Ketuk untuk memeriksa dan menyimpan.": "Still a draft. Tap to check and save.",
+  "Baca gambar butuh Saku Plus": "Read image needs Saku Plus",
+  "Draf yang sudah ada tetap bisa diperiksa dan disimpan.": "Drafts you already have can still be checked and saved.",
+  "Smart Tracker belum disetujui": "Smart Tracker is not agreed yet",
+  "Buka Saku dan setujui Smart Tracker supaya gambar bisa dibaca.": "Open Saku and agree to Smart Tracker so images can be read.",
+  "Jatah AI bulan ini habis": "This month's AI allowance is used up",
+  "Gambar ini belum terbaca. Jatah terisi lagi bulan depan.": "This image was not read. The allowance refills next month."
 }
