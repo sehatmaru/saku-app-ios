@@ -6213,6 +6213,16 @@
         }
       }
     },
+    "Dibaca dengan AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read with AI"
+          }
+        }
+      }
+    },
     "Dibaca di HP-mu": {
       "localizations": {
         "en": {
@@ -12223,6 +12233,16 @@
         }
       }
     },
+    "Membaca…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading…"
+          }
+        }
+      }
+    },
     "Membatalkan…": {
       "localizations": {
         "en": {
@@ -13419,6 +13439,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "On %@, %@ a year is charged through the App Store. Cancel before then if you don't want to continue."
+          }
+        }
+      }
+    },
+    "Pakai AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use AI"
           }
         }
       }

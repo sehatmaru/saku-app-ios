@@ -15,6 +15,29 @@ struct ReaderBadge: View {
     }
 }
 
+/// "AI" label of a reading. On: AI read it (the sparkle plays once). Reading: AI is working (the sparkle keeps going).
+/// Off: the rules read it, or AI failed or is off; same label in grey, no motion.
+struct AIStatusChip: View {
+    enum Mode { case on, reading, off }
+    let mode: Mode
+    @State private var plays = 0
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "sparkles").font(.system(size: 14, weight: .semibold))
+                .symbolEffect(.variableColor.iterative, isActive: mode == .reading)
+                .symbolEffect(.bounce, value: plays)
+            Text("AI").font(.app(13, weight: .bold))
+        }
+        .foregroundStyle(mode == .off ? Color.appTextSecondary : Color.appPrimaryText)
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .background(mode == .off ? Color.stChip : Color.appPrimary.opacity(0.12), in: Capsule())
+        .onAppear { if mode == .on { plays += 1 } }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(mode == .off ? L("Dibaca tanpa AI") : mode == .reading ? L("Membaca dengan AI") : L("Dibaca dengan AI"))
+    }
+}
+
 extension Draft {
     /// Where it came from, in words ("Suara", "Notifikasi BCA").
     var sourceLabel: String {

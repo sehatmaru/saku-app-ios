@@ -31,6 +31,8 @@ struct QuickResultSheet: View {
     @AppStorage(SmartTrackerConsent.key) private var aiOn = false
     @State private var aiState: AIReadState = .idle
     @State private var plusReason: PlusReason?
+    /// Why AI could not read it on the last try ("AI gagal membaca"), shown instead of the first reason.
+    @State private var retryReason: String?
 
     private enum AIReadState { case idle, loading, out, failed }
 
@@ -74,13 +76,21 @@ struct QuickResultSheet: View {
         .filterSheet {
             if isUnclear {
                 VStack(spacing: 12) {
-                    if showsAIRead { aiReadButton }
                     if aiState == .out { plusOfferLink }
                     HStack(spacing: 12) {
                         redoButton
-                        Button { fillManually() } label: {
-                            Text(L("Isi nominal")).font(.app(18, weight: .semibold)).foregroundStyle(.white)
-                                .frame(maxWidth: .infinity, minHeight: 56).background(Color.appPrimary, in: Capsule())
+                        if showsAIRead {
+                            Button { fillManually() } label: {
+                                Image(systemName: "pencil").font(.system(size: 22)).foregroundStyle(Color.appText)
+                                    .frame(width: 56, height: 56).background(Color.appFill, in: Circle())
+                            }
+                            .accessibilityLabel(L("Isi nominal"))
+                            aiPrimaryButton
+                        } else {
+                            Button { fillManually() } label: {
+                                Label(L("Isi nominal"), systemImage: "pencil").font(.app(18, weight: .semibold)).foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity, minHeight: 56).background(Color.appPrimary, in: Capsule())
+                            }
                         }
                     }
                 }
@@ -108,6 +118,14 @@ struct QuickResultSheet: View {
     }
 
     @ViewBuilder private var header: some View {
+        if isUnclear {
+            AIStatusChip(mode: aiState == .loading ? .reading : drafts.first?.reader == .ai ? .on : .off)
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24)
+            if let why = retryReason ?? drafts.first?.fallbackReason {
+                Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                    .padding(.horizontal, 24).padding(.top, 8)
+            }
+        } else {
         HStack(spacing: 8) {
             Image(systemName: source == .voice ? "mic" : source == .photo ? "photo" : "keyboard").font(.system(size: 14))
             Text(source == .voice ? L("Dari suaramu") : source == .photo ? L("Dari gambarmu") : L("Dari ketikanmu")).layoutPriority(1)
@@ -122,6 +140,7 @@ struct QuickResultSheet: View {
         if let why = drafts.first?.fallbackReason {
             Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
                 .padding(.horizontal, 24).padding(.top, 6)
+        }
         }
     }
 
@@ -497,6 +516,22 @@ struct QuickResultSheet: View {
         .disabled(aiState == .loading || aiState == .out)
     }
 
+    /// The main action of the unreadable sheet: read the same sentence again with AI.
+    private var aiPrimaryButton: some View {
+        let out = aiState == .out
+        return Button(action: readWithAI) {
+            HStack(spacing: 8) {
+                if aiState == .loading { ProgressView().controlSize(.small).tint(.white) } else if !out { Image(systemName: "sparkles").font(.system(size: 18)) }
+                Text(aiState == .loading ? L("Membaca…") : out ? L("Jatah habis") : aiState == .failed ? L("Coba lagi") : L("Pakai AI"))
+                    .font(.app(18, weight: .semibold))
+            }
+            .foregroundStyle(out ? Color.appTextSecondary : Color.white)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .background(out ? Color.appFill : Color.appPrimary, in: Capsule())
+        }
+        .disabled(aiState == .loading || out)
+    }
+
     private var plusOfferLink: some View {
         Button { plusReason = .aiHelp } label: {
             Text(L("Coba Saku Plus untuk AI tanpa batas")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
@@ -511,10 +546,15 @@ struct QuickResultSheet: View {
             switch await store.aiRead(sentence, source: source) {
             case .outOfQuota:
                 aiState = .out
-            case .unavailable:
+            case .unavailable(let why):
+                retryReason = why.reason
                 aiState = .failed
             case .drafts(let read):
-                guard let first = read.first, !(read.count == 1 && (first.isUnreadable || first.amount == nil)) else { aiState = .failed; return }
+                guard let first = read.first, !(read.count == 1 && (first.isUnreadable || first.amount == nil)) else {
+                    retryReason = RemoteSmartParser.Fallback.failed.reason
+                    aiState = .failed
+                    return
+                }
                 withAnimation(.settle(0.4)) {
                     manualIds = []
                     drafts = read
