@@ -12,6 +12,15 @@ final class NotificationParserTests: XCTestCase {
                             categories: [Saku.Category(id: "kopi", name: "Jajan & Kopi", icon: nil, color: nil, type: .expense, systemKey: nil)])
     }
 
+    func testForeignCurrencyBecomesEstimatedRupiahWithOriginalInTitle() {
+        let drafts = NotificationParser.parse(app: "BCA", title: "Financial Diary", subtitle: "",
+                                              body: "You spent USD 5.54 at Shopping.", context: context)
+        XCTAssertEqual(drafts.count, 1)
+        XCTAssertEqual(drafts[0].amount, (5.54 * NotificationParser.rates["USD"]!).rounded())
+        XCTAssertEqual(drafts[0].title, "Shopping (USD 5.54)")
+        XCTAssertEqual(drafts[0].accountId, "bca")
+    }
+
     func testPaymentUsesTheAppsWallet() {
         let drafts = NotificationParser.parse(app: "GoPay", title: "Pembayaran berhasil", subtitle: "",
                                               body: "Pembayaran Rp25.000 ke Kopi Kenangan berhasil. Saldo GoPay kamu Rp1.234.567", context: context)
