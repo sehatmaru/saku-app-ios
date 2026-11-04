@@ -94,6 +94,14 @@ enum SmartTrackerWays {
         set { UserDefaults.standard.set(newValue, forKey: notificationKey) }
     }
 
+    static let reminderKey = "smartWayReminder"
+
+    /// On by default: a reminder 5 hours and 1 day after a draft arrives while it is still unconfirmed.
+    static var reminder: Bool {
+        get { UserDefaults.standard.object(forKey: reminderKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: reminderKey) }
+    }
+
     static var siri: Bool {
         get { UserDefaults.standard.object(forKey: siriKey) as? Bool ?? false }
         set { UserDefaults.standard.set(newValue, forKey: siriKey) }

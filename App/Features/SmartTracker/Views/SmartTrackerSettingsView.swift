@@ -10,6 +10,7 @@ struct SmartTrackerSettingsView: View {
     @State private var plusReason: PlusReason?
     @State private var siri = SmartTrackerWays.siri
     @State private var notification = SmartTrackerWays.notification
+    @State private var reminder = SmartTrackerWays.reminder
     @State private var showsConsent = false
     @State private var showsPrivacy = false
     @State private var failed = false
@@ -35,6 +36,11 @@ struct SmartTrackerSettingsView: View {
                     }
                 }
                 if !isGuest { setupGuideRow }
+                wayRow(.reminder, L("Diingatkan 5 jam dan 1 hari setelah draf masuk")) {
+                    Toggle(SmartWay.reminder.title, isOn: Binding(get: { reminder }, set: { reminder = $0; SmartTrackerWays.reminder = $0; DraftStore.shared.rescheduleReminder() }))
+                        .labelsHidden().tint(Color.appPrimary)
+                }
+                if reminder { textLink(L("Coba pengingat")) { DraftReminder.sendSample() }.padding(.leading, 62).padding(.trailing, 24) }
                 wayRow(.siri, isGuest ? L("Perlu akun") : L("Catat lewat perintah suara Siri")) {
                     if isGuest { lock } else {
                         Toggle(SmartWay.siri.title, isOn: Binding(get: { siri }, set: { siri = $0; SmartTrackerWays.siri = $0 }))

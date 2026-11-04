@@ -1565,5 +1565,11 @@
   "Bayar kartu, cek sekarang!": "Card payment, check now!",
   "%lld draf baru, cek sekarang!": "%lld new drafts, check now!",
   "Ketuk untuk memeriksa dan menyimpan.": "Tap to check and save.",
-  "%@ sebesar %@": "%@ for %@"
+  "%@ sebesar %@": "%@ for %@",
+  "Ada %lld draf belum dicek": "%lld drafts not checked yet",
+  "Ketuk untuk menyimpan atau membuang.": "Tap to save or discard.",
+  "%@ %@ menunggu. Ketuk untuk menyimpan atau membuangnya.": "%@ %@ is waiting. Tap to save or discard it.",
+  "Pengingat draf": "Draft reminder",
+  "Diingatkan 5 jam dan 1 hari setelah draf masuk": "Reminds you 5 hours and 1 day after a draft arrives",
+  "Coba pengingat": "Try the reminder"
 }

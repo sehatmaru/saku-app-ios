@@ -121,6 +121,16 @@
         }
       }
     },
+    "%@ %@ menunggu. Ketuk untuk menyimpan atau membuangnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@ is waiting. Tap to save or discard it."
+          }
+        }
+      }
+    },
     "%@ - %@ tercatat!": {
       "localizations": {
         "en": {
@@ -1899,6 +1909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Healthy reference"
+          }
+        }
+      }
+    },
+    "Ada %lld draf belum dicek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld drafts not checked yet"
           }
         }
       }
@@ -5623,6 +5643,16 @@
         }
       }
     },
+    "Coba pengingat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try the reminder"
+          }
+        }
+      }
+    },
     "Contoh: Netflix": {
       "localizations": {
         "en": {
@@ -6609,6 +6639,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Counted from all wallets · shown on Home"
+          }
+        }
+      }
+    },
+    "Diingatkan 5 jam dan 1 hari setelah draf masuk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminds you 5 hours and 1 day after a draft arrives"
           }
         }
       }
@@ -10733,6 +10773,16 @@
         }
       }
     },
+    "Ketuk untuk menyimpan atau membuang.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to save or discard."
+          }
+        }
+      }
+    },
     "Ketuk ✦ lalu tulis “kopi 25rb gopay”. Saku yang menyusun transaksinya.": {
       "localizations": {
         "en": {
@@ -14229,6 +14279,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reminders on this phone are turned off now"
+          }
+        }
+      }
+    },
+    "Pengingat draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft reminder"
           }
         }
       }

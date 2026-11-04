@@ -90,7 +90,10 @@ final class DraftStore: ObservableObject {
                                 memoryTombstones: memoryTombstones, memoryForgottenAt: memoryForgottenAt)
         if let data = try? JSONEncoder().encode(snapshot) { try? data.write(to: fileURL, options: .atomic) }
         updateBadge()
+        DraftReminder.reschedule(drafts)
     }
+
+    func rescheduleReminder() { DraftReminder.reschedule(drafts) }
 
     /// Drafts the user never handled are dropped after 30 days; skipped notices once their day is over (K10).
     func purgeExpired(now: Date = Date()) {
