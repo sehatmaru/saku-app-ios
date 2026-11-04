@@ -20,14 +20,14 @@ final class ShareViewController: UIViewController {
     }
 
     /// Tells the user right away; tapping it opens Saku on Konfirmasi transaksi. Works once the app has notification permission.
-    private func announce(_ body: String = "Teksnya masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya.", route: String = "drafts") async {
+    private func announce(title: String, body: String, route: String?) async {
         let center = UNUserNotificationCenter.current()
         guard await center.notificationSettings().authorizationStatus == .authorized else { return }
         let content = UNMutableNotificationContent()
-        content.title = "Dikirim ke Saku"
+        content.title = title
         content.body = body
         content.sound = .default
-        content.userInfo = ["route": route]
+        if let route { content.userInfo = ["route": route] }
         try? await center.add(UNNotificationRequest(identifier: "share-\(UUID().uuidString)", content: content,
                                                     trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)))
     }
@@ -70,7 +70,12 @@ final class ShareViewController: UIViewController {
         else if added == 0 { message = "Tidak ada yang bisa dikirim ke Saku." }
         else { message = "Masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya." }
         label.text = message
-        await announce(message, route: "drafts")
+        // only what the owner can act on gets a notification; an empty picture or nothing to send stays on the sheet
+        if added > 0 {
+            await announce(title: "Terkirim ke Saku, cek sekarang!", body: "Ketuk untuk membaca dan memeriksa drafnya.", route: "drafts")
+        } else if needsPlus {
+            await announce(title: "Baca gambar butuh Saku Plus", body: "Teks tetap bisa dibagikan ke Saku.", route: nil)
+        }
         if added == 0 { try? await Task.sleep(for: .seconds(3)) }
         extensionContext?.completeRequest(returningItems: nil)
     }
