@@ -327,6 +327,13 @@ final class DraftStore: ObservableObject {
         Task { for text in texts { await ingestShared(text) } }
     }
 
+    /// Text read from a picture handed over by a Shortcut; returns how many drafts joined the queue.
+    func ingestPhoto(lines: [String]) async -> Int {
+        let before = drafts.count
+        await ingestShared(ShareInbox.photoMark + lines.joined(separator: "\n"))
+        return max(0, drafts.count - before)
+    }
+
     private func ingestShared(_ text: String) async {
         let isPhoto = text.hasPrefix(ShareInbox.photoMark)
         var rules: [Draft]

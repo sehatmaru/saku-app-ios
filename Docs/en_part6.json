@@ -1539,5 +1539,15 @@
   "Maks. +40. Jatah dasar 50, total maksimal 90.": "Max +40. Base quota is 50, up to 90 in total.",
   "Pakai AI": "Use AI",
   "Membaca…": "Reading…",
-  "Dibaca dengan AI": "Read with AI"
+  "Dibaca dengan AI": "Read with AI",
+  "Baca gambar": "Read image",
+  "Membaca screenshot, foto, atau struk dan membuat draf. Hasilnya masuk ke Konfirmasi transaksi.": "Reads a screenshot, photo or receipt and makes drafts. The result goes to Confirm transactions.",
+  "Gambar": "Image",
+  "Gambar mana yang mau dibaca?": "Which image should be read?",
+  "Membaca gambar butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.": "Reading images needs Saku Plus. Drafts you already have can still be checked and saved.",
+  "Gambar tidak bisa dibuka.": "The image could not be opened.",
+  "Tidak ada teks di gambar ini.": "There is no text in this image.",
+  "Tidak ada nominal di gambar ini, jadi tidak dibuat draf.": "There is no amount in this image, so no draft was made.",
+  "Lihat draf": "View drafts",
+  "Membuka Konfirmasi transaksi di Saku.": "Opens Confirm transactions in Saku."
 }

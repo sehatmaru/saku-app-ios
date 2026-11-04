@@ -16,6 +16,40 @@ struct RecordTransactionIntent: AppIntent {
     }
 }
 
+/// Shortcuts: feed a screenshot, photo or receipt (from "Ambil screenshot", "Ambil foto" or the photo picker). The picture is read
+/// on the device and dropped; only its text goes on, like a picture shared from another app. Reading pictures is Saku Plus.
+struct ReadImageIntent: AppIntent {
+    static let title: LocalizedStringResource = "Baca gambar"
+    static let description = IntentDescription("Membaca screenshot, foto, atau struk dan membuat draf. Hasilnya masuk ke Konfirmasi transaksi.")
+
+    @Parameter(title: "Gambar", supportedContentTypes: [.image], requestValueDialog: "Gambar mana yang mau dibaca?")
+    var image: IntentFile
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard SmartTrackerWays.siri else { return .result(dialog: "Siri belum diaktifkan. Nyalakan di Profil > Smart Tracker.") }
+        guard PlusStore.cachedIsPlus else { return .result(dialog: "Membaca gambar butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.") }
+        guard let cg = ImageReader.downscaled(image.data) else { return .result(dialog: "Gambar tidak bisa dibuka.") }
+        let lines = await ImageReader.lines(in: cg)
+        guard !lines.isEmpty else { return .result(dialog: "Tidak ada teks di gambar ini.") }
+        let count = await MainActor.run { DraftStore.shared }.ingestPhoto(lines: lines)
+        guard count > 0 else { return .result(dialog: "Tidak ada nominal di gambar ini, jadi tidak dibuat draf.") }
+        await DraftNotifier.announce(count: count)
+        return .result(dialog: "\(count) draf masuk ke Konfirmasi transaksi di Saku.")
+    }
+}
+
+/// Opens Konfirmasi transaksi.
+struct ReviewDraftsIntent: AppIntent {
+    static let title: LocalizedStringResource = "Lihat draf"
+    static let description = IntentDescription("Membuka Konfirmasi transaksi di Saku.")
+    static let openAppWhenRun = true
+
+    @MainActor func perform() async throws -> some IntentResult {
+        NotificationRouter.shared.opensDrafts = true
+        return .result()
+    }
+}
+
 /// Shortcuts automation with the "Notifikasi" trigger: pass the notification's title, subtitle and body.
 struct RecordFromNotificationIntent: AppIntent {
     static let title: LocalizedStringResource = "Catat dari notifikasi"
@@ -62,5 +96,9 @@ struct SakuShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: RecordTransactionIntent(), phrases: ["Catat di \(.applicationName)", "Catat transaksi di \(.applicationName)"],
                     shortTitle: "Catat transaksi", systemImageName: "plus.circle")
+        AppShortcut(intent: ReadImageIntent(), phrases: ["Baca gambar di \(.applicationName)", "Baca screenshot di \(.applicationName)"],
+                    shortTitle: "Baca gambar", systemImageName: "photo")
+        AppShortcut(intent: ReviewDraftsIntent(), phrases: ["Lihat draf di \(.applicationName)"],
+                    shortTitle: "Lihat draf", systemImageName: "tray.full")
     }
 }

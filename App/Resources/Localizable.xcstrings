@@ -2513,6 +2513,16 @@
         }
       }
     },
+    "Baca gambar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read image"
+          }
+        }
+      }
+    },
     "Baca teks, suara, dan gambar dengan AI": {
       "localizations": {
         "en": {
@@ -7863,6 +7873,36 @@
         }
       }
     },
+    "Gambar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Image"
+          }
+        }
+      }
+    },
+    "Gambar mana yang mau dibaca?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which image should be read?"
+          }
+        }
+      }
+    },
+    "Gambar tidak bisa dibuka.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The image could not be opened."
+          }
+        }
+      }
+    },
     "Gambar tidak disimpan": {
       "localizations": {
         "en": {
@@ -11533,6 +11573,16 @@
         }
       }
     },
+    "Lihat draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View drafts"
+          }
+        }
+      }
+    },
     "Lihat lebih lama": {
       "localizations": {
         "en": {
@@ -12223,12 +12273,32 @@
         }
       }
     },
+    "Membaca gambar butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading images needs Saku Plus. Drafts you already have can still be checked and saved."
+          }
+        }
+      }
+    },
     "Membaca gambar…": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Reading the picture…"
+          }
+        }
+      }
+    },
+    "Membaca screenshot, foto, atau struk dan membuat draf. Hasilnya masuk ke Konfirmasi transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reads a screenshot, photo or receipt and makes drafts. The result goes to Confirm transactions."
           }
         }
       }
@@ -12249,6 +12319,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancelling…"
+          }
+        }
+      }
+    },
+    "Membuka Konfirmasi transaksi di Saku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Confirm transactions in Saku."
           }
         }
       }
@@ -19623,6 +19703,16 @@
         }
       }
     },
+    "Tidak ada nominal di gambar ini, jadi tidak dibuat draf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There is no amount in this image, so no draft was made."
+          }
+        }
+      }
+    },
     "Tidak ada pengeluaran kategori ini di periode itu.": {
       "localizations": {
         "en": {
@@ -19659,6 +19749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No bills on this date"
+          }
+        }
+      }
+    },
+    "Tidak ada teks di gambar ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There is no text in this image."
           }
         }
       }
