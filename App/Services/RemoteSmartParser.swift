@@ -72,7 +72,7 @@ enum RemoteSmartParser {
         do {
             reply = try await SupabaseSDK.client.functions.invoke("smart-parse", options: FunctionInvokeOptions(body: payload))
         } catch FunctionsError.httpError(let code, _) where code == 402 {
-            await AIQuotaStore.shared.refresh()
+            Task { @MainActor in await AIQuotaStore.shared.refresh() }
             return .outOfQuota
         } catch let error as URLError where error.code == .notConnectedToInternet || error.code == .networkConnectionLost {
             return .unavailable(.offline)
@@ -81,7 +81,8 @@ enum RemoteSmartParser {
         } catch {
             return .unavailable(.failed)
         }
-        await AIQuotaStore.shared.refresh()
+        // the allowance refreshes after the answer is on screen, not inside the 4 s wait
+        Task { @MainActor in await AIQuotaStore.shared.refresh() }
         let drafts = reply.drafts.compactMap { item -> Draft? in
             guard let amount = item.amount, amount > 0, let kind = Draft.Kind(rawValue: item.kind) else { return nil }
             var draft = Draft()
