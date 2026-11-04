@@ -26,14 +26,18 @@ struct ReadImageIntent: AppIntent {
                inputConnectionBehavior: .connectToPreviousIntentResult)
     var image: IntentFile
 
+    private func why(_ text: String) async -> IntentDialog {
+        await DraftNotifier.explain(text)
+        return IntentDialog(stringLiteral: text)
+    }
+
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard SmartTrackerWays.siri else { return .result(dialog: "Siri belum diaktifkan. Nyalakan di Profil > Smart Tracker.") }
-        guard PlusStore.cachedIsPlus else { return .result(dialog: "Membaca gambar butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.") }
-        guard let cg = ImageReader.downscaled(image.data) else { return .result(dialog: "Gambar tidak bisa dibuka.") }
+        guard PlusStore.cachedIsPlus else { return .result(dialog: await why("Membaca gambar butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.")) }
+        guard let cg = ImageReader.downscaled(image.data) else { return .result(dialog: await why("Gambar tidak bisa dibuka.")) }
         let lines = await ImageReader.lines(in: cg)
-        guard !lines.isEmpty else { return .result(dialog: "Tidak ada teks di gambar ini.") }
+        guard !lines.isEmpty else { return .result(dialog: await why("Tidak ada teks di gambar ini.")) }
         let count = await MainActor.run { DraftStore.shared }.ingestPhoto(lines: lines)
-        guard count > 0 else { return .result(dialog: "Tidak ada nominal di gambar ini, jadi tidak dibuat draf.") }
+        guard count > 0 else { return .result(dialog: await why("Tidak ada nominal di gambar ini, jadi tidak dibuat draf.")) }
         await DraftNotifier.announce(count: count)
         return .result(dialog: "\(count) draf masuk ke Konfirmasi transaksi di Saku.")
     }
