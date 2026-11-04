@@ -121,10 +121,6 @@ struct QuickResultSheet: View {
         if isUnclear {
             AIStatusChip(mode: aiState == .loading ? .reading : drafts.first?.reader == .ai ? .on : .off)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24)
-            if let why = retryReason ?? drafts.first?.fallbackReason {
-                Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                    .padding(.horizontal, 24).padding(.top, 8)
-            }
         } else {
         HStack(spacing: 8) {
             Image(systemName: source == .voice ? "mic" : source == .photo ? "photo" : "keyboard").font(.system(size: 14))
@@ -430,6 +426,13 @@ struct QuickResultSheet: View {
                 Text(L("Nominal tidak terbaca")).font(.app(22, weight: .bold))
                 Text(L("Tulis nama dan nominal dalam satu kalimat, mis. “sabun 18rb”."))
                     .font(.app(16)).lineSpacing(4).foregroundStyle(Color.appTextSecondary)
+            }
+            if let why = retryReason ?? drafts.first?.fallbackReason {
+                Label(why, systemImage: "exclamationmark.circle").font(.app(15, weight: .medium))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.horizontal, 16).padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.appFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
         }
         .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 12)
