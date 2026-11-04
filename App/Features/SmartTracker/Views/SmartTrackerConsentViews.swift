@@ -15,15 +15,18 @@ enum SmartWay: CaseIterable {
     var icon: String {
         switch self {
         case .ai: return "sparkles"
-        case .notification: return "bell.badge"
-        case .siri: return "waveform"
+        case .notification: return "bolt"
+        case .siri: return "phone"
         }
     }
 }
 
-/// What is sent, removed, kept and how to delete it: the body of Profil › Smart Tracker › Cara data diproses.
-struct SmartTrackerPrivacyContent: View {
-    var points: [(String, String, String)] {
+/// What is sent, removed, kept and how to delete it (design 1g). A sheet with a medium and a large detent, opened from the
+/// agreement sheet and from Profil › Smart Tracker.
+struct SmartTrackerPrivacySheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private var points: [(String, String, String)] {
         [("arrow.up.right", L("Apa yang dikirim"),
           L("Hanya teks: yang kamu ketik, ucapkan (diubah jadi teks), bagikan, atau baca dari gambar. Teks dikirim ke penyedia model bahasa untuk dibaca AI. Tidak dipakai melatih AI.")),
          ("lock", L("Apa yang dibuang di perangkat"),
@@ -34,21 +37,37 @@ struct SmartTrackerPrivacyContent: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: point.0)
-                        .font(.system(size: 17))
-                        .foregroundStyle(Color.appText)
-                        .frame(width: 36, height: 36)
-                        .background(Color.stChip, in: Circle())
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L(point.1)).font(.app(15, weight: .semibold))
-                        Text(L(point.2)).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
-                    }
+        VStack(spacing: 0) {
+            HStack {
+                Text(L("Cara data diproses")).font(.app(20, weight: .semibold))
+                Spacer()
+                Button { dismiss() } label: {
+                    Text(L("Selesai")).font(.app(17, weight: .semibold)).foregroundStyle(Color.appPrimary).frame(minHeight: 44)
                 }
             }
+            .padding(.horizontal, 24).padding(.top, 8).frame(minHeight: 52)
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(Array(points.enumerated()), id: \.offset) { _, point in
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 14) {
+                                Image(systemName: point.0).font(.system(size: 20)).foregroundStyle(Color.appPrimary).frame(width: 24)
+                                Text(point.1).font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
+                            }
+                            Text(point.2).font(.app(15)).lineSpacing(4).foregroundStyle(Color.appBody).padding(.leading, 38)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24).padding(.vertical, 14)
+                        .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+                    }
+                }
+                .padding(.bottom, 34)
+            }
         }
+        .background(Color.appBackground)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
     }
 }
 
@@ -93,30 +112,56 @@ struct SmartTrackerConsentSheet: View {
     var isPreview = false
     @Environment(\.dismiss) private var dismiss
     @State private var showsDetails = false
+    @State private var height: CGFloat = 560
+
+    private var promises: [(String, String)] {
+        [("globe", L("Teks yang kamu masukkan dikirim ke penyedia model bahasa.")),
+         ("lock", L("Nomor panjang (rekening, kartu) dan kode OTP dibuang di perangkat sebelum dikirim.")),
+         ("camera.fill", L("Hanya teks yang dikirim, bukan gambar mentah."))]
+    }
 
     var body: some View {
-        SmartSheet(tone: .consent, icon: "sparkles", title: L("Aktifkan AI untuk Smart Tracker"),
-                   promises: [SmartPromise(icon: "globe", title: L("Teks dikirim ke AI"), detail: L("Teks yang kamu masukkan dikirim ke penyedia model bahasa.")),
-                              SmartPromise(icon: "lock", title: L("Nomor panjang dibuang"), detail: L("Nomor panjang (rekening, kartu) dan kode OTP dibuang di perangkat sebelum dikirim.")),
-                              SmartPromise(icon: "camera.fill", title: L("Bukan gambar mentah"), detail: L("Hanya teks yang dikirim, bukan gambar mentah."))],
-                   extra: {
-                       VStack(spacing: 6) {
-                           Text(L("Kalau Nanti saja, AI mati. Smart Tracker tetap jalan dengan aturan di perangkat."))
-                               .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
-                           Button { showsDetails = true } label: {
-                               Text(L("Cara data diproses")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                                   .frame(minHeight: 44)
-                           }
-                       }
-                       .frame(maxWidth: .infinity).padding(.top, 14)
-                   }) {
-            SmartSheetFooter(primary: L("Setuju dan aktifkan AI"), secondary: L("Nanti saja"), onPrimary: agree, onSecondary: decline)
+        VStack(alignment: .leading, spacing: 20) {
+            Image(systemName: "sparkles").font(.system(size: 28)).foregroundStyle(Color.appPrimary)
+                .frame(width: 56, height: 56).background(Color.appPrimary.opacity(0.12), in: Circle())
+            Text(L("Aktifkan AI untuk Smart Tracker")).font(.app(26, weight: .bold)).lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 16) {
+                ForEach(Array(promises.enumerated()), id: \.offset) { _, promise in
+                    HStack(alignment: .top, spacing: 14) {
+                        Image(systemName: promise.0).font(.system(size: 20)).foregroundStyle(Color.appTextSecondary)
+                            .frame(width: 24).padding(.top, 1)
+                        Text(promise.1).font(.app(16)).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            VStack(spacing: 4) {
+                PrimaryButton(title: L("Setuju dan aktifkan AI"), action: agree)
+                Button(action: decline) {
+                    Text(L("Nanti saja")).font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                }
+                Text(L("AI mati. Smart Tracker tetap jalan dengan aturan di perangkat."))
+                    .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
+                    .padding(.top, -6)
+                Button { showsDetails = true } label: {
+                    Text(L("Cara data diproses")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+            }
+            .padding(.top, 4)
         }
-        .sheet(isPresented: $showsDetails) {
-            ScrollView { SmartTrackerPrivacyContent().padding(24) }
-                .background(Color.appBackground)
-                .presentationDetents([.medium, .large])
-        }
+        .foregroundStyle(Color.appText)
+        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(GeometryReader { geo in
+            Color.clear.onAppear { height = geo.size.height }.onChange(of: geo.size.height) { _, new in height = new }
+        })
+        .background(Color.appBackground)
+        .presentationDetents([.height(height)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+        .sheet(isPresented: $showsDetails) { SmartTrackerPrivacySheet() }
     }
 
     private func agree() {

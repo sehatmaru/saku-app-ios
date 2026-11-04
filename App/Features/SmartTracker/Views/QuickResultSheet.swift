@@ -28,6 +28,11 @@ struct QuickResultSheet: View {
     @State private var picker: FieldPicker?
     @State private var openId: UUID?
     @State private var contentHeight: CGFloat = 420
+    @AppStorage(SmartTrackerConsent.key) private var aiOn = false
+    @State private var aiState: AIReadState = .idle
+    @State private var plusReason: PlusReason?
+
+    private enum AIReadState { case idle, loading, out, failed }
 
     struct FieldPicker: Identifiable {
         let draftId: UUID
@@ -68,18 +73,22 @@ struct QuickResultSheet: View {
         .padding(.top, 22)
         .filterSheet {
             if isUnclear {
-                HStack(spacing: 12) {
-                    Button { dismiss(); onRedo(sentence) } label: {
-                        Image(systemName: "arrow.counterclockwise").font(.system(size: 20)).foregroundStyle(Color.appText)
-                            .frame(width: 50, height: 50).background(Color.appFill, in: Circle())
+                VStack(spacing: 12) {
+                    if showsAIRead { aiReadButton }
+                    if aiState == .out { plusOfferLink }
+                    HStack(spacing: 12) {
+                        redoButton
+                        Button { fillManually() } label: {
+                            Text(L("Isi nominal")).font(.app(18, weight: .semibold)).foregroundStyle(.white)
+                                .frame(maxWidth: .infinity, minHeight: 56).background(Color.appPrimary, in: Capsule())
+                        }
                     }
-                    .accessibilityLabel(L("Ulang"))
-                    SmartSheetFooter(primary: L("Isi nominal"), secondary: nil, onPrimary: { fillManually() })
                 }
                 .buttonStyle(PressScaleStyle())
             } else { footer }
         }
         .presentationDetents([.medium, .large], selection: $detent)
+        .plusOffer($plusReason)
 
         .sheet(item: $periodChoice) { d in
     EarlySalarySheet(date: d.date) { choice in
@@ -111,7 +120,7 @@ struct QuickResultSheet: View {
         .font(.app(13)).foregroundStyle(Color.appTextSecondary)
         .padding(.horizontal, 24)
         if let why = drafts.first?.fallbackReason {
-            Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+            Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
                 .padding(.horizontal, 24).padding(.top, 6)
         }
     }
@@ -397,11 +406,11 @@ struct QuickResultSheet: View {
 
     private var unclearBody: some View {
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("“\(sentence)”").font(.app(26, weight: .light)).tracking(-0.4).lineSpacing(3)
-                Text("Nominalnya tidak terbaca").font(.app(17, weight: .semibold))
-                Text("Tulis nama dan jumlahnya dalam satu kalimat, mis. “sabun 18rb”.")
-                    .font(.app(15)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+            VStack(alignment: .leading, spacing: 14) {
+                Text("“\(sentence)”").font(.app(34, weight: .light)).tracking(-0.5).lineSpacing(2)
+                Text(L("Nominal tidak terbaca")).font(.app(22, weight: .bold))
+                Text(L("Tulis nama dan nominal dalam satu kalimat, mis. “sabun 18rb”."))
+                    .font(.app(16)).lineSpacing(4).foregroundStyle(Color.appTextSecondary)
             }
         }
         .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 12)
@@ -428,6 +437,10 @@ struct QuickResultSheet: View {
             action = saveSingle
         }
         return VStack(spacing: 6) {
+            if showsAIRead && !manualIds.isEmpty {
+                aiReadButton.padding(.bottom, 4)
+                if aiState == .out { plusOfferLink }
+            }
             HStack(spacing: 10) {
                 Button { dismiss(); onRedo(sentence) } label: {
                     Image(systemName: "arrow.counterclockwise").font(.system(size: 20)).foregroundStyle(Color.appText)
@@ -447,6 +460,68 @@ struct QuickResultSheet: View {
                         .padding(.horizontal, 16).frame(height: 44)
                 }
                 .disabled(saving)
+            }
+        }
+    }
+
+    // MARK: Read with AI
+
+    /// "Baca dengan AI" reads the same sentence again (designs 1c and 1d). Only while AI is on, for an account that has one.
+    private var showsAIRead: Bool { aiOn && !store.isGuest && !sentence.isEmpty }
+
+    private var redoButton: some View {
+        Button { dismiss(); onRedo(sentence) } label: {
+            Image(systemName: "arrow.counterclockwise").font(.system(size: 24)).foregroundStyle(Color.appText)
+                .frame(width: 56, height: 56).background(Color.appFill, in: Circle())
+        }
+        .accessibilityLabel(L("Ulang"))
+    }
+
+    private var aiReadButton: some View {
+        let label: String
+        switch aiState {
+        case .idle: label = L("Baca dengan AI")
+        case .loading: label = L("Membaca dengan AI…")
+        case .out: label = L("Jatah AI habis")
+        case .failed: label = L("Gagal. Ketuk untuk coba lagi")
+        }
+        return Button(action: readWithAI) {
+            HStack(spacing: 8) {
+                if aiState == .loading { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles").font(.system(size: 16)) }
+                Text(label).font(.app(16, weight: .semibold))
+            }
+            .foregroundStyle(aiState == .failed ? Color.appError : aiState == .out ? Color.appTextSecondary : Color.appPrimaryText)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(aiState == .idle || aiState == .loading ? Color.appPrimary.opacity(0.12) : Color.appFill, in: Capsule())
+        }
+        .disabled(aiState == .loading || aiState == .out)
+    }
+
+    private var plusOfferLink: some View {
+        Button { plusReason = .aiHelp } label: {
+            Text(L("Coba Saku Plus untuk AI tanpa batas")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        }
+    }
+
+    private func readWithAI() {
+        guard aiState != .loading, aiState != .out else { return }
+        aiState = .loading
+        Task {
+            switch await store.aiRead(sentence, source: source) {
+            case .outOfQuota:
+                aiState = .out
+            case .unavailable:
+                aiState = .failed
+            case .drafts(let read):
+                guard let first = read.first, !(read.count == 1 && (first.isUnreadable || first.amount == nil)) else { aiState = .failed; return }
+                withAnimation(.settle(0.4)) {
+                    manualIds = []
+                    drafts = read
+                    isUnclear = false
+                    detent = .large
+                    aiState = .idle
+                }
             }
         }
     }

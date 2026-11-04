@@ -15,22 +15,14 @@ struct ReferralView: View {
         return L("Aku pakai Saku buat catat keuangan. Pakai kodeku %@ waktu daftar: %@", summary.code, summary.inviteLink)
     }
 
-    private func progressLine(_ summary: ReferralSummary) -> String { L("%lld dari %lld teman", summary.counted, ReferralSummary.bonusCap / ReferralSummary.perFriend) }
-
-    private func note(_ summary: ReferralSummary) -> String {
-        let room = ReferralSummary.bonusCap - summary.reward
-        if summary.isMaxed { return L("Batas +40 sudah tercapai. Teman tetap bisa memakai kodemu, tetapi tidak menambah jatahmu.") }
-        if summary.waiting > 0 { return L("%lld teman menunggu transaksi pertama. Bisa tambah +%lld lagi.", summary.waiting, room) }
-        if summary.counted > 0 { return L("Bisa tambah +%lld lagi.", room) }
-        return L("Belum ada teman. Setiap teman yang mencatat transaksi pertama menambah +10.")
-    }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Ajak teman").font(.app(34, weight: .bold)).tracking(-0.4).foregroundStyle(Color.appText)
-                Text(plus.isPlus ? L("Bagikan kodemu ke temanmu.") : L("Setiap teman yang mencatat transaksi pertama menambah +10 bantuan AI untukmu."))
-                    .font(.app(15)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true).padding(.top, 8)
+                if plus.isPlus {
+                    Text(L("Bagikan kodemu ke temanmu.")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
+                }
 
                 if let summary {
                     content(summary)
@@ -51,22 +43,45 @@ struct ReferralView: View {
 
     @ViewBuilder
     private func content(_ summary: ReferralSummary) -> some View {
-        VStack(spacing: 6) {
-            Text("Kode kamu").font(.app(13)).foregroundStyle(Color.appTextSecondary)
-            Text(summary.code).font(.app(34, weight: .light)).tracking(4).monospacedDigit().foregroundStyle(Color.appText)
+        if !plus.isPlus {
+            // design 1f: the permanent bonus, what each side gets, then the code
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L("Bonus jatah permanen")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("+\(summary.reward)").font(.app(58, weight: .ultraLight)).tracking(-2).monospacedDigit().foregroundStyle(Color.appPrimary)
+                    Text(L("dari maks. +40")).font(.app(17)).foregroundStyle(Color.appTextSecondary)
+                }
+                SegmentBar(value: Double(summary.reward) / Double(ReferralSummary.bonusCap), count: 40, height: 14, spacing: 3)
+                Text(summary.isMaxed ? L("Bonus penuh. Jatah kamu 90 per bulan. Teman baru tetap dapat +10.") : L("Maks. +40. Jatah dasar 50, total maksimal 90."))
+                    .font(.app(13)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 16).stEnter(0)
+
+            HStack(alignment: .top, spacing: 12) {
+                rewardCard(L("Kamu dapat"), L("Setelah teman mencatat transaksi pertama."))
+                rewardCard(L("Temanmu dapat"), L("Saat daftar dengan kodemu, setelah transaksi pertamanya."))
+            }
+            .padding(.top, 20).stEnter(1)
+        }
+
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L("Kodemu")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Text(summary.code).font(.app(19, weight: .semibold)).tracking(1).monospacedDigit().foregroundStyle(Color.appText)
+            }
+            Spacer(minLength: 8)
             Button {
                 UIPasteboard.general.string = summary.code
                 copied = true
                 Task { try? await Task.sleep(for: .seconds(2)); copied = false }
             } label: {
-                Label(copied ? L("Tersalin") : L("Salin kode"), systemImage: copied ? "checkmark" : "doc.on.doc")
-                    .font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                Text(copied ? L("Tersalin") : L("Salin kode")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText).frame(minHeight: 44)
             }
             .buttonStyle(.plain)
         }
-        .frame(maxWidth: .infinity).padding(20)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
-        .padding(.top, 22).stEnter(0)
+        .padding(.horizontal, 16).padding(.vertical, 12).frame(minHeight: 64)
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.appBorder, lineWidth: 1))
+        .padding(.top, 16).stEnter(2)
 
         // an account that skipped the code at sign-up (or signed up before this existed) may still enter one
         if summary.canRedeem {
@@ -75,26 +90,10 @@ struct ReferralView: View {
         }
 
         if !plus.isPlus {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(progressLine(summary)).font(.app(15))
-                    Spacer(minLength: 12)
-                    Text(L("+%lld jatah AI", summary.reward)).font(.app(15)).monospacedDigit()
-                        .foregroundStyle(summary.counted > 0 ? Color.appPrimary : Color.appTextSecondary)
-                }
-                HStack(spacing: 6) {
-                    ForEach(0..<(ReferralSummary.bonusCap / ReferralSummary.perFriend), id: \.self) { i in
-                        Capsule().fill(i < summary.reward / ReferralSummary.perFriend ? Color.appPrimary : Color.appFill).frame(height: 6)
-                    }
-                }
-                Text(note(summary)).font(.app(13)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 24)
-
             NavigationLink(destination: ReferralHistoryView(summary: summary).detailPage()) {
                 linkRow(L("Riwayat ajakan"), trailing: summary.friends.isEmpty ? "" : "\(summary.friends.count)")
             }
-            .buttonStyle(.plain).padding(.top, 22)
+            .buttonStyle(.plain).padding(.top, 14)
             NavigationLink(destination: ReferralHowView(shareText: shareText).detailPage()) { linkRow(L("Cara kerjanya"), trailing: "") }
                 .buttonStyle(.plain)
         }
@@ -105,11 +104,17 @@ struct ReferralView: View {
                 .frame(maxWidth: .infinity).frame(height: 54).background(Color.appPrimary, in: Capsule())
         }
         .padding(.top, 28)
-        if !plus.isPlus {
-            Text("Hadiah masuk saat temanmu mencatat transaksi pertama. Maksimal +40 untuk selamanya.")
-                .font(.app(12)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.top, 10)
+    }
+
+    private func rewardCard(_ title: String, _ detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            Text(verbatim: "+10").font(.app(28, weight: .light)).foregroundStyle(Color.appPrimary)
+            Text(detail).font(.app(13)).lineSpacing(3).foregroundStyle(Color.appBody).fixedSize(horizontal: false, vertical: true)
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func load() async {

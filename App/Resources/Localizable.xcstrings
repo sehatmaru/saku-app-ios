@@ -1393,6 +1393,16 @@
         }
       }
     },
+    "+%lld dari maks. +40": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld of max +40"
+          }
+        }
+      }
+    },
     "+%lld dompet lain di halaman 2": {
       "localizations": {
         "en": {
@@ -2489,6 +2499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Read and agree"
+          }
+        }
+      }
+    },
+    "Baca dengan AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read with AI"
           }
         }
       }
@@ -4233,6 +4253,36 @@
         }
       }
     },
+    "Bonus jatah permanen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanent quota bonus"
+          }
+        }
+      }
+    },
+    "Bonus penuh. Jatah kamu 90 per bulan. Teman baru tetap dapat +10.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonus is full. Your quota is 90 a month. New friends still get +10."
+          }
+        }
+      }
+    },
+    "Bonus referral": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referral bonus"
+          }
+        }
+      }
+    },
     "Bonus referral +%lld dari maks. +40": {
       "localizations": {
         "en": {
@@ -4873,6 +4923,16 @@
         }
       }
     },
+    "Cara mengatur notifikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to set up notifications"
+          }
+        }
+      }
+    },
     "Cara menghapus": {
       "localizations": {
         "en": {
@@ -5389,6 +5449,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Try Saku Plus"
+          }
+        }
+      }
+    },
+    "Coba Saku Plus untuk AI tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Saku Plus for unlimited AI"
           }
         }
       }
@@ -9053,6 +9123,16 @@
         }
       }
     },
+    "Jatah AI habis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI quota used up"
+          }
+        }
+      }
+    },
     "Jatah bantuan AI bulan ini habis. Isi manual.": {
       "localizations": {
         "en": {
@@ -9489,6 +9569,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You can restore it from Wallets › Archived."
+          }
+        }
+      }
+    },
+    "Kamu dapat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You get"
           }
         }
       }
@@ -10633,6 +10723,16 @@
         }
       }
     },
+    "Kodemu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your code"
+          }
+        }
+      }
+    },
     "Koin": {
       "localizations": {
         "en": {
@@ -11653,6 +11753,16 @@
         }
       }
     },
+    "Maks. +40. Jatah dasar 50, total maksimal 90.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max +40. Base quota is 50, up to 90 in total."
+          }
+        }
+      }
+    },
     "Maks. 4 huruf": {
       "localizations": {
         "en": {
@@ -11799,6 +11909,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Added to Confirm transactions"
+          }
+        }
+      }
+    },
+    "Masuk ke akun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        }
+      }
+    },
+    "Masuk ke akun untuk memakai AI. Persetujuan dan jatah disimpan di akun.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to use AI. Your consent and quota are saved to your account."
           }
         }
       }
@@ -12069,6 +12199,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Forgetting a memory doesn't change transactions already saved."
+          }
+        }
+      }
+    },
+    "Membaca dengan AI…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading with AI…"
           }
         }
       }
@@ -12989,6 +13129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The amount the bank already printed. The due date stays the same."
+          }
+        }
+      }
+    },
+    "Nominal tidak terbaca": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read the amount"
           }
         }
       }
@@ -14333,6 +14483,16 @@
         }
       }
     },
+    "Perlu akun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account needed"
+          }
+        }
+      }
+    },
     "Perlu perbaikan": {
       "localizations": {
         "en": {
@@ -15429,6 +15589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "SAVE"
+          }
+        }
+      }
+    },
+    "Saat daftar dengan kodemu, setelah transaksi pertamanya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When they sign up with your code, after their first transaction."
           }
         }
       }
@@ -16769,6 +16939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "After you save a draft, Saku remembers your category and wallet for the same word."
+          }
+        }
+      }
+    },
+    "Setelah teman mencatat transaksi pertama.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After your friend logs their first transaction."
           }
         }
       }
@@ -18843,6 +19023,16 @@
         }
       }
     },
+    "Temanmu dapat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your friend gets"
+          }
+        }
+      }
+    },
     "Temanmu mencatat transaksi pertama. +%lld jatah AI masuk.": {
       "localizations": {
         "en": {
@@ -20385,6 +20575,16 @@
         }
       }
     },
+    "Tulis nama dan nominal dalam satu kalimat, mis. “sabun 18rb”.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write the name and the amount in one sentence, e.g. “soap 18k”."
+          }
+        }
+      }
+    },
     "Tunai": {
       "localizations": {
         "en": {
@@ -21161,6 +21361,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "over this period's budget."
+          }
+        }
+      }
+    },
+    "dari maks. +40": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of max +40"
           }
         }
       }

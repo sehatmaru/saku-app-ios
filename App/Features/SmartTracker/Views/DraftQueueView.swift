@@ -5,11 +5,13 @@ struct ReaderBadge: View {
     let reader: Draft.Reader
 
     var body: some View {
-        Label(reader == .ai ? "AI" : L("Aturan"), systemImage: reader == .ai ? "sparkles" : "list.bullet")
-            .font(.app(12, weight: .semibold))
-            .foregroundStyle(reader == .ai ? Color.appPrimaryText : Color.appTextSecondary)
-            .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(reader == .ai ? Color.appPrimary.opacity(0.12) : Color.appFill, in: Capsule())
+        Group {
+            if reader == .ai { Label("AI", systemImage: "sparkles").labelStyle(.titleAndIcon) } else { Text(L("Aturan")) }
+        }
+        .font(.app(13, weight: .bold))
+        .foregroundStyle(reader == .ai ? Color.appPrimaryText : Color.appTextSecondary)
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .background(reader == .ai ? Color.appPrimary.opacity(0.12) : Color.stChip, in: Capsule())
     }
 }
 
@@ -132,6 +134,8 @@ struct DraftQueueView: View {
         }
     }
 
+    /// Slow fade of the "Membaca dengan AI" label and skeleton while a rescan runs (design 1e).
+    @State private var pulse = false
     @State private var rescanning: Set<UUID> = []
     @State private var rescanFailed: Set<UUID> = []
     @State private var plusReason: PlusReason?
@@ -152,21 +156,23 @@ struct DraftQueueView: View {
         (d.source == .notification || d.source == .siri) && d.rawText != nil && d.reader != .ai && aiOn && RemoteSmartParser.isAvailable
     }
 
+    private var aiOut: Bool { quotaStore.quota?.isOut == true }
+
     private func rescanButton(_ d: Draft) -> some View {
-        let busy = rescanning.contains(d.id), failed = rescanFailed.contains(d.id)
+        let busy = rescanning.contains(d.id), failed = rescanFailed.contains(d.id), out = aiOut
         return Button { rescan(d) } label: {
-            HStack(spacing: 6) {
-                if busy { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles") }
-                Text(busy ? L("Memindai ulang…") : failed ? L("Gagal. Ketuk untuk coba lagi") : L("Pindai ulang dengan AI"))
+            HStack(spacing: 8) {
+                if busy { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles").font(.system(size: 16)) }
+                Text(busy ? L("Memindai ulang…") : failed ? L("Gagal. Ketuk untuk coba lagi") : out ? L("Jatah habis") : L("Baca dengan AI"))
             }
-            .font(.app(13, weight: .semibold))
-            .foregroundStyle(failed ? Color.appError : Color.appPrimaryText)
-            .padding(.horizontal, 12).frame(minHeight: 36)
-            .background(failed ? Color.clear : Color.appPrimary.opacity(0.12), in: Capsule())
-            .overlay(Capsule().strokeBorder(failed ? Color.appError : Color.clear))
+            .font(.app(16, weight: .semibold))
+            .foregroundStyle(failed ? Color.appError : out ? Color.appTextSecondary : Color.appPrimaryText)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(failed || out ? Color.clear : Color.appPrimary.opacity(0.12), in: Capsule())
+            .overlay(Capsule().strokeBorder(failed ? Color.appError : out ? Color.appDivider : Color.clear, lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .disabled(busy)
+        .disabled(busy || out)
     }
 
     private func rescan(_ d: Draft) {
@@ -230,6 +236,10 @@ struct DraftQueueView: View {
             }
         }
         .task { await store.refreshReferenceData(userId: userId); await quotaStore.refresh() }
+        .onChange(of: rescanning.isEmpty) { _, idle in
+            if idle { withAnimation(.default) { pulse = false } }
+            else { withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) { pulse = true } }
+        }
     }
 
     // MARK: List
@@ -237,7 +247,7 @@ struct DraftQueueView: View {
     private var list: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Konfirmasi transaksi").font(.app(34, weight: .bold)).tracking(0.2)
+                Text("Konfirmasi transaksi").font(.app(30, weight: .bold)).tracking(-0.4)
                     .padding(.horizontal, 24).padding(.top, 6)
                 Label {
                     Text(L("%lld draf dicatat otomatis oleh Smart Tracker. Cek dan lengkapi sebelum disimpan.", store.drafts.count))
@@ -258,12 +268,15 @@ struct DraftQueueView: View {
                 }
 
                 if let note = quotaNote {
-                    Label(note, systemImage: "sparkles")
-                        .font(.app(13))
-                        .foregroundStyle(quotaStore.quota?.isOut == true || (quotaStore.quota?.left ?? 99) <= 3 ? Color.appWarning : Color.appPrimary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 10)
+                    let low = quotaStore.quota?.isOut == true || (quotaStore.quota?.left ?? 99) <= 3
+                    HStack(spacing: 10) {
+                        Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(low ? Color.appWarning : Color.appPrimary)
+                        Text(note).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appText)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 16).padding(.vertical, 10).frame(minHeight: 44)
+                    .background(low ? Color.appFill : Color.appPrimary.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal, 24).padding(.top, 12)
                 }
 
                 VStack(spacing: 12) {
@@ -316,19 +329,23 @@ struct DraftQueueView: View {
                     Label(L("%@ · Smart Tracker", d.sourceLabel), systemImage: d.sourceIcon)
                         .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1).minimumScaleFactor(0.85)
                     Spacer(minLength: 4)
-                    Text(Self.arrival(d.createdAt)).font(.app(12)).foregroundStyle(Color.appTextTertiary).lineLimit(1)
+                    if rescanning.contains(d.id) {
+                        Text(L("Membaca dengan AI")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                            .opacity(pulse ? 0.45 : 1)
+                    } else {
+                        Text(Self.arrival(d.createdAt)).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                    }
                 }
-                HStack(spacing: 6) {
-                    Label(pillText, systemImage: pillIcon)
-                        .font(.app(12, weight: .semibold)).foregroundStyle(tint)
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(pillBg, in: Capsule())
+                HStack(spacing: 8) {
                     if let reader = d.reader { ReaderBadge(reader: reader) }
+                    Label(pillText, systemImage: pillIcon)
+                        .font(.app(14, weight: .semibold)).foregroundStyle(tint)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(pillBg, in: Capsule())
                 }
                 if let why = d.fallbackReason {
-                    Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                    Text(L("Dibaca tanpa AI · %@", why)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
                 }
-                if canRescan(d) { rescanButton(d) }
             }
 
             if d.isUnreadable {
@@ -339,9 +356,17 @@ struct DraftQueueView: View {
                 }
             }
 
+            if rescanning.contains(d.id) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Capsule().fill(Color.stChip).frame(width: 160, height: 20)
+                    RoundedRectangle(cornerRadius: 12).fill(Color.stChip).frame(width: 230, height: 44)
+                }
+                .opacity(pulse ? 0.45 : 1)
+                .accessibilityHidden(true)
+            } else {
             VStack(alignment: .leading, spacing: 2) {
-                TextField("", text: nameBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.appTextTertiary))
-                    .font(.app(17, weight: .semibold))
+                TextField("", text: nameBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.appTextSecondary))
+                    .font(.app(22)).foregroundStyle(Color.appTextSecondary)
                     .focused($focusedId, equals: d.id)
                     .submitLabel(.done)
                     .onSubmit { focusedId = nil }
@@ -349,7 +374,7 @@ struct DraftQueueView: View {
                     HStack(alignment: .top, spacing: 3) {
                         Text("Rp").font(.app(15)).foregroundStyle(Color.appTextTertiary).padding(.top, 8)
                         Text(d.amount.map { $0.formattedAsDigits() } ?? "0")
-                            .font(.app(44, weight: .light)).tracking(-1.2).monospacedDigit()
+                            .font(.app(42, weight: .ultraLight)).tracking(-1.2).monospacedDigit()
                             .foregroundStyle(d.amount == nil ? Color.appTextTertiary : d.kind == .income ? Color.stGreen : Color.appText)
                             .lineLimit(1).minimumScaleFactor(0.5)
                         Spacer(minLength: 0)
@@ -360,6 +385,7 @@ struct DraftQueueView: View {
                 if d.amount == nil {
                     Text("Ketuk untuk isi nominal").font(.app(13)).foregroundStyle(Color.stWarn)
                 }
+            }
             }
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
@@ -392,11 +418,19 @@ struct DraftQueueView: View {
                     .background(Color.stDangerBg, in: RoundedRectangle(cornerRadius: 12))
             }
 
+            if canRescan(d) { rescanButton(d) }
+            if aiOn && aiOut && d.reader != .ai {
+                Button { plusReason = .aiHelp } label: {
+                    Text(L("Coba Saku Plus untuk AI tanpa batas")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                }
+            }
+
             HStack(spacing: 10) {
                 Button { ignore(d) } label: {
-                    Text("Abaikan").font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
-                        .padding(.horizontal, 18).frame(height: 44)
-                        .overlay(Capsule().strokeBorder(Color(light: 0xD2D2D7, dark: 0x48484A), lineWidth: 1))
+                    Text("Abaikan").font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
+                        .padding(.horizontal, 20).frame(minWidth: 104, minHeight: 56)
+                        .overlay(Capsule().strokeBorder(Color.appBorder, lineWidth: 1))
                 }
                 .buttonStyle(PressScaleStyle())
                 .disabled(isSaving)
@@ -405,19 +439,19 @@ struct DraftQueueView: View {
                         if isSaving { ProgressView().tint(.white).scaleEffect(0.8) }
                         Text(isSaving ? L("Menyimpan…") : failure != nil ? L("Coba lagi") : lv == .complete ? L("Simpan") : L("Lengkapi dulu"))
                     }
-                    .font(.app(15, weight: .semibold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(lv == .complete ? Color.stGreen : Color.appTextTertiary, in: Capsule())
+                    .font(.app(17, weight: .semibold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity).frame(height: 56)
+                    .background(lv == .complete ? Color.appPrimary : Color(light: 0x6E6E73, dark: 0x636366), in: Capsule())
                 }
                 .buttonStyle(PressScaleStyle())
                 .disabled(isSaving)
             }
         }
         .padding(16)
-        .background(lv == .unread ? Color.appBackground : Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .background(lv == .unread ? Color.appBackground : Color.appFill, in: RoundedRectangle(cornerRadius: 28))
         .overlay {
             if lv == .unread {
-                RoundedRectangle(cornerRadius: 20).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                RoundedRectangle(cornerRadius: 28).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
             }
         }
         .id(d.id)
@@ -481,19 +515,19 @@ struct DraftQueueView: View {
     private func fieldButton(_ d: Draft, _ f: Field) -> some View {
         Button { sheet = DraftSheet(draftId: d.id, kind: f.kind) } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(f.label).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                HStack(spacing: 6) {
-                    Image(systemName: f.isMissing ? "plus.circle" : f.icon).font(.system(size: 14))
-                    Text(f.isMissing ? L("Pilih") : f.value).font(.app(15, weight: .medium)).lineLimit(1)
+                Text(f.label).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                HStack(spacing: 8) {
+                    Image(systemName: f.isMissing ? "plus.circle" : f.icon).font(.system(size: 16))
+                    Text(f.isMissing ? L("Pilih") : f.value).font(.app(16)).lineLimit(1)
                 }
                 .foregroundStyle(f.isMissing ? Color.stWarn : Color.appText)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12).padding(.vertical, 9)
-            .background(f.isMissing ? Color.clear : Color.appBackground, in: RoundedRectangle(cornerRadius: 12))
+            .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .background(f.isMissing ? Color.clear : Color.appBackground, in: RoundedRectangle(cornerRadius: 18))
             .overlay {
                 if f.isMissing {
-                    RoundedRectangle(cornerRadius: 12).strokeBorder(Color.stWarn, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    RoundedRectangle(cornerRadius: 18).strokeBorder(Color.stWarn, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 }
             }
         }
@@ -505,7 +539,7 @@ struct DraftQueueView: View {
 
     private var emptyQueue: some View {
         VStack(spacing: 0) {
-            Text("Konfirmasi transaksi").font(.app(34, weight: .bold)).tracking(0.2)
+            Text("Konfirmasi transaksi").font(.app(30, weight: .bold)).tracking(-0.4)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 6)
             VStack(spacing: 10) {
                 Image(systemName: "tray").font(.system(size: 44, weight: .light)).foregroundStyle(Color.appTextTertiary).stFloat()
@@ -525,7 +559,7 @@ struct DraftQueueView: View {
 
     private var allChecked: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Konfirmasi transaksi").font(.app(34, weight: .bold)).tracking(0.2).padding(.top, 6)
+            Text("Konfirmasi transaksi").font(.app(30, weight: .bold)).tracking(-0.4).padding(.top, 6)
             Spacer()
             Image(systemName: "checkmark").font(.system(size: 28, weight: .bold)).foregroundStyle(Color.appPrimary)
                 .frame(width: 64, height: 64).background(Color.stSuccessBg, in: Circle()).stEnter(0)

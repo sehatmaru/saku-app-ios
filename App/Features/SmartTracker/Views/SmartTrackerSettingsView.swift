@@ -1,16 +1,17 @@
 import SwiftUI
 
-/// Profil › Smart Tracker (design 1b): three switches (AI, Notifikasi, Siri) and the way the data is processed.
-/// Smart Tracker itself is always on; the AI switch needs the one AI agreement.
+/// Profil › Smart Tracker (design 1b): three switches (AI, Notifikasi, Siri), the quota card, and the way the data is processed.
+/// Smart Tracker itself is always on; the AI switch needs the one AI agreement. Notifikasi keeps a sub-menu with the steps.
 struct SmartTrackerSettingsView: View {
     @ObservedObject private var plus = PlusStore.shared
-    @ObservedObject private var store = DraftStore.shared
     @ObservedObject private var quotaStore = AIQuotaStore.shared
     @EnvironmentObject private var authViewModel: AuthViewModel
     @AppStorage(SmartTrackerConsent.key) private var aiOn = false
     @State private var plusReason: PlusReason?
     @State private var siri = SmartTrackerWays.siri
+    @State private var notification = SmartTrackerWays.notification
     @State private var showsConsent = false
+    @State private var showsPrivacy = false
     @State private var failed = false
 
     private var profileId: UUID? { authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) } }
@@ -19,70 +20,56 @@ struct SmartTrackerSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                VStack(spacing: 0) {
-                    wayRow(.ai, aiDetail) {
-                        if isGuest {
-                            Image(systemName: "lock").font(.system(size: 17)).foregroundStyle(Color.appTextTertiary).frame(width: 44, height: 44)
-                        } else {
-                            Toggle(SmartWay.ai.title, isOn: Binding(get: { aiOn }, set: { setAI($0) })).labelsHidden().tint(Color.stGreen)
-                        }
-                    }
-                    separator
-                    NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
-                        wayRow(.notification, L("Ubah notifikasi bank jadi draf")) {
-                            HStack(spacing: 6) {
-                                if !plus.isPlus {
-                                    Text(verbatim: "Plus").font(.app(11, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
-                                        .padding(.horizontal, 8).padding(.vertical, 2).background(Color.appPrimary.opacity(0.12), in: Capsule())
-                                }
-                                Text(!NotificationTrigger.isAvailable ? L("Butuh iOS 27") : (store.connectedApps.isEmpty ? L("Atur") : L("%lld aplikasi", store.connectedApps.count)))
-                                    .font(.app(15)).foregroundStyle(NotificationTrigger.isAvailable ? Color.appTextSecondary : Color.appTextTertiary)
-                                chevron
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    separator
-                    wayRow(.siri, L("Catat lewat perintah suara Siri")) {
-                        Toggle(SmartWay.siri.title, isOn: Binding(get: { siri }, set: { siri = $0; SmartTrackerWays.siri = $0 })).labelsHidden().tint(Color.stGreen)
+                Text("Smart Tracker").font(.app(34, weight: .bold)).tracking(-0.4).foregroundStyle(Color.appText)
+                    .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 12)
+
+                wayRow(.ai, aiDetail) {
+                    if isGuest { lock } else {
+                        Toggle(SmartWay.ai.title, isOn: Binding(get: { aiOn }, set: { setAI($0) })).labelsHidden().tint(Color.appPrimary)
                     }
                 }
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal, 24).padding(.top, 12).stEnter(0)
-
-                if !isGuest {
-                    if let quota = quotaStore.quota {
-                        quotaCard(quota).padding(.horizontal, 24).padding(.top, 16).stEnter(1)
-                    } else {
-                        quotaPlaceholder.padding(.horizontal, 24).padding(.top, 16)
+                wayRow(.notification, notificationDetail) {
+                    if isGuest { lock } else {
+                        Toggle(SmartWay.notification.title, isOn: Binding(get: { notification }, set: { notification = $0; SmartTrackerWays.notification = $0 }))
+                            .labelsHidden().tint(Color.appPrimary).disabled(!NotificationTrigger.isAvailable)
+                    }
+                }
+                if !isGuest { setupGuideRow }
+                wayRow(.siri, isGuest ? L("Perlu akun") : L("Catat lewat perintah suara Siri")) {
+                    if isGuest { lock } else {
+                        Toggle(SmartWay.siri.title, isOn: Binding(get: { siri }, set: { siri = $0; SmartTrackerWays.siri = $0 }))
+                            .labelsHidden().tint(Color.appPrimary)
                     }
                 }
 
-                caption(L("Privasi")).stEnter(2)
-                NavigationLink(destination: SmartTrackerPrivacyView().detailPage()) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "checkmark.shield").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 32)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(L("Cara data diproses")).font(.app(16)).foregroundStyle(Color.appText)
-                            Text(L("Apa yang dikirim, dibuang, dan disimpan")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                        }
-                        Spacer(minLength: 8)
-                        chevron
+                Rectangle().fill(Color.appDivider).frame(height: 1).padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 16)
+
+                if isGuest {
+                    guestCard.padding(.horizontal, 24)
+                } else if let quota = quotaStore.quota {
+                    quotaCard(quota).padding(.horizontal, 24)
+                    if quota.isOut {
+                        Text(L("Jatah habis. Dibaca dengan aturan di perangkat.")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appError)
+                            .padding(.horizontal, 24).padding(.top, 12)
+                        textLink(L("Lihat Saku Plus")) { plusReason = .aiHelp }.padding(.horizontal, 24).padding(.top, 4)
+                    } else if !aiOn && !quota.isPlus {
+                        Text(L("AI mati. Jatah tidak terpakai.")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                            .padding(.horizontal, 24).padding(.top, 12)
                     }
-                    .padding(.horizontal, 14).frame(minHeight: 56).contentShape(Rectangle())
-                    .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+                } else {
+                    quotaPlaceholder.padding(.horizontal, 24)
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 24).padding(.bottom, 40)
+
+                textLink(L("Cara data diproses")) { showsPrivacy = true }.padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 40)
             }
         }
+        .scrollIndicators(.hidden)
         .background(Color.appBackground)
-        .navigationTitle("Smart Tracker")
-        .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
         .plusOffer($plusReason)
         .task { await quotaStore.refresh() }
         .sheet(isPresented: $showsConsent) { SmartTrackerConsentSheet(profileId: profileId) { showsConsent = false } }
+        .sheet(isPresented: $showsPrivacy) { SmartTrackerPrivacySheet() }
         .confirmDialog(isPresented: $failed, icon: "exclamationmark.triangle", title: L("Gagal mematikan AI"),
                        message: L("Periksa koneksi internetmu lalu coba lagi. Pengaturanmu belum berubah."), confirmTitle: nil, cancelTitle: L("Tutup"))
     }
@@ -95,42 +82,96 @@ struct SmartTrackerSettingsView: View {
         return f
     }()
 
-    /// This month's AI help, real from the server (design 1b). Plus shows no bar; an empty allowance turns red and offers Plus.
+    // MARK: Rows
+
+    private var lock: some View {
+        Image(systemName: "lock").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 44, height: 44)
+    }
+
+    private func wayRow<Trailing: View>(_ way: SmartWay, _ detail: String, @ViewBuilder trailing: () -> Trailing) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: way.icon).font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L(way.title)).font(.app(17)).foregroundStyle(Color.appText)
+                Text(L(detail)).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+            }
+            Spacer(minLength: 8)
+            trailing().frame(minWidth: 51, minHeight: 44)
+        }
+        .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64)
+    }
+
+    /// The sub-menu under Notifikasi: the steps to connect a bank or e-wallet app. Plus is needed to record from notifications.
+    private var setupGuideRow: some View {
+        NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
+            HStack(spacing: 8) {
+                Text(L("Cara mengatur notifikasi")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+                Spacer(minLength: 8)
+                if !plus.isPlus {
+                    Text(verbatim: "Plus").font(.app(11, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+                        .padding(.horizontal, 8).padding(.vertical, 2).background(Color.appPrimary.opacity(0.12), in: Capsule())
+                }
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+            }
+            .padding(.leading, 62).padding(.trailing, 24).frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func textLink(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+                .frame(minHeight: 44, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: Cards
+
+    /// This month's AI help, real from the server (design 1b). Plus shows no bar; an empty allowance turns red.
     private func quotaCard(_ quota: AIQuotaReading) -> some View {
         let out = quota.isOut
         let total = max(quota.total ?? 1, 1)
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(L("Jatah AI bulan ini")).font(.app(15, weight: .semibold))
-                Spacer()
-                if !quota.isPlus { Text(L("Reset %@", Self.resetFormat.string(from: AIQuotaReading.resetDate))).font(.app(12)).foregroundStyle(Color.appTextSecondary) }
-            }
+        return VStack(alignment: .leading, spacing: quota.isPlus ? 10 : 14) {
+            Text(L("Jatah AI bulan ini")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
             if quota.isPlus {
-                Text(L("Tanpa batas")).font(.app(28, weight: .bold)).foregroundStyle(Color.appPrimary)
-                Text(L("Saku Plus aktif. AI tanpa batas.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Text(L("Tanpa batas")).font(.app(40, weight: .ultraLight)).tracking(-1).foregroundStyle(Color.appPrimary)
+                Text(L("Saku Plus aktif. AI tanpa batas.")).font(.app(13)).lineSpacing(3).foregroundStyle(Color.appTextSecondary)
             } else {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("\(quota.left ?? 0)").font(.app(28, weight: .bold)).monospacedDigit()
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(quota.left ?? 0)").font(.app(52, weight: .ultraLight)).tracking(-1.5).monospacedDigit()
                         .foregroundStyle(out ? Color.appError : Color.appText)
-                    Text(L("dari %lld", quota.total ?? 0)).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    Text(L("dari %lld", quota.total ?? 0)).font(.app(17)).foregroundStyle(Color.appTextSecondary)
                 }
-                ProgressView(value: Double(quota.left ?? 0), total: Double(total)).tint(out ? Color.appError : Color.appPrimary)
-                if quota.referralBonus > 0 {
-                    Text(L("Bonus referral +%lld dari maks. +40", quota.referralBonus)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                }
-                if out {
-                    Text(L("Jatah habis. Dibaca dengan aturan di perangkat.")).font(.app(13)).foregroundStyle(Color.appError)
-                    Button { plusReason = .aiHelp } label: {
-                        Text(L("Lihat Saku Plus")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary).frame(minHeight: 44)
+                SegmentBar(value: Double(quota.left ?? 0) / Double(total), color: out ? Color.appError : Color.appPrimary,
+                           count: 40, height: 14, spacing: 3)
+                Text(L("Reset %@", Self.resetFormat.string(from: AIQuotaReading.resetDate))).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Rectangle().fill(Color.appBorder).frame(height: 1)
+                NavigationLink(destination: ReferralView().detailPage()) {
+                    HStack(spacing: 8) {
+                        Text(L("Bonus referral")).font(.app(15)).foregroundStyle(Color.appText)
+                        Spacer(minLength: 8)
+                        Text(L("+%lld dari maks. +40", quota.referralBonus)).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+                        Image(systemName: "chevron.right").font(.system(size: 14)).foregroundStyle(Color.appTextSecondary)
                     }
-                } else if !aiOn {
-                    Text(L("AI mati. Jatah tidak terpakai.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    .frame(minHeight: 44).contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
         }
-        .padding(16)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private var guestCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(L("Masuk ke akun untuk memakai AI. Persetujuan dan jatah disimpan di akun.")).font(.app(15)).lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
+            PrimaryButton(title: L("Masuk ke akun")) { authViewModel.startGuestLink() }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
     }
 
     /// Loading and failed states of the allowance card: say which one it is, and offer the retry.
@@ -148,14 +189,19 @@ struct SmartTrackerSettingsView: View {
                 Spacer(minLength: 0)
             }
         }
-        .padding(.horizontal, 16).padding(.vertical, 8)
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 20).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
     }
 
     private var aiDetail: String {
-        if isGuest { return L("Daftar untuk memakai AI") }
+        if isGuest { return L("Perlu akun") }
         return aiOn ? L("Baca teks, suara, dan gambar dengan AI") : L("Mati. Dibaca dengan aturan di perangkat")
+    }
+
+    private var notificationDetail: String {
+        if isGuest { return L("Perlu akun") }
+        return NotificationTrigger.isAvailable ? L("Ubah notifikasi bank jadi draf") : L("Butuh iOS 27")
     }
 
     /// Turning on needs the agreement sheet; turning off just stops AI and Ingatan sync (nothing is deleted).
@@ -169,43 +215,6 @@ struct SmartTrackerSettingsView: View {
             do { try await SupabaseSDK.revokeSmartTrackerConsent(profileId: profileId) }
             catch { SmartTrackerConsent.isGranted = previous; failed = true }
         }
-    }
-
-    private func caption(_ text: String) -> some View {
-        Text(L(text)).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-            .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 8)
-    }
-
-    private var separator: some View { Rectangle().fill(Color.appSeparator).frame(height: 1).padding(.leading, 58) }
-    private var chevron: some View {
-        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
-    }
-
-    private func wayRow<Trailing: View>(_ way: SmartWay, _ detail: String, @ViewBuilder trailing: () -> Trailing) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: way.icon).font(.system(size: 17)).foregroundStyle(Color.stGreen)
-                .frame(width: 32, height: 32).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 10))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(L(way.title)).font(.app(16)).foregroundStyle(Color.appText)
-                Text(L(detail)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-            }
-            Spacer(minLength: 8)
-            trailing()
-        }
-        .padding(.horizontal, 14).padding(.vertical, 10).frame(minHeight: 62).contentShape(Rectangle())
-    }
-}
-
-/// Cara data diproses: the same words as the agreement, any time, with the state of the agreement.
-struct SmartTrackerPrivacyView: View {
-    var body: some View {
-        ScrollView {
-            SmartTrackerPrivacyContent().padding(24)
-        }
-        .background(Color.appBackground)
-        .navigationTitle(L("Cara data diproses"))
-        .navigationBarTitleDisplayMode(.inline)
-        .hidesSmartButton()
     }
 }
 

@@ -27,6 +27,7 @@ struct RecordFromNotificationIntent: AppIntent {
     @Parameter(title: "Isi") var body: String
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard SmartTrackerWays.notification else { return .result(dialog: "Notifikasi belum diaktifkan. Nyalakan di Profil > Smart Tracker.") }
         // Recording from notifications is a Saku Plus feature; drafts already queued stay (US6, TC 17).
         guard PlusStore.cachedIsPlus else { return .result(dialog: "Fitur ini butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.") }
         NotificationFilter.remember(title: notificationTitle)
