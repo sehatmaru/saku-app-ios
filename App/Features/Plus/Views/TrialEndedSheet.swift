@@ -43,7 +43,7 @@ struct TrialEndedSheet: View {
             list(title: L("Dijeda"), tint: .appTextSecondary, titleTint: .appTextSecondary, rows: [
                 ("plus.circle", L("Tambah dompet, kategori, atau budget di atas batas gratis.")),
                 ("bell", L("Catat dari notifikasi, foto struk, dan email terusan. Draf yang sudah ada tetap bisa disimpan.")),
-                ("sparkle", L("Laporan PDF baru. Bantuan AI kembali 10 kali per bulan.")),
+                ("sparkle", L("Laporan PDF baru. Bantuan AI kembali 50 kali per bulan.")),
             ])
         }
         .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12)

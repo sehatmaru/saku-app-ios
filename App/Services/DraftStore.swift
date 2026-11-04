@@ -494,6 +494,7 @@ final class DraftStore: ObservableObject {
 
     /// Signing out: nothing of this account stays on the device for the next one.
     func reset() {
+        AIQuotaStore.shared.reset()
         memory = []
         drafts = []
         accounts = []

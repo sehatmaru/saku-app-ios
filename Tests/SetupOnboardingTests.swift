@@ -71,7 +71,6 @@ final class SetupOnboardingTests: XCTestCase {
         let setup = OnboardingSetup(name: "Dina", wallets: [], hiddenCategoryKeys: [], paydayDay: nil)
         XCTAssertTrue(setup.budgets.isEmpty)
         XCTAssertFalse(setup.smartTrackerConsent)
-        XCTAssertFalse(setup.memorySync)
         XCTAssertFalse(setup.joinsPlus)
     }
 

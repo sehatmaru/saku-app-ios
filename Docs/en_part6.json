@@ -1484,5 +1484,15 @@
   "Baca teks, suara, dan gambar dengan AI": "Read text, voice, and images with AI",
   "Mati. Dibaca dengan aturan di perangkat": "Off. Read with on-device rules",
   "Gagal mematikan AI": "Could not turn off AI",
-  "Baca teks, suara, dan gambar dengan AI. Kamu tetap yang mengonfirmasi.": "Read text, voice, and images with AI. You still confirm."
+  "Baca teks, suara, dan gambar dengan AI. Kamu tetap yang mengonfirmasi.": "Read text, voice, and images with AI. You still confirm.",
+  "Jatah AI bulan ini": "AI quota this month",
+  "Reset %@": "Resets %@",
+  "dari %lld": "of %lld",
+  "Bonus referral +%lld dari maks. +40": "Referral bonus +%lld of max +40",
+  "Saku Plus aktif. AI tanpa batas.": "Saku Plus is active. Unlimited AI.",
+  "Jatah habis. Dibaca dengan aturan di perangkat.": "Quota used up. Read with on-device rules.",
+  "AI mati. Jatah tidak terpakai.": "AI is off. No quota is used.",
+  "Sisa %lld jatah AI bulan ini": "%lld AI reads left this month",
+  "Sisa %lld jatah AI. Setelah itu dibaca dengan aturan.": "%lld AI reads left. After that, rules read it.",
+  "Laporan PDF baru. Bantuan AI kembali 50 kali per bulan.": "New PDF reports. AI help goes back to 50 a month."
 }

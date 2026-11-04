@@ -5,8 +5,10 @@ import SwiftUI
 struct SmartTrackerSettingsView: View {
     @ObservedObject private var plus = PlusStore.shared
     @ObservedObject private var store = DraftStore.shared
+    @ObservedObject private var quotaStore = AIQuotaStore.shared
     @EnvironmentObject private var authViewModel: AuthViewModel
     @AppStorage(SmartTrackerConsent.key) private var aiOn = false
+    @State private var plusReason: PlusReason?
     @State private var siri = SmartTrackerWays.siri
     @State private var showsConsent = false
     @State private var failed = false
@@ -48,7 +50,9 @@ struct SmartTrackerSettingsView: View {
                 .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal, 24).padding(.top, 12).stEnter(0)
 
-                caption(L("Privasi")).stEnter(1)
+                if !isGuest, let quota = quotaStore.quota { quotaCard(quota).padding(.horizontal, 24).padding(.top, 16).stEnter(1) }
+
+                caption(L("Privasi")).stEnter(2)
                 NavigationLink(destination: SmartTrackerPrivacyView().detailPage()) {
                     HStack(spacing: 12) {
                         Image(systemName: "checkmark.shield").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 32)
@@ -70,9 +74,58 @@ struct SmartTrackerSettingsView: View {
         .navigationTitle("Smart Tracker")
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
+        .plusOffer($plusReason)
+        .task { await quotaStore.refresh() }
         .sheet(isPresented: $showsConsent) { SmartTrackerConsentSheet(profileId: profileId) { showsConsent = false } }
         .confirmDialog(isPresented: $failed, icon: "exclamationmark.triangle", title: L("Gagal mematikan AI"),
                        message: L("Periksa koneksi internetmu lalu coba lagi. Pengaturanmu belum berubah."), confirmTitle: nil, cancelTitle: L("Tutup"))
+    }
+
+    private static let resetFormat: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM yyyy"
+        f.locale = AppLanguage.locale
+        f.timeZone = TimeZone(identifier: "Asia/Jakarta")
+        return f
+    }()
+
+    /// This month's AI help, real from the server (design 1b). Plus shows no bar; an empty allowance turns red and offers Plus.
+    private func quotaCard(_ quota: AIQuotaReading) -> some View {
+        let out = quota.isOut
+        let total = max(quota.total ?? 1, 1)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(L("Jatah AI bulan ini")).font(.app(15, weight: .semibold))
+                Spacer()
+                if !quota.isPlus { Text(L("Reset %@", Self.resetFormat.string(from: AIQuotaReading.resetDate))).font(.app(12)).foregroundStyle(Color.appTextTertiary) }
+            }
+            if quota.isPlus {
+                Text(L("Tanpa batas")).font(.app(28, weight: .bold)).foregroundStyle(Color.appPrimary)
+                Text(L("Saku Plus aktif. AI tanpa batas.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("\(quota.left ?? 0)").font(.app(28, weight: .bold)).monospacedDigit()
+                        .foregroundStyle(out ? Color.appError : Color.appText)
+                    Text(L("dari %lld", quota.total ?? 0)).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                }
+                ProgressView(value: Double(quota.left ?? 0), total: Double(total)).tint(out ? Color.appError : Color.appPrimary)
+                if quota.referralBonus > 0 {
+                    Text(L("Bonus referral +%lld dari maks. +40", quota.referralBonus)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                }
+                if out {
+                    Text(L("Jatah habis. Dibaca dengan aturan di perangkat.")).font(.app(13)).foregroundStyle(Color.appError)
+                    Button { plusReason = .aiHelp } label: {
+                        Text(L("Lihat Saku Plus")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary).frame(minHeight: 44)
+                    }
+                } else if !aiOn {
+                    Text(L("AI mati. Jatah tidak terpakai.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        .opacity(aiOn || quota.isPlus ? 1 : 0.6)
     }
 
     private var aiDetail: String {

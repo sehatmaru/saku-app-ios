@@ -119,6 +119,18 @@ struct DraftQueueView: View {
         }
     }
 
+    @ObservedObject private var quotaStore = AIQuotaStore.shared
+    @AppStorage(SmartTrackerConsent.key) private var aiOn = false
+
+    /// A short head-up in the draft list when the allowance runs low (10 left, 3 left) or is used up.
+    private var quotaNote: String? {
+        guard aiOn, let quota = quotaStore.quota, !quota.isPlus, let left = quota.left else { return nil }
+        if left == 0 { return L("Jatah AI habis. Dibaca dengan aturan di perangkat.") }
+        if left <= 3 { return L("Sisa %lld jatah AI. Setelah itu dibaca dengan aturan.", left) }
+        if left <= 10 { return L("Sisa %lld jatah AI bulan ini", left) }
+        return nil
+    }
+
     private var ready: [Draft] { store.drafts.filter { $0.isComplete && !store.needsPeriodChoice($0) } }
 
     // MARK: Body
@@ -164,7 +176,7 @@ struct DraftQueueView: View {
                 sheet = DraftSheet(draftId: id, kind: .amount)
             }
         }
-        .task { await store.refreshReferenceData(userId: userId) }
+        .task { await store.refreshReferenceData(userId: userId); await quotaStore.refresh() }
     }
 
     // MARK: List
@@ -187,6 +199,15 @@ struct DraftQueueView: View {
                     Label(L("%lld draf akan dihapus dalam 3 hari jika tidak diproses.", store.expiringSoon), systemImage: "clock")
                         .font(.app(13))
                         .foregroundStyle(Color.appWarning)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 10)
+                }
+
+                if let note = quotaNote {
+                    Label(note, systemImage: "sparkles")
+                        .font(.app(13))
+                        .foregroundStyle(quotaStore.quota?.isOut == true || (quotaStore.quota?.left ?? 99) <= 3 ? Color.appWarning : Color.appPrimary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
                         .padding(.top, 10)

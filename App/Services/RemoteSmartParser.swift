@@ -39,10 +39,12 @@ enum RemoteSmartParser {
         do {
             reply = try await SupabaseSDK.client.functions.invoke("smart-parse", options: FunctionInvokeOptions(body: payload))
         } catch FunctionsError.httpError(let code, _) where code == 402 {
+            await AIQuotaStore.shared.refresh()
             return .outOfQuota
         } catch {
             return .unavailable
         }
+        await AIQuotaStore.shared.refresh()
         let drafts = reply.drafts.compactMap { item -> Draft? in
             guard let amount = item.amount, amount > 0, let kind = Draft.Kind(rawValue: item.kind) else { return nil }
             var draft = Draft()

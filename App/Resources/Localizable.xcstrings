@@ -1713,6 +1713,16 @@
         }
       }
     },
+    "AI mati. Jatah tidak terpakai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI is off. No quota is used."
+          }
+        }
+      }
+    },
     "AI tanpa batas": {
       "localizations": {
         "en": {
@@ -4119,6 +4129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Optional. Your answer helps us improve Saku."
+          }
+        }
+      }
+    },
+    "Bonus referral +%lld dari maks. +40": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referral bonus +%lld of max +40"
           }
         }
       }
@@ -8873,6 +8893,16 @@
         }
       }
     },
+    "Jatah AI bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI quota this month"
+          }
+        }
+      }
+    },
     "Jatah bantuan AI bulan ini habis. Isi manual.": {
       "localizations": {
         "en": {
@@ -8889,6 +8919,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This month's free AI help is used up. With Plus, Saku keeps helping you read hard sentences and pictures."
+          }
+        }
+      }
+    },
+    "Jatah habis. Dibaca dengan aturan di perangkat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quota used up. Read with on-device rules."
           }
         }
       }
@@ -10909,6 +10949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "New PDF reports. AI help goes back to 10 a month."
+          }
+        }
+      }
+    },
+    "Laporan PDF baru. Bantuan AI kembali 50 kali per bulan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New PDF reports. AI help goes back to 50 a month."
           }
         }
       }
@@ -14973,6 +15023,16 @@
         }
       }
     },
+    "Reset %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resets %@"
+          }
+        }
+      }
+    },
     "Ringkas": {
       "localizations": {
         "en": {
@@ -15249,6 +15309,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saku Plus is active"
+          }
+        }
+      }
+    },
+    "Saku Plus aktif. AI tanpa batas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku Plus is active. Unlimited AI."
           }
         }
       }
@@ -16889,6 +16959,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld days left"
+          }
+        }
+      }
+    },
+    "Sisa %lld jatah AI bulan ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld AI reads left this month"
+          }
+        }
+      }
+    },
+    "Sisa %lld jatah AI. Setelah itu dibaca dengan aturan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld AI reads left. After that, rules read it."
           }
         }
       }
@@ -20861,6 +20951,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "from %@"
+          }
+        }
+      }
+    },
+    "dari %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of %lld"
           }
         }
       }
