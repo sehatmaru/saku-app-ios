@@ -1503,5 +1503,15 @@
   "tidak ada koneksi": "no connection",
   "AI gagal membaca": "AI could not read it",
   "AI terlalu lama": "AI took too long",
-  "jatah habis": "quota used up"
+  "jatah habis": "quota used up",
+  "%lld dari %lld teman": "%lld of %lld friends",
+  "Batas +40 sudah tercapai. Teman tetap bisa memakai kodemu, tetapi tidak menambah jatahmu.": "The +40 limit is reached. Friends can still use your code, but they add nothing to your quota.",
+  "%lld teman menunggu transaksi pertama. Bisa tambah +%lld lagi.": "%lld friends are waiting for their first transaction. You can still add +%lld.",
+  "Bisa tambah +%lld lagi.": "You can still add +%lld.",
+  "Belum ada teman. Setiap teman yang mencatat transaksi pertama menambah +10.": "No friends yet. Every friend who records a first transaction adds +10.",
+  "Setiap teman yang mencatat transaksi pertama menambah +10 bantuan AI untukmu.": "Every friend who records a first transaction adds +10 AI help for you.",
+  "Hadiah masuk saat temanmu mencatat transaksi pertama. Maksimal +40 untuk selamanya.": "Rewards arrive when your friend records a first transaction. Maximum +40, for good.",
+  "Begitu temanmu mencatat transaksi pertamanya, +10 bantuan AI langsung masuk ke akunmu, dan temanmu juga dapat +10.": "As soon as your friend records their first transaction, +10 AI help goes into your account, and your friend gets +10 too.",
+  "+10 bantuan AI per teman, maksimal +40. Bonusnya tidak hilang tiap bulan.": "+10 AI help per friend, up to +40. The bonus does not reset each month.",
+  "Dapat +10 bantuan AI per teman": "Get +10 AI help per friend"
 }

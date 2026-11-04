@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Profil › Ajak teman (design "Plus C Ajak Teman" 8a): the code, progress per friend, history and how it works.
 /// Real data from the server (Fitur 2). A Plus account sees only the code and the share button: no counter and no
-/// promise of +5, because Plus already has unlimited AI help (K7). Guests never get here (K6).
+/// promise of +10, because Plus already has unlimited AI help (K7). Guests never get here (K6).
 struct ReferralView: View {
     @ObservedObject private var plus = PlusStore.shared
     @State private var summary: ReferralSummary?
@@ -15,29 +15,21 @@ struct ReferralView: View {
         return L("Aku pakai Saku buat catat keuangan. Pakai kodeku %@ waktu daftar: %@", summary.code, summary.inviteLink)
     }
 
-    private func progressLine(_ summary: ReferralSummary) -> String { L("%lld dari %lld teman bulan ini", summary.thisMonth, ReferralSummary.monthlyLimit) }
+    private func progressLine(_ summary: ReferralSummary) -> String { L("%lld dari %lld teman", summary.counted, ReferralSummary.bonusCap / ReferralSummary.perFriend) }
 
     private func note(_ summary: ReferralSummary) -> String {
-        if summary.isMaxed { return L("Batas +20 bulan ini sudah tercapai. Teman tetap bisa memakai kodemu; hadiah berikutnya mulai %@.", nextReset) }
-        if summary.waiting > 0 { return L("%lld teman menunggu transaksi pertama. Bisa tambah +%lld lagi bulan ini.", summary.waiting, 20 - summary.reward) }
-        if summary.thisMonth > 0 { return L("Bisa tambah +%lld lagi bulan ini.", 20 - summary.reward) }
-        return L("Belum ada teman bulan ini. Hadiah terisi lagi setiap tanggal 1.")
-    }
-
-    /// "1 Nov": when the monthly count starts again.
-    private var nextReset: String {
-        let first = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date())).flatMap {
-            Calendar.current.date(byAdding: .month, value: 1, to: $0)
-        } ?? Date()
-        let format = DateFormatter(); format.locale = AppLanguage.locale; format.dateFormat = "d MMM"
-        return format.string(from: first)
+        let room = ReferralSummary.bonusCap - summary.reward
+        if summary.isMaxed { return L("Batas +40 sudah tercapai. Teman tetap bisa memakai kodemu, tetapi tidak menambah jatahmu.") }
+        if summary.waiting > 0 { return L("%lld teman menunggu transaksi pertama. Bisa tambah +%lld lagi.", summary.waiting, room) }
+        if summary.counted > 0 { return L("Bisa tambah +%lld lagi.", room) }
+        return L("Belum ada teman. Setiap teman yang mencatat transaksi pertama menambah +10.")
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Ajak teman").font(.app(34, weight: .bold)).tracking(-0.4).foregroundStyle(Color.appText)
-                Text(plus.isPlus ? L("Bagikan kodemu ke temanmu.") : L("Setiap teman yang mencatat transaksi pertama menambah +5 bantuan AI untukmu."))
+                Text(plus.isPlus ? L("Bagikan kodemu ke temanmu.") : L("Setiap teman yang mencatat transaksi pertama menambah +10 bantuan AI untukmu."))
                     .font(.app(15)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true).padding(.top, 8)
 
                 if let summary {
@@ -88,11 +80,11 @@ struct ReferralView: View {
                     Text(progressLine(summary)).font(.app(15))
                     Spacer(minLength: 12)
                     Text(L("+%lld jatah AI", summary.reward)).font(.app(15)).monospacedDigit()
-                        .foregroundStyle(summary.thisMonth > 0 ? Color.appPrimary : Color.appTextSecondary)
+                        .foregroundStyle(summary.counted > 0 ? Color.appPrimary : Color.appTextSecondary)
                 }
                 HStack(spacing: 6) {
-                    ForEach(0..<ReferralSummary.monthlyLimit, id: \.self) { i in
-                        Capsule().fill(i < summary.thisMonth ? Color.appPrimary : Color.appFill).frame(height: 6)
+                    ForEach(0..<(ReferralSummary.bonusCap / ReferralSummary.perFriend), id: \.self) { i in
+                        Capsule().fill(i < summary.reward / ReferralSummary.perFriend ? Color.appPrimary : Color.appFill).frame(height: 6)
                     }
                 }
                 Text(note(summary)).font(.app(13)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
@@ -114,7 +106,7 @@ struct ReferralView: View {
         }
         .padding(.top, 28)
         if !plus.isPlus {
-            Text("Hadiah masuk saat temanmu mencatat transaksi pertama. Maksimal +20 per bulan.")
+            Text("Hadiah masuk saat temanmu mencatat transaksi pertama. Maksimal +40 untuk selamanya.")
                 .font(.app(12)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.top, 10)
         }
@@ -167,7 +159,7 @@ struct ReferralHistoryView: View {
                             Spacer(minLength: 8)
                             if friend.joined != nil {
                                 if friend.counts {
-                                    Text(verbatim: "+5").font(.app(15)).monospacedDigit().foregroundStyle(Color.appPrimary)
+                                    Text(verbatim: "+10").font(.app(15)).monospacedDigit().foregroundStyle(Color.appPrimary)
                                 } else {
                                     Text("Di atas batas").font(.app(12)).foregroundStyle(Color.appTextTertiary)
                                 }
@@ -192,14 +184,13 @@ struct ReferralHowView: View {
     private var steps: [(String, String)] { [
         (L("Bagikan kodemu"), L("Kirim kode atau tautan lewat WhatsApp, pesan, atau aplikasi apa saja.")),
         (L("Temanmu mendaftar"), L("Ia memasukkan kodemu saat membuat akun Saku. Langkah ini opsional untuknya.")),
-        (L("Transaksi pertama tercatat"), L("Begitu temanmu mencatat transaksi pertamanya, +5 bantuan AI langsung masuk ke akunmu.")),
+        (L("Transaksi pertama tercatat"), L("Begitu temanmu mencatat transaksi pertamanya, +10 bantuan AI langsung masuk ke akunmu, dan temanmu juga dapat +10.")),
     ] }
 
     private var rules: [(String, String)] { [
-        ("gift", L("+5 bantuan AI per teman, maksimal +20 setiap bulan.")),
+        ("gift", L("+10 bantuan AI per teman, maksimal +40. Bonusnya tidak hilang tiap bulan.")),
         ("person.badge.plus", L("Hanya untuk akun baru. Satu akun hanya bisa memakai satu kode.")),
         ("eye.slash", L("Nama temanmu hanya tampil di riwayat bila ia mengizinkan.")),
-        ("calendar", L("Hitungan bulanan mulai lagi setiap tanggal 1.")),
     ] }
 
     var body: some View {

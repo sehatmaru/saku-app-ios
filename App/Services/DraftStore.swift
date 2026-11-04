@@ -318,32 +318,38 @@ final class DraftStore: ObservableObject {
         persist()
     }
 
-    /// Text shared from other apps becomes drafts; the inbox is emptied so the raw text is not kept.
+    /// Text and pictures shared from other apps become drafts; the inbox is emptied so the raw text is not kept.
+    /// AI reads first when it is on (rules as the fallback, 4 s each); the share extension already told the user.
     func ingestSharedText() {
         purgeExpired()
         let texts = ShareInbox.drain()
         guard !texts.isEmpty else { return }
-        var hard: [String] = []
-        let added = texts.flatMap { text -> [Draft] in
-            guard text.hasPrefix(ShareInbox.photoMark) else { return SmartParser.parse(text, source: .share, context: context) }
-            // text read from a shared picture (the picture itself never reached the app)
-            guard PlusStore.cachedIsPlus else { return [] }
-            let lines = text.dropFirst(ShareInbox.photoMark.count).components(separatedBy: "\n")
-            let drafts = ImageParser.parse(lines: lines, context: context).drafts
-            // a hard picture: the rules read nothing, so the language model gets the text (Saku Plus only, so no allowance to check)
-            if drafts.isEmpty, !lines.isEmpty { hard.append(lines.joined(separator: "\n")) }
-            return drafts
-        }
-        // the share extension already told the user; no second notification here
-        add(added)
-        if !hard.isEmpty { Task { await refineSharedPictures(hard) } }
+        Task { for text in texts { await ingestShared(text) } }
     }
 
-    /// The model's reading of shared pictures the rules could not read; they land in the queue when it answers.
-    private func refineSharedPictures(_ texts: [String]) async {
-        for text in texts {
-            if case .drafts(let remote) = await aiRead(text, source: .photo) { add(remote) }
+    private func ingestShared(_ text: String) async {
+        let isPhoto = text.hasPrefix(ShareInbox.photoMark)
+        var rules: [Draft]
+        let body: String
+        if isPhoto {
+            // text read from a shared picture (the picture itself never reached the app); reading pictures is Saku Plus
+            guard PlusStore.cachedIsPlus else { return }
+            let lines = text.dropFirst(ShareInbox.photoMark.count).components(separatedBy: "\n")
+            rules = ImageParser.parse(lines: lines, context: context).drafts
+            body = lines.joined(separator: "\n")
+        } else {
+            rules = SmartParser.parse(text, source: .share, context: context)
+            body = text
         }
+        for i in rules.indices { rules[i].reader = .rules }
+        if RemoteSmartParser.isAvailable, !body.isEmpty {
+            switch await aiRead(body, source: isPhoto ? .photo : .share) {
+            case .drafts(let remote): add(remote); return
+            case .outOfQuota: Self.markFallback(&rules, .quota)
+            case .unavailable(let why): Self.markFallback(&rules, why)
+            }
+        }
+        if !rules.isEmpty { add(rules) }
     }
 
     // MARK: Duplicates

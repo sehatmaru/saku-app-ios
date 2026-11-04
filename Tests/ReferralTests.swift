@@ -4,7 +4,7 @@ import XCTest
 /// Fitur 2 (Referral): what the app does with the server's answers (TC 26-36).
 final class ReferralTests: XCTestCase {
     private let json = """
-    {"code":"K7M2QX","can_redeem":true,"monthly_limit":4,"per_friend":5,"this_month":2,"bonus":10,
+    {"code":"K7M2QX","can_redeem":true,"bonus_cap":40,"per_friend":10,"counted":2,"bonus":20,
      "friends":[
       {"id":"1","name":"Dimas","status":"done","joined_at":"2026-10-03T08:00:00.123456+00:00","first_transaction_at":"2026-10-14T09:30:00+00:00","counts":true},
       {"id":"2","name":null,"status":"done","joined_at":"2026-10-04T08:00:00+00:00","first_transaction_at":"2026-10-15T09:30:00+00:00","counts":false},
@@ -14,12 +14,12 @@ final class ReferralTests: XCTestCase {
     func testSummaryReadsCodeProgressAndFriends() throws {
         let summary = try ReferralSummary.decode(Data(json.utf8))
         XCTAssertEqual(summary.code, "K7M2QX")
-        XCTAssertEqual(summary.thisMonth, 2); XCTAssertEqual(summary.reward, 10)
+        XCTAssertEqual(summary.counted, 2); XCTAssertEqual(summary.reward, 20)
         XCTAssertEqual(summary.friends.count, 3); XCTAssertEqual(summary.waiting, 1)
         XCTAssertEqual(summary.friends[0].name, "Dimas")
         XCTAssertEqual(summary.friends[1].name, L("Teman"), "a name nobody allowed stays hidden")
         XCTAssertNil(summary.friends[2].joined, "still waiting for the first transaction")
-        XCTAssertFalse(summary.friends[1].counts, "over the month's cap: listed, adds nothing")
+        XCTAssertFalse(summary.friends[1].counts, "over the +40 cap: listed, adds nothing")
         XCTAssertFalse(summary.isMaxed)
         XCTAssertTrue(summary.canRedeem, "a fresh account may still enter a code")
     }
@@ -31,7 +31,7 @@ final class ReferralTests: XCTestCase {
     }
 
     func testAGuestHasNoSummary() {
-        XCTAssertThrowsError(try ReferralSummary.decode(Data(#"{"code":null,"this_month":0,"bonus":0,"friends":[]}"#.utf8)))
+        XCTAssertThrowsError(try ReferralSummary.decode(Data(#"{"code":null,"counted":0,"bonus":0,"friends":[]}"#.utf8)))
     }
 
     func testTheRewardNoticeAnnouncesOnlyNewFriendsOnce() {

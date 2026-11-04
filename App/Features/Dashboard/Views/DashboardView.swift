@@ -148,11 +148,11 @@ struct DashboardView: View {
         guard authViewModel.currentUser?.isGuest == false, !PlusStore.shared.isPlus else { return }
         Task {
             guard let summary = try? await SupabaseSDK.fetchReferralSummary() else { return }
-            let format = DateFormatter(); format.locale = Locale(identifier: "en_US_POSIX"); format.dateFormat = "yyyy-MM"
+            // the bonus no longer resets each month: one running count (its own key, so old monthly counts are not announced)
             let defaults = UserDefaults.standard
-            let result = ReferralSummary.rewardDelta(thisMonth: summary.thisMonth, monthKey: format.string(from: Date()),
-                                                     stored: defaults.string(forKey: "referralRewardSeen"))
-            defaults.set(result.stored, forKey: "referralRewardSeen")
+            let result = ReferralSummary.rewardDelta(thisMonth: summary.counted, monthKey: "all",
+                                                     stored: defaults.string(forKey: "referralRewardSeenTotal"))
+            defaults.set(result.stored, forKey: "referralRewardSeenTotal")
             guard result.newFriends > 0 else { return }
             toastText = L("Temanmu mencatat transaksi pertama. +%lld jatah AI masuk.", result.newFriends * ReferralSummary.perFriend)
             isToastShown = true

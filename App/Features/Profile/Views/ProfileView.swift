@@ -90,7 +90,7 @@ struct ProfileView: View {
                         if authViewModel.currentUser?.isGuest == false {
                             NavigationLink(destination: ReferralView().detailPage()) {
                                 row(icon: "person.2", title: L("Ajak teman"),
-                                    subtitle: plus.isPlus ? L("Bagikan kodemu ke teman") : L("Dapat +5 bantuan AI per teman")) { chevron }
+                                    subtitle: plus.isPlus ? L("Bagikan kodemu ke teman") : L("Dapat +10 bantuan AI per teman")) { chevron }
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(RowPressStyle())

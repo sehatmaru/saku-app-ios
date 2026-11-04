@@ -46,23 +46,25 @@ struct ReferralSummary: Equatable {
         let joined: String?
         /// The month the friend counts in: the month of the first transaction, else of joining.
         let month: String
-        /// Over the month's cap of 4: listed, but adds nothing.
+        /// Over the +40 cap: listed, but adds nothing.
         let counts: Bool
     }
 
-    static let monthlyLimit = 4
-    static let perFriend = 5
+    /// A permanent bonus on top of the monthly base: +10 per friend, +10 for joining with a code, at most +40 in all.
+    static let bonusCap = 40
+    static let perFriend = 10
     /// Where the invitation link points; one place to change once the App Store page exists.
     static let inviteLinkBase = "https://saku.app/u/"
 
     var code: String
     var friends: [Friend]
-    var thisMonth: Int
+    /// Friends whose first transaction counts toward the bonus.
+    var counted: Int
     var reward: Int
     /// This account has not used a friend's code and has no records yet: it can still enter one.
     var canRedeem = false
 
-    var isMaxed: Bool { thisMonth >= Self.monthlyLimit }
+    var isMaxed: Bool { reward >= Self.bonusCap }
     var waiting: Int { friends.filter { $0.joined == nil }.count }
     var inviteLink: String { Self.inviteLinkBase + code }
 
@@ -89,7 +91,7 @@ struct ReferralSummary: Equatable {
         }
         let code: String?
         let can_redeem: Bool?
-        let this_month: Int
+        let counted: Int
         let bonus: Int
         let friends: [FriendDTO]
     }
@@ -106,7 +108,7 @@ struct ReferralSummary: Equatable {
             return Friend(id: f.id, name: f.name ?? L("Teman"), joined: done.map { day.string(from: $0) },
                           month: month.string(from: when), counts: f.counts)
         }
-        return ReferralSummary(code: code, friends: friends, thisMonth: dto.this_month, reward: dto.bonus,
+        return ReferralSummary(code: code, friends: friends, counted: dto.counted, reward: dto.bonus,
                                canRedeem: dto.can_redeem ?? false)
     }
 

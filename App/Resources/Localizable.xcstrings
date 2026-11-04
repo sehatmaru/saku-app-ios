@@ -823,6 +823,16 @@
         }
       }
     },
+    "%lld dari %lld teman": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld friends"
+          }
+        }
+      }
+    },
     "%lld dari %lld teman bulan ini": {
       "localizations": {
         "en": {
@@ -1243,6 +1253,16 @@
         }
       }
     },
+    "%lld teman menunggu transaksi pertama. Bisa tambah +%lld lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld friends are waiting for their first transaction. You can still add +%lld."
+          }
+        }
+      }
+    },
     "%lld transaksi": {
       "localizations": {
         "en": {
@@ -1429,6 +1449,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "+1M"
+          }
+        }
+      }
+    },
+    "+10 bantuan AI per teman, maksimal +40. Bonusnya tidak hilang tiap bulan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+10 AI help per friend, up to +40. The bonus does not reset each month."
           }
         }
       }
@@ -2853,6 +2883,16 @@
         }
       }
     },
+    "Batas +40 sudah tercapai. Teman tetap bisa memakai kodemu, tetapi tidak menambah jatahmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The +40 limit is reached. Friends can still use your code, but they add nothing to your quota."
+          }
+        }
+      }
+    },
     "Batas budget tercapai": {
       "localizations": {
         "en": {
@@ -3089,6 +3129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Once the first notification arrives, its app shows up here."
+          }
+        }
+      }
+    },
+    "Begitu temanmu mencatat transaksi pertamanya, +10 bantuan AI langsung masuk ke akunmu, dan temanmu juga dapat +10.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As soon as your friend records their first transaction, +10 AI help goes into your account, and your friend gets +10 too."
           }
         }
       }
@@ -3539,6 +3589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No friends have used your code yet."
+          }
+        }
+      }
+    },
+    "Belum ada teman. Setiap teman yang mencatat transaksi pertama menambah +10.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No friends yet. Every friend who records a first transaction adds +10."
           }
         }
       }
@@ -4149,6 +4209,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You can add +%lld more this month."
+          }
+        }
+      }
+    },
+    "Bisa tambah +%lld lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can still add +%lld."
           }
         }
       }
@@ -5509,6 +5579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Available funds"
+          }
+        }
+      }
+    },
+    "Dapat +10 bantuan AI per teman": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get +10 AI help per friend"
           }
         }
       }
@@ -7949,6 +8029,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The reward arrives when your friend records a first transaction. Up to +20 a month."
+          }
+        }
+      }
+    },
+    "Hadiah masuk saat temanmu mencatat transaksi pertama. Maksimal +40 untuk selamanya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rewards arrive when your friend records a first transaction. Maximum +40, for good."
           }
         }
       }
@@ -16679,6 +16769,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "On the 1st of every month"
+          }
+        }
+      }
+    },
+    "Setiap teman yang mencatat transaksi pertama menambah +10 bantuan AI untukmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every friend who records a first transaction adds +10 AI help for you."
           }
         }
       }
