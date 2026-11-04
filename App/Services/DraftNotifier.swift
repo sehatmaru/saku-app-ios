@@ -6,23 +6,23 @@ enum DraftNotifier {
     /// userInfo value that makes a tap open Konfirmasi transaksi.
     static let route = "drafts"
 
-    /// "Pemasukan - Rp25.000 tercatat!" for one draft, "3 transaksi tercatat!" for several. The body says it is still a draft.
-    static func announce(_ drafts: [Draft]) async {
+    /// "Uang masuk, cek sekarang!" with "BCA sebesar Rp25.000"; several drafts say how many. Still a draft, so the tap opens the queue.
+    @MainActor static func announce(_ drafts: [Draft]) async {
         guard let first = drafts.first else { return }
-        let title: String
-        if drafts.count == 1, let amount = first.amount {
-            let kind: String
-            switch first.kind {
-            case .expense: kind = L("Pengeluaran")
-            case .income: kind = L("Pemasukan")
-            case .transfer: kind = L("Transfer")
-            case .cardPayment: kind = L("Bayar kartu")
-            }
-            title = L("%@ - %@ tercatat!", kind, amount.formattedAsCurrency())
-        } else {
-            title = L("%lld transaksi tercatat!", drafts.count)
+        guard drafts.count == 1, let amount = first.amount else {
+            await post(title: L("%lld draf baru, cek sekarang!", drafts.count), body: L("Ketuk untuk memeriksa dan menyimpan."), route: route)
+            return
         }
-        await post(title: title, body: L("Masih draf. Ketuk untuk memeriksa dan menyimpan."), route: route)
+        let title: String
+        switch first.kind {
+        case .expense: title = L("Uang keluar, cek sekarang!")
+        case .income: title = L("Uang masuk, cek sekarang!")
+        case .transfer: title = L("Uang pindah, cek sekarang!")
+        case .cardPayment: title = L("Bayar kartu, cek sekarang!")
+        }
+        let wallet = DraftStore.shared.accounts.first { $0.id == first.accountId }?.name ?? first.sourceName
+        let body = wallet.map { L("%@ sebesar %@", $0, amount.formattedAsCurrency()) } ?? amount.formattedAsCurrency()
+        await post(title: title, body: body, route: route)
     }
 
     /// Why an automation could not read anything. A Shortcuts automation runs in the background and its dialog is never shown.

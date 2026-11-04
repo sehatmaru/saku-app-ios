@@ -481,6 +481,16 @@
         }
       }
     },
+    "%@ sebesar %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ for %@"
+          }
+        }
+      }
+    },
     "%@ sekarang": {
       "localizations": {
         "en": {
@@ -929,6 +939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld drafts will be deleted in 3 days if left unprocessed."
+          }
+        }
+      }
+    },
+    "%lld draf baru, cek sekarang!": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld new drafts, check now!"
           }
         }
       }
@@ -3079,6 +3099,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Card payment"
+          }
+        }
+      }
+    },
+    "Bayar kartu, cek sekarang!": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card payment, check now!"
           }
         }
       }
@@ -10689,6 +10719,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tap to compare"
+          }
+        }
+      }
+    },
+    "Ketuk untuk memeriksa dan menyimpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to check and save."
           }
         }
       }
@@ -20925,12 +20965,42 @@
         }
       }
     },
+    "Uang keluar, cek sekarang!": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Money out, check now!"
+          }
+        }
+      }
+    },
     "Uang masuk ke dompet": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Money arrives in the wallet"
+          }
+        }
+      }
+    },
+    "Uang masuk, cek sekarang!": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Money in, check now!"
+          }
+        }
+      }
+    },
+    "Uang pindah, cek sekarang!": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Money moved, check now!"
           }
         }
       }

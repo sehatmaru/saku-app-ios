@@ -1558,5 +1558,12 @@
   "Smart Tracker belum disetujui": "Smart Tracker is not agreed yet",
   "Buka Saku dan setujui Smart Tracker supaya gambar bisa dibaca.": "Open Saku and agree to Smart Tracker so images can be read.",
   "Jatah AI bulan ini habis": "This month's AI allowance is used up",
-  "Gambar ini belum terbaca. Jatah terisi lagi bulan depan.": "This image was not read. The allowance refills next month."
+  "Gambar ini belum terbaca. Jatah terisi lagi bulan depan.": "This image was not read. The allowance refills next month.",
+  "Uang keluar, cek sekarang!": "Money out, check now!",
+  "Uang masuk, cek sekarang!": "Money in, check now!",
+  "Uang pindah, cek sekarang!": "Money moved, check now!",
+  "Bayar kartu, cek sekarang!": "Card payment, check now!",
+  "%lld draf baru, cek sekarang!": "%lld new drafts, check now!",
+  "Ketuk untuk memeriksa dan menyimpan.": "Tap to check and save.",
+  "%@ sebesar %@": "%@ for %@"
 }
