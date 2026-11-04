@@ -40,7 +40,6 @@ struct SmartTrackerSettingsView: View {
                     Toggle(SmartWay.reminder.title, isOn: Binding(get: { reminder }, set: { reminder = $0; SmartTrackerWays.reminder = $0; DraftStore.shared.rescheduleReminder() }))
                         .labelsHidden().tint(Color.appPrimary)
                 }
-                if reminder { textLink(L("Coba pengingat")) { DraftReminder.sendSample() }.padding(.leading, 62).padding(.trailing, 24) }
                 wayRow(.siri, isGuest ? L("Perlu akun") : L("Catat lewat perintah suara Siri")) {
                     if isGuest { lock } else {
                         Toggle(SmartWay.siri.title, isOn: Binding(get: { siri }, set: { siri = $0; SmartTrackerWays.siri = $0 }))

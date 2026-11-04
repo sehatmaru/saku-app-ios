@@ -56,18 +56,27 @@ enum DraftReminder {
                                          trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)))
     }
 
-    /// The button in Profil › Smart Tracker: shows the reminder in a few seconds so the text can be checked without waiting.
-    @MainActor static func sendSample() {
+    /// The test button (Profil › Menu uji): shows the reminder in 5 seconds so the text can be checked without waiting.
+    /// Returns what happened, so a silent failure (permission off) is visible on the page.
+    @MainActor static func sendSample() async -> String {
         let center = UNUserNotificationCenter.current()
-        Task {
-            guard (try? await center.requestAuthorization(options: [.alert, .badge])) == true else { return }
-            let content = UNMutableNotificationContent()
-            content.title = L("Ada %lld draf belum dicek", 1)
-            content.body = L("%@ %@ menunggu. Ketuk untuk menyimpan atau membuangnya.", L("Pengeluaran"), 25_000.0.formattedAsCurrency())
-            content.sound = .default
-            content.userInfo = ["route": DraftNotifier.route]
-            try? await center.add(UNNotificationRequest(identifier: "draft-reminder-sample", content: content,
-                                                        trigger: UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)))
+        var status = await center.notificationSettings().authorizationStatus
+        if status == .notDetermined {
+            _ = try? await center.requestAuthorization(options: [.alert, .badge, .sound])
+            status = await center.notificationSettings().authorizationStatus
         }
+        guard status == .authorized || status == .provisional else {
+            return "Izin notifikasi Saku mati. Nyalakan di Pengaturan iOS > Notifikasi > Saku."
+        }
+        let content = UNMutableNotificationContent()
+        content.title = L("Ada %lld draf belum dicek", 1)
+        content.body = L("%@ %@ menunggu. Ketuk untuk menyimpan atau membuangnya.", L("Pengeluaran"), 25_000.0.formattedAsCurrency())
+        content.sound = .default
+        content.userInfo = ["route": DraftNotifier.route]
+        do {
+            try await center.add(UNNotificationRequest(identifier: "draft-reminder-sample", content: content,
+                                                       trigger: UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)))
+        } catch { return "Gagal menjadwalkan: \(error.localizedDescription)" }
+        return "Terjadwal. Muncul dalam 5 detik. Kalau tidak tampil, cek Fokus atau mode Jangan Ganggu."
     }
 }

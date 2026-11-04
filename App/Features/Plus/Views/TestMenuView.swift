@@ -11,6 +11,7 @@ struct TestMenuView: View {
     @State private var showsTrialEndedTest = false
     @State private var sheet: PreviewSheet?
     @State private var confirm: PreviewConfirm?
+    @State private var sampleResult: String?
 
     private var phase: PlusPhase { plus.entitlement.phase() }
 
@@ -59,6 +60,11 @@ struct TestMenuView: View {
                 item("Matikan Smart Tracker? (sibuk)", selected: false) { confirm = .offBusy }
                 item("Lupakan semua?", selected: false) { confirm = .forget }
                 item("Abaikan semua draf?", selected: false) { confirm = .deleteAll }
+
+                header("Smart Tracker · pengingat")
+                note("Mengirim contoh pengingat draf dalam 5 detik. Tetap di halaman ini atau tutup layar.")
+                item("Kirim pengingat draf", selected: false) { Task { sampleResult = await DraftReminder.sendSample() } }
+                if let sampleResult { note(sampleResult) }
 
                 header("Smart Tracker · informasi")
                 item("Gagal mematikan Smart Tracker", selected: false) { confirm = .failedOff }
