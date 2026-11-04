@@ -22,7 +22,8 @@ struct ReadImageIntent: AppIntent {
     static let title: LocalizedStringResource = "Baca gambar"
     static let description = IntentDescription("Membaca screenshot, foto, atau struk dan membuat draf. Hasilnya masuk ke Konfirmasi transaksi.")
 
-    @Parameter(title: "Gambar", supportedContentTypes: [.image], requestValueDialog: "Gambar mana yang mau dibaca?")
+    @Parameter(title: "Gambar", supportedContentTypes: [.image], requestValueDialog: "Gambar mana yang mau dibaca?",
+               inputConnectionBehavior: .connectToPreviousIntentResult)
     var image: IntentFile
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
