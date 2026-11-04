@@ -10,6 +10,8 @@ extension Color {
     }
 
     static let appPrimary = Color(light: 0x16875A, dark: 0x2FB57C)
+    /// Small green text on a tinted green chip: darker in light mode to reach 4.5:1 (appPrimary gives 3.5:1 there).
+    static let appPrimaryText = Color(light: 0x0F6B47, dark: 0x2FB57C)
     /// Fixed brand green behind the splash, login, and logo pockets.
     static let appBrand = Color(light: 0x16875A, dark: 0x16875A)
     static let appSecondary = Color(light: 0x1FA06B, dark: 0x3FC98C)

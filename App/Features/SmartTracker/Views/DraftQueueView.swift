@@ -7,7 +7,7 @@ struct ReaderBadge: View {
     var body: some View {
         Label(reader == .ai ? "AI" : L("Aturan"), systemImage: reader == .ai ? "sparkles" : "list.bullet")
             .font(.app(12, weight: .semibold))
-            .foregroundStyle(reader == .ai ? Color.appPrimary : Color.appTextSecondary)
+            .foregroundStyle(reader == .ai ? Color.appPrimaryText : Color.appTextSecondary)
             .padding(.horizontal, 8).padding(.vertical, 3)
             .background(reader == .ai ? Color.appPrimary.opacity(0.12) : Color.appFill, in: Capsule())
     }
@@ -160,7 +160,7 @@ struct DraftQueueView: View {
                 Text(busy ? L("Memindai ulang…") : failed ? L("Gagal. Ketuk untuk coba lagi") : L("Pindai ulang dengan AI"))
             }
             .font(.app(13, weight: .semibold))
-            .foregroundStyle(failed ? Color.appError : Color.appPrimary)
+            .foregroundStyle(failed ? Color.appError : Color.appPrimaryText)
             .padding(.horizontal, 12).frame(minHeight: 36)
             .background(failed ? Color.clear : Color.appPrimary.opacity(0.12), in: Capsule())
             .overlay(Capsule().strokeBorder(failed ? Color.appError : Color.clear))
@@ -326,7 +326,7 @@ struct DraftQueueView: View {
                     if let reader = d.reader { ReaderBadge(reader: reader) }
                 }
                 if let why = d.fallbackReason {
-                    Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                    Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
                 }
                 if canRescan(d) { rescanButton(d) }
             }

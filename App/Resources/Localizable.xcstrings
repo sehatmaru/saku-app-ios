@@ -9033,6 +9033,16 @@
         }
       }
     },
+    "Jatah AI belum bisa dimuat. Periksa koneksi lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI allowance could not load. Check your connection and try again."
+          }
+        }
+      }
+    },
     "Jatah AI bulan ini": {
       "localizations": {
         "en": {
@@ -12119,6 +12129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Loading"
+          }
+        }
+      }
+    },
+    "Memuat jatah AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading AI allowance"
           }
         }
       }

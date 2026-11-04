@@ -31,11 +31,18 @@ struct AIQuotaReading: Equatable, Decodable {
 final class AIQuotaStore: ObservableObject {
     static let shared = AIQuotaStore()
     @Published private(set) var quota: AIQuotaReading?
+    /// The last refresh failed and there is nothing to show yet (offline, or the quota migration not run).
+    @Published private(set) var failed = false
 
     func refresh() async {
-        guard !DraftStore.shared.isGuest else { quota = nil; return }
-        if let fresh: AIQuotaReading = try? await SupabaseSDK.client.rpc("ai_quota").execute().value { quota = fresh }
+        guard !DraftStore.shared.isGuest else { quota = nil; failed = false; return }
+        if let fresh: AIQuotaReading = try? await SupabaseSDK.client.rpc("ai_quota").execute().value {
+            quota = fresh
+            failed = false
+        } else {
+            failed = quota == nil
+        }
     }
 
-    func reset() { quota = nil }
+    func reset() { quota = nil; failed = false }
 }

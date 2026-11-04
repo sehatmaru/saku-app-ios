@@ -1513,5 +1513,7 @@
   "Hadiah masuk saat temanmu mencatat transaksi pertama. Maksimal +40 untuk selamanya.": "Rewards arrive when your friend records a first transaction. Maximum +40, for good.",
   "Begitu temanmu mencatat transaksi pertamanya, +10 bantuan AI langsung masuk ke akunmu, dan temanmu juga dapat +10.": "As soon as your friend records their first transaction, +10 AI help goes into your account, and your friend gets +10 too.",
   "+10 bantuan AI per teman, maksimal +40. Bonusnya tidak hilang tiap bulan.": "+10 AI help per friend, up to +40. The bonus does not reset each month.",
-  "Dapat +10 bantuan AI per teman": "Get +10 AI help per friend"
+  "Dapat +10 bantuan AI per teman": "Get +10 AI help per friend",
+  "Jatah AI belum bisa dimuat. Periksa koneksi lalu coba lagi.": "AI allowance could not load. Check your connection and try again.",
+  "Memuat jatah AI": "Loading AI allowance"
 }

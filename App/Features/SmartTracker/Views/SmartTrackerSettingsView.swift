@@ -24,7 +24,7 @@ struct SmartTrackerSettingsView: View {
                         if isGuest {
                             Image(systemName: "lock").font(.system(size: 17)).foregroundStyle(Color.appTextTertiary).frame(width: 44, height: 44)
                         } else {
-                            Toggle("", isOn: Binding(get: { aiOn }, set: { setAI($0) })).labelsHidden().tint(Color.stGreen)
+                            Toggle(SmartWay.ai.title, isOn: Binding(get: { aiOn }, set: { setAI($0) })).labelsHidden().tint(Color.stGreen)
                         }
                     }
                     separator
@@ -32,7 +32,7 @@ struct SmartTrackerSettingsView: View {
                         wayRow(.notification, L("Ubah notifikasi bank jadi draf")) {
                             HStack(spacing: 6) {
                                 if !plus.isPlus {
-                                    Text(verbatim: "Plus").font(.app(11, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                                    Text(verbatim: "Plus").font(.app(11, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
                                         .padding(.horizontal, 8).padding(.vertical, 2).background(Color.appPrimary.opacity(0.12), in: Capsule())
                                 }
                                 Text(!NotificationTrigger.isAvailable ? L("Butuh iOS 27") : (store.connectedApps.isEmpty ? L("Atur") : L("%lld aplikasi", store.connectedApps.count)))
@@ -44,13 +44,19 @@ struct SmartTrackerSettingsView: View {
                     .buttonStyle(.plain)
                     separator
                     wayRow(.siri, L("Catat lewat perintah suara Siri")) {
-                        Toggle("", isOn: Binding(get: { siri }, set: { siri = $0; SmartTrackerWays.siri = $0 })).labelsHidden().tint(Color.stGreen)
+                        Toggle(SmartWay.siri.title, isOn: Binding(get: { siri }, set: { siri = $0; SmartTrackerWays.siri = $0 })).labelsHidden().tint(Color.stGreen)
                     }
                 }
                 .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal, 24).padding(.top, 12).stEnter(0)
 
-                if !isGuest, let quota = quotaStore.quota { quotaCard(quota).padding(.horizontal, 24).padding(.top, 16).stEnter(1) }
+                if !isGuest {
+                    if let quota = quotaStore.quota {
+                        quotaCard(quota).padding(.horizontal, 24).padding(.top, 16).stEnter(1)
+                    } else {
+                        quotaPlaceholder.padding(.horizontal, 24).padding(.top, 16)
+                    }
+                }
 
                 caption(L("Privasi")).stEnter(2)
                 NavigationLink(destination: SmartTrackerPrivacyView().detailPage()) {
@@ -58,7 +64,7 @@ struct SmartTrackerSettingsView: View {
                         Image(systemName: "checkmark.shield").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).frame(width: 32)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(L("Cara data diproses")).font(.app(16)).foregroundStyle(Color.appText)
-                            Text(L("Apa yang dikirim, dibuang, dan disimpan")).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                            Text(L("Apa yang dikirim, dibuang, dan disimpan")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
                         }
                         Spacer(minLength: 8)
                         chevron
@@ -97,7 +103,7 @@ struct SmartTrackerSettingsView: View {
             HStack {
                 Text(L("Jatah AI bulan ini")).font(.app(15, weight: .semibold))
                 Spacer()
-                if !quota.isPlus { Text(L("Reset %@", Self.resetFormat.string(from: AIQuotaReading.resetDate))).font(.app(12)).foregroundStyle(Color.appTextTertiary) }
+                if !quota.isPlus { Text(L("Reset %@", Self.resetFormat.string(from: AIQuotaReading.resetDate))).font(.app(12)).foregroundStyle(Color.appTextSecondary) }
             }
             if quota.isPlus {
                 Text(L("Tanpa batas")).font(.app(28, weight: .bold)).foregroundStyle(Color.appPrimary)
@@ -125,7 +131,26 @@ struct SmartTrackerSettingsView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-        .opacity(aiOn || quota.isPlus ? 1 : 0.6)
+    }
+
+    /// Loading and failed states of the allowance card: say which one it is, and offer the retry.
+    private var quotaPlaceholder: some View {
+        HStack(spacing: 10) {
+            if quotaStore.failed {
+                Text(L("Jatah AI belum bisa dimuat. Periksa koneksi lalu coba lagi.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Spacer(minLength: 8)
+                Button { Task { await quotaStore.refresh() } } label: {
+                    Text(L("Coba lagi")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText).frame(minHeight: 44)
+                }
+            } else {
+                ProgressView().controlSize(.small)
+                Text(L("Memuat jatah AI")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var aiDetail: String {
@@ -162,7 +187,7 @@ struct SmartTrackerSettingsView: View {
                 .frame(width: 32, height: 32).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 1) {
                 Text(L(way.title)).font(.app(16)).foregroundStyle(Color.appText)
-                Text(L(detail)).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                Text(L(detail)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
             }
             Spacer(minLength: 8)
             trailing()
