@@ -9,23 +9,8 @@ enum ShareInbox {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup)?.appendingPathComponent("share-inbox.json")
     }
 
-    /// The "Bagikan teks" switch in Profil, kept in the App Group so the extension can read it.
-    static var isEnabled: Bool {
-        UserDefaults(suiteName: appGroup)?.object(forKey: "shareEnabled") as? Bool ?? true
-    }
-
-    static func setEnabled(_ on: Bool) {
-        UserDefaults(suiteName: appGroup)?.set(on, forKey: "shareEnabled")
-    }
-
     /// Text read from a shared picture starts with this mark; the picture itself is never stored.
     static let photoMark = "\u{1}photo\u{1}"
-
-    /// The short agreement for reading pictures, kept in the App Group so the extension can check it.
-    static var isImageAgreed: Bool {
-        get { UserDefaults(suiteName: appGroup)?.bool(forKey: "imageAgreed") ?? false }
-        set { UserDefaults(suiteName: appGroup)?.set(newValue, forKey: "imageAgreed") }
-    }
 
     /// Whether the account has Saku Plus, mirrored by the app so the extension can refuse pictures (Plus) without a network call.
     static var isPlus: Bool {

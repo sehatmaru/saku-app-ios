@@ -449,11 +449,10 @@ struct SetupBudgetStep: View {
 /// Where the notification permission stands in the step.
 enum SetupNotificationState { case idle, allowed, denied }
 
-/// Smart Tracker and notifications: two separate switches, each with a plain reason, both optional.
+/// AI for Smart Tracker and notifications: two separate switches, each with a plain reason, both optional.
 struct SetupTrackingStep: View {
     var isGuest: Bool
     @Binding var tracker: Bool
-    @Binding var memorySync: Bool
     @Binding var notification: SetupNotificationState
     @State private var showsConsent = false
     @State private var bellTurn = 0
@@ -466,9 +465,10 @@ struct SetupTrackingStep: View {
                     .padding(.top, 20)
 
                 VStack(spacing: 0) {
-                    row(icon: "sparkles", title: L("Smart Tracker"),
-                        text: L("Catat otomatis dari notifikasi bank dan e-wallet. Kamu tetap yang mengonfirmasi."),
+                    row(icon: "sparkles", title: "AI",
+                        text: isGuest ? L("Daftar untuk memakai AI") : L("Baca teks, suara, dan gambar dengan AI. Kamu tetap yang mengonfirmasi."),
                         isOn: Binding(get: { tracker }, set: { toggleTracker($0) }), delay: 0.1)
+                        .disabled(isGuest)
                     Divider().overlay(Color.appDivider)
                     row(icon: "bell", title: L("Notifikasi"), text: notificationText,
                         isOn: Binding(get: { notification == .allowed }, set: { toggleNotification($0) }), delay: 0.2)
@@ -486,10 +486,10 @@ struct SetupTrackingStep: View {
         .scrollIndicators(.hidden)
         .task { await readNotificationStatus() }
         .sheet(isPresented: $showsConsent) {
-            SetupTrackerConsentSheet(isGuest: isGuest, memorySync: $memorySync) {
+            SmartTrackerConsentSheet(profileId: nil, onAgree: {
                 tracker = true
                 showsConsent = false
-            } onCancel: { showsConsent = false }
+            }, isPreview: true)
         }
     }
 
@@ -519,7 +519,7 @@ struct SetupTrackingStep: View {
     }
 
     private func toggleTracker(_ on: Bool) {
-        if on { showsConsent = true } else { tracker = false; memorySync = false }
+        if on { showsConsent = true } else { tracker = false }
     }
 
     private func toggleNotification(_ on: Bool) {
@@ -631,67 +631,6 @@ private struct BellMotion: ViewModifier {
             return v0 + (v1 - v0) * (t - t0) / (t1 - t0)
         }
         return 0
-    }
-}
-
-/// "Aktifkan Smart Tracker": what is read, what is kept, and the optional Ingatan on the server.
-struct SetupTrackerConsentSheet: View {
-    var isGuest: Bool
-    @Binding var memorySync: Bool
-    var onAgree: () -> Void
-    var onCancel: () -> Void
-    @State private var shown = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Aktifkan Smart Tracker").font(.app(24, weight: .bold))
-            block(icon: "eye", title: "YANG DIBACA",
-                  text: L("Teks notifikasi dari aplikasi bank dan e-wallet yang kamu pilih: nominal, nama toko, dan waktu."), delay: 0.1)
-                .padding(.top, 20)
-            block(icon: "checkmark", title: "YANG DISIMPAN",
-                  text: L("Hanya transaksi yang kamu konfirmasi. Isi notifikasi lain tidak disimpan dan tidak dikirim."), delay: 0.18)
-                .padding(.top, 16)
-            if isGuest {
-                Text("Sebagai tamu, semua data tetap di iPhone ini. Ingatan di server tersedia setelah kamu masuk.")
-                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                    .padding(.top, 18)
-            } else {
-                HStack(spacing: 14) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Simpan Ingatan di server").font(.app(15, weight: .semibold))
-                        Text("Kebiasaan kategori dan toko supaya tebakan makin pas. Opsional.")
-                            .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(1.5)
-                    }
-                    Spacer(minLength: 8)
-                    Toggle("", isOn: $memorySync).labelsHidden().tint(.appPrimary)
-                }
-                .padding(.horizontal, 16).padding(.vertical, 14)
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.top, 18)
-                .rise(shown, y: 12, delay: 0.26)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .padding(.bottom, 12)
-        .filterSheet {
-            SmartSheetFooter(primary: L("Setuju dan aktifkan"), secondary: L("Batal"), onPrimary: { onAgree() }) { onCancel() }
-        }
-        .background(Color.appBackground)
-
-        .onAppear { shown = true }
-    }
-
-    private func block(icon: String, title: String, text: String, delay: Double) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icon).font(.system(size: 16, weight: .semibold))
-                .frame(width: 36, height: 36).background(Color.appFill, in: Circle())
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                Text(text).font(.app(15)).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .rise(shown, y: 12, delay: delay)
     }
 }
 

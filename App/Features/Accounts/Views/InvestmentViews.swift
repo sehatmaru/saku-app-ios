@@ -467,9 +467,6 @@ struct UpdateValueView: View {
     @State private var showsCamera = false
     @State private var showsLibrary = false
     @State private var pickedPhoto: PhotosPickerItem?
-    @State private var showsImageConsent = false
-    @State private var showsTrackerConsent = false
-    @State private var afterConsent: (() -> Void)?
     @State private var cameraOff = false
     @State private var chosenCandidate: InvestmentValueReader.Candidate?
 
@@ -515,22 +512,6 @@ struct UpdateValueView: View {
             Text("Saku belum boleh memakai kamera. Kamu masih bisa memilih gambar dari Galeri atau mengetik nilainya.")
         }
         .sheet(isPresented: $showsSource) { sourceSheet }
-        .sheet(isPresented: $showsImageConsent) {
-            ImageConsentSheet(profileId: SupabaseSDK.client.auth.currentUser?.id) {
-                afterConsent?()
-                afterConsent = nil
-            } onDetails: {
-                showsImageConsent = false
-                showsTrackerConsent = true
-            }
-        }
-        .sheet(isPresented: $showsTrackerConsent) {
-            SmartTrackerConsentSheet(profileId: SupabaseSDK.client.auth.currentUser?.id) {
-                showsTrackerConsent = false
-                afterConsent?()
-                afterConsent = nil
-            }
-        }
         .sheet(isPresented: Binding(
             get: { if case .candidates = imageStep { return true } else { return false } },
             set: { if !$0, case .candidates = imageStep { imageStep = .none } }
@@ -705,7 +686,6 @@ struct UpdateValueView: View {
         }
         Task {
             try? await Task.sleep(for: .milliseconds(450)) // the sheet is closing
-            guard SmartTrackerImageConsent.isGranted else { afterConsent = go; showsImageConsent = true; return }
             go()
         }
     }

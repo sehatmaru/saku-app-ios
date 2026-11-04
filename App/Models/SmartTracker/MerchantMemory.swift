@@ -68,39 +68,25 @@ enum MerchantMemory {
     }
 }
 
-/// Per-device switches for each way of recording (Profil › Smart Tracker). The agreement itself is per account.
-/// Mirrored into the App Group so the share extension can honour its switch.
+/// Per-device switch for Siri (Profil › Smart Tracker). Typing, voice, pictures and sharing are always on.
 enum SmartTrackerWays {
-    static let quickKey = "smartWayQuick"
-    static let shareKey = "smartWayShare"
     static let siriKey = "smartWaySiri"
 
-    static var quick: Bool {
-        get { UserDefaults.standard.object(forKey: quickKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: quickKey) }
-    }
-    static var share: Bool {
-        get { UserDefaults.standard.object(forKey: shareKey) as? Bool ?? true }
-        set {
-            UserDefaults.standard.set(newValue, forKey: shareKey)
-            ShareInbox.setEnabled(newValue)
-        }
-    }
     static var siri: Bool {
         get { UserDefaults.standard.object(forKey: siriKey) as? Bool ?? false }
         set { UserDefaults.standard.set(newValue, forKey: siriKey) }
     }
 }
 
-/// Whether this account agreed to Smart Tracker reading sentences, notifications and shared text.
-/// The profile row is the source of truth (per account, every device); `SupabaseSDK` mirrors it here so
-/// Siri, Shortcuts and the share extension can check it without a network call. Cleared on sign-out.
+/// Whether this account agreed to the language model (AI) reading what it types, says, shares or receives.
+/// Smart Tracker itself is always on; this is the AI switch. The profile row is the source of truth (per account,
+/// every device); `SupabaseSDK` mirrors it here so the app can check it without a network call. Cleared on sign-out.
 enum SmartTrackerConsent {
     static let key = "smartTrackerConsent"
-
     static let sinceKey = "smartTrackerConsentSince"
+    /// The one-time AI sheet was shown (agreed or "Nanti saja"); existing users see it once.
+    static let promptSeenKey = "smartTrackerAIPromptSeen"
 
-    /// When the user agreed, for "Aktif sejak".
     static var since: Date? {
         get { UserDefaults.standard.object(forKey: sinceKey) as? Date }
         set { UserDefaults.standard.set(newValue, forKey: sinceKey) }
@@ -108,43 +94,17 @@ enum SmartTrackerConsent {
 
     static var isGranted: Bool {
         get { UserDefaults.standard.bool(forKey: key) }
-        set {
-            UserDefaults.standard.set(newValue, forKey: key)
-            // withdrawing the agreement also switches reading pictures off
-            if !newValue { ShareInbox.isImageAgreed = false }
-        }
-    }
-}
-
-/// The short one-time agreement for reading pictures (kamera, galeri, Bagikan). Only counts while Smart Tracker is agreed.
-enum SmartTrackerImageConsent {
-    static var isGranted: Bool {
-        get { SmartTrackerConsent.isGranted && ShareInbox.isImageAgreed }
-        set { ShareInbox.isImageAgreed = newValue }
-    }
-}
-
-/// Whether this account agreed to keeping Ingatan on the server so it follows the user to every device.
-/// The profile row is the source of truth (`smart_tracker_memory_consent_at`); mirrored here like `SmartTrackerConsent`.
-/// Guests never sync, whatever this says.
-enum SmartTrackerMemorySync {
-    static let key = "smartTrackerMemorySync"
-    static let declinedKey = "smartTrackerMemorySyncDeclinedAt"
-
-    static var isGranted: Bool {
-        get { UserDefaults.standard.bool(forKey: key) }
         set { UserDefaults.standard.set(newValue, forKey: key) }
     }
 
-    /// "Nanti saja" was chosen at this moment; asked again after a week.
-    static var declinedAt: Date? {
-        get { UserDefaults.standard.object(forKey: declinedKey) as? Date }
-        set { UserDefaults.standard.set(newValue, forKey: declinedKey) }
+    static var promptSeen: Bool {
+        get { UserDefaults.standard.bool(forKey: promptSeenKey) }
+        set { UserDefaults.standard.set(newValue, forKey: promptSeenKey) }
     }
+}
 
-    static var shouldAsk: Bool {
-        guard !isGranted else { return false }
-        guard let declinedAt else { return true }
-        return Date().timeIntervalSince(declinedAt) > 7 * 86_400
-    }
+/// Ingatan on the server follows the AI switch: synced while AI is on, paused (server data kept) while it is off.
+/// Guests never sync, whatever this says.
+enum SmartTrackerMemorySync {
+    static var isGranted: Bool { SmartTrackerConsent.isGranted }
 }

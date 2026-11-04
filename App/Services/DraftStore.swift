@@ -295,16 +295,13 @@ final class DraftStore: ObservableObject {
     /// Text shared from other apps becomes drafts; the inbox is emptied so the raw text is not kept.
     func ingestSharedText() {
         purgeExpired()
-        // not agreed yet: the shared text waits in the inbox until the user is asked
-        guard SmartTrackerConsent.isGranted else { return }
-        guard SmartTrackerWays.share else { _ = ShareInbox.drain(); return }
         let texts = ShareInbox.drain()
         guard !texts.isEmpty else { return }
         var hard: [String] = []
         let added = texts.flatMap { text -> [Draft] in
             guard text.hasPrefix(ShareInbox.photoMark) else { return SmartParser.parse(text, source: .share, context: context) }
             // text read from a shared picture (the picture itself never reached the app)
-            guard SmartTrackerImageConsent.isGranted, PlusStore.cachedIsPlus else { return [] }
+            guard PlusStore.cachedIsPlus else { return [] }
             let lines = text.dropFirst(ShareInbox.photoMark.count).components(separatedBy: "\n")
             let drafts = ImageParser.parse(lines: lines, context: context).drafts
             // a hard picture: the rules read nothing, so the language model gets the text (Saku Plus only, so no allowance to check)

@@ -40,7 +40,6 @@ struct SetupOnboardingView: View {
     @State private var budgets: [String: Double] = [:]
     @State private var focusedBudget: String?
     @State private var trackerOn = false
-    @State private var memorySync = false
     @State private var notification: SetupNotificationState = .idle
     @State private var joinsPlus = false
     @State private var phase: Phase = .steps
@@ -74,7 +73,6 @@ struct SetupOnboardingView: View {
             paydayDay: payday,
             budgets: budgets.filter { selectedCategories.contains($0.key) && $0.value > 0 },
             smartTrackerConsent: trackerOn,
-            memorySync: trackerOn && memorySync && !isGuest,
             joinsPlus: joinsPlus && !isGuest
         )
     }
@@ -101,7 +99,7 @@ struct SetupOnboardingView: View {
                     case 3: balanceStep
                     case 4: categoryStep
                     case 5: SetupBudgetStep(categories: budgetCategories, amounts: $budgets, focused: $focusedBudget)
-                    case 6: SetupTrackingStep(isGuest: isGuest, tracker: $trackerOn, memorySync: $memorySync, notification: $notification)
+                    case 6: SetupTrackingStep(isGuest: isGuest, tracker: $trackerOn, notification: $notification)
                     case 7: SetupPaydayStep(payday: $payday)
                     default: SetupPlusStep()
                     }

@@ -7,7 +7,7 @@ final class HomePreview: ObservableObject {
     static let shared = HomePreview()
 
     enum Kind: String, CaseIterable, Identifiable {
-        case overdue, overdueMany, grace, trial2, trial1, guest, guestClosed, smart, noWallet, errorBanner, errorFull
+        case overdue, overdueMany, grace, trial2, trial1, guest, guestClosed, noWallet, errorBanner, errorFull
         var id: String { rawValue }
 
         var title: String {
@@ -19,7 +19,6 @@ final class HomePreview: ObservableObject {
             case .trial1: "Plus: trial besok"
             case .guest: "Simpan akun tamu"
             case .guestClosed: "Catatan kartu tamu ditutup"
-            case .smart: "Coba Smart Tracker"
             case .noWallet: "Tambah dompet pertama"
             case .errorBanner: "Banner error"
             case .errorFull: "Layar error penuh"

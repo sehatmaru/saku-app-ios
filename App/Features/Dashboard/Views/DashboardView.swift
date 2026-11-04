@@ -10,11 +10,9 @@ struct DashboardView: View {
     }
     @State private var isBalanceVisible = true
     @State private var showAddSheet = false
-@AppStorage(SmartTrackerWays.quickKey) private var smartQuickOn = true
 @StateObject private var tabAvatar = TabAvatarCache()
 @ObservedObject private var draftStore = DraftStore.shared
-@State private var showsConsent = false
-@State private var showsImageConsent = false
+@State private var showsAIConsent = false
 @ObservedObject private var plusStore = PlusStore.shared
 /// Test builds can show any Beranda card or banner on demand.
 @ObservedObject private var homePreview = HomePreview.shared
@@ -36,8 +34,6 @@ struct DashboardView: View {
     @AppStorage("plusBannersClosed") private var plusBannersClosed = ""
     @AppStorage(GuestCardPolicy.countKey) private var guestDismissCount = 0
     @AppStorage(GuestCardPolicy.untilKey) private var guestHiddenUntil = 0.0
-    @AppStorage(SmartTrackerConsent.key) private var smartConsented = false
-    @AppStorage("smartTrackerCardDismissed") private var smartCardDismissed = false
     /// Catat tagihan for an overdue card bill, from the banner or a notification.
     /// Kept as the bill it was opened with, so the sheet survives the reload after paying.
     @State private var recordCard: OverdueCardBill?
@@ -102,10 +98,9 @@ struct DashboardView: View {
         }
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
         .onChange(of: notificationRouter.opensDrafts) { _, _ in openDraftsIfRequested() }
-        .onChange(of: notificationRouter.opensImageConsent) { _, _ in openImageConsentIfRequested() }
         .onChange(of: notificationRouter.pendingInvestmentId) { _, id in if id != nil { openWalletsPage() } }
         .overlay {
-            if selectedTab != .home || homePath.isEmpty, viewModel.hasLoadedOnce, smartQuickOn, let userId = authViewModel.currentUser?.id {
+            if selectedTab != .home || homePath.isEmpty, viewModel.hasLoadedOnce, let userId = authViewModel.currentUser?.id {
                 // the gate is watched inside, so a page opening or closing does not re-run this whole screen
                 SmartButtonGated {
                     SmartTrackerHomeOverlay(userId: userId, isFresh: viewModel.recentTransactions.isEmpty, onOpenQueue: { openDraftsPage() }) { text in
@@ -115,22 +110,10 @@ struct DashboardView: View {
                 }
             }
         }
-        .onAppear { openDraftsIfRequested(); openImageConsentIfRequested(); askConsentForSharedText(); announceReferralReward() }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in askConsentForSharedText(); announceReferralReward() }
-        .sheet(isPresented: $showsImageConsent) {
-            ImageConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) {
-                showsImageConsent = false
-            } onDetails: {
-                showsImageConsent = false
-                showsConsent = true
-            }
-        }
-        .sheet(isPresented: $showsConsent) {
-            SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) {
-                showsConsent = false
-                DraftStore.shared.ingestSharedText()
-                openDraftsPage()
-            }
+        .onAppear { openDraftsIfRequested(); askAIConsentOnce(); announceReferralReward() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in announceReferralReward() }
+        .sheet(isPresented: $showsAIConsent) {
+            SmartTrackerConsentSheet(profileId: authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) }) { showsAIConsent = false }
         }
         .onAppear { showsTrialEnded = plusStore.trialEndedSummaryDue }
         .onChange(of: plusStore.entitlement) { _, _ in showsTrialEnded = plusStore.trialEndedSummaryDue }
@@ -176,17 +159,10 @@ struct DashboardView: View {
         }
     }
 
-    /// Text was shared to Saku before the user agreed to Smart Tracker: ask now, then read it.
-    private func askConsentForSharedText() {
-        guard !SmartTrackerConsent.isGranted, ShareInbox.hasItems, authViewModel.isAuthenticated else { return }
-        showsConsent = true
-    }
-
-    /// Tapping "setujui baca gambar" from the share extension: the agreement sheet opens right away.
-    private func openImageConsentIfRequested() {
-        guard notificationRouter.opensImageConsent else { return }
-        notificationRouter.opensImageConsent = false
-        showsImageConsent = true
+    /// The AI agreement is asked once per person (accounts only; guests cannot turn AI on).
+    private func askAIConsentOnce() {
+        guard !SmartTrackerConsent.promptSeen, authViewModel.isAuthenticated, authViewModel.currentUser?.isGuest != true else { return }
+        showsAIConsent = true
     }
 
     /// Tapping the "new drafts" notification: read what was shared, then show Konfirmasi transaksi.
@@ -197,9 +173,8 @@ struct DashboardView: View {
         openDraftsPage()
     }
 
-    /// "Catat pengeluaran pertamamu": the Smart Tracker bar when it is on, the add form when it is not.
+    /// "Catat pengeluaran pertamamu": opens the Smart Tracker bar.
     private func openFirstEntry() {
-        guard SmartTrackerConsent.isGranted, smartQuickOn else { showAddSheet = true; return }
         selectedTab = .home
         if viewModel.hasLoadedOnce {
             NotificationCenter.default.post(name: .openSmartTrackerBar, object: nil)
@@ -533,9 +508,9 @@ struct DashboardView: View {
 
     // MARK: Attention
 
-    private enum Attention { case plus, guest, smart }
+    private enum Attention { case plus, guest }
 
-    /// One card at a time under the hero: Saku Plus or trial, saving a guest account, then trying Smart Tracker.
+    /// One card at a time under the hero: Saku Plus or trial, or saving a guest account.
     /// The card bill alert above the hero is its own thing and does not count.
     private var attention: Attention? {
         let closed = Set(plusBannersClosed.split(separator: "|").map(String.init))
@@ -546,14 +521,12 @@ struct DashboardView: View {
             signedUpAt: SupabaseSDK.client.auth.currentUser?.createdAt,
             dismissCount: guestDismissCount,
             hiddenUntil: guestHiddenUntil > 0 ? Date(timeIntervalSince1970: guestHiddenUntil) : nil) { return .guest }
-        if !smartConsented, !smartCardDismissed, authViewModel.currentUser != nil { return .smart }
         return nil
     }
 
     @ViewBuilder private var attentionSlot: some View {
-        if let kind = homePreview.kind, [.grace, .trial2, .trial1, .guest, .guestClosed, .smart].contains(kind) {
+        if let kind = homePreview.kind, [.grace, .trial2, .trial1, .guest, .guestClosed].contains(kind) {
             switch kind {
-            case .smart: TrySmartTrackerCard(isForced: true)
             case .guest, .guestClosed: GuestSaveCard(transactionCount: 0, preview: kind)
             default: PlusBannerView(preview: homePreview.plusBanner)
             }
@@ -566,7 +539,6 @@ struct DashboardView: View {
         switch attention {
         case .plus: PlusBannerView()
         case .guest: GuestSaveCard(transactionCount: viewModel.currentMonthTransactionCount)
-        case .smart: TrySmartTrackerCard()
         case nil: EmptyView()
         }
     }

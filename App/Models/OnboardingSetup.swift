@@ -18,10 +18,8 @@ struct OnboardingSetup {
     var paydayDay: Int?
     /// Monthly budget per expense category, by `systemKey`; only the ones the user gave an amount.
     var budgets: [String: Double] = [:]
-    /// Agreed to Smart Tracker in step 6; recorded on the account once it exists.
+    /// Agreed to AI for Smart Tracker in step 6; recorded on the account once it exists.
     var smartTrackerConsent = false
-    /// Also keep Ingatan on the server (real accounts only).
-    var memorySync = false
     /// Chose "Coba 7 hari" in step 8 (real accounts only).
     var joinsPlus = false
 }

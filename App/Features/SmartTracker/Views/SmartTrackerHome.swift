@@ -10,13 +10,10 @@ struct SmartTrackerHomeOverlay: View {
     var onOpenQueue: () -> Void
     var onToast: (String) -> Void
     @ObservedObject private var store = DraftStore.shared
-    @AppStorage(SmartTrackerConsent.key) private var consented = false
     /// The tip over the button is shown until the button is first tapped, then never again.
     @AppStorage("smartTrackerTipSeen") private var tipSeen = false
     @State private var isOpen = false
     @State private var text = ""
-    @State private var showsConsent = false
-    @State private var showsMemoryConsent = false
     @State private var showsVoice = false
     @State private var showsCamera = false
     @State private var showsLibrary = false
@@ -24,7 +21,6 @@ struct SmartTrackerHomeOverlay: View {
 @State private var afterOffer: QuickInput?
     @ObservedObject private var plus = PlusStore.shared
     @State private var pickedPhoto: PhotosPickerItem?
-    @State private var showsImageConsent = false
     /// The picture being read, shown small in the bar. Memory only; dropped when reading ends.
     @State private var thumbnail: UIImage?
     @State private var notice: ImageNotice?
@@ -35,8 +31,6 @@ struct SmartTrackerHomeOverlay: View {
     @State private var retryHint = false
     @State private var isThinking = false
     @FocusState private var focused: Bool
-    /// What to do after the agreement: open the bar, or start listening.
-    @State private var afterConsent: (() -> Void)?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -54,23 +48,6 @@ struct SmartTrackerHomeOverlay: View {
             if SmartButtonGate.shared.opensBarOnShow {
                 SmartButtonGate.shared.opensBarOnShow = false
                 open()
-            }
-        }
-        .sheet(isPresented: $showsConsent) {
-            SmartTrackerConsentSheet(profileId: UUID(uuidString: userId)) {
-                showsConsent = false
-                afterConsent?()
-                afterConsent = nil
-            }
-        }
-        .sheet(isPresented: $showsMemoryConsent) { MemorySyncConsentSheet(profileId: UUID(uuidString: userId)) }
-        .sheet(isPresented: $showsImageConsent) {
-            ImageConsentSheet(profileId: UUID(uuidString: userId)) {
-                afterConsent?()
-                afterConsent = nil
-            } onDetails: {
-                showsImageConsent = false
-                showsConsent = true
             }
         }
         .fullScreenCover(isPresented: $showsCamera) { CameraPicker { read(imageData: $0) }.ignoresSafeArea() }
@@ -356,11 +333,8 @@ struct SmartTrackerHomeOverlay: View {
 
     private func open() {
         tipSeen = true
-        guard consented else { afterConsent = { isOpen = true; focused = true }; showsConsent = true; return }
         isOpen = true
         focused = true
-        // agreed to Smart Tracker before Ingatan could live on the server: ask about that once
-        if SmartTrackerMemorySync.shouldAsk, !store.isGuest { showsMemoryConsent = true }
     }
 
     private func close() {
@@ -384,27 +358,21 @@ struct SmartTrackerHomeOverlay: View {
 
     private func startVoice() {
         tipSeen = true
-        guard consented else { afterConsent = { showsVoice = true }; showsConsent = true; return }
         focused = false
         showsVoice = true
     }
 
-    /// Camera or gallery. Needs the short agreement for pictures (asked once); when Smart Tracker is
-    /// not on yet, that same sheet switches it on ("Setuju dan aktifkan", design "Sheet persetujuan gambar").
+    /// Camera or gallery; the picture is read on the device.
     private func startImage(camera: Bool) {
         tipSeen = true
         // Reading a photo is a Saku Plus feature (US9).
         guard plus.isPlus else { plusReason = .receiptPhoto; return }
-        let go = {
-            guard !camera || CameraPicker.isAllowed else {
-                notice = .cameraOff
-                return
-            }
-            focused = false
-            if camera { showsCamera = true } else { showsLibrary = true }
+        guard !camera || CameraPicker.isAllowed else {
+            notice = .cameraOff
+            return
         }
-        guard SmartTrackerImageConsent.isGranted else { afterConsent = go; showsImageConsent = true; return }
-        go()
+        focused = false
+        if camera { showsCamera = true } else { showsLibrary = true }
     }
 
     /// Reads the picture on the device, then lands in the same result sheet as a sentence. The picture is dropped afterwards.
@@ -454,7 +422,6 @@ struct SmartTrackerHomeOverlay: View {
     private func submit(_ raw: String, source: Draft.Source) {
         let sentence = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sentence.isEmpty else { return }
-        guard consented else { afterConsent = { submit(sentence, source: source) }; showsConsent = true; return }
         text = sentence
         retryHint = false
         focused = false
@@ -533,6 +500,8 @@ struct QuickInput: Identifiable {
 extension Notification.Name {
     /// Asks the Beranda button to open the Catat cepat bar ("Catat sekarang" in an empty Konfirmasi transaksi).
     static let openSmartTrackerBar = Notification.Name("openSmartTrackerBar")
+    /// "Catat pengeluaran pertamamu" on the welcome screen: Beranda opens where the first entry is made.
+    static let openFirstEntry = Notification.Name("openFirstEntry")
 }
 
 /// Pages that cover the bottom of the screen (Konfirmasi transaksi, its sheets, Smart Tracker settings) hide the

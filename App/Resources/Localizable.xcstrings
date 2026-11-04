@@ -1873,6 +1873,16 @@
         }
       }
     },
+    "Aktifkan AI untuk Smart Tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on AI for Smart Tracker"
+          }
+        }
+      }
+    },
     "Aktifkan Smart Tracker": {
       "localizations": {
         "en": {
@@ -2183,6 +2193,46 @@
         }
       }
     },
+    "Apa yang dibuang di perangkat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is removed on your device"
+          }
+        }
+      }
+    },
+    "Apa yang dikirim": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is sent"
+          }
+        }
+      }
+    },
+    "Apa yang dikirim, dibuang, dan disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is sent, removed, and stored"
+          }
+        }
+      }
+    },
+    "Apa yang disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is stored"
+          }
+        }
+      }
+    },
     "Aplikasi yang didukung: %@. Draf dari notifikasi selalu masuk ke Konfirmasi transaksi; teks notifikasi tidak disimpan.": {
       "localizations": {
         "en": {
@@ -2369,6 +2419,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Read and agree"
+          }
+        }
+      }
+    },
+    "Baca teks, suara, dan gambar dengan AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read text, voice, and images with AI"
+          }
+        }
+      }
+    },
+    "Baca teks, suara, dan gambar dengan AI. Kamu tetap yang mengonfirmasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read text, voice, and images with AI. You still confirm."
           }
         }
       }
@@ -4423,6 +4493,16 @@
         }
       }
     },
+    "Buka Profil, lalu Hapus akun. Datamu ikut terhapus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Profile, then Delete account. Your data is deleted with it."
+          }
+        }
+      }
+    },
     "Buka Saku dan setujui Catat cepat dulu, lalu coba lagi.": {
       "localizations": {
         "en": {
@@ -4499,6 +4579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Expand stack"
+          }
+        }
+      }
+    },
+    "Bukan gambar mentah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never the raw image"
           }
         }
       }
@@ -4659,6 +4749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ways to record"
+          }
+        }
+      }
+    },
+    "Cara menghapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to delete"
           }
         }
       }
@@ -4869,6 +4969,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Record less"
+          }
+        }
+      }
+    },
+    "Catat lewat perintah suara Siri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log with Siri voice commands"
           }
         }
       }
@@ -5299,6 +5409,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fairly healthy"
+          }
+        }
+      }
+    },
+    "Daftar untuk memakai AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign up to use AI"
           }
         }
       }
@@ -7183,6 +7303,16 @@
         }
       }
     },
+    "Gagal mematikan AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not turn off AI"
+          }
+        }
+      }
+    },
     "Gagal mematikan Smart Tracker": {
       "localizations": {
         "en": {
@@ -7889,6 +8019,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only a marker: it doesn't change Net, budget or card bills."
+          }
+        }
+      }
+    },
+    "Hanya teks yang dikirim, bukan gambar mentah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only text is sent, never the raw image."
+          }
+        }
+      }
+    },
+    "Hanya teks: yang kamu ketik, ucapkan (diubah jadi teks), bagikan, atau baca dari gambar. Teks dikirim ke penyedia model bahasa untuk dibaca AI. Tidak dipakai melatih AI.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text only: what you type, say (turned into text), share, or read from an image. The text goes to a language model provider so AI can read it. It is not used to train AI."
           }
         }
       }
@@ -8939,6 +9089,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "INVITE CODE"
+          }
+        }
+      }
+    },
+    "Kalau Nanti saja, AI mati. Smart Tracker tetap jalan dengan aturan di perangkat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you choose Not now, AI stays off. Smart Tracker still works with on-device rules."
           }
         }
       }
@@ -11543,6 +11703,16 @@
         }
       }
     },
+    "Mati. Dibaca dengan aturan di perangkat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off. Read with on-device rules"
+          }
+        }
+      }
+    },
     "Matikan \"Tanya Sebelum Menjalankan\" jika iOS menawarkannya, lalu ketuk Selesai.": {
       "localizations": {
         "en": {
@@ -12609,6 +12779,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't read the amount"
+          }
+        }
+      }
+    },
+    "Nomor panjang (rekening, kartu) dan kode OTP dibuang di perangkat sebelum dikirim.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Long numbers (accounts, cards) and OTP codes are removed on your device before sending."
+          }
+        }
+      }
+    },
+    "Nomor panjang (rekening, kartu) dan kode OTP dihapus sebelum teks dikirim. Gambar mentah tidak pernah dikirim.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Long numbers (accounts, cards) and OTP codes are removed before the text is sent. Raw images are never sent."
+          }
+        }
+      }
+    },
+    "Nomor panjang dibuang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Long numbers are removed"
           }
         }
       }
@@ -16443,6 +16643,16 @@
         }
       }
     },
+    "Setuju dan aktifkan AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agree and turn on AI"
+          }
+        }
+      }
+    },
     "Setup belum tersimpan": {
       "localizations": {
         "en": {
@@ -18303,6 +18513,16 @@
         }
       }
     },
+    "Teks dikirim ke AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text is sent to AI"
+          }
+        }
+      }
+    },
     "Teks ikon": {
       "localizations": {
         "en": {
@@ -18319,6 +18539,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The notification text from the bank and e-wallet apps you choose: amount, shop name and time."
+          }
+        }
+      }
+    },
+    "Teks yang kamu masukkan dikirim ke penyedia model bahasa.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The text you enter is sent to a language model provider."
           }
         }
       }
@@ -19665,6 +19895,16 @@
         }
       }
     },
+    "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli dihapus begitu draf jadi. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence is deleted as soon as the draft is made. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save."
+          }
+        }
+      }
+    },
     "Transaksi, dompet, dan budget": {
       "localizations": {
         "en": {
@@ -20091,6 +20331,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Change the amount first"
+          }
+        }
+      }
+    },
+    "Ubah notifikasi bank jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn bank notifications into drafts"
           }
         }
       }

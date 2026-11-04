@@ -15,7 +15,7 @@ struct TestMenuView: View {
     private var phase: PlusPhase { plus.entitlement.phase() }
 
     enum PreviewSheet: String, Identifiable {
-        case smart, image, imageNeedsTracker, memory, saveAll
+        case smart, saveAll
         var id: String { rawValue }
     }
 
@@ -51,10 +51,7 @@ struct TestMenuView: View {
 
                 header("Smart Tracker · persetujuan")
                 note("Setuju tidak menyimpan apa pun di sini.")
-                item("Smart Tracker", selected: false) { sheet = .smart }
-                item("Catat dari gambar", selected: false) { sheet = .image }
-                item("Catat dari gambar + catatan Smart Tracker", selected: false) { sheet = .imageNeedsTracker }
-                item("Sinkron Ingatan", selected: false) { sheet = .memory }
+                item("Persetujuan AI", selected: false) { sheet = .smart }
 
                 header("Smart Tracker · konfirmasi")
                 item("Simpan N transaksi", selected: false) { sheet = .saveAll }
@@ -83,9 +80,6 @@ struct TestMenuView: View {
         .sheet(item: $sheet) { item in
             switch item {
             case .smart: SmartTrackerConsentSheet(profileId: nil, onAgree: { sheet = nil }, isPreview: true)
-            case .image: ImageConsentSheet(profileId: nil, onAgree: {}, onDetails: nil, isPreview: true, previewNeedsTracker: false)
-            case .imageNeedsTracker: ImageConsentSheet(profileId: nil, onAgree: {}, onDetails: nil, isPreview: true, previewNeedsTracker: true)
-            case .memory: MemorySyncConsentSheet(profileId: nil, isPreview: true)
             case .saveAll:
                 SmartSheet(tone: .consent, icon: "checkmark.circle", title: L("Simpan %lld transaksi yang lengkap?", 5),
                            message: L("%lld draf yang belum lengkap tetap di daftar supaya bisa kamu cek nanti.", 2)) {

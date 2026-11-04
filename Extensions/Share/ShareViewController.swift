@@ -33,10 +33,6 @@ final class ShareViewController: UIViewController {
     }
 
     private func receive() async {
-        guard ShareInbox.isEnabled else {
-            extensionContext?.completeRequest(returningItems: nil)
-            return
-        }
         let items = (extensionContext?.inputItems as? [NSExtensionItem]) ?? []
         var received = Set<String>()
         var added = 0
@@ -45,15 +41,12 @@ final class ShareViewController: UIViewController {
             // WhatsApp and others hand over the same text as an attachment and as contentText
             if !text.isEmpty, received.insert(text).inserted { ShareInbox.append(text); added += 1 }
         }
-        var imagesRefused = false
         var imagesSeen = 0
         var needsPlus = false
         for provider in items.flatMap({ $0.attachments ?? [] }) {
             if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                 // reading pictures is a Saku Plus feature, like Catat dari gambar in the app
                 guard ShareInbox.isPlus else { needsPlus = true; continue }
-                // the short agreement for pictures is given in the app; until then nothing is read
-                guard ShareInbox.isImageAgreed else { imagesRefused = true; continue }
                 imagesSeen += 1
                 if let data = await imageData(from: provider), let image = ImageReader.downscaled(data) {
                     let lines = await ImageReader.lines(in: image)
@@ -73,12 +66,11 @@ final class ShareViewController: UIViewController {
         // say what happened on screen too: the notification only shows when the app has permission
         let message: String
         if needsPlus && added == 0 { message = "Membaca gambar butuh Saku Plus. Teks tetap bisa dibagikan ke Saku." }
-        else if imagesRefused && added == 0 { message = "Ketuk untuk menyetujui baca gambar, lalu bagikan lagi." }
         else if imagesSeen > 0 && added == 0 { message = "Tidak ada tulisan yang terbaca di gambarnya, jadi belum ada yang masuk ke Konfirmasi transaksi." }
         else if added == 0 { message = "Tidak ada yang bisa dikirim ke Saku." }
         else { message = "Masuk ke Konfirmasi transaksi. Ketuk untuk memeriksa drafnya." }
         label.text = message
-        await announce(message, route: imagesRefused && added == 0 ? "imageConsent" : "drafts")
+        await announce(message, route: "drafts")
         if added == 0 { try? await Task.sleep(for: .seconds(3)) }
         extensionContext?.completeRequest(returningItems: nil)
     }

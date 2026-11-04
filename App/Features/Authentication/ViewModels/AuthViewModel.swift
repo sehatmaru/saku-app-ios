@@ -305,11 +305,9 @@ final class AuthViewModel: ObservableObject {
         let budgetTotal = await createBudgets(setup.budgets, userId: profileId.uuidString)
         if setup.smartTrackerConsent {
             try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
-            if setup.memorySync, !isGuest {
-                try? await SupabaseSDK.recordMemorySyncConsent(profileId: profileId)
-                await DraftStore.shared.syncMemory()
-            }
+            await DraftStore.shared.syncMemory()
         }
+        if !isGuest { SmartTrackerConsent.promptSeen = true }
         var joinedPlus = false
         if setup.joinsPlus, PlusStore.isInternalBuild {
             // Until StoreKit exists the trial starts on the server through the internal test switch, like the paywall.
@@ -369,8 +367,7 @@ final class AuthViewModel: ObservableObject {
         PaydaySetting.shifts = []
         HomeBalanceSetting.mode = nil
         SmartTrackerConsent.isGranted = false
-        SmartTrackerMemorySync.isGranted = false
-        SmartTrackerMemorySync.declinedAt = nil
+        SmartTrackerConsent.promptSeen = false
         DraftStore.shared.reset()
         for key in ["paydayCardDismissed", "hasSeenOnboarding", "memberSince", "billReminderSnoozedUntil"] {
             UserDefaults.standard.removeObject(forKey: key)
@@ -530,8 +527,7 @@ final class AuthViewModel: ObservableObject {
     private func resetLocalAccountState() {
         PaydaySetting.shifts = []
         SmartTrackerConsent.isGranted = false
-        SmartTrackerMemorySync.isGranted = false
-        SmartTrackerMemorySync.declinedAt = nil
+        SmartTrackerConsent.promptSeen = false
         DraftStore.shared.reset()
         PlusStore.shared.reset()
         GuestCardPolicy.resetCounters()

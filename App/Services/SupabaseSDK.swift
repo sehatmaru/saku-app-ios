@@ -18,7 +18,6 @@ enum SupabaseSDK {
         PaydaySetting.day = profile.paydayDay
         HomeBalanceSetting.mode = profile.homeBalanceMode
         await syncSmartTrackerConsent(profile)
-        SmartTrackerMemorySync.isGranted = profile.smartTrackerMemoryConsentAt != nil
         await refreshPaydaySchedule()
         await refreshPaydayShifts()
         await PlusStore.shared.apply(profile)
@@ -96,25 +95,6 @@ enum SupabaseSDK {
     }
 
     // MARK: Ingatan sync
-
-    /// Saves that the user agreed to keeping Ingatan on the server, and mirrors it on the device.
-    static func recordMemorySyncConsent(profileId: UUID) async throws {
-        try await client
-            .from("user_profiles")
-            .update(["smart_tracker_memory_consent_at": AnyJSON.string(ISO8601DateFormatter().string(from: Date()))] as [String: AnyJSON])
-            .eq("id", value: profileId)
-            .execute()
-        SmartTrackerMemorySync.isGranted = true
-    }
-
-    static func revokeMemorySyncConsent(profileId: UUID) async throws {
-        try await client
-            .from("user_profiles")
-            .update(["smart_tracker_memory_consent_at": AnyJSON.null] as [String: AnyJSON])
-            .eq("id", value: profileId)
-            .execute()
-        SmartTrackerMemorySync.isGranted = false
-    }
 
     private struct MemoryRow: Codable {
         let keyword: String
@@ -319,10 +299,8 @@ struct UserProfile: Codable, Identifiable {
     var avatarUrl: String? = nil
     /// "cash" or "all"; nil reads as cash.
     var homeBalanceMode: String? = nil
-    /// When the user agreed to Smart Tracker; nil until then.
+    /// When the user agreed to AI for Smart Tracker; nil until then.
     var smartTrackerConsentAt: String? = nil
-    /// When the user agreed to keeping Ingatan on the server; nil until then.
-    var smartTrackerMemoryConsentAt: String? = nil
     /// When a requested deletion becomes permanent; nil for an account not waiting to be deleted.
     var deletionScheduledFor: String? = nil
     /// Saku Plus: free, trial, active or grace; nil until the server has the columns.
@@ -343,7 +321,6 @@ struct UserProfile: Codable, Identifiable {
         case avatarUrl = "avatar_url"
         case homeBalanceMode = "home_balance_mode"
         case smartTrackerConsentAt = "smart_tracker_consent_at"
-        case smartTrackerMemoryConsentAt = "smart_tracker_memory_consent_at"
         case deletionScheduledFor = "deletion_scheduled_for"
         case plusStatus = "plus_status"
         case plusUntil = "plus_until"

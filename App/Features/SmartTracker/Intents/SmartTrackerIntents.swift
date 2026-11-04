@@ -8,10 +8,7 @@ struct RecordTransactionIntent: AppIntent {
     @Parameter(title: "Teks", requestValueDialog: "Apa yang mau dicatat?")
     var text: String
 
-    static let needsConsent: IntentDialog = "Buka Saku dan setujui Catat cepat dulu, lalu coba lagi."
-
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard SmartTrackerConsent.isGranted else { return .result(dialog: Self.needsConsent) }
         guard SmartTrackerWays.siri else { return .result(dialog: "Siri belum diaktifkan. Nyalakan di Profil > Smart Tracker.") }
         let count = await MainActor.run { DraftStore.shared.add(text: text, source: .siri).count }
         await DraftNotifier.announce(count: count)
@@ -30,7 +27,6 @@ struct RecordFromNotificationIntent: AppIntent {
     @Parameter(title: "Isi") var body: String
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard SmartTrackerConsent.isGranted else { return .result(dialog: RecordTransactionIntent.needsConsent) }
         // Recording from notifications is a Saku Plus feature; drafts already queued stay (US6, TC 17).
         guard PlusStore.cachedIsPlus else { return .result(dialog: "Fitur ini butuh Saku Plus. Draf yang sudah ada tetap bisa diperiksa dan disimpan.") }
         NotificationFilter.remember(title: notificationTitle)
