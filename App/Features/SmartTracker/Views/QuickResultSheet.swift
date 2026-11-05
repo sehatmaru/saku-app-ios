@@ -98,6 +98,7 @@ struct QuickResultSheet: View {
             } else { footer }
         }
         .presentationDetents([.medium, .large], selection: $detent)
+        .presentationBackground(Color.appBackground)
         .plusOffer($plusReason)
 
         .sheet(item: $periodChoice) { d in
