@@ -550,11 +550,10 @@ struct QuickResultSheet: View {
             case .outOfQuota:
                 aiState = .out
             case .unavailable(let why):
-                retryReason = why.reason
+                retryReason = why == .failed ? nil : why.reason
                 aiState = .failed
             case .drafts(let read):
                 guard let first = read.first, !(read.count == 1 && (first.isUnreadable || first.amount == nil)) else {
-                    retryReason = RemoteSmartParser.Fallback.failed.reason
                     aiState = .failed
                     return
                 }

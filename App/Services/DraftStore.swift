@@ -209,7 +209,7 @@ final class DraftStore: ObservableObject {
 
     /// Drafts the rules read because AI could not: marks why, for "Dibaca tanpa AI".
     static func markFallback(_ drafts: inout [Draft], _ why: RemoteSmartParser.Fallback) {
-        for i in drafts.indices { drafts[i].reader = .rules; drafts[i].fallbackReason = why.reason }
+        for i in drafts.indices { drafts[i].reader = .rules; drafts[i].fallbackReason = why == .failed ? nil : why.reason }
     }
 
     /// "Pindai ulang dengan AI": the saved original text of a notification or Siri draft is read again; the draft takes
