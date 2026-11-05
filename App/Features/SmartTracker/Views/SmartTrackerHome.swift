@@ -164,7 +164,10 @@ struct SmartTrackerHomeOverlay: View {
                             Text("Gambar tidak disimpan").font(.app(12)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
                         }
                     } else {
-                        Text("Tunggu sebentar…").font(.app(15, weight: .medium)).foregroundStyle(Color.stGreen).lineLimit(1)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(text).font(.app(15)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                            Text("Tunggu sebentar…").font(.app(12, weight: .medium)).foregroundStyle(Color.stGreen).lineLimit(1)
+                        }
                     }
                     Spacer(minLength: 0)
                 } else if let notice {
