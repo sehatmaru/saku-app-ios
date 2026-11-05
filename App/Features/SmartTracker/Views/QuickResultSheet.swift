@@ -73,7 +73,7 @@ struct QuickResultSheet: View {
             }
         }
         .padding(.top, 22)
-        .filterSheet {
+        .filterSheet(detent: $detent) {
             if isUnclear {
                 VStack(spacing: 12) {
                     if aiState == .out { plusOfferLink }
@@ -97,7 +97,6 @@ struct QuickResultSheet: View {
                 .buttonStyle(PressScaleStyle())
             } else { footer }
         }
-        .presentationDetents([.medium, .large], selection: $detent)
         .presentationBackground(Color.appBackground)
         .plusOffer($plusReason)
 

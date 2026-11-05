@@ -601,9 +601,8 @@ private struct BudgetAmountSheet: View {
                 .padding(.bottom, 12)
         }
         .foregroundStyle(Color.appText)
-        .filterSheet()
+        .filterSheet(detent: $detent)
         .background(Color.appBackground)
-        .presentationDetents([.medium, .large], selection: $detent)
     }
 
     private var info: String {

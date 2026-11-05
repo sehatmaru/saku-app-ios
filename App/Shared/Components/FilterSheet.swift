@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Every sheet behaves like the transaction filter: half height, drag up to full, system corners and grabber.
-/// The content scrolls when the half height is too short for it.
+/// Every sheet behaves like the transaction filter: as tall as its content, drag up to full, system corners and grabber.
+/// The content scrolls when the sheet is shorter than it (a long list is capped at full height).
 /// The action buttons go in `footer`: they stay at the bottom of the sheet and never scroll away with the content.
 extension View {
     /// The gap from the buttons to the bottom edge of the screen is the same 24 pt as on their sides. The home
@@ -12,24 +12,25 @@ extension View {
         return 24 - safe
     }
 
-    func filterSheet() -> some View {
-        ScrollView { self }
+    /// `detent` is for sheets that also open or jump to full height from code: `.large` is full, anything else means "fits the content".
+    func filterSheet(detent: Binding<PresentationDetent>? = nil) -> some View {
+        ScrollView { self.reportHeight(SheetContentHeight.self) }
             .background(Color.appBackground)
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
-            .presentationDetents([.medium, .large])
+            .modifier(AdaptiveDetents(selection: detent))
     }
 
     /// `showsMoreCue` adds a fade and a down arrow above the footer while there is more content below.
-    func filterSheet<Footer: View>(showsMoreCue: Bool = false, @ViewBuilder footer: () -> Footer) -> some View {
+    func filterSheet<Footer: View>(showsMoreCue: Bool = false, detent: Binding<PresentationDetent>? = nil, @ViewBuilder footer: () -> Footer) -> some View {
         let bar = footer()
-        return ScrollView { self }
+        return ScrollView { self.reportHeight(SheetContentHeight.self) }
             .background(Color.appBackground)
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
             .modifier(MoreCue(enabled: showsMoreCue))
             .pinnedFooter { bar }
-            .presentationDetents([.medium, .large])
+            .modifier(AdaptiveDetents(selection: detent))
     }
 
     /// The footer pinned at the bottom of a sheet, 24 pt from the screen edge and from the sides.
@@ -58,6 +59,7 @@ private struct PinnedFooter<Bar: View>: ViewModifier {
                     .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, padding)
                     .frame(maxWidth: .infinity)
                     .background(Color.appBackground)
+                    .reportHeight(SheetFooterHeight.self)
                     .overlay(alignment: .top) { if separator { Rectangle().fill(Color.appSeparator).frame(height: 1) } }
             }
             .background {
@@ -95,6 +97,50 @@ private struct MoreCue: ViewModifier {
                 .animation(.easeOut(duration: 0.2), value: hasMore)
         } else {
             content
+        }
+    }
+}
+
+private struct SheetContentHeight: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+private struct SheetFooterHeight: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+private extension View {
+    func reportHeight<K: PreferenceKey>(_ key: K.Type) -> some View where K.Value == CGFloat {
+        background(GeometryReader { Color.clear.preference(key: K.self, value: $0.size.height) })
+    }
+}
+
+/// Detents are "fits the content" and full. The content and footer heights are measured inside the sheet; until the first
+/// measurement the system's half height stands in. A sheet taller than the screen is capped at full height by the system.
+private struct AdaptiveDetents: ViewModifier {
+    let selection: Binding<PresentationDetent>?
+    @State private var content: CGFloat = 0
+    @State private var footer: CGFloat = 0
+
+    private var adaptive: PresentationDetent {
+        guard content > 0 else { return .medium }
+        let safe = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            .first?.keyWindow?.safeAreaInsets.bottom ?? 0
+        return .height(max(ceil(content + footer + safe), 200))
+    }
+
+    func body(content view: Content) -> some View {
+        let sized = view
+            .onPreferenceChange(SheetContentHeight.self) { content = $0 }
+            .onPreferenceChange(SheetFooterHeight.self) { footer = $0 }
+        if let selection {
+            sized.presentationDetents([adaptive, .large], selection: Binding(
+                get: { selection.wrappedValue == .large ? .large : adaptive },
+                set: { selection.wrappedValue = $0 == .large ? .large : .medium }))
+        } else {
+            sized.presentationDetents([adaptive, .large])
         }
     }
 }
