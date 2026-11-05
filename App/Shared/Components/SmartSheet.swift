@@ -55,18 +55,16 @@ struct SmartSheet<Extra: View, Footer: View>: View {
         VStack(spacing: 0) {
             Text(title).font(.app(22, weight: .bold)).tracking(-0.3).multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true).padding(.top, 18)
-            Spacer(minLength: 16)
             Image(systemName: icon).font(.system(size: 40)).foregroundStyle(tone.ink)
-                .frame(width: 88, height: 88).background(tone.tint, in: Circle())
+                .frame(width: 88, height: 88).background(tone.tint, in: Circle()).padding(.top, 28)
             if let message {
                 Text(message).font(.app(16)).lineSpacing(3).foregroundStyle(Color.appTextSecondary)
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true).padding(.top, 24)
             }
             extra()
-            Spacer(minLength: 16)
         }
         .frame(maxWidth: .infinity)
-        .containerRelativeFrame(.vertical, alignment: .top) { height, _ in height - 58 }
+        .padding(.bottom, 8)
     }
 
     private var list: some View {
