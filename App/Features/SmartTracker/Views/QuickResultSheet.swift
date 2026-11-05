@@ -420,15 +420,15 @@ struct QuickResultSheet: View {
     private var unclearBody: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "quote.opening").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                        .padding(.top, 3)
-                    Text(sentence).font(.system(size: 15, weight: .medium, design: .monospaced)).foregroundStyle(Color.appText)
-                        .lineLimit(2, reservesSpace: true)
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "quote.opening").font(.system(size: 16, weight: .heavy)).foregroundStyle(Color.appTextSecondary)
+                        .padding(.top, 2)
+                    Text(sentence).font(.system(size: 16, weight: .regular, design: .monospaced)).foregroundStyle(Color.appText)
+                        .lineSpacing(3).lineLimit(3)
                         .frame(maxWidth: .infinity, alignment: .topLeading)
                 }
-                .padding(.horizontal, 14).padding(.vertical, 12)
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .padding(.horizontal, 4)
+                Divider().padding(.vertical, 2)
                 Text(L("Nominal tidak terbaca")).font(.app(22, weight: .bold))
                 Text(L("Tulis nama dan nominal dalam satu kalimat, mis. “sabun 18rb”."))
                     .font(.app(16)).lineSpacing(4).foregroundStyle(Color.appTextSecondary)
