@@ -51,6 +51,7 @@ struct TrialEndedSheet: View {
         .filterSheet {
             SmartSheetFooter(primary: L("Lihat Saku Plus"), secondary: L("Nanti saja"), onPrimary: { dismiss(); onOffer() }) { dismiss() }
         }
+        .presentationDetents([.medium, .large])
         .onDisappear { PlusStore.shared.markTrialEndedSeen() }
         .task { ticksShown = true }
     }
