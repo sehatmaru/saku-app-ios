@@ -124,24 +124,37 @@ private struct AdaptiveDetents: ViewModifier {
     @State private var content: CGFloat = 0
     @State private var footer: CGFloat = 0
 
-    private var adaptive: PresentationDetent {
-        guard content > 0 else { return .medium }
+    private var adaptive: PresentationDetent? {
+        guard content > 0 else { return nil }
         let safe = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
             .first?.keyWindow?.safeAreaInsets.bottom ?? 0
         return .height(max(ceil(content + footer + safe), 200))
     }
 
     func body(content view: Content) -> some View {
-        let sized = view
+        view
             .onPreferenceChange(SheetContentHeight.self) { content = $0 }
             .onPreferenceChange(SheetFooterHeight.self) { footer = $0 }
-        if let selection {
-            sized.presentationDetents([adaptive, .large], selection: Binding(
-                get: { selection.wrappedValue == .large ? .large : adaptive },
-                set: { selection.wrappedValue = $0 == .large ? .large : .medium }))
-        } else {
-            sized.presentationDetents([adaptive, .large])
-        }
+            .modifier(FitDetents(fit: adaptive, selection: selection))
+    }
+}
+
+/// The sheet always has a selected detent that exists in the set: while nothing is measured it is half height, then the fit
+/// height replaces it in the same update. Removing the selected detent from the set made the system jump to full height.
+private struct FitDetents: ViewModifier {
+    let fit: PresentationDetent?
+    let selection: Binding<PresentationDetent>?
+    @State private var local: PresentationDetent = .medium
+
+    func body(content: Content) -> some View {
+        let wantsFull = (selection?.wrappedValue ?? local) == .large
+        let current: PresentationDetent = wantsFull ? .large : (fit ?? .medium)
+        content.presentationDetents([fit ?? .medium, .large], selection: Binding(
+            get: { current },
+            set: { new in
+                let value: PresentationDetent = new == .large ? .large : .medium
+                if let selection { selection.wrappedValue = value } else { local = value }
+            }))
     }
 }
 
@@ -170,22 +183,16 @@ private struct SlackDetents: ViewModifier {
     @State private var total: CGFloat = 0
     @State private var clip: CGFloat?
 
-    private var adaptive: PresentationDetent {
-        guard total > 0, let clip else { return .medium }
+    private var adaptive: PresentationDetent? {
+        guard total > 0, let clip else { return nil }
         return .height(max(ceil(total + clip), 200))
     }
 
     func body(content view: Content) -> some View {
-        let sized = view
+        view
             .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { total = $0 }
             .onPreferenceChange(SheetClipKey.self) { clip = $0 }
-        if let selection {
-            sized.presentationDetents([adaptive, .large], selection: Binding(
-                get: { selection.wrappedValue == .large ? .large : adaptive },
-                set: { selection.wrappedValue = $0 == .large ? .large : .medium }))
-        } else {
-            sized.presentationDetents([adaptive, .large])
-        }
+            .modifier(FitDetents(fit: adaptive, selection: selection))
     }
 }
 
