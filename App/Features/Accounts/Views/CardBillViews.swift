@@ -647,9 +647,10 @@ struct PayCardBillSheet: View {
                 .padding(.bottom, isRecord ? 4 : 16)
                 if isRecord { otherSourceRow }
             }
+            .sheetScrollSlack()
         }
         .background(Color.appBackground)
-        .presentationDetents([.medium, .large])
+        .adaptiveSheet()
         .background(Color.appBackground)
     }
 

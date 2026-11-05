@@ -165,13 +165,14 @@ struct CategoryFormView: View {
         VStack(spacing: 0) {
             topBar
             ScrollView { content }
+            .sheetScrollSlack()
                 .scrollIndicators(.hidden)
                 .scrollDismissesKeyboard(.interactively)
         }
         .foregroundStyle(Color.appText)
         .pinnedFooter { saveBar }
         .background(Color.appBackground)
-        .presentationDetents([.medium, .large], selection: $detent)
+        .adaptiveSheet(detent: $detent)
 
         .background(Color.appBackground)
         .sheet(isPresented: $showsBudget) {

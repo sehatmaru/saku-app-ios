@@ -86,7 +86,7 @@ struct BudgetDetailView: View {
                        message: L("Perubahan budget belum tersimpan. Coba lagi."), confirmTitle: nil, cancelTitle: L("Tutup"))
         .sheet(item: $detailTransaction) { txn in
             TransactionDetailView(transaction: txn, categories: [category], accounts: accounts, isEditable: false)
-                .presentationDetents([.medium, .large])
+                .adaptiveSheet()
         }
     }
 

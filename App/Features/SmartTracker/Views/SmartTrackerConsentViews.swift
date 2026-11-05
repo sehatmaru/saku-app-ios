@@ -65,9 +65,10 @@ struct SmartTrackerPrivacySheet: View {
                 }
                 .padding(.bottom, 34)
             }
+            .sheetScrollSlack()
         }
         .background(Color.appBackground)
-        .presentationDetents([.medium, .large])
+        .adaptiveSheet()
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
     }

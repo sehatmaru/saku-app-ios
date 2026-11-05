@@ -493,9 +493,10 @@ struct AddSubscriptionView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 16)
             }
+            .sheetScrollSlack()
         }
         .background(Color.appBackground)
-        .presentationDetents([.medium, .large])
+        .adaptiveSheet()
         .background(Color.appBackground)
     }
 

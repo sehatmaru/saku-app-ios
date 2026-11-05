@@ -91,9 +91,10 @@ struct RunningInstallmentsSheet: View {
             .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 34)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
         }
+        .sheetScrollSlack()
         .scrollIndicators(.hidden)
         .foregroundStyle(Color.appText)
-        .presentationDetents([.medium, .large])
+        .adaptiveSheet()
 
         .background(Color.appBackground)
     }

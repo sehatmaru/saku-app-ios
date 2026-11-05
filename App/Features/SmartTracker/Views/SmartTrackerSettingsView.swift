@@ -560,9 +560,10 @@ private struct FilterWordsSheet: View {
             }
             .padding(.horizontal, 24).padding(.bottom, 24)
         }
+        .sheetScrollSlack()
         .scrollDismissesKeyboard(.interactively)
         .pinnedFooter { SmartSheetFooter(primary: L("Tutup"), secondary: nil, onPrimary: { dismiss() }) }
-        .presentationDetents([.medium, .large])
+        .adaptiveSheet()
         .background(Color.appBackground)
     }
 
@@ -608,8 +609,9 @@ private struct RecentTitlesSheet: View {
             }
             .padding(.horizontal, 24).padding(.bottom, 24)
         }
+        .sheetScrollSlack()
         .pinnedFooter { SmartSheetFooter(primary: L("Tutup"), secondary: nil, onPrimary: { dismiss() }) }
-        .presentationDetents([.medium, .large])
+        .adaptiveSheet()
         .background(Color.appBackground)
     }
 

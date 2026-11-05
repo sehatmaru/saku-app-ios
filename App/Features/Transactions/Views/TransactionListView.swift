@@ -148,7 +148,7 @@ struct TransactionListView: View {
                 .animation(.easeInOut(duration: 0.2), value: showBackToTop)
                 .sheet(isPresented: $showAdvancedSearch) {
                     AdvancedSearchView(filter: $filter, categories: viewModel.categories)
-                        .presentationDetents([.medium, .large])
+                        .adaptiveSheet()
                 }
             }
         }

@@ -29,6 +29,7 @@ struct AdvancedSearchView: View {
                 }
                 .padding(.bottom, 24)
             }
+            .sheetScrollSlack()
         }
         .background(Color.appBackground)
         .pinnedFooter { bottomBar }

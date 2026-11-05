@@ -71,6 +71,7 @@ struct TransactionDetailView: View {
                     // exactly as wide as the screen: a long note or amount can no longer make the detail scroll sideways
                     .containerRelativeFrame(.horizontal)
                 }
+                .sheetScrollSlack()
                 .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             }

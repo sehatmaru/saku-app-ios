@@ -42,11 +42,12 @@ struct SelectionSheet<Content: View>: View {
                 content
                     .padding(.bottom, 24)
             }
+            .sheetScrollSlack()
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)
         }
         .foregroundStyle(Color.appText)
-        .presentationDetents([.medium, .large])
+        .adaptiveSheet()
 
         .background(Color.appBackground)
     }

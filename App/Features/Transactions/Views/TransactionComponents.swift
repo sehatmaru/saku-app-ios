@@ -47,11 +47,12 @@ struct PickerSheet<Content: View>: View {
                 .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 8)
 
             ScrollView { content }
+            .sheetScrollSlack()
                 .scrollIndicators(.hidden)
         }
         .foregroundStyle(Color.appText)
         .pinnedFooter { if let actionTitle { SmartSheetFooter(primary: actionTitle, secondary: nil, onPrimary: onDone) } }
-        .presentationDetents([.medium, .large])
+        .adaptiveSheet()
 
         .background(Color.appBackground)
     }

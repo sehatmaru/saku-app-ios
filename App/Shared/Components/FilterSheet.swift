@@ -144,3 +144,56 @@ private struct AdaptiveDetents: ViewModifier {
         }
     }
 }
+
+private struct SheetClipKey: PreferenceKey {
+    static let defaultValue: CGFloat? = nil
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) { value = nextValue() ?? value }
+}
+
+/// How much of the scroll content is cut off (positive) or spare (negative) at the sheet's current height.
+private struct SheetScrollSlack: ViewModifier {
+    @State private var clip: CGFloat?
+
+    func body(content: Content) -> some View {
+        content
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentSize.height - $0.containerSize.height } action: { _, new in
+                if clip == nil || abs((clip ?? 0) - new) >= 1 { clip = new }
+            }
+            .preference(key: SheetClipKey.self, value: clip)
+    }
+}
+
+/// Fits the sheet to its content for layouts that are not built with `filterSheet`: the sheet's height now plus whatever
+/// the scroll view cuts off (or has spare) is the height that fits. Until the first measurement the half height stands in.
+private struct SlackDetents: ViewModifier {
+    let selection: Binding<PresentationDetent>?
+    @State private var total: CGFloat = 0
+    @State private var clip: CGFloat?
+
+    private var adaptive: PresentationDetent {
+        guard total > 0, let clip else { return .medium }
+        return .height(max(ceil(total + clip), 200))
+    }
+
+    func body(content view: Content) -> some View {
+        let sized = view
+            .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { total = $0 }
+            .onPreferenceChange(SheetClipKey.self) { clip = $0 }
+        if let selection {
+            sized.presentationDetents([adaptive, .large], selection: Binding(
+                get: { selection.wrappedValue == .large ? .large : adaptive },
+                set: { selection.wrappedValue = $0 == .large ? .large : .medium }))
+        } else {
+            sized.presentationDetents([adaptive, .large])
+        }
+    }
+}
+
+extension View {
+    /// Put on the sheet's ScrollView, together with `adaptiveSheet` on the sheet's root.
+    func sheetScrollSlack() -> some View { modifier(SheetScrollSlack()) }
+
+    /// Replaces `.presentationDetents([.medium, .large])`: as tall as the content, full height one drag away.
+    /// `detent` works like in `filterSheet`: `.large` is full, anything else means "fits the content".
+    func adaptiveSheet(detent: Binding<PresentationDetent>? = nil) -> some View { modifier(SlackDetents(selection: detent)) }
+}
