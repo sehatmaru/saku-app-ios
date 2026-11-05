@@ -15,42 +15,6 @@ struct ReaderBadge: View {
     }
 }
 
-/// "AI" label of a reading. On: AI read it (the sparkle plays once). Reading: AI is working (the sparkle keeps going).
-/// Off: the rules read it, or AI failed or is off; same label in grey, no motion.
-struct AIStatusChip: View {
-    enum Mode { case on, reading, off }
-    let mode: Mode
-    @State private var plays = 0
-    @State private var opened = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// Reading shows only the round sparkle; the "AI" word opens out of it once the reading is done.
-    private var showsWord: Bool { mode != .reading && (opened || reduceMotion) }
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "sparkles").font(.system(size: 19, weight: .semibold))
-                .symbolEffect(.variableColor.iterative, isActive: mode == .reading)
-                .symbolEffect(.bounce, value: plays)
-            if showsWord {
-                Text("AI").font(.app(18, weight: .bold))
-                    .transition(.opacity.combined(with: .scale(scale: 0.6, anchor: .leading)))
-            }
-        }
-        .foregroundStyle(mode == .off ? Color.appTextSecondary : Color.appPrimaryText)
-        .padding(.horizontal, showsWord ? 18 : 12).frame(height: 44)
-        .background(mode == .off ? Color.stChip : Color.appPrimary.opacity(0.12), in: Capsule())
-        .animation(reduceMotion ? nil : .timingCurve(0.23, 1, 0.32, 1, duration: 0.35), value: showsWord)
-        .task {
-            if mode == .on { plays += 1 }
-            try? await Task.sleep(for: .milliseconds(450))
-            opened = true
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(mode == .off ? L("Dibaca tanpa AI") : mode == .reading ? L("Membaca dengan AI") : L("Dibaca dengan AI"))
-    }
-}
-
 extension Draft {
     /// Where it came from, in words ("Suara", "Notifikasi BCA").
     var sourceLabel: String {

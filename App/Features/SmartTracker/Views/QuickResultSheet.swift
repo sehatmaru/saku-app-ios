@@ -118,10 +118,7 @@ struct QuickResultSheet: View {
     }
 
     @ViewBuilder private var header: some View {
-        if isUnclear {
-            AIStatusChip(mode: aiState == .loading ? .reading : drafts.first?.reader == .ai ? .on : .off)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24)
-        } else {
+        if !isUnclear {
         HStack(spacing: 8) {
             Image(systemName: source == .voice ? "mic" : source == .photo ? "photo" : "keyboard").font(.system(size: 14))
             Text(source == .voice ? L("Dari suaramu") : source == .photo ? L("Dari gambarmu") : L("Dari ketikanmu")).layoutPriority(1)

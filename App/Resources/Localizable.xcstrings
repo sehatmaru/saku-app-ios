@@ -6313,16 +6313,6 @@
         }
       }
     },
-    "Dibaca dengan AI": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Read with AI"
-          }
-        }
-      }
-    },
     "Dibaca di HP-mu": {
       "localizations": {
         "en": {
