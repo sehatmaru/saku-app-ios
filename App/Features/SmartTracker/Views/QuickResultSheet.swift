@@ -53,7 +53,7 @@ struct QuickResultSheet: View {
         _drafts = State(initialValue: drafts)
         let unclear = drafts.count == 1 && (drafts[0].isUnreadable || drafts[0].amount == nil)
         _isUnclear = State(initialValue: unclear)
-        _detent = State(initialValue: unclear ? .medium : .large)
+        _detent = State(initialValue: drafts.count > 1 ? .large : .medium)
         isMulti = drafts.count > 1
     }
 
