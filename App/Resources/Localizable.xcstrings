@@ -1793,16 +1793,6 @@
         }
       }
     },
-    "AI gagal membaca": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI could not read it"
-          }
-        }
-      }
-    },
     "AI lebih banyak": {
       "localizations": {
         "en": {

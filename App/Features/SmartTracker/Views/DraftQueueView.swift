@@ -21,18 +21,31 @@ struct AIStatusChip: View {
     enum Mode { case on, reading, off }
     let mode: Mode
     @State private var plays = 0
+    @State private var opened = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Reading shows only the round sparkle; the "AI" word opens out of it once the reading is done.
+    private var showsWord: Bool { mode != .reading && (opened || reduceMotion) }
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "sparkles").font(.system(size: 14, weight: .semibold))
+        HStack(spacing: 8) {
+            Image(systemName: "sparkles").font(.system(size: 19, weight: .semibold))
                 .symbolEffect(.variableColor.iterative, isActive: mode == .reading)
                 .symbolEffect(.bounce, value: plays)
-            Text("AI").font(.app(13, weight: .bold))
+            if showsWord {
+                Text("AI").font(.app(18, weight: .bold))
+                    .transition(.opacity.combined(with: .scale(scale: 0.6, anchor: .leading)))
+            }
         }
         .foregroundStyle(mode == .off ? Color.appTextSecondary : Color.appPrimaryText)
-        .padding(.horizontal, 12).padding(.vertical, 6)
+        .padding(.horizontal, showsWord ? 18 : 12).frame(height: 44)
         .background(mode == .off ? Color.stChip : Color.appPrimary.opacity(0.12), in: Capsule())
-        .onAppear { if mode == .on { plays += 1 } }
+        .animation(reduceMotion ? nil : .timingCurve(0.23, 1, 0.32, 1, duration: 0.35), value: showsWord)
+        .task {
+            if mode == .on { plays += 1 }
+            try? await Task.sleep(for: .milliseconds(450))
+            opened = true
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(mode == .off ? L("Dibaca tanpa AI") : mode == .reading ? L("Membaca dengan AI") : L("Dibaca dengan AI"))
     }

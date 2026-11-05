@@ -16,10 +16,11 @@ enum RemoteSmartParser {
     enum Fallback: Equatable {
         case offline, failed, slow, quota
 
-        var reason: String {
+        /// nil when failing is not worth telling the user about.
+        var reason: String? {
             switch self {
             case .offline: L("tidak ada koneksi")
-            case .failed: L("AI gagal membaca")
+            case .failed: nil
             case .slow: L("AI terlalu lama")
             case .quota: L("jatah habis")
             }

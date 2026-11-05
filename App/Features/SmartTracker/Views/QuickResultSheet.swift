@@ -550,7 +550,7 @@ struct QuickResultSheet: View {
             case .outOfQuota:
                 aiState = .out
             case .unavailable(let why):
-                retryReason = why == .failed ? nil : why.reason
+                retryReason = why.reason
                 aiState = .failed
             case .drafts(let read):
                 guard let first = read.first, !(read.count == 1 && (first.isUnreadable || first.amount == nil)) else {
