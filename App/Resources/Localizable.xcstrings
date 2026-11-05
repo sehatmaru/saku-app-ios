@@ -18083,16 +18083,6 @@
         }
       }
     },
-    "Smart Tracker sedang membaca…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Smart Tracker is reading…"
-          }
-        }
-      }
-    },
     "Smart Tracker · %@": {
       "localizations": {
         "en": {
@@ -20951,6 +20941,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wait for your data to load, then export."
+          }
+        }
+      }
+    },
+    "Tunggu sebentar…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold on…"
           }
         }
       }
