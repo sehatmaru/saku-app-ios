@@ -556,9 +556,8 @@ struct DraftQueueView: View {
                         Button { if !swiping { ignore(d) } } label: {
                             Text("Abaikan").font(.app(16, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
                                 .frame(maxWidth: .infinity).frame(height: 48)
-                                .overlay(Capsule().strokeBorder(Color.appBorder, lineWidth: 1))
                         }
-                        .buttonStyle(PressScaleStyle())
+                        .buttonStyle(.plain)
                         .disabled(isSaving)
                     }
                 }
