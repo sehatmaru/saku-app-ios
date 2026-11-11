@@ -224,12 +224,14 @@ struct DraftQueueView: View {
                 let step = (drag < 0 || flick < -220) ? 1 : -1
                 focusedId = nil
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                withAnimation(.easeIn(duration: 0.16)) { drag = CGFloat(-step) * 420 }
+                // Out to one side, then the next card is swapped in off-screen on the other side and slides to the middle.
+                let away: CGFloat = 480
+                withAnimation(.easeIn(duration: 0.18)) { drag = CGFloat(-step) * away }
                 Task {
-                    try? await Task.sleep(for: .milliseconds(160))
+                    try? await Task.sleep(for: .milliseconds(190))
                     var instant = SwiftUI.Transaction(); instant.disablesAnimations = true
-                    withTransaction(instant) { drag = 0 }
-                    withAnimation(.settle(0.4)) { browse += step }
+                    withTransaction(instant) { browse += step; drag = CGFloat(step) * away }
+                    withAnimation(.spring(duration: 0.4, bounce: 0.12)) { drag = 0 }
                 }
             }
     }
@@ -345,12 +347,10 @@ struct DraftQueueView: View {
                     // The oldest draft sits in front; up to two cards peek out below it.
                     ZStack {
                         card(front)
-                            .background(alignment: .bottom) { stackPeek(count: stack.count) }
                             .offset(x: drag)
-                            .rotationEffect(.degrees(Double(drag) / 28), anchor: .bottom)
                             .simultaneousGesture(swipe)
-                            .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.96)),
-                                                    removal: .opacity.combined(with: .offset(x: -40))))
+                            .background(alignment: .bottom) { stackPeek(count: stack.count) }
+                            .transition(.opacity)
                     }
                     .padding(.horizontal, 16).padding(.top, 10)
                     .padding(.bottom, stack.count > 2 ? 40 : stack.count > 1 ? 28 : 24)
