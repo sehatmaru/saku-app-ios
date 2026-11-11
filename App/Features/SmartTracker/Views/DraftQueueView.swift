@@ -194,6 +194,46 @@ struct DraftQueueView: View {
 
     private var ready: [Draft] { queue.filter { $0.isComplete && !store.needsPeriodChoice($0) } }
 
+    /// Swiping only browses: left brings the next draft to the front, right the one before it, round and round.
+    @State private var browse = 0
+    @State private var drag: CGFloat = 0
+
+    private var stackPosition: Int {
+        let n = queue.count
+        return n == 0 ? 0 : ((browse % n) + n) % n
+    }
+
+    /// `queue` turned so the browsed draft is first.
+    private var stack: [Draft] {
+        let q = queue, i = stackPosition
+        return Array(q[i...] + q[..<i])
+    }
+
+    private var swipe: some Gesture {
+        DragGesture(minimumDistance: 20)
+            .onChanged { value in
+                guard stack.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
+                drag = value.translation.width
+            }
+            .onEnded { value in
+                let flick = value.predictedEndTranslation.width
+                guard stack.count > 1, abs(drag) > 0, abs(drag) > 90 || abs(flick) > 220 else {
+                    withAnimation(.spring(duration: 0.35, bounce: 0.25)) { drag = 0 }
+                    return
+                }
+                let step = (drag < 0 || flick < -220) ? 1 : -1
+                focusedId = nil
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                withAnimation(.easeIn(duration: 0.16)) { drag = CGFloat(-step) * 420 }
+                Task {
+                    try? await Task.sleep(for: .milliseconds(160))
+                    var instant = Transaction(); instant.disablesAnimations = true
+                    withTransaction(instant) { drag = 0 }
+                    withAnimation(.settle(0.4)) { browse += step }
+                }
+            }
+    }
+
     /// The cards waiting behind the front one: each a little narrower and lower, so the stack reads as a pile.
     @ViewBuilder private func stackPeek(count: Int) -> some View {
         ZStack(alignment: .bottom) {
@@ -297,20 +337,23 @@ struct DraftQueueView: View {
                     .padding(.horizontal, 24).padding(.top, 12)
                 }
 
-                if let front = queue.first {
-                    Text(L("%lld dari %lld", 1, queue.count))
+                if let front = stack.first {
+                    Text(L("%lld dari %lld", stackPosition + 1, stack.count))
                         .font(.app(13, weight: .semibold)).monospacedDigit()
                         .foregroundStyle(Color.appTextSecondary)
                         .padding(.horizontal, 24).padding(.top, 20)
                     // The oldest draft sits in front; up to two cards peek out below it.
                     ZStack {
                         card(front)
-                            .background(alignment: .bottom) { stackPeek(count: queue.count) }
+                            .background(alignment: .bottom) { stackPeek(count: stack.count) }
+                            .offset(x: drag)
+                            .rotationEffect(.degrees(Double(drag) / 28), anchor: .bottom)
+                            .simultaneousGesture(swipe)
                             .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.96)),
                                                     removal: .opacity.combined(with: .offset(x: -40))))
                     }
                     .padding(.horizontal, 16).padding(.top, 10)
-                    .padding(.bottom, queue.count > 2 ? 40 : queue.count > 1 ? 28 : 24)
+                    .padding(.bottom, stack.count > 2 ? 40 : stack.count > 1 ? 28 : 24)
                 }
 
                 // Notifications already recorded: information only, kept for 7 days (K5, K10).
