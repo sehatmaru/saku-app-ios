@@ -160,7 +160,7 @@ struct DraftQueueView: View {
 
     private func rescanButton(_ d: Draft) -> some View {
         let busy = rescanning.contains(d.id), failed = rescanFailed.contains(d.id), out = aiOut
-        return Button { rescan(d) } label: {
+        return Button { if !swiping { rescan(d) } } label: {
             HStack(spacing: 8) {
                 if busy { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles").font(.system(size: 16)) }
                 Text(busy ? L("Memindai ulang…") : failed ? L("Gagal. Ketuk untuk coba lagi") : out ? L("Jatah habis") : L("Baca dengan AI"))
@@ -209,14 +209,20 @@ struct DraftQueueView: View {
         return Array(q[i...] + q[..<i])
     }
 
+    /// True from the first sideways move until a moment after the finger lifts, so a swipe that starts on a chip
+    /// or button never counts as a tap on it.
+    @State private var swiping = false
+
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 20)
             .onChanged { value in
                 guard stack.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
+                swiping = true
                 drag = value.translation.width
             }
             .onEnded { value in
                 let flick = value.predictedEndTranslation.width
+                Task { try? await Task.sleep(for: .milliseconds(350)); swiping = false }
                 guard stack.count > 1, abs(drag) > 0, abs(drag) > 90 || abs(flick) > 220 else {
                     withAnimation(.spring(duration: 0.35, bounce: 0.25)) { drag = 0 }
                     return
@@ -224,28 +230,36 @@ struct DraftQueueView: View {
                 let step = (drag < 0 || flick < -220) ? 1 : -1
                 focusedId = nil
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                // Out to one side, then the next card is swapped in off-screen on the other side and slides to the middle.
-                let away: CGFloat = 480
-                withAnimation(.easeIn(duration: 0.18)) { drag = CGFloat(-step) * away }
+                // The front card leaves to the side; the card under it has grown to full size by then, so swapping is invisible.
+                withAnimation(.easeIn(duration: 0.2)) { drag = CGFloat(-step) * 480 }
                 Task {
-                    try? await Task.sleep(for: .milliseconds(190))
+                    try? await Task.sleep(for: .milliseconds(210))
                     var instant = SwiftUI.Transaction(); instant.disablesAnimations = true
-                    withTransaction(instant) { browse += step; drag = CGFloat(step) * away }
-                    withAnimation(.spring(duration: 0.4, bounce: 0.12)) { drag = 0 }
+                    withTransaction(instant) { browse += step; drag = 0 }
                 }
             }
     }
 
-    /// The cards waiting behind the front one: each a little narrower and lower, so the stack reads as a pile.
-    @ViewBuilder private func stackPeek(count: Int) -> some View {
-        ZStack(alignment: .bottom) {
-            if count > 2 {
+    /// What waits behind the front card. The next draft (or the previous one when dragging right) is drawn for real,
+    /// small at first and growing to full size as the front card is pulled away; a third card is a plain shape.
+    @ViewBuilder private func stackPeek() -> some View {
+        let n = stack.count
+        ZStack {
+            if n > 2 {
                 RoundedRectangle(cornerRadius: 28).fill(Color.stChip.opacity(0.55))
                     .scaleEffect(x: 0.86, y: 1, anchor: .bottom).offset(y: 24)
             }
-            if count > 1 {
-                RoundedRectangle(cornerRadius: 28).fill(Color.stChip)
-                    .scaleEffect(x: 0.93, y: 1, anchor: .bottom).offset(y: 12)
+            if n > 1 {
+                let progress = min(abs(drag) / 200, 1)
+                GeometryReader { geo in
+                    card(drag > 0 ? stack[n - 1] : stack[1])
+                        .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                        .background(Color.appFill)
+                        .clipShape(RoundedRectangle(cornerRadius: 28))
+                        .allowsHitTesting(false)
+                        .scaleEffect(0.93 + 0.07 * progress, anchor: .bottom)
+                        .offset(y: 12 * (1 - progress))
+                }
             }
         }
         .accessibilityHidden(true)
@@ -271,6 +285,7 @@ struct DraftQueueView: View {
         .animation(.settle(0.4), value: store.drafts.map(\.id))
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
+        .background(NoSwipeBack())
         .onChange(of: sheet?.id) { focusedId = nil }
         .plusOffer($plusReason)
         .sheet(item: $sheet) { item in sheetContent(item) }
@@ -349,7 +364,7 @@ struct DraftQueueView: View {
                         card(front)
                             .offset(x: drag)
                             .simultaneousGesture(swipe)
-                            .background(alignment: .bottom) { stackPeek(count: stack.count) }
+                            .background(alignment: .bottom) { stackPeek() }
                             .transition(.opacity)
                     }
                     .padding(.horizontal, 16).padding(.top, 10)
@@ -430,7 +445,7 @@ struct DraftQueueView: View {
                 .accessibilityHidden(true)
             } else {
             VStack(alignment: .leading, spacing: 4) {
-                Button { sheet = DraftSheet(draftId: d.id, kind: .amount) } label: {
+                Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: .amount) } } label: {
                     HStack(alignment: .top, spacing: 3) {
                         Text("Rp").font(.app(15)).foregroundStyle(Color.appTextTertiary).padding(.top, 8)
                         Text(d.amount.map { $0.formattedAsDigits() } ?? "0")
@@ -496,7 +511,7 @@ struct DraftQueueView: View {
             }
 
             VStack(spacing: 4) {
-                Button { save(d) } label: {
+                Button { if !swiping { save(d) } } label: {
                     HStack(spacing: 8) {
                         if isSaving { ProgressView().tint(.white).scaleEffect(0.8) }
                         Text(isSaving ? L("Menyimpan…") : failure != nil ? L("Coba lagi") : lv == .complete ? L("Simpan") : L("Lengkapi dulu"))
@@ -507,7 +522,7 @@ struct DraftQueueView: View {
                 }
                 .buttonStyle(PressScaleStyle())
                 .disabled(isSaving)
-                Button { ignore(d) } label: {
+                Button { if !swiping { ignore(d) } } label: {
                     Text("Abaikan").font(.app(16, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
@@ -581,7 +596,7 @@ struct DraftQueueView: View {
     }
 
     private func fieldButton(_ d: Draft, _ f: Field) -> some View {
-        Button { sheet = DraftSheet(draftId: d.id, kind: f.kind) } label: {
+        Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: f.kind) } } label: {
             HStack(spacing: 6) {
                 Image(systemName: f.isMissing ? "plus.circle" : f.icon).font(.system(size: 14))
                 Text(f.isMissing ? f.label : f.value).font(.app(15, weight: .medium)).lineLimit(1)
@@ -853,4 +868,21 @@ extension DateFormatter {
         f.dateFormat = "HH.mm"
         return f
     }
+}
+
+/// Turns the edge-swipe back gesture off while the screen is open, so a swipe on the card stack never pops the page.
+/// The back button still works.
+private struct NoSwipeBack: UIViewControllerRepresentable {
+    final class Host: UIViewController {
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+        }
+        override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            navigationController?.interactivePopGestureRecognizer?.isEnabled = true
+        }
+    }
+    func makeUIViewController(context: Context) -> Host { Host() }
+    func updateUIViewController(_ uiViewController: Host, context: Context) {}
 }
