@@ -773,19 +773,21 @@ struct DraftQueueView: View {
         .padding(.vertical, 18)
     }
 
+    /// "Draf diabaikan  Urungkan": a dark pill with words only (a check mark would read as "done", which is wrong for
+    /// Abaikan). Sits just above the bottom bar, where the Simpan and Abaikan buttons are.
     @ViewBuilder private var toastView: some View {
         if let toast {
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill").foregroundStyle(Color(light: 0x3DDC97, dark: 0x3DDC97))
+            HStack(spacing: 14) {
                 Text(toast.text).font(.app(15, weight: .medium)).lineLimit(1)
                 Button { undo(toast) } label: {
-                    Text("Urungkan").font(.app(14, weight: .semibold)).foregroundStyle(Color(light: 0x3DDC97, dark: 0x3DDC97))
-                        .padding(.horizontal, 12).frame(height: 32)
-                        .background(Color.white.opacity(0.14), in: Capsule())
+                    Text("Urungkan").font(.app(15, weight: .semibold)).foregroundStyle(Color(light: 0x3DDC97, dark: 0x3DDC97))
+                        .padding(.horizontal, 14).frame(height: 36)
+                        .background(Color.white.opacity(0.12), in: Capsule())
                 }
+                .buttonStyle(PressScaleStyle())
             }
             .foregroundStyle(.white)
-            .padding(.leading, 14).padding(.trailing, 6).frame(height: 44)
+            .padding(.leading, 20).padding(.trailing, 6).frame(height: 48)
             .background(Color(light: 0x111111, dark: 0x2C2C2E), in: Capsule())
             .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
             .padding(.bottom, store.drafts.isEmpty ? 110 : store.drafts.count > 1 && focusedId == nil ? 124 : 40)
@@ -921,7 +923,7 @@ struct DraftQueueView: View {
     private func show(_ t: Toast) {
         withAnimation(.settle(0.4)) { toast = t }
         Task {
-            try? await Task.sleep(for: .seconds(5))
+            try? await Task.sleep(for: .seconds(6))
             if toast?.id == t.id { withAnimation(.settle(0.3)) { toast = nil } }
         }
     }
