@@ -406,19 +406,15 @@ struct DraftQueueView: View {
         let pillIcon = lv == .unread ? "questionmark" : lv == .partial ? "exclamationmark.circle.fill" : "checkmark.circle.fill"
         let pillText = lv == .unread ? L("Tidak terbaca") : lv == .partial ? L("Kurang %@", missingNames(d).joined(separator: ", ")) : L("Siap disimpan")
         return VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 10) {
-                    Image(systemName: d.kindIcon).font(.system(size: 14, weight: .semibold)).foregroundStyle(d.kindColor)
-                        .frame(width: 32, height: 32).background(d.kindColor.opacity(0.14), in: Circle())
-                    VStack(alignment: .leading, spacing: 1) {
-                        Label(d.sourceLabel, systemImage: d.sourceIcon)
-                            .font(.app(14, weight: .medium)).foregroundStyle(Color.appText).lineLimit(1).minimumScaleFactor(0.85)
-                        if rescanning.contains(d.id) {
-                            Text(L("Membaca dengan AI")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                                .opacity(pulse ? 0.45 : 1)
-                        } else {
-                            Text(Self.arrival(d.createdAt)).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
-                        }
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Label(d.sourceLabel, systemImage: d.sourceIcon).labelStyle(.titleAndIcon)
+                        .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1).minimumScaleFactor(0.85)
+                    if rescanning.contains(d.id) {
+                        Text(L("Membaca dengan AI")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                            .opacity(pulse ? 0.45 : 1)
+                    } else {
+                        Text("· " + Self.arrival(d.createdAt)).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
                     }
                     Spacer(minLength: 4)
                     if let reader = d.reader { ReaderBadge(reader: reader) }
@@ -444,16 +440,28 @@ struct DraftQueueView: View {
                 .opacity(pulse ? 0.45 : 1)
                 .accessibilityHidden(true)
             } else {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(spacing: 4) {
+                Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: .type) } } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: d.kindIcon).font(.system(size: 12, weight: .semibold))
+                        Text(d.kindTitle)
+                        Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold))
+                    }
+                    .font(.app(14, weight: .medium)).foregroundStyle(d.kindColor)
+                    .frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L("Tipe"))
+                .accessibilityValue(d.kindTitle)
                 Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: .amount) } } label: {
                     HStack(alignment: .top, spacing: 3) {
                         Text("Rp").font(.app(15)).foregroundStyle(Color.appTextTertiary).padding(.top, 8)
                         Text(d.amount.map { $0.formattedAsDigits() } ?? "0")
-                            .font(.app(42, weight: .ultraLight)).tracking(-1.2).monospacedDigit()
+                            .font(.app(46, weight: .ultraLight)).tracking(-1.2).monospacedDigit()
                             .foregroundStyle(d.amount == nil ? Color.appTextTertiary : d.kind == .income ? Color.stGreen : Color.appText)
                             .lineLimit(1).minimumScaleFactor(0.5)
-                        Spacer(minLength: 0)
                     }
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(L("Nominal"))
@@ -461,20 +469,24 @@ struct DraftQueueView: View {
                     Text("Ketuk untuk isi nominal").font(.app(13)).foregroundStyle(Color.stWarn)
                 }
                 TextField("", text: nameBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.appTextSecondary))
-                    .font(.app(20)).foregroundStyle(Color.appText)
+                    .font(.app(18)).foregroundStyle(Color.appText).multilineTextAlignment(.center)
                     .focused($focusedId, equals: d.id)
                     .submitLabel(.done)
                     .onSubmit { focusedId = nil }
-                    .padding(.top, 4)
+                    .frame(minHeight: 36)
             }
             }
 
-            Label(pillText, systemImage: pillIcon)
-                .font(.app(14, weight: .semibold)).foregroundStyle(tint)
+            if lv != .complete {
+                Label(pillText, systemImage: pillIcon)
+                    .font(.app(14, weight: .semibold)).foregroundStyle(tint)
+                    .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+            }
 
-            FlowLayout(spacing: 8) {
+            VStack(spacing: 0) {
                 ForEach(fields(d), id: \.label) { field in fieldButton(d, field) }
             }
+            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
 
             if let note = d.duplicateNote {
                 Label {
@@ -582,7 +594,7 @@ struct DraftQueueView: View {
         let wallet = store.accounts.first { $0.id == d.accountId }
         let target = store.accounts.first { $0.id == d.counterpartyAccountId }
         let category = store.categories.first { $0.id == d.categoryId }
-        var result = [Field(label: L("Tipe"), value: d.kindTitle, icon: d.kindIcon, isMissing: false, kind: .type)]
+        var result: [Field] = []
         if d.kind == .expense || d.kind == .income {
             result.append(Field(label: L("Kategori"), value: category?.name ?? "", icon: category?.icon ?? "tag", isMissing: category == nil, kind: .category))
         }
@@ -595,22 +607,22 @@ struct DraftQueueView: View {
         return result
     }
 
+    /// One line of the receipt: label on the left, value and chevron on the right.
     private func fieldButton(_ d: Draft, _ f: Field) -> some View {
         Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: f.kind) } } label: {
-            HStack(spacing: 6) {
-                Image(systemName: f.isMissing ? "plus.circle" : f.icon).font(.system(size: 14))
-                Text(f.isMissing ? f.label : f.value).font(.app(15, weight: .medium)).lineLimit(1)
+            HStack(spacing: 8) {
+                Text(f.label).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                Spacer(minLength: 12)
+                Text(f.isMissing ? L("Pilih") : f.value)
+                    .font(.app(16, weight: f.isMissing ? .semibold : .regular)).lineLimit(1)
+                    .foregroundStyle(f.isMissing ? Color.stWarn : Color.appText)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
-            .foregroundStyle(f.isMissing ? Color.stWarn : Color.appText)
-            .padding(.horizontal, 14).frame(maxWidth: 240, minHeight: 44)
-            .background(f.isMissing ? Color.clear : Color.appBackground, in: Capsule())
-            .overlay {
-                if f.isMissing {
-                    Capsule().strokeBorder(Color.stWarn, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                }
-            }
+            .frame(minHeight: 52)
+            .contentShape(Rectangle())
+            .rowSeparator()
         }
-        .buttonStyle(PressScaleStyle())
+        .buttonStyle(.plain)
         .accessibilityLabel(f.label)
         .accessibilityValue(f.isMissing ? "" : f.value)
     }
