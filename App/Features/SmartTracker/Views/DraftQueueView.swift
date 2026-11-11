@@ -227,7 +227,7 @@ struct DraftQueueView: View {
                 withAnimation(.easeIn(duration: 0.16)) { drag = CGFloat(-step) * 420 }
                 Task {
                     try? await Task.sleep(for: .milliseconds(160))
-                    var instant = Transaction(); instant.disablesAnimations = true
+                    var instant = SwiftUI.Transaction(); instant.disablesAnimations = true
                     withTransaction(instant) { drag = 0 }
                     withAnimation(.settle(0.4)) { browse += step }
                 }
