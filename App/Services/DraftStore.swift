@@ -212,7 +212,7 @@ final class DraftStore: ObservableObject {
         for i in drafts.indices { drafts[i].reader = .rules; drafts[i].fallbackReason = why.reason }
     }
 
-    /// "Pindai ulang dengan AI": the saved original text of a notification or Siri draft is read again; the draft takes
+    /// "Pindai ulang dengan AI": the saved original text of a draft (a sentence, a notification, or the text read from a picture) is read again; the draft takes
     /// the AI's reading (more than one transaction in it adds the rest as new drafts). Nothing changes when AI fails.
     func rescan(_ id: UUID) async -> RescanResult {
         guard let index = drafts.firstIndex(where: { $0.id == id }), let text = drafts[index].rawText else { return .failed }

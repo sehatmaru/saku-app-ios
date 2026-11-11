@@ -20675,12 +20675,12 @@
         }
       }
     },
-    "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
+    "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, teks yang terbaca dari gambar, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence you type, say or share, and the notification and Siri text, stay on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save."
+            "value": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence you type, say or share, the text read from a picture, and the notification and Siri text, stay on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save."
           }
         }
       }

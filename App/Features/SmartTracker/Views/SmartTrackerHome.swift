@@ -404,6 +404,11 @@ struct SmartTrackerHomeOverlay: View {
                 case .unavailable(let why): DraftStore.markFallback(&reading.drafts, why)
                 }
             }
+            // the text read from the picture stays with each draft (the picture itself is dropped), so AI can read it again later
+            if !reading.truncated, !lines.isEmpty {
+                let words = lines.joined(separator: "\n")
+                for i in reading.drafts.indices { reading.drafts[i].rawText = words }
+            }
             isThinking = false
             guard !reading.drafts.isEmpty else {
                 notice = .unreadable

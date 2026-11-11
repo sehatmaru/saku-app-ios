@@ -151,9 +151,9 @@ struct DraftQueueView: View {
         return nil
     }
 
-    /// Notification and Siri drafts start with the rules; AI reads them again on request (only while AI is on).
+    /// A draft the rules read can be read again by AI on request, as long as its original text is still here (only while AI is on).
     private func canRescan(_ d: Draft) -> Bool {
-        (d.source == .notification || d.source == .siri) && d.rawText != nil && d.reader != .ai && aiOn && RemoteSmartParser.isAvailable
+        d.rawText != nil && d.reader != .ai && aiOn && RemoteSmartParser.isAvailable
     }
 
     private var aiOut: Bool { quotaStore.quota?.isOut == true }
