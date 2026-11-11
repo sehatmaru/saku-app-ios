@@ -7133,6 +7133,16 @@
         }
       }
     },
+    "Draf Transaksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction Drafts"
+          }
+        }
+      }
+    },
     "Draf belum tersimpan. Coba lagi, atau pilih Simpan nanti.": {
       "localizations": {
         "en": {

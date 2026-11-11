@@ -285,6 +285,7 @@ struct DraftQueueView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBackground)
         .animation(.settle(0.4), value: store.drafts.map(\.id))
+        .navigationTitle(L("Draf Transaksi"))
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
         .background(NoSwipeBack())
@@ -324,16 +325,6 @@ struct DraftQueueView: View {
     private var list: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Konfirmasi transaksi").font(.app(30, weight: .bold)).tracking(-0.4)
-                    .padding(.horizontal, 24).padding(.top, 6)
-                Label {
-                    Text(L("%lld draf dicatat otomatis oleh Smart Tracker. Cek dan lengkapi sebelum disimpan.", store.drafts.count))
-                } icon: {
-                    Image(systemName: "sparkle").foregroundStyle(Color.appPrimary)
-                }
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                .padding(.horizontal, 24).padding(.top, 8)
-
                 // TC 45: a head-up in the last days before drafts expire (restored after the layout-A redesign dropped it).
                 if store.expiringSoon > 0 {
                     Label(L("%lld draf akan dihapus dalam 3 hari jika tidak diproses.", store.expiringSoon), systemImage: "clock")
@@ -732,8 +723,6 @@ struct DraftQueueView: View {
 
     private var emptyQueue: some View {
         VStack(spacing: 0) {
-            Text("Konfirmasi transaksi").font(.app(30, weight: .bold)).tracking(-0.4)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 6)
             VStack(spacing: 10) {
                 Image(systemName: "tray").font(.system(size: 44, weight: .light)).foregroundStyle(Color.appTextTertiary).stFloat()
                 Text("Belum ada draf").font(.app(20, weight: .semibold))
@@ -752,7 +741,6 @@ struct DraftQueueView: View {
 
     private var allChecked: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Konfirmasi transaksi").font(.app(30, weight: .bold)).tracking(-0.4).padding(.top, 6)
             Spacer()
             Image(systemName: "checkmark").font(.system(size: 28, weight: .bold)).foregroundStyle(Color.appPrimary)
                 .frame(width: 64, height: 64).background(Color.stSuccessBg, in: Circle()).stEnter(0)
