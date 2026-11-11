@@ -411,9 +411,9 @@ final class DraftStore: ObservableObject {
     /// Returns the new transaction's id so a save can be undone.
     @discardableResult
     func save(_ saved: Draft, userId: String, remember: Bool = true) async throws -> String? {
-        // stamped when it is recorded (the chosen day, the time now), not with the time the draft was read
+        // stamped with the chosen day and the time the draft arrived, not the time it is saved
         var draft = saved
-        draft.date = saved.date.atCurrentTime()
+        draft.date = saved.date.atTime(of: saved.createdAt)
         guard draft.isComplete, let amount = draft.amount else { throw SaveError.incomplete }
         if draft.kind == .cardPayment && draft.accountId == nil { try await saveOutsideCardPayment(draft); return nil }
         guard let accountId = draft.accountId else { throw SaveError.incomplete }

@@ -10,6 +10,13 @@ final class DateStampTests: XCTestCase {
         XCTAssertEqual(draftTime.atCurrentTime(now: now, calendar: calendar), now)
     }
 
+    func testDraftKeepsTheTimeItArrivedOnThePickedDay() {
+        let arrival = calendar.date(from: DateComponents(year: 2026, month: 10, day: 14, hour: 9, minute: 41, second: 7))!
+        let picked = calendar.date(from: DateComponents(year: 2026, month: 10, day: 11, hour: 16, minute: 5))!
+        let parts = calendar.dateComponents([.day, .hour, .minute, .second], from: picked.atTime(of: arrival, calendar: calendar))
+        XCTAssertEqual([parts.day, parts.hour, parts.minute, parts.second], [11, 9, 41, 7])
+    }
+
     func testAPastDayKeepsItsDayAndGetsTheCurrentTime() {
         let now = calendar.date(from: DateComponents(year: 2026, month: 10, day: 14, hour: 16, minute: 5, second: 9))!
         let picked = calendar.date(from: DateComponents(year: 2026, month: 10, day: 11))!

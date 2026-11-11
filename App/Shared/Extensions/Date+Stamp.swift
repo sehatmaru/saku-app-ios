@@ -8,4 +8,10 @@ extension Date {
         let time = calendar.dateComponents([.hour, .minute, .second], from: now)
         return calendar.date(bySettingHour: time.hour ?? 0, minute: time.minute ?? 0, second: time.second ?? 0, of: self) ?? self
     }
+
+    /// The day of this date with the clock time of `arrival`: a draft saved later keeps the time it came in.
+    func atTime(of arrival: Date, calendar: Calendar = .current) -> Date {
+        let time = calendar.dateComponents([.hour, .minute, .second], from: arrival)
+        return calendar.date(bySettingHour: time.hour ?? 0, minute: time.minute ?? 0, second: time.second ?? 0, of: self) ?? self
+    }
 }
