@@ -874,14 +874,18 @@ extension DateFormatter {
 /// The back button still works.
 private struct NoSwipeBack: UIViewControllerRepresentable {
     final class Host: UIViewController {
-        override func viewDidAppear(_ animated: Bool) {
-            super.viewDidAppear(animated)
-            navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+        /// Both back gestures: the one from the left edge and, on newer iOS, the one that works from anywhere on the page.
+        private func setBackSwipe(_ enabled: Bool) {
+            navigationController?.interactivePopGestureRecognizer?.isEnabled = enabled
+            if #available(iOS 26.0, *) {
+                navigationController?.interactiveContentPopGestureRecognizer?.isEnabled = enabled
+            }
         }
-        override func viewWillDisappear(_ animated: Bool) {
-            super.viewWillDisappear(animated)
-            navigationController?.interactivePopGestureRecognizer?.isEnabled = true
-        }
+        override func viewWillAppear(_ animated: Bool) { super.viewWillAppear(animated); setBackSwipe(false) }
+        override func viewDidAppear(_ animated: Bool) { super.viewDidAppear(animated); setBackSwipe(false) }
+        // SwiftUI may turn the gesture back on while it lays the page out
+        override func viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); setBackSwipe(false) }
+        override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); setBackSwipe(true) }
     }
     func makeUIViewController(context: Context) -> Host { Host() }
     func updateUIViewController(_ uiViewController: Host, context: Context) {}
