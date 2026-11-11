@@ -409,6 +409,13 @@ struct QuickResultSheet: View {
         }
     }
 
+    /// The original sentence goes with the draft so the card can show it later (not for photos, which have no words).
+    private func withWords(_ drafts: [Draft]) -> [Draft] {
+        let words = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard source != .photo, !words.isEmpty else { return drafts }
+        return drafts.map { var d = $0; if d.rawText == nil { d.rawText = words }; return d }
+    }
+
     private func amountText(_ d: Draft) -> String {
         guard let amount = d.amount else { return L("Isi nominal") }
         return (d.kind == .expense ? "−" : d.kind == .income ? "+" : "") + "Rp" + amount.formattedAsDigits()
@@ -697,7 +704,7 @@ struct QuickResultSheet: View {
             saving = false
             guard failure == nil else { return }
             let rest = drafts
-            if !rest.isEmpty { onSaveLater(rest) }
+            if !rest.isEmpty { onSaveLater(withWords(rest)) }
             dismiss()
             onSaved(L("%lld transaksi tersimpan", saved) + (rest.isEmpty ? "" : " · " + L("%lld ke Konfirmasi", rest.count)))
         }
@@ -705,7 +712,7 @@ struct QuickResultSheet: View {
 
     private func saveLater() {
         guard !saving else { return }
-        onSaveLater(drafts)
+        onSaveLater(withWords(drafts))
         dismiss()
         onSaved(L("Masuk ke Konfirmasi transaksi"))
     }

@@ -212,6 +212,7 @@ struct DraftQueueView: View {
     /// True from the first sideways move until a moment after the finger lifts, so a swipe that starts on a chip
     /// or button never counts as a tap on it.
     @State private var swiping = false
+    @State private var expandedWords: Set<UUID> = []
 
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 20)
@@ -416,11 +417,17 @@ struct DraftQueueView: View {
                     } else {
                         Text("· " + Self.arrival(d.createdAt)).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
                     }
-                    Spacer(minLength: 4)
-                    if let reader = d.reader { ReaderBadge(reader: reader) }
+                    if let reader = d.reader {
+                        Text("· " + (reader == .ai ? "AI" : L("Aturan"))).font(.app(13, weight: .semibold))
+                            .foregroundStyle(reader == .ai ? Color.appPrimaryText : Color.appTextSecondary)
+                    }
+                    Spacer(minLength: 0)
                 }
                 if let why = d.fallbackReason {
                     Text(L("Dibaca tanpa AI · %@", why)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                }
+                if !d.isUnreadable, let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty {
+                    originalText(d, words)
                 }
             }
 
@@ -607,6 +614,34 @@ struct DraftQueueView: View {
         return result
     }
 
+    /// What the user typed, said or was notified with. One line at first; a tap opens all of it.
+    private func originalText(_ d: Draft, _ words: String) -> some View {
+        let open = expandedWords.contains(d.id)
+        let isLong = words.contains("\n") || words.count > 34
+        return Button {
+            if swiping { return }
+            withAnimation(.settle(0.3)) { if open { expandedWords.remove(d.id) } else { expandedWords.insert(d.id) } }
+        } label: {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "quote.opening").font(.system(size: 12, weight: .heavy)).foregroundStyle(Color.appTextTertiary)
+                    .padding(.top, 3)
+                Text(words).font(.system(size: 14, design: .monospaced)).foregroundStyle(Color.appTextSecondary)
+                    .lineLimit(open ? nil : 1).multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if isLong {
+                    Image(systemName: open ? "chevron.up" : "chevron.down").font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color.appTextTertiary).padding(.top, 4)
+                }
+            }
+            .padding(.top, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isLong)
+        .accessibilityLabel(L("Teks asli"))
+        .accessibilityValue(words)
+    }
+
     /// One line of the receipt: label on the left, value and chevron on the right.
     private func fieldButton(_ d: Draft, _ f: Field) -> some View {
         Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: f.kind) } } label: {
@@ -618,7 +653,7 @@ struct DraftQueueView: View {
                     .foregroundStyle(f.isMissing ? Color.stWarn : Color.appText)
                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
-            .frame(minHeight: 52)
+            .frame(minHeight: 48)
             .contentShape(Rectangle())
             .rowSeparator()
         }

@@ -191,10 +191,10 @@ final class DraftStore: ObservableObject {
     /// Reads a sentence and queues what it finds. Returns the new drafts.
     @discardableResult
     func add(text: String, source: Draft.Source) -> [Draft] {
-        // a Siri sentence keeps its words on the phone so "Pindai ulang dengan AI" can read it again
+        // the words stay on the phone (shown on the card; Siri and notification drafts can also be read again with AI)
         add(SmartParser.parse(text, source: source, context: context).map { draft in
             var draft = draft
-            if source == .siri { draft.rawText = text }
+            draft.rawText = text
             return draft
         })
     }
