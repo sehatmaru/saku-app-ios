@@ -512,22 +512,20 @@ struct DraftQueueView: View {
                     }
                     .padding(.bottom, 8)
                 }
-                // name first, then the rest, one line each
-                HStack(spacing: 14) {
-                    Image(systemName: "square.and.pencil").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
-                    Text(L("Nama")).font(.app(16)).foregroundStyle(Color.appTextSecondary)
-                    TextField("", text: nameBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.appTextTertiary))
-                        .font(.app(16)).foregroundStyle(Color.appText).multilineTextAlignment(.trailing)
-                        .focused($focusedId, equals: d.id)
-                        .submitLabel(.done)
-                        .onSubmit { focusedId = nil }
-                    Image(systemName: "pencil").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextTertiary)
-                }
-                .frame(height: 44)
-                .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+                // the same rows as the manual form: label, mark and value, chevron; the name field closes the list
                 ForEach(Array(rows.enumerated()), id: \.element.label) { _, field in
                     fieldRow(d, field)
                 }
+                HStack(spacing: 12) {
+                    Text(L("Nama")).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
+                    TextField("", text: nameBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.appTextTertiary))
+                        .font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
+                        .focused($focusedId, equals: d.id)
+                        .submitLabel(.done)
+                        .onSubmit { focusedId = nil }
+                }
+                .frame(height: 48)
+                .padding(.leading, 24).padding(.trailing, 20)
 
                 chips(d)
                 if let note = d.note {
@@ -814,6 +812,8 @@ struct DraftQueueView: View {
         let icon: String
         let isMissing: Bool
         let kind: DraftFieldSheet.Kind
+        var wallet: Account?
+        var category: Category?
     }
 
     private func fields(_ d: Draft) -> [Field] {
@@ -822,12 +822,12 @@ struct DraftQueueView: View {
         let category = store.categories.first { $0.id == d.categoryId }
         var result: [Field] = []
         if d.kind == .expense || d.kind == .income {
-            result.append(Field(label: L("Kategori"), value: category?.name ?? "", icon: category?.icon ?? "tag", isMissing: category == nil, kind: .category))
+            result.append(Field(label: L("Kategori"), value: category?.name ?? "", icon: category?.icon ?? "tag", isMissing: category == nil, kind: .category, category: category))
         }
         result.append(Field(label: d.kind == .transfer ? L("Dari dompet") : L("Dompet"), value: wallet?.name ?? "", icon: "wallet.bifold",
-                            isMissing: wallet == nil, kind: .wallet))
+                            isMissing: wallet == nil, kind: .wallet, wallet: wallet))
         if d.kind == .transfer {
-            result.append(Field(label: L("Ke dompet"), value: target?.name ?? "", icon: "arrow.right", isMissing: target == nil, kind: .target))
+            result.append(Field(label: L("Ke dompet"), value: target?.name ?? "", icon: "arrow.right", isMissing: target == nil, kind: .target, wallet: target))
         }
         result.append(Field(label: L("Tanggal"), value: Self.dateLabel(d.date), icon: "calendar", isMissing: false, kind: .date))
         return result
@@ -871,21 +871,11 @@ struct DraftQueueView: View {
 
     /// One line: icon, label, value at the end, chevron. A missing value turns icon and label amber with a plus.
     private func fieldRow(_ d: Draft, _ f: Field) -> some View {
+        let isDate = f.kind == .date
         return Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: f.kind) } } label: {
-            HStack(spacing: 14) {
-                Image(systemName: f.isMissing ? "plus.circle" : f.icon).font(.system(size: 20))
-                    .foregroundStyle(f.isMissing ? Color.stWarn : Color.appTextSecondary).frame(width: 24)
-                Text(f.label).font(.app(16, weight: f.isMissing ? .semibold : .regular))
-                    .foregroundStyle(f.isMissing ? Color.stWarn : Color.appTextSecondary)
-                Spacer(minLength: 8)
-                if !f.isMissing {
-                    Text(f.value).font(.app(16)).foregroundStyle(Color.appText).lineLimit(1)
-                }
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
-            }
-            .frame(height: 44)
-            .contentShape(Rectangle())
-            .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+            DetailRow(label: f.label, value: f.isMissing ? (f.kind == .category ? L("Belum dipilih") : L("Pilih")) : f.value,
+                      wallet: f.isMissing ? nil : f.wallet, categoryMark: f.isMissing ? nil : f.category,
+                      icon: isDate ? "calendar" : nil, showsChevron: true, height: 48, isPlaceholder: f.isMissing)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(f.label)
