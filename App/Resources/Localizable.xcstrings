@@ -12823,6 +12823,16 @@
         }
       }
     },
+    "Mirip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Similar"
+          }
+        }
+      }
+    },
     "Mirip dengan draf lain di daftar ini": {
       "localizations": {
         "en": {

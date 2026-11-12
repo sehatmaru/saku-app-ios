@@ -1573,5 +1573,7 @@
   "Teks asli": "Original text",
   "Draf Transaksi": "Transaction Drafts",
   "Lihat gambar asli": "View original image",
-  "Gambar tidak ditemukan": "Image not found"
+  "Gambar tidak ditemukan": "Image not found",
+  "Mirip": "Similar",
+  "%lld hari": "%lld days"
 }
