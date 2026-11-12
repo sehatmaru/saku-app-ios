@@ -305,8 +305,8 @@ struct DraftQueueView: View {
     }
 
     /// One height for every card, state and kind: the tallest realistic content, capped so it fits small screens.
-    /// The coloured head is a quarter of the card; 24 pt side padding matches the rows below.
-    private static let heroHeight: CGFloat = 132
+    /// The coloured head is a bit under a third of the card; 24 pt side padding matches the rows below.
+    private static let heroHeight: CGFloat = 148
     private static var cardWidth: CGFloat { UIScreen.main.bounds.width }
     private static var cardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
 
