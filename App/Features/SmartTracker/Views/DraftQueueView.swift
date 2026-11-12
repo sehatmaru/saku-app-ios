@@ -189,8 +189,8 @@ struct DraftQueueView: View {
         }
     }
 
-    /// Oldest first: the order the drafts came in, and the order "Simpan semua" records them.
-    private var queue: [Draft] { store.drafts.sorted { $0.createdAt < $1.createdAt } }
+    /// Newest first, left to right. "Simpan semua" still records them oldest first.
+    private var queue: [Draft] { store.drafts.sorted { $0.createdAt > $1.createdAt } }
 
     private var ready: [Draft] { queue.filter { $0.isComplete && !store.needsPeriodChoice($0) } }
 
@@ -305,8 +305,8 @@ struct DraftQueueView: View {
     }
 
     /// One height for every card, state and kind: the tallest realistic content, capped so it fits small screens.
-    /// The coloured head is a bit under a third of the card; 24 pt side padding matches the rows below.
-    private static let heroHeight: CGFloat = 148
+    /// The coloured head is about a third of the card; 24 pt side padding matches the rows below.
+    private static let heroHeight: CGFloat = 176
     private static var cardWidth: CGFloat { UIScreen.main.bounds.width }
     private static var cardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
 
@@ -323,7 +323,7 @@ struct DraftQueueView: View {
                     allChecked
                 }
             }
-            toastView
+            if store.drafts.isEmpty { toastView.padding(.bottom, 110) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBackground)
@@ -398,7 +398,7 @@ struct DraftQueueView: View {
                     .padding(.horizontal, 20)
                 // the marks sit halfway between the card and the bar below
                 Spacer(minLength: 0)
-                pageDots
+                pageDots.overlay { toastView }
                 Spacer(minLength: 0)
             } else {
                 Spacer(minLength: 0)
@@ -752,7 +752,8 @@ struct DraftQueueView: View {
         .foregroundStyle(Color.appText)
         .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 24)
         .frame(maxWidth: .infinity, alignment: .leading)
-        if image != nil { content.filterSheet(detent: .constant(.large)) } else { content.filterSheet() }
+        let close = PrimaryButton(title: L("Tutup")) { sourceSheet = nil }
+        if image != nil { content.filterSheet(detent: .constant(.large)) { close } } else { content.filterSheet { close } }
     }
 
     /// "Notifikasi BCA · Masuk 09.41 · AI": shown when the source icon is tapped.
@@ -941,7 +942,7 @@ struct DraftQueueView: View {
     }
 
     /// "Draf diabaikan  Urungkan": a dark pill with words only (a check mark would read as "done", which is wrong for
-    /// Abaikan). Sits just above the bottom bar, where the Simpan and Abaikan buttons are.
+    /// Abaikan). Sits in the band of page marks between the card and the bottom bar, so it never covers a button.
     @ViewBuilder private var toastView: some View {
         if let toast {
             HStack(spacing: 14) {
@@ -957,7 +958,6 @@ struct DraftQueueView: View {
             .padding(.leading, 20).padding(.trailing, 6).frame(height: 48)
             .background(Color(light: 0x111111, dark: 0x2C2C2E), in: Capsule())
             .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
-            .padding(.bottom, store.drafts.isEmpty ? 110 : store.drafts.count > 1 && focusedId == nil ? 124 : 40)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -1034,7 +1034,7 @@ struct DraftQueueView: View {
     }
 
     private func saveAllComplete() {
-        let items = ready
+        let items = Array(ready.reversed())
         showsSaveAll = false
         Task {
             var done: [Draft] = []
