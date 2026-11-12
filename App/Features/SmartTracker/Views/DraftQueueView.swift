@@ -460,6 +460,15 @@ struct DraftQueueView: View {
                             .fill(headerColor(d))
                             .frame(width: size.0, height: size.1)
                             .opacity(dist > 3 ? 0 : dist == 0 ? 1 : 0.55)
+                            .overlay(alignment: .topTrailing) {
+                                // a draft that still lacks something wears the same amber as its dashed card
+                                if !d.isComplete && dist <= 3 {
+                                    Image(systemName: "exclamationmark.circle.fill").font(.system(size: 11, weight: .bold))
+                                        .foregroundStyle(Color.stWarn)
+                                        .background(Color.appBackground, in: Circle())
+                                        .offset(x: 5, y: -5)
+                                }
+                            }
                             .frame(width: 24, height: 44)
                     }
                     .buttonStyle(.plain)
