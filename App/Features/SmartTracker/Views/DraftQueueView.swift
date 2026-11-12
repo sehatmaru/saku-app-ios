@@ -422,6 +422,28 @@ struct DraftQueueView: View {
 
     /// One mark per draft in the colour of its kind. The track slides so the front draft is centred; the front mark is the
     /// tallest, the ones further away shrink and fade out.
+    @State private var dotStart: Int?
+
+    /// Dragging along the marks scrubs through the drafts: the strip follows the finger, one draft per mark.
+    private var dotScrub: some Gesture {
+        DragGesture(minimumDistance: 8, coordinateSpace: .global)
+            .onChanged { v in
+                guard !queue.isEmpty else { return }
+                swiping = true
+                let start = dotStart ?? stackPosition
+                dotStart = start
+                let target = min(max(start - Int((v.translation.width / 24).rounded()), 0), queue.count - 1)
+                guard target != stackPosition else { return }
+                focusedId = nil
+                UISelectionFeedbackGenerator().selectionChanged()
+                browse = target
+            }
+            .onEnded { _ in
+                dotStart = nil
+                Task { try? await Task.sleep(for: .milliseconds(350)); swiping = false }
+            }
+    }
+
     private var pageDots: some View {
         let sizes: [(CGFloat, CGFloat)] = [(22, 30), (16, 22), (12, 18), (9, 14)]
         let n = queue.count, pos = stackPosition
@@ -449,6 +471,8 @@ struct DraftQueueView: View {
         }
         .frame(height: 44)
         .clipped()
+        .contentShape(Rectangle())
+        .simultaneousGesture(dotScrub)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L("%lld dari %lld", pos + 1, n))
     }
