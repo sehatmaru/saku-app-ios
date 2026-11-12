@@ -753,7 +753,7 @@ struct DraftQueueView: View {
         .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 24)
         .frame(maxWidth: .infinity, alignment: .leading)
         let close = PrimaryButton(title: L("Tutup")) { sourceSheet = nil }
-        if image != nil { content.filterSheet(detent: .constant(.large)) { close } } else { content.filterSheet { close } }
+        if image != nil { content.filterSheet(fullHeight: true) { close } } else { content.filterSheet { close } }
     }
 
     /// "Notifikasi BCA · Masuk 09.41 · AI": shown when the source icon is tapped.

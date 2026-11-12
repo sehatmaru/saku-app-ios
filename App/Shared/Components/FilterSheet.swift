@@ -22,7 +22,8 @@ extension View {
     }
 
     /// `showsMoreCue` adds a fade and a down arrow above the footer while there is more content below.
-    func filterSheet<Footer: View>(showsMoreCue: Bool = false, detent: Binding<PresentationDetent>? = nil, @ViewBuilder footer: () -> Footer) -> some View {
+    /// `fullHeight` is for sheets that always open full: one `.large` detent, so the system slides it up from the bottom like any other sheet.
+    func filterSheet<Footer: View>(showsMoreCue: Bool = false, detent: Binding<PresentationDetent>? = nil, fullHeight: Bool = false, @ViewBuilder footer: () -> Footer) -> some View {
         let bar = footer()
         return ScrollView { self.reportHeight(SheetContentHeight.self) }
             .background(Color.appBackground)
@@ -30,7 +31,7 @@ extension View {
             .scrollIndicators(.hidden)
             .modifier(MoreCue(enabled: showsMoreCue))
             .pinnedFooter { bar }
-            .modifier(AdaptiveDetents(selection: detent))
+            .modifier(AdaptiveDetents(selection: detent, fullHeight: fullHeight))
     }
 
     /// The footer pinned at the bottom of a sheet, 24 pt from the screen edge and from the sides.
@@ -132,6 +133,7 @@ private struct KeyboardUp: ViewModifier {
 /// measurement the system's half height stands in. A sheet taller than the screen is capped at full height by the system.
 private struct AdaptiveDetents: ViewModifier {
     let selection: Binding<PresentationDetent>?
+    var fullHeight = false
     @State private var content: CGFloat = 0
     @State private var footer: CGFloat = 0
     @State private var keyboard = false
@@ -143,12 +145,16 @@ private struct AdaptiveDetents: ViewModifier {
         return .height(max(ceil(content + footer + safe), 200))
     }
 
-    func body(content view: Content) -> some View {
-        view
-            .modifier(KeyboardUp(up: $keyboard))
-            .onPreferenceChange(SheetContentHeight.self) { if !keyboard { content = $0 } }
-            .onPreferenceChange(SheetFooterHeight.self) { if !keyboard { footer = $0 } }
-            .modifier(FitDetents(fit: adaptive, selection: selection))
+    @ViewBuilder func body(content view: Content) -> some View {
+        if fullHeight {
+            view.presentationDetents([.large])
+        } else {
+            view
+                .modifier(KeyboardUp(up: $keyboard))
+                .onPreferenceChange(SheetContentHeight.self) { if !keyboard { content = $0 } }
+                .onPreferenceChange(SheetFooterHeight.self) { if !keyboard { footer = $0 } }
+                .modifier(FitDetents(fit: adaptive, selection: selection))
+        }
     }
 }
 
