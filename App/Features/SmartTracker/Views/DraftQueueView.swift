@@ -305,6 +305,8 @@ struct DraftQueueView: View {
     }
 
     /// One height for every card, state and kind: the tallest realistic content, capped so it fits small screens.
+    /// The coloured head is a quarter of the card; 24 pt side padding matches the rows below.
+    private static let heroHeight: CGFloat = 132
     private static var cardWidth: CGFloat { UIScreen.main.bounds.width }
     private static var cardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
 
@@ -514,7 +516,7 @@ struct DraftQueueView: View {
                 }
                 // the same rows as the manual form: label, mark and value, chevron; the name field closes the list
                 ForEach(Array(rows.enumerated()), id: \.element.label) { _, field in
-                    fieldRow(d, field).padding(.horizontal, -20)
+                    fieldRow(d, field).padding(.horizontal, -24).padding(.trailing, 4)
                 }
                 HStack(spacing: 12) {
                     Text(L("Nama")).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
@@ -525,8 +527,7 @@ struct DraftQueueView: View {
                         .onSubmit { focusedId = nil }
                 }
                 .frame(height: 48)
-                .padding(.leading, 4).padding(.trailing, 0)
-
+                
                 chips(d)
                 if let note = d.note {
                     Label(note, systemImage: "eye").font(.app(13)).foregroundStyle(Color.stWarn).padding(.top, 8)
@@ -581,12 +582,12 @@ struct DraftQueueView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20).padding(.top, 30).padding(.bottom, 14)
-            .frame(maxWidth: .infinity, minHeight: Self.cardHeight - 150, alignment: .topLeading)
+            .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 16)
+            .frame(maxWidth: .infinity, minHeight: Self.cardHeight - Self.heroHeight, alignment: .topLeading)
             }
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
-            .frame(height: Self.cardHeight - 150)
+            .frame(height: Self.cardHeight - Self.heroHeight)
         }
         .background(Color.appBackground)
         .clipShape(RoundedRectangle(cornerRadius: 32))
@@ -607,35 +608,37 @@ struct DraftQueueView: View {
             HStack(spacing: 8) {
                 Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: .type) } } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: d.kindIcon).font(.system(size: 14, weight: .bold))
+                        Image(systemName: d.kindIcon).font(.system(size: 13, weight: .bold))
                         Text(d.kindTitle)
-                        Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold))
+                        Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold))
                     }
-                    .font(.app(15, weight: .semibold)).foregroundStyle(.white)
-                    .padding(.horizontal, 16).frame(height: 44)
+                    .font(.app(14, weight: .semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 14).frame(height: 36)
                     .background(Color.white.opacity(0.22), in: Capsule())
+                    .padding(.vertical, 4).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(L("Tipe"))
                 .accessibilityValue(d.kindTitle)
                 Spacer(minLength: 0)
                 Label(DateFormatter.arrivalTime.string(from: d.createdAt), systemImage: "clock")
-                    .font(.app(13, weight: .medium)).monospacedDigit().foregroundStyle(.white.opacity(0.92))
+                    .font(.app(12, weight: .medium)).monospacedDigit().foregroundStyle(.white.opacity(0.92))
                     .padding(.trailing, 4)
                 Button { if !swiping { sourceSheet = DraftImageItem(id: d.id) } } label: {
                     Group {
                         if let thumb {
                             Image(uiImage: thumb).resizable().scaledToFill()
                         } else {
-                            Image(systemName: d.sourceIcon).font(.system(size: 18, weight: .medium)).foregroundStyle(.white)
+                            Image(systemName: d.sourceIcon).font(.system(size: 16, weight: .medium)).foregroundStyle(.white)
                         }
                     }
-                    .frame(width: 44, height: 44)
+                    .frame(width: 36, height: 36)
                     .background(Color.white.opacity(0.28))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .overlay {
-                        if thumb != nil { RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.white, lineWidth: 2) }
+                        if thumb != nil { RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.white, lineWidth: 2) }
                     }
+                    .padding(4).contentShape(Rectangle())
                     .opacity(reading && pulse ? 0.45 : 1)
                 }
                 .buttonStyle(PressScaleStyle())
@@ -652,16 +655,16 @@ struct DraftQueueView: View {
                     Group {
                         if let amount = d.amount {
                             HStack(alignment: .top, spacing: 2) {
-                                Text("Rp").font(.app(18)).opacity(0.85).padding(.top, 7)
+                                Text("Rp").font(.app(16, weight: .medium)).opacity(0.85).padding(.top, 6)
                                 Text(amount.formattedAsDigits())
-                                    .font(.app(amount.formattedAsDigits().count > 7 ? 44 : 52, weight: .ultraLight)).tracking(-2.5).monospacedDigit()
+                                    .font(.app(amount.formattedAsDigits().count > 7 ? 38 : 46, weight: .light)).tracking(-1.5).monospacedDigit()
                                     .lineLimit(1).minimumScaleFactor(0.5)
                             }
                         } else {
                             HStack(spacing: 16) {
                                 HStack(alignment: .top, spacing: 8) {
-                                    Text("Rp").font(.app(20)).padding(.top, 10)
-                                    Text("0").font(.app(52, weight: .ultraLight)).tracking(-2.5)
+                                    Text("Rp").font(.app(16, weight: .medium)).padding(.top, 6)
+                                    Text("0").font(.app(46, weight: .light)).tracking(-1.5)
                                 }
                                 .opacity(0.5)
                                 Label("Ketuk untuk isi nominal", systemImage: "pencil").font(.app(13, weight: .semibold))
@@ -670,14 +673,14 @@ struct DraftQueueView: View {
                         }
                     }
                     .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(L("Nominal"))
             }
         }
-        .padding(.horizontal, 20).padding(.vertical, 14)
-        .frame(maxWidth: .infinity, minHeight: 150, maxHeight: 150, alignment: .topLeading)
+        .padding(.horizontal, 24).padding(.vertical, 16)
+        .frame(maxWidth: .infinity, minHeight: Self.heroHeight, maxHeight: Self.heroHeight, alignment: .topLeading)
         .background(headerColor(d), in: RoundedRectangle(cornerRadius: 32))
         .overlay(alignment: .bottomTrailing) {
             if canRescan(d) || rescanning.contains(d.id) {
@@ -691,7 +694,7 @@ struct DraftQueueView: View {
                     }
                     sparkleButton(d)
                 }
-                .offset(y: 24).padding(.trailing, 20)
+                .offset(y: 24).padding(.trailing, 24)
             }
         }
     }
