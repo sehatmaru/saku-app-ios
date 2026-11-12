@@ -216,60 +216,84 @@ struct DraftQueueView: View {
     @State private var expandedSource: Set<UUID> = []
     @State private var viewingImage: DraftImageItem?
     @State private var sourceSheet: DraftImageItem?
+    @State private var dragging = false
+    @State private var exiting: UUID?
+    @State private var exitDir: CGFloat = 0
+    @State private var busy = false
 
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 20)
             .onChanged { value in
-                guard stack.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
+                guard queue.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
                 swiping = true
+                dragging = true
                 drag = value.translation.width
             }
             .onEnded { value in
+                dragging = false
                 let flick = value.predictedEndTranslation.width
                 Task { try? await Task.sleep(for: .milliseconds(350)); swiping = false }
-                guard stack.count > 1, abs(drag) > 0, abs(drag) > 90 || abs(flick) > 220 else {
-                    withAnimation(.spring(duration: 0.35, bounce: 0.25)) { drag = 0 }
-                    return
-                }
-                let step = (drag < 0 || flick < -220) ? 1 : -1
-                focusedId = nil
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                // The front card leaves to the side; the card under it has grown to full size by then, so swapping is invisible.
-                withAnimation(.easeIn(duration: 0.2)) { drag = CGFloat(-step) * 480 }
-                Task {
-                    try? await Task.sleep(for: .milliseconds(210))
-                    var instant = SwiftUI.Transaction(); instant.disablesAnimations = true
-                    withTransaction(instant) { browse += step; drag = 0 }
-                }
+                guard queue.count > 1, abs(drag) > 0, abs(drag) > 90 || abs(flick) > 220 else { drag = 0; return }
+                commit(step: (drag < 0 || flick < -220) ? 1 : -1)
             }
     }
 
-    /// What waits behind the front card. The next draft (or the previous one when dragging right) is drawn for real,
-    /// small at first and growing to full size as the front card is pulled away; a third card is a plain shape.
-    @ViewBuilder private func stackPeek() -> some View {
-        let n = stack.count
-        let progress = min(abs(drag) / 140, 1)
-        ZStack(alignment: .top) {
-            if n > 2 {
-                RoundedRectangle(cornerRadius: 32).fill(Color.stChip.opacity(0.55))
-                    .scaleEffect(1 - 0.06 * (2 - 0), anchor: .top).offset(y: -36)
-            }
-            if n > 1 {
-                GeometryReader { geo in
-                    card(drag > 0 ? stack[n - 1] : stack[1])
-                        .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
-                        .background(Color.appBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 32))
-                        .allowsHitTesting(false)
-                        .blur(radius: 2.5 * (1 - progress))
-                        .scaleEffect(1 - 0.06 * (1 - progress), anchor: .top)
-                        .offset(y: -18 * (1 - progress))
-                        .opacity(1 - 0.12 * (1 - progress))
+    /// Brings another draft to the front: the old front card leaves to the side while the next one grows from behind.
+    private func commit(step: Int) {
+        guard !busy, queue.count > 1, step != 0 else { drag = 0; return }
+        busy = true
+        Task { try? await Task.sleep(for: .milliseconds(300)); busy = false }
+        focusedId = nil
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        exiting = queue[stackPosition].id
+        exitDir = step > 0 ? -1 : 1
+        browse += step
+        drag = 0
+    }
+
+    /// Where draft `j` sits relative to the front one: 0 front, 1 and 2 behind it, -1 the one before it.
+    private func relative(_ j: Int, _ pos: Int, _ n: Int) -> Int {
+        let r = ((j - pos) % n + n) % n
+        return n > 2 && r == n - 1 ? -1 : r
+    }
+
+    private static let ease = Animation.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.28)
+
+    /// Every draft is a real card. The front one follows the finger; the ones behind sit higher, smaller and blurred, and
+    /// sharpen as the front one is pulled away.
+    private var cardStack: some View {
+        let n = queue.count, pos = stackPosition
+        let t = min(abs(drag) / 140, 1)
+        return ZStack(alignment: .top) {
+            ForEach(Array(queue.enumerated()), id: \.element.id) { j, d in
+                let rel = relative(j, pos, n)
+                if (rel >= -1 && rel <= 2) || d.id == exiting {
+                    let front = rel == 0
+                    let out = d.id == exiting && !front
+                    let under = (drag < 0 && rel > 0) || (drag > 0 && (rel == -1 || (n == 2 && rel == 1)))
+                    let behind = !out && (rel > 0 || (rel == -1 && drag > 0))
+                    let eff = max(0, Double(abs(rel)) - (under ? t : 0))
+                    card(d)
+                        .frame(height: Self.cardHeight)
+                        .allowsHitTesting(front)
+                        .simultaneousGesture(swipe)
+                        .blur(radius: behind ? 2.5 * eff : 0)
+                        .scaleEffect(behind ? 1 - 0.06 * eff : 1, anchor: .top)
+                        .opacity(out ? 0 : behind ? (eff > 2 ? 0 : 1 - 0.12 * eff) : front ? 1 : 0)
+                        .offset(x: front ? drag : out ? exitDir * 520 : behind ? 0 : -520,
+                                y: behind ? (eff > 2 ? -32 : -18 * eff) : 0)
+                        .zIndex(out ? 6 : front ? 5 : behind ? 4 - eff : 1)
+                        .animation(front && dragging ? nil : Self.ease, value: drag)
+                        .animation(Self.ease, value: pos)
+                        .animation(Self.ease, value: exiting)
                 }
             }
         }
-        .accessibilityHidden(true)
+        .frame(maxWidth: .infinity, minHeight: Self.cardHeight, alignment: .top)
     }
+
+    /// One height for every card, state and kind: the tallest realistic content, capped so it fits small screens.
+    private static var cardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
 
     // MARK: Body
 
@@ -355,18 +379,11 @@ struct DraftQueueView: View {
                     .padding(.horizontal, 24).padding(.top, 12)
                 }
 
-                if let front = stack.first {
-                    // The oldest draft sits in front; the next ones peek out above it, small and blurred.
-                    ZStack {
-                        card(front)
-                            .offset(x: drag)
-                            .simultaneousGesture(swipe)
-                            .background(alignment: .top) { stackPeek() }
-                            .transition(.opacity)
-                    }
-                    .padding(.horizontal, 20).padding(.top, stack.count > 2 ? 46 : stack.count > 1 ? 28 : 12)
+                if !queue.isEmpty {
+                    cardStack
+                        .padding(.horizontal, 20).padding(.top, queue.count > 2 ? 46 : queue.count > 1 ? 28 : 12)
                     pageDots
-                        .padding(.bottom, 16)
+                        .padding(.top, 20).padding(.bottom, 16)
                 }
 
                 // Notifications already recorded: information only, kept for 7 days (K5, K10).
@@ -388,29 +405,35 @@ struct DraftQueueView: View {
         }
     }
 
-    /// One mark per draft in the colour of its kind; the front one is the tallest, the ones further away shrink and fade.
+    /// One mark per draft in the colour of its kind. The track slides so the front draft is centred; the front mark is the
+    /// tallest, the ones further away shrink and fade out.
     private var pageDots: some View {
         let sizes: [(CGFloat, CGFloat)] = [(22, 30), (16, 22), (12, 18), (9, 14)]
         let n = queue.count, pos = stackPosition
-        return HStack(spacing: 0) {
-            ForEach(Array(queue.enumerated()), id: \.element.id) { k, d in
-                let dist = abs(k - pos)
-                if dist <= 3 {
-                    Button {
-                        withAnimation(.settle(0.3)) { browse = k }
-                    } label: {
+        let curve = Animation.timingCurve(0.22, 0.9, 0.25, 1, duration: 0.45)
+        return GeometryReader { geo in
+            HStack(spacing: 0) {
+                ForEach(Array(queue.enumerated()), id: \.element.id) { k, d in
+                    let dist = abs(k - pos)
+                    let size = dist < sizes.count ? sizes[dist] : (8, 12)
+                    Button { commit(step: k - pos) } label: {
                         RoundedRectangle(cornerRadius: dist == 0 ? 6 : 4)
-                            .fill(headerColor(d)).opacity(dist == 0 ? 1 : 0.55)
-                            .frame(width: sizes[dist].0, height: sizes[dist].1)
+                            .fill(headerColor(d))
+                            .frame(width: size.0, height: size.1)
+                            .opacity(dist > 3 ? 0 : dist == 0 ? 1 : 0.55)
                             .frame(width: 24, height: 44)
                     }
                     .buttonStyle(.plain)
+                    .allowsHitTesting(dist <= 3)
                     .accessibilityLabel(d.kindTitle)
                 }
             }
+            .frame(width: CGFloat(n) * 24, alignment: .leading)
+            .offset(x: geo.size.width / 2 - 24 * CGFloat(pos) - 12)
+            .animation(curve, value: pos)
         }
-        .frame(maxWidth: .infinity)
-        .animation(.settle(0.3), value: pos)
+        .frame(height: 44)
+        .clipped()
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L("%lld dari %lld", pos + 1, n))
     }
@@ -440,6 +463,7 @@ struct DraftQueueView: View {
         return VStack(spacing: 0) {
             cardHeader(d, reading: rescanning.contains(d.id))
                 .zIndex(1)
+            ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 if d.isUnreadable {
                     VStack(alignment: .leading, spacing: 4) {
@@ -521,7 +545,11 @@ struct DraftQueueView: View {
                 }
             }
             .padding(.horizontal, 20).padding(.top, 30).padding(.bottom, 14)
-            .frame(maxWidth: .infinity, minHeight: 300, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: Self.cardHeight - 150, alignment: .topLeading)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .scrollIndicators(.hidden)
+            .frame(height: Self.cardHeight - 150)
         }
         .background(Color.appBackground)
         .clipShape(RoundedRectangle(cornerRadius: 32))
@@ -614,7 +642,7 @@ struct DraftQueueView: View {
             }
         }
         .padding(.horizontal, 20).padding(.vertical, 14)
-        .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 150, maxHeight: 150, alignment: .topLeading)
         .background(headerColor(d), in: RoundedRectangle(cornerRadius: 32))
         .overlay(alignment: .bottomTrailing) {
             if canRescan(d) || rescanning.contains(d.id) {
