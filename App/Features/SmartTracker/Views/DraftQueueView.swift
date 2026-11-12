@@ -215,6 +215,7 @@ struct DraftQueueView: View {
     @State private var expandedWords: Set<UUID> = []
     @State private var expandedSource: Set<UUID> = []
     @State private var viewingImage: DraftImageItem?
+    @State private var sourceSheet: DraftImageItem?
 
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 20)
@@ -296,6 +297,9 @@ struct DraftQueueView: View {
         .plusOffer($plusReason)
         .sheet(item: $sheet) { item in sheetContent(item) }
         .fullScreenCover(item: $viewingImage) { DraftImageViewer(id: $0.id) }
+        .sheet(item: $sourceSheet) { item in
+            if let d = store.drafts.first(where: { $0.id == item.id }) { sourceSheetContent(d) }
+        }
         .sheet(isPresented: $showsSaveAll) { saveAllSheet }
 .sheet(item: $periodChoice) { d in
     EarlySalarySheet(date: d.date) { choice in
@@ -456,7 +460,7 @@ struct DraftQueueView: View {
                         .onSubmit { focusedId = nil }
                     Image(systemName: "pencil").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextTertiary)
                 }
-                .frame(height: 48)
+                .frame(height: 44)
                 .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
                 ForEach(Array(rows.enumerated()), id: \.element.label) { _, field in
                     fieldRow(d, field)
@@ -516,8 +520,8 @@ struct DraftQueueView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20).padding(.top, 36).padding(.bottom, 16)
-            .frame(maxWidth: .infinity, minHeight: 394, alignment: .topLeading)
+            .padding(.horizontal, 20).padding(.top, 30).padding(.bottom, 14)
+            .frame(maxWidth: .infinity, minHeight: 300, alignment: .topLeading)
         }
         .background(Color.appBackground)
         .clipShape(RoundedRectangle(cornerRadius: 32))
@@ -553,22 +557,23 @@ struct DraftQueueView: View {
                 Label(DateFormatter.arrivalTime.string(from: d.createdAt), systemImage: "clock")
                     .font(.app(13, weight: .medium)).monospacedDigit().foregroundStyle(.white.opacity(0.92))
                     .padding(.trailing, 4)
-                Button {
-                    if swiping { return }
-                    if let id = d.imageId, thumb != nil { viewingImage = DraftImageItem(id: id); return }
-                    withAnimation(.settle(0.3)) {
-                        if expandedSource.contains(d.id) { expandedSource.remove(d.id) } else { expandedSource.insert(d.id) }
-                    }
-                } label: {
-                    Image(systemName: thumb != nil ? "photo" : d.sourceIcon).font(.system(size: 18, weight: .medium)).foregroundStyle(.white)
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(alignment: .bottomTrailing) {
-                            Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(Color.black).frame(width: 20, height: 20)
-                                .background(.white, in: Circle()).offset(x: 4, y: 4)
+                Button { if !swiping { sourceSheet = DraftImageItem(id: d.id) } } label: {
+                    Group {
+                        if let thumb {
+                            Image(uiImage: thumb).resizable().scaledToFill()
+                        } else {
+                            Image(systemName: d.sourceIcon).font(.system(size: 18, weight: .medium)).foregroundStyle(.white)
                         }
-                        .opacity(reading && pulse ? 0.45 : 1)
+                    }
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.28))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Color.black).frame(width: 20, height: 20)
+                            .background(.white, in: Circle()).offset(x: 4, y: 4)
+                    }
+                    .opacity(reading && pulse ? 0.45 : 1)
                 }
                 .buttonStyle(PressScaleStyle())
                 .accessibilityLabel(thumb != nil ? L("Lihat gambar asli") : d.sourceLabel)
@@ -576,7 +581,7 @@ struct DraftQueueView: View {
 
             if reading {
                 Capsule().fill(Color.white.opacity(0.22)).frame(width: 200, height: 44)
-                    .frame(maxWidth: .infinity, minHeight: 72)
+                    .frame(maxWidth: .infinity, minHeight: 56)
                     .opacity(pulse ? 0.45 : 1)
                     .accessibilityHidden(true)
             } else {
@@ -584,16 +589,16 @@ struct DraftQueueView: View {
                     Group {
                         if let amount = d.amount {
                             HStack(alignment: .top, spacing: 2) {
-                                Text("Rp").font(.app(20)).opacity(0.85).padding(.top, 10)
+                                Text("Rp").font(.app(18)).opacity(0.85).padding(.top, 7)
                                 Text(amount.formattedAsDigits())
-                                    .font(.app(amount.formattedAsDigits().count > 7 ? 56 : 64, weight: .ultraLight)).tracking(-2.5).monospacedDigit()
+                                    .font(.app(amount.formattedAsDigits().count > 7 ? 44 : 52, weight: .ultraLight)).tracking(-2.5).monospacedDigit()
                                     .lineLimit(1).minimumScaleFactor(0.5)
                             }
                         } else {
                             HStack(spacing: 16) {
                                 HStack(alignment: .top, spacing: 8) {
                                     Text("Rp").font(.app(20)).padding(.top, 10)
-                                    Text("0").font(.app(64, weight: .ultraLight)).tracking(-2.5)
+                                    Text("0").font(.app(52, weight: .ultraLight)).tracking(-2.5)
                                 }
                                 .opacity(0.5)
                                 Label("Ketuk untuk isi nominal", systemImage: "pencil").font(.app(13, weight: .semibold))
@@ -602,32 +607,15 @@ struct DraftQueueView: View {
                         }
                     }
                     .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(L("Nominal"))
             }
         }
-        .padding(.horizontal, 20).padding(.vertical, 16)
-        .frame(maxWidth: .infinity, minHeight: 176, alignment: .topLeading)
+        .padding(.horizontal, 20).padding(.vertical, 14)
+        .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
         .background(headerColor(d), in: RoundedRectangle(cornerRadius: 32))
-        .overlay(alignment: .topTrailing) {
-            if expandedSource.contains(d.id) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(sourceLine(d, reading: reading))
-                    if let why = d.fallbackReason { Text(L("Dibaca tanpa AI · %@", why)) }
-                    if let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty, !d.isUnreadable {
-                        Text(words).font(.app(13)).foregroundStyle(Color.black.opacity(0.7))
-                    }
-                }
-                .font(.app(13, weight: .medium)).foregroundStyle(.black)
-                .padding(.horizontal, 12).padding(.vertical, 8)
-                .frame(maxWidth: 260, alignment: .leading)
-                .background(.white, in: RoundedRectangle(cornerRadius: 12))
-                .padding(.trailing, 20).padding(.top, 68)
-                .transition(.opacity)
-            }
-        }
         .overlay(alignment: .bottomTrailing) {
             if canRescan(d) || rescanning.contains(d.id) {
                 HStack(spacing: 8) {
@@ -640,7 +628,7 @@ struct DraftQueueView: View {
                     }
                     sparkleButton(d)
                 }
-                .offset(y: 26).padding(.trailing, 20)
+                .offset(y: 24).padding(.trailing, 20)
             }
         }
     }
@@ -671,6 +659,35 @@ struct DraftQueueView: View {
         .background(Color.appFill, in: Capsule())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
+    }
+
+    /// The source of a draft: the picture it was read from, or the words it was made from.
+    private func sourceSheetContent(_ d: Draft) -> some View {
+        let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(sourceLine(d, reading: false)).font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                if let why = d.fallbackReason { Text(L("Dibaca tanpa AI · %@", why)).font(.app(13)).foregroundStyle(Color.appTextSecondary) }
+                if let id = d.imageId, let image = DraftImageStore.image(id) {
+                    Image(uiImage: image).resizable().scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .accessibilityLabel(L("Lihat gambar asli"))
+                } else if !words.isEmpty {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "quote.opening").font(.system(size: 12, weight: .heavy)).foregroundStyle(Color.appTextTertiary).padding(.top, 3)
+                        Text(words).font(.system(size: 14, design: .monospaced)).foregroundStyle(Color.appText).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .accessibilityLabel(L("Teks asli"))
+                }
+            }
+            .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 24)
+        }
+        .background(Color.appBackground)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
     }
 
     /// "Notifikasi BCA · Masuk 09.41 · AI": shown when the source icon is tapped.
@@ -802,7 +819,7 @@ struct DraftQueueView: View {
                 }
                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
             }
-            .frame(height: 48)
+            .frame(height: 44)
             .contentShape(Rectangle())
             .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
         }
