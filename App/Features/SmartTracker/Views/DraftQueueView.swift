@@ -220,6 +220,8 @@ struct DraftQueueView: View {
     @State private var exiting: UUID?
     @State private var exitDir: CGFloat = 0
     @State private var busy = false
+    /// Why the round AI button does nothing, shown beside it for a few seconds.
+    @State private var aiReason: (id: UUID, text: String)?
 
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 20, coordinateSpace: .global)
@@ -241,6 +243,15 @@ struct DraftQueueView: View {
                 guard queue.count > 1, abs(drag) > 0, abs(drag) > 90 || abs(flick) > 220 else { drag = 0; return }
                 commit(step: (drag < 0 || flick < -220) ? 1 : -1)
             }
+    }
+
+    /// A draft arriving at the front must not push the card being looked at out of view.
+    private func keepFront(_ old: [UUID], _ new: [UUID]) {
+        guard !old.isEmpty else { return }
+        let front = old[min(max(browse, 0), old.count - 1)]
+        guard let at = new.firstIndex(of: front), at != browse else { return }
+        var t = SwiftUI.Transaction(); t.disablesAnimations = true
+        withTransaction(t) { browse = at }
     }
 
     /// Brings another draft to the front: the old front card leaves to the side while the next one grows from behind.
@@ -396,6 +407,7 @@ struct DraftQueueView: View {
             if !queue.isEmpty {
                 cardStack
                     .padding(.horizontal, 20)
+                    .onChange(of: queue.map(\.id)) { old, new in keepFront(old, new) }
                 // the marks sit halfway between the card and the bar below
                 Spacer(minLength: 0)
                 pageDots.overlay { toastView }
@@ -426,11 +438,12 @@ struct DraftQueueView: View {
     /// tallest, the ones further away shrink and fade out.
     @State private var dotStart: Int?
 
-    /// Dragging along the marks scrubs through the drafts: the strip follows the finger, one draft per mark.
-    private var dotScrub: some Gesture {
-        DragGesture(minimumDistance: 8, coordinateSpace: .global)
+    /// One gesture on the strip: a short touch jumps to the mark under the finger, a drag scrubs through the drafts, one
+    /// per mark, and the card stays on whichever draft the finger was lifted over.
+    private func dotGesture(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { v in
-                guard !queue.isEmpty else { return }
+                guard !queue.isEmpty, abs(v.translation.width) > 8 else { return }
                 swiping = true
                 let start = dotStart ?? stackPosition
                 dotStart = start
@@ -440,9 +453,16 @@ struct DraftQueueView: View {
                 UISelectionFeedbackGenerator().selectionChanged()
                 browse = target
             }
-            .onEnded { _ in
+            .onEnded { v in
+                let scrubbed = dotStart != nil
                 dotStart = nil
-                Task { try? await Task.sleep(for: .milliseconds(350)); swiping = false }
+                if scrubbed {
+                    Task { try? await Task.sleep(for: .milliseconds(350)); swiping = false }
+                } else if abs(v.translation.width) <= 8, abs(v.translation.height) <= 12 {
+                    // a tap: the strip's first mark sits at width/2 - 24 * position - 12
+                    let k = Int(((v.startLocation.x - width / 2 + 24 * CGFloat(stackPosition) + 12) / 24).rounded(.down))
+                    if k >= 0 && k < queue.count && abs(k - stackPosition) <= 3 { commit(step: k - stackPosition) }
+                }
             }
     }
 
@@ -455,35 +475,35 @@ struct DraftQueueView: View {
                 ForEach(Array(queue.enumerated()), id: \.element.id) { k, d in
                     let dist = abs(k - pos)
                     let size = dist < sizes.count ? sizes[dist] : (8, 12)
-                    Button { commit(step: k - pos) } label: {
-                        RoundedRectangle(cornerRadius: dist == 0 ? 6 : 4)
-                            .fill(headerColor(d))
-                            .frame(width: size.0, height: size.1)
-                            .opacity(dist > 3 ? 0 : dist == 0 ? 1 : 0.55)
-                            .overlay(alignment: .topTrailing) {
-                                // a draft that still lacks something wears the same amber as its dashed card
-                                if !d.isComplete && dist <= 3 {
-                                    Image(systemName: "exclamationmark.circle.fill").font(.system(size: 11, weight: .bold))
-                                        .foregroundStyle(Color.stWarn)
-                                        .background(Color.appBackground, in: Circle())
-                                        .offset(x: 5, y: -5)
-                                }
+                    RoundedRectangle(cornerRadius: dist == 0 ? 6 : 4)
+                        .fill(headerColor(d))
+                        .frame(width: size.0, height: size.1)
+                        .opacity(dist > 3 ? 0 : dist == 0 ? 1 : 0.55)
+                        .overlay(alignment: .topTrailing) {
+                            // a draft that still lacks something wears the same amber as its dashed card
+                            if !d.isComplete && dist <= 3 {
+                                Image(systemName: "exclamationmark.circle.fill").font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(Color.stWarn)
+                                    .background(Color.appBackground, in: Circle())
+                                    .offset(x: 5, y: -5)
                             }
-                            .frame(width: 24, height: 44)
-                    }
-                    .buttonStyle(.plain)
-                    .allowsHitTesting(dist <= 3)
-                    .accessibilityLabel(d.kindTitle)
+                        }
+                        .frame(width: 24, height: 44)
+                        .accessibilityElement()
+                        .accessibilityLabel(d.kindTitle)
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction { commit(step: k - pos) }
                 }
             }
             .frame(width: CGFloat(n) * 24, alignment: .leading)
             .offset(x: geo.size.width / 2 - 24 * CGFloat(pos) - 12)
             .animation(curve, value: pos)
+            .frame(width: geo.size.width, alignment: .leading)
+            .contentShape(Rectangle())
+            .gesture(dotGesture(width: geo.size.width))
         }
         .frame(height: 44)
         .clipped()
-        .contentShape(Rectangle())
-        .simultaneousGesture(dotScrub)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L("%lld dari %lld", pos + 1, n))
     }
@@ -511,8 +531,7 @@ struct DraftQueueView: View {
         let failure = failures[d.id]
         let rows = fields(d)
         return VStack(spacing: 0) {
-            cardHeader(d, reading: rescanning.contains(d.id))
-                .zIndex(1)
+            cardHeader(d, reading: rescanning.contains(d.id)).zIndex(1)
             ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 if d.isUnreadable {
@@ -692,8 +711,14 @@ struct DraftQueueView: View {
         .frame(maxWidth: .infinity, minHeight: Self.heroHeight, maxHeight: Self.heroHeight, alignment: .topLeading)
         .background(headerColor(d), in: RoundedRectangle(cornerRadius: 32))
         .overlay(alignment: .bottomTrailing) {
-            if canRescan(d) || rescanning.contains(d.id) {
-                HStack(spacing: 8) {
+            HStack(spacing: 8) {
+                    if let r = aiReason, r.id == d.id, !failed {
+                        Text(r.text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
+                            .padding(.horizontal, 12).frame(height: 40)
+                            .background(Color.appBackground, in: Capsule())
+                            .overlay(Capsule().strokeBorder(Color.appDivider, lineWidth: 1))
+                            .transition(.opacity)
+                    }
                     if failed {
                         Label(L("Gagal. Ketuk untuk coba lagi"), systemImage: "arrow.counterclockwise")
                             .font(.app(13, weight: .semibold)).foregroundStyle(Color.appError)
@@ -704,7 +729,6 @@ struct DraftQueueView: View {
                     sparkleButton(d)
                 }
                 .offset(y: 24).padding(.trailing, 24)
-            }
         }
     }
 
@@ -775,18 +799,35 @@ struct DraftQueueView: View {
     /// The "Baca dengan AI" button as a round-ended icon beside Simpan.
     private func sparkleButton(_ d: Draft) -> some View {
         let busy = rescanning.contains(d.id), failed = rescanFailed.contains(d.id), out = aiOut
-        return Button { if !swiping { rescan(d) } } label: {
+        let done = d.reader == .ai
+        // why the button cannot read again: nothing left to read, or AI is off
+        let blocked: String? = done ? L("Sudah dibaca AI") : d.rawText == nil ? L("Tidak ada teks asli") : !(aiOn && RemoteSmartParser.isAvailable) ? L("AI belum aktif") : nil
+        let grey = blocked != nil && !done
+        return Button {
+            if swiping { return }
+            if let blocked {
+                let note = (id: d.id, text: blocked)
+                withAnimation(.settle(0.3)) { aiReason = note }
+                Task {
+                    try? await Task.sleep(for: .seconds(3))
+                    if aiReason?.id == note.id && aiReason?.text == note.text { withAnimation(.settle(0.3)) { aiReason = nil } }
+                }
+            } else {
+                rescan(d)
+            }
+        } label: {
             Group {
-                if busy { ProgressView().tint(.white) } else { Image(systemName: failed ? "exclamationmark.circle.fill" : "sparkles").font(.system(size: 22)) }
+                if busy { ProgressView().tint(.white) }
+                else { Image(systemName: failed ? "exclamationmark.circle.fill" : done ? "checkmark" : "sparkles").font(.system(size: 22, weight: done ? .bold : .regular)) }
             }
             .foregroundStyle(failed ? Color.appError : .white)
             .frame(width: 52, height: 52)
-            .background(failed ? Color.stDangerBg : out ? Color.appTextTertiary : Color.appPrimary, in: Circle())
+            .background(failed ? Color.stDangerBg : (out && blocked == nil) || grey ? Color.appTextTertiary : Color.appPrimary, in: Circle())
             .overlay(Circle().strokeBorder(Color.appBackground, lineWidth: 3))
         }
         .buttonStyle(PressScaleStyle())
-        .disabled(busy || out)
-        .accessibilityLabel(busy ? L("Memindai ulang…") : failed ? L("Gagal. Ketuk untuk coba lagi") : out ? L("Jatah habis") : L("Baca dengan AI"))
+        .disabled(busy || (out && blocked == nil))
+        .accessibilityLabel(busy ? L("Memindai ulang…") : failed ? L("Gagal. Ketuk untuk coba lagi") : blocked ?? (out ? L("Jatah habis") : L("Baca dengan AI")))
     }
 
     /// "Notifikasi BCA sudah tercatat sebagai cicilan iPhone 15": information only, with Batalkan (K5).

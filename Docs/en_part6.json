@@ -1575,6 +1575,8 @@
   "Lihat gambar asli": "View original image",
   "Gambar tidak ditemukan": "Image not found",
   "Mirip": "Similar",
-  "%lld hari": "%lld days",
-  "Gambar asli": "Original image"
+  "Gambar asli": "Original image",
+  "Sudah dibaca AI": "Already read by AI",
+  "Tidak ada teks asli": "No original text",
+  "AI belum aktif": "AI is off"
 }

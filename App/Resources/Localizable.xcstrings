@@ -1793,6 +1793,16 @@
         }
       }
     },
+    "AI belum aktif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI is off"
+          }
+        }
+      }
+    },
     "AI lebih banyak": {
       "localizations": {
         "en": {
@@ -18223,6 +18233,16 @@
         }
       }
     },
+    "Sudah dibaca AI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already read by AI"
+          }
+        }
+      }
+    },
     "Sudah dibayar": {
       "localizations": {
         "en": {
@@ -19969,6 +19989,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No bills on this date"
+          }
+        }
+      }
+    },
+    "Tidak ada teks asli": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No original text"
           }
         }
       }
