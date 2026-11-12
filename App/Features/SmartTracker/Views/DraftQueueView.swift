@@ -222,7 +222,7 @@ struct DraftQueueView: View {
     @State private var busy = false
 
     private var swipe: some Gesture {
-        DragGesture(minimumDistance: 20)
+        DragGesture(minimumDistance: 20, coordinateSpace: .global)
             .onChanged { value in
                 guard queue.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
                 // the first draft cannot be pulled right, the last one cannot be pulled left
