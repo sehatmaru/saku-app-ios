@@ -251,8 +251,11 @@ struct DraftQueueView: View {
         Task { try? await Task.sleep(for: .milliseconds(300)); busy = false }
         focusedId = nil
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        exiting = queue[stackPosition].id
-        exitDir = target > stackPosition ? -1 : 1
+        // only a card leaving forward flies off; going back, the old front simply sinks behind the stack
+        let leaving = target > stackPosition ? queue[stackPosition].id : nil
+        exiting = leaving
+        exitDir = -1
+        Task { try? await Task.sleep(for: .milliseconds(400)); if exiting == leaving { exiting = nil } }
         browse = target
         drag = 0
     }
