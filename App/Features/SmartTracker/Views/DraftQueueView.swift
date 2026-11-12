@@ -514,7 +514,7 @@ struct DraftQueueView: View {
                 }
                 // the same rows as the manual form: label, mark and value, chevron; the name field closes the list
                 ForEach(Array(rows.enumerated()), id: \.element.label) { _, field in
-                    fieldRow(d, field)
+                    fieldRow(d, field).padding(.horizontal, -20)
                 }
                 HStack(spacing: 12) {
                     Text(L("Nama")).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
@@ -525,7 +525,7 @@ struct DraftQueueView: View {
                         .onSubmit { focusedId = nil }
                 }
                 .frame(height: 48)
-                .padding(.leading, 24).padding(.trailing, 20)
+                .padding(.leading, 4).padding(.trailing, 0)
 
                 chips(d)
                 if let note = d.note {
