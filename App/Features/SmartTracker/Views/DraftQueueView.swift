@@ -275,20 +275,23 @@ struct DraftQueueView: View {
                 let rel = relative(j, pos, n)
                 if (rel >= -1 && rel <= 2) || d.id == exiting {
                     let front = rel == 0
-                    let out = d.id == exiting && !front
-                    let under = (drag < 0 && rel > 0) || (drag > 0 && rel == -1)
-                    let behind = !out && (rel > 0 || (rel == -1 && drag > 0))
+                    // swiping right brings the previous draft in from the left over the front one
+                    let prev = rel == -1 && drag > 0
+                    let out = d.id == exiting && !front && !prev
+                    let under = drag < 0 && rel > 0
+                    let behind = !out && !prev && rel > 0
                     let eff = max(0, Double(abs(rel)) - (under ? t : 0))
+                    let sink = front && drag > 0 ? t : 0
                     card(d)
                         .frame(height: Self.cardHeight)
                         .allowsHitTesting(front)
                         .simultaneousGesture(swipe)
-                        .blur(radius: behind ? 2.5 * eff : 0)
-                        .scaleEffect(behind ? 1 - 0.06 * eff : 1, anchor: .top)
-                        .opacity(out ? 0 : behind ? (eff > 2 ? 0 : 1 - 0.12 * eff) : front ? 1 : 0)
-                        .offset(x: front ? drag : out ? exitDir * 520 : behind ? 0 : -520,
-                                y: behind ? (eff > 2 ? -32 : -18 * eff) : 0)
-                        .zIndex(out ? 6 : front ? 5 : behind ? 4 - eff : 1)
+                        .blur(radius: behind ? 2.5 * eff : 2.5 * sink)
+                        .scaleEffect(behind ? 1 - 0.06 * eff : 1 - 0.06 * sink, anchor: .top)
+                        .opacity(out ? 0 : prev ? 1 : behind ? (eff > 2 ? 0 : 1 - 0.12 * eff) : front ? 1 - 0.12 * sink : 0)
+                        .offset(x: prev ? drag - Self.cardWidth : front ? (drag > 0 ? 0 : drag) : out ? exitDir * 520 : behind ? 0 : -520,
+                                y: behind ? (eff > 2 ? -32 : -18 * eff) : -18 * sink)
+                        .zIndex(prev ? 7 : out ? 6 : front ? 5 : behind ? 4 - eff : 1)
                         .animation(dragging ? nil : Self.ease, value: drag)
                         .animation(Self.ease, value: pos)
                         .animation(Self.ease, value: exiting)
@@ -299,6 +302,7 @@ struct DraftQueueView: View {
     }
 
     /// One height for every card, state and kind: the tallest realistic content, capped so it fits small screens.
+    private static var cardWidth: CGFloat { UIScreen.main.bounds.width }
     private static var cardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
 
     // MARK: Body
