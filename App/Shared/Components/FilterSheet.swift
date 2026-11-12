@@ -189,6 +189,16 @@ private struct SheetScrollSlack: ViewModifier {
     }
 }
 
+private struct FixedSheetDetentsKey: EnvironmentKey { static let defaultValue = false }
+
+extension EnvironmentValues {
+    /// True: `adaptiveSheet` does not measure anything and the sheet simply opens at half height, one drag from full.
+    var fixedSheetDetents: Bool {
+        get { self[FixedSheetDetentsKey.self] }
+        set { self[FixedSheetDetentsKey.self] = newValue }
+    }
+}
+
 /// Fits the sheet to its content for layouts that are not built with `filterSheet`: the sheet's height now plus whatever
 /// the scroll view cuts off (or has spare) is the height that fits. Until the first measurement the half height stands in.
 private struct SlackDetents: ViewModifier {
@@ -196,18 +206,23 @@ private struct SlackDetents: ViewModifier {
     @State private var total: CGFloat = 0
     @State private var clip: CGFloat?
     @State private var keyboard = false
+    @Environment(\.fixedSheetDetents) private var fixed
 
     private var adaptive: PresentationDetent? {
         guard total > 0, let clip else { return nil }
         return .height(max(ceil(total + clip), 200))
     }
 
-    func body(content view: Content) -> some View {
+    @ViewBuilder func body(content view: Content) -> some View {
+        if fixed {
+            view.presentationDetents([.medium, .large])
+        } else {
         view
             .modifier(KeyboardUp(up: $keyboard))
             .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { if !keyboard { total = $0 } }
             .onPreferenceChange(SheetClipKey.self) { if !keyboard { clip = $0 } }
             .modifier(FitDetents(fit: adaptive, selection: selection))
+        }
     }
 }
 

@@ -200,7 +200,7 @@ struct DraftQueueView: View {
 
     private var stackPosition: Int {
         let n = queue.count
-        return n == 0 ? 0 : ((browse % n) + n) % n
+        return n == 0 ? 0 : min(max(browse, 0), n - 1)
     }
 
     /// `queue` turned so the browsed draft is first.
@@ -225,6 +225,11 @@ struct DraftQueueView: View {
         DragGesture(minimumDistance: 20)
             .onChanged { value in
                 guard queue.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
+                // the first draft cannot be pulled right, the last one cannot be pulled left
+                if (stackPosition == 0 && value.translation.width > 0) || (stackPosition == queue.count - 1 && value.translation.width < 0) {
+                    drag = 0
+                    return
+                }
                 swiping = true
                 dragging = true
                 drag = value.translation.width
@@ -240,22 +245,20 @@ struct DraftQueueView: View {
 
     /// Brings another draft to the front: the old front card leaves to the side while the next one grows from behind.
     private func commit(step: Int) {
-        guard !busy, queue.count > 1, step != 0 else { drag = 0; return }
+        let target = min(max(stackPosition + step, 0), queue.count - 1)
+        guard !busy, queue.count > 1, target != stackPosition else { drag = 0; return }
         busy = true
         Task { try? await Task.sleep(for: .milliseconds(300)); busy = false }
         focusedId = nil
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         exiting = queue[stackPosition].id
-        exitDir = step > 0 ? -1 : 1
-        browse += step
+        exitDir = target > stackPosition ? -1 : 1
+        browse = target
         drag = 0
     }
 
     /// Where draft `j` sits relative to the front one: 0 front, 1 and 2 behind it, -1 the one before it.
-    private func relative(_ j: Int, _ pos: Int, _ n: Int) -> Int {
-        let r = ((j - pos) % n + n) % n
-        return n > 2 && r == n - 1 ? -1 : r
-    }
+    private func relative(_ j: Int, _ pos: Int, _ n: Int) -> Int { j - pos }
 
     private static let ease = Animation.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.28)
 
@@ -270,7 +273,7 @@ struct DraftQueueView: View {
                 if (rel >= -1 && rel <= 2) || d.id == exiting {
                     let front = rel == 0
                     let out = d.id == exiting && !front
-                    let under = (drag < 0 && rel > 0) || (drag > 0 && (rel == -1 || (n == 2 && rel == 1)))
+                    let under = (drag < 0 && rel > 0) || (drag > 0 && rel == -1)
                     let behind = !out && (rel > 0 || (rel == -1 && drag > 0))
                     let eff = max(0, Double(abs(rel)) - (under ? t : 0))
                     card(d)
@@ -283,7 +286,7 @@ struct DraftQueueView: View {
                         .offset(x: front ? drag : out ? exitDir * 520 : behind ? 0 : -520,
                                 y: behind ? (eff > 2 ? -32 : -18 * eff) : 0)
                         .zIndex(out ? 6 : front ? 5 : behind ? 4 - eff : 1)
-                        .animation(front && dragging ? nil : Self.ease, value: drag)
+                        .animation(dragging ? nil : Self.ease, value: drag)
                         .animation(Self.ease, value: pos)
                         .animation(Self.ease, value: exiting)
                 }
@@ -355,51 +358,53 @@ struct DraftQueueView: View {
     // MARK: List
 
     private var list: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                // TC 45: a head-up in the last days before drafts expire (restored after the layout-A redesign dropped it).
-                if store.expiringSoon > 0 {
-                    Label(L("%lld draf akan dihapus dalam 3 hari jika tidak diproses.", store.expiringSoon), systemImage: "clock")
-                        .font(.app(13))
-                        .foregroundStyle(Color.appWarning)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 10)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            // TC 45: a head-up in the last days before drafts expire (restored after the layout-A redesign dropped it).
+            if store.expiringSoon > 0 {
+                Label(L("%lld draf akan dihapus dalam 3 hari jika tidak diproses.", store.expiringSoon), systemImage: "clock")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appWarning)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 10)
+            }
 
-                if let note = quotaNote {
-                    let low = quotaStore.quota?.isOut == true || (quotaStore.quota?.left ?? 99) <= 3
-                    HStack(spacing: 10) {
-                        Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(low ? Color.appWarning : Color.appPrimary)
-                        Text(note).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appText)
-                        Spacer(minLength: 0)
+            if let note = quotaNote {
+                let low = quotaStore.quota?.isOut == true || (quotaStore.quota?.left ?? 99) <= 3
+                HStack(spacing: 10) {
+                    Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(low ? Color.appWarning : Color.appPrimary)
+                    Text(note).font(.app(14)).lineSpacing(2).foregroundStyle(Color.appText)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 10).frame(minHeight: 44)
+                .background(low ? Color.appFill : Color.appPrimary.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 24).padding(.top, 12)
+            }
+
+            if !queue.isEmpty {
+                cardStack
+                    .padding(.horizontal, 20).padding(.top, queue.count > 2 ? 46 : queue.count > 1 ? 28 : 12)
+                // the marks sit halfway between the card and the bar below
+                Spacer(minLength: 0)
+                pageDots
+                Spacer(minLength: 0)
+            } else {
+                Spacer(minLength: 0)
+            }
+
+            // Notifications already recorded: information only, kept for 7 days (K5, K10).
+            if !store.notices.isEmpty {
+                VStack(spacing: 10) {
+                    ForEach(store.notices) { notice in
+                        noticeRow(notice)
                     }
-                    .padding(.horizontal, 16).padding(.vertical, 10).frame(minHeight: 44)
-                    .background(low ? Color.appFill : Color.appPrimary.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
-                    .padding(.horizontal, 24).padding(.top, 12)
                 }
-
-                if !queue.isEmpty {
-                    cardStack
-                        .padding(.horizontal, 20).padding(.top, queue.count > 2 ? 46 : queue.count > 1 ? 28 : 12)
-                    pageDots
-                        .padding(.top, 20).padding(.bottom, 16)
-                }
-
-                // Notifications already recorded: information only, kept for 7 days (K5, K10).
-                if !store.notices.isEmpty {
-                    VStack(spacing: 10) {
-                        ForEach(store.notices) { notice in
-                            noticeRow(notice)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 24)
-                    .animation(.settle(0.3), value: store.notices.map(\.id))
-                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+                .animation(.settle(0.3), value: store.notices.map(\.id))
             }
         }
-        .scrollDismissesKeyboard(.interactively)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .pinnedFooter(separator: true) {
             if store.drafts.count > 1 && focusedId == nil { bulkBar }
         }
@@ -596,10 +601,8 @@ struct DraftQueueView: View {
                     .frame(width: 44, height: 44)
                     .background(Color.white.opacity(0.28))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(alignment: .bottomTrailing) {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Color.black).frame(width: 20, height: 20)
-                            .background(.white, in: Circle()).offset(x: 4, y: 4)
+                    .overlay {
+                        if thumb != nil { RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.white, lineWidth: 2) }
                     }
                     .opacity(reading && pulse ? 0.45 : 1)
                 }
@@ -689,33 +692,32 @@ struct DraftQueueView: View {
         .accessibilityLabel(label)
     }
 
-    /// The source of a draft: the picture it was read from, or the words it was made from.
-    private func sourceSheetContent(_ d: Draft) -> some View {
+    /// The source of a draft: the picture it was read from (full height) or the words it was made from (as tall as the text).
+    @ViewBuilder private func sourceSheetContent(_ d: Draft) -> some View {
         let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(sourceLine(d, reading: false)).font(.app(14)).foregroundStyle(Color.appTextSecondary)
-                if let why = d.fallbackReason { Text(L("Dibaca tanpa AI · %@", why)).font(.app(13)).foregroundStyle(Color.appTextSecondary) }
-                if let id = d.imageId, let image = DraftImageStore.image(id) {
-                    Image(uiImage: image).resizable().scaledToFit()
-                        .frame(maxWidth: .infinity)
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .accessibilityLabel(L("Lihat gambar asli"))
-                } else if !words.isEmpty {
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "quote.opening").font(.system(size: 12, weight: .heavy)).foregroundStyle(Color.appTextTertiary).padding(.top, 3)
-                        Text(words).font(.system(size: 14, design: .monospaced)).foregroundStyle(Color.appText).textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .accessibilityLabel(L("Teks asli"))
+        let image = d.imageId.flatMap { DraftImageStore.image($0) }
+        let content = VStack(alignment: .leading, spacing: 12) {
+            Text(image != nil ? L("Gambar asli") : L("Teks asli")).font(.app(22, weight: .bold)).tracking(-0.3)
+            Text(sourceLine(d, reading: false)).font(.app(14)).foregroundStyle(Color.appTextSecondary)
+            if let why = d.fallbackReason { Text(L("Dibaca tanpa AI · %@", why)).font(.app(13)).foregroundStyle(Color.appTextSecondary) }
+            if let image {
+                Image(uiImage: image).resizable().scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.appDivider, lineWidth: 1))
+                    .padding(.top, 4)
+            } else if !words.isEmpty {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "quote.opening").font(.system(size: 12, weight: .heavy)).foregroundStyle(Color.appTextTertiary).padding(.top, 3)
+                    Text(words).font(.system(size: 14, design: .monospaced)).foregroundStyle(Color.appText).textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            .padding(.horizontal, 20).padding(.top, 28).padding(.bottom, 24)
         }
-        .background(Color.appBackground)
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
+        .foregroundStyle(Color.appText)
+        .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        if image != nil { content.filterSheet(detent: .constant(.large)) } else { content.filterSheet() }
     }
 
     /// "Notifikasi BCA · Masuk 09.41 · AI": shown when the source icon is tapped.

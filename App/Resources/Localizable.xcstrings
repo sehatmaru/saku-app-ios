@@ -7993,6 +7993,16 @@
         }
       }
     },
+    "Gambar asli": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original image"
+          }
+        }
+      }
+    },
     "Gambar ini belum terbaca. Jatah terisi lagi bulan depan.": {
       "localizations": {
         "en": {

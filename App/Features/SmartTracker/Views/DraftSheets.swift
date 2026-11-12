@@ -25,6 +25,12 @@ struct DraftFieldSheet: View {
     let close: () -> Void
 
     var body: some View {
+        content
+            // Kategori, Dompet and Tanggal open half height and drag up to full; Tipe and Nominal fit their content.
+            .environment(\.fixedSheetDetents, kind != .type && kind != .amount)
+    }
+
+    @ViewBuilder private var content: some View {
         switch kind {
         case .type:
             DraftTypeSheet(selected: draft.kind, onDone: close) { picked in
@@ -104,30 +110,32 @@ struct DraftTypeSheet: View {
         (.transfer, "Transfer", "Pindah uang antar dompet", "arrow.left.arrow.right", .stTransfer)]
 
     var body: some View {
-        PickerSheet(title: L("Tipe transaksi"), actionTitle: nil, onDone: onDone) {
-            VStack(spacing: 0) {
-                ForEach(kinds, id: \.kind) { item in
-                    let isOn = item.kind == selected
-                    Button { onPick(item.kind) } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: item.icon).font(.system(size: 18, weight: .semibold)).foregroundStyle(item.color)
-                                .frame(width: 44, height: 44).background(item.color.opacity(0.12), in: Circle())
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(L(item.title)).font(.app(16, weight: .medium))
-                                Text(L(item.detail)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                            }
-                            Spacer()
-                            if isOn { Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(Color.appPrimary) }
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("Tipe transaksi")).font(.app(22, weight: .bold)).tracking(-0.3)
+                .padding(.horizontal, 24).padding(.top, 22).padding(.bottom, 8)
+            ForEach(kinds, id: \.kind) { item in
+                let isOn = item.kind == selected
+                Button { onPick(item.kind) } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: item.icon).font(.system(size: 18, weight: .semibold)).foregroundStyle(item.color)
+                            .frame(width: 44, height: 44).background(item.color.opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L(item.title)).font(.app(16, weight: .medium))
+                            Text(L(item.detail)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
                         }
-                        .padding(.horizontal, 24).frame(height: 68)
-                        .contentShape(Rectangle())
+                        Spacer()
+                        if isOn { Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(Color.appPrimary) }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(isOn ? .isSelected : [])
+                    .padding(.horizontal, 24).frame(height: 68)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isOn ? .isSelected : [])
             }
-            .padding(.top, 8)
         }
+        .foregroundStyle(Color.appText)
+        .padding(.bottom, 16)
+        .filterSheet()
     }
 }
 
