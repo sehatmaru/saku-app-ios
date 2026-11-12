@@ -433,28 +433,6 @@ struct DraftQueueView: View {
                 .accessibilityLabel(d.sourceLabel)
             }
 
-            if let imageId = d.imageId, let thumb = DraftImageStore.thumbnail(imageId) {
-                Button { if !swiping { viewingImage = DraftImageItem(id: imageId) } } label: {
-                    HStack(spacing: 12) {
-                        Image(uiImage: thumb).resizable().scaledToFill()
-                            .frame(width: 44, height: 44).clipShape(RoundedRectangle(cornerRadius: 10))
-                        Text(L("Lihat gambar asli")).font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
-                        Spacer(minLength: 0)
-                        Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.appTextTertiary)
-                    }
-                    .padding(8).padding(.trailing, 6)
-                    .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(L("Lihat gambar asli"))
-            }
-
-            if let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty, !d.isUnreadable {
-                originalText(d, words)
-            }
-
             if expandedSource.contains(d.id) {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: d.sourceIcon).font(.system(size: 16)).foregroundStyle(Color.appPrimaryText).padding(.top, 1)
@@ -504,19 +482,45 @@ struct DraftQueueView: View {
                 }
             }
 
+            if let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty, !d.isUnreadable {
+                originalText(d, words)
+            }
+
+            if let imageId = d.imageId, let thumb = DraftImageStore.thumbnail(imageId) {
+                Button { if !swiping { viewingImage = DraftImageItem(id: imageId) } } label: {
+                    HStack(spacing: 8) {
+                        Image(uiImage: thumb).resizable().scaledToFill()
+                            .frame(width: 28, height: 28).clipShape(RoundedRectangle(cornerRadius: 7))
+                        Text(L("Lihat gambar asli")).font(.app(14, weight: .medium)).foregroundStyle(Color.appText)
+                        Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.appTextTertiary)
+                    }
+                    .padding(.vertical, 6).padding(.leading, 8).padding(.trailing, 14)
+                    .background(Color.appBackground, in: Capsule())
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel(L("Lihat gambar asli"))
+            }
+
             // name first, then the rest as plain rows
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
-                    Image(systemName: "textformat").font(.system(size: 17)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
-                    TextField("", text: nameBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.appTextTertiary))
-                        .font(.app(16)).foregroundStyle(Color.appText)
-                        .focused($focusedId, equals: d.id)
-                        .submitLabel(.done)
-                        .onSubmit { focusedId = nil }
+                    iconBubble("textformat", missing: false)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(L("Nama")).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                        TextField("", text: nameBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.appTextTertiary))
+                            .font(.app(16)).foregroundStyle(Color.appText)
+                            .focused($focusedId, equals: d.id)
+                            .submitLabel(.done)
+                            .onSubmit { focusedId = nil }
+                    }
                     Image(systemName: "pencil").font(.system(size: 14)).foregroundStyle(Color.appTextTertiary)
                 }
-                .frame(minHeight: 52)
-                .overlay(alignment: .bottom) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+                .frame(minHeight: 60)
+                .overlay(alignment: .bottom) { Rectangle().fill(Color.appSeparator).frame(height: 1).padding(.leading, 48) }
                 ForEach(Array(rows.enumerated()), id: \.element.label) { index, field in
                     fieldRow(d, field, isLast: index == rows.count - 1)
                 }
@@ -691,15 +695,16 @@ struct DraftQueueView: View {
             withAnimation(.settle(0.3)) { if open { expandedWords.remove(d.id) } else { expandedWords.insert(d.id) } }
         } label: {
             HStack(alignment: .top, spacing: 8) {
+                Spacer(minLength: 0)
                 Image(systemName: "quote.opening").font(.system(size: 12, weight: .heavy)).foregroundStyle(Color.appTextTertiary)
                     .padding(.top, 3)
-                Text(words).font(.system(size: 14, design: .monospaced)).foregroundStyle(Color.appText)
-                    .lineLimit(open ? nil : 1).multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(words).font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                    .lineLimit(open ? nil : 1).multilineTextAlignment(.center)
                 if isLong {
                     Image(systemName: open ? "chevron.up" : "chevron.down").font(.system(size: 11, weight: .bold))
                         .foregroundStyle(Color.appTextTertiary).padding(.top, 4)
                 }
+                Spacer(minLength: 0)
             }
             .padding(.top, 2).padding(.bottom, 4)
             .contentShape(Rectangle())
@@ -708,6 +713,13 @@ struct DraftQueueView: View {
         .disabled(!isLong)
         .accessibilityLabel(L("Teks asli"))
         .accessibilityValue(words)
+    }
+
+    private func iconBubble(_ name: String, missing: Bool) -> some View {
+        Image(systemName: name).font(.system(size: 15, weight: .medium))
+            .foregroundStyle(missing ? Color.stWarn : Color.appTextSecondary)
+            .frame(width: 36, height: 36)
+            .background(Color.appFill, in: Circle())
     }
 
     /// One plain row: icon, value (or a prompt in the warning colour when it is missing), chevron.
@@ -719,20 +731,19 @@ struct DraftQueueView: View {
         }
         return Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: f.kind) } } label: {
             HStack(spacing: 12) {
-                Image(systemName: f.icon).font(.system(size: 17))
-                    .foregroundStyle(f.isMissing ? Color.stWarn : Color.appTextSecondary).frame(width: 24)
-                if d.kind == .transfer, f.kind == .wallet || f.kind == .target, !f.isMissing {
-                    Text(f.label).font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                iconBubble(f.icon, missing: f.isMissing)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(f.label).font(.app(12)).foregroundStyle(Color.appTextTertiary)
+                    Text(f.isMissing ? prompt : f.value)
+                        .font(.app(16, weight: f.isMissing ? .semibold : .regular)).lineLimit(1)
+                        .foregroundStyle(f.isMissing ? Color.stWarn : Color.appText)
                 }
-                Text(f.isMissing ? prompt : f.value)
-                    .font(.app(16, weight: f.isMissing ? .semibold : .regular)).lineLimit(1)
-                    .foregroundStyle(f.isMissing ? Color.stWarn : Color.appText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
-            .frame(minHeight: 52)
+            .frame(minHeight: 60)
             .contentShape(Rectangle())
-            .overlay(alignment: .bottom) { if !isLast { Rectangle().fill(Color.appSeparator).frame(height: 1) } }
+            .overlay(alignment: .bottom) { if !isLast { Rectangle().fill(Color.appSeparator).frame(height: 1).padding(.leading, 48) } }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(f.label)
