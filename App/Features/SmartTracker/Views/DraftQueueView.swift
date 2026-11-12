@@ -285,11 +285,10 @@ struct DraftQueueView: View {
                     card(d)
                         .frame(height: Self.cardHeight)
                         .allowsHitTesting(front)
-                        .simultaneousGesture(swipe)
                         .blur(radius: behind ? 2.5 * eff : 2.5 * sink)
                         .scaleEffect(behind ? 1 - 0.06 * eff : 1 - 0.06 * sink, anchor: .top)
                         .opacity(out ? 0 : prev ? 1 : behind ? (eff > 2 ? 0 : 1 - 0.12 * eff) : front ? 1 - 0.12 * sink : 0)
-                        .offset(x: prev ? drag - Self.cardWidth : front ? (drag > 0 ? 0 : drag) : out ? exitDir * 520 : behind ? 0 : -520,
+                        .offset(x: prev ? drag - Self.cardWidth : front ? (drag > 0 ? 0 : drag) : out ? exitDir * 520 : behind ? drag * 0.08 * Double(rel) : -520,
                                 y: behind ? (eff > 2 ? -32 : -18 * eff) : -18 * sink)
                         .zIndex(prev ? 7 : out ? 6 : front ? 5 : behind ? 4 - eff : 1)
                         .animation(dragging ? nil : Self.ease, value: drag)
@@ -299,6 +298,10 @@ struct DraftQueueView: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: Self.cardHeight, alignment: .top)
+        // the strip where the cards behind peek out is part of the swipe area too
+        .padding(.top, n > 2 ? 46 : n > 1 ? 28 : 12)
+        .contentShape(Rectangle())
+        .simultaneousGesture(swipe)
     }
 
     /// One height for every card, state and kind: the tallest realistic content, capped so it fits small screens.
@@ -390,7 +393,7 @@ struct DraftQueueView: View {
 
             if !queue.isEmpty {
                 cardStack
-                    .padding(.horizontal, 20).padding(.top, queue.count > 2 ? 46 : queue.count > 1 ? 28 : 12)
+                    .padding(.horizontal, 20)
                 // the marks sit halfway between the card and the bar below
                 Spacer(minLength: 0)
                 pageDots
