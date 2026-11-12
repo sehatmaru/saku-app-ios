@@ -117,12 +117,24 @@ private extension View {
     }
 }
 
+/// While the keyboard is up the sheet's content shrinks; measuring then and resizing the detent feeds back into the layout
+/// and loops ("presentation preference is rapidly switching"). Measurements are ignored until the keyboard is gone.
+private struct KeyboardUp: ViewModifier {
+    @Binding var up: Bool
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in up = true }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in up = false }
+    }
+}
+
 /// Detents are "fits the content" and full. The content and footer heights are measured inside the sheet; until the first
 /// measurement the system's half height stands in. A sheet taller than the screen is capped at full height by the system.
 private struct AdaptiveDetents: ViewModifier {
     let selection: Binding<PresentationDetent>?
     @State private var content: CGFloat = 0
     @State private var footer: CGFloat = 0
+    @State private var keyboard = false
 
     private var adaptive: PresentationDetent? {
         guard content > 0 else { return nil }
@@ -133,8 +145,9 @@ private struct AdaptiveDetents: ViewModifier {
 
     func body(content view: Content) -> some View {
         view
-            .onPreferenceChange(SheetContentHeight.self) { content = $0 }
-            .onPreferenceChange(SheetFooterHeight.self) { footer = $0 }
+            .modifier(KeyboardUp(up: $keyboard))
+            .onPreferenceChange(SheetContentHeight.self) { if !keyboard { content = $0 } }
+            .onPreferenceChange(SheetFooterHeight.self) { if !keyboard { footer = $0 } }
             .modifier(FitDetents(fit: adaptive, selection: selection))
     }
 }
@@ -182,6 +195,7 @@ private struct SlackDetents: ViewModifier {
     let selection: Binding<PresentationDetent>?
     @State private var total: CGFloat = 0
     @State private var clip: CGFloat?
+    @State private var keyboard = false
 
     private var adaptive: PresentationDetent? {
         guard total > 0, let clip else { return nil }
@@ -190,8 +204,9 @@ private struct SlackDetents: ViewModifier {
 
     func body(content view: Content) -> some View {
         view
-            .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { total = $0 }
-            .onPreferenceChange(SheetClipKey.self) { clip = $0 }
+            .modifier(KeyboardUp(up: $keyboard))
+            .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { if !keyboard { total = $0 } }
+            .onPreferenceChange(SheetClipKey.self) { if !keyboard { clip = $0 } }
             .modifier(FitDetents(fit: adaptive, selection: selection))
     }
 }
