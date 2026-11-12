@@ -68,7 +68,7 @@ struct SmartTrackerHomeOverlay: View {
             VoiceCaptureView(onFinish: { spoken in submit(spoken, source: .voice) },
                              onKeyboard: { showsVoice = false; isOpen = true; focused = true })
         }
-        .sheet(item: $result) { input in
+        .sheet(item: $result, onDismiss: { store.pruneImages(after: 65) }) { input in
             QuickResultSheet(sentence: input.sentence, source: input.source, drafts: input.drafts, userId: userId,
                              onSaved: { onToast($0) }, onSaveLater: { store.add($0) },
                              onRedo: { sentence in
@@ -375,7 +375,7 @@ struct SmartTrackerHomeOverlay: View {
         if camera { showsCamera = true } else { showsLibrary = true }
     }
 
-    /// Reads the picture on the device, then lands in the same result sheet as a sentence. The picture is dropped afterwards.
+    /// Reads the picture on the device, then lands in the same result sheet as a sentence. The picture is kept on the phone with its drafts.
     private func read(imageData data: Data) {
         text = ""
         focused = false
@@ -408,6 +408,10 @@ struct SmartTrackerHomeOverlay: View {
             if !reading.truncated, !lines.isEmpty {
                 let words = lines.joined(separator: "\n")
                 for i in reading.drafts.indices { reading.drafts[i].rawText = words }
+            }
+            // the picture stays on the phone too, so the draft card can open it again
+            if let cg = ImageReader.downscaled(data), let imageId = DraftImageStore.save(cg) {
+                for i in reading.drafts.indices { reading.drafts[i].imageId = imageId }
             }
             isThinking = false
             guard !reading.drafts.isEmpty else {

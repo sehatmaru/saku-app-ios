@@ -102,6 +102,15 @@ final class DraftStore: ObservableObject {
         if kept.count != drafts.count { drafts = kept }
         if keptNotices.count != notices.count { notices = keptNotices }
         if kept.count != drafts.count || keptNotices.count != notices.count { persist() }
+        DraftImageStore.prune(keeping: Set(drafts.compactMap(\.imageId)))
+    }
+
+    /// Removes the pictures of drafts that are gone. Waits a little after a discard so Urungkan still finds its picture.
+    func pruneImages(after seconds: Double = 0) {
+        Task {
+            if seconds > 0 { try? await Task.sleep(for: .seconds(seconds)) }
+            DraftImageStore.prune(keeping: Set(drafts.compactMap(\.imageId)))
+        }
     }
 
     /// Drafts that disappear within three days, for the in-app notice.
@@ -319,6 +328,7 @@ final class DraftStore: ObservableObject {
     func discard(_ id: UUID) {
         drafts.removeAll { $0.id == id }
         persist()
+        pruneImages(after: 75)
     }
 
     /// Text and pictures shared from other apps become drafts; the inbox is emptied so the raw text is not kept.
@@ -331,14 +341,14 @@ final class DraftStore: ObservableObject {
     }
 
     /// Text read from a picture handed over by a Shortcut; returns how many drafts joined the queue.
-    func ingestPhoto(lines: [String]) async -> (drafts: [Draft], outOfQuota: Bool) {
+    func ingestPhoto(lines: [String], imageId: UUID? = nil) async -> (drafts: [Draft], outOfQuota: Bool) {
         let before = drafts.count
-        let out = await ingestShared(ShareInbox.photoMark + lines.joined(separator: "\n"))
+        let out = await ingestShared(ShareInbox.photoMark + lines.joined(separator: "\n"), imageId: imageId)
         return (Array(drafts.prefix(max(0, drafts.count - before))), out)
     }
 
     /// True when the AI allowance was used up while reading.
-    @discardableResult private func ingestShared(_ text: String) async -> Bool {
+    @discardableResult private func ingestShared(_ text: String, imageId: UUID? = nil) async -> Bool {
         let isPhoto = text.hasPrefix(ShareInbox.photoMark)
         var rules: [Draft]
         let body: String
@@ -353,10 +363,13 @@ final class DraftStore: ObservableObject {
             body = text
         }
         for i in rules.indices { rules[i].reader = .rules }
+        // the words (and the picture, when there is one) stay with the draft so the card can show them
+        let keep: (Draft) -> Draft = { var d = $0; if !body.isEmpty { d.rawText = body }; d.imageId = imageId; return d }
+        rules = rules.map(keep)
         var outOfQuota = false
         if RemoteSmartParser.isAvailable, !body.isEmpty {
             switch await aiRead(body, source: isPhoto ? .photo : .share) {
-            case .drafts(let remote): add(remote); return false
+            case .drafts(let remote): add(remote.map(keep)); return false
             case .outOfQuota: outOfQuota = true; Self.markFallback(&rules, .quota)
             case .unavailable(let why): Self.markFallback(&rules, why)
             }
@@ -512,6 +525,7 @@ final class DraftStore: ObservableObject {
     func forgetEverything() {
         forgetAllMemory()
         drafts = []
+        DraftImageStore.removeAll()
         connectedApps = []
         NotificationFilter.clearRecent()
         persist()
@@ -542,6 +556,7 @@ final class DraftStore: ObservableObject {
         AIQuotaStore.shared.reset()
         memory = []
         drafts = []
+        DraftImageStore.removeAll()
         accounts = []
         categories = []
         connectedApps = []

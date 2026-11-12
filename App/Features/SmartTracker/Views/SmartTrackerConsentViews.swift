@@ -34,7 +34,7 @@ struct SmartTrackerPrivacySheet: View {
          ("lock", L("Apa yang dibuang di perangkat"),
           L("Nomor panjang (rekening, kartu) dan kode OTP dihapus sebelum teks dikirim. Gambar mentah tidak pernah dikirim.")),
          ("tray", L("Apa yang disimpan"),
-          L("Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, teks yang terbaca dari gambar, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.")),
+          L("Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.")),
          ("trash", L("Cara menghapus"), L("Buka Profil, lalu Hapus akun. Datamu ikut terhapus."))]
     }
 

@@ -51,6 +51,8 @@ struct Draft: Identifiable, Codable, Hashable {
     /// The original text of a notification or Siri draft, kept on this phone until the draft is saved or dropped (at most
     /// 30 days), so "Pindai ulang dengan AI" can read it again.
     var rawText: String?
+    /// The picture a photo draft was read from, kept on this phone (`DraftImageStore`) so the card can open it again.
+    var imageId: UUID?
     /// An early salary: nil = the user has not been asked yet, true = start the period on this date, false = keep it.
     var startsPeriod: Bool?
 

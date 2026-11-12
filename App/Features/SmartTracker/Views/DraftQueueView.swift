@@ -214,6 +214,7 @@ struct DraftQueueView: View {
     @State private var swiping = false
     @State private var expandedWords: Set<UUID> = []
     @State private var expandedSource: Set<UUID> = []
+    @State private var viewingImage: DraftImageItem?
 
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 20)
@@ -292,6 +293,7 @@ struct DraftQueueView: View {
         .onChange(of: sheet?.id) { focusedId = nil }
         .plusOffer($plusReason)
         .sheet(item: $sheet) { item in sheetContent(item) }
+        .fullScreenCover(item: $viewingImage) { DraftImageViewer(id: $0.id) }
         .sheet(isPresented: $showsSaveAll) { saveAllSheet }
 .sheet(item: $periodChoice) { d in
     EarlySalarySheet(date: d.date) { choice in
@@ -428,6 +430,24 @@ struct DraftQueueView: View {
                 }
                 .buttonStyle(PressScaleStyle())
                 .accessibilityLabel(d.sourceLabel)
+            }
+
+            if let imageId = d.imageId, let thumb = DraftImageStore.thumbnail(imageId) {
+                Button { if !swiping { viewingImage = DraftImageItem(id: imageId) } } label: {
+                    HStack(spacing: 12) {
+                        Image(uiImage: thumb).resizable().scaledToFill()
+                            .frame(width: 44, height: 44).clipShape(RoundedRectangle(cornerRadius: 10))
+                        Text(L("Lihat gambar asli")).font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
+                        Spacer(minLength: 0)
+                        Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.appTextTertiary)
+                    }
+                    .padding(8).padding(.trailing, 6)
+                    .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L("Lihat gambar asli"))
             }
 
             if let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty, !d.isUnreadable {

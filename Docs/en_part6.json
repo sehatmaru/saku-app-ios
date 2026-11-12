@@ -1494,7 +1494,7 @@
   "Sisa %lld jatah AI bulan ini": "%lld AI reads left this month",
   "Sisa %lld jatah AI. Setelah itu dibaca dengan aturan.": "%lld AI reads left. After that, rules read it.",
   "Laporan PDF baru. Bantuan AI kembali 50 kali per bulan.": "New PDF reports. AI help goes back to 50 a month.",
-  "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, teks yang terbaca dari gambar, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence you type, say or share, the text read from a picture, and the notification and Siri text, stay on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save.",
+  "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence you type, say or share, the picture you choose and the text read from it, and the notification and Siri text, stay on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save.",
   "Dibaca tanpa AI · %@": "Read without AI · %@",
   "Aturan": "Rules",
   "Pindai ulang dengan AI": "Rescan with AI",
@@ -1571,5 +1571,7 @@
   "Diingatkan 5 jam dan 1 hari setelah draf masuk": "Reminds you 5 hours and 1 day after a draft arrives",
   "Coba pengingat": "Try the reminder",
   "Teks asli": "Original text",
-  "Draf Transaksi": "Transaction Drafts"
+  "Draf Transaksi": "Transaction Drafts",
+  "Lihat gambar asli": "View original image",
+  "Gambar tidak ditemukan": "Image not found"
 }

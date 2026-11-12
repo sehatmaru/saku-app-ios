@@ -44,7 +44,8 @@ struct ReadImageIntent: AppIntent {
         guard let cg = ImageReader.downscaled(image.data) else { return .result(dialog: "Gambar tidak bisa dibuka.") }
         let lines = await ImageReader.lines(in: cg)
         guard !lines.isEmpty else { return .result(dialog: "Tidak ada teks di gambar ini.") }
-        let read = await MainActor.run { DraftStore.shared }.ingestPhoto(lines: lines)
+        let imageId = DraftImageStore.save(cg)
+        let read = await MainActor.run { DraftStore.shared }.ingestPhoto(lines: lines, imageId: imageId)
         if read.drafts.isEmpty {
             if read.outOfQuota {
                 return .result(dialog: await stop("Jatah AI bulan ini habis", "Gambar ini belum terbaca. Jatah terisi lagi bulan depan."))
