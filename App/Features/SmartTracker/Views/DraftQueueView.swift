@@ -260,6 +260,7 @@ struct DraftQueueView: View {
                         .background(Color.appFill)
                         .clipShape(RoundedRectangle(cornerRadius: 24))
                         .allowsHitTesting(false)
+                        .blur(radius: 8 * (1 - progress))
                         .scaleEffect(0.93 + 0.07 * progress, anchor: .bottom)
                         .offset(y: 12 * (1 - progress))
                 }
