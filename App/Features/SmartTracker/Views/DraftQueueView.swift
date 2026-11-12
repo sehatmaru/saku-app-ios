@@ -226,11 +226,11 @@ struct DraftQueueView: View {
             .onChanged { value in
                 guard queue.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
                 // the first draft cannot be pulled right, the last one cannot be pulled left
+                swiping = true
                 if (stackPosition == 0 && value.translation.width > 0) || (stackPosition == queue.count - 1 && value.translation.width < 0) {
                     drag = 0
                     return
                 }
-                swiping = true
                 dragging = true
                 drag = value.translation.width
             }
