@@ -294,7 +294,7 @@ struct DraftQueueView: View {
                     let eff = max(0, Double(abs(rel)) - (under ? t : 0))
                     let sink = front && drag > 0 ? t : 0
                     card(d)
-                        .frame(height: Self.cardHeight)
+                        .frame(height: cardHeight)
                         .allowsHitTesting(front)
                         .blur(radius: behind ? 2.5 * eff : 2.5 * sink)
                         .scaleEffect(behind ? 1 - 0.06 * eff : 1 - 0.06 * sink, anchor: .top)
@@ -308,7 +308,7 @@ struct DraftQueueView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, minHeight: Self.cardHeight, alignment: .top)
+        .frame(maxWidth: .infinity, minHeight: cardHeight, alignment: .top)
         // the strip where the cards behind peek out is part of the swipe area too
         .padding(.top, n > 2 ? 46 : n > 1 ? 28 : 12)
         .contentShape(Rectangle())
@@ -319,7 +319,17 @@ struct DraftQueueView: View {
     /// The coloured head is about a third of the card; 24 pt side padding matches the rows below.
     private static let heroHeight: CGFloat = 176
     private static var cardWidth: CGFloat { UIScreen.main.bounds.width }
-    private static var cardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
+    private static var baseCardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
+
+    /// The notices of notifications already recorded sit below the marks, so the card gives up their room; its body scrolls.
+    private static let noticeRowHeight: CGFloat = 76
+    private var visibleNotices: Int { min(store.notices.count, 2) }
+    private var noticeReserve: CGFloat {
+        visibleNotices == 0 ? 0 : CGFloat(visibleNotices) * Self.noticeRowHeight + CGFloat(visibleNotices - 1) * 8 + 40
+    }
+    private var cardHeight: CGFloat {
+        visibleNotices == 0 ? Self.baseCardHeight : max(380, Self.baseCardHeight - noticeReserve)
+    }
 
     // MARK: Body
 
@@ -418,11 +428,15 @@ struct DraftQueueView: View {
 
             // Notifications already recorded: information only, kept for 7 days (K5, K10).
             if !store.notices.isEmpty {
-                VStack(spacing: 10) {
-                    ForEach(store.notices) { notice in
-                        noticeRow(notice)
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(store.notices) { notice in
+                            noticeRow(notice)
+                        }
                     }
                 }
+                .scrollBounceBehavior(.basedOnSize).scrollIndicators(.hidden)
+                .frame(maxHeight: CGFloat(visibleNotices) * Self.noticeRowHeight + CGFloat(visibleNotices - 1) * 8)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
                 .animation(.settle(0.3), value: store.notices.map(\.id))
@@ -611,11 +625,11 @@ struct DraftQueueView: View {
                 }
             }
             .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 16)
-            .frame(maxWidth: .infinity, minHeight: Self.cardHeight - Self.heroHeight, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: cardHeight - Self.heroHeight, alignment: .topLeading)
             }
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
-            .frame(height: Self.cardHeight - Self.heroHeight)
+            .frame(height: cardHeight - Self.heroHeight)
         }
         .background(Color.appBackground)
         .clipShape(RoundedRectangle(cornerRadius: 32))
@@ -832,22 +846,18 @@ struct DraftQueueView: View {
 
     /// "Notifikasi BCA sudah tercatat sebagai cicilan iPhone 15": information only, with Batalkan (K5).
     private func noticeRow(_ notice: SkippedNotice) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "checkmark.seal")
-                .font(.system(size: 17)).foregroundStyle(Color.stGreen).padding(.top, 1)
-            VStack(alignment: .leading, spacing: 8) {
-                Text(noticeText(notice))
-                    .font(.app(14)).foregroundStyle(Color.appTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button { withAnimation(.settle(0.3)) { store.cancelNotice(notice) } } label: {
-                    Text("Batalkan").font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                }
-                .buttonStyle(.plain)
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark.seal").font(.system(size: 17)).foregroundStyle(Color.stGreen)
+            Text(noticeText(notice)).font(.app(13)).lineLimit(3).foregroundStyle(Color.appTextSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button { withAnimation(.settle(0.3)) { store.cancelNotice(notice) } } label: {
+                Text("Batalkan").font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary).fixedSize()
+                    .frame(minHeight: 44)
             }
-            Spacer(minLength: 0)
+            .buttonStyle(.plain)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14).padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: Self.noticeRowHeight, alignment: .leading)
         .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
         .transition(.opacity.combined(with: .offset(y: 12)))
     }
