@@ -2043,6 +2043,16 @@
         }
       }
     },
+    "Aktifkan **Jalankan Segera**, lalu ketuk Berikutnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on **Run Immediately**, then tap Next."
+          }
+        }
+      }
+    },
     "Aktifkan AI untuk Smart Tracker": {
       "localizations": {
         "en": {
@@ -4813,6 +4823,26 @@
         }
       }
     },
+    "Buka **Pengaturan**, lalu ketuk **Aksesibilitas** dan **Sentuh**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open **Settings**, then tap **Accessibility** and **Touch**."
+          }
+        }
+      }
+    },
+    "Buka **Pengaturan**, lalu ketuk **Tombol Tindakan**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open **Settings**, then tap **Action Button**."
+          }
+        }
+      }
+    },
     "Buka Dompet": {
       "localizations": {
         "en": {
@@ -4899,6 +4929,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Shortcuts, choose the "
+          }
+        }
+      }
+    },
+    "Buka Shortcuts, pilih tab **Otomatisasi**, ketuk +, lalu pilih **%@**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Shortcuts, pick the **Automation** tab, tap +, then pick **%@**."
           }
         }
       }
@@ -6429,6 +6469,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "In shorter months, the "
+          }
+        }
+      }
+    },
+    "Di daftar pintasan, pilih %@, lalu ketuk **Selesai**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the Shortcut list, pick %@, then tap **Done**."
           }
         }
       }
@@ -8283,6 +8333,16 @@
         }
       }
     },
+    "Geser ke **Pintasan**, ketuk Pilih Pintasan, lalu pilih %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe to **Shortcut**, tap Choose a Shortcut, then pick %@."
+          }
+        }
+      }
+    },
     "Geser ke Pintasan": {
       "localizations": {
         "en": {
@@ -8429,6 +8489,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Free monthly"
+          }
+        }
+      }
+    },
+    "Gulir ke bagian Pintasan, lalu pilih %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scroll to the Shortcuts section, then pick %@."
           }
         }
       }
@@ -10829,6 +10899,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tap \"Now\" to go back"
+          }
+        }
+      }
+    },
+    "Ketuk **Ketuk Bagian Belakang**, lalu pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap **Back Tap**, then pick **Double Tap** or **Triple Tap**."
           }
         }
       }
@@ -14233,6 +14313,16 @@
         }
       }
     },
+    "Pasang pintasan **%@**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add the **%@** Shortcut."
+          }
+        }
+      }
+    },
     "Pasang pintasan, pilih pemicunya, lalu draf masuk sendiri.": {
       "localizations": {
         "en": {
@@ -15389,6 +15479,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose a number"
+          }
+        }
+      }
+    },
+    "Pilih aplikasi bank atau e-wallet-mu, aktifkan **Jalankan Segera**, lalu ketuk Berikutnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick your bank or e-wallet app, turn on **Run Immediately**, then tap Next."
           }
         }
       }

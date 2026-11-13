@@ -1640,5 +1640,15 @@
   "Salah satu saja": "Either one",
   "Ketuk Tombol Tindakan": "Tap Action Button",
   "Geser ke Pintasan": "Swipe to Shortcut",
-  "Lalu ketuk Pilih Pintasan": "Then tap Choose a Shortcut"
+  "Lalu ketuk Pilih Pintasan": "Then tap Choose a Shortcut",
+  "Pasang pintasan **%@**.": "Add the **%@** Shortcut.",
+  "Di daftar pintasan, pilih %@, lalu ketuk **Selesai**.": "In the Shortcut list, pick %@, then tap **Done**.",
+  "Buka Shortcuts, pilih tab **Otomatisasi**, ketuk +, lalu pilih **%@**.": "Open Shortcuts, pick the **Automation** tab, tap +, then pick **%@**.",
+  "Pilih aplikasi bank atau e-wallet-mu, aktifkan **Jalankan Segera**, lalu ketuk Berikutnya.": "Pick your bank or e-wallet app, turn on **Run Immediately**, then tap Next.",
+  "Aktifkan **Jalankan Segera**, lalu ketuk Berikutnya.": "Turn on **Run Immediately**, then tap Next.",
+  "Buka **Pengaturan**, lalu ketuk **Aksesibilitas** dan **Sentuh**.": "Open **Settings**, then tap **Accessibility** and **Touch**.",
+  "Ketuk **Ketuk Bagian Belakang**, lalu pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**.": "Tap **Back Tap**, then pick **Double Tap** or **Triple Tap**.",
+  "Gulir ke bagian Pintasan, lalu pilih %@.": "Scroll to the Shortcuts section, then pick %@.",
+  "Buka **Pengaturan**, lalu ketuk **Tombol Tindakan**.": "Open **Settings**, then tap **Action Button**.",
+  "Geser ke **Pintasan**, ketuk Pilih Pintasan, lalu pilih %@.": "Swipe to **Shortcut**, tap Choose a Shortcut, then pick %@."
 }

@@ -52,11 +52,9 @@ enum SakuShortcut: String, CaseIterable, Identifiable {
     }
 }
 
-/// One step after the install: what to do, with the menu path under it.
-struct RecipeStep {
-    let icon: String
-    let title: String
-    var note: String? = nil
+/// A sentence with its key words in **bold**.
+func richText(_ markdown: String) -> Text {
+    Text((try? AttributedString(markdown: markdown)) ?? AttributedString(markdown))
 }
 
 /// One way to make a draft without opening Saku: a trigger on the iPhone runs a Shortcut, the Shortcut hands Saku
@@ -109,27 +107,23 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The steps after the install, one tap each, the place to tap named in the title.
-    var steps: [RecipeStep] {
-        let pick = RecipeStep(icon: "square.stack.3d.up", title: L("Pilih pintasannya"), note: shortcut.name)
-        let openShortcuts = RecipeStep(icon: "square.stack.3d.up", title: L("Buka Shortcuts, tab Otomatisasi"))
-        let newOne = RecipeStep(icon: "plus", title: L("Ketuk + untuk otomatisasi baru"))
-        let runNow = RecipeStep(icon: "play.circle", title: L("Pilih Jalankan Segera"), note: L("Lalu ketuk Berikutnya"))
-        let settings = RecipeStep(icon: "gearshape", title: L("Buka Pengaturan"))
+    /// The sentences after the install, one tap or one screen each, the key words in **bold**.
+    var steps: [String] {
+        let name = "**" + shortcut.name + "**"
+        let pick = L("Di daftar pintasan, pilih %@, lalu ketuk **Selesai**.", name)
+        let automation = L("Buka Shortcuts, pilih tab **Otomatisasi**, ketuk +, lalu pilih **%@**.", self == .notification ? L("Notifikasi") : "Screenshot")
         switch self {
         case .notification:
-            return [openShortcuts, newOne,
-                    RecipeStep(icon: "bell", title: L("Pilih Notifikasi"), note: L("Lalu pilih aplikasi bank atau e-wallet-mu")), runNow, pick]
+            return [automation, L("Pilih aplikasi bank atau e-wallet-mu, aktifkan **Jalankan Segera**, lalu ketuk Berikutnya."), pick]
         case .screenshot:
-            return [openShortcuts, newOne, RecipeStep(icon: "camera.viewfinder", title: L("Pilih Screenshot")), runNow, pick]
+            return [automation, L("Aktifkan **Jalankan Segera**, lalu ketuk Berikutnya."), pick]
         case .backTap:
-            return [settings,
-                    RecipeStep(icon: "accessibility", title: L("Ketuk Aksesibilitas, lalu Sentuh")),
-                    RecipeStep(icon: "hand.tap", title: L("Pilih Ketuk Bagian Belakang")),
-                    RecipeStep(icon: "2.circle", title: L("Pilih Ketuk Dua Kali atau Ketuk Tiga Kali"), note: L("Salah satu saja")), pick]
+            return [L("Buka **Pengaturan**, lalu ketuk **Aksesibilitas** dan **Sentuh**."),
+                    L("Ketuk **Ketuk Bagian Belakang**, lalu pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**."),
+                    L("Gulir ke bagian Pintasan, lalu pilih %@.", name)]
         case .actionButton:
-            return [settings, RecipeStep(icon: "button.programmable", title: L("Ketuk Tombol Tindakan")),
-                    RecipeStep(icon: "square.stack.3d.up", title: L("Geser ke Pintasan"), note: L("Lalu ketuk Pilih Pintasan")), pick]
+            return [L("Buka **Pengaturan**, lalu ketuk **Tombol Tindakan**."),
+                    L("Geser ke **Pintasan**, ketuk Pilih Pintasan, lalu pilih %@.", name)]
         }
     }
 
@@ -507,42 +501,41 @@ struct AutoRecipeDetailView: View {
         let count = list.count + 2
         let ran = recipe.shortcut.lastRunText
         return VStack(alignment: .leading, spacing: 0) {
-            numbered(1, of: count, title: recipe.shortcut.name) {
-                InstallButton(shortcut: recipe.shortcut) { refresh += 1 }
+            numbered(1, of: count) {
+                richText(L("Pasang pintasan **%@**.", recipe.shortcut.name))
+                InstallButton(shortcut: recipe.shortcut) { refresh += 1 }.padding(.top, 6)
             }
-            ForEach(Array(list.enumerated()), id: \.offset) { index, step in
-                numbered(index + 2, of: count, title: step.title, note: step.note) {
+            ForEach(Array(list.enumerated()), id: \.offset) { index, sentence in
+                numbered(index + 2, of: count) {
+                    richText(sentence)
                     if recipe.isAutomation && index == 0 {
                         Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
-                            Image(systemName: "arrow.up.forward.app").font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(Color.appPrimaryText).frame(width: 44, height: 44)
+                            Label(L("Buka Shortcuts"), systemImage: "arrow.up.forward.app")
+                                .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText).frame(minHeight: 44, alignment: .leading)
                         }
-                        .accessibilityLabel(L("Buka Shortcuts"))
                     }
                 }
             }
-            numbered(count, of: count, title: recipe.tryIt, note: ran ?? L("Belum jalan"), noteTint: ran == nil ? .appTextSecondary : .stSuccessText) {
-                if ran != nil { Image(systemName: "checkmark.circle.fill").font(.system(size: 20)).foregroundStyle(Color.stGreen) }
+            numbered(count, of: count) {
+                Text(recipe.tryIt)
+                if let ran { Label(ran, systemImage: "checkmark.circle.fill").font(.app(13)).foregroundStyle(Color.stSuccessText).padding(.top, 4) }
+                else { Text(L("Belum jalan")).font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.top, 4) }
             }
         }
     }
 
-    /// A step: its number on a line that runs down to the next one, then what to do.
-    private func numbered<T: View>(_ number: Int, of count: Int, title: String, note: String? = nil,
-                                   noteTint: Color = .appTextSecondary, @ViewBuilder trailing: () -> T) -> some View {
+    /// A step: its number on a line that runs down to the next one, then the sentence.
+    private func numbered<C: View>(_ number: Int, of count: Int, @ViewBuilder content: () -> C) -> some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(spacing: 4) {
                 Text("\(number)").font(.app(14, weight: .bold)).foregroundStyle(.white)
                     .frame(width: 28, height: 28).background(Color.stGreen, in: Circle())
                 if number < count { Rectangle().fill(Color.stGreen.opacity(0.4)).frame(width: 2).frame(maxHeight: .infinity).padding(.bottom, 4) }
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText).fixedSize(horizontal: false, vertical: true)
-                if let note { Text(note).font(.app(13)).foregroundStyle(noteTint).fixedSize(horizontal: false, vertical: true) }
-            }
-            .padding(.top, 4).padding(.bottom, 26)
-            Spacer(minLength: 8)
-            trailing().frame(height: 28)
+            VStack(alignment: .leading, spacing: 0) { content() }
+                .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appText)
+                .padding(.top, 3).padding(.bottom, 22)
+            Spacer(minLength: 0)
         }
     }
 
