@@ -14223,6 +14223,16 @@
         }
       }
     },
+    "Notifikasi, ketuk belakang, Tombol Aksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications, Back Tap, Action Button"
+          }
+        }
+      }
+    },
     "Notifikasi, ketuk belakang, Tombol Aksi, screenshot": {
       "localizations": {
         "en": {

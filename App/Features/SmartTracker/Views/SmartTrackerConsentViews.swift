@@ -23,9 +23,8 @@ enum SmartWay: CaseIterable {
 
 /// What is sent, removed, kept and how to delete it (design 1g). A sheet with a medium and a large detent, opened from the
 /// agreement sheet and from Profil › Smart Tracker.
-struct SmartTrackerPrivacySheet: View {
-    @Environment(\.dismiss) private var dismiss
-
+/// The four things to know about how Smart Tracker handles data: shared by the sheet (consent) and the page (settings).
+private struct PrivacyPoints: View {
     private var points: [(String, String, String)] {
         [("arrow.up.right", L("Apa yang dikirim"),
           L("Hanya teks: yang kamu ketik, ucapkan (diubah jadi teks), bagikan, atau baca dari gambar. Teks dikirim ke penyedia model bahasa untuk dibaca AI. Tidak dipakai melatih AI.")),
@@ -38,6 +37,27 @@ struct SmartTrackerPrivacySheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            ForEach(Array(points.enumerated()), id: \.offset) { _, point in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 14) {
+                        Image(systemName: point.0).font(.system(size: 20)).foregroundStyle(Color.appPrimary).frame(width: 24)
+                        Text(point.1).font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
+                    }
+                    Text(point.2).font(.app(15)).lineSpacing(4).foregroundStyle(Color.appBody).padding(.leading, 38)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24).padding(.vertical, 14)
+                .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+            }
+        }
+    }
+}
+
+struct SmartTrackerPrivacySheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
             HStack {
                 Text(L("Cara data diproses")).font(.app(20, weight: .semibold))
                 Spacer()
@@ -47,21 +67,7 @@ struct SmartTrackerPrivacySheet: View {
             }
             .padding(.horizontal, 24).padding(.top, 8).frame(minHeight: 52)
             ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 14) {
-                                Image(systemName: point.0).font(.system(size: 20)).foregroundStyle(Color.appPrimary).frame(width: 24)
-                                Text(point.1).font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
-                            }
-                            Text(point.2).font(.app(15)).lineSpacing(4).foregroundStyle(Color.appBody).padding(.leading, 38)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 24).padding(.vertical, 14)
-                        .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
-                    }
-                }
-                .padding(.bottom, 34)
+                PrivacyPoints().padding(.bottom, 34)
             }
             .sheetScrollSlack()
         }
@@ -69,6 +75,18 @@ struct SmartTrackerPrivacySheet: View {
         .adaptiveSheet()
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
+    }
+}
+
+/// Profil › Smart Tracker › Cara data diproses, as a page of its own.
+struct SmartTrackerPrivacyPage: View {
+    var body: some View {
+        ScrollView { PrivacyPoints().padding(.top, 8).padding(.bottom, 40) }
+            .scrollIndicators(.hidden)
+            .background(Color.appBackground)
+            .navigationTitle(L("Cara data diproses"))
+            .navigationBarTitleDisplayMode(.inline)
+            .hidesSmartButton()
     }
 }
 

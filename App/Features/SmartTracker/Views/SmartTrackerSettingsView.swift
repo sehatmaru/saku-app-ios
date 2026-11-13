@@ -11,7 +11,6 @@ struct SmartTrackerSettingsView: View {
     @State private var siri = SmartTrackerWays.siri
     @State private var reminder = SmartTrackerWays.reminder
     @State private var showsConsent = false
-    @State private var showsPrivacy = false
     @State private var failed = false
 
     private var profileId: UUID? { authViewModel.currentUser.flatMap { UUID(uuidString: $0.id) } }
@@ -20,8 +19,7 @@ struct SmartTrackerSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Smart Tracker").font(.app(34, weight: .bold)).tracking(-0.4).foregroundStyle(Color.appText)
-                    .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 12)
+                quotaSection.padding(.top, 8)
 
                 sectionLabel(L("Cara mencatat"))
                 wayRow(.ai, aiDetail) {
@@ -44,36 +42,60 @@ struct SmartTrackerSettingsView: View {
                         .labelsHidden().tint(Color.appPrimary)
                 }
 
-                Rectangle().fill(Color.appDivider).frame(height: 1).padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 16)
-
-                if isGuest {
-                    guestCard.padding(.horizontal, 24)
-                } else if let quota = quotaStore.quota {
-                    quotaCard(quota).padding(.horizontal, 24)
-                    if quota.isOut {
-                        Text(L("Jatah habis. Dibaca dengan aturan di perangkat.")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appError)
-                            .padding(.horizontal, 24).padding(.top, 12)
-                        textLink(L("Lihat Saku Plus")) { plusReason = .aiHelp }.padding(.horizontal, 24).padding(.top, 4)
-                    } else if !aiOn && !quota.isPlus {
-                        Text(L("AI mati. Jatah tidak terpakai.")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
-                            .padding(.horizontal, 24).padding(.top, 12)
-                    }
-                } else {
-                    quotaPlaceholder.padding(.horizontal, 24)
-                }
-
-                textLink(L("Cara data diproses")) { showsPrivacy = true }.padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 40)
+                privacyRow.padding(.bottom, 40)
             }
         }
         .scrollIndicators(.hidden)
         .background(Color.appBackground)
+        .navigationTitle("Smart Tracker")
+        .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
         .plusOffer($plusReason)
         .task { await quotaStore.refresh() }
         .sheet(isPresented: $showsConsent) { SmartTrackerConsentSheet(profileId: profileId) { showsConsent = false } }
-        .sheet(isPresented: $showsPrivacy) { SmartTrackerPrivacySheet() }
         .confirmDialog(isPresented: $failed, icon: "exclamationmark.triangle", title: L("Gagal mematikan AI"),
                        message: L("Periksa koneksi internetmu lalu coba lagi. Pengaturanmu belum berubah."), confirmTitle: nil, cancelTitle: L("Tutup"))
+    }
+
+    /// The allowance sits first: it is the thing people open this page to check.
+    @ViewBuilder private var quotaSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if isGuest {
+                guestCard.padding(.horizontal, 24)
+            } else if let quota = quotaStore.quota {
+                quotaCard(quota).padding(.horizontal, 24)
+                if quota.isOut {
+                    Text(L("Jatah habis. Dibaca dengan aturan di perangkat.")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appError)
+                        .padding(.horizontal, 24).padding(.top, 12)
+                    textLink(L("Lihat Saku Plus")) { plusReason = .aiHelp }.padding(.horizontal, 24).padding(.top, 4)
+                } else if !aiOn && !quota.isPlus {
+                    Text(L("AI mati. Jatah tidak terpakai.")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                        .padding(.horizontal, 24).padding(.top, 12)
+                }
+            } else {
+                quotaPlaceholder.padding(.horizontal, 24)
+            }
+
+        }
+        .padding(.bottom, 12)
+    }
+
+    /// One menu row to the page that explains how data is processed.
+    private var privacyRow: some View {
+        NavigationLink(destination: SmartTrackerPrivacyPage().detailPage()) {
+            HStack(spacing: 14) {
+                Image(systemName: "lock.shield").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("Cara data diproses")).font(.app(17)).foregroundStyle(Color.appText)
+                    Text(L("Apa yang dikirim, dibuang, dan disimpan")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                    .frame(minHeight: 44)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private static let resetFormat: DateFormatter = {
@@ -115,7 +137,7 @@ struct SmartTrackerSettingsView: View {
                 Image(systemName: "hand.tap").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L("Catat otomatis")).font(.app(17)).foregroundStyle(Color.appText)
-                    Text(L("Notifikasi, ketuk belakang, Tombol Aksi, screenshot")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                    Text(L("Notifikasi, ketuk belakang, Tombol Aksi")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
                 }
                 Spacer(minLength: 8)
                 if !plus.isPlus {
