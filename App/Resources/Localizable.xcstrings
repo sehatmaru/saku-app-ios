@@ -4463,6 +4463,16 @@
         }
       }
     },
+    "Bisa dipakai per hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can spend per day"
+          }
+        }
+      }
+    },
     "Bisa dipakai untuk": {
       "localizations": {
         "en": {
@@ -4479,16 +4489,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Usable · %lld days left"
-          }
-        }
-      }
-    },
-    "Bisa dipakai/hari": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Can spend/day"
           }
         }
       }
@@ -8533,16 +8533,6 @@
         }
       }
     },
-    "Garis di bar menunjukkan di mana pengeluaran seharusnya hari ini.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The line on each bar shows where spending should be today."
-          }
-        }
-      }
-    },
     "Gelap": {
       "localizations": {
         "en": {
@@ -12233,22 +12223,22 @@
         }
       }
     },
-    "Lebih cepat %@ dari ritme": {
+    "Lebih cepat %@ dari garis ritme": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ ahead of pace"
+            "value": "%@ ahead of the pace line"
           }
         }
       }
     },
-    "Lebih hemat %@ dari ritme": {
+    "Lebih hemat %@ dari garis ritme": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ under pace"
+            "value": "%@ under the pace line"
           }
         }
       }
@@ -12359,16 +12349,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Over by Rp20.000"
-          }
-        }
-      }
-    },
-    "Lewat budget": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over budget"
           }
         }
       }
@@ -13799,6 +13779,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Start setting money aside for an emergency fund, however small."
+          }
+        }
+      }
+    },
+    "Muncul setelah hari ke-%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows after day %lld"
           }
         }
       }
@@ -16583,12 +16573,12 @@
         }
       }
     },
-    "Proyeksi akhir": {
+    "Proyeksi akhir periode": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Projected end"
+            "value": "Projected by period end"
           }
         }
       }
@@ -16773,16 +16763,6 @@
         }
       }
     },
-    "Rata-rata/hari": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Average/day"
-          }
-        }
-      }
-    },
     "Rekam notifikasi": {
       "localizations": {
         "en": {
@@ -16959,6 +16939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "One-period summary, ready to share"
+          }
+        }
+      }
+    },
+    "Ritme belanja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending pace"
           }
         }
       }
@@ -18473,12 +18463,12 @@
         }
       }
     },
-    "Sesuai ritme": {
+    "Sesuai garis ritme hari ini": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "On pace"
+            "value": "On today's pace line"
           }
         }
       }
@@ -23125,16 +23115,6 @@
         }
       }
     },
-    "Waktu berjalan": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Time elapsed"
-          }
-        }
-      }
-    },
     "Waktunya memperbarui nilai %@": {
       "localizations": {
         "en": {
@@ -23441,16 +23421,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "from %@"
-          }
-        }
-      }
-    },
-    "dari %@ · terpakai %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "of %@ · spent %@"
           }
         }
       }

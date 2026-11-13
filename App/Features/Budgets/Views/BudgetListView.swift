@@ -88,7 +88,10 @@ struct BudgetListView: View {
                         if viewModel.budgetItems.isEmpty {
                             emptyState
                         } else {
-                            if let summary { summaryBlock(summary) }
+                            if let summary {
+                                summaryBlock(summary)
+                                rhythmSection(summary)
+                            }
                             attentionSection
                             budgetList
                         }
@@ -256,79 +259,76 @@ struct BudgetListView: View {
         isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
     }
 
+    /// Same shape as the budget detail hero: label, big amount, one bar, then the figures under it.
     private func summaryBlock(_ s: BudgetSummary) -> some View {
-        let isOver = s.spent > s.total
-        let tint: Color = isOver ? .appError : s.spentShare >= 0.8 ? .appWarning : .appPrimary
+        let tint: Color = s.spent > s.total ? .appError : s.spentShare >= 0.8 ? .appWarning : .appPrimary
         return VStack(alignment: .leading, spacing: 0) {
-            Text(isOver ? L("Lewat budget") : L("Sisa budget"))
-                .font(.app(13))
+            Text("Sisa budget")
+                .font(.app(15))
                 .foregroundStyle(Color.appTextSecondary)
-            Text(money(isOver ? s.spent - s.total : s.remaining))
-                .font(.app(40, weight: .light))
-                .tracking(-1.5)
-                .foregroundStyle(isOver ? Color.appError : Color.appText)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .padding(.top, 2)
-            Text(L("dari %@ · terpakai %@", money(s.total), money(s.spent)))
-                .font(.app(14))
-                .foregroundStyle(Color.appTextSecondary)
-                .monospacedDigit()
-                .padding(.top, 2)
-            summaryBar(L("Terpakai"), s.spentShare, color: tint, delay: 0.15).padding(.top, 20)
-            summaryBar(L("Waktu berjalan"), s.timeShare, color: Color.appTextTertiary, delay: 0.3).padding(.top, 14)
+            HeroAmount(value: s.remaining, size: .hero, color: s.remaining < 0 ? .appError : .appText,
+                       isVisible: isBalanceVisible, weight: .ultraLight)
+                .padding(.top, 8)
+            SegmentBar(value: s.spentShare, color: tint, delay: 0.15, isActive: !isPeriodHidden, replays: false, marker: s.timeShare)
+                .padding(.top, 24)
+            HStack {
+                (Text(L("Terpakai") + " ") + Text(money(s.spent)).fontWeight(.medium).foregroundStyle(Color.appText))
+                Spacer()
+                (Text(L("Budget") + " ") + Text(money(s.total)).fontWeight(.medium).foregroundStyle(Color.appText))
+            }
+            .font(.app(15))
+            .foregroundStyle(Color.appTextSecondary)
+            .monospacedDigit()
+            .padding(.top, 12)
             Text(paceText(s.pace))
-                .font(.app(14, weight: .medium))
+                .font(.app(15, weight: .medium))
                 .foregroundStyle(paceColor(s.pace))
                 .padding(.top, 14)
-            HStack(alignment: .top, spacing: 12) {
-                stat(L("Bisa dipakai/hari"), money(s.perDayLeft))
-                stat(L("Rata-rata/hari"), money(s.dailyAverage))
-                stat(L("Proyeksi akhir"), s.projected.map(money) ?? "–", warn: (s.projected ?? 0) > s.total)
-            }
-            .padding(.top, 18)
         }
         .padding(.horizontal, 24)
         .padding(.top, 22)
-        .padding(.bottom, 6)
     }
 
-    private func summaryBar(_ title: String, _ share: Double, color: Color, delay: Double) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(title)
-                Spacer()
-                Text("\(Int((share * 100).rounded()))%").monospacedDigit()
-            }
-            .font(.app(13))
-            .foregroundStyle(Color.appTextSecondary)
-            SegmentBar(value: share, color: color, delay: delay, isActive: !isPeriodHidden, replays: false)
+    /// The three figures behind the pace, kept out of the hero.
+    private func rhythmSection(_ s: BudgetSummary) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: L("Ritme belanja"))
+                .padding(.bottom, 4)
+            rhythmRow(L("Bisa dipakai per hari"), money(s.perDayLeft))
+            rhythmRow(L("Rata-rata per hari"), money(s.dailyAverage))
+            rhythmRow(L("Proyeksi akhir periode"), s.projected.map(money) ?? "–",
+                      note: s.projected == nil ? L("Muncul setelah hari ke-%lld", BudgetSummary.projectionAfterDays) : nil,
+                      warn: (s.projected ?? 0) > s.total)
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 26)
     }
 
-    private func stat(_ label: String, _ value: String, warn: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label)
-                .font(.app(12))
-                .foregroundStyle(Color.appTextTertiary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+    private func rhythmRow(_ label: String, _ value: String, note: String? = nil, warn: Bool = false) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.app(16))
+                    .foregroundStyle(Color.appText)
+                if let note {
+                    Text(note).font(.app(13)).foregroundStyle(Color.appTextTertiary)
+                }
+            }
+            Spacer(minLength: 12)
             Text(value)
-                .font(.app(15, weight: .semibold))
+                .font(.app(16, weight: .medium))
                 .foregroundStyle(warn ? Color.appError : Color.appText)
                 .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 10)
+        .accessibilityElement(children: .combine)
     }
 
     private func paceText(_ pace: BudgetSummary.Pace) -> String {
         switch pace {
-        case .onPace: L("Sesuai ritme")
-        case .fast(let gap): L("Lebih cepat %@ dari ritme", money(gap))
-        case .slow(let gap): L("Lebih hemat %@ dari ritme", money(gap))
+        case .onPace: L("Sesuai garis ritme hari ini")
+        case .fast(let gap): L("Lebih cepat %@ dari garis ritme", money(gap))
+        case .slow(let gap): L("Lebih hemat %@ dari garis ritme", money(gap))
         case .over: L("Pengeluaran sudah melewati total budget.")
         }
     }
@@ -395,14 +395,10 @@ struct BudgetListView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 14)
                     .padding(.bottom, 4)
-                Text("Garis di bar menunjukkan di mana pengeluaran seharusnya hari ini.")
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextTertiary)
-                    .padding(.horizontal, 24)
             }
             ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
                 NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
-                    BudgetCardView(budget: item.budget, category: item.category, paceShare: summary?.timeShare,
+                    BudgetCardView(budget: item.budget, category: item.category,
                                    fillDelay: 0.3 + Double(i) * 0.07, isFillActive: !isPeriodHidden,
                                    isBalanceVisible: isBalanceVisible)
                         .padding(.horizontal, 24)
@@ -535,8 +531,6 @@ struct BudgetListView: View {
 struct BudgetCardView: View {
     let budget: Budget?
     let category: Category
-    /// How far the period has gone, 0...1: drawn as a tick on the bar so spending can be read against the calendar.
-    var paceShare: Double?
     /// Stagger for the segment bar's fill-in, so rows fill one after another.
     var fillDelay: Double = 0
     /// Empties the bar while false, e.g. while the period changes.
@@ -573,7 +567,7 @@ struct BudgetCardView: View {
                         .monospacedDigit()
                         .lineLimit(1)
                 }
-                SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive, replays: false, marker: paceShare)
+                SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive, replays: false)
                 Text(L("%@ dari %@", money(budget.spent), money(budget.amount)))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)

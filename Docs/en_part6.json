@@ -1741,15 +1741,12 @@
   "Belum dinilai": "Not rated yet",
   "Cara menambah +%lld poin": "How to add +%lld points",
   "Cara memulai": "How to start",
-  "Lewat budget": "Over budget",
-  "dari %@ · terpakai %@": "of %@ · spent %@",
-  "Waktu berjalan": "Time elapsed",
-  "Sesuai ritme": "On pace",
-  "Lebih cepat %@ dari ritme": "%@ ahead of pace",
-  "Lebih hemat %@ dari ritme": "%@ under pace",
   "Pengeluaran sudah melewati total budget.": "Spending has passed the total budget.",
-  "Bisa dipakai/hari": "Can spend/day",
-  "Rata-rata/hari": "Average/day",
-  "Proyeksi akhir": "Projected end",
-  "Garis di bar menunjukkan di mana pengeluaran seharusnya hari ini.": "The line on each bar shows where spending should be today."
+  "Sesuai garis ritme hari ini": "On today's pace line",
+  "Lebih cepat %@ dari garis ritme": "%@ ahead of the pace line",
+  "Lebih hemat %@ dari garis ritme": "%@ under the pace line",
+  "Ritme belanja": "Spending pace",
+  "Bisa dipakai per hari": "Can spend per day",
+  "Proyeksi akhir periode": "Projected by period end",
+  "Muncul setelah hari ke-%lld": "Shows after day %lld"
 }

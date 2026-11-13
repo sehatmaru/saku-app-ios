@@ -129,9 +129,10 @@ struct SegmentBar: View {
             if let marker {
                 GeometryReader { geo in
                     Capsule()
-                        .fill(Color.appText.opacity(0.6))
-                        .frame(width: 2, height: height + 6)
-                        .offset(x: geo.size.width * min(max(marker, 0), 1) - 1, y: -3)
+                        .fill(Color.appText)
+                        .overlay(Capsule().stroke(Color.appBackground, lineWidth: 1.5))
+                        .frame(width: 4, height: height + 16)
+                        .offset(x: geo.size.width * min(max(marker, 0), 1) - 2, y: -8)
                 }
                 .allowsHitTesting(false)
             }
