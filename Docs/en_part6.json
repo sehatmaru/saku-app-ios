@@ -1699,5 +1699,10 @@
   "Apa yang dilakukan Shortcut ini": "What this Shortcut does",
   "Pasang Shortcut **%@**.": "Add the **%@** Shortcut.",
   "Notifikasi, ketuk belakang, Tombol Aksi": "Notifications, Back Tap, Action Button",
-  "Apa yang dikirim, dibuang, dan disimpan": "What is sent, removed, and stored"
+  "Apa yang dikirim, dibuang, dan disimpan": "What is sent, removed, and stored",
+  "Hanya teks yang dikirim. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": "Only text is sent. Nothing is recorded until you tap Save.",
+  "Hanya teks. Tidak dipakai melatih AI.": "Text only. Not used to train AI.",
+  "Nomor panjang dan kode OTP. Gambar mentah tidak pernah dikirim.": "Long numbers and OTP codes. Raw images are never sent.",
+  "Transaksi yang kamu simpan, jatah AI, dan Ingatan.": "Transactions you save, your AI quota, and Memory.",
+  "Profil, lalu Hapus akun.": "Profile, then Delete account."
 }

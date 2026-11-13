@@ -25,25 +25,26 @@ enum SmartWay: CaseIterable {
 /// agreement sheet and from Profil › Smart Tracker.
 /// The four things to know about how Smart Tracker handles data: shared by the sheet (consent) and the page (settings).
 private struct PrivacyPoints: View {
-    private var points: [(String, String, String)] {
-        [("arrow.up.right", L("Apa yang dikirim"),
+    /// icon, title, one-line summary, full text
+    static var points: [(String, String, String, String)] {
+        [("arrow.up.right", L("Apa yang dikirim"), L("Hanya teks. Tidak dipakai melatih AI."),
           L("Hanya teks: yang kamu ketik, ucapkan (diubah jadi teks), bagikan, atau baca dari gambar. Teks dikirim ke penyedia model bahasa untuk dibaca AI. Tidak dipakai melatih AI.")),
-         ("lock", L("Apa yang dibuang di perangkat"),
+         ("lock", L("Apa yang dibuang di perangkat"), L("Nomor panjang dan kode OTP. Gambar mentah tidak pernah dikirim."),
           L("Nomor panjang (rekening, kartu) dan kode OTP dihapus sebelum teks dikirim. Gambar mentah tidak pernah dikirim.")),
-         ("tray", L("Apa yang disimpan"),
+         ("tray", L("Apa yang disimpan"), L("Transaksi yang kamu simpan, jatah AI, dan Ingatan."),
           L("Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.")),
-         ("trash", L("Cara menghapus"), L("Buka Profil, lalu Hapus akun. Datamu ikut terhapus."))]
+         ("trash", L("Cara menghapus"), L("Profil, lalu Hapus akun."), L("Buka Profil, lalu Hapus akun. Datamu ikut terhapus."))]
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(Array(points.enumerated()), id: \.offset) { _, point in
+            ForEach(Array(Self.points.enumerated()), id: \.offset) { _, point in
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 14) {
                         Image(systemName: point.0).font(.system(size: 20)).foregroundStyle(Color.appPrimary).frame(width: 24)
                         Text(point.1).font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
                     }
-                    Text(point.2).font(.app(15)).lineSpacing(4).foregroundStyle(Color.appBody).padding(.leading, 38)
+                    Text(point.3).font(.app(15)).lineSpacing(4).foregroundStyle(Color.appBody).padding(.leading, 38)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24).padding(.vertical, 14)
@@ -78,15 +79,54 @@ struct SmartTrackerPrivacySheet: View {
     }
 }
 
-/// Profil › Smart Tracker › Cara data diproses, as a page of its own.
+/// Profil › Smart Tracker › Cara data diproses, as a page of its own: four cards with a one-line answer each; a tap opens the full text.
 struct SmartTrackerPrivacyPage: View {
+    @State private var open: Set<Int> = []
+
     var body: some View {
-        ScrollView { PrivacyPoints().padding(.top, 8).padding(.bottom, 40) }
-            .scrollIndicators(.hidden)
-            .background(Color.appBackground)
-            .navigationTitle(L("Cara data diproses"))
-            .navigationBarTitleDisplayMode(.inline)
-            .hidesSmartButton()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L("Hanya teks yang dikirim. Tidak ada yang tercatat sebelum kamu ketuk Simpan."))
+                    .font(.app(20, weight: .semibold)).tracking(-0.3).foregroundStyle(Color.appText).lineSpacing(3)
+                    .padding(.bottom, 8)
+                ForEach(Array(PrivacyPoints.points.enumerated()), id: \.offset) { index, point in card(index, point) }
+            }
+            .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 40)
+        }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
+        .navigationTitle(L("Cara data diproses"))
+        .navigationBarTitleDisplayMode(.inline)
+        .hidesSmartButton()
+    }
+
+    private func card(_ index: Int, _ point: (String, String, String, String)) -> some View {
+        let isOpen = open.contains(index)
+        return Button {
+            withAnimation(.settle(0.3)) { if isOpen { open.remove(index) } else { open.insert(index) } }
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 14) {
+                    Image(systemName: point.0).font(.system(size: 18, weight: .medium)).foregroundStyle(Color.appPrimaryText)
+                        .frame(width: 40, height: 40).background(Color.appPrimary.opacity(0.12), in: Circle())
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(point.1).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
+                        Text(point.2).font(.app(14)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.leading)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.down").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                        .rotationEffect(.degrees(isOpen ? 180 : 0))
+                }
+                if isOpen {
+                    Text(point.3).font(.app(15)).lineSpacing(4).foregroundStyle(Color.appBody).multilineTextAlignment(.leading)
+                        .padding(.top, 14).transition(.opacity)
+                }
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20)).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(isOpen ? point.3 : point.2)
     }
 }
 

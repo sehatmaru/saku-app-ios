@@ -8783,6 +8783,26 @@
         }
       }
     },
+    "Hanya teks yang dikirim. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only text is sent. Nothing is recorded until you tap Save."
+          }
+        }
+      }
+    },
+    "Hanya teks. Tidak dipakai melatih AI.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text only. Not used to train AI."
+          }
+        }
+      }
+    },
     "Hanya teks: yang kamu ketik, ucapkan (diubah jadi teks), bagikan, atau baca dari gambar. Teks dikirim ke penyedia model bahasa untuk dibaca AI. Tidak dipakai melatih AI.": {
       "localizations": {
         "en": {
@@ -14023,6 +14043,16 @@
         }
       }
     },
+    "Nomor panjang dan kode OTP. Gambar mentah tidak pernah dikirim.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Long numbers and OTP codes. Raw images are never sent."
+          }
+        }
+      }
+    },
     "Nomor panjang dibuang": {
       "localizations": {
         "en": {
@@ -16279,6 +16309,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Profile saved"
+          }
+        }
+      }
+    },
+    "Profil, lalu Hapus akun.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile, then Delete account."
           }
         }
       }
@@ -21871,6 +21911,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence you type, say or share, the picture you choose and the text read from it, and the notification and Siri text, stay on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save."
+          }
+        }
+      }
+    },
+    "Transaksi yang kamu simpan, jatah AI, dan Ingatan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions you save, your AI quota, and Memory."
           }
         }
       }
