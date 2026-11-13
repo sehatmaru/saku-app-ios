@@ -617,7 +617,8 @@ private struct ShortcutSheet: View {
                 .font(.app(14))
             }
             VStack(alignment: .leading, spacing: 8) {
-                Text(L("Apa yang dilakukan Shortcut ini")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                Text(L("Apa yang dilakukan Shortcut ini")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                    .padding(.bottom, 4)
                 preview
             }
         }
@@ -633,7 +634,6 @@ private struct ShortcutSheet: View {
             }) { dismiss() }
         }
         .background(Color.appBackground)
-        .presentationDetents([.medium, .large])
     }
 
     private var preview: some View {
@@ -644,16 +644,54 @@ private struct ShortcutSheet: View {
         .accessibilityHidden(true)
     }
 
+    private static let shortcutBlue = Color(light: 0x2F7DF6, dark: 0x4C93FF)
+
+    /// The notification shortcut as Shortcuts draws it: the automation trigger, then the Record from notification action.
     private var notificationPreview: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Configure this automation.").font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 30, alignment: .leading).background(Color.stChip, in: Capsule())
-            Label("When I receive a notification from", systemImage: "bell.fill")
-                .font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
-            FlowLayout(spacing: 6) { ForEach(AutomationGuide.apps, id: \.self) { appChip($0) } }
+        VStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Configure this automation.").font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                    .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 30, alignment: .leading).background(Color.stChip, in: Capsule())
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "bell.fill").font(.system(size: 14)).foregroundStyle(Color.appTextSecondary).padding(.top, 2)
+                    FlowLayout(spacing: 6) {
+                        Text("When I receive a notification from").font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
+                        ForEach(AutomationGuide.apps, id: \.self) { appChip($0) }
+                    }
+                }
+                Divider()
+                Label("Add Filter", systemImage: "plus.circle").font(.app(13)).foregroundStyle(Self.shortcutBlue)
+            }
+            .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    sakuTile
+                    Text("Record from notification").font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
+                    Spacer(minLength: 0)
+                }
+                .padding(12)
+                ForEach([("Aplikasi sumber", "App"), ("Title", "Title"), ("Subjudul", "Subtitle"), ("Isi", "Body")], id: \.0) { row in
+                    Divider()
+                    HStack {
+                        Text(row.0).font(.app(14)).foregroundStyle(Color.appText)
+                        Spacer(minLength: 8)
+                        Label(row.1, systemImage: "bell").font(.app(12, weight: .semibold)).foregroundStyle(Self.shortcutBlue)
+                            .padding(.horizontal, 8).frame(height: 26).background(Self.shortcutBlue.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                    .padding(.horizontal, 12).frame(height: 40)
+                }
+                Divider()
+                HStack {
+                    Text("Show When Run").font(.app(14)).foregroundStyle(Color.appText)
+                    Spacer(minLength: 8)
+                    Capsule().fill(Color.stChip).frame(width: 40, height: 24).overlay(alignment: .leading) { Circle().fill(Color.appBackground).padding(2) }
+                }
+                .padding(.horizontal, 12).frame(height: 44)
+            }
+            .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
         }
-        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
     }
 
     /// The two actions of the shortcut as Shortcuts draws them: Take screenshot, then Read image.
@@ -701,15 +739,21 @@ private struct ShortcutSheet: View {
             .frame(width: 28, height: 28).background(Color.appTextTertiary, in: RoundedRectangle(cornerRadius: 8))
     }
 
+    private static let brandLogos = ["myBCA": "bca", "GoPay": "gopay", "OVO": "ovo", "DANA": "dana", "Jago": "jago"]
+
     private func appChip(_ name: String) -> some View {
-        Text(name).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
-            .padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
+        HStack(spacing: 5) {
+            if let id = Self.brandLogos[name], UIImage(named: id) != nil {
+                Image(id).resizable().scaledToFit().frame(width: 18, height: 18).clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+            }
+            Text(name).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
+        }
+        .padding(.horizontal, 8).frame(height: 28).background(Color.stChip, in: Capsule())
     }
 
     private var sakuTile: some View {
-        SakuLogoIcon().padding(3).frame(width: 28, height: 28)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.appDivider, lineWidth: 1))
+        Image("SakuMark").resizable().scaledToFill().frame(width: 28, height: 28)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private func actionIcon(_ name: String) -> some View {
