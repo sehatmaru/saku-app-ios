@@ -634,6 +634,7 @@ private struct ShortcutSheet: View {
             }) { dismiss() }
         }
         .background(Color.appBackground)
+        .presentationDetents([.medium, .large])
     }
 
     private var preview: some View {
