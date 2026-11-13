@@ -13,12 +13,11 @@ final class PeriodAdviceTests: XCTestCase {
         .init(income: income, expense: expense, categories: categories)
     }
 
-    private func health(debt: Double = 0, liquid: Double = 20_000_000, budgetTotal: Double = 4_000_000, budgetSpent: Double = 3_000_000,
-                        activeDays: Int = 10) -> FinancialHealth.Input {
+    private func health(debt: Double = 0, liquid: Double = 20_000_000, budgetTotal: Double = 4_000_000, budgetSpent: Double = 3_000_000) -> FinancialHealth.Input {
         .init(monthlyIncome: [15_000_000, 15_000_000, 15_000_000], monthlyExpense: [9_000_000, 9_000_000, 9_000_000],
               liquidBalance: liquid, creditDebt: debt, creditLimit: 0, hasCreditCard: debt > 0,
               budgetTotal: budgetTotal, budgetSpent: budgetSpent, monthProgress: 0.8,
-              activeDays: activeDays, topExpenseCategory: "Makan Harian", hasTransactions: true)
+              topExpenseCategory: "Makan Harian", hasTransactions: true)
     }
 
     private func input(previous: Int = 3, debt: Double = 0, liquid: Double = 20_000_000, budgetTotal: Double = 4_000_000,

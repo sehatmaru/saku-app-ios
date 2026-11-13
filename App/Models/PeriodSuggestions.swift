@@ -7,7 +7,7 @@ extension PeriodAnalysis {
     struct Suggestion: Equatable {
         enum Kind: CaseIterable {
             case limitOverBudget, setAsideOnPayday, reviewSubscriptions, delayFlexible, payCardInFull
-            case createBudget, recordRegularly, logIncome
+            case createBudget, logIncome
         }
 
         let kind: Kind
@@ -142,13 +142,6 @@ extension PeriodAnalysis {
                     input.budgetSpent = input.budgetTotal * max(input.monthProgress, 0.2) * 0.95
                 }))
         }
-
-        found.append(Candidate(
-            kind: .recordRegularly,
-            action: L("Catat transaksi lebih rutin"),
-            reason: L("Mencatat setiap hari membuat skor dan analisis lebih akurat."),
-            shortAction: L("Catat lebih rutin"), shortReason: L("Skor dan analisis jadi lebih akurat."),
-            amount: nil, isEstimate: false, edit: { $0.activeDays = max($0.activeDays, 20) }))
 
         let current = FinancialHealth(health).score
         let ranked = found.enumerated().map { index, candidate -> (index: Int, candidate: Candidate, gain: Int) in

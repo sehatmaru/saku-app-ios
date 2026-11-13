@@ -14,7 +14,7 @@ final class PeriodAnalysisTests: XCTestCase {
         .init(monthlyIncome: income, monthlyExpense: expense, liquidBalance: 5_000_000,
               creditDebt: 0, creditLimit: 0, hasCreditCard: false,
               budgetTotal: 5_000_000, budgetSpent: spent, monthProgress: 0.5,
-              activeDays: 25, topExpenseCategory: "Makan", hasTransactions: true)
+              topExpenseCategory: "Makan", hasTransactions: true)
     }
 
     // TC 26

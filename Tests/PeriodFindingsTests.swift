@@ -17,7 +17,7 @@ final class PeriodFindingsTests: XCTestCase {
             monthlyIncome: [10_000_000, 10_000_000, 10_000_000], monthlyExpense: [7_000_000, 7_000_000, 7_000_000],
             liquidBalance: 50_000_000, creditDebt: 0, creditLimit: 0, hasCreditCard: false,
             budgetTotal: budgetTotal, budgetSpent: budgetSpent, monthProgress: 0.5,
-            activeDays: 25, topExpenseCategory: "Makan", hasTransactions: true))
+            topExpenseCategory: "Makan", hasTransactions: true))
     }
 
     private func analysisInput(current: PeriodAnalysis.Totals? = nil, previous: [PeriodAnalysis.Totals], budgets: [ReportModel.BudgetLine] = [],
@@ -26,7 +26,7 @@ final class PeriodFindingsTests: XCTestCase {
               health: .init(monthlyIncome: [10_000_000, 10_000_000, 10_000_000], monthlyExpense: [7_000_000, 7_000_000, 7_000_000],
                             liquidBalance: 50_000_000, creditDebt: 0, creditLimit: 0, hasCreditCard: false,
                             budgetTotal: budgets.isEmpty ? 0 : 5_000_000, budgetSpent: 2_000_000, monthProgress: 0.5,
-                            activeDays: 25, topExpenseCategory: "Makan", hasTransactions: true),
+                            topExpenseCategory: "Makan", hasTransactions: true),
               budgets: budgets, charges: [], billsTotal: 0, flexibleCategories: [], isPrivate: isPrivate)
     }
 

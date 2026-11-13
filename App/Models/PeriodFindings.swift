@@ -249,11 +249,11 @@ extension PeriodAnalysis {
 
     private static func privateAdvice(_ kind: FinancialHealth.Kind) -> String {
         switch kind {
+        case .spendable: L("Tunda pengeluaran yang tidak mendesak sampai saldo menutup tagihan.")
         case .cashflow: L("Sisihkan sebagian pemasukan begitu gajian, sebelum dipakai belanja.")
         case .emergencyFund: L("Tambah tabungan secara rutin, sekecil apa pun.")
         case .debt: L("Pastikan tagihan kartu kredit terbayar tepat waktu.")
         case .budget: L("Tahan pengeluaran yang tidak wajib supaya budget cukup sampai akhir periode.")
-        case .habit: L("Catat transaksi setiap hari supaya skor dan saranmu akurat.")
         }
     }
 
