@@ -175,7 +175,7 @@ private struct FlowHero: View {
                 tile("tray.full", lit: t >= 0.7, tint: .stGreen)
             }
         }
-        .padding(16).frame(maxWidth: .infinity).background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .padding(.vertical, 8).frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("Pemicu, lalu pintasan, lalu draf"))
     }
@@ -219,7 +219,7 @@ private struct RecipeDemo: View {
                 }
             }
         }
-        .padding(.vertical, 18).frame(maxWidth: .infinity).background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .padding(.vertical, 8).frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("%@, lalu pintasan, lalu draf", recipe.title))
     }
@@ -334,6 +334,32 @@ private struct RecipeDemo: View {
     }
 }
 
+/// One line of a plain list: an icon, a title with an optional note under it, and whatever sits at the trailing edge.
+private struct ListLine<Trailing: View>: View {
+    let icon: String
+    let title: String
+    var note: String? = nil
+    var noteTint: Color = .appTextSecondary
+    var divider = true
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Color.appText).frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText).fixedSize(horizontal: false, vertical: true)
+                if let note { Text(note).font(.app(13)).foregroundStyle(noteTint).lineLimit(2) }
+            }
+            Spacer(minLength: 8)
+            trailing
+        }
+        .padding(.vertical, 10).frame(minHeight: 60)
+        .overlay(alignment: .bottom) {
+            if divider { Rectangle().fill(Color.appDivider).frame(height: 0.5).padding(.leading, 42) }
+        }
+    }
+}
+
 /// Profil › Smart Tracker › Catat otomatis: install the two Shortcuts once, then pick when they run.
 struct AutoRecordView: View {
     @ObservedObject private var plus = PlusStore.shared
@@ -342,25 +368,21 @@ struct AutoRecordView: View {
     /// Bumped when Saku comes back to the front, so "Terakhir jalan" is read again.
     @State private var refresh = 0
 
-    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                FlowHero().padding(.top, 12)
-                Text(L("Pasang pintasan, pilih pemicunya, lalu draf masuk sendiri."))
-                    .font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.top, 14)
+                FlowHero().padding(.top, 8)
 
-                if !plus.isPlus { plusNote.padding(.top, 16) }
+                if !plus.isPlus { plusNote.padding(.top, 8) }
 
                 sectionLabel(L("1. Pasang pintasan"))
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(SakuShortcut.allCases) { shortcutTile($0) }
+                ForEach(Array(SakuShortcut.allCases.enumerated()), id: \.element.id) { index, shortcut in
+                    shortcutLine(shortcut, last: index == SakuShortcut.allCases.count - 1)
                 }
 
                 sectionLabel(L("2. Pilih pemicu"))
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(AutoRecipe.allCases) { recipeTile($0) }
+                ForEach(Array(AutoRecipe.allCases.enumerated()), id: \.element.id) { index, recipe in
+                    recipeLine(recipe, last: index == AutoRecipe.allCases.count - 1)
                 }
 
                 Label(L("Semuanya masuk sebagai draf. Tidak ada yang tercatat sebelum kamu cek."), systemImage: "lock")
@@ -381,66 +403,40 @@ struct AutoRecordView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-            .padding(.top, 24).padding(.bottom, 10)
+            .padding(.top, 24).padding(.bottom, 2)
     }
 
     /// Reading pictures and notifications is Saku Plus; saying so here saves a failed first try.
     private var plusNote: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "info.circle").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary)
-            Text(L("Catat otomatis butuh Saku Plus")).font(.app(15, weight: .semibold))
-            Spacer(minLength: 8)
+        ListLine(icon: "info.circle", title: L("Catat otomatis butuh Saku Plus"), divider: false) {
             Button { plusReason = .aiHelp } label: {
                 Text(L("Lihat")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText).frame(minWidth: 44, minHeight: 44)
             }
         }
-        .padding(.leading, 16).padding(.trailing, 8).background(Color.stChip, in: RoundedRectangle(cornerRadius: 16))
     }
 
-    private func shortcutTile(_ shortcut: SakuShortcut) -> some View {
+    private func shortcutLine(_ shortcut: SakuShortcut, last: Bool) -> some View {
         let ran = shortcut.lastRunText
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Image(systemName: shortcut.icon).font(.system(size: 20)).foregroundStyle(Color.appText)
-                    .frame(width: 44, height: 44).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 12))
-                Spacer(minLength: 0)
-                if ran != nil {
-                    Image(systemName: "checkmark.circle.fill").font(.system(size: 20)).foregroundStyle(Color.stGreen)
-                        .accessibilityLabel(L("Sudah jalan"))
-                }
-            }
-            Text(shortcut.short).font(.app(17, weight: .semibold)).foregroundStyle(Color.appText).padding(.top, 10)
-            Text(ran ?? L("Belum jalan")).font(.app(12)).foregroundStyle(ran == nil ? Color.appTextSecondary : Color.stSuccessText)
-                .lineLimit(2).frame(minHeight: 32, alignment: .topLeading).padding(.top, 2)
-            InstallButton(shortcut: shortcut, wide: true) { refresh += 1 }.padding(.top, 6)
+        return ListLine(icon: shortcut.icon, title: shortcut.short, note: ran ?? L("Belum jalan"),
+                        noteTint: ran == nil ? .appTextSecondary : .stSuccessText, divider: !last) {
+            InstallButton(shortcut: shortcut) { refresh += 1 }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
         .accessibilityElement(children: .contain)
     }
 
-    private func recipeTile(_ recipe: AutoRecipe) -> some View {
+    private func recipeLine(_ recipe: AutoRecipe, last: Bool) -> some View {
         NavigationLink(destination: AutoRecipeDetailView(recipe: recipe).detailPage()) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Image(systemName: recipe.icon).font(.system(size: 20)).foregroundStyle(Color.appText)
-                        .frame(width: 44, height: 44).background(Color.stRaised, in: RoundedRectangle(cornerRadius: 12))
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
-                }
-                Text(recipe.title).font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
-                    .lineLimit(1).minimumScaleFactor(0.85).padding(.top, 10)
-                Text(recipe.requirement ?? " ").font(.app(12)).foregroundStyle(Color.appTextSecondary).lineLimit(1).padding(.top, 2)
+            ListLine(icon: recipe.icon, title: recipe.title, note: recipe.requirement, divider: !last) {
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
-            .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
             .contentShape(Rectangle())
         }
-        .buttonStyle(PressScaleStyle())
+        .buttonStyle(.plain)
         .accessibilityLabel(recipe.title)
         .accessibilityHint(recipe.summary)
     }
 }
+
 
 /// Opens the Shortcut's iCloud page; iOS shows its own "Add Shortcut" sheet from there.
 private struct InstallButton: View {
@@ -468,7 +464,7 @@ private struct InstallButton: View {
     }
 }
 
-/// One recipe: the demo on top, then the steps as paths of chips, the first being the one-tap install.
+/// One recipe: the demo on top, then the steps as a plain list, the first being the one-tap install.
 struct AutoRecipeDetailView: View {
     let recipe: AutoRecipe
     @Environment(\.openURL) private var openURL
@@ -478,11 +474,11 @@ struct AutoRecipeDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                RecipeDemo(recipe: recipe).padding(.top, 12)
+                RecipeDemo(recipe: recipe).padding(.top, 8)
                 Text(recipe.summary).font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.top, 14)
 
                 if recipe.isAvailable {
-                    steps.padding(.top, 22)
+                    steps.padding(.top, 10)
                     if recipe == .notification {
                         NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
                             HStack(spacing: 8) {
@@ -513,78 +509,47 @@ struct AutoRecipeDetailView: View {
 
     private var steps: some View {
         let paths = recipe.steps
-        let count = paths.count + 2
         return VStack(alignment: .leading, spacing: 0) {
-            step(1, of: count) {
-                VStack(alignment: .leading, spacing: 6) {
-                    chip(recipe.shortcut.icon, recipe.shortcut.name)
-                    InstallButton(shortcut: recipe.shortcut) { refresh += 1 }
-                }
+            ListLine(icon: recipe.shortcut.icon, title: recipe.shortcut.name) {
+                InstallButton(shortcut: recipe.shortcut) { refresh += 1 }
             }
             ForEach(Array(paths.enumerated()), id: \.offset) { index, parts in
-                step(index + 2, of: count) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        path(parts)
-                        if recipe.isAutomation && index == 0 {
-                            Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
-                                Label(L("Buka Shortcuts"), systemImage: "arrow.up.forward.app")
-                                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
-                                    .frame(minHeight: 44, alignment: .leading)
-                            }
+                ListLine(icon: icon(of: parts), title: text(of: parts)) {
+                    if recipe.isAutomation && index == 0 {
+                        Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
+                            Image(systemName: "arrow.up.forward.app").font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(Color.appPrimaryText).frame(width: 44, height: 44)
                         }
+                        .accessibilityLabel(L("Buka Shortcuts"))
                     }
                 }
             }
-            step(count, of: count) {
-                VStack(alignment: .leading, spacing: 6) {
-                    chip("play.circle", recipe.tryIt)
-                    if let ran = recipe.shortcut.lastRunText {
-                        Label(ran, systemImage: "checkmark.circle.fill").font(.app(13)).foregroundStyle(Color.stSuccessText)
-                    } else {
-                        Text(L("Belum jalan")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                    }
-                }
+            let ran = recipe.shortcut.lastRunText
+            ListLine(icon: "play.circle", title: recipe.tryIt, note: ran ?? L("Belum jalan"),
+                     noteTint: ran == nil ? .appTextSecondary : .stSuccessText, divider: false) {
+                if ran != nil { Image(systemName: "checkmark.circle.fill").font(.system(size: 20)).foregroundStyle(Color.stGreen) }
             }
         }
     }
 
-    /// Places to tap, in order, wrapping onto more lines when they do not fit.
-    private func path(_ parts: [StepPart]) -> some View {
-        FlowLayout(spacing: 6) {
-            ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
-                HStack(spacing: 6) {
-                    switch part {
-                    case .chip(let icon, let label): chip(icon, label)
-                    case .or: Text(L("atau")).font(.app(13)).foregroundStyle(Color.appTextSecondary).frame(height: 32)
-                    }
-                    if index < parts.count - 1, case .chip = part, case .chip = parts[index + 1] {
-                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).foregroundStyle(Color.appTextTertiary)
-                    }
-                }
+    /// The places to tap as one line: Pengaturan › Aksesibilitas › Sentuh.
+    private func text(of parts: [StepPart]) -> String {
+        var s = ""
+        for part in parts {
+            switch part {
+            case .chip(_, let label):
+                if !s.isEmpty && !s.hasSuffix(" ") { s += " › " }
+                s += label
+            case .or: s += " " + L("atau") + " "
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(parts.map(\.spoken).joined(separator: ", "))
+        return s
     }
 
-    private func chip(_ icon: String, _ label: String) -> some View {
-        Label(label, systemImage: icon).font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
-            .lineLimit(2).padding(.horizontal, 10).padding(.vertical, 7)
-            .background(Color.stChip, in: RoundedRectangle(cornerRadius: 10))
-    }
-
-    private func step<Content: View>(_ number: Int, of count: Int, @ViewBuilder content: () -> Content) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            VStack(spacing: 4) {
-                Text("\(number)").font(.app(14, weight: .bold)).foregroundStyle(.white)
-                    .frame(width: 28, height: 28).background(Color.stGreen, in: Circle())
-                if number < count {
-                    Rectangle().fill(Color.stLine).frame(width: 2).frame(maxHeight: .infinity)
-                }
-            }
-            content().padding(.bottom, 18)
-            Spacer(minLength: 0)
-        }
+    /// The first real icon of the path; the "2" and "3" tap counts do not count.
+    private func icon(of parts: [StepPart]) -> String {
+        for case .chip(let icon, _) in parts where !(icon.first?.isNumber ?? false) { return icon }
+        return "hand.tap"
     }
 
     private var unavailable: some View {
@@ -597,6 +562,6 @@ struct AutoRecipeDetailView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(16).background(Color.stChip, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.vertical, 8)
     }
 }
