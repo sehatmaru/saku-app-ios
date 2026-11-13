@@ -598,44 +598,33 @@ private struct ShortcutSheet: View {
 
     var body: some View {
         let ran = shortcut.lastRunText
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 14) {
-                    Image(systemName: shortcut.icon).font(.system(size: 22)).foregroundStyle(Color.appBackground)
-                        .frame(width: 56, height: 56).background(Color.appText, in: Circle())
-                    Text(shortcut.label).font(.app(24, weight: .bold)).foregroundStyle(Color.appText)
-                }
-                Text(shortcut.blurb).font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 16)
-                if let ran {
-                    Label(L("Terpasang") + " · " + ran, systemImage: "checkmark.circle").font(.app(13, weight: .semibold))
-                        .foregroundStyle(Color.stSuccessText).padding(.horizontal, 12).frame(height: 36)
-                        .background(Color.stSuccessBg, in: Capsule()).padding(.top, 16)
-                }
-                preview.padding(.top, 16)
-                Button {
-                    shortcut.wasOpened = true
-                    openURL(shortcut.url)
-                    done()
-                    dismiss()
-                } label: {
-                    Label(ran == nil ? L("Tambah ke Shortcuts") : L("Tambah ulang ke Shortcuts"), systemImage: "square.stack.3d.up.fill")
-                        .font(.app(16, weight: .bold)).foregroundStyle(ran == nil ? Color.appBackground : Color.appText)
-                        .frame(maxWidth: .infinity).frame(height: 56)
-                        .background(ran == nil ? Color.appText : Color.clear, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Color.appBorder, lineWidth: ran == nil ? 0 : 1.5))
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(PressScaleStyle()).padding(.top, 20)
-                Button { dismiss() } label: {
-                    Text(L("Batal")).font(.app(16, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                }
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(shortcut.label).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(shortcut.blurb).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 12)
+            if let ran {
+                Label(L("Terpasang") + " · " + ran, systemImage: "checkmark.circle").font(.app(13, weight: .semibold))
+                    .foregroundStyle(Color.stSuccessText).padding(.horizontal, 12).frame(height: 36)
+                    .background(Color.stSuccessBg, in: Capsule())
+            }
+            preview
         }
-        .scrollIndicators(.hidden)
+        .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .filterSheet {
+            SmartSheetFooter(primary: ran == nil ? L("Tambah ke Shortcuts") : L("Tambah ulang ke Shortcuts"), secondary: L("Batal"),
+                             onPrimary: {
+                shortcut.wasOpened = true
+                openURL(shortcut.url)
+                done()
+                dismiss()
+            }) { dismiss() }
+        }
         .background(Color.appBackground)
-        .presentationDetents([.large]).presentationDragIndicator(.visible)
+        .presentationDetents([.medium, .large])
     }
 
     private var preview: some View {
