@@ -11093,6 +11093,16 @@
         }
       }
     },
+    "Ketuk punggung iPhone dua kali": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double-tap the back of your iPhone"
+          }
+        }
+      }
+    },
     "Ketuk punggung iPhone, layar jadi draf": {
       "localizations": {
         "en": {
@@ -13993,6 +14003,16 @@
         }
       }
     },
+    "Notifikasi bank/aplikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank/app notification"
+          }
+        }
+      }
+    },
     "Notifikasi belum diizinkan": {
       "localizations": {
         "en": {
@@ -15723,6 +15743,16 @@
         }
       }
     },
+    "Pilih pemicu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a trigger"
+          }
+        }
+      }
+    },
     "Pilih periode": {
       "localizations": {
         "en": {
@@ -17149,6 +17179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "New screenshot"
+          }
+        }
+      }
+    },
+    "Screenshot struk jadi draf otomatis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Receipt screenshots become drafts automatically"
           }
         }
       }
@@ -20013,6 +20053,16 @@
         }
       }
     },
+    "Tekan tombol samping kiri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press the left side button"
+          }
+        }
+      }
+    },
     "Tekan tombol, layar jadi draf": {
       "localizations": {
         "en": {
@@ -21421,6 +21471,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transactions from"
+          }
+        }
+      }
+    },
+    "Transaksi dari notifikasi jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions from notifications become drafts"
           }
         }
       }

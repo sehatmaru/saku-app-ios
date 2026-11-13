@@ -10,11 +10,6 @@ enum SakuShortcut: String, CaseIterable, Identifiable {
     /// The name on the card, as the owner shares it.
     var title: String { self == .screenshot ? "Screenshot Record To Saku" : "Notification Record To Saku" }
 
-    /// What the Shortcut serves, one line under its name.
-    var use: String {
-        self == .screenshot ? L("Untuk Back Tap, Action Button, dan Screenshot") : L("Untuk Notifikasi Bank/Aplikasi")
-    }
-
     /// The Shortcut's own name, as it appears in Shortcuts and in Settings. Not translated.
     var name: String {
         switch self {
@@ -73,7 +68,7 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .notification: L("Notifikasi Bank/Aplikasi")
+        case .notification: L("Notifikasi bank/aplikasi")
         case .backTap: "Back Tap"
         case .actionButton: "Action Button"
         case .screenshot: "Screenshot"
@@ -86,10 +81,10 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
     /// One line under the title on the list.
     var subtitle: String {
         switch self {
-        case .notification: L("Notifikasi transaksi jadi draf")
-        case .backTap: L("Ketuk punggung iPhone, layar jadi draf")
-        case .actionButton: L("Tekan tombol, layar jadi draf")
-        case .screenshot: L("Setiap screenshot jadi draf")
+        case .notification: L("Transaksi dari notifikasi jadi draf")
+        case .backTap: L("Ketuk punggung iPhone dua kali")
+        case .actionButton: L("Tekan tombol samping kiri")
+        case .screenshot: L("Screenshot struk jadi draf otomatis")
         }
     }
 
@@ -119,9 +114,9 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
     /// What the iPhone needs, shown on the list before anyone starts.
     var requirement: String {
         switch self {
-        case .notification, .screenshot: L("iOS 27 ke atas")
-        case .actionButton: L("iPhone 15 Pro ke atas")
-        case .backTap: L("iPhone 8 ke atas")
+        case .notification, .screenshot: "iOS 27+"
+        case .actionButton: "iPhone 15 Pro+"
+        case .backTap: "iPhone 8+"
         }
     }
 
@@ -356,7 +351,7 @@ private struct ListLine<Trailing: View>: View {
             Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Color.appText).frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText).fixedSize(horizontal: false, vertical: true)
-                if let note { Text(note).font(.app(13)).foregroundStyle(noteTint).lineLimit(2) }
+                if let note { Text(note).font(.app(12)).foregroundStyle(noteTint).lineLimit(2).minimumScaleFactor(0.9) }
             }
             Spacer(minLength: 8)
             trailing
@@ -383,13 +378,7 @@ struct AutoRecordView: View {
 
                 if !plus.isPlus { plusNote.padding(.top, 8) }
 
-                sectionLabel(L("1. Pasang Shortcuts"))
-                HStack(alignment: .top, spacing: 12) {
-                    ForEach(SakuShortcut.allCases) { shortcutCard($0) }
-                }
-                .padding(.top, 8)
-
-                sectionLabel(L("2. Pilih pemicu"))
+                sectionLabel(L("Pilih pemicu"))
                 ForEach(Array(AutoRecipe.allCases.enumerated()), id: \.element.id) { index, recipe in
                     recipeLine(recipe, last: index == AutoRecipe.allCases.count - 1)
                 }
@@ -424,26 +413,9 @@ struct AutoRecordView: View {
         }
     }
 
-    private func shortcutCard(_ shortcut: SakuShortcut) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Image(systemName: shortcut.icon).font(.system(size: 22)).foregroundStyle(Color.stSuccessText)
-                .frame(width: 48, height: 48).background(Color.stSuccessBg, in: RoundedRectangle(cornerRadius: 14))
-            Text(shortcut.title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
-                .lineLimit(2).frame(maxWidth: .infinity, minHeight: 42, alignment: .topLeading).padding(.top, 14)
-            Text(shortcut.use).font(.app(12)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
-                .lineLimit(3).frame(maxWidth: .infinity, minHeight: 48, alignment: .topLeading).padding(.top, 4)
-            InstallButton(shortcut: shortcut, wide: true) { refresh += 1 }.padding(.top, 8)
-        }
-        .padding(16).frame(maxWidth: .infinity)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
-        .accessibilityElement(children: .contain)
-    }
-
     private func recipeLine(_ recipe: AutoRecipe, last: Bool) -> some View {
         NavigationLink(destination: AutoRecipeDetailView(recipe: recipe).detailPage()) {
-            ListLine(icon: recipe.icon, title: recipe.title, note: recipe.subtitle, divider: !last) {
-                Text(recipe.requirement).font(.app(11, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                    .lineLimit(1).fixedSize().padding(.horizontal, 8).frame(height: 22).background(Color.stChip, in: Capsule())
+            ListLine(icon: recipe.icon, title: recipe.title, note: recipe.subtitle + " · " + recipe.requirement, divider: !last) {
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
             .contentShape(Rectangle())
