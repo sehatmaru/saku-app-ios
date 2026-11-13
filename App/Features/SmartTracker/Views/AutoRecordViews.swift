@@ -177,8 +177,8 @@ private struct FlowHero: View {
     var body: some View {
         TimelineView(.animation(paused: reduceMotion)) { context in
             let seconds = context.date.timeIntervalSinceReferenceDate
-            let t = reduceMotion ? 1 : loopTime(context.date, seconds: 2.4)
-            let recipe = AutoRecipe.allCases[reduceMotion ? 0 : Int(seconds / 2.4) % AutoRecipe.allCases.count]
+            let t = reduceMotion ? 1 : loopTime(context.date, seconds: 4)
+            let recipe = AutoRecipe.allCases[reduceMotion ? 0 : Int(seconds / 4) % AutoRecipe.allCases.count]
             HStack(spacing: 8) {
                 tile(recipe.icon, lit: t < 0.34, tint: .appText).id(recipe.id).transition(.opacity)
                 track(eased(t, 0.1, 0.45))
@@ -221,26 +221,35 @@ private struct RecipeDemo: View {
 
     var body: some View {
         TimelineView(.animation(paused: reduceMotion)) { context in
-            let t = reduceMotion ? 0.88 : loopTime(context.date, seconds: 4.2)
-            VStack(spacing: 14) {
+            let t = reduceMotion ? 0.88 : loopTime(context.date, seconds: 9)
+            HStack(alignment: .center, spacing: 28) {
                 phone(t).opacity(1 - eased(t, 0.95, 1))
-                HStack(spacing: 6) {
-                    stage(recipe.icon, recipe.stageTitle, on: t < 0.4)
-                    stage("square.stack.3d.up", L("Pintasan"), on: t >= 0.4 && t < 0.62)
-                    stage("tray.full", L("Draf"), on: t >= 0.62)
+                VStack(alignment: .leading, spacing: 0) {
+                    stage(recipe.icon, recipe.stageTitle, on: t < 0.4, last: false)
+                    stage("square.stack.3d.up", L("Pintasan"), on: t >= 0.4 && t < 0.62, last: false)
+                    stage("tray.full", L("Draf"), on: t >= 0.62, last: true)
                 }
             }
+            .frame(maxWidth: .infinity)
         }
-        .padding(.vertical, 8).frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("%@, lalu pintasan, lalu draf", recipe.title))
     }
 
-    private func stage(_ icon: String, _ label: String, on: Bool) -> some View {
-        Label(label, systemImage: icon).font(.app(12, weight: .semibold)).lineLimit(1)
-            .foregroundStyle(on ? Color.stSuccessText : Color.appTextSecondary)
-            .padding(.horizontal, 10).frame(height: 28)
-            .background(on ? Color.stSuccessBg : Color.stRaised, in: Capsule())
+    /// One stage of the flow: its icon on a line that runs down to the next one, then its name.
+    private func stage(_ icon: String, _ label: String, on: Bool, last: Bool) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(spacing: 0) {
+                Image(systemName: icon).font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(on ? Color.stSuccessText : Color.appTextSecondary)
+                    .frame(width: 36, height: 36).background(on ? Color.stSuccessBg : Color.stRaised, in: Circle())
+                if !last { Rectangle().fill(Color.stLine).frame(width: 2, height: 22) }
+            }
+            Text(label).font(.app(14, weight: .semibold)).foregroundStyle(on ? Color.appText : Color.appTextSecondary)
+                .frame(height: 36, alignment: .leading)
+        }
+        .animation(.easeInOut(duration: 0.4), value: on)
     }
 
     private func phone(_ t: Double) -> some View {
@@ -558,22 +567,19 @@ private struct ShortcutButton: View {
             HStack(spacing: 12) {
                 Image(systemName: ran == nil ? "square.stack.3d.up.fill" : "checkmark").font(.system(size: 17, weight: .bold))
                     .foregroundStyle(ran == nil ? Color.appText : Color.white)
-                    .frame(width: 40, height: 40).background(ran == nil ? Color.appBackground : Color.stGreen, in: Circle())
+                    .frame(width: 40, height: 40).background(ran == nil ? Color.appBackground : Color.white.opacity(0.22), in: Circle())
                 VStack(alignment: .leading, spacing: 1) {
-                    if let ran {
-                        Text(shortcut.label).font(.app(15, weight: .bold)).foregroundStyle(Color.appText).lineLimit(1).minimumScaleFactor(0.7)
-                        Text(ran).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1).minimumScaleFactor(0.85)
-                    } else {
-                        Text(shortcut.label).font(.app(13)).foregroundStyle(Color.appBackground.opacity(0.7)).lineLimit(1).minimumScaleFactor(0.85)
-                        Text(L("Tambah ke Shortcuts")).font(.app(16, weight: .bold)).foregroundStyle(Color.appBackground)
-                    }
+                    Text(ran ?? shortcut.label).font(.app(13)).foregroundStyle(ran == nil ? Color.appBackground.opacity(0.7) : Color.white.opacity(0.85))
+                        .lineLimit(1).minimumScaleFactor(0.85)
+                    Text(ran == nil ? L("Tambah ke Shortcuts") : L("Terpasang")).font(.app(16, weight: .bold))
+                        .foregroundStyle(ran == nil ? Color.appBackground : Color.white)
                 }
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(ran == nil ? Color.appBackground : Color.appTextTertiary)
+                    .foregroundStyle(ran == nil ? Color.appBackground : Color.white.opacity(0.85))
             }
             .padding(.horizontal, 10).frame(height: 60).frame(maxWidth: .infinity)
-            .background(ran == nil ? Color.appText : Color.appFill, in: Capsule())
+            .background(ran == nil ? Color.appText : Color.stGreen, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(PressScaleStyle())
