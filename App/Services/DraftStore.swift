@@ -300,6 +300,12 @@ final class DraftStore: ObservableObject {
         add([notices.remove(at: index).draft])
     }
 
+    /// "Mengerti": the notice is read and gone for good.
+    func dismissNotice(_ notice: SkippedNotice) {
+        notices.removeAll { $0.id == notice.id }
+        persist()
+    }
+
     /// The other way around (K6): a recurring bill just posted its transaction, so waiting notification
     /// drafts that match it are skipped with the same notice.
     func skipWaitingDrafts(billName: String, amount: Double, accountId: String, billingDate: Date) {

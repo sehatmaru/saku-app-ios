@@ -21143,6 +21143,16 @@
         }
       }
     },
+    "Tidak dibuat jadi draf supaya tidak tercatat dua kali.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not made into a draft so it is not recorded twice."
+          }
+        }
+      }
+    },
     "Tidak disimpan": {
       "localizations": {
         "en": {

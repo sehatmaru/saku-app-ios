@@ -192,22 +192,23 @@ struct DraftQueueView: View {
     /// Newest first, left to right. "Simpan semua" still records them oldest first.
     private var queue: [Draft] { store.drafts.sorted { $0.createdAt > $1.createdAt } }
 
+    /// The stack: notices already recorded first, then the drafts.
+    private enum StackItem: Identifiable {
+        case notice(SkippedNotice), draft(Draft)
+        var id: UUID { switch self { case .notice(let n): n.id; case .draft(let d): d.id } }
+    }
+
+    private var items: [StackItem] { store.notices.map(StackItem.notice) + queue.map(StackItem.draft) }
+
     private var ready: [Draft] { queue.filter { $0.isComplete && !store.needsPeriodChoice($0) } }
 
     /// Swiping only browses: left brings the next draft to the front, right the one before it, round and round.
-    @State private var showsNotices = false
     @State private var browse = 0
     @State private var drag: CGFloat = 0
 
     private var stackPosition: Int {
-        let n = queue.count
+        let n = items.count
         return n == 0 ? 0 : min(max(browse, 0), n - 1)
-    }
-
-    /// `queue` turned so the browsed draft is first.
-    private var stack: [Draft] {
-        let q = queue, i = stackPosition
-        return Array(q[i...] + q[..<i])
     }
 
     /// True from the first sideways move until a moment after the finger lifts, so a swipe that starts on a chip
@@ -227,10 +228,10 @@ struct DraftQueueView: View {
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 20, coordinateSpace: .global)
             .onChanged { value in
-                guard queue.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
+                guard items.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
                 // the first draft cannot be pulled right, the last one cannot be pulled left
                 swiping = true
-                if (stackPosition == 0 && value.translation.width > 0) || (stackPosition == queue.count - 1 && value.translation.width < 0) {
+                if (stackPosition == 0 && value.translation.width > 0) || (stackPosition == items.count - 1 && value.translation.width < 0) {
                     drag = 0
                     return
                 }
@@ -241,7 +242,7 @@ struct DraftQueueView: View {
                 dragging = false
                 let flick = value.predictedEndTranslation.width
                 Task { try? await Task.sleep(for: .milliseconds(350)); swiping = false }
-                guard queue.count > 1, abs(drag) > 0, abs(drag) > 90 || abs(flick) > 220 else { drag = 0; return }
+                guard items.count > 1, abs(drag) > 0, abs(drag) > 90 || abs(flick) > 220 else { drag = 0; return }
                 commit(step: (drag < 0 || flick < -220) ? 1 : -1)
             }
     }
@@ -257,14 +258,14 @@ struct DraftQueueView: View {
 
     /// Brings another draft to the front: the old front card leaves to the side while the next one grows from behind.
     private func commit(step: Int) {
-        let target = min(max(stackPosition + step, 0), queue.count - 1)
-        guard !busy, queue.count > 1, target != stackPosition else { drag = 0; return }
+        let target = min(max(stackPosition + step, 0), items.count - 1)
+        guard !busy, items.count > 1, target != stackPosition else { drag = 0; return }
         busy = true
         Task { try? await Task.sleep(for: .milliseconds(300)); busy = false }
         focusedId = nil
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         // only a card leaving forward flies off; going back, the old front simply sinks behind the stack
-        let leaving = target > stackPosition ? queue[stackPosition].id : nil
+        let leaving = target > stackPosition ? items[stackPosition].id : nil
         exiting = leaving
         exitDir = -1
         Task { try? await Task.sleep(for: .milliseconds(400)); if exiting == leaving { exiting = nil } }
@@ -280,10 +281,11 @@ struct DraftQueueView: View {
     /// Every draft is a real card. The front one follows the finger; the ones behind sit higher, smaller and blurred, and
     /// sharpen as the front one is pulled away.
     private var cardStack: some View {
-        let n = queue.count, pos = stackPosition
+        let n = items.count, pos = stackPosition
         let t = min(abs(drag) / 140, 1)
         return ZStack(alignment: .top) {
-            ForEach(Array(queue.enumerated()), id: \.element.id) { j, d in
+            ForEach(Array(items.enumerated()), id: \.element.id) { j, item in
+                let d = item
                 let rel = relative(j, pos, n)
                 if (rel >= -1 && rel <= 2) || d.id == exiting {
                     let front = rel == 0
@@ -294,7 +296,7 @@ struct DraftQueueView: View {
                     let behind = !out && !prev && rel > 0
                     let eff = max(0, Double(abs(rel)) - (under ? t : 0))
                     let sink = front && drag > 0 ? t : 0
-                    card(d)
+                    cardView(item)
                         .frame(height: cardHeight)
                         .allowsHitTesting(front)
                         .blur(radius: behind ? 2.5 * eff : 2.5 * sink)
@@ -345,13 +347,6 @@ struct DraftQueueView: View {
         .navigationTitle(L("Draf Transaksi"))
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if !queue.isEmpty && !store.notices.isEmpty { noticesButton }
-            }
-        }
-        .sheet(isPresented: $showsNotices) { noticesSheet }
-        .onChange(of: store.notices.isEmpty) { _, empty in if empty { showsNotices = false } }
         .background(NoSwipeBack())
         .onChange(of: sheet?.id) { focusedId = nil }
         .plusOffer($plusReason)
@@ -426,16 +421,6 @@ struct DraftQueueView: View {
                 Spacer(minLength: 0)
             }
 
-            // Notifications already recorded: information only, kept for 7 days (K5, K10). With a card on screen they live
-            // behind the button in the bar, so they never take room from the card; on their own they show here.
-            if queue.isEmpty && !store.notices.isEmpty {
-                VStack(spacing: 8) {
-                    ForEach(store.notices) { notice in noticeRow(notice) }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-                .animation(.settle(0.3), value: store.notices.map(\.id))
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .pinnedFooter(separator: true) {
@@ -452,11 +437,11 @@ struct DraftQueueView: View {
     private func dotGesture(width: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { v in
-                guard !queue.isEmpty, abs(v.translation.width) > 8 else { return }
+                guard !items.isEmpty, abs(v.translation.width) > 8 else { return }
                 swiping = true
                 let start = dotStart ?? stackPosition
                 dotStart = start
-                let target = min(max(start - Int((v.translation.width / 24).rounded()), 0), queue.count - 1)
+                let target = min(max(start - Int((v.translation.width / 24).rounded()), 0), items.count - 1)
                 guard target != stackPosition else { return }
                 focusedId = nil
                 UISelectionFeedbackGenerator().selectionChanged()
@@ -470,27 +455,27 @@ struct DraftQueueView: View {
                 } else if abs(v.translation.width) <= 8, abs(v.translation.height) <= 12 {
                     // a tap: the strip's first mark sits at width/2 - 24 * position - 12
                     let k = Int(((v.startLocation.x - width / 2 + 24 * CGFloat(stackPosition) + 12) / 24).rounded(.down))
-                    if k >= 0 && k < queue.count && abs(k - stackPosition) <= 3 { commit(step: k - stackPosition) }
+                    if k >= 0 && k < items.count && abs(k - stackPosition) <= 3 { commit(step: k - stackPosition) }
                 }
             }
     }
 
     private var pageDots: some View {
         let sizes: [(CGFloat, CGFloat)] = [(22, 30), (16, 22), (12, 18), (9, 14)]
-        let n = queue.count, pos = stackPosition
+        let n = items.count, pos = stackPosition
         let curve = Animation.timingCurve(0.22, 0.9, 0.25, 1, duration: 0.45)
         return GeometryReader { geo in
             HStack(spacing: 0) {
-                ForEach(Array(queue.enumerated()), id: \.element.id) { k, d in
+                ForEach(Array(items.enumerated()), id: \.element.id) { k, d in
                     let dist = abs(k - pos)
                     let size = dist < sizes.count ? sizes[dist] : (8, 12)
                     RoundedRectangle(cornerRadius: dist == 0 ? 6 : 4)
-                        .fill(headerColor(d))
+                        .fill(itemColor(d))
                         .frame(width: size.0, height: size.1)
                         .opacity(dist > 3 ? 0 : dist == 0 ? 1 : 0.55)
                         .overlay(alignment: .topTrailing) {
                             // a draft that still lacks something wears the same amber as its dashed card
-                            if !d.isComplete && dist <= 3 {
+                            if case .draft(let draft) = d, !draft.isComplete, dist <= 3 {
                                 Image(systemName: "exclamationmark.circle.fill").font(.system(size: 11, weight: .bold))
                                     .foregroundStyle(Color.stWarn)
                                     .background(Color.appBackground, in: Circle())
@@ -499,7 +484,7 @@ struct DraftQueueView: View {
                         }
                         .frame(width: 24, height: 44)
                         .accessibilityElement()
-                        .accessibilityLabel(d.kindTitle)
+                        .accessibilityLabel(itemTitle(d))
                         .accessibilityAddTraits(.isButton)
                         .accessibilityAction { commit(step: k - pos) }
                 }
@@ -840,59 +825,104 @@ struct DraftQueueView: View {
     }
 
     /// "Notifikasi BCA sudah tercatat sebagai cicilan iPhone 15": information only, with Batalkan (K5).
-    /// The bar button that opens the notifications already recorded, with how many there are.
-    private var noticesButton: some View {
-        Button { showsNotices = true } label: {
-            Image(systemName: "checkmark.seal").font(.system(size: 19)).foregroundStyle(Color.appText)
-                .frame(width: 44, height: 44)
-                .overlay(alignment: .topTrailing) {
-                    Text("\(store.notices.count)").font(.app(11, weight: .bold)).foregroundStyle(Color.appBackground)
-                        .frame(minWidth: 18, minHeight: 18).background(Color.stGreen, in: Capsule()).offset(x: -2, y: 4)
-                }
-                .contentShape(Rectangle())
+    private func cardView(_ item: StackItem) -> some View {
+        switch item {
+        case .draft(let d): AnyView(card(d))
+        case .notice(let n): AnyView(noticeCard(n))
         }
-        .accessibilityLabel(L("Sudah tercatat") + ", \(store.notices.count)")
     }
 
-    private var noticesSheet: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(L("Sudah tercatat")).font(.app(20, weight: .bold)).foregroundStyle(Color.appText)
-                .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 12)
-            ScrollView {
-                VStack(spacing: 8) {
-                    ForEach(store.notices) { notice in noticeRow(notice) }
+    private func itemColor(_ item: StackItem) -> Color {
+        switch item {
+        case .draft(let d): headerColor(d)
+        case .notice: Self.noticeGray
+        }
+    }
+
+    private func itemTitle(_ item: StackItem) -> String {
+        switch item {
+        case .draft(let d): d.kindTitle
+        case .notice: L("Sudah tercatat")
+        }
+    }
+
+    private static let noticeGray = Color(light: 0x5F5E5A, dark: 0x4A4944)
+
+    /// "Notifikasi myBCA sudah tercatat sebagai tagihan berulang Spotify": a card at the front of the stack, same size as
+    /// a draft. Information only: Mengerti dismisses it for good, Batalkan hands the notification back as a draft (K5).
+    private func noticeCard(_ n: SkippedNotice) -> some View {
+        let d = n.draft
+        let (kind, name): (String, String) = switch n.match {
+        case .installment(let t): (L("Cicilan"), t)
+        case .bill(let b): (L("Tagihan berulang"), b)
+        }
+        return VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Label(L("Sudah tercatat"), systemImage: "checkmark.circle")
+                        .font(.app(14, weight: .semibold)).foregroundStyle(.white)
+                        .padding(.horizontal, 14).frame(height: 36)
+                        .background(Color.white.opacity(0.22), in: Capsule())
+                    Spacer(minLength: 0)
+                    Label(DateFormatter.arrivalTime.string(from: n.at), systemImage: "clock")
+                        .font(.app(12, weight: .medium)).monospacedDigit().foregroundStyle(.white.opacity(0.92))
                 }
-                .padding(.horizontal, 16).padding(.bottom, 24)
+                Text(d.sourceLabel).font(.app(13, weight: .medium)).foregroundStyle(.white.opacity(0.9))
+                if let amount = d.amount {
+                    HStack(alignment: .top, spacing: 2) {
+                        Text("Rp").font(.app(16, weight: .medium)).opacity(0.85).padding(.top, 6)
+                        Text(amount.formattedAsDigits())
+                            .font(.app(amount.formattedAsDigits().count > 7 ? 38 : 46, weight: .light)).tracking(-1.5).monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.5)
+                    }
+                    .foregroundStyle(.white)
+                }
             }
-            .scrollIndicators(.hidden)
+            .padding(.horizontal, 24).padding(.vertical, 16)
+            .frame(maxWidth: .infinity, minHeight: Self.heroHeight, maxHeight: Self.heroHeight, alignment: .topLeading)
+            .background(Self.noticeGray, in: RoundedRectangle(cornerRadius: 32))
+            VStack(alignment: .leading, spacing: 0) {
+                noticeRow(L("Dicatat"), kind)
+                noticeRow(L("Nama"), name)
+                noticeRow(L("Tanggal"), Self.dateLabel(d.date))
+                Text(L("Tidak dibuat jadi draf supaya tidak tercatat dua kali."))
+                    .font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.stGreen.opacity(0.14), in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(alignment: .leading) { Capsule().fill(Color.stGreen).frame(width: 3).padding(.vertical, 8) }
+                    .padding(.top, 16)
+                Spacer(minLength: 16)
+                HStack(spacing: 12) {
+                    Button { if !swiping { withAnimation(.settle(0.3)) { store.cancelNotice(n) } } } label: {
+                        Text("Batalkan").font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
+                            .padding(.horizontal, 12).frame(height: 48)
+                    }
+                    .buttonStyle(.plain)
+                    Button { if !swiping { withAnimation(.settle(0.3)) { store.dismissNotice(n) } } } label: {
+                        Text("Mengerti").font(.app(17, weight: .semibold)).foregroundStyle(.white)
+                            .frame(maxWidth: .infinity).frame(height: 48)
+                            .background(Color.appPrimary, in: Capsule())
+                    }
+                    .buttonStyle(PressScaleStyle())
+                }
+            }
+            .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .background(Color.appBackground)
-        .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+        .clipShape(RoundedRectangle(cornerRadius: 32))
+        .overlay { RoundedRectangle(cornerRadius: 32).strokeBorder(Color.appDivider, lineWidth: 1) }
+        .id(n.id)
     }
 
-    private func noticeRow(_ notice: SkippedNotice) -> some View {
+    private func noticeRow(_ label: String, _ value: String) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: "checkmark.seal").font(.system(size: 17)).foregroundStyle(Color.stGreen)
-            Text(noticeText(notice)).font(.app(13)).lineLimit(3).foregroundStyle(Color.appTextSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Button { withAnimation(.settle(0.3)) { store.cancelNotice(notice) } } label: {
-                Text("Batalkan").font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary).fixedSize()
-                    .frame(minHeight: 44)
-            }
-            .buttonStyle(.plain)
+            Text(label).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
+            Text(value).font(.app(16, weight: .medium)).foregroundStyle(Color.appText).lineLimit(1)
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 14).padding(.vertical, 6)
-        .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-        .transition(.opacity.combined(with: .offset(y: 12)))
-    }
-
-    private func noticeText(_ notice: SkippedNotice) -> String {
-        let name = notice.draft.sourceName ?? notice.draft.title
-        return switch notice.match {
-        case .installment(let title): L("Notifikasi %@ sudah tercatat sebagai cicilan %@", name, title)
-        case .bill(let bill): L("Notifikasi %@ sudah tercatat sebagai tagihan berulang %@", name, bill)
-        }
+        .frame(height: 48)
     }
 
     private struct Field {

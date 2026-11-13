@@ -1688,5 +1688,6 @@
   "Buka **Pengaturan** › **Tombol Tindakan**.": "Open **Settings** › **Action Button**.",
   "Geser ke **Pintasan**, ketuk **Pilih Pintasan**.": "Swipe to **Shortcut**, tap **Choose a Shortcut**.",
   "Pilih %@.": "Pick %@.",
-  "Sudah tercatat": "Already recorded"
+  "Sudah tercatat": "Already recorded",
+  "Tidak dibuat jadi draf supaya tidak tercatat dua kali.": "Not made into a draft so it is not recorded twice."
 }
