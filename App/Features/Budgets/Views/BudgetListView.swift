@@ -173,9 +173,6 @@ struct BudgetListView: View {
                     .id(days.total)
                     .padding(.top, 10)
             }
-            (Text(headerPayday.map { L("Gajian tiap tanggal %lld", $0) } ?? L("Mengikuti tanggal 1"))
-                + Text(" · hari ke-\(dayNumber) dari \(days.total)"))
-                .padding(.top, 12)
         }
         .font(.app(13))
         .foregroundStyle(Color.appTextSecondary)
