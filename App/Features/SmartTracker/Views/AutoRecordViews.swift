@@ -27,6 +27,14 @@ enum SakuShortcut: String, CaseIterable, Identifiable {
 
     var icon: String { self == .screenshot ? "camera.viewfinder" : "bell" }
 
+    /// The name shown on the button and the sheet.
+    var label: String { self == .screenshot ? L("Rekam screenshot") : L("Rekam notifikasi") }
+
+    var blurb: String {
+        self == .screenshot ? L("Membaca screenshot struk atau bukti transfer, lalu menyimpannya sebagai draf.")
+                            : L("Membaca notifikasi transaksi dari bank atau e-wallet, lalu menyimpannya sebagai draf.")
+    }
+
     private var runKey: String { "sakuShortcut.lastRun." + rawValue }
     private var openedKey: String { "sakuShortcut.opened." + rawValue }
 
@@ -427,29 +435,156 @@ struct AutoRecordView: View {
 }
 
 
-/// Opens the Shortcut's iCloud page; iOS shows its own "Add Shortcut" sheet from there.
-/// The Shortcuts icon and the word, so it is clear where it leads.
-private struct InstallButton: View {
+/// The button on a recipe's first step. Dark while the Shortcut has not run; light with a check once it has.
+/// It opens the sheet that adds the Shortcut.
+private struct ShortcutButton: View {
     let shortcut: SakuShortcut
-    var wide = false
-    var opened: () -> Void = {}
+    let action: () -> Void
+
+    var body: some View {
+        let ran = shortcut.lastRunText
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: ran == nil ? "square.stack.3d.up.fill" : "checkmark").font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(ran == nil ? Color.appText : Color.white)
+                    .frame(width: 40, height: 40).background(ran == nil ? Color.appBackground : Color.stGreen, in: Circle())
+                VStack(alignment: .leading, spacing: 1) {
+                    if let ran {
+                        Text(shortcut.label).font(.app(16, weight: .bold)).foregroundStyle(Color.appText)
+                        Text(ran).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    } else {
+                        Text(shortcut.label).font(.app(13)).foregroundStyle(Color.appBackground.opacity(0.7))
+                        Text(L("Tambah ke Shortcuts")).font(.app(16, weight: .bold)).foregroundStyle(Color.appBackground)
+                    }
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(ran == nil ? Color.appBackground : Color.appTextTertiary)
+            }
+            .padding(.horizontal, 10).frame(height: 60).frame(maxWidth: .infinity)
+            .background(ran == nil ? Color.appText : Color.appFill, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+        .accessibilityLabel(L("Tambah ke Shortcuts") + ": " + shortcut.label)
+    }
+}
+
+/// What the Shortcut is and what it holds, with the button that opens its iCloud page. iOS then shows its own
+/// "Add Shortcut" sheet. The preview is a drawing, in the English words Shortcuts itself uses.
+private struct ShortcutSheet: View {
+    let shortcut: SakuShortcut
+    var done: () -> Void = {}
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        let again = shortcut.wasOpened
-        Button {
-            shortcut.wasOpened = true
-            openURL(shortcut.url)
-            opened()
-        } label: {
-            Label(L("Pasang"), systemImage: "square.stack.3d.up.fill").font(.app(15, weight: .semibold)).lineLimit(1)
-                .foregroundStyle(again ? Color.appText : Color.appBackground)
-                .padding(.horizontal, 16).frame(maxWidth: wide ? .infinity : nil).frame(height: 40)
-                .background(again ? Color.stChip : Color.appText, in: Capsule())
-                .contentShape(Rectangle())
+        let ran = shortcut.lastRunText
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 14) {
+                    Image(systemName: shortcut.icon).font(.system(size: 22)).foregroundStyle(Color.appBackground)
+                        .frame(width: 56, height: 56).background(Color.appText, in: Circle())
+                    Text(shortcut.label).font(.app(24, weight: .bold)).foregroundStyle(Color.appText)
+                }
+                Text(shortcut.blurb).font(.app(15)).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 16)
+                if let ran {
+                    Label(L("Terpasang") + " · " + ran, systemImage: "checkmark.circle").font(.app(13, weight: .semibold))
+                        .foregroundStyle(Color.stSuccessText).padding(.horizontal, 12).frame(height: 36)
+                        .background(Color.stSuccessBg, in: Capsule()).padding(.top, 16)
+                }
+                preview.padding(.top, 16)
+                Button {
+                    shortcut.wasOpened = true
+                    openURL(shortcut.url)
+                    done()
+                    dismiss()
+                } label: {
+                    Label(ran == nil ? L("Tambah ke Shortcuts") : L("Tambah ulang ke Shortcuts"), systemImage: "square.stack.3d.up.fill")
+                        .font(.app(16, weight: .bold)).foregroundStyle(ran == nil ? Color.appBackground : Color.appText)
+                        .frame(maxWidth: .infinity).frame(height: 56)
+                        .background(ran == nil ? Color.appText : Color.clear, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color.appBorder, lineWidth: ran == nil ? 0 : 1.5))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(PressScaleStyle()).padding(.top, 20)
+                Button { dismiss() } label: {
+                    Text(L("Batal")).font(.app(16, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                }
+            }
+            .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 12)
         }
-        .buttonStyle(PressScaleStyle())
-        .accessibilityLabel(L("Pasang pintasan %@", shortcut.name))
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
+        .presentationDetents([.large]).presentationDragIndicator(.visible)
+    }
+
+    private var preview: some View {
+        VStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Configure this automation.").font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                    .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 30, alignment: .leading).background(Color.stChip, in: Capsule())
+                Label(shortcut == .screenshot ? "When I save a screenshot to" : "When I get a notification from", systemImage: shortcut == .screenshot ? "camera" : "bell")
+                    .font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
+                Text(shortcut == .screenshot ? "Photos, Files or Clipboard" : "Bank or e-wallet apps").font(.app(13))
+                    .foregroundStyle(Color.appTextTertiary).padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
+            }
+            .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+
+            if shortcut == .screenshot {
+                action("photo", "Get the latest", chip: "1 screenshot")
+                actionCard("textformat", "Read image", rows: [("Image", "Latest Screenshots")])
+            } else {
+                actionCard("bell", "Record notification", rows: [("Notification", "Shortcut Input")])
+            }
+        }
+        .padding(10).background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .accessibilityHidden(true)
+    }
+
+    private func action(_ icon: String, _ title: String, chip: String) -> some View {
+        HStack(spacing: 10) {
+            actionIcon(icon)
+            Text(title).font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
+            Text(chip).font(.app(13)).foregroundStyle(Color.appTextTertiary).padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
+            Spacer(minLength: 0)
+        }
+        .padding(12).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func actionCard(_ icon: String, _ title: String, rows: [(String, String)]) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                actionIcon(icon)
+                Text(title).font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            ForEach(rows, id: \.0) { row in
+                Divider()
+                HStack {
+                    Text(row.0).font(.app(14)).foregroundStyle(Color.appText)
+                    Spacer(minLength: 8)
+                    Text(row.1).font(.app(13)).foregroundStyle(Color.appTextTertiary).padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
+                }
+                .padding(.horizontal, 12).frame(height: 44)
+            }
+            Divider()
+            HStack {
+                Text("Show When Run").font(.app(14)).foregroundStyle(Color.appText)
+                Spacer(minLength: 8)
+                Capsule().fill(Color.stChip).frame(width: 40, height: 24).overlay(alignment: .leading) { Circle().fill(Color.appBackground).padding(2) }
+            }
+            .padding(.horizontal, 12).frame(height: 44)
+        }
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func actionIcon(_ name: String) -> some View {
+        Image(systemName: name).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+            .frame(width: 28, height: 28).background(Color.stGreen, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -459,6 +594,7 @@ struct AutoRecipeDetailView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var refresh = 0
+    @State private var showsShortcut = false
 
     var body: some View {
         ScrollView {
@@ -494,6 +630,7 @@ struct AutoRecipeDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
         .onChange(of: scenePhase) { _, phase in if phase == .active { refresh += 1 } }
+        .sheet(isPresented: $showsShortcut) { ShortcutSheet(shortcut: recipe.shortcut) { refresh += 1 } }
     }
 
     private var steps: some View {
@@ -502,7 +639,7 @@ struct AutoRecipeDetailView: View {
         return VStack(alignment: .leading, spacing: 0) {
             numbered(1, of: count) {
                 richText(L("Pasang pintasan **%@**.", recipe.shortcut.name))
-                InstallButton(shortcut: recipe.shortcut) { refresh += 1 }.padding(.top, 6)
+                ShortcutButton(shortcut: recipe.shortcut) { showsShortcut = true }.padding(.top, 10)
             }
             ForEach(Array(list.enumerated()), id: \.offset) { index, sentence in
                 numbered(index + 2, of: count) {

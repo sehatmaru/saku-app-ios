@@ -1667,5 +1667,12 @@
   "Transaksi dari notifikasi jadi draf": "Transactions from notifications become drafts",
   "Ketuk punggung iPhone dua kali": "Double-tap the back of your iPhone",
   "Tekan tombol samping kiri": "Press the left side button",
-  "Screenshot struk jadi draf otomatis": "Receipt screenshots become drafts automatically"
+  "Screenshot struk jadi draf otomatis": "Receipt screenshots become drafts automatically",
+  "Rekam screenshot": "Record screenshot",
+  "Rekam notifikasi": "Record notification",
+  "Membaca screenshot struk atau bukti transfer, lalu menyimpannya sebagai draf.": "Reads a receipt or transfer screenshot, then saves it as a draft.",
+  "Membaca notifikasi transaksi dari bank atau e-wallet, lalu menyimpannya sebagai draf.": "Reads a transaction notification from your bank or e-wallet, then saves it as a draft.",
+  "Tambah ke Shortcuts": "Add to Shortcuts",
+  "Tambah ulang ke Shortcuts": "Add to Shortcuts again",
+  "Terpasang": "Installed"
 }

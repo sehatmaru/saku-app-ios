@@ -12903,6 +12903,26 @@
         }
       }
     },
+    "Membaca notifikasi transaksi dari bank atau e-wallet, lalu menyimpannya sebagai draf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reads a transaction notification from your bank or e-wallet, then saves it as a draft."
+          }
+        }
+      }
+    },
+    "Membaca screenshot struk atau bukti transfer, lalu menyimpannya sebagai draf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reads a receipt or transfer screenshot, then saves it as a draft."
+          }
+        }
+      }
+    },
     "Membaca screenshot, foto, atau struk dan membuat draf. Hasilnya masuk ke Konfirmasi transaksi.": {
       "localizations": {
         "en": {
@@ -16273,6 +16293,26 @@
         }
       }
     },
+    "Rekam notifikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record notification"
+          }
+        }
+      }
+    },
+    "Rekam screenshot": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record screenshot"
+          }
+        }
+      }
+    },
     "Rekening tabungan atau giro": {
       "localizations": {
         "en": {
@@ -19593,6 +19633,16 @@
         }
       }
     },
+    "Tambah ke Shortcuts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to Shortcuts"
+          }
+        }
+      }
+    },
     "Tambah tabungan secara rutin, sekecil apa pun.": {
       "localizations": {
         "en": {
@@ -19609,6 +19659,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add transaction"
+          }
+        }
+      }
+    },
+    "Tambah ulang ke Shortcuts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to Shortcuts again"
           }
         }
       }
@@ -20499,6 +20559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Used · due %@"
+          }
+        }
+      }
+    },
+    "Terpasang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installed"
           }
         }
       }
