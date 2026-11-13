@@ -1453,6 +1453,16 @@
         }
       }
     },
+    "**Selesai**. Lakukan satu transaksi kecil untuk mencoba.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Done**. Make one small transaction to try it."
+          }
+        }
+      }
+    },
     "+%lld dari maks. +40": {
       "localizations": {
         "en": {
@@ -4829,6 +4839,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The budget for %@ will be deleted."
+          }
+        }
+      }
+    },
+    "Buka **%@**, lalu nyalakan **Automation**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open **%@**, then turn on **Automation**."
           }
         }
       }
@@ -11083,6 +11103,16 @@
         }
       }
     },
+    "Ketuk panah bawah, lalu nyalakan Automation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the down arrow, then turn on Automation"
+          }
+        }
+      }
+    },
     "Ketuk punggung iPhone dua atau tiga kali, layar yang terbuka jadi draf.": {
       "localizations": {
         "en": {
@@ -14369,6 +14399,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add"
+          }
+        }
+      }
+    },
+    "Pasang Shortcuts **%@**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add the **%@** Shortcut."
           }
         }
       }
@@ -19679,6 +19719,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add, edit, hide"
+          }
+        }
+      }
+    },
+    "Tambahkan aplikasi bank atau e-wallet lainnya dengan ketuk tanda **+**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add other bank or e-wallet apps by tapping **+**."
           }
         }
       }

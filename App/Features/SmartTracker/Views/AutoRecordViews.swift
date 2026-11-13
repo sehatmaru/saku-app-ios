@@ -28,7 +28,7 @@ enum SakuShortcut: String, CaseIterable, Identifiable {
     var icon: String { self == .screenshot ? "camera.viewfinder" : "bell" }
 
     /// The name shown on the button and the sheet.
-    var label: String { self == .screenshot ? L("Rekam screenshot") : L("Rekam notifikasi") }
+    var label: String { self == .screenshot ? "Screenshot Record To Saku" : "Notification Record To Saku" }
 
     var blurb: String {
         self == .screenshot ? L("Membaca screenshot struk atau bukti transfer, lalu menyimpannya sebagai draf.")
@@ -135,7 +135,8 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
         let automation = L("Buka Shortcuts, pilih tab **Otomatisasi**, ketuk +, lalu pilih **%@**.", self == .notification ? L("Notifikasi") : "Screenshot")
         switch self {
         case .notification:
-            return [automation, L("Pilih aplikasi bank atau e-wallet-mu, aktifkan **Jalankan Segera**, lalu ketuk Berikutnya."), pick]
+            return [L("Buka **%@**, lalu nyalakan **Automation**.", shortcut.name),
+                    L("Tambahkan aplikasi bank atau e-wallet lainnya dengan ketuk tanda **+**.")]
         case .screenshot:
             return [automation, L("Aktifkan **Jalankan Segera**, lalu ketuk Berikutnya."), pick]
         case .backTap:
@@ -150,7 +151,7 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
 
     var tryIt: String {
         switch self {
-        case .notification: L("Lakukan satu transaksi kecil")
+        case .notification: L("**Selesai**. Lakukan satu transaksi kecil untuk mencoba.")
         case .backTap: L("Buka struk, lalu ketuk punggung iPhone")
         case .actionButton: L("Buka struk, lalu tekan Tombol Aksi")
         case .screenshot: L("Ambil screenshot struk")
@@ -435,6 +436,66 @@ struct AutoRecordView: View {
 }
 
 
+/// How to switch the automation on, acted out: tap the down arrow, the rest opens, then the Automation switch goes on.
+/// The words are the ones Shortcuts shows. With Reduce Motion it stands at the end.
+private struct AutomationGuide: View {
+    static let apps = ["myBCA", "GoPay", "OVO", "DANA", "Jago", "neobank", "Krom"]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(paused: reduceMotion)) { context in
+            let t = reduceMotion ? 0.95 : loopTime(context.date, seconds: 6)
+            let open = eased(t, 0.2, 0.3)
+            let on = eased(t, 0.62, 0.72)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "bell.fill").font(.system(size: 14)).foregroundStyle(Color.appError).padding(.top, 2)
+                    FlowLayout(spacing: 6) {
+                        Text("When I receive a notification from").font(.app(13, weight: .semibold)).foregroundStyle(Color.appText).frame(height: 28)
+                        ForEach(Self.apps, id: \.self) { app in
+                            Text(app).font(.app(12, weight: .semibold)).foregroundStyle(Color.appText)
+                                .padding(.horizontal, 8).frame(height: 24).background(Color.stChip, in: Capsule())
+                        }
+                        Image(systemName: "chevron.down.circle").font(.system(size: 22)).foregroundStyle(Color.stGreen)
+                            .rotationEffect(.degrees(180 * open)).frame(height: 28)
+                            .overlay { ring(t, 0.05, 0.2) }
+                    }
+                }
+                .padding(12)
+                VStack(spacing: 0) {
+                    Divider()
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle").font(.system(size: 14)).foregroundStyle(Color.appTextSecondary)
+                        Text("Add Filter").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 12).frame(height: 40)
+                    Divider()
+                    HStack {
+                        Text("Automation").font(.app(13)).foregroundStyle(Color.appText)
+                        Spacer(minLength: 8)
+                        Capsule().fill(on > 0.5 ? Color.stGreen : Color.stChip).frame(width: 44, height: 26)
+                            .overlay(alignment: .leading) { Circle().fill(Color.white).frame(width: 22, height: 22).offset(x: on > 0.5 ? 20 : 2) }
+                            .overlay { ring(t, 0.45, 0.62) }
+                    }
+                    .padding(.horizontal, 12).frame(height: 44)
+                }
+                .opacity(open).offset(y: -6 * (1 - open))
+            }
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("Ketuk panah bawah, lalu nyalakan Automation"))
+    }
+
+    /// A ring that grows around what to tap.
+    private func ring(_ t: Double, _ a: Double, _ b: Double) -> some View {
+        let p = eased(t, a, b)
+        return Circle().strokeBorder(Color.stGreen, lineWidth: 2).frame(width: 36, height: 36)
+            .scaleEffect(0.6 + 0.6 * p).opacity(p > 0 && p < 1 ? 1 - p * 0.8 : 0)
+    }
+}
+
 /// The button on a recipe's first step. Dark while the Shortcut has not run; light with a check once it has.
 /// It opens the sheet that adds the Shortcut.
 private struct ShortcutButton: View {
@@ -525,10 +586,14 @@ private struct ShortcutSheet: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Configure this automation.").font(.app(12)).foregroundStyle(Color.appTextSecondary)
                     .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 30, alignment: .leading).background(Color.stChip, in: Capsule())
-                Label(shortcut == .screenshot ? "When I save a screenshot to" : "When I get a notification from", systemImage: shortcut == .screenshot ? "camera" : "bell")
+                Label(shortcut == .screenshot ? "When I save a screenshot to" : "When I receive a notification from", systemImage: shortcut == .screenshot ? "camera" : "bell.fill")
                     .font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
-                Text(shortcut == .screenshot ? "Photos, Files or Clipboard" : "Bank or e-wallet apps").font(.app(13))
-                    .foregroundStyle(Color.appTextTertiary).padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
+                if shortcut == .screenshot {
+                    Text("Photos, Files or Clipboard").font(.app(13)).foregroundStyle(Color.appTextTertiary)
+                        .padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
+                } else {
+                    FlowLayout(spacing: 6) { ForEach(AutomationGuide.apps, id: \.self) { appChip($0) } }
+                }
             }
             .padding(12).frame(maxWidth: .infinity, alignment: .leading)
             .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
@@ -536,12 +601,15 @@ private struct ShortcutSheet: View {
             if shortcut == .screenshot {
                 action("photo", "Get the latest", chip: "1 screenshot")
                 actionCard("textformat", "Read image", rows: [("Image", "Latest Screenshots")])
-            } else {
-                actionCard("bell", "Record notification", rows: [("Notification", "Shortcut Input")])
             }
         }
         .padding(10).background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
         .accessibilityHidden(true)
+    }
+
+    private func appChip(_ name: String) -> some View {
+        Text(name).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
+            .padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
     }
 
     private func action(_ icon: String, _ title: String, chip: String) -> some View {
@@ -638,21 +706,22 @@ struct AutoRecipeDetailView: View {
         let count = list.count + 2
         return VStack(alignment: .leading, spacing: 0) {
             numbered(1, of: count) {
-                richText(L("Pasang pintasan **%@**.", recipe.shortcut.name))
+                richText(L("Pasang Shortcuts **%@**.", recipe.shortcut.name))
                 ShortcutButton(shortcut: recipe.shortcut) { showsShortcut = true }.padding(.top, 10)
             }
             ForEach(Array(list.enumerated()), id: \.offset) { index, sentence in
                 numbered(index + 2, of: count) {
                     richText(sentence)
+                    if recipe == .notification && index == 0 { AutomationGuide().padding(.top, 10) }
                     if recipe.isAutomation && index == 0 {
-                        Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
+                        Button { openURL(URL(string: recipe == .notification ? "shortcuts://" : "shortcuts://create-automation")!) } label: {
                             Label(L("Buka Shortcuts"), systemImage: "arrow.up.forward.app")
                                 .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText).frame(minHeight: 44, alignment: .leading)
                         }
                     }
                 }
             }
-            numbered(count, of: count) { Text(recipe.tryIt) }
+            numbered(count, of: count) { richText(recipe.tryIt) }
         }
     }
 
