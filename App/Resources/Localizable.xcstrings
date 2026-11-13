@@ -4403,6 +4403,26 @@
         }
       }
     },
+    "Bisa dipakai %@ per hari, rata-rata belanjamu %@ per hari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ a day is safe to spend, you usually spend %@ a day."
+          }
+        }
+      }
+    },
+    "Bisa dipakai %@ per hari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ a day is safe to spend."
+          }
+        }
+      }
+    },
     "Bisa dipakai untuk": {
       "localizations": {
         "en": {
@@ -5169,6 +5189,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Monthly"
+          }
+        }
+      }
+    },
+    "Butuh %lld hari data supaya bisa dinilai. Tinggal %lld hari lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs %lld days of data to be rated. %lld days to go."
           }
         }
       }
@@ -17263,6 +17293,16 @@
         }
       }
     },
+    "Saldo belum cukup menutup tagihan, kurang %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your balance does not cover the bills yet, short by %@."
+          }
+        }
+      }
+    },
     "Saldo cukup untuk %@ bulan pengeluaran.": {
       "localizations": {
         "en": {
@@ -17769,6 +17809,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Entire transaction history"
+          }
+        }
+      }
+    },
+    "Seluruh saldo sudah terpakai untuk tagihan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your whole balance is already committed to bills."
           }
         }
       }
@@ -22325,6 +22375,16 @@
         }
       }
     },
+    "Tunda pengeluaran yang tidak mendesak sampai saldo menutup tagihan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold off non-urgent spending until your balance covers the bills."
+          }
+        }
+      }
+    },
     "Tunggu data selesai dimuat, lalu ekspor.": {
       "localizations": {
         "en": {
@@ -22451,6 +22511,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Money moved, check now!"
+          }
+        }
+      }
+    },
+    "Uang yang bisa dipakai per hari lebih kecil dari kebiasaan belanjamu. Tahan pengeluaran yang tidak wajib sampai akhir periode.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What you can spend per day is below your usual spending. Hold off non-essential spending until the period ends."
           }
         }
       }
