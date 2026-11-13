@@ -714,18 +714,6 @@ struct AutoRecipeDetailView: View {
 
                 if recipe.isAvailable {
                     steps.padding(.top, 24)
-                    if recipe == .notification {
-                        NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
-                            HStack(spacing: 8) {
-                                Label(L("Pilih aplikasi dan judul"), systemImage: "slider.horizontal.3")
-                                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
-                                Spacer(minLength: 8)
-                                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                            }
-                            .frame(minHeight: 44).contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain).padding(.top, 8)
-                    }
                 } else {
                     unavailable.padding(.top, 16)
                 }
