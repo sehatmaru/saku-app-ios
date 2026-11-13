@@ -129,6 +129,8 @@ private struct RatioRow: Layout {
 /// text button across the width; without `secondary` it is one pill across the width.
 struct SmartSheetFooter: View {
     var primary: String?
+    /// SF Symbol shown before the primary title.
+    var primaryIcon: String?
     var destructive = false
     /// Black pill (white in dark mode) for a calm action that is not the main green one.
     var ink = false
@@ -137,6 +139,10 @@ struct SmartSheetFooter: View {
     var secondary: String?
     var onPrimary: () -> Void = {}
     var onSecondary: () -> Void = {}
+
+    @ViewBuilder private func primaryLabel(_ title: String) -> some View {
+        if let primaryIcon { Label(title, systemImage: primaryIcon) } else { Text(title) }
+    }
 
     var body: some View {
         Group {
@@ -149,7 +155,7 @@ struct SmartSheetFooter: View {
                     .opacity(isBusy ? 0.35 : 1)
                     Button(action: onPrimary) {
                         ZStack {
-                            Text(primary).opacity(isBusy ? 0 : 1)
+                            primaryLabel(primary).opacity(isBusy ? 0 : 1)
                             if isBusy { ProgressView().tint(.white) }
                         }
                         .font(.app(17, weight: .semibold)).foregroundStyle(ink ? Color.appBackground : .white)
@@ -164,7 +170,7 @@ struct SmartSheetFooter: View {
             } else if let primary {
                 Button(action: onPrimary) {
                     ZStack {
-                        Text(primary).opacity(isBusy ? 0 : 1)
+                        primaryLabel(primary).opacity(isBusy ? 0 : 1)
                         if isBusy { ProgressView().tint(.white) }
                     }
                     .font(.app(17, weight: .semibold)).foregroundStyle(ink ? Color.appBackground : .white)

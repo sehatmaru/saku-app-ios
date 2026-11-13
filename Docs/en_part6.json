@@ -1694,5 +1694,8 @@
   "Judul transaksi": "Transaction title",
   "cicilan": "installment",
   "tagihan berulang": "recurring bill",
-  "Sudah ada di %@ **%@**, jadi notifikasi ini tidak dibuat draf agar tidak tercatat dua kali. Bukan itu? Ketuk **Batalkan**.": "Already in %@ **%@**, so this notification was not made into a draft to avoid recording it twice. Not that one? Tap **Batalkan**."
+  "Sudah ada di %@ **%@**, jadi notifikasi ini tidak dibuat draf agar tidak tercatat dua kali. Bukan itu? Ketuk **Batalkan**.": "Already in %@ **%@**, so this notification was not made into a draft to avoid recording it twice. Not that one? Tap **Batalkan**.",
+  "Tambah Shortcut": "Add Shortcut",
+  "Apa yang dilakukan Shortcut ini": "What this Shortcut does",
+  "Pasang Shortcut **%@**.": "Add the **%@** Shortcut."
 }

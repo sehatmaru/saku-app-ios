@@ -2443,6 +2443,16 @@
         }
       }
     },
+    "Apa yang dilakukan Shortcut ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What this Shortcut does"
+          }
+        }
+      }
+    },
     "Apa yang disimpan": {
       "localizations": {
         "en": {
@@ -14473,6 +14483,16 @@
         }
       }
     },
+    "Pasang Shortcut **%@**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add the **%@** Shortcut."
+          }
+        }
+      }
+    },
     "Pasang Shortcuts **%@**.": {
       "localizations": {
         "en": {
@@ -19689,6 +19709,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add"
+          }
+        }
+      }
+    },
+    "Tambah Shortcut": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Shortcut"
           }
         }
       }

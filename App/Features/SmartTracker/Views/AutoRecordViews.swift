@@ -609,16 +609,22 @@ private struct ShortcutSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let ran {
-                Label(L("Terpasang") + " · " + ran, systemImage: "checkmark.circle").font(.app(13, weight: .semibold))
-                    .foregroundStyle(Color.stSuccessText).padding(.horizontal, 12).frame(height: 36)
-                    .background(Color.stSuccessBg, in: Capsule())
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appPrimary)
+                    (Text(L("Terpasang")).fontWeight(.semibold).foregroundStyle(Color.appPrimaryText)
+                        + Text(" · " + ran).foregroundStyle(Color.appTextSecondary))
+                }
+                .font(.app(14))
             }
-            preview
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L("Apa yang dilakukan Shortcut ini")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                preview
+            }
         }
         .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .filterSheet {
-            SmartSheetFooter(primary: ran == nil ? L("Tambah ke Shortcuts") : L("Tambah ulang ke Shortcuts"), secondary: L("Batal"),
+            SmartSheetFooter(primary: L("Tambah Shortcut"), primaryIcon: "square.stack.3d.up.fill", secondary: L("Batal"),
                              onPrimary: {
                 shortcut.wasOpened = true
                 openURL(shortcut.url)
@@ -662,7 +668,7 @@ private struct ShortcutSheet: View {
             Rectangle().fill(Color.appDivider).frame(width: 2, height: 10)
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
-                    actionIcon("textformat")
+                    sakuTile
                     Text("Read image").font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
                     Spacer(minLength: 0)
                 }
@@ -698,6 +704,12 @@ private struct ShortcutSheet: View {
     private func appChip(_ name: String) -> some View {
         Text(name).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
             .padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
+    }
+
+    private var sakuTile: some View {
+        SakuLogoIcon().padding(3).frame(width: 28, height: 28)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.appDivider, lineWidth: 1))
     }
 
     private func actionIcon(_ name: String) -> some View {
@@ -744,7 +756,7 @@ struct AutoRecipeDetailView: View {
         let count = list.count + 2
         return VStack(alignment: .leading, spacing: 0) {
             numbered(1, of: count) {
-                richText(L("Pasang Shortcuts **%@**.", recipe.shortcut.name))
+                richText(L("Pasang Shortcut **%@**.", recipe.shortcut.name))
                 ShortcutButton(shortcut: recipe.shortcut) { showsShortcut = true }.padding(.top, 10)
             }
             ForEach(Array(list.enumerated()), id: \.offset) { index, sentence in
