@@ -1679,5 +1679,7 @@
   "Buka **%@**, lalu nyalakan **Automation**.": "Open **%@**, then turn on **Automation**.",
   "Tambahkan aplikasi bank atau e-wallet lainnya dengan ketuk tanda **+**.": "Add other bank or e-wallet apps by tapping **+**.",
   "**Selesai**. Lakukan satu transaksi kecil untuk mencoba.": "**Done**. Make one small transaction to try it.",
-  "Ketuk panah bawah, lalu nyalakan Automation": "Tap the down arrow, then turn on Automation"
+  "Ketuk panah bawah, lalu nyalakan Automation": "Tap the down arrow, then turn on Automation",
+  "Pemicu, lalu Shortcuts, lalu draf": "Trigger, then Shortcuts, then draft",
+  "%@, lalu Shortcuts, lalu draf": "%@, then Shortcuts, then draft"
 }

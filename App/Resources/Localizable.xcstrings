@@ -631,6 +631,16 @@
         }
       }
     },
+    "%@, lalu Shortcuts, lalu draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, then Shortcuts, then draft"
+          }
+        }
+      }
+    },
     "%@, lalu pintasan, lalu draf": {
       "localizations": {
         "en": {
@@ -14699,6 +14709,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This trigger is in Shortcuts from iOS 27. Until you update, use Back Tap or the Action Button."
+          }
+        }
+      }
+    },
+    "Pemicu, lalu Shortcuts, lalu draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trigger, then Shortcuts, then draft"
           }
         }
       }

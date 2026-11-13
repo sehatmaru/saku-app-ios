@@ -189,7 +189,7 @@ private struct FlowHero: View {
         }
         .padding(.vertical, 8).frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L("Pemicu, lalu pintasan, lalu draf"))
+        .accessibilityLabel(L("Pemicu, lalu Shortcuts, lalu draf"))
     }
 
     private func tile(_ icon: String, lit: Bool, tint: Color) -> some View {
@@ -226,7 +226,7 @@ private struct RecipeDemo: View {
                 phone(t).opacity(1 - eased(t, 0.95, 1))
                 VStack(alignment: .leading, spacing: 0) {
                     stage(recipe.icon, recipe.stageTitle, on: t < 0.4, last: false)
-                    stage("square.stack.3d.up", L("Pintasan"), on: t >= 0.4 && t < 0.62, last: false)
+                    stage("square.stack.3d.up", "Shortcuts", on: t >= 0.4 && t < 0.62, last: false)
                     stage("tray.full", L("Draf"), on: t >= 0.62, last: true)
                 }
             }
@@ -234,7 +234,7 @@ private struct RecipeDemo: View {
         }
         .padding(.vertical, 8)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L("%@, lalu pintasan, lalu draf", recipe.title))
+        .accessibilityLabel(L("%@, lalu Shortcuts, lalu draf", recipe.title))
     }
 
     /// One stage of the flow: its icon on a line that runs down to the next one, then its name.
@@ -566,17 +566,17 @@ private struct ShortcutButton: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: ran == nil ? "square.stack.3d.up.fill" : "checkmark").font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(ran == nil ? Color.appText : Color.white)
-                    .frame(width: 40, height: 40).background(ran == nil ? Color.appBackground : Color.white.opacity(0.22), in: Circle())
+                    .foregroundStyle(ran == nil ? Color.appText : Color.appBackground)
+                    .frame(width: 40, height: 40).background(ran == nil ? Color.appBackground : Color.appBackground.opacity(0.22), in: Circle())
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(ran ?? shortcut.label).font(.app(13)).foregroundStyle(ran == nil ? Color.appBackground.opacity(0.7) : Color.white.opacity(0.85))
-                        .lineLimit(1).minimumScaleFactor(0.85)
                     Text(ran == nil ? L("Tambah ke Shortcuts") : L("Terpasang")).font(.app(16, weight: .bold))
-                        .foregroundStyle(ran == nil ? Color.appBackground : Color.white)
+                        .foregroundStyle(ran == nil ? Color.appBackground : Color.appBackground)
+                    Text(ran ?? shortcut.label).font(.app(13)).foregroundStyle(ran == nil ? Color.appBackground.opacity(0.7) : Color.appBackground.opacity(0.85))
+                        .lineLimit(1).minimumScaleFactor(0.85)
                 }
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(ran == nil ? Color.appBackground : Color.white.opacity(0.85))
+                    .foregroundStyle(ran == nil ? Color.appBackground : Color.appBackground.opacity(0.85))
             }
             .padding(.horizontal, 10).frame(height: 60).frame(maxWidth: .infinity)
             .background(ran == nil ? Color.appText : Color.stGreen, in: Capsule())
