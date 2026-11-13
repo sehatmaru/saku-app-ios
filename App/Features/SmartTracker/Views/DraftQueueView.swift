@@ -884,7 +884,7 @@ struct DraftQueueView: View {
             VStack(alignment: .leading, spacing: 0) {
                 noticeRow(L("Dicatat"), kind)
                 noticeRow(L("Nama"), name)
-                noticeRow(L("Tanggal"), Self.dateLabel(d.date))
+                noticeRow(L("Tanggal"), Self.dateLabel(d.date), icon: "calendar")
                 Text(L("Tidak dibuat jadi draf supaya tidak tercatat dua kali."))
                     .font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
                     .padding(.horizontal, 14).padding(.vertical, 12)
@@ -916,13 +916,10 @@ struct DraftQueueView: View {
         .id(n.id)
     }
 
-    private func noticeRow(_ label: String, _ value: String) -> some View {
-        HStack(spacing: 12) {
-            Text(label).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
-            Text(value).font(.app(16, weight: .medium)).foregroundStyle(Color.appText).lineLimit(1)
-            Spacer(minLength: 0)
-        }
-        .frame(height: 48)
+    /// Same row as the draft fields, without the chevron.
+    private func noticeRow(_ label: String, _ value: String, icon: String? = nil) -> some View {
+        DetailRow(label: label, value: value, icon: icon, showsChevron: false, height: 48)
+            .padding(.horizontal, -24).padding(.trailing, 4)
     }
 
     private struct Field {
