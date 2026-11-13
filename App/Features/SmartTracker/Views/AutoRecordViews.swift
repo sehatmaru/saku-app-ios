@@ -8,27 +8,27 @@ enum SakuShortcut: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     /// The name on the card, as the owner shares it.
-    var title: String { self == .screenshot ? "Screenshot Record To Saku" : "Notification Record To Saku" }
+    var title: String { self == .screenshot ? "Record Screenshot To Saku" : "Record Notification To Saku" }
 
     /// The Shortcut's own name, as it appears in Shortcuts and in Settings. Not translated.
     var name: String {
         switch self {
-        case .screenshot: "Screenshot Record To Saku"
-        case .notification: "Notification Record To Saku"
+        case .screenshot: "Record Screenshot To Saku"
+        case .notification: "Record Notification To Saku"
         }
     }
 
     var url: URL {
         switch self {
-        case .screenshot: URL(string: "https://www.icloud.com/shortcuts/da2c810a80ef4217b18a35ff41cbecb4")!
-        case .notification: URL(string: "https://www.icloud.com/shortcuts/716543278f364045a3925ff1836510f0")!
+        case .screenshot: URL(string: "https://www.icloud.com/shortcuts/ab6c7e1da8dc4a458670e00abaac3645")!
+        case .notification: URL(string: "https://www.icloud.com/shortcuts/d3a93d7813ca477694caea93c960a360")!
         }
     }
 
     var icon: String { self == .screenshot ? "camera.viewfinder" : "bell" }
 
     /// The name shown on the button and the sheet.
-    var label: String { self == .screenshot ? "Screenshot Record To Saku" : "Notification Record To Saku" }
+    var label: String { self == .screenshot ? "Record Screenshot To Saku" : "Record Notification To Saku" }
 
     var blurb: String {
         self == .screenshot ? L("Membaca screenshot struk atau bukti transfer, lalu menyimpannya sebagai draf.")
@@ -69,6 +69,9 @@ func richText(_ markdown: String) -> Text {
 /// the notification or the picture, and Saku makes a draft.
 enum AutoRecipe: String, CaseIterable, Identifiable {
     case notification, backTap, actionButton, screenshot
+
+    /// The triggers on the list. Screenshot is no longer one of them (its shortcut still serves Back Tap and Action Button).
+    static var allCases: [AutoRecipe] { [.notification, .backTap, .actionButton] }
 
     var id: String { rawValue }
 
