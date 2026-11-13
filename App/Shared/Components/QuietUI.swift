@@ -111,6 +111,8 @@ struct SegmentBar: View {
     var isActive = true
     /// False for bars that fill once and then stay full when the screen is left and re-entered.
     var replays = true
+    /// 0...1 position of a thin tick over the bar, e.g. how far the period has gone.
+    var marker: Double?
     @State private var isShown = false
 
     var body: some View {
@@ -123,6 +125,17 @@ struct SegmentBar: View {
             }
         }
         .frame(height: height)
+        .overlay {
+            if let marker {
+                GeometryReader { geo in
+                    Capsule()
+                        .fill(Color.appText.opacity(0.6))
+                        .frame(width: 2, height: height + 6)
+                        .offset(x: geo.size.width * min(max(marker, 0), 1) - 1, y: -3)
+                }
+                .allowsHitTesting(false)
+            }
+        }
         // Fill on the next frame so the first render is empty and the change animates.
         .task { isShown = true }
         .onDisappear {

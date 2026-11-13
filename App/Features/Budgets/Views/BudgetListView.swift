@@ -88,6 +88,8 @@ struct BudgetListView: View {
                         if viewModel.budgetItems.isEmpty {
                             emptyState
                         } else {
+                            if let summary { summaryBlock(summary) }
+                            attentionSection
                             budgetList
                         }
                     }
@@ -166,10 +168,12 @@ struct BudgetListView: View {
             .monospacedDigit()
             // Same sweep as the category bars, starting with the first row once the list is shown
             // (not while the skeleton is up, where nobody sees it), and only on first open.
-            SegmentBar(value: Double(dayNumber) / Double(max(days.total, 1)), count: days.total,
-                       delay: 0.3, isActive: !isPeriodHidden && viewModel.hasLoadedOnce, replays: false)
-                .id(days.total)
-                .padding(.top, 10)
+            if viewModel.hasLoadedOnce && summary == nil {
+                SegmentBar(value: Double(dayNumber) / Double(max(days.total, 1)), count: days.total,
+                           delay: 0.3, isActive: !isPeriodHidden, replays: false)
+                    .id(days.total)
+                    .padding(.top, 10)
+            }
             (Text(headerPayday.map { L("Gajian tiap tanggal %lld", $0) } ?? L("Mengikuti tanggal 1"))
                 + Text(" · hari ke-\(dayNumber) dari \(days.total)"))
                 .padding(.top, 12)
@@ -239,6 +243,149 @@ struct BudgetListView: View {
         }
     }
 
+    // MARK: Summary
+
+    /// All budgets of the period added up and set against how much of the period has gone; nil while loading or with a payday change running.
+    private var summary: BudgetSummary? {
+        guard viewModel.hasLoadedOnce, frozenPayday == nil else { return nil }
+        let days = PaydayCycle.current.days()
+        return BudgetSummary(budgets: viewModel.visibleBudgets, dayNumber: days.total - days.left, totalDays: days.total)
+    }
+
+    private func money(_ amount: Double) -> String {
+        isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
+    }
+
+    private func summaryBlock(_ s: BudgetSummary) -> some View {
+        let isOver = s.spent > s.total
+        let tint: Color = isOver ? .appError : s.spentShare >= 0.8 ? .appWarning : .appPrimary
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(isOver ? L("Lewat budget") : L("Sisa budget"))
+                .font(.app(13))
+                .foregroundStyle(Color.appTextSecondary)
+            Text(money(isOver ? s.spent - s.total : s.remaining))
+                .font(.app(40, weight: .light))
+                .tracking(-1.5)
+                .foregroundStyle(isOver ? Color.appError : Color.appText)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .padding(.top, 2)
+            Text(L("dari %@ · terpakai %@", money(s.total), money(s.spent)))
+                .font(.app(14))
+                .foregroundStyle(Color.appTextSecondary)
+                .monospacedDigit()
+                .padding(.top, 2)
+            summaryBar(L("Terpakai"), s.spentShare, color: tint, delay: 0.15).padding(.top, 20)
+            summaryBar(L("Waktu berjalan"), s.timeShare, color: Color.appTextTertiary, delay: 0.3).padding(.top, 14)
+            Text(paceText(s.pace))
+                .font(.app(14, weight: .medium))
+                .foregroundStyle(paceColor(s.pace))
+                .padding(.top, 14)
+            HStack(alignment: .top, spacing: 12) {
+                stat(L("Bisa dipakai/hari"), money(s.perDayLeft))
+                stat(L("Rata-rata/hari"), money(s.dailyAverage))
+                stat(L("Proyeksi akhir"), s.projected.map(money) ?? "–", warn: (s.projected ?? 0) > s.total)
+            }
+            .padding(.top, 18)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 22)
+        .padding(.bottom, 6)
+    }
+
+    private func summaryBar(_ title: String, _ share: Double, color: Color, delay: Double) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                Spacer()
+                Text("\(Int((share * 100).rounded()))%").monospacedDigit()
+            }
+            .font(.app(13))
+            .foregroundStyle(Color.appTextSecondary)
+            SegmentBar(value: share, color: color, delay: delay, isActive: !isPeriodHidden, replays: false)
+        }
+    }
+
+    private func stat(_ label: String, _ value: String, warn: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.app(12))
+                .foregroundStyle(Color.appTextTertiary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(value)
+                .font(.app(15, weight: .semibold))
+                .foregroundStyle(warn ? Color.appError : Color.appText)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func paceText(_ pace: BudgetSummary.Pace) -> String {
+        switch pace {
+        case .onPace: L("Sesuai ritme")
+        case .fast(let gap): L("Lebih cepat %@ dari ritme", money(gap))
+        case .slow(let gap): L("Lebih hemat %@ dari ritme", money(gap))
+        case .over: L("Pengeluaran sudah melewati total budget.")
+        }
+    }
+
+    private func paceColor(_ pace: BudgetSummary.Pace) -> Color {
+        switch pace {
+        case .onPace: .appTextSecondary
+        case .fast: .appWarning
+        case .slow: .appPrimary
+        case .over: .appError
+        }
+    }
+
+    /// The few budgets closest to (or past) their limit, so they don't hide in the long list.
+    @ViewBuilder
+    private var attentionSection: some View {
+        let items = BudgetSummary.needingAttention(viewModel.visibleBudgets).compactMap { budget in
+            setItems.first { $0.budget?.id == budget.id }
+        }
+        if !items.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                SectionHeader(title: L("Perlu perhatian"))
+                    .padding(.horizontal, 24)
+                    .padding(.top, 22)
+                    .padding(.bottom, 4)
+                ForEach(items) { item in
+                    NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
+                        HStack(spacing: 14) {
+                            Image(systemName: item.category.icon ?? "tag")
+                                .font(.system(size: 20))
+                                .foregroundStyle(Color.appTextSecondary)
+                                .frame(width: 24)
+                            Text(item.category.name)
+                                .font(.app(16, weight: .medium))
+                                .foregroundStyle(Color.appText)
+                                .lineLimit(1)
+                            Spacer(minLength: 8)
+                            attentionStatus(item.budget!)
+                                .font(.app(14, weight: .medium))
+                                .monospacedDigit()
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 24)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(RowPressStyle())
+                }
+            }
+        }
+    }
+
+    private func attentionStatus(_ budget: Budget) -> some View {
+        budget.progress >= 1
+            ? Text(L("Lewat %@", money(-budget.remaining))).foregroundStyle(Color.appError)
+            : Text(L("%lld%% terpakai", Int((budget.progress * 100).rounded()))).foregroundStyle(Color.appWarning)
+    }
+
     // MARK: Budgets
 
     private var budgetList: some View {
@@ -248,10 +395,14 @@ struct BudgetListView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 14)
                     .padding(.bottom, 4)
+                Text("Garis di bar menunjukkan di mana pengeluaran seharusnya hari ini.")
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextTertiary)
+                    .padding(.horizontal, 24)
             }
             ForEach(Array(setItems.enumerated()), id: \.element.id) { i, item in
                 NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
-                    BudgetCardView(budget: item.budget, category: item.category,
+                    BudgetCardView(budget: item.budget, category: item.category, paceShare: summary?.timeShare,
                                    fillDelay: 0.3 + Double(i) * 0.07, isFillActive: !isPeriodHidden,
                                    isBalanceVisible: isBalanceVisible)
                         .padding(.horizontal, 24)
@@ -384,6 +535,8 @@ struct BudgetListView: View {
 struct BudgetCardView: View {
     let budget: Budget?
     let category: Category
+    /// How far the period has gone, 0...1: drawn as a tick on the bar so spending can be read against the calendar.
+    var paceShare: Double?
     /// Stagger for the segment bar's fill-in, so rows fill one after another.
     var fillDelay: Double = 0
     /// Empties the bar while false, e.g. while the period changes.
@@ -420,7 +573,7 @@ struct BudgetCardView: View {
                         .monospacedDigit()
                         .lineLimit(1)
                 }
-                SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive, replays: false)
+                SegmentBar(value: budget.progress, color: color(budget), delay: fillDelay, isActive: isFillActive, replays: false, marker: paceShare)
                 Text(L("%@ dari %@", money(budget.spent), money(budget.amount)))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)

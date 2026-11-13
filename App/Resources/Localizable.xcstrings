@@ -4483,6 +4483,16 @@
         }
       }
     },
+    "Bisa dipakai/hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can spend/day"
+          }
+        }
+      }
+    },
     "Bisa ditampilkan lagi kapan saja dari Kelola kategori.": {
       "localizations": {
         "en": {
@@ -8523,6 +8533,16 @@
         }
       }
     },
+    "Garis di bar menunjukkan di mana pengeluaran seharusnya hari ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The line on each bar shows where spending should be today."
+          }
+        }
+      }
+    },
     "Gelap": {
       "localizations": {
         "en": {
@@ -12213,6 +12233,26 @@
         }
       }
     },
+    "Lebih cepat %@ dari ritme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ahead of pace"
+          }
+        }
+      }
+    },
+    "Lebih hemat %@ dari ritme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ under pace"
+          }
+        }
+      }
+    },
     "Lebih sedikit": {
       "localizations": {
         "en": {
@@ -12319,6 +12359,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Over by Rp20.000"
+          }
+        }
+      }
+    },
+    "Lewat budget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over budget"
           }
         }
       }
@@ -15143,6 +15193,16 @@
         }
       }
     },
+    "Pengeluaran sudah melewati total budget.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending has passed the total budget."
+          }
+        }
+      }
+    },
     "Pengeluaran tersimpan": {
       "localizations": {
         "en": {
@@ -16523,6 +16583,16 @@
         }
       }
     },
+    "Proyeksi akhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projected end"
+          }
+        }
+      }
+    },
     "Proyeksi pengeluaran akhir periode": {
       "localizations": {
         "en": {
@@ -16699,6 +16769,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Average per transaction"
+          }
+        }
+      }
+    },
+    "Rata-rata/hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average/day"
           }
         }
       }
@@ -18389,6 +18469,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Server only when needed"
+          }
+        }
+      }
+    },
+    "Sesuai ritme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On pace"
           }
         }
       }
@@ -23035,6 +23125,16 @@
         }
       }
     },
+    "Waktu berjalan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time elapsed"
+          }
+        }
+      }
+    },
     "Waktunya memperbarui nilai %@": {
       "localizations": {
         "en": {
@@ -23341,6 +23441,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "from %@"
+          }
+        }
+      }
+    },
+    "dari %@ · terpakai %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of %@ · spent %@"
           }
         }
       }
