@@ -641,10 +641,13 @@ private struct ShortcutSheet: View {
         Group {
             if shortcut == .screenshot { screenshotPreview } else { notificationPreview }
         }
-        .padding(10).background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .padding(10).background(Self.previewCard, in: RoundedRectangle(cornerRadius: 20))
         .accessibilityHidden(true)
     }
 
+    /// The grey card behind the drawing, the white cards and chips on it: all three must differ in both themes.
+    private static let previewCard = Color(light: 0xF2F2F4, dark: 0x2C2C2E)
+    private static let chipFill = Color(light: 0xE3E3E8, dark: 0x3F3F42)
     private static let shortcutBlue = Color(light: 0x2F7DF6, dark: 0x4C93FF)
 
     /// The notification shortcut as Shortcuts draws it: the automation trigger, then the Record from notification action.
@@ -652,7 +655,7 @@ private struct ShortcutSheet: View {
         VStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Configure this automation.").font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                    .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 30, alignment: .leading).background(Color.stChip, in: Capsule())
+                    .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 30, alignment: .leading).background(Self.chipFill, in: Capsule())
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "bell.fill").font(.system(size: 14)).foregroundStyle(Color.appTextSecondary).padding(.top, 2)
                     FlowLayout(spacing: 6) {
@@ -687,7 +690,7 @@ private struct ShortcutSheet: View {
                 HStack {
                     Text("Show When Run").font(.app(14)).foregroundStyle(Color.appText)
                     Spacer(minLength: 8)
-                    Capsule().fill(Color.stChip).frame(width: 40, height: 24).overlay(alignment: .leading) { Circle().fill(Color.appBackground).padding(2) }
+                    Capsule().fill(Self.chipFill).frame(width: 40, height: 24).overlay(alignment: .leading) { Circle().fill(Color.appBackground).padding(2) }
                 }
                 .padding(.horizontal, 12).frame(height: 44)
             }
@@ -720,14 +723,14 @@ private struct ShortcutSheet: View {
                         screenshotGlyph.scaleEffect(0.75).frame(width: 22, height: 22)
                         Text("Screenshot").font(.app(14, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
                     }
-                    .padding(.horizontal, 8).frame(height: 30).background(Color.stChip, in: RoundedRectangle(cornerRadius: 8))
+                    .padding(.horizontal, 8).frame(height: 30).background(Self.chipFill, in: RoundedRectangle(cornerRadius: 8))
                 }
                 .padding(.horizontal, 12).frame(height: 44)
                 Divider()
                 HStack {
                     Text("Show When Run").font(.app(14)).foregroundStyle(Color.appText)
                     Spacer(minLength: 8)
-                    Capsule().fill(Color.stChip).frame(width: 40, height: 24).overlay(alignment: .leading) { Circle().fill(Color.appBackground).padding(2) }
+                    Capsule().fill(Self.chipFill).frame(width: 40, height: 24).overlay(alignment: .leading) { Circle().fill(Color.appBackground).padding(2) }
                 }
                 .padding(.horizontal, 12).frame(height: 44)
             }
@@ -749,7 +752,7 @@ private struct ShortcutSheet: View {
             }
             Text(name).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
         }
-        .padding(.horizontal, 8).frame(height: 28).background(Color.stChip, in: Capsule())
+        .padding(.horizontal, 8).frame(height: 28).background(Self.chipFill, in: Capsule())
     }
 
     private var sakuTile: some View {
