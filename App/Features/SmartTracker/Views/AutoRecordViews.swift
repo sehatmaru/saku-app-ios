@@ -365,7 +365,7 @@ private struct ListLine<Trailing: View>: View {
     let title: String
     var note: String? = nil
     var noteTint: Color = .appTextSecondary
-    var divider = true
+    var divider = false
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
@@ -437,7 +437,7 @@ struct AutoRecordView: View {
 
     private func recipeLine(_ recipe: AutoRecipe, last: Bool) -> some View {
         NavigationLink(destination: AutoRecipeDetailView(recipe: recipe).detailPage()) {
-            ListLine(icon: recipe.icon, title: recipe.title, note: recipe.subtitle + " · " + recipe.requirement, divider: !last) {
+            ListLine(icon: recipe.icon, title: recipe.title, note: recipe.subtitle + " · " + recipe.requirement) {
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
             .contentShape(Rectangle())

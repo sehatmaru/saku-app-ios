@@ -1704,5 +1704,11 @@
   "Hanya teks. Tidak dipakai melatih AI.": "Text only. Not used to train AI.",
   "Nomor panjang dan kode OTP. Gambar mentah tidak pernah dikirim.": "Long numbers and OTP codes. Raw images are never sent.",
   "Transaksi yang kamu simpan, jatah AI, dan Ingatan.": "Transactions you save, your AI quota, and Memory.",
-  "Profil, lalu Hapus akun.": "Profile, then Delete account."
+  "Profil, lalu Hapus akun.": "Profile, then Delete account.",
+  "Dikirim": "Sent",
+  "Disimpan": "Stored",
+  "Nomor panjang, kode OTP, dan gambar mentah tidak ikut dikirim.": "Long numbers, OTP codes, and raw images are not sent.",
+  "Teks asli dan gambar": "Original text and images",
+  "Tetap di HP sampai kamu simpan atau buang draf. Draf hilang sendiri setelah 30 hari.": "Stays on your phone until you save or drop the draft. Drafts disappear after 30 days.",
+  "Profil, lalu Hapus akun. Datamu ikut terhapus.": "Profile, then Delete account. Your data is deleted with it."
 }

@@ -6943,6 +6943,16 @@
         }
       }
     },
+    "Dikirim": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sent"
+          }
+        }
+      }
+    },
     "Dipakai untuk": {
       "localizations": {
         "en": {
@@ -7009,6 +7019,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hidden · %lld"
+          }
+        }
+      }
+    },
+    "Disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stored"
           }
         }
       }
@@ -14063,6 +14083,16 @@
         }
       }
     },
+    "Nomor panjang, kode OTP, dan gambar mentah tidak ikut dikirim.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Long numbers, OTP codes, and raw images are not sent."
+          }
+        }
+      }
+    },
     "Notifikasi": {
       "localizations": {
         "en": {
@@ -16319,6 +16349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Profile, then Delete account."
+          }
+        }
+      }
+    },
+    "Profil, lalu Hapus akun. Datamu ikut terhapus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile, then Delete account. Your data is deleted with it."
           }
         }
       }
@@ -20393,6 +20433,16 @@
         }
       }
     },
+    "Teks asli dan gambar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original text and images"
+          }
+        }
+      }
+    },
     "Teks asli dihapus setelah draf dibuat. Draf yang tidak diproses dihapus otomatis setelah 30 hari. Kamu bisa menghapus semuanya di Profil.": {
       "localizations": {
         "en": {
@@ -20869,6 +20919,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stays safe"
+          }
+        }
+      }
+    },
+    "Tetap di HP sampai kamu simpan atau buang draf. Draf hilang sendiri setelah 30 hari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stays on your phone until you save or drop the draft. Drafts disappear after 30 days."
           }
         }
       }
