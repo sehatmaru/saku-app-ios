@@ -1738,5 +1738,10 @@
   "Belum dinilai dan tidak dihitung: %@.": "Not rated yet and left out: %@.",
   "Perlu dibenahi": "Needs work",
   "Sudah baik": "Doing well",
-  "Belum dinilai": "Not rated yet"
+  "Belum dinilai": "Not rated yet",
+  "Cara menambah +%lld poin": "How to add +%lld points",
+  "Cara memulai": "How to start",
+  "Lihat transaksi": "View transactions",
+  "Buka kartu kredit": "Open credit cards",
+  "Buka budget": "Open budget"
 }

@@ -3,6 +3,12 @@ import SwiftUI
 /// Kesehatan finansial in full: the score, every factor behind it, and what to do next.
 struct HealthDetailView: View {
     let health: FinancialHealth
+    /// Opens the screen a recommendation points to; the caller decides where each factor goes.
+    var onAction: (FinancialHealth.Kind) -> Void = { _ in }
+
+    @Environment(\.dismiss) private var dismiss
+    /// Factors whose advice box the user toggled; nil until then, so the biggest gap starts open.
+    @State private var openKinds: Set<FinancialHealth.Kind>?
 
     var body: some View {
         ScrollView {
@@ -132,6 +138,72 @@ struct HealthDetailView: View {
         }
     }
 
+    private func isOpen(_ kind: FinancialHealth.Kind) -> Bool {
+        (openKinds ?? Set(needsWork.prefix(1).map(\.kind))).contains(kind)
+    }
+
+    private func toggle(_ kind: FinancialHealth.Kind) {
+        var set = openKinds ?? Set(needsWork.prefix(1).map(\.kind))
+        if !set.insert(kind).inserted { set.remove(kind) }
+        withAnimation(.easeOut(duration: 0.2)) { openKinds = set }
+    }
+
+    /// The advice for one factor: a tinted box that opens to the step and a button to the screen where it is done.
+    private func adviceBox(_ factor: FinancialHealth.Factor, tip: String) -> some View {
+        let tint = factor.isPending ? Color.appTextSecondary : factor.color
+        let open = isOpen(factor.kind)
+        return VStack(alignment: .leading, spacing: 0) {
+            Button { toggle(factor.kind) } label: {
+                HStack {
+                    Text(factor.missing > 0 ? L("Cara menambah +%lld poin", factor.missing) : L("Cara memulai"))
+                        .font(.app(14, weight: .semibold))
+                        .foregroundStyle(tint)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(tint)
+                        .rotationEffect(.degrees(open ? 180 : 0))
+                }
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(open ? L("Terbuka") : L("Tertutup"))
+            if open {
+                Text(tip)
+                    .font(.app(14))
+                    .foregroundStyle(Color.appBody)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let label = factor.actionLabel {
+                    Button {
+                        dismiss()
+                        onAction(factor.kind)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(label)
+                            Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold))
+                        }
+                        .font(.app(14, weight: .semibold))
+                        .foregroundStyle(tint)
+                        .padding(.horizontal, 14)
+                        .frame(height: 36)
+                        .overlay(Capsule().stroke(tint, lineWidth: 1))
+                    }
+                    .buttonStyle(PressScaleStyle())
+                    .padding(.top, 12)
+                    .padding(.bottom, 14)
+                } else {
+                    Color.clear.frame(height: 14)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.top, 4)
+    }
+
     private func factorRow(_ factor: FinancialHealth.Factor, compact: Bool) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: factor.icon)
@@ -162,22 +234,7 @@ struct HealthDetailView: View {
                     .foregroundStyle(Color.appTextSecondary)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
-                if !compact, let tip = factor.tip {
-                    VStack(alignment: .leading, spacing: 2) {
-                        if factor.missing > 0 {
-                            Text("+\(factor.missing) poin")
-                                .font(.app(13, weight: .semibold))
-                                .foregroundStyle(Color.appPrimary)
-                                .monospacedDigit()
-                        }
-                        Text(tip)
-                            .font(.app(14))
-                            .foregroundStyle(Color.appBody)
-                            .lineSpacing(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.top, 4)
-                }
+                if !compact, let tip = factor.tip { adviceBox(factor, tip: tip) }
             }
         }
         .padding(.vertical, 14)
@@ -200,4 +257,17 @@ extension FinancialHealth {
 
 extension FinancialHealth.Factor {
     var color: Color { FinancialHealth.color(forShare: ratio) }
+}
+
+extension FinancialHealth.Factor {
+    /// The button on the advice box; nil when there is nowhere better than this page to act.
+    var actionLabel: String? {
+        switch kind {
+        case .spendable: L("Lihat transaksi")
+        case .cashflow: isPending ? L("Catat pemasukan") : L("Lihat transaksi")
+        case .emergencyFund: L("Buka dompet")
+        case .debt: L("Buka kartu kredit")
+        case .budget: L("Buka budget")
+        }
+    }
 }
