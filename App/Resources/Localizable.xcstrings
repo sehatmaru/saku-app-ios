@@ -11663,6 +11663,16 @@
         }
       }
     },
+    "Kurang %@ untuk menutup tagihan di bawah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ short of covering the bills below."
+          }
+        }
+      }
+    },
     "Lacak limit, tagihan, dan jatuh tempo": {
       "localizations": {
         "en": {

@@ -555,12 +555,13 @@ struct DashboardView: View {
     private var safeToSpendRow: some View {
         let safe = viewModel.safeToSpend
         func line(visible: Bool) -> Text {
-            let isNegative = viewModel.safePerDay == nil && safe < 0
+            // nothing left to spend reads Rp0; the sheet says how short the balance is
+            let isNegative = viewModel.safePerDay == nil
             let value: String
             if let perDay = viewModel.safePerDay {
                 value = visible ? "Rp" + perDay.formattedAsDigits() + "/" + L("hari") : hiddenAmount
             } else {
-                value = visible ? maskedAmount(safe, negative: safe < 0) : hiddenAmount
+                value = visible ? "Rp0" : hiddenAmount
             }
             return Text(L("Bisa dipakai") + " ").foregroundStyle(Color.appTextSecondary)
                 + Text(value).fontWeight(.semibold).foregroundStyle(isNegative ? Color.appError : Color.appText)
@@ -595,7 +596,8 @@ struct DashboardView: View {
     private var safeToSpendSheet: some View {
         let safe = viewModel.safeToSpend
         let perDay = viewModel.safePerDay
-        let big = perDay ?? safe
+        // never negative on screen: the shortfall is written out under the amount instead
+        let big = perDay ?? 0
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Bisa dipakai")
@@ -614,10 +616,10 @@ struct DashboardView: View {
             .padding(.top, 12)
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(isBalanceVisible ? (big < 0 ? "−" : "") + "Rp" + abs(big).formattedAsDigits() : "Rp" + hiddenAmount)
+                Text(isBalanceVisible ? "Rp" + big.formattedAsDigits() : "Rp" + hiddenAmount)
                     .font(.app(44, weight: .light))
                     .tracking(-1.6)
-                    .foregroundStyle(big < 0 ? Color.appError : Color.appText)
+                    .foregroundStyle(perDay == nil ? Color.appError : Color.appText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                 if perDay != nil {
@@ -631,6 +633,13 @@ struct DashboardView: View {
 
             if perDay != nil {
                 Text(L("untuk %lld hari sampai %@", viewModel.daysLeftInPeriod, PaydayCycle.current.lastDayLabel()))
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.top, 4)
+            }
+
+            if perDay == nil && safe < 0 && isBalanceVisible {
+                Text(L("Kurang %@ untuk menutup tagihan di bawah.", "Rp" + abs(safe).formattedAsDigits()))
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .padding(.top, 4)
