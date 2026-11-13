@@ -1620,5 +1620,12 @@
   "Lihat": "View",
   "Sudah jalan": "Has run",
   "Belum jalan": "Hasn't run yet",
-  "Pilih aplikasi dan judul": "Choose apps and titles"
+  "Pilih aplikasi dan judul": "Choose apps and titles",
+  "Buat otomatisasi baru": "Create a new automation",
+  "Pilih Notifikasi dan aplikasi bank": "Pick Notification and your bank app",
+  "Pilih Screenshot": "Pick Screenshot",
+  "Pilih pintasannya": "Pick the Shortcut",
+  "Buka Ketuk Bagian Belakang": "Open Back Tap",
+  "Pilih dua atau tiga ketukan": "Pick double or triple tap",
+  "Buka Tombol Tindakan": "Open Action Button"
 }

@@ -4563,6 +4563,16 @@
         }
       }
     },
+    "Buat otomatisasi baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new automation"
+          }
+        }
+      }
+    },
     "Budget": {
       "localizations": {
         "en": {
@@ -4813,6 +4823,16 @@
         }
       }
     },
+    "Buka Ketuk Bagian Belakang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Back Tap"
+          }
+        }
+      }
+    },
     "Buka Pengaturan": {
       "localizations": {
         "en": {
@@ -4889,6 +4909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Smart Tracker"
+          }
+        }
+      }
+    },
+    "Buka Tombol Tindakan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Action Button"
           }
         }
       }
@@ -15213,6 +15243,26 @@
         }
       }
     },
+    "Pilih Notifikasi dan aplikasi bank": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick Notification and your bank app"
+          }
+        }
+      }
+    },
+    "Pilih Screenshot": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick Screenshot"
+          }
+        }
+      }
+    },
     "Pilih angka": {
       "localizations": {
         "en": {
@@ -15323,6 +15373,16 @@
         }
       }
     },
+    "Pilih dua atau tiga ketukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick double or triple tap"
+          }
+        }
+      }
+    },
     "Pilih e-wallet": {
       "localizations": {
         "en": {
@@ -15399,6 +15459,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pick a period"
+          }
+        }
+      }
+    },
+    "Pilih pintasannya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick the Shortcut"
           }
         }
       }

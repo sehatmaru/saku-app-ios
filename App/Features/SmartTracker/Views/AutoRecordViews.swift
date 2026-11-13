@@ -52,17 +52,11 @@ enum SakuShortcut: String, CaseIterable, Identifiable {
     }
 }
 
-/// One piece of a step: a place to tap, shown as a chip with its icon, or the word between two choices.
-enum StepPart {
-    case chip(String, String)
-    case or
-
-    var spoken: String {
-        switch self {
-        case .chip(_, let label): label
-        case .or: L("atau")
-        }
-    }
+/// One step after the install: what to do, with the menu path under it.
+struct RecipeStep {
+    let icon: String
+    let title: String
+    var note: String? = nil
 }
 
 /// One way to make a draft without opening Saku: a trigger on the iPhone runs a Shortcut, the Shortcut hands Saku
@@ -115,25 +109,21 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The steps after the install, each a path of places to tap.
-    var steps: [[StepPart]] {
-        let shortcuts: StepPart = .chip("square.stack.3d.up", L("Pintasan"))
-        let mine: StepPart = .chip(shortcut.icon, shortcut.name)
-        let settings: StepPart = .chip("gearshape", L("Pengaturan"))
-        let newAutomation: [StepPart] = [.chip("square.stack.3d.up", "Shortcuts"), .chip("clock.arrow.2.circlepath", L("Otomatisasi")), .chip("plus", L("Baru"))]
-        let run: StepPart = .chip("play.circle", L("Jalankan Segera"))
-        let done: StepPart = .chip("checkmark", L("Selesai"))
+    /// The steps after the install.
+    var steps: [RecipeStep] {
+        let pick = RecipeStep(icon: "square.stack.3d.up", title: L("Pilih pintasannya"), note: shortcut.name)
+        let automation = RecipeStep(icon: "clock.arrow.2.circlepath", title: L("Buat otomatisasi baru"), note: "Shortcuts › " + L("Otomatisasi") + " › " + L("Baru"))
         switch self {
         case .notification:
-            return [newAutomation, [.chip("bell", L("Notifikasi")), .chip("building.columns", L("Aplikasi bank")), run], [mine, done]]
+            return [automation,
+                    RecipeStep(icon: "bell", title: L("Pilih Notifikasi dan aplikasi bank"), note: L("Jalankan Segera")), pick]
         case .screenshot:
-            return [newAutomation, [.chip("camera.viewfinder", "Screenshot"), run], [mine, done]]
+            return [automation, RecipeStep(icon: "camera.viewfinder", title: L("Pilih Screenshot"), note: L("Jalankan Segera")), pick]
         case .backTap:
-            return [[settings, .chip("accessibility", L("Aksesibilitas")), .chip("hand.point.up.left", L("Sentuh")), .chip("hand.tap", L("Ketuk Bagian Belakang"))],
-                    [.chip("2.circle", L("Ketuk Dua Kali")), .or, .chip("3.circle", L("Ketuk Tiga Kali"))],
-                    [shortcuts, mine]]
+            return [RecipeStep(icon: "hand.tap", title: L("Buka Ketuk Bagian Belakang"), note: L("Pengaturan") + " › " + L("Aksesibilitas") + " › " + L("Sentuh")),
+                    RecipeStep(icon: "2.circle", title: L("Pilih dua atau tiga ketukan")), pick]
         case .actionButton:
-            return [[settings, .chip("button.programmable", L("Tombol Tindakan"))], [shortcuts, mine]]
+            return [RecipeStep(icon: "button.programmable", title: L("Buka Tombol Tindakan"), note: L("Pengaturan")), pick]
         }
     }
 
@@ -439,9 +429,9 @@ struct AutoRecordView: View {
 
 
 /// Opens the Shortcut's iCloud page; iOS shows its own "Add Shortcut" sheet from there.
+/// Before the first time it says "Pasang"; after, a quiet round button installs it again.
 private struct InstallButton: View {
     let shortcut: SakuShortcut
-    var wide = false
     var opened: () -> Void = {}
     @Environment(\.openURL) private var openURL
 
@@ -452,12 +442,16 @@ private struct InstallButton: View {
             openURL(shortcut.url)
             opened()
         } label: {
-            Label(again ? L("Pasang lagi") : L("Pasang"), systemImage: again ? "arrow.clockwise" : "plus")
-                .font(.app(15, weight: .semibold))
-                .foregroundStyle(again ? Color.appText : Color.appBackground)
-                .padding(.horizontal, 16).frame(maxWidth: wide ? .infinity : nil).frame(height: 36)
-                .background(again ? (wide ? Color.stRaised : Color.stChip) : Color.appText, in: Capsule())
-                .padding(.vertical, 4).contentShape(Rectangle())
+            Group {
+                if again {
+                    Image(systemName: "arrow.clockwise").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.appText)
+                        .frame(width: 36, height: 36).background(Color.stChip, in: Circle())
+                } else {
+                    Text(L("Pasang")).font(.app(15, weight: .semibold)).lineLimit(1).foregroundStyle(Color.appBackground)
+                        .padding(.horizontal, 18).frame(height: 36).background(Color.appText, in: Capsule())
+                }
+            }
+            .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityLabel(L("Pasang pintasan %@", shortcut.name))
@@ -513,8 +507,8 @@ struct AutoRecipeDetailView: View {
             ListLine(icon: recipe.shortcut.icon, title: recipe.shortcut.name) {
                 InstallButton(shortcut: recipe.shortcut) { refresh += 1 }
             }
-            ForEach(Array(paths.enumerated()), id: \.offset) { index, parts in
-                ListLine(icon: icon(of: parts), title: text(of: parts)) {
+            ForEach(Array(paths.enumerated()), id: \.offset) { index, step in
+                ListLine(icon: step.icon, title: step.title, note: step.note) {
                     if recipe.isAutomation && index == 0 {
                         Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
                             Image(systemName: "arrow.up.forward.app").font(.system(size: 18, weight: .semibold))
@@ -530,26 +524,6 @@ struct AutoRecipeDetailView: View {
                 if ran != nil { Image(systemName: "checkmark.circle.fill").font(.system(size: 20)).foregroundStyle(Color.stGreen) }
             }
         }
-    }
-
-    /// The places to tap as one line: Pengaturan › Aksesibilitas › Sentuh.
-    private func text(of parts: [StepPart]) -> String {
-        var s = ""
-        for part in parts {
-            switch part {
-            case .chip(_, let label):
-                if !s.isEmpty && !s.hasSuffix(" ") { s += " › " }
-                s += label
-            case .or: s += " " + L("atau") + " "
-            }
-        }
-        return s
-    }
-
-    /// The first real icon of the path; the "2" and "3" tap counts do not count.
-    private func icon(of parts: [StepPart]) -> String {
-        for case .chip(let icon, _) in parts where !(icon.first?.isNumber ?? false) { return icon }
-        return "hand.tap"
     }
 
     private var unavailable: some View {
