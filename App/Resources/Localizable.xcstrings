@@ -1753,12 +1753,12 @@
         }
       }
     },
-    "2. Pilih kapan dijalankan": {
+    "2. Pilih pemicu": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "2. Choose when they run"
+            "value": "2. Pick a trigger"
           }
         }
       }
@@ -2003,6 +2003,16 @@
         }
       }
     },
+    "Aksesibilitas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility"
+          }
+        }
+      }
+    },
     "Aktif": {
       "localizations": {
         "en": {
@@ -2243,6 +2253,16 @@
         }
       }
     },
+    "Ambil screenshot struk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take a screenshot of a receipt"
+          }
+        }
+      }
+    },
     "Analisis": {
       "localizations": {
         "en": {
@@ -2393,6 +2413,16 @@
         }
       }
     },
+    "Aplikasi bank": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank apps"
+          }
+        }
+      }
+    },
     "Aplikasi yang didukung: %@. Draf dari notifikasi selalu masuk ke Konfirmasi transaksi; teks notifikasi tidak disimpan.": {
       "localizations": {
         "en": {
@@ -2499,16 +2529,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Set"
-          }
-        }
-      }
-    },
-    "Atur aplikasi dan judul notifikasi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose apps and notification titles"
           }
         }
       }
@@ -3993,6 +4013,16 @@
         }
       }
     },
+    "Belum jalan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hasn't run yet"
+          }
+        }
+      }
+    },
     "Belum punya budget": {
       "localizations": {
         "en": {
@@ -4793,26 +4823,6 @@
         }
       }
     },
-    "Buka Pengaturan iPhone, lalu **Aksesibilitas**, **Sentuh**, **Ketuk Bagian Belakang**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open iPhone Settings, then **Accessibility**, **Touch**, **Back Tap**."
-          }
-        }
-      }
-    },
-    "Buka Pengaturan iPhone, lalu **Tombol Tindakan**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open iPhone Settings, then **Action Button**."
-          }
-        }
-      }
-    },
     "Buka Profil, lalu Hapus akun. Datamu ikut terhapus.": {
       "localizations": {
         "en": {
@@ -4873,16 +4883,6 @@
         }
       }
     },
-    "Buka Shortcuts, pilih tab **Otomatisasi**, lalu ketuk **+**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open Shortcuts, pick the **Automation** tab, then tap **+**."
-          }
-        }
-      }
-    },
     "Buka Smart Tracker": {
       "localizations": {
         "en": {
@@ -4909,6 +4909,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open wallet"
+          }
+        }
+      }
+    },
+    "Buka struk, lalu ketuk punggung iPhone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open a receipt, then tap the back of your iPhone"
+          }
+        }
+      }
+    },
+    "Buka struk, lalu tekan Tombol Aksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open a receipt, then press the Action Button"
           }
         }
       }
@@ -5089,16 +5109,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ways to record"
-          }
-        }
-      }
-    },
-    "Cara mengatur": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "How to set it up"
           }
         }
       }
@@ -5749,46 +5759,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Try the reminder"
-          }
-        }
-      }
-    },
-    "Coba sekarang: ambil screenshot struk atau bukti transfer.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Try it now: take a screenshot of a receipt or transfer proof."
-          }
-        }
-      }
-    },
-    "Coba sekarang: buka struk atau bukti transfer, lalu ketuk punggung iPhone.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Try it now: open a receipt or transfer proof, then tap the back of your iPhone."
-          }
-        }
-      }
-    },
-    "Coba sekarang: buka struk atau bukti transfer, lalu tekan Tombol Aksi.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Try it now: open a receipt or transfer proof, then press the Action Button."
-          }
-        }
-      }
-    },
-    "Coba sekarang: lakukan satu transaksi kecil, lalu tunggu notifikasinya.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Try it now: make one small transaction and wait for its notification."
           }
         }
       }
@@ -8273,16 +8243,6 @@
         }
       }
     },
-    "Geser ke **Pintasan**, lalu pilih **Screenshot To Saku**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Swipe to **Shortcut**, then pick **Screenshot To Saku**."
-          }
-        }
-      }
-    },
     "Geser untuk bayar": {
       "localizations": {
         "en": {
@@ -8419,16 +8379,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Free monthly"
-          }
-        }
-      }
-    },
-    "Gulir ke **Pintasan**, lalu pilih **Screenshot To Saku**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Scroll to **Shortcuts**, then pick **Screenshot To Saku**."
           }
         }
       }
@@ -9763,16 +9713,6 @@
         }
       }
     },
-    "Kalau sudah terpasang, lewati langkah ini.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Already added? Skip this step."
-          }
-        }
-      }
-    },
     "Kalender pengeluaran": {
       "localizations": {
         "en": {
@@ -10843,6 +10783,16 @@
         }
       }
     },
+    "Ketuk Bagian Belakang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back Tap"
+          }
+        }
+      }
+    },
     "Ketuk Berikutnya, cari Saku, lalu pilih aksi ": {
       "localizations": {
         "en": {
@@ -10859,6 +10809,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tap Next and add the \"Record from notification\" action from Saku."
+          }
+        }
+      }
+    },
+    "Ketuk Dua Kali": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Double Tap"
+          }
+        }
+      }
+    },
+    "Ketuk Tiga Kali": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Triple Tap"
           }
         }
       }
@@ -11353,6 +11323,16 @@
         }
       }
     },
+    "Lakukan satu transaksi kecil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make one small transaction"
+          }
+        }
+      }
+    },
     "Langganan Saku Plus di App Store tetap berjalan dan ditagih sampai kamu membatalkannya.": {
       "localizations": {
         "en": {
@@ -11703,6 +11683,16 @@
         }
       }
     },
+    "Layar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen"
+          }
+        }
+      }
+    },
     "Lebih banyak": {
       "localizations": {
         "en": {
@@ -11879,6 +11869,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skip all"
+          }
+        }
+      }
+    },
+    "Lihat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View"
           }
         }
       }
@@ -12683,16 +12683,6 @@
         }
       }
     },
-    "Membaca layar atau screenshot jadi draf": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turns the screen or a screenshot into a draft"
-          }
-        }
-      }
-    },
     "Membaca screenshot, foto, atau struk dan membuat draf. Hasilnya masuk ke Konfirmasi transaksi.": {
       "localizations": {
         "en": {
@@ -12849,16 +12839,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Listening"
-          }
-        }
-      }
-    },
-    "Meneruskan notifikasi bank jadi draf": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turns bank notifications into drafts"
           }
         }
       }
@@ -14143,12 +14123,12 @@
         }
       }
     },
-    "Pasang pintasan **%@**.": {
+    "Pasang pintasan, pilih pemicunya, lalu draf masuk sendiri.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add the **%@** shortcut."
+            "value": "Add the shortcuts, pick a trigger, and drafts arrive by themselves."
           }
         }
       }
@@ -14393,6 +14373,16 @@
         }
       }
     },
+    "Pemicu, lalu pintasan, lalu draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A trigger, then the shortcut, then a draft"
+          }
+        }
+      }
+    },
     "Pemisah kolom": {
       "localizations": {
         "en": {
@@ -14409,6 +14399,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Email forwarding"
+          }
+        }
+      }
+    },
+    "Pengaturan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
           }
         }
       }
@@ -15213,16 +15213,6 @@
         }
       }
     },
-    "Pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose **Double Tap** or **Triple Tap**."
-          }
-        }
-      }
-    },
     "Pilih angka": {
       "localizations": {
         "en": {
@@ -15239,6 +15229,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose your bank or e-wallet app, then turn on "
+          }
+        }
+      }
+    },
+    "Pilih aplikasi dan judul": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose apps and titles"
           }
         }
       }
@@ -15393,52 +15393,12 @@
         }
       }
     },
-    "Pilih pemicu **Notifikasi**, pilih aplikasi bank atau e-wallet-mu, lalu aktifkan **Jalankan Segera**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pick the **Notification** trigger, choose your bank or e-wallet apps, then turn on **Run Immediately**."
-          }
-        }
-      }
-    },
-    "Pilih pemicu **Screenshot**, lalu aktifkan **Jalankan Segera**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pick the **Screenshot** trigger, then turn on **Run Immediately**."
-          }
-        }
-      }
-    },
     "Pilih periode": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Pick a period"
-          }
-        }
-      }
-    },
-    "Pilih pintasan **Notification Record To Saku**, lalu ketuk **Selesai**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pick the **Notification Record To Saku** shortcut, then tap **Done**."
-          }
-        }
-      }
-    },
-    "Pilih pintasan **Screenshot To Saku**, lalu ketuk **Selesai**.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pick the **Screenshot To Saku** shortcut, then tap **Done**."
           }
         }
       }
@@ -15599,26 +15559,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Shortcut"
-          }
-        }
-      }
-    },
-    "Pintasan ini belum pernah jalan di iPhone ini.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This shortcut hasn't run on this iPhone yet."
-          }
-        }
-      }
-    },
-    "Pintasannya bisa dipasang sekarang, tapi draf baru dibuat setelah Saku Plus aktif.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You can add the shortcuts now, but drafts are only made once Saku Plus is active."
           }
         }
       }
@@ -16419,16 +16359,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saku isn't allowed to use the camera. You can still pick a picture from the Gallery or type the transaction."
-          }
-        }
-      }
-    },
-    "Saku bisa membuat draf sendiri saat sesuatu terjadi di iPhone-mu. Pasang pintasannya sekali, lalu pilih kapan dijalankan.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saku can make drafts by itself when something happens on your iPhone. Add the shortcuts once, then choose when they run."
           }
         }
       }
@@ -17529,6 +17459,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Monday"
+          }
+        }
+      }
+    },
+    "Sentuh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch"
           }
         }
       }
@@ -18709,6 +18649,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deleted: you deleted this budget, but it is shown because it was active in this period."
+          }
+        }
+      }
+    },
+    "Sudah jalan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has run"
           }
         }
       }
@@ -20803,6 +20753,16 @@
         }
       }
     },
+    "Tombol Tindakan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Action Button"
+          }
+        }
+      }
+    },
     "Tombol uji sedang dimatikan di server.": {
       "localizations": {
         "en": {
@@ -22121,6 +22081,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "so the next report shows Safe, Near limit or Over for each category."
+          }
+        }
+      }
+    },
+    "atau": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "or"
           }
         }
       }
