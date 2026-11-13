@@ -1681,5 +1681,11 @@
   "**Selesai**. Lakukan satu transaksi kecil untuk mencoba.": "**Done**. Make one small transaction to try it.",
   "Ketuk panah bawah, lalu nyalakan Automation": "Tap the down arrow, then turn on Automation",
   "Pemicu, lalu Shortcuts, lalu draf": "Trigger, then Shortcuts, then draft",
-  "%@, lalu Shortcuts, lalu draf": "%@, then Shortcuts, then draft"
+  "%@, lalu Shortcuts, lalu draf": "%@, then Shortcuts, then draft",
+  "Buka **Pengaturan** › **Aksesibilitas** › **Sentuh** › **Ketuk Bagian Belakang**.": "Open **Settings** › **Accessibility** › **Touch** › **Back Tap**.",
+  "Pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**.": "Pick **Double Tap** or **Triple Tap**.",
+  "Gulir ke bagian **Pintasan**, lalu pilih %@.": "Scroll to the **Shortcuts** section, then pick %@.",
+  "Buka **Pengaturan** › **Tombol Tindakan**.": "Open **Settings** › **Action Button**.",
+  "Geser ke **Pintasan**, ketuk **Pilih Pintasan**.": "Swipe to **Shortcut**, tap **Choose a Shortcut**.",
+  "Pilih %@.": "Pick %@."
 }

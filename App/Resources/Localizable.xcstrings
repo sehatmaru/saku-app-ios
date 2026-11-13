@@ -4863,6 +4863,26 @@
         }
       }
     },
+    "Buka **Pengaturan** › **Aksesibilitas** › **Sentuh** › **Ketuk Bagian Belakang**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open **Settings** › **Accessibility** › **Touch** › **Back Tap**."
+          }
+        }
+      }
+    },
+    "Buka **Pengaturan** › **Tombol Tindakan**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open **Settings** › **Action Button**."
+          }
+        }
+      }
+    },
     "Buka **Pengaturan**, lalu ketuk **Aksesibilitas** dan **Sentuh**.": {
       "localizations": {
         "en": {
@@ -8373,6 +8393,16 @@
         }
       }
     },
+    "Geser ke **Pintasan**, ketuk **Pilih Pintasan**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe to **Shortcut**, tap **Choose a Shortcut**."
+          }
+        }
+      }
+    },
     "Geser ke **Pintasan**, ketuk Pilih Pintasan, lalu pilih %@.": {
       "localizations": {
         "en": {
@@ -8529,6 +8559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Free monthly"
+          }
+        }
+      }
+    },
+    "Gulir ke bagian **Pintasan**, lalu pilih %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scroll to the **Shortcuts** section, then pick %@."
           }
         }
       }
@@ -15559,6 +15599,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose"
+          }
+        }
+      }
+    },
+    "Pilih %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick %@."
+          }
+        }
+      }
+    },
+    "Pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick **Double Tap** or **Triple Tap**."
           }
         }
       }

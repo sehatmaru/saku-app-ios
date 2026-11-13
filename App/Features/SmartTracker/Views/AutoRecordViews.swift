@@ -140,12 +140,13 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
         case .screenshot:
             return [automation, L("Aktifkan **Jalankan Segera**, lalu ketuk Berikutnya."), pick]
         case .backTap:
-            return [L("Buka **Pengaturan**, lalu ketuk **Aksesibilitas** dan **Sentuh**."),
-                    L("Ketuk **Ketuk Bagian Belakang**, lalu pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**."),
-                    L("Gulir ke bagian Pintasan, lalu pilih %@.", name)]
+            return [L("Buka **Pengaturan** › **Aksesibilitas** › **Sentuh** › **Ketuk Bagian Belakang**."),
+                    L("Pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**."),
+                    L("Gulir ke bagian **Pintasan**, lalu pilih %@.", name)]
         case .actionButton:
-            return [L("Buka **Pengaturan**, lalu ketuk **Tombol Tindakan**."),
-                    L("Geser ke **Pintasan**, ketuk Pilih Pintasan, lalu pilih %@.", name)]
+            return [L("Buka **Pengaturan** › **Tombol Tindakan**."),
+                    L("Geser ke **Pintasan**, ketuk **Pilih Pintasan**."),
+                    L("Pilih %@.", name)]
         }
     }
 
