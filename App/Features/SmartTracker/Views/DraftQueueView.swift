@@ -867,7 +867,6 @@ struct DraftQueueView: View {
                     Label(DateFormatter.arrivalTime.string(from: n.at), systemImage: "clock")
                         .font(.app(12, weight: .medium)).monospacedDigit().foregroundStyle(.white.opacity(0.92))
                 }
-                Text(d.sourceLabel).font(.app(13, weight: .medium)).foregroundStyle(.white.opacity(0.9))
                 if let amount = d.amount {
                     HStack(alignment: .top, spacing: 2) {
                         Text("Rp").font(.app(16, weight: .medium)).opacity(0.85).padding(.top, 6)
@@ -886,14 +885,18 @@ struct DraftQueueView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         noticeRow(L("Judul"), name)
                         noticeRow(L("Tanggal"), Self.dateLabel(d.date), icon: "calendar")
-                        if let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty {
-                            HStack(alignment: .top, spacing: 8) {
-                                Image(systemName: "quote.opening").font(.system(size: 12, weight: .heavy)).foregroundStyle(Color.appTextTertiary).padding(.top, 3)
-                                Text(words).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineLimit(3)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                        HStack(alignment: .top, spacing: 12) {
+                            Text(L("Notifikasi")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                                .frame(width: 76, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(d.sourceName ?? d.sourceLabel).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
+                                if let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty {
+                                    Text(words).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineLimit(2)
+                                }
                             }
-                            .padding(.top, 8)
+                            Spacer(minLength: 0)
                         }
+                        .padding(.vertical, 13)
                         richText(L("Sudah ada di %@ **%@**, jadi notifikasi ini tidak dibuat draf agar tidak tercatat dua kali. Bukan itu? Ketuk **Batalkan**.", kind, name))
                             .font(.app(14)).foregroundStyle(Color.appText).lineSpacing(2)
                             .padding(.horizontal, 14).padding(.vertical, 12)
