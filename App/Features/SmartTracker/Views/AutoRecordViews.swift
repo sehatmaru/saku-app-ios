@@ -13,7 +13,7 @@ enum SakuShortcut: String, CaseIterable, Identifiable {
     /// The Shortcut's own name, as it appears in Shortcuts and in Settings. Not translated.
     var name: String {
         switch self {
-        case .screenshot: "Screenshot To Saku"
+        case .screenshot: "Screenshot Record To Saku"
         case .notification: "Notification Record To Saku"
         }
     }
@@ -436,63 +436,105 @@ struct AutoRecordView: View {
 }
 
 
-/// How to switch the automation on, acted out: tap the down arrow, the rest opens, then the Automation switch goes on.
-/// The words are the ones Shortcuts shows. With Reduce Motion it stands at the end.
+/// Smooth ease in and out of `t` through the window `a...b`.
+private func smooth(_ t: Double, _ a: Double, _ b: Double) -> Double {
+    let x = min(max((t - a) / (b - a), 0), 1)
+    return x * x * (3 - 2 * x)
+}
+
+/// How to switch the automation on, acted out on a copy of the Shortcuts card: a finger touches the down arrow, the card
+/// opens, the finger goes to the Automation switch and touches it, the switch slides on. The words are the ones
+/// Shortcuts shows. The stage keeps one height, so nothing below it moves. With Reduce Motion it stands at the end.
 private struct AutomationGuide: View {
-    static let apps = ["myBCA", "GoPay", "OVO", "DANA", "Jago", "neobank", "Krom"]
+    static let apps = ["myBCA", "GoPay", "OVO", "DANA", "Jago", "neobank", "Krom", "+"]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let top: CGFloat = 130
+    private let lower: CGFloat = 86
 
     var body: some View {
         TimelineView(.animation(paused: reduceMotion)) { context in
-            let t = reduceMotion ? 0.95 : loopTime(context.date, seconds: 6)
-            let open = eased(t, 0.2, 0.3)
-            let on = eased(t, 0.62, 0.72)
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "bell.fill").font(.system(size: 14)).foregroundStyle(Color.appError).padding(.top, 2)
-                    FlowLayout(spacing: 6) {
-                        Text("When I receive a notification from").font(.app(13, weight: .semibold)).foregroundStyle(Color.appText).frame(height: 28)
-                        ForEach(Self.apps, id: \.self) { app in
-                            Text(app).font(.app(12, weight: .semibold)).foregroundStyle(Color.appText)
-                                .padding(.horizontal, 8).frame(height: 24).background(Color.stChip, in: Capsule())
-                        }
-                        Image(systemName: "chevron.down.circle").font(.system(size: 22)).foregroundStyle(Color.stGreen)
-                            .rotationEffect(.degrees(180 * open)).frame(height: 28)
-                            .overlay { ring(t, 0.05, 0.2) }
-                    }
+            let t = reduceMotion ? 0.85 : loopTime(context.date, seconds: 8)
+            GeometryReader { geo in
+                let cardW = geo.size.width - 20
+                let open = smooth(t, 0.26, 0.42)
+                let on = smooth(t, 0.66, 0.74)
+                let chevron = CGPoint(x: 10 + cardW - 23, y: 10 + 34)
+                let toggle = CGPoint(x: 10 + cardW - 34, y: 10 + top + 1 + 40 + 1 + 22)
+                let start = CGPoint(x: geo.size.width - 24, y: geo.size.height - 14)
+                // where the finger is: in from the corner, to the arrow, to the switch, then away
+                let toArrow = smooth(t, 0.04, 0.22), toSwitch = smooth(t, 0.46, 0.62), away = smooth(t, 0.82, 0.92)
+                let x = start.x + (chevron.x - start.x) * toArrow
+                let y = start.y + (chevron.y - start.y) * toArrow
+                let fx = x + (toggle.x - chevron.x) * toSwitch + (start.x - toggle.x) * away
+                let fy = y + (toggle.y - chevron.y) * toSwitch + (start.y - toggle.y) * away
+                // a touch is a quick dip in size
+                let press = 1 - 0.28 * (smooth(t, 0.22, 0.25) - smooth(t, 0.25, 0.29)) - 0.28 * (smooth(t, 0.64, 0.67) - smooth(t, 0.67, 0.71))
+                let seen = smooth(t, 0.02, 0.06) * (1 - smooth(t, 0.9, 0.95))
+
+                ZStack(alignment: .topLeading) {
+                    card(open: open, on: on, width: cardW).padding(10)
+                    Circle().fill(Color.stGreen.opacity(0.22)).overlay(Circle().strokeBorder(Color.stGreen, lineWidth: 2))
+                        .frame(width: 34, height: 34).scaleEffect(press)
+                        .position(x: fx, y: fy).opacity(seen)
                 }
-                .padding(12)
-                VStack(spacing: 0) {
-                    Divider()
-                    HStack(spacing: 8) {
-                        Image(systemName: "plus.circle").font(.system(size: 14)).foregroundStyle(Color.appTextSecondary)
-                        Text("Add Filter").font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 12).frame(height: 40)
-                    Divider()
-                    HStack {
-                        Text("Automation").font(.app(13)).foregroundStyle(Color.appText)
-                        Spacer(minLength: 8)
-                        Capsule().fill(on > 0.5 ? Color.stGreen : Color.stChip).frame(width: 44, height: 26)
-                            .overlay(alignment: .leading) { Circle().fill(Color.white).frame(width: 22, height: 22).offset(x: on > 0.5 ? 20 : 2) }
-                            .overlay { ring(t, 0.45, 0.62) }
-                    }
-                    .padding(.horizontal, 12).frame(height: 44)
-                }
-                .opacity(open).offset(y: -6 * (1 - open))
+                .opacity(max(smooth(t, 0, 0.03), reduceMotion ? 1 : 0) * (1 - smooth(t, 0.96, 1)))
             }
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
         }
+        .frame(height: 252)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("Ketuk panah bawah, lalu nyalakan Automation"))
     }
 
-    /// A ring that grows around what to tap.
-    private func ring(_ t: Double, _ a: Double, _ b: Double) -> some View {
-        let p = eased(t, a, b)
-        return Circle().strokeBorder(Color.stGreen, lineWidth: 2).frame(width: 36, height: 36)
-            .scaleEffect(0.6 + 0.6 * p).opacity(p > 0 && p < 1 ? 1 - p * 0.8 : 0)
+    private func card(open: Double, on: Double, width: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 8) {
+                    Image(systemName: "bell.fill").font(.system(size: 14)).foregroundStyle(Color.appError)
+                    Text("When I receive a notification from").font(.app(12, weight: .semibold)).foregroundStyle(Color.appText)
+                        .lineLimit(1).fixedSize()
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down.circle").font(.system(size: 22)).foregroundStyle(Color.stGreen)
+                        .rotationEffect(.degrees(180 * open))
+                }
+                .frame(height: 44)
+                FlowLayout(spacing: 6) {
+                    ForEach(Self.apps, id: \.self) { app in
+                        Text(app).font(.app(12, weight: .semibold)).foregroundStyle(Color.appText)
+                            .padding(.horizontal, 10).frame(height: 26).background(Color.stChip, in: Capsule())
+                    }
+                }
+                .frame(height: 62, alignment: .topLeading)
+            }
+            .padding(12)
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: 8) {
+                    Image(systemName: "plus.circle").font(.system(size: 14)).foregroundStyle(Color.appTextSecondary)
+                    Text("Add Filter").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 12).frame(height: 40)
+                Divider()
+                HStack {
+                    Text("Automation").font(.app(13)).foregroundStyle(Color.appText)
+                    Spacer(minLength: 8)
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.stChip)
+                        Capsule().fill(Color.stGreen).opacity(on)
+                        Circle().fill(Color.white).frame(width: 22, height: 22).shadow(color: .black.opacity(0.15), radius: 1.5, y: 1).offset(x: 2 + 20 * on)
+                    }
+                    .frame(width: 44, height: 26)
+                }
+                .padding(.horizontal, 12).frame(height: 44)
+            }
+            .frame(height: lower * open, alignment: .top).clipped().opacity(smooth(open, 0.15, 1))
+        }
+        .frame(width: width, alignment: .top)
+        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 }
 
@@ -713,12 +755,6 @@ struct AutoRecipeDetailView: View {
                 numbered(index + 2, of: count) {
                     richText(sentence)
                     if recipe == .notification && index == 0 { AutomationGuide().padding(.top, 10) }
-                    if recipe.isAutomation && index == 0 {
-                        Button { openURL(URL(string: recipe == .notification ? "shortcuts://" : "shortcuts://create-automation")!) } label: {
-                            Label(L("Buka Shortcuts"), systemImage: "arrow.up.forward.app")
-                                .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText).frame(minHeight: 44, alignment: .leading)
-                        }
-                    }
                 }
             }
             numbered(count, of: count) { richText(recipe.tryIt) }
