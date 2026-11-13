@@ -9,7 +9,6 @@ struct SmartTrackerSettingsView: View {
     @AppStorage(SmartTrackerConsent.key) private var aiOn = false
     @State private var plusReason: PlusReason?
     @State private var siri = SmartTrackerWays.siri
-    @State private var notification = SmartTrackerWays.notification
     @State private var reminder = SmartTrackerWays.reminder
     @State private var showsConsent = false
     @State private var showsPrivacy = false
@@ -24,20 +23,11 @@ struct SmartTrackerSettingsView: View {
                 Text("Smart Tracker").font(.app(34, weight: .bold)).tracking(-0.4).foregroundStyle(Color.appText)
                     .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 12)
 
+                sectionLabel(L("Cara mencatat"))
                 wayRow(.ai, aiDetail) {
                     if isGuest { lock } else {
                         Toggle(SmartWay.ai.title, isOn: Binding(get: { aiOn }, set: { setAI($0) })).labelsHidden().tint(Color.appPrimary)
                     }
-                }
-                wayRow(.notification, notificationDetail) {
-                    if isGuest { lock } else {
-                        Toggle(SmartWay.notification.title, isOn: Binding(get: { notification }, set: { notification = $0; SmartTrackerWays.notification = $0 }))
-                            .labelsHidden().tint(Color.appPrimary).disabled(!NotificationTrigger.isAvailable)
-                    }
-                }
-                wayRow(.reminder, L("Diingatkan 5 jam dan 1 hari setelah draf masuk")) {
-                    Toggle(SmartWay.reminder.title, isOn: Binding(get: { reminder }, set: { reminder = $0; SmartTrackerWays.reminder = $0; DraftStore.shared.rescheduleReminder() }))
-                        .labelsHidden().tint(Color.appPrimary)
                 }
                 wayRow(.siri, isGuest ? L("Perlu akun") : L("Catat lewat perintah suara Siri")) {
                     if isGuest { lock } else {
@@ -47,6 +37,12 @@ struct SmartTrackerSettingsView: View {
                 }
 
                 if !isGuest { autoRecordRow }
+
+                sectionLabel(L("Pengingat"))
+                wayRow(.reminder, L("Diingatkan 5 jam dan 1 hari setelah draf masuk")) {
+                    Toggle(SmartWay.reminder.title, isOn: Binding(get: { reminder }, set: { reminder = $0; SmartTrackerWays.reminder = $0; DraftStore.shared.rescheduleReminder() }))
+                        .labelsHidden().tint(Color.appPrimary)
+                }
 
                 Rectangle().fill(Color.appDivider).frame(height: 1).padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 16)
 
@@ -89,6 +85,11 @@ struct SmartTrackerSettingsView: View {
     }()
 
     // MARK: Rows
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+            .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 2)
+    }
 
     private var lock: some View {
         Image(systemName: "lock").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 44, height: 44)
@@ -208,11 +209,6 @@ struct SmartTrackerSettingsView: View {
     private var aiDetail: String {
         if isGuest { return L("Perlu akun") }
         return aiOn ? L("Baca teks, suara, dan gambar dengan AI") : L("Mati. Dibaca dengan aturan di perangkat")
-    }
-
-    private var notificationDetail: String {
-        if isGuest { return L("Perlu akun") }
-        return NotificationTrigger.isAvailable ? L("Ubah notifikasi bank jadi draf") : L("Butuh iOS 27")
     }
 
     /// Turning on needs the agreement sheet; turning off just stops AI and Ingatan sync (nothing is deleted).

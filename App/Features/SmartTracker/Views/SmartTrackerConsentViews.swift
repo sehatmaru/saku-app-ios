@@ -2,12 +2,11 @@ import SwiftUI
 
 /// The ways of recording that have a switch in Profil › Smart Tracker.
 enum SmartWay: CaseIterable {
-    case ai, notification, reminder, siri
+    case ai, reminder, siri
 
     var title: String {
         switch self {
         case .ai: return "AI"
-        case .notification: return L("Notifikasi")
         case .reminder: return L("Pengingat draf")
         case .siri: return "Siri"
         }
@@ -16,7 +15,6 @@ enum SmartWay: CaseIterable {
     var icon: String {
         switch self {
         case .ai: return "sparkles"
-        case .notification: return "bolt"
         case .reminder: return "bell"
         case .siri: return "phone"
         }

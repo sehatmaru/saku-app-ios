@@ -86,14 +86,6 @@ enum MerchantMemory {
 /// Per-device switches for Siri and for notifications (Profil › Smart Tracker). Typing, voice, pictures and sharing are always on.
 enum SmartTrackerWays {
     static let siriKey = "smartWaySiri"
-    static let notificationKey = "smartWayNotification"
-
-    /// On by default: connecting a bank app through Shortcuts is the choice; the switch pauses it.
-    static var notification: Bool {
-        get { UserDefaults.standard.object(forKey: notificationKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: notificationKey) }
-    }
-
     static let reminderKey = "smartWayReminder"
 
     /// On by default: a reminder 5 hours and 1 day after a draft arrives while it is still unconfirmed.
