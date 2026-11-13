@@ -49,8 +49,8 @@ final class DashboardViewModel: ObservableObject {
     /// What can be spent per day until the period ends; nil when nothing is safe to spend.
     var safePerDay: Double? { safeToSpend > 0 ? (safeToSpend / Double(daysLeftInPeriod)).rounded(.down) : nil }
 
-    /// Balance minus what already has to leave it this month: printed card bills and
-    /// subscriptions paid from a wallet.
+    /// Balance minus what already has to leave it: for each card, what is still owed on the last statement plus the
+    /// charges since its cut-off (billed on the next statement), and this month's subscriptions paid from a wallet.
     var safeToSpend: Double { balance - cardDueTotal - upcomingBillsTotal }
 
     var averageDailySpending: Double {
