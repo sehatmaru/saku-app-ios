@@ -631,6 +631,16 @@
         }
       }
     },
+    "%@, lalu pintasan, lalu draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, then the shortcut, then a draft"
+          }
+        }
+      }
+    },
     "%@, saldo %@": {
       "localizations": {
         "en": {
@@ -1703,6 +1713,16 @@
         }
       }
     },
+    "1. Pasang pintasan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Add the shortcuts"
+          }
+        }
+      }
+    },
     "2 dari 4": {
       "localizations": {
         "en": {
@@ -1729,6 +1749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "2 transactions read"
+          }
+        }
+      }
+    },
+    "2. Pilih kapan dijalankan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Choose when they run"
           }
         }
       }
@@ -2469,6 +2499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Set"
+          }
+        }
+      }
+    },
+    "Atur aplikasi dan judul notifikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose apps and notification titles"
           }
         }
       }
@@ -4753,6 +4793,26 @@
         }
       }
     },
+    "Buka Pengaturan iPhone, lalu **Aksesibilitas**, **Sentuh**, **Ketuk Bagian Belakang**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open iPhone Settings, then **Accessibility**, **Touch**, **Back Tap**."
+          }
+        }
+      }
+    },
+    "Buka Pengaturan iPhone, lalu **Tombol Tindakan**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open iPhone Settings, then **Action Button**."
+          }
+        }
+      }
+    },
     "Buka Profil, lalu Hapus akun. Datamu ikut terhapus.": {
       "localizations": {
         "en": {
@@ -4809,6 +4869,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Shortcuts, choose the "
+          }
+        }
+      }
+    },
+    "Buka Shortcuts, pilih tab **Otomatisasi**, lalu ketuk **+**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Shortcuts, pick the **Automation** tab, then tap **+**."
           }
         }
       }
@@ -5019,6 +5089,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ways to record"
+          }
+        }
+      }
+    },
+    "Cara mengatur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to set it up"
           }
         }
       }
@@ -5259,6 +5339,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Log with Siri voice commands"
+          }
+        }
+      }
+    },
+    "Catat otomatis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record automatically"
+          }
+        }
+      }
+    },
+    "Catat otomatis butuh Saku Plus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording automatically needs Saku Plus"
           }
         }
       }
@@ -5649,6 +5749,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Try the reminder"
+          }
+        }
+      }
+    },
+    "Coba sekarang: ambil screenshot struk atau bukti transfer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try it now: take a screenshot of a receipt or transfer proof."
+          }
+        }
+      }
+    },
+    "Coba sekarang: buka struk atau bukti transfer, lalu ketuk punggung iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try it now: open a receipt or transfer proof, then tap the back of your iPhone."
+          }
+        }
+      }
+    },
+    "Coba sekarang: buka struk atau bukti transfer, lalu tekan Tombol Aksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try it now: open a receipt or transfer proof, then press the Action Button."
+          }
+        }
+      }
+    },
+    "Coba sekarang: lakukan satu transaksi kecil, lalu tunggu notifikasinya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try it now: make one small transaction and wait for its notification."
           }
         }
       }
@@ -8133,6 +8273,16 @@
         }
       }
     },
+    "Geser ke **Pintasan**, lalu pilih **Screenshot To Saku**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe to **Shortcut**, then pick **Screenshot To Saku**."
+          }
+        }
+      }
+    },
     "Geser untuk bayar": {
       "localizations": {
         "en": {
@@ -8269,6 +8419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Free monthly"
+          }
+        }
+      }
+    },
+    "Gulir ke **Pintasan**, lalu pilih **Screenshot To Saku**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scroll to **Shortcuts**, then pick **Screenshot To Saku**."
           }
         }
       }
@@ -9603,6 +9763,16 @@
         }
       }
     },
+    "Kalau sudah terpasang, lewati langkah ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already added? Skip this step."
+          }
+        }
+      }
+    },
     "Kalender pengeluaran": {
       "localizations": {
         "en": {
@@ -10693,6 +10863,16 @@
         }
       }
     },
+    "Ketuk belakang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back Tap"
+          }
+        }
+      }
+    },
     "Ketuk dua kali untuk konfirmasi": {
       "localizations": {
         "en": {
@@ -10759,6 +10939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tap the microphone to try again"
+          }
+        }
+      }
+    },
+    "Ketuk punggung iPhone dua atau tiga kali, layar yang terbuka jadi draf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the back of your iPhone two or three times and the open screen becomes a draft."
           }
         }
       }
@@ -12493,6 +12683,16 @@
         }
       }
     },
+    "Membaca layar atau screenshot jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turns the screen or a screenshot into a draft"
+          }
+        }
+      }
+    },
     "Membaca screenshot, foto, atau struk dan membuat draf. Hasilnya masuk ke Konfirmasi transaksi.": {
       "localizations": {
         "en": {
@@ -12649,6 +12849,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Listening"
+          }
+        }
+      }
+    },
+    "Meneruskan notifikasi bank jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turns bank notifications into drafts"
           }
         }
       }
@@ -13623,6 +13833,16 @@
         }
       }
     },
+    "Notifikasi transaksi dari bank atau e-wallet langsung jadi draf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction notifications from your bank or e-wallet become drafts."
+          }
+        }
+      }
+    },
     "Notifikasi yang ditangkap": {
       "localizations": {
         "en": {
@@ -13639,6 +13859,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Notifications whose title contains these words don't become drafts, e.g. Promo."
+          }
+        }
+      }
+    },
+    "Notifikasi, ketuk belakang, Tombol Aksi, screenshot": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications, Back Tap, Action Button, screenshots"
           }
         }
       }
@@ -13883,6 +14113,46 @@
         }
       }
     },
+    "Pasang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
+    "Pasang lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add again"
+          }
+        }
+      }
+    },
+    "Pasang pintasan %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add the %@ shortcut"
+          }
+        }
+      }
+    },
+    "Pasang pintasan **%@**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add the **%@** shortcut."
+          }
+        }
+      }
+    },
     "Pastikan tagihan kartu kredit terbayar tepat waktu.": {
       "localizations": {
         "en": {
@@ -14109,6 +14379,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The Notification trigger in Shortcuts only exists on iOS 27 and later. Until your iOS is updated, record by typing or speaking, the Share menu, or Siri."
+          }
+        }
+      }
+    },
+    "Pemicu ini ada di Shortcuts mulai iOS 27. Sampai iOS-mu diperbarui, pakai Ketuk belakang atau Tombol Aksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This trigger is in Shortcuts from iOS 27. Until you update, use Back Tap or the Action Button."
           }
         }
       }
@@ -14933,6 +15213,16 @@
         }
       }
     },
+    "Pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose **Double Tap** or **Triple Tap**."
+          }
+        }
+      }
+    },
     "Pilih angka": {
       "localizations": {
         "en": {
@@ -15103,12 +15393,52 @@
         }
       }
     },
+    "Pilih pemicu **Notifikasi**, pilih aplikasi bank atau e-wallet-mu, lalu aktifkan **Jalankan Segera**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick the **Notification** trigger, choose your bank or e-wallet apps, then turn on **Run Immediately**."
+          }
+        }
+      }
+    },
+    "Pilih pemicu **Screenshot**, lalu aktifkan **Jalankan Segera**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick the **Screenshot** trigger, then turn on **Run Immediately**."
+          }
+        }
+      }
+    },
     "Pilih periode": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Pick a period"
+          }
+        }
+      }
+    },
+    "Pilih pintasan **Notification Record To Saku**, lalu ketuk **Selesai**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick the **Notification Record To Saku** shortcut, then tap **Done**."
+          }
+        }
+      }
+    },
+    "Pilih pintasan **Screenshot To Saku**, lalu ketuk **Selesai**.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick the **Screenshot To Saku** shortcut, then tap **Done**."
           }
         }
       }
@@ -15259,6 +15589,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rescan with AI"
+          }
+        }
+      }
+    },
+    "Pintasan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcut"
+          }
+        }
+      }
+    },
+    "Pintasan ini belum pernah jalan di iPhone ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This shortcut hasn't run on this iPhone yet."
+          }
+        }
+      }
+    },
+    "Pintasannya bisa dipasang sekarang, tapi draf baru dibuat setelah Saku Plus aktif.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can add the shortcuts now, but drafts are only made once Saku Plus is active."
           }
         }
       }
@@ -16063,6 +16423,16 @@
         }
       }
     },
+    "Saku bisa membuat draf sendiri saat sesuatu terjadi di iPhone-mu. Pasang pintasannya sekali, lalu pilih kapan dijalankan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku can make drafts by itself when something happens on your iPhone. Add the shortcuts once, then choose when they run."
+          }
+        }
+      }
+    },
     "Saku hanya membaca notifikasi untuk membuat draf, lalu langsung menghapusnya. Tidak ada yang tercatat sebelum kamu cek.": {
       "localizations": {
         "en": {
@@ -16489,6 +16859,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "I understand, continue"
+          }
+        }
+      }
+    },
+    "Screenshot baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New screenshot"
           }
         }
       }
@@ -17123,6 +17503,16 @@
         }
       }
     },
+    "Semuanya masuk sebagai draf. Tidak ada yang tercatat sebelum kamu cek.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything arrives as a draft. Nothing is recorded until you check it."
+          }
+        }
+      }
+    },
     "Sen": {
       "localizations": {
         "en": {
@@ -17289,6 +17679,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Every time a transaction notification arrives, Shortcuts on your iPhone forwards it to Saku. Set it up once per app."
+          }
+        }
+      }
+    },
+    "Setiap screenshot yang tersimpan dibaca jadi draf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every screenshot you save is read into a draft."
           }
         }
       }
@@ -19293,6 +19693,16 @@
         }
       }
     },
+    "Tekan Tombol Aksi, layar yang terbuka jadi draf.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press the Action Button and the open screen becomes a draft."
+          }
+        }
+      }
+    },
     "Teks asli": {
       "localizations": {
         "en": {
@@ -19429,6 +19839,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Last updated"
+          }
+        }
+      }
+    },
+    "Terakhir jalan %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last ran %@ %@"
+          }
+        }
+      }
+    },
+    "Terakhir jalan hari ini %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last ran today %@"
           }
         }
       }
@@ -20359,6 +20789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Semicolon works with Indonesian-language Excel."
+          }
+        }
+      }
+    },
+    "Tombol Aksi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Action Button"
           }
         }
       }
@@ -21911,6 +22351,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "days without spending"
+          }
+        }
+      }
+    },
+    "iPhone 15 Pro ke atas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone 15 Pro or later"
           }
         }
       }

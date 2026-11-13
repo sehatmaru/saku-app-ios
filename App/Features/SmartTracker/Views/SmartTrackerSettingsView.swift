@@ -35,7 +35,6 @@ struct SmartTrackerSettingsView: View {
                             .labelsHidden().tint(Color.appPrimary).disabled(!NotificationTrigger.isAvailable)
                     }
                 }
-                if !isGuest { setupGuideRow }
                 wayRow(.reminder, L("Diingatkan 5 jam dan 1 hari setelah draf masuk")) {
                     Toggle(SmartWay.reminder.title, isOn: Binding(get: { reminder }, set: { reminder = $0; SmartTrackerWays.reminder = $0; DraftStore.shared.rescheduleReminder() }))
                         .labelsHidden().tint(Color.appPrimary)
@@ -46,6 +45,8 @@ struct SmartTrackerSettingsView: View {
                             .labelsHidden().tint(Color.appPrimary)
                     }
                 }
+
+                if !isGuest { autoRecordRow }
 
                 Rectangle().fill(Color.appDivider).frame(height: 1).padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 16)
 
@@ -106,19 +107,24 @@ struct SmartTrackerSettingsView: View {
         .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64)
     }
 
-    /// The sub-menu under Notifikasi: the steps to connect a bank or e-wallet app. Plus is needed to record from notifications.
-    private var setupGuideRow: some View {
-        NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
-            HStack(spacing: 8) {
-                Text(L("Cara mengatur notifikasi")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+    /// Catat otomatis: the ready-made Shortcuts and the triggers that run them. The notification guide now lives inside it.
+    private var autoRecordRow: some View {
+        NavigationLink(destination: AutoRecordView().detailPage()) {
+            HStack(spacing: 14) {
+                Image(systemName: "hand.tap").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("Catat otomatis")).font(.app(17)).foregroundStyle(Color.appText)
+                    Text(L("Notifikasi, ketuk belakang, Tombol Aksi, screenshot")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                }
                 Spacer(minLength: 8)
                 if !plus.isPlus {
                     Text(verbatim: "Plus").font(.app(11, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
                         .padding(.horizontal, 8).padding(.vertical, 2).background(Color.appPrimary.opacity(0.12), in: Capsule())
                 }
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                    .frame(minHeight: 44)
             }
-            .padding(.leading, 62).padding(.trailing, 24).frame(minHeight: 44).contentShape(Rectangle())
+            .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
