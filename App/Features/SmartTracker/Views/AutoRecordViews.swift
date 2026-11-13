@@ -456,12 +456,13 @@ private struct AutomationGuide: View {
         TimelineView(.animation(paused: reduceMotion)) { context in
             let t = reduceMotion ? 0.85 : loopTime(context.date, seconds: 8)
             GeometryReader { geo in
-                let cardW = geo.size.width - 20
+                let pad: CGFloat = 2
+                let cardW = geo.size.width - 2 * pad
                 let open = smooth(t, 0.26, 0.42)
                 let on = smooth(t, 0.66, 0.74)
-                let chevron = CGPoint(x: 10 + cardW - 23, y: 10 + 34)
-                let toggle = CGPoint(x: 10 + cardW - 34, y: 10 + top + 1 + 40 + 1 + 22)
-                let start = CGPoint(x: geo.size.width - 24, y: geo.size.height - 14)
+                let chevron = CGPoint(x: pad + cardW - 23, y: pad + 34)
+                let toggle = CGPoint(x: pad + cardW - 34, y: pad + top + 1 + 40 + 1 + 22)
+                let start = CGPoint(x: geo.size.width - 24, y: geo.size.height - 6)
                 // where the finger is: in from the corner, to the arrow, to the switch, then away
                 let toArrow = smooth(t, 0.04, 0.22), toSwitch = smooth(t, 0.46, 0.62), away = smooth(t, 0.82, 0.92)
                 let x = start.x + (chevron.x - start.x) * toArrow
@@ -473,19 +474,25 @@ private struct AutomationGuide: View {
                 let seen = smooth(t, 0.02, 0.06) * (1 - smooth(t, 0.9, 0.95))
 
                 ZStack(alignment: .topLeading) {
-                    card(open: open, on: on, width: cardW).padding(10)
+                    card(open: open, on: on, width: cardW).padding(pad)
                     Circle().fill(Color.stGreen.opacity(0.22)).overlay(Circle().strokeBorder(Color.stGreen, lineWidth: 2))
                         .frame(width: 34, height: 34).scaleEffect(press)
                         .position(x: fx, y: fy).opacity(seen)
+                    badge(1).position(x: chevron.x + 10, y: chevron.y - 22).opacity(smooth(t, 0.12, 0.18) * (1 - smooth(t, 0.44, 0.5)))
+                    badge(2).position(x: toggle.x - 46, y: toggle.y).opacity(smooth(t, 0.5, 0.56) * (1 - smooth(t, 0.86, 0.92)))
                 }
                 .opacity(max(smooth(t, 0, 0.03), reduceMotion ? 1 : 0) * (1 - smooth(t, 0.96, 1)))
             }
         }
-        .frame(height: 252)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .frame(height: 224)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("Ketuk panah bawah, lalu nyalakan Automation"))
+    }
+
+    /// The number of the tap, in the colour of the step numbers.
+    private func badge(_ n: Int) -> some View {
+        Text("\(n)").font(.app(12, weight: .bold)).foregroundStyle(.white)
+            .frame(width: 20, height: 20).background(Color.stGreen, in: Circle())
     }
 
     private func card(open: Double, on: Double, width: CGFloat) -> some View {
@@ -503,7 +510,7 @@ private struct AutomationGuide: View {
                 FlowLayout(spacing: 6) {
                     ForEach(Self.apps, id: \.self) { app in
                         Text(app).font(.app(12, weight: .semibold)).foregroundStyle(Color.appText)
-                            .padding(.horizontal, 10).frame(height: 26).background(Color.stChip, in: Capsule())
+                            .padding(.horizontal, 10).frame(height: 26).background(Color.appFill, in: Capsule())
                     }
                 }
                 .frame(height: 62, alignment: .topLeading)
@@ -534,6 +541,7 @@ private struct AutomationGuide: View {
         }
         .frame(width: width, alignment: .top)
         .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.appBorder, lineWidth: 1))
         .frame(maxHeight: .infinity, alignment: .top)
     }
 }
@@ -553,10 +561,10 @@ private struct ShortcutButton: View {
                     .frame(width: 40, height: 40).background(ran == nil ? Color.appBackground : Color.stGreen, in: Circle())
                 VStack(alignment: .leading, spacing: 1) {
                     if let ran {
-                        Text(shortcut.label).font(.app(16, weight: .bold)).foregroundStyle(Color.appText)
-                        Text(ran).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                        Text(shortcut.label).font(.app(15, weight: .bold)).foregroundStyle(Color.appText).lineLimit(1).minimumScaleFactor(0.7)
+                        Text(ran).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1).minimumScaleFactor(0.85)
                     } else {
-                        Text(shortcut.label).font(.app(13)).foregroundStyle(Color.appBackground.opacity(0.7))
+                        Text(shortcut.label).font(.app(13)).foregroundStyle(Color.appBackground.opacity(0.7)).lineLimit(1).minimumScaleFactor(0.85)
                         Text(L("Tambah ke Shortcuts")).font(.app(16, weight: .bold)).foregroundStyle(Color.appBackground)
                     }
                 }
