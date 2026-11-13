@@ -19233,6 +19233,16 @@
         }
       }
     },
+    "Sudah tercatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already recorded"
+          }
+        }
+      }
+    },
     "Sudah terhubung": {
       "localizations": {
         "en": {

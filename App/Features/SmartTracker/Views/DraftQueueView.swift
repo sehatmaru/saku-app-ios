@@ -195,6 +195,7 @@ struct DraftQueueView: View {
     private var ready: [Draft] { queue.filter { $0.isComplete && !store.needsPeriodChoice($0) } }
 
     /// Swiping only browses: left brings the next draft to the front, right the one before it, round and round.
+    @State private var showsNotices = false
     @State private var browse = 0
     @State private var drag: CGFloat = 0
 
@@ -321,15 +322,7 @@ struct DraftQueueView: View {
     private static var cardWidth: CGFloat { UIScreen.main.bounds.width }
     private static var baseCardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
 
-    /// The notices of notifications already recorded sit below the marks, so the card gives up their room; its body scrolls.
-    private static let noticeRowHeight: CGFloat = 76
-    private var visibleNotices: Int { min(store.notices.count, 2) }
-    private var noticeReserve: CGFloat {
-        visibleNotices == 0 ? 0 : CGFloat(visibleNotices) * Self.noticeRowHeight + CGFloat(visibleNotices - 1) * 8 + 40
-    }
-    private var cardHeight: CGFloat {
-        visibleNotices == 0 ? Self.baseCardHeight : max(380, Self.baseCardHeight - noticeReserve)
-    }
+    private var cardHeight: CGFloat { Self.baseCardHeight }
 
     // MARK: Body
 
@@ -352,6 +345,13 @@ struct DraftQueueView: View {
         .navigationTitle(L("Draf Transaksi"))
         .navigationBarTitleDisplayMode(.inline)
         .hidesSmartButton()
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if !queue.isEmpty && !store.notices.isEmpty { noticesButton }
+            }
+        }
+        .sheet(isPresented: $showsNotices) { noticesSheet }
+        .onChange(of: store.notices.isEmpty) { _, empty in if empty { showsNotices = false } }
         .background(NoSwipeBack())
         .onChange(of: sheet?.id) { focusedId = nil }
         .plusOffer($plusReason)
@@ -426,17 +426,12 @@ struct DraftQueueView: View {
                 Spacer(minLength: 0)
             }
 
-            // Notifications already recorded: information only, kept for 7 days (K5, K10).
-            if !store.notices.isEmpty {
-                ScrollView {
-                    VStack(spacing: 8) {
-                        ForEach(store.notices) { notice in
-                            noticeRow(notice)
-                        }
-                    }
+            // Notifications already recorded: information only, kept for 7 days (K5, K10). With a card on screen they live
+            // behind the button in the bar, so they never take room from the card; on their own they show here.
+            if queue.isEmpty && !store.notices.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(store.notices) { notice in noticeRow(notice) }
                 }
-                .scrollBounceBehavior(.basedOnSize).scrollIndicators(.hidden)
-                .frame(maxHeight: CGFloat(visibleNotices) * Self.noticeRowHeight + CGFloat(visibleNotices - 1) * 8)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
                 .animation(.settle(0.3), value: store.notices.map(\.id))
@@ -845,6 +840,36 @@ struct DraftQueueView: View {
     }
 
     /// "Notifikasi BCA sudah tercatat sebagai cicilan iPhone 15": information only, with Batalkan (K5).
+    /// The bar button that opens the notifications already recorded, with how many there are.
+    private var noticesButton: some View {
+        Button { showsNotices = true } label: {
+            Image(systemName: "checkmark.seal").font(.system(size: 19)).foregroundStyle(Color.appText)
+                .frame(width: 44, height: 44)
+                .overlay(alignment: .topTrailing) {
+                    Text("\(store.notices.count)").font(.app(11, weight: .bold)).foregroundStyle(Color.appBackground)
+                        .frame(minWidth: 18, minHeight: 18).background(Color.stGreen, in: Capsule()).offset(x: -2, y: 4)
+                }
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel(L("Sudah tercatat") + ", \(store.notices.count)")
+    }
+
+    private var noticesSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("Sudah tercatat")).font(.app(20, weight: .bold)).foregroundStyle(Color.appText)
+                .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 12)
+            ScrollView {
+                VStack(spacing: 8) {
+                    ForEach(store.notices) { notice in noticeRow(notice) }
+                }
+                .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .background(Color.appBackground)
+        .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+    }
+
     private func noticeRow(_ notice: SkippedNotice) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "checkmark.seal").font(.system(size: 17)).foregroundStyle(Color.stGreen)
@@ -857,7 +882,7 @@ struct DraftQueueView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 14).padding(.vertical, 6)
-        .frame(maxWidth: .infinity, minHeight: Self.noticeRowHeight, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
         .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
         .transition(.opacity.combined(with: .offset(y: 12)))
     }
