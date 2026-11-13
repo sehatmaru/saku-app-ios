@@ -28,12 +28,12 @@ private struct PrivacyPoints: View {
     /// icon, title, one-line summary, full text
     static var points: [(String, String, String, String)] {
         [("arrow.up.right", L("Apa yang dikirim"), L("Hanya teks. Tidak dipakai melatih AI."),
-          L("Hanya teks: yang kamu ketik, ucapkan (diubah jadi teks), bagikan, atau baca dari gambar. Teks dikirim ke penyedia model bahasa untuk dibaca AI. Tidak dipakai melatih AI.")),
+          L("Hanya saat AI menyala: teks yang kamu ketik, bagikan, atau baca dari gambar, hasil pengenalan suara, serta nama dompet dan kategorimu, tanpa saldo. Teks dikirim ke penyedia model bahasa untuk dibaca AI. Tidak dipakai melatih AI. Suara dikenali oleh Apple di iPhone-mu; Saku hanya mengirim teksnya.")),
          ("lock", L("Apa yang dibuang di perangkat"), L("Nomor panjang dan kode OTP. Gambar mentah tidak pernah dikirim."),
           L("Nomor panjang (rekening, kartu) dan kode OTP dihapus sebelum teks dikirim. Gambar mentah tidak pernah dikirim.")),
          ("tray", L("Apa yang disimpan"), L("Transaksi yang kamu simpan, jatah AI, dan Ingatan."),
-          L("Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.")),
-         ("trash", L("Cara menghapus"), L("Profil, lalu Hapus akun."), L("Buka Profil, lalu Hapus akun. Datamu ikut terhapus."))]
+          L("Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Server Saku tidak menyimpan kalimat yang dikirim ke AI. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.")),
+         ("trash", L("Cara menghapus"), L("Profil, lalu Hapus akun."), L("Buka Profil, lalu Hapus akun. Datamu dihapus permanen setelah 30 hari."))]
     }
 
     var body: some View {
@@ -85,13 +85,14 @@ struct SmartTrackerPrivacyPage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 section(L("Dikirim"))
-                row("arrow.up.right", L("Apa yang dikirim"), L("Hanya teks. Tidak dipakai melatih AI."))
+                row("arrow.up.right", L("Apa yang dikirim"), L("Teks, nama dompet, dan nama kategorimu, hanya saat AI menyala. Tidak dipakai melatih AI."))
+                row("mic", L("Suara"), L("Dikenali oleh pengenalan suara Apple. Saku hanya mengirim teksnya."))
                 row("lock", L("Apa yang dibuang di perangkat"), L("Nomor panjang, kode OTP, dan gambar mentah tidak ikut dikirim."))
                 section(L("Disimpan"))
-                row("tray", L("Apa yang disimpan"), L("Transaksi yang kamu simpan, jatah AI, dan Ingatan."))
-                row("doc.text", L("Teks asli dan gambar"), L("Tetap di HP sampai kamu simpan atau buang draf. Draf hilang sendiri setelah 30 hari."))
+                row("tray", L("Apa yang disimpan"), L("Transaksi yang kamu simpan, jatah AI, dan Ingatan (selama AI menyala)."))
+                row("doc.text", L("Teks asli dan gambar"), L("Tetap di HP sampai kamu simpan atau buang draf, atau hilang sendiri setelah 30 hari. Server Saku tidak menyimpan kalimatnya."))
                 section(L("Hapus"))
-                row("trash", L("Cara menghapus"), L("Profil, lalu Hapus akun. Datamu ikut terhapus."))
+                row("trash", L("Cara menghapus"), L("Profil, lalu Hapus akun. Datamu dihapus permanen setelah 30 hari."))
             }
             .padding(.top, 8).padding(.bottom, 40)
         }

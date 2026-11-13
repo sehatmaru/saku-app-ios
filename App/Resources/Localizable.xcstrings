@@ -4943,6 +4943,16 @@
         }
       }
     },
+    "Buka Profil, lalu Hapus akun. Datamu dihapus permanen setelah 30 hari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Profile, then Delete account. Your data is permanently deleted after 30 days."
+          }
+        }
+      }
+    },
     "Buka Profil, lalu Hapus akun. Datamu ikut terhapus.": {
       "localizations": {
         "en": {
@@ -6943,6 +6953,16 @@
         }
       }
     },
+    "Dikenali oleh pengenalan suara Apple. Saku hanya mengirim teksnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognised by Apple's speech recognition. Saku only sends the text."
+          }
+        }
+      }
+    },
     "Dikirim": {
       "localizations": {
         "en": {
@@ -8789,6 +8809,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only a marker: it doesn't change Net, budget or card bills."
+          }
+        }
+      }
+    },
+    "Hanya saat AI menyala: teks yang kamu ketik, bagikan, atau baca dari gambar, hasil pengenalan suara, serta nama dompet dan kategorimu, tanpa saldo. Teks dikirim ke penyedia model bahasa untuk dibaca AI. Tidak dipakai melatih AI. Suara dikenali oleh Apple di iPhone-mu; Saku hanya mengirim teksnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only while AI is on: text you type, share, or read from an image, speech recognition results, and your wallet and category names, with no balances. The text goes to a language model provider so AI can read it. It is not used to train AI. Apple recognises your voice on your iPhone; Saku only sends the text."
           }
         }
       }
@@ -16353,6 +16383,16 @@
         }
       }
     },
+    "Profil, lalu Hapus akun. Datamu dihapus permanen setelah 30 hari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile, then Delete account. Your data is permanently deleted after 30 days."
+          }
+        }
+      }
+    },
     "Profil, lalu Hapus akun. Datamu ikut terhapus.": {
       "localizations": {
         "en": {
@@ -20503,6 +20543,16 @@
         }
       }
     },
+    "Teks, nama dompet, dan nama kategorimu, hanya saat AI menyala. Tidak dipakai melatih AI.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text, wallet names, and category names, only while AI is on. Not used to train AI."
+          }
+        }
+      }
+    },
     "Tema": {
       "localizations": {
         "en": {
@@ -20919,6 +20969,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stays safe"
+          }
+        }
+      }
+    },
+    "Tetap di HP sampai kamu simpan atau buang draf, atau hilang sendiri setelah 30 hari. Server Saku tidak menyimpan kalimatnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stays on your phone until you save or drop the draft, or disappears after 30 days. Saku's server does not store the sentence."
           }
         }
       }
@@ -21971,6 +22031,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence you type, say or share, the picture you choose and the text read from it, and the notification and Siri text, stay on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save."
+          }
+        }
+      }
+    },
+    "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Server Saku tidak menyimpan kalimat yang dikirim ke AI. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions you save, your AI quota count, and Memory (keywords, categories, wallets) while AI is on. The original sentence you type, say or share, the picture you choose and the text read from it, and the notification and Siri text, stay on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save. Saku's server does not store the sentence sent to AI."
+          }
+        }
+      }
+    },
+    "Transaksi yang kamu simpan, jatah AI, dan Ingatan (selama AI menyala).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions you save, your AI quota, and Memory (while AI is on)."
           }
         }
       }
