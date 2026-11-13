@@ -104,19 +104,19 @@ struct SmartTrackerPrivacyPage: View {
 
     private func section(_ text: String) -> some View {
         Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-            .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 6)
+            .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 2)
     }
 
     private func row(_ icon: String, _ title: String, _ detail: String) -> some View {
         HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Color.appText).frame(width: 28).padding(.top, 2)
+            Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24).padding(.top, 2)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
-                Text(detail).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                Text(title).font(.app(17)).foregroundStyle(Color.appText)
+                Text(detail).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 24).padding(.vertical, 10).frame(minHeight: 60, alignment: .top)
+        .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64, alignment: .top)
         .accessibilityElement(children: .combine)
     }
 }

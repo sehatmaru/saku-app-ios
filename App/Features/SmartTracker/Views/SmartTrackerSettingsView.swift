@@ -84,16 +84,16 @@ struct SmartTrackerSettingsView: View {
     private var privacyRow: some View {
         NavigationLink(destination: SmartTrackerPrivacyPage().detailPage()) {
             HStack(spacing: 14) {
-                Image(systemName: "lock.shield").font(.system(size: 20)).foregroundStyle(Color.appText).frame(width: 28)
+                Image(systemName: "lock.shield").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(L("Cara data diproses")).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
-                    Text(L("Apa yang dikirim, dibuang, dan disimpan")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                    Text(L("Cara data diproses")).font(.app(17)).foregroundStyle(Color.appText)
+                    Text(L("Apa yang dikirim, dibuang, dan disimpan")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
                 }
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
                     .frame(minHeight: 44)
             }
-            .padding(.horizontal, 24).padding(.vertical, 10).frame(minHeight: 60).contentShape(Rectangle())
+            .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -110,7 +110,7 @@ struct SmartTrackerSettingsView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-            .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 6)
+            .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 2)
     }
 
     private var lock: some View {
@@ -119,25 +119,25 @@ struct SmartTrackerSettingsView: View {
 
     private func wayRow<Trailing: View>(_ way: SmartWay, _ detail: String, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 14) {
-            Image(systemName: way.icon).font(.system(size: 20)).foregroundStyle(Color.appText).frame(width: 28)
+            Image(systemName: way.icon).font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
-                Text(L(way.title)).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
-                Text(L(detail)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                Text(L(way.title)).font(.app(17)).foregroundStyle(Color.appText)
+                Text(L(detail)).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
             }
             Spacer(minLength: 8)
             trailing().frame(minWidth: 51, minHeight: 44)
         }
-        .padding(.horizontal, 24).padding(.vertical, 10).frame(minHeight: 60)
+        .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64)
     }
 
     /// Catat otomatis: the ready-made Shortcuts and the triggers that run them. The notification guide now lives inside it.
     private var autoRecordRow: some View {
         NavigationLink(destination: AutoRecordView().detailPage()) {
             HStack(spacing: 14) {
-                Image(systemName: "hand.tap").font(.system(size: 20)).foregroundStyle(Color.appText).frame(width: 28)
+                Image(systemName: "hand.tap").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(L("Catat otomatis")).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
-                    Text(L("Notifikasi, ketuk belakang, Tombol Aksi")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                    Text(L("Catat otomatis")).font(.app(17)).foregroundStyle(Color.appText)
+                    Text(L("Notifikasi, ketuk belakang, Tombol Aksi")).font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
                 }
                 Spacer(minLength: 8)
                 if !plus.isPlus {
@@ -147,7 +147,7 @@ struct SmartTrackerSettingsView: View {
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
                     .frame(minHeight: 44)
             }
-            .padding(.horizontal, 24).padding(.vertical, 10).frame(minHeight: 60).contentShape(Rectangle())
+            .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

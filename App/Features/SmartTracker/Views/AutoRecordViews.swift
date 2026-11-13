@@ -370,15 +370,15 @@ private struct ListLine<Trailing: View>: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Color.appText).frame(width: 28)
+            Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText).fixedSize(horizontal: false, vertical: true)
-                if let note { Text(note).font(.app(12)).foregroundStyle(noteTint).lineLimit(2).minimumScaleFactor(0.9) }
+                Text(title).font(.app(17)).foregroundStyle(Color.appText).fixedSize(horizontal: false, vertical: true)
+                if let note { Text(note).font(.app(13)).lineSpacing(2).foregroundStyle(noteTint) }
             }
             Spacer(minLength: 8)
             trailing
         }
-        .padding(.vertical, 10).frame(minHeight: 60)
+        .padding(.vertical, 12).frame(minHeight: 64)
         .overlay(alignment: .bottom) {
             if divider { Rectangle().fill(Color.appDivider).frame(height: 0.5).padding(.leading, 42) }
         }
@@ -423,7 +423,7 @@ struct AutoRecordView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-            .padding(.top, 28).padding(.bottom, 6)
+            .padding(.top, 12).padding(.bottom, 2)
     }
 
     /// Reading pictures and notifications is Saku Plus; saying so here saves a failed first try.
