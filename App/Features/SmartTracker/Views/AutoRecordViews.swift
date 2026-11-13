@@ -631,72 +631,73 @@ private struct ShortcutSheet: View {
     }
 
     private var preview: some View {
-        VStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Configure this automation.").font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                    .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 30, alignment: .leading).background(Color.stChip, in: Capsule())
-                Label(shortcut == .screenshot ? "When I save a screenshot to" : "When I receive a notification from", systemImage: shortcut == .screenshot ? "camera" : "bell.fill")
-                    .font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
-                if shortcut == .screenshot {
-                    Text("Photos, Files or Clipboard").font(.app(13)).foregroundStyle(Color.appTextTertiary)
-                        .padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
-                } else {
-                    FlowLayout(spacing: 6) { ForEach(AutomationGuide.apps, id: \.self) { appChip($0) } }
-                }
-            }
-            .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
-
-            if shortcut == .screenshot {
-                action("photo", "Get the latest", chip: "1 screenshot")
-                actionCard("textformat", "Read image", rows: [("Image", "Latest Screenshots")])
-            }
+        Group {
+            if shortcut == .screenshot { screenshotPreview } else { notificationPreview }
         }
         .padding(10).background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
         .accessibilityHidden(true)
     }
 
-    private func appChip(_ name: String) -> some View {
-        Text(name).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
-            .padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
-    }
-
-    private func action(_ icon: String, _ title: String, chip: String) -> some View {
-        HStack(spacing: 10) {
-            actionIcon(icon)
-            Text(title).font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
-            Text(chip).font(.app(13)).foregroundStyle(Color.appTextTertiary).padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
-            Spacer(minLength: 0)
+    private var notificationPreview: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Configure this automation.").font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                .padding(.horizontal, 12).frame(maxWidth: .infinity, minHeight: 30, alignment: .leading).background(Color.stChip, in: Capsule())
+            Label("When I receive a notification from", systemImage: "bell.fill")
+                .font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
+            FlowLayout(spacing: 6) { ForEach(AutomationGuide.apps, id: \.self) { appChip($0) } }
         }
-        .padding(12).background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
+        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.stDash, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
     }
 
-    private func actionCard(_ icon: String, _ title: String, rows: [(String, String)]) -> some View {
+    /// The two actions of the shortcut as Shortcuts draws them: Take screenshot, then Read image.
+    private var screenshotPreview: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                actionIcon(icon)
-                Text(title).font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
+                screenshotGlyph
+                Text("Take screenshot").font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
                 Spacer(minLength: 0)
             }
-            .padding(12)
-            ForEach(rows, id: \.0) { row in
+            .padding(12).frame(minHeight: 52).background(Color.appBackground, in: Capsule())
+            Rectangle().fill(Color.appDivider).frame(width: 2, height: 10)
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    actionIcon("textformat")
+                    Text("Read image").font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
+                    Spacer(minLength: 0)
+                }
+                .padding(12)
                 Divider()
                 HStack {
-                    Text(row.0).font(.app(14)).foregroundStyle(Color.appText)
+                    Text("Image").font(.app(14)).foregroundStyle(Color.appText)
                     Spacer(minLength: 8)
-                    Text(row.1).font(.app(13)).foregroundStyle(Color.appTextTertiary).padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
+                    HStack(spacing: 6) {
+                        screenshotGlyph.scaleEffect(0.75).frame(width: 22, height: 22)
+                        Text("Screenshot").font(.app(14, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+                    }
+                    .padding(.horizontal, 8).frame(height: 30).background(Color.stChip, in: RoundedRectangle(cornerRadius: 8))
+                }
+                .padding(.horizontal, 12).frame(height: 44)
+                Divider()
+                HStack {
+                    Text("Show When Run").font(.app(14)).foregroundStyle(Color.appText)
+                    Spacer(minLength: 8)
+                    Capsule().fill(Color.stChip).frame(width: 40, height: 24).overlay(alignment: .leading) { Circle().fill(Color.appBackground).padding(2) }
                 }
                 .padding(.horizontal, 12).frame(height: 44)
             }
-            Divider()
-            HStack {
-                Text("Show When Run").font(.app(14)).foregroundStyle(Color.appText)
-                Spacer(minLength: 8)
-                Capsule().fill(Color.stChip).frame(width: 40, height: 24).overlay(alignment: .leading) { Circle().fill(Color.appBackground).padding(2) }
-            }
-            .padding(.horizontal, 12).frame(height: 44)
+            .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
         }
-        .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var screenshotGlyph: some View {
+        Image(systemName: "camera.viewfinder").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+            .frame(width: 28, height: 28).background(Color.appTextTertiary, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func appChip(_ name: String) -> some View {
+        Text(name).font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
+            .padding(.horizontal, 10).frame(height: 28).background(Color.stChip, in: Capsule())
     }
 
     private func actionIcon(_ name: String) -> some View {
