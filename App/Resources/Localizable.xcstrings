@@ -4903,6 +4903,16 @@
         }
       }
     },
+    "Buka Shortcuts, tab Otomatisasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Shortcuts, Automation tab"
+          }
+        }
+      }
+    },
     "Buka Smart Tracker": {
       "localizations": {
         "en": {
@@ -8273,6 +8283,16 @@
         }
       }
     },
+    "Geser ke Pintasan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe to Shortcut"
+          }
+        }
+      }
+    },
     "Geser untuk bayar": {
       "localizations": {
         "en": {
@@ -10813,6 +10833,26 @@
         }
       }
     },
+    "Ketuk + untuk otomatisasi baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap + for a new automation"
+          }
+        }
+      }
+    },
+    "Ketuk Aksesibilitas, lalu Sentuh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap Accessibility, then Touch"
+          }
+        }
+      }
+    },
     "Ketuk Bagian Belakang": {
       "localizations": {
         "en": {
@@ -10859,6 +10899,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Triple Tap"
+          }
+        }
+      }
+    },
+    "Ketuk Tombol Tindakan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap Action Button"
           }
         }
       }
@@ -11359,6 +11409,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Make one small transaction"
+          }
+        }
+      }
+    },
+    "Lalu ketuk Berikutnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Then tap Next"
+          }
+        }
+      }
+    },
+    "Lalu ketuk Pilih Pintasan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Then tap Choose a Shortcut"
+          }
+        }
+      }
+    },
+    "Lalu pilih aplikasi bank atau e-wallet-mu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Then pick your bank or e-wallet app"
           }
         }
       }
@@ -15243,6 +15323,46 @@
         }
       }
     },
+    "Pilih Jalankan Segera": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick Run Immediately"
+          }
+        }
+      }
+    },
+    "Pilih Ketuk Bagian Belakang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick Back Tap"
+          }
+        }
+      }
+    },
+    "Pilih Ketuk Dua Kali atau Ketuk Tiga Kali": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick Double Tap or Triple Tap"
+          }
+        }
+      }
+    },
+    "Pilih Notifikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick Notification"
+          }
+        }
+      }
+    },
     "Pilih Notifikasi dan aplikasi bank": {
       "localizations": {
         "en": {
@@ -16519,6 +16639,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your Saku is ready to use."
+          }
+        }
+      }
+    },
+    "Salah satu saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Either one"
           }
         }
       }

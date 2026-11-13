@@ -109,21 +109,27 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The steps after the install.
+    /// The steps after the install, one tap each, the place to tap named in the title.
     var steps: [RecipeStep] {
         let pick = RecipeStep(icon: "square.stack.3d.up", title: L("Pilih pintasannya"), note: shortcut.name)
-        let automation = RecipeStep(icon: "clock.arrow.2.circlepath", title: L("Buat otomatisasi baru"), note: "Shortcuts › " + L("Otomatisasi") + " › " + L("Baru"))
+        let openShortcuts = RecipeStep(icon: "square.stack.3d.up", title: L("Buka Shortcuts, tab Otomatisasi"))
+        let newOne = RecipeStep(icon: "plus", title: L("Ketuk + untuk otomatisasi baru"))
+        let runNow = RecipeStep(icon: "play.circle", title: L("Pilih Jalankan Segera"), note: L("Lalu ketuk Berikutnya"))
+        let settings = RecipeStep(icon: "gearshape", title: L("Buka Pengaturan"))
         switch self {
         case .notification:
-            return [automation,
-                    RecipeStep(icon: "bell", title: L("Pilih Notifikasi dan aplikasi bank"), note: L("Jalankan Segera")), pick]
+            return [openShortcuts, newOne,
+                    RecipeStep(icon: "bell", title: L("Pilih Notifikasi"), note: L("Lalu pilih aplikasi bank atau e-wallet-mu")), runNow, pick]
         case .screenshot:
-            return [automation, RecipeStep(icon: "camera.viewfinder", title: L("Pilih Screenshot"), note: L("Jalankan Segera")), pick]
+            return [openShortcuts, newOne, RecipeStep(icon: "camera.viewfinder", title: L("Pilih Screenshot")), runNow, pick]
         case .backTap:
-            return [RecipeStep(icon: "hand.tap", title: L("Buka Ketuk Bagian Belakang"), note: L("Pengaturan") + " › " + L("Aksesibilitas") + " › " + L("Sentuh")),
-                    RecipeStep(icon: "2.circle", title: L("Pilih dua atau tiga ketukan")), pick]
+            return [settings,
+                    RecipeStep(icon: "accessibility", title: L("Ketuk Aksesibilitas, lalu Sentuh")),
+                    RecipeStep(icon: "hand.tap", title: L("Pilih Ketuk Bagian Belakang")),
+                    RecipeStep(icon: "2.circle", title: L("Pilih Ketuk Dua Kali atau Ketuk Tiga Kali"), note: L("Salah satu saja")), pick]
         case .actionButton:
-            return [RecipeStep(icon: "button.programmable", title: L("Buka Tombol Tindakan"), note: L("Pengaturan")), pick]
+            return [settings, RecipeStep(icon: "button.programmable", title: L("Ketuk Tombol Tindakan")),
+                    RecipeStep(icon: "square.stack.3d.up", title: L("Geser ke Pintasan"), note: L("Lalu ketuk Pilih Pintasan")), pick]
         }
     }
 
@@ -377,7 +383,7 @@ struct AutoRecordView: View {
 
                 Label(L("Semuanya masuk sebagai draf. Tidak ada yang tercatat sebelum kamu cek."), systemImage: "lock")
                     .font(.app(13)).lineSpacing(3).foregroundStyle(Color.appTextSecondary)
-                    .padding(.top, 20).padding(.bottom, 40)
+                    .padding(.top, 24).padding(.bottom, 40)
             }
             .padding(.horizontal, 24)
             .id(refresh)
@@ -393,7 +399,7 @@ struct AutoRecordView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-            .padding(.top, 24).padding(.bottom, 2)
+            .padding(.top, 28).padding(.bottom, 6)
     }
 
     /// Reading pictures and notifications is Saku Plus; saying so here saves a failed first try.
@@ -467,7 +473,7 @@ struct AutoRecipeDetailView: View {
                 Text(recipe.summary).font(.app(15)).lineSpacing(3).foregroundStyle(Color.appBody).padding(.top, 14)
 
                 if recipe.isAvailable {
-                    steps.padding(.top, 10)
+                    steps.padding(.top, 24)
                     if recipe == .notification {
                         NavigationLink(destination: NotificationSetupGuideView().detailPage()) {
                             HStack(spacing: 8) {
@@ -478,7 +484,7 @@ struct AutoRecipeDetailView: View {
                             }
                             .frame(minHeight: 44).contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain).padding(.top, 4)
+                        .buttonStyle(.plain).padding(.top, 8)
                     }
                 } else {
                     unavailable.padding(.top, 16)
@@ -528,15 +534,15 @@ struct AutoRecipeDetailView: View {
             VStack(spacing: 4) {
                 Text("\(number)").font(.app(14, weight: .bold)).foregroundStyle(.white)
                     .frame(width: 28, height: 28).background(Color.stGreen, in: Circle())
-                if number < count { Rectangle().fill(Color.stGreen.opacity(0.4)).frame(width: 2).frame(maxHeight: .infinity) }
+                if number < count { Rectangle().fill(Color.stGreen.opacity(0.4)).frame(width: 2).frame(maxHeight: .infinity).padding(.bottom, 4) }
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText).fixedSize(horizontal: false, vertical: true)
                 if let note { Text(note).font(.app(13)).foregroundStyle(noteTint).fixedSize(horizontal: false, vertical: true) }
             }
-            .padding(.top, 3).padding(.bottom, 18)
+            .padding(.top, 4).padding(.bottom, 26)
             Spacer(minLength: 8)
-            trailing().padding(.top, -4)
+            trailing().frame(height: 28)
         }
     }
 
