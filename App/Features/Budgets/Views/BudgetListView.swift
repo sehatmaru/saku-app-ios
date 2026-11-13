@@ -88,11 +88,7 @@ struct BudgetListView: View {
                         if viewModel.budgetItems.isEmpty {
                             emptyState
                         } else {
-                            if let summary {
-                                summaryBlock(summary)
-                                rhythmSection(summary)
-                            }
-                            attentionSection
+                            if let summary { summaryBlock(summary) }
                             budgetList
                         }
                     }
@@ -271,119 +267,14 @@ struct BudgetListView: View {
                 .padding(.top, 8)
             SegmentBar(value: s.spentShare, color: tint, delay: 0.15, isActive: !isPeriodHidden, replays: false, marker: s.timeShare)
                 .padding(.top, 24)
-            HStack {
-                (Text(L("Terpakai") + " ") + Text(money(s.spent)).fontWeight(.medium).foregroundStyle(Color.appText))
-                Spacer()
-                (Text(L("Budget") + " ") + Text(money(s.total)).fontWeight(.medium).foregroundStyle(Color.appText))
-            }
-            .font(.app(15))
-            .foregroundStyle(Color.appTextSecondary)
-            .monospacedDigit()
-            .padding(.top, 12)
-            Text(paceText(s.pace))
-                .font(.app(15, weight: .medium))
-                .foregroundStyle(paceColor(s.pace))
-                .padding(.top, 14)
+            Text(L("%@ dari %@", money(s.spent), money(s.total)))
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .monospacedDigit()
+                .padding(.top, 12)
         }
         .padding(.horizontal, 24)
         .padding(.top, 22)
-    }
-
-    /// The three figures behind the pace, kept out of the hero.
-    private func rhythmSection(_ s: BudgetSummary) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: L("Ritme belanja"))
-                .padding(.bottom, 4)
-            rhythmRow(L("Bisa dipakai per hari"), money(s.perDayLeft))
-            rhythmRow(L("Rata-rata per hari"), money(s.dailyAverage))
-            rhythmRow(L("Proyeksi akhir periode"), s.projected.map(money) ?? "–",
-                      note: s.projected == nil ? L("Muncul setelah hari ke-%lld", BudgetSummary.projectionAfterDays) : nil,
-                      warn: (s.projected ?? 0) > s.total)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 26)
-    }
-
-    private func rhythmRow(_ label: String, _ value: String, note: String? = nil, warn: Bool = false) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(.app(16))
-                    .foregroundStyle(Color.appText)
-                if let note {
-                    Text(note).font(.app(13)).foregroundStyle(Color.appTextTertiary)
-                }
-            }
-            Spacer(minLength: 12)
-            Text(value)
-                .font(.app(16, weight: .medium))
-                .foregroundStyle(warn ? Color.appError : Color.appText)
-                .monospacedDigit()
-        }
-        .padding(.vertical, 10)
-        .accessibilityElement(children: .combine)
-    }
-
-    private func paceText(_ pace: BudgetSummary.Pace) -> String {
-        switch pace {
-        case .onPace: L("Sesuai garis ritme hari ini")
-        case .fast(let gap): L("Lebih cepat %@ dari garis ritme", money(gap))
-        case .slow(let gap): L("Lebih hemat %@ dari garis ritme", money(gap))
-        case .over: L("Pengeluaran sudah melewati total budget.")
-        }
-    }
-
-    private func paceColor(_ pace: BudgetSummary.Pace) -> Color {
-        switch pace {
-        case .onPace: .appTextSecondary
-        case .fast: .appWarning
-        case .slow: .appPrimary
-        case .over: .appError
-        }
-    }
-
-    /// The few budgets closest to (or past) their limit, so they don't hide in the long list.
-    @ViewBuilder
-    private var attentionSection: some View {
-        let items = BudgetSummary.needingAttention(viewModel.visibleBudgets).compactMap { budget in
-            setItems.first { $0.budget?.id == budget.id }
-        }
-        if !items.isEmpty {
-            VStack(alignment: .leading, spacing: 0) {
-                SectionHeader(title: L("Perlu perhatian"))
-                    .padding(.horizontal, 24)
-                    .padding(.top, 22)
-                    .padding(.bottom, 4)
-                ForEach(items) { item in
-                    NavigationLink(destination: budgetDetailDestination(for: item).detailPage()) {
-                        HStack(spacing: 14) {
-                            Image(systemName: item.category.icon ?? "tag")
-                                .font(.system(size: 20))
-                                .foregroundStyle(Color.appTextSecondary)
-                                .frame(width: 24)
-                            Text(item.category.name)
-                                .font(.app(16, weight: .medium))
-                                .foregroundStyle(Color.appText)
-                                .lineLimit(1)
-                            Spacer(minLength: 8)
-                            attentionStatus(item.budget!)
-                                .font(.app(14, weight: .medium))
-                                .monospacedDigit()
-                        }
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 24)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(RowPressStyle())
-                }
-            }
-        }
-    }
-
-    private func attentionStatus(_ budget: Budget) -> some View {
-        budget.progress >= 1
-            ? Text(L("Lewat %@", money(-budget.remaining))).foregroundStyle(Color.appError)
-            : Text(L("%lld%% terpakai", Int((budget.progress * 100).rounded()))).foregroundStyle(Color.appWarning)
     }
 
     // MARK: Budgets

@@ -4463,16 +4463,6 @@
         }
       }
     },
-    "Bisa dipakai per hari": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Can spend per day"
-          }
-        }
-      }
-    },
     "Bisa dipakai untuk": {
       "localizations": {
         "en": {
@@ -12223,26 +12213,6 @@
         }
       }
     },
-    "Lebih cepat %@ dari garis ritme": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ ahead of the pace line"
-          }
-        }
-      }
-    },
-    "Lebih hemat %@ dari garis ritme": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ under the pace line"
-          }
-        }
-      }
-    },
     "Lebih sedikit": {
       "localizations": {
         "en": {
@@ -13783,16 +13753,6 @@
         }
       }
     },
-    "Muncul setelah hari ke-%lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Shows after day %lld"
-          }
-        }
-      }
-    },
     "NAMAMU": {
       "localizations": {
         "en": {
@@ -15183,16 +15143,6 @@
         }
       }
     },
-    "Pengeluaran sudah melewati total budget.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spending has passed the total budget."
-          }
-        }
-      }
-    },
     "Pengeluaran tersimpan": {
       "localizations": {
         "en": {
@@ -16573,16 +16523,6 @@
         }
       }
     },
-    "Proyeksi akhir periode": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Projected by period end"
-          }
-        }
-      }
-    },
     "Proyeksi pengeluaran akhir periode": {
       "localizations": {
         "en": {
@@ -16939,16 +16879,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "One-period summary, ready to share"
-          }
-        }
-      }
-    },
-    "Ritme belanja": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spending pace"
           }
         }
       }
@@ -18459,16 +18389,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Server only when needed"
-          }
-        }
-      }
-    },
-    "Sesuai garis ritme hari ini": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "On today's pace line"
           }
         }
       }

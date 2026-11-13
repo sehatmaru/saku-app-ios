@@ -1740,13 +1740,5 @@
   "Sudah baik": "Doing well",
   "Belum dinilai": "Not rated yet",
   "Cara menambah +%lld poin": "How to add +%lld points",
-  "Cara memulai": "How to start",
-  "Pengeluaran sudah melewati total budget.": "Spending has passed the total budget.",
-  "Sesuai garis ritme hari ini": "On today's pace line",
-  "Lebih cepat %@ dari garis ritme": "%@ ahead of the pace line",
-  "Lebih hemat %@ dari garis ritme": "%@ under the pace line",
-  "Ritme belanja": "Spending pace",
-  "Bisa dipakai per hari": "Can spend per day",
-  "Proyeksi akhir periode": "Projected by period end",
-  "Muncul setelah hari ke-%lld": "Shows after day %lld"
+  "Cara memulai": "How to start"
 }
