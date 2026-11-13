@@ -11,10 +11,6 @@ struct HealthDetailView: View {
                     hero
                     SectionDivider()
                     factorsSection
-                    if !health.recommendations.isEmpty {
-                        SectionDivider()
-                        recommendationsSection
-                    }
                 } else {
                     emptyHero
                 }
@@ -150,58 +146,25 @@ struct HealthDetailView: View {
                     .foregroundStyle(Color.appTextSecondary)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
+                if let tip = factor.tip {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if factor.missing > 0 {
+                            Text("+\(factor.missing) poin")
+                                .font(.app(13, weight: .semibold))
+                                .foregroundStyle(Color.appPrimary)
+                                .monospacedDigit()
+                        }
+                        Text(tip)
+                            .font(.app(14))
+                            .foregroundStyle(Color.appBody)
+                            .lineSpacing(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, 4)
+                }
             }
         }
         .padding(.vertical, 14)
-        .accessibilityElement(children: .combine)
-    }
-
-    // MARK: Recommendations
-
-    private var recommendationsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: L("Rekomendasi"))
-            VStack(spacing: 10) {
-                ForEach(Array(health.recommendations.enumerated()), id: \.element.id) { index, factor in
-                    recommendationCard(factor, number: index + 1)
-                }
-            }
-            .padding(.top, 16)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-    }
-
-    private func recommendationCard(_ factor: FinancialHealth.Factor, number: Int) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Text("\(number)")
-                .font(.app(14, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 26, height: 26)
-                .background(number == 1 ? health.color : Color.appTextTertiary, in: Circle())
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(factor.title)
-                        .font(.app(16, weight: .semibold))
-                        .foregroundStyle(Color.appText)
-                    Spacer()
-                    if factor.missing > 0 {
-                        Text("+\(factor.missing) poin")
-                            .font(.app(13, weight: .medium))
-                            .foregroundStyle(Color.appPrimary)
-                            .monospacedDigit()
-                    }
-                }
-                Text(factor.tip ?? "")
-                    .font(.app(15))
-                    .foregroundStyle(Color.appBody)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .combine)
     }
 }
