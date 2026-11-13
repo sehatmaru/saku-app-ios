@@ -5113,16 +5113,6 @@
         }
       }
     },
-    "Buka budget": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open budget"
-          }
-        }
-      }
-    },
     "Buka dengan Saku Plus": {
       "localizations": {
         "en": {
@@ -5139,16 +5129,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open wallet"
-          }
-        }
-      }
-    },
-    "Buka kartu kredit": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open credit cards"
           }
         }
       }
@@ -12569,16 +12549,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "See all icons"
-          }
-        }
-      }
-    },
-    "Lihat transaksi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "View transactions"
           }
         }
       }

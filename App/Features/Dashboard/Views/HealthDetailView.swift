@@ -3,10 +3,6 @@ import SwiftUI
 /// Kesehatan finansial in full: the score, every factor behind it, and what to do next.
 struct HealthDetailView: View {
     let health: FinancialHealth
-    /// Opens the screen a recommendation points to; the caller decides where each factor goes.
-    var onAction: (FinancialHealth.Kind) -> Void = { _ in }
-
-    @Environment(\.dismiss) private var dismiss
     /// Factors whose advice box the user toggled; nil until then, so the biggest gap starts open.
     @State private var openKinds: Set<FinancialHealth.Kind>?
 
@@ -175,27 +171,7 @@ struct HealthDetailView: View {
                     .foregroundStyle(Color.appBody)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
-                if let label = factor.actionLabel {
-                    Button {
-                        dismiss()
-                        onAction(factor.kind)
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(label)
-                            Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold))
-                        }
-                        .font(.app(14, weight: .semibold))
-                        .foregroundStyle(tint)
-                        .padding(.horizontal, 14)
-                        .frame(height: 36)
-                        .overlay(Capsule().stroke(tint, lineWidth: 1))
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .padding(.top, 12)
-                    .padding(.bottom, 14)
-                } else {
-                    Color.clear.frame(height: 14)
-                }
+                Color.clear.frame(height: 14)
             }
         }
         .padding(.horizontal, 14)
@@ -257,17 +233,4 @@ extension FinancialHealth {
 
 extension FinancialHealth.Factor {
     var color: Color { FinancialHealth.color(forShare: ratio) }
-}
-
-extension FinancialHealth.Factor {
-    /// The button on the advice box; nil when there is nowhere better than this page to act.
-    var actionLabel: String? {
-        switch kind {
-        case .spendable: L("Lihat transaksi")
-        case .cashflow: isPending ? L("Catat pemasukan") : L("Lihat transaksi")
-        case .emergencyFund: L("Buka dompet")
-        case .debt: L("Buka kartu kredit")
-        case .budget: L("Buka budget")
-        }
-    }
 }

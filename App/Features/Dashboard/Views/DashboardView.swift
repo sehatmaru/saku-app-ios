@@ -497,20 +497,8 @@ struct DashboardView: View {
     }
 
     /// The pill that opens Kesehatan finansial; without a score yet it is an empty ring and the page says when one comes.
-    /// Where each Kesehatan finansial recommendation is acted on.
-    private func openHealthAction(_ kind: FinancialHealth.Kind) {
-        switch kind {
-        case .spendable: selectedTab = .transactions
-        case .cashflow:
-            if viewModel.health.factors.first(where: { $0.kind == .cashflow })?.isPending == true { showAddSheet = true }
-            else { selectedTab = .transactions }
-        case .emergencyFund, .debt: homePath.append(HomeRoute.wallets)
-        case .budget: selectedTab = .budget
-        }
-    }
-
     private func healthPill(_ health: FinancialHealth) -> some View {
-        NavigationLink { HealthDetailView(health: health, onAction: openHealthAction).detailPage() } label: {
+        NavigationLink { HealthDetailView(health: health).detailPage() } label: {
             HealthPill(score: health.isAvailable ? health.score : nil)
         }
         .buttonStyle(PressScaleStyle())
