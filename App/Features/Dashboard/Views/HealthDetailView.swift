@@ -75,18 +75,9 @@ struct HealthDetailView: View {
                         .foregroundStyle(Color.appTextSecondary)
                 }
                 Spacer()
-                if let label = health.label {
-                    Text(label)
-                        .font(.app(17, weight: .semibold))
-                        .foregroundStyle(health.color)
-                } else {
-                    Text("Sementara")
-                        .font(.app(14, weight: .semibold))
-                        .foregroundStyle(Color.appTextSecondary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(Color.appFill, in: Capsule())
-                }
+                Text(health.label)
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(health.color)
             }
 
             SegmentBar(value: Double(health.score) / 100, color: health.color, count: 40, height: 22, spacing: 3)
@@ -105,9 +96,7 @@ struct HealthDetailView: View {
 
     private var verdict: String {
         if health.isHealthy { return L("Keuanganmu sehat. Pertahankan kebiasaan ini.") }
-        guard let weakest = health.weakest else {
-            return health.isProvisional ? L("Skor sementara. Skor lengkap muncul setelah 3 bulan pemakaian.") : ""
-        }
+        guard let weakest = health.weakest else { return "" }
         return L("%@ paling menahan skormu. Perbaiki itu dulu untuk menambah hingga %lld poin.", weakest.title, weakest.missing)
     }
 
@@ -210,8 +199,8 @@ extension FinancialHealth {
 
     static func color(forShare share: Double) -> Color {
         switch share {
-        case 0.6...: .appPrimary
-        case 0.4..<0.6: .appWarning
+        case 0.8...: .appPrimary
+        case 0.6..<0.8: .appWarning
         default: .appError
         }
     }

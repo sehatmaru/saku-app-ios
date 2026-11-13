@@ -13,17 +13,22 @@ final class FinancialHealthTests: XCTestCase {
         liquid: Double = 50_000_000,
         debt: Double = 0, limit: Double = 0, hasCard: Bool = false,
         budget: Double = 5_000_000, spent: Double = 2_000_000, progress: Double = 0.5,
-        activeDays: Int = 25,
-        overdue: [FinancialHealth.OverdueBill] = []
+        overdue: [FinancialHealth.OverdueBill] = [],
+        total: Double? = nil, safe: Double? = 50_000_000, daysLeft: Int = 15
     ) -> FinancialHealth.Input {
         .init(monthlyIncome: income, monthlyExpense: expense, liquidBalance: liquid,
               creditDebt: debt, creditLimit: limit, hasCreditCard: hasCard,
               budgetTotal: budget, budgetSpent: spent, monthProgress: progress,
-              activeDays: activeDays, topExpenseCategory: "Makan", hasTransactions: true, overdueBills: overdue)
+              topExpenseCategory: "Makan", hasTransactions: true, overdueBills: overdue,
+              totalBalance: total, safeToSpend: safe, daysLeft: daysLeft)
+    }
+
+    private func factor(_ health: FinancialHealth, _ kind: FinancialHealth.Kind) -> FinancialHealth.Factor? {
+        health.factors.first { $0.kind == kind }
     }
 
     private func points(_ health: FinancialHealth, _ kind: FinancialHealth.Kind) -> Int {
-        health.factors.first { $0.kind == kind }!.points
+        factor(health, kind)!.points
     }
 
     func testHealthyUserScoresFullWithNoTips() {
@@ -31,25 +36,85 @@ final class FinancialHealthTests: XCTestCase {
         XCTAssertEqual(health.score, 100)
         XCTAssertEqual(health.label, "Sehat")
         XCTAssertTrue(health.recommendations.isEmpty)
+        // No credit card: that factor is not there, and the score still runs on a 100 scale.
+        XCTAssertNil(factor(health, .debt))
+        XCTAssertEqual(health.factors.map(\.kind), [.spendable, .cashflow, .emergencyFund, .budget])
     }
 
     func testOverspendingAndNoSavingsGetTipsWorstFirst() {
         let health = FinancialHealth(input(expense: [12_000_000, 12_000_000, 12_000_000], liquid: 0,
-                                           budget: 0, spent: 0))
+                                           budget: 0, spent: 0, safe: 0))
+        XCTAssertEqual(points(health, .spendable), 0)
         XCTAssertEqual(points(health, .cashflow), 0) // −20% savings rate
         XCTAssertEqual(points(health, .emergencyFund), 0)
-        XCTAssertEqual(points(health, .budget), 0)
-        XCTAssertEqual(health.weakest?.kind, .cashflow) // 30 points missing beats 25 and 15
+        XCTAssertTrue(factor(health, .budget)!.isPending) // no budget: left out, not punished
+        XCTAssertEqual(health.weakest?.kind, .spendable) // 30 points missing beats 20 and 20
         XCTAssertEqual(health.label, "Perlu perbaikan")
     }
 
-    func testEmergencyFundAveragesOnlyActiveMonths() {
-        // One active month of Rp5 jt spending; Rp20 jt covers 4 months, not 12.
-        let health = FinancialHealth(input(income: [0, 0, 10_000_000], expense: [0, 0, 5_000_000], liquid: 20_000_000))
-        XCTAssertEqual(points(health, .emergencyFund), 18)
+    func testSpendableFollowsPerDayAgainstUsualSpending() {
+        // Rp7 jt a month is about Rp233 rb a day; 15 days left.
+        XCTAssertEqual(points(FinancialHealth(input(safe: 3_500_000)), .spendable), 30)   // 1.0x
+        XCTAssertEqual(points(FinancialHealth(input(safe: 1_750_000)), .spendable), 18)   // 0.5x
+        XCTAssertEqual(points(FinancialHealth(input(safe: 400_000)), .spendable), 5)      // thin
+        XCTAssertEqual(points(FinancialHealth(input(safe: -963_674)), .spendable), 0)
+        XCTAssertNotNil(factor(FinancialHealth(input(safe: -963_674)), .spendable)?.tip)
+        // Not known (a past period in a report): the factor is not there.
+        XCTAssertNil(factor(FinancialHealth(input(safe: nil)), .spendable))
     }
 
-    private func debt(_ health: FinancialHealth) -> FinancialHealth.Factor { health.factors.first { $0.kind == .debt }! }
+    func testEmergencyFundAveragesOnlyActiveMonths() {
+        // One active month of Rp5 jt spending; Rp20 jt covers 4 months, not 12: 14 + 6 / 3.
+        let health = FinancialHealth(input(income: [0, 0, 10_000_000], expense: [0, 0, 5_000_000], liquid: 20_000_000))
+        XCTAssertEqual(points(health, .emergencyFund), 16)
+    }
+
+    func testEmergencyFundMarks() {
+        func fund(_ months: Double) -> Int {
+            points(FinancialHealth(input(expense: [10_000_000, 10_000_000, 10_000_000], liquid: 10_000_000 * months)), .emergencyFund)
+        }
+        XCTAssertEqual(fund(0.5), 3)
+        XCTAssertEqual(fund(1), 6)
+        XCTAssertEqual(fund(3), 14)
+        XCTAssertEqual(fund(6), 20)
+        XCTAssertEqual(fund(12), 20)
+    }
+
+    func testEmergencyFundCountsEveryWalletIncludingInvestments() {
+        // Cash is only Rp1 jt but all wallets hold Rp70 jt: 10 months of Rp7 jt.
+        let health = FinancialHealth(input(liquid: 1_000_000, total: 70_000_000))
+        XCTAssertEqual(points(health, .emergencyFund), 20)
+    }
+
+    func testEmergencyFundWaitsForTwoWeeksOfData() {
+        var young = input(liquid: 0)
+        young.daysOfData = 10
+        let health = FinancialHealth(young)
+        XCTAssertTrue(factor(health, .emergencyFund)!.isPending)
+        // The score runs on what is rated: spendable 30, cashflow 20, budget 10 -> full marks out of 60.
+        XCTAssertEqual(health.score, 100)
+        young.daysOfData = FinancialHealth.minDays
+        XCTAssertFalse(factor(FinancialHealth(young), .emergencyFund)!.isPending)
+    }
+
+    func testRunningCycleIsProjectedToAWholeCycle() {
+        // Half a cycle gone with Rp3 jt spent: about Rp6 jt a cycle, so Rp12 jt covers 2 months.
+        var running = input(income: [10_000_000], expense: [3_000_000], liquid: 12_000_000, progress: 0.5)
+        running.cyclesAreRunning = true
+        XCTAssertEqual(running.averageMonthlyExpense, 6_000_000)
+        XCTAssertEqual(points(FinancialHealth(running), .emergencyFund), 10) // 2 months: 6 + 8 / 2
+    }
+
+    func testNoIncomeRecordedLeavesCashflowOut() {
+        let health = FinancialHealth(input(income: [0, 0, 0], expense: [1_000_000, 1_000_000, 1_000_000]))
+        let flow = factor(health, .cashflow)!
+        XCTAssertTrue(flow.isPending)
+        XCTAssertNotNil(flow.tip)
+        XCTAssertEqual(flow.missing, 0)
+        XCTAssertEqual(health.score, 100) // the rest is on track
+    }
+
+    private func debt(_ health: FinancialHealth) -> FinancialHealth.Factor { factor(health, .debt)! }
 
     func testHighUseButCashCoversTheBillScoresFullWithAGentleTip() {
         // 85% of the limit, cash (Rp50 jt) well above the card balance, nothing late.
@@ -71,8 +136,8 @@ final class FinancialHealthTests: XCTestCase {
         let light = FinancialHealth(input(liquid: 100_000, debt: 500_000, limit: 10_000_000, hasCard: true))
         XCTAssertEqual(points(light, .debt), 8)
         XCTAssertNil(debt(light).tip)
-        // No card: full points.
-        XCTAssertEqual(points(FinancialHealth(input()), .debt), 20)
+        // A card with nothing owed: full points.
+        XCTAssertEqual(points(FinancialHealth(input(hasCard: true)), .debt), 20)
     }
 
     func testOverdueBillCapsTheDebtFactor() {
@@ -99,49 +164,24 @@ final class FinancialHealthTests: XCTestCase {
     }
 
     func testBudgetPace() {
-        XCTAssertEqual(points(FinancialHealth(input(spent: 2_500_000, progress: 0.5)), .budget), 15)
+        XCTAssertEqual(points(FinancialHealth(input(spent: 2_500_000, progress: 0.5)), .budget), 10)
         XCTAssertEqual(points(FinancialHealth(input(spent: 3_500_000, progress: 0.5)), .budget), 0)
         XCTAssertEqual(points(FinancialHealth(input(spent: 6_000_000, progress: 0.9)), .budget), 0) // over budget
     }
 
-    func testYoungAccountScoresOnlyTheFactorsWithEnoughData() {
-        var young = input()
-        young.daysOfData = 30
-        let early = FinancialHealth(young)
-        XCTAssertTrue(early.isAvailable)
-        XCTAssertTrue(early.isPartial)
-        XCTAssertEqual(early.factors.filter(\.isPending).map(\.kind), [.cashflow, .emergencyFund])
-        // Debt 20/20, budget 15/15, habit 10/10 -> full marks out of the 45 that count.
-        XCTAssertEqual(early.score, 100)
-        XCTAssertTrue(early.recommendations.isEmpty)
-
-        young.daysOfData = FinancialHealth.minDays
-        let ready = FinancialHealth(young)
-        XCTAssertFalse(ready.isPartial)
-        XCTAssertEqual(points(ready, .cashflow), 30)
-    }
-
-    func testPendingFactorsDoNotDragTheScoreDown() {
-        var young = input(budget: 5_000_000, spent: 6_000_000)   // over budget: 0/15
-        young.daysOfData = 10
-        let health = FinancialHealth(young)
-        // (20 + 0 + 10) of 45 possible, not 30 of 100.
-        XCTAssertEqual(health.score, 67)
-    }
-
-    func testYoungAccountIsProvisionalAndNeverRated() {
-        var young = input()          // no card, budget on track, logged 25 days
-        young.daysOfData = 20
-        let health = FinancialHealth(young)
-        XCTAssertTrue(health.isProvisional)
-        XCTAssertFalse(health.isHealthy)
-        XCTAssertNil(health.label)
-        XCTAssertEqual(health.score, 100) // still computed, just not rated
-
-        young.daysOfData = FinancialHealth.minDays
-        let full = FinancialHealth(young)
-        XCTAssertFalse(full.isProvisional)
-        XCTAssertEqual(full.label, "Sehat")
+    func testLabelsUseTheSameCutOffsAsTheRingOnBeranda() {
+        // Only "Bisa dipakai" is rated (no income, no budget, 5 days of data): its points over 30 are the score.
+        func rated(safe: Double) -> FinancialHealth {
+            var user = input(income: [0], expense: [7_000_000], budget: 0, safe: safe)
+            user.daysOfData = 5
+            return FinancialHealth(user)
+        }
+        XCTAssertEqual(rated(safe: 3_500_000).score, 100)
+        XCTAssertEqual(rated(safe: 3_500_000).label, "Sehat")
+        XCTAssertEqual(rated(safe: 1_750_000).score, 60)
+        XCTAssertEqual(rated(safe: 1_750_000).label, "Cukup sehat")
+        XCTAssertEqual(rated(safe: 1_000_000).score, 33) // 10 of 30
+        XCTAssertEqual(rated(safe: 1_000_000).label, "Perlu perbaikan")
     }
 
     // MARK: Payday cycle inputs

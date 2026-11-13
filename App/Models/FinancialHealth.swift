@@ -1,13 +1,14 @@
 import Foundation
 
-/// The 0–100 financial health score: five factors, each worth a fixed share, plus a tip
-/// for every factor that is holding the score back.
+/// The 0–100 financial health score: up to five factors, each worth a fixed share, plus a tip for every
+/// factor that is holding the score back. A factor that cannot be rated yet (no budget, no income recorded,
+/// too little data) or does not apply (no credit card) is left out, and the score is worked out from the rest.
 struct FinancialHealth {
     struct Input {
-        /// Income and expense per month, oldest first; the last entry is the current month.
+        /// Income and expense per payday cycle, oldest first. The last entry is the running cycle when `cyclesAreRunning`.
         var monthlyIncome: [Double]
         var monthlyExpense: [Double]
-        /// Cash, bank and e-wallet balances; credit cards excluded.
+        /// Cash, bank and e-wallet balances; credit cards and investments excluded. What pays a card bill off.
         var liquidBalance: Double
         var creditDebt: Double
         /// Sum of the credit cards' limits; 0 when no card has one.
@@ -15,16 +16,29 @@ struct FinancialHealth {
         var hasCreditCard: Bool
         var budgetTotal: Double
         var budgetSpent: Double
-        /// Share of the current month already gone, 0...1.
+        /// Share of the current cycle already gone, 0...1.
         var monthProgress: Double
-        /// Days in the last 30 with at least one transaction.
-        var activeDays: Int
         var topExpenseCategory: String?
         var hasTransactions: Bool
-        /// Days between the first real transaction and today. The score needs `minDays` of it.
+        /// Days between the first real transaction and today. The emergency fund needs `minDays` of it.
         var daysOfData: Int = FinancialHealth.minDays
         /// Card statements still owed past their due date.
         var overdueBills: [OverdueBill] = []
+        /// Every wallet's balance, investments included, cards excluded: what the emergency fund counts. Falls back to `liquidBalance`.
+        var totalBalance: Double? = nil
+        /// What Beranda calls "Bisa dipakai"; nil when it is not known (past periods in reports), which leaves that factor out.
+        var safeToSpend: Double? = nil
+        /// Days left in the cycle, today counted.
+        var daysLeft: Int = 1
+        /// True when only the running cycle exists, so its spending is projected to a whole cycle.
+        var cyclesAreRunning = false
+
+        /// Spending in one cycle, on average over the cycles shown; the running cycle is projected.
+        var averageMonthlyExpense: Double {
+            if cyclesAreRunning { return (monthlyExpense.last ?? 0) / max(monthProgress, 0.2) }
+            let active = zip(monthlyIncome, monthlyExpense).filter { $0 + $1 > 0 }.map(\.1)
+            return active.isEmpty ? 0 : active.reduce(0, +) / Double(active.count)
+        }
     }
 
     struct OverdueBill: Equatable {
@@ -34,7 +48,7 @@ struct FinancialHealth {
     }
 
     enum Kind: CaseIterable {
-        case cashflow, emergencyFund, debt, budget, habit
+        case spendable, cashflow, emergencyFund, debt, budget
     }
 
     struct Factor: Identifiable {
@@ -45,42 +59,40 @@ struct FinancialHealth {
         let summary: String
         /// What to do about it; nil when the factor is fine.
         let tip: String?
-        /// Needs three months of history, so it is left out of the score for now.
+        /// Not rated yet: shown with a dash and left out of the score.
         var isPending = false
 
         var id: Kind { kind }
         var ratio: Double { isPending ? 0 : Double(points) / Double(maxPoints) }
-        var missing: Int { maxPoints - points }
+        var missing: Int { isPending ? 0 : maxPoints - points }
 
         var title: String {
             switch kind {
+            case .spendable: L("Bisa dipakai")
             case .cashflow: L("Arus kas")
             case .emergencyFund: L("Dana darurat")
             case .debt: L("Utang kartu kredit")
             case .budget: L("Budget")
-            case .habit: L("Kebiasaan mencatat")
             }
         }
 
         var icon: String {
             switch kind {
+            case .spendable: "checkmark.shield"
             case .cashflow: "arrow.left.arrow.right"
             case .emergencyFund: "shield"
             case .debt: "creditcard"
             case .budget: "chart.pie"
-            case .habit: "calendar"
             }
         }
     }
 
-    /// Cash flow and emergency fund compare months, so they wait for this much history.
-    static let minDays = 90
+    /// The emergency fund compares against what you spend, so it waits for this many days of history.
+    static let minDays = 14
 
     let factors: [Factor]
     /// False until there is something to score; the UI then explains instead of showing 0.
     let isAvailable: Bool
-    /// Some factors still wait for `minDays` of history; the score covers the others only.
-    var isPartial: Bool { factors.contains(where: \.isPending) }
 
     /// Points earned out of the points the rated factors are worth, on a 0–100 scale.
     var score: Int {
@@ -90,13 +102,9 @@ struct FinancialHealth {
         return Int((Double(rated.reduce(0) { $0 + $1.points }) * 100 / Double(possible)).rounded())
     }
 
-    /// Still missing history for some factors (`isPartial`): the score shows, the rating does not.
-    var isProvisional: Bool { isPartial }
-
-    /// nil while provisional: a rating from partial data would mislead.
-    var label: String? {
-        if isProvisional { return nil }
-        return switch score {
+    /// The same cut-offs as the ring on Beranda: green from 80, amber from 60, red below.
+    var label: String {
+        switch score {
         case 80...: L("Sehat")
         case 60..<80: L("Cukup sehat")
         case 40..<60: L("Perlu perhatian")
@@ -104,7 +112,7 @@ struct FinancialHealth {
         }
     }
 
-    var isHealthy: Bool { !isProvisional && score >= 80 }
+    var isHealthy: Bool { score >= 80 }
 
     /// Factors with a tip, the ones costing the most points first.
     var recommendations: [Factor] {
@@ -123,40 +131,76 @@ struct FinancialHealth {
 
     init(_ input: Input) {
         isAvailable = input.hasTransactions
-        let young = input.daysOfData < Self.minDays
-        factors = [
-            young ? Self.pending(.cashflow, 30, input) : Self.cashflow(input),
-            young ? Self.pending(.emergencyFund, 25, input) : Self.emergencyFund(input),
-            Self.debt(input),
-            Self.budget(input),
-            Self.habit(input),
-        ]
+        var list: [Factor] = []
+        if let safe = input.safeToSpend { list.append(Self.spendable(input, safe: safe)) }
+        list.append(Self.cashflow(input))
+        list.append(Self.emergencyFund(input))
+        if input.hasCreditCard { list.append(Self.debt(input)) }
+        list.append(Self.budget(input))
+        factors = list
     }
 
     // MARK: Factors
 
-    private static func pending(_ kind: Kind, _ maxPoints: Int, _ input: Input) -> Factor {
-        Factor(kind: kind, points: 0, maxPoints: maxPoints,
-               summary: L("Butuh 3 bulan data supaya bisa dinilai. Tinggal %lld hari lagi.", max(0, minDays - input.daysOfData)),
-               tip: nil, isPending: true)
+    /// A factor that cannot be rated yet: shown with a dash, left out of the score, still free to carry a tip.
+    private static func pending(_ kind: Kind, _ maxPoints: Int, summary: String, tip: String? = nil) -> Factor {
+        Factor(kind: kind, points: 0, maxPoints: maxPoints, summary: summary, tip: tip, isPending: true)
     }
 
-    /// Share of income left after spending, over the months shown.
+    /// Straight lines between the given (x, points) marks; flat beyond the last one.
+    private static func interpolate(_ x: Double, _ marks: [(Double, Double)]) -> Int {
+        guard let last = marks.last else { return 0 }
+        if x >= last.0 { return Int(last.1.rounded()) }
+        for (low, high) in zip(marks, marks.dropFirst()) where x < high.0 {
+            let share = (x - low.0) / (high.0 - low.0)
+            return Int((low.1 + (high.1 - low.1) * share).rounded())
+        }
+        return 0
+    }
+
+    /// "Bisa dipakai" per day against what you usually spend per day.
+    private static func spendable(_ input: Input, safe: Double) -> Factor {
+        guard safe > 0 else {
+            return Factor(kind: .spendable, points: 0, maxPoints: 30,
+                          summary: safe < 0 ? L("Saldo belum cukup menutup tagihan, kurang %@.", abs(safe).formattedAsCurrency())
+                                            : L("Seluruh saldo sudah terpakai untuk tagihan."),
+                          tip: L("Tunda pengeluaran yang tidak mendesak sampai saldo menutup tagihan."))
+        }
+        let perDay = safe / Double(max(input.daysLeft, 1))
+        let daily = input.averageMonthlyExpense / 30
+        guard daily > 0 else {
+            return Factor(kind: .spendable, points: 30, maxPoints: 30,
+                          summary: L("Bisa dipakai %@ per hari.", perDay.formattedAsCurrency()), tip: nil)
+        }
+        let ratio = perDay / daily
+        let points = switch ratio {
+        case 1...: 30
+        case 0.75..<1: 25
+        case 0.5..<0.75: 18
+        case 0.25..<0.5: 10
+        default: 5
+        }
+        return Factor(kind: .spendable, points: points, maxPoints: 30,
+                      summary: L("Bisa dipakai %@ per hari, rata-rata belanjamu %@ per hari.", perDay.formattedAsCurrency(), daily.formattedAsCurrency()),
+                      tip: points == 30 ? nil : L("Uang yang bisa dipakai per hari lebih kecil dari kebiasaan belanjamu. Tahan pengeluaran yang tidak wajib sampai akhir periode."))
+    }
+
+    /// Share of income left after spending, over the cycles shown.
     private static func cashflow(_ input: Input) -> Factor {
         let income = input.monthlyIncome.reduce(0, +)
         let expense = input.monthlyExpense.reduce(0, +)
         let months = input.monthlyIncome.count
         guard income > 0 else {
-            return Factor(kind: .cashflow, points: 0, maxPoints: 30,
-                          summary: expense > 0 ? L("Belum ada pemasukan tercatat, tapi ada pengeluaran.") : L("Belum ada pemasukan tercatat."),
-                          tip: L("Catat gaji dan pemasukan lain supaya kelihatan berapa yang bisa disisihkan."))
+            return pending(.cashflow, 20,
+                           summary: expense > 0 ? L("Belum ada pemasukan tercatat, tapi ada pengeluaran.") : L("Belum ada pemasukan tercatat."),
+                           tip: L("Catat gaji dan pemasukan lain supaya kelihatan berapa yang bisa disisihkan."))
         }
         let rate = (income - expense) / income
         let points = switch rate {
-        case 0.2...: 30
-        case 0.1..<0.2: 24
-        case 0..<0.1: 15
-        case -0.1..<0: 6
+        case 0.2...: 20
+        case 0.1..<0.2: 16
+        case 0..<0.1: 10
+        case -0.1..<0: 4
         default: 0
         }
         let percent = Int((abs(rate) * 100).rounded())
@@ -169,36 +213,33 @@ struct FinancialHealth {
         default: input.topExpenseCategory.map { L("Pengeluaran melebihi pemasukan. Kurangi pos terbesarmu, %@, dan tunda belanja yang tidak mendesak.", $0) }
             ?? L("Pengeluaran melebihi pemasukan. Kurangi pos terbesarmu dan tunda belanja yang tidak mendesak.")
         }
-        return Factor(kind: .cashflow, points: points, maxPoints: 30, summary: summary, tip: tip)
+        return Factor(kind: .cashflow, points: points, maxPoints: 20, summary: summary, tip: tip)
     }
 
-    /// Months of spending the liquid balance covers.
+    /// Months of spending all the wallets (investments included) cover: 1 month is 6 points, 3 are 14, 6 or more are 20.
     private static func emergencyFund(_ input: Input) -> Factor {
-        let active = zip(input.monthlyIncome, input.monthlyExpense).filter { $0 + $1 > 0 }.map(\.1)
-        let averageExpense = active.isEmpty ? 0 : active.reduce(0, +) / Double(active.count)
+        guard input.daysOfData >= minDays else {
+            return pending(.emergencyFund, 20, summary: L("Butuh %lld hari data supaya bisa dinilai. Tinggal %lld hari lagi.", minDays, max(0, minDays - input.daysOfData)))
+        }
+        let funds = max(input.totalBalance ?? input.liquidBalance, 0)
+        let averageExpense = input.averageMonthlyExpense
         guard averageExpense > 0 else {
-            let hasBalance = input.liquidBalance > 0
-            return Factor(kind: .emergencyFund, points: hasBalance ? 25 : 0, maxPoints: 25,
+            let hasBalance = funds > 0
+            return Factor(kind: .emergencyFund, points: hasBalance ? 20 : 0, maxPoints: 20,
                           summary: hasBalance ? L("Belum ada pengeluaran untuk dibandingkan.") : L("Belum ada saldo tersimpan."),
                           tip: hasBalance ? nil : L("Mulai sisihkan saldo untuk dana darurat, sekecil apa pun."))
         }
-        let months = max(input.liquidBalance, 0) / averageExpense
-        let points = switch months {
-        case 6...: 25
-        case 3..<6: 18
-        case 1..<3: 10
-        case 0.01..<1: 4
-        default: 0
-        }
-        let summary = input.liquidBalance <= 0
+        let months = funds / averageExpense
+        let points = interpolate(months, [(0, 0), (1, 6), (3, 14), (6, 20)])
+        let summary = funds <= 0
             ? L("Saldomu minus, belum ada dana darurat.")
             : L("Saldo cukup untuk %@ bulan pengeluaran.", months.formatted(.number.precision(.fractionLength(1)).locale(AppLanguage.locale)))
         let target = averageExpense * 3
-        let gap = target - max(input.liquidBalance, 0)
+        let gap = target - funds
         let tip: String? = months >= 3 ? nil
             : L("Kumpulkan dana darurat minimal 3 bulan pengeluaran, sekitar %@. Sisihkan %@ per bulan untuk mencapainya dalam setahun.",
                 target.abbreviatedRupiahText, (gap / 12).abbreviatedRupiahText)
-        return Factor(kind: .emergencyFund, points: points, maxPoints: 25, summary: summary, tip: tip)
+        return Factor(kind: .emergencyFund, points: points, maxPoints: 20, summary: summary, tip: tip)
     }
 
     /// Credit card use, capped while a bill is overdue: a week late still earns 8 of 20, later earns none.
@@ -241,12 +282,11 @@ struct FinancialHealth {
         return Factor(kind: .debt, points: points, maxPoints: 20, summary: summary, tip: tip)
     }
 
-    /// Spending pace against the budget for the part of the month gone.
+    /// Spending pace against the budget for the part of the cycle gone. Left out when there is no budget.
     private static func budget(_ input: Input) -> Factor {
         guard input.budgetTotal > 0 else {
-            return Factor(kind: .budget, points: 0, maxPoints: 15,
-                          summary: L("Belum ada budget bulan ini."),
-                          tip: input.topExpenseCategory.map { L("Buat budget, mulai dari %@ yang paling besar pengeluarannya.", $0) }
+            return pending(.budget, 10, summary: L("Belum ada budget bulan ini."),
+                           tip: input.topExpenseCategory.map { L("Buat budget, mulai dari %@ yang paling besar pengeluarannya.", $0) }
                             ?? L("Buat budget untuk kategori pengeluaran terbesarmu."))
         }
         let used = input.budgetSpent / input.budgetTotal
@@ -254,32 +294,17 @@ struct FinancialHealth {
         let pace = input.budgetSpent / (input.budgetTotal * max(input.monthProgress, 0.2))
         let points = switch (used > 1, pace) {
         case (true, _): 0
-        case (false, ..<1.0001): 15
-        case (false, ..<1.1): 10
-        case (false, ..<1.25): 5
+        case (false, ..<1.0001): 10
+        case (false, ..<1.1): 7
+        case (false, ..<1.25): 3
         default: 0
         }
         let summary = L("Terpakai %lld%% budget, %lld%% bulan sudah lewat.",
                         Int((used * 100).rounded()), Int((input.monthProgress * 100).rounded()))
-        let tip: String? = points == 15 ? nil
+        let tip: String? = points == 10 ? nil
             : used > 1 ? L("Budget bulan ini sudah terlewati. Tahan pengeluaran yang tidak wajib sampai bulan depan.")
             : L("Belanjamu lebih cepat dari jadwal. Batasi ke %@ per hari supaya cukup sampai akhir bulan.", ((input.budgetTotal - input.budgetSpent) / max(1, (1 - input.monthProgress) * 30)).abbreviatedRupiahText)
-        return Factor(kind: .budget, points: points, maxPoints: 15, summary: summary, tip: tip)
-    }
-
-    /// Days with at least one transaction in the last 30.
-    private static func habit(_ input: Input) -> Factor {
-        let points = switch input.activeDays {
-        case 20...: 10
-        case 12..<20: 7
-        case 5..<12: 4
-        case 1..<5: 2
-        default: 0
-        }
-        let tip: String? = input.activeDays >= 12 ? nil
-            : L("Catat transaksi setiap hari, termasuk yang kecil, supaya skor dan saranmu akurat.")
-        return Factor(kind: .habit, points: points, maxPoints: 10,
-                      summary: L("Mencatat di %lld dari 30 hari terakhir.", input.activeDays), tip: tip)
+        return Factor(kind: .budget, points: points, maxPoints: 10, summary: summary, tip: tip)
     }
 }
 
@@ -301,16 +326,17 @@ extension FinancialHealth {
     /// Income and expense of the last three finished payday cycles, oldest first. A cycle before the
     /// first transaction is left out; with no finished cycle yet it falls back to the running one.
     static func cashflowCycles(_ transactions: [Transaction], cycle: PaydayCycle, now: Date = Date(),
-                               calendar: Calendar = .current) -> (income: [Double], expense: [Double]) {
+                               calendar: Calendar = .current) -> (income: [Double], expense: [Double], isRunning: Bool) {
         let counted = transactions.filter { $0.type == .income || $0.type == .expense }
         let first = counted.map(\.date).min()
         var periods = [3, 2, 1].map { cycle.period(offset: -$0, from: now, calendar: calendar) }
             .filter { period in first.map { $0 < period.end } ?? false }
-        if periods.isEmpty { periods = [cycle.period(containing: now, calendar: calendar)] }
+        let isRunning = periods.isEmpty
+        if isRunning { periods = [cycle.period(containing: now, calendar: calendar)] }
         func total(_ type: Transaction.TransactionType, in period: DateInterval) -> Double {
             counted.filter { $0.type == type && $0.date >= period.start && $0.date < period.end }.reduce(0) { $0 + $1.amount }
         }
-        return (periods.map { total(.income, in: $0) }, periods.map { total(.expense, in: $0) })
+        return (periods.map { total(.income, in: $0) }, periods.map { total(.expense, in: $0) }, isRunning)
     }
 }
 

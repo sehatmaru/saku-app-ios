@@ -293,9 +293,6 @@ final class DashboardViewModel: ObservableObject {
         let cashflow = FinancialHealth.cashflowCycles(transactions, cycle: cycle, now: now, calendar: calendar)
         let cards = accounts.filter { $0.isActive && $0.isCreditCard }
         let startOfToday = calendar.startOfDay(for: now)
-        let since = calendar.date(byAdding: .day, value: -29, to: startOfToday) ?? startOfToday
-        let activeDays = Set(transactions.filter { $0.date >= since && $0.type != .adjustment }
-            .map { calendar.startOfDay(for: $0.date) }).count
         return FinancialHealth(.init(
             monthlyIncome: cashflow.income,
             monthlyExpense: cashflow.expense,
@@ -306,14 +303,17 @@ final class DashboardViewModel: ObservableObject {
             budgetTotal: totalBudget,
             budgetSpent: totalSpent,
             monthProgress: FinancialHealth.cycleProgress(cycle, on: now, calendar: calendar),
-            activeDays: activeDays,
             topExpenseCategory: categorySpending.first?.0.name,
             hasTransactions: transactions.contains { $0.type == .income || $0.type == .expense },
             daysOfData: transactions.filter { $0.type != .adjustment }.map(\.date).min()
                 .map { calendar.dateComponents([.day], from: calendar.startOfDay(for: $0), to: startOfToday).day ?? 0 } ?? 0,
             overdueBills: overdueBills.map {
                 .init(cardName: $0.card.name, amount: $0.statement.remaining, daysLate: $0.statement.daysOverdue)
-            }
+            },
+            totalBalance: WealthSummary(accounts: accounts.filter(\.isActive)).total,
+            safeToSpend: safeToSpend,
+            daysLeft: daysLeftInPeriod,
+            cyclesAreRunning: cashflow.isRunning
         ))
     }
 

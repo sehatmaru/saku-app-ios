@@ -221,7 +221,6 @@ struct ReportModel {
         let flexible = Set(categories.filter { $0.systemKey.map(flexibleCategoryKeys.contains) ?? false }.map(\.name))
 
         let end = min(now, interval.end)
-        let since = calendar.date(byAdding: .day, value: -30, to: end) ?? end
         let real = transactions.filter { $0.type != .adjustment }
         let cards = accounts.filter { $0.isActive && $0.isCreditCard }
         let cashflow = previous.isEmpty ? [current] : Array(previous.reversed())
@@ -233,9 +232,10 @@ struct ReportModel {
             hasCreditCard: !cards.isEmpty,
             budgetTotal: lines.reduce(0) { $0 + $1.amount }, budgetSpent: lines.reduce(0) { $0 + $1.spent },
             monthProgress: interval.contains(now) ? FinancialHealth.cycleProgress(cycle, on: now, calendar: calendar) : 1,
-            activeDays: Set(real.filter { $0.date >= since && $0.date < end }.map { calendar.startOfDay(for: $0.date) }).count,
             topExpenseCategory: topCategory, hasTransactions: !counted.isEmpty,
-            daysOfData: real.map(\.date).min().map { calendar.dateComponents([.day], from: calendar.startOfDay(for: $0), to: end).day ?? 0 } ?? 0)
+            daysOfData: real.map(\.date).min().map { calendar.dateComponents([.day], from: calendar.startOfDay(for: $0), to: end).day ?? 0 } ?? 0,
+            totalBalance: WealthSummary(accounts: accounts.filter(\.isActive)).total,
+            cyclesAreRunning: previous.isEmpty)
         return PeriodAnalysis.Input(current: current, previous: previous, health: health, budgets: lines, charges: charges,
                                     billsTotal: charges.reduce(0) { $0 + $1.amount }, flexibleCategories: flexible, isPrivate: isPrivate)
     }
