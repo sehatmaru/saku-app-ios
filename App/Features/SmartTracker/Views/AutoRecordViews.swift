@@ -429,7 +429,7 @@ struct AutoRecordView: View {
 
 
 /// Opens the Shortcut's iCloud page; iOS shows its own "Add Shortcut" sheet from there.
-/// Before the first time it says "Pasang"; after, a quiet round button installs it again.
+/// Before the first time it says "Pasang"; after, "Pasang lagi" in a quieter colour.
 private struct InstallButton: View {
     let shortcut: SakuShortcut
     var opened: () -> Void = {}
@@ -442,15 +442,10 @@ private struct InstallButton: View {
             openURL(shortcut.url)
             opened()
         } label: {
-            Group {
-                if again {
-                    Image(systemName: "arrow.clockwise").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.appText)
-                        .frame(width: 36, height: 36).background(Color.stChip, in: Circle())
-                } else {
-                    Text(L("Pasang")).font(.app(15, weight: .semibold)).lineLimit(1).foregroundStyle(Color.appBackground)
-                        .padding(.horizontal, 18).frame(height: 36).background(Color.appText, in: Capsule())
-                }
-            }
+            Text(again ? L("Pasang lagi") : L("Pasang")).font(.app(15, weight: .semibold)).lineLimit(1).fixedSize()
+                .foregroundStyle(again ? Color.appText : Color.appBackground)
+                .padding(.horizontal, 16).frame(height: 36)
+                .background(again ? Color.stChip : Color.appText, in: Capsule())
             .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
@@ -502,13 +497,15 @@ struct AutoRecipeDetailView: View {
     }
 
     private var steps: some View {
-        let paths = recipe.steps
+        let list = recipe.steps
+        let count = list.count + 2
+        let ran = recipe.shortcut.lastRunText
         return VStack(alignment: .leading, spacing: 0) {
-            ListLine(icon: recipe.shortcut.icon, title: recipe.shortcut.name) {
+            numbered(1, of: count, title: recipe.shortcut.name) {
                 InstallButton(shortcut: recipe.shortcut) { refresh += 1 }
             }
-            ForEach(Array(paths.enumerated()), id: \.offset) { index, step in
-                ListLine(icon: step.icon, title: step.title, note: step.note) {
+            ForEach(Array(list.enumerated()), id: \.offset) { index, step in
+                numbered(index + 2, of: count, title: step.title, note: step.note) {
                     if recipe.isAutomation && index == 0 {
                         Button { openURL(URL(string: "shortcuts://create-automation")!) } label: {
                             Image(systemName: "arrow.up.forward.app").font(.system(size: 18, weight: .semibold))
@@ -518,11 +515,28 @@ struct AutoRecipeDetailView: View {
                     }
                 }
             }
-            let ran = recipe.shortcut.lastRunText
-            ListLine(icon: "play.circle", title: recipe.tryIt, note: ran ?? L("Belum jalan"),
-                     noteTint: ran == nil ? .appTextSecondary : .stSuccessText, divider: false) {
+            numbered(count, of: count, title: recipe.tryIt, note: ran ?? L("Belum jalan"), noteTint: ran == nil ? .appTextSecondary : .stSuccessText) {
                 if ran != nil { Image(systemName: "checkmark.circle.fill").font(.system(size: 20)).foregroundStyle(Color.stGreen) }
             }
+        }
+    }
+
+    /// A step: its number on a line that runs down to the next one, then what to do.
+    private func numbered<T: View>(_ number: Int, of count: Int, title: String, note: String? = nil,
+                                   noteTint: Color = .appTextSecondary, @ViewBuilder trailing: () -> T) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(spacing: 4) {
+                Text("\(number)").font(.app(14, weight: .bold)).foregroundStyle(.white)
+                    .frame(width: 28, height: 28).background(Color.stGreen, in: Circle())
+                if number < count { Rectangle().fill(Color.stGreen.opacity(0.4)).frame(width: 2).frame(maxHeight: .infinity) }
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText).fixedSize(horizontal: false, vertical: true)
+                if let note { Text(note).font(.app(13)).foregroundStyle(noteTint).fixedSize(horizontal: false, vertical: true) }
+            }
+            .padding(.top, 3).padding(.bottom, 18)
+            Spacer(minLength: 8)
+            trailing().padding(.top, -4)
         }
     }
 
