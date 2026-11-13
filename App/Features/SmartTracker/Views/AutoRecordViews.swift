@@ -7,8 +7,13 @@ enum SakuShortcut: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    /// A short label for the tile.
-    var short: String { self == .screenshot ? L("Layar") : L("Notifikasi") }
+    /// The name on the card, as the owner shares it.
+    var title: String { self == .screenshot ? "Screenshot Record To Saku" : "Notification Record To Saku" }
+
+    /// What the Shortcut serves, one line under its name.
+    var use: String {
+        self == .screenshot ? L("Untuk Back Tap, Action Button, dan Screenshot") : L("Untuk Notifikasi Bank/Aplikasi")
+    }
 
     /// The Shortcut's own name, as it appears in Shortcuts and in Settings. Not translated.
     var name: String {
@@ -68,10 +73,23 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .notification: L("Notifikasi bank")
-        case .backTap: L("Ketuk belakang")
-        case .actionButton: L("Tombol Aksi")
-        case .screenshot: L("Screenshot baru")
+        case .notification: L("Notifikasi Bank/Aplikasi")
+        case .backTap: "Back Tap"
+        case .actionButton: "Action Button"
+        case .screenshot: "Screenshot"
+        }
+    }
+
+    /// Short enough for the three stages under the demo.
+    var stageTitle: String { self == .notification ? L("Notifikasi") : title }
+
+    /// One line under the title on the list.
+    var subtitle: String {
+        switch self {
+        case .notification: L("Notifikasi transaksi jadi draf")
+        case .backTap: L("Ketuk punggung iPhone, layar jadi draf")
+        case .actionButton: L("Tekan tombol, layar jadi draf")
+        case .screenshot: L("Setiap screenshot jadi draf")
         }
     }
 
@@ -98,12 +116,12 @@ enum AutoRecipe: String, CaseIterable, Identifiable {
 
     var isAvailable: Bool { !isAutomation || NotificationTrigger.isAvailable }
 
-    /// What the iPhone needs, said on the tile before anyone starts.
-    var requirement: String? {
+    /// What the iPhone needs, shown on the list before anyone starts.
+    var requirement: String {
         switch self {
-        case .notification, .screenshot: NotificationTrigger.isAvailable ? nil : L("Butuh iOS 27")
+        case .notification, .screenshot: L("iOS 27 ke atas")
         case .actionButton: L("iPhone 15 Pro ke atas")
-        case .backTap: nil
+        case .backTap: L("iPhone 8 ke atas")
         }
     }
 
@@ -203,7 +221,7 @@ private struct RecipeDemo: View {
             VStack(spacing: 14) {
                 phone(t).opacity(1 - eased(t, 0.95, 1))
                 HStack(spacing: 6) {
-                    stage(recipe.icon, recipe.title, on: t < 0.4)
+                    stage(recipe.icon, recipe.stageTitle, on: t < 0.4)
                     stage("square.stack.3d.up", L("Pintasan"), on: t >= 0.4 && t < 0.62)
                     stage("tray.full", L("Draf"), on: t >= 0.62)
                 }
@@ -365,10 +383,11 @@ struct AutoRecordView: View {
 
                 if !plus.isPlus { plusNote.padding(.top, 8) }
 
-                sectionLabel(L("1. Pasang pintasan"))
-                ForEach(Array(SakuShortcut.allCases.enumerated()), id: \.element.id) { index, shortcut in
-                    shortcutLine(shortcut, last: index == SakuShortcut.allCases.count - 1)
+                sectionLabel(L("1. Pasang Shortcuts"))
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(SakuShortcut.allCases) { shortcutCard($0) }
                 }
+                .padding(.top, 8)
 
                 sectionLabel(L("2. Pilih pemicu"))
                 ForEach(Array(AutoRecipe.allCases.enumerated()), id: \.element.id) { index, recipe in
@@ -405,33 +424,42 @@ struct AutoRecordView: View {
         }
     }
 
-    private func shortcutLine(_ shortcut: SakuShortcut, last: Bool) -> some View {
-        let ran = shortcut.lastRunText
-        return ListLine(icon: shortcut.icon, title: shortcut.short, note: ran ?? L("Belum jalan"),
-                        noteTint: ran == nil ? .appTextSecondary : .stSuccessText, divider: !last) {
-            InstallButton(shortcut: shortcut) { refresh += 1 }
+    private func shortcutCard(_ shortcut: SakuShortcut) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image(systemName: shortcut.icon).font(.system(size: 22)).foregroundStyle(Color.stSuccessText)
+                .frame(width: 48, height: 48).background(Color.stSuccessBg, in: RoundedRectangle(cornerRadius: 14))
+            Text(shortcut.title).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
+                .lineLimit(2).frame(maxWidth: .infinity, minHeight: 42, alignment: .topLeading).padding(.top, 14)
+            Text(shortcut.use).font(.app(12)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
+                .lineLimit(3).frame(maxWidth: .infinity, minHeight: 48, alignment: .topLeading).padding(.top, 4)
+            InstallButton(shortcut: shortcut, wide: true) { refresh += 1 }.padding(.top, 8)
         }
+        .padding(16).frame(maxWidth: .infinity)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20))
         .accessibilityElement(children: .contain)
     }
 
     private func recipeLine(_ recipe: AutoRecipe, last: Bool) -> some View {
         NavigationLink(destination: AutoRecipeDetailView(recipe: recipe).detailPage()) {
-            ListLine(icon: recipe.icon, title: recipe.title, note: recipe.requirement, divider: !last) {
+            ListLine(icon: recipe.icon, title: recipe.title, note: recipe.subtitle, divider: !last) {
+                Text(recipe.requirement).font(.app(11, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                    .lineLimit(1).fixedSize().padding(.horizontal, 8).frame(height: 22).background(Color.stChip, in: Capsule())
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(recipe.title)
-        .accessibilityHint(recipe.summary)
+        .accessibilityHint(recipe.subtitle)
     }
 }
 
 
 /// Opens the Shortcut's iCloud page; iOS shows its own "Add Shortcut" sheet from there.
-/// Before the first time it says "Pasang"; after, "Pasang lagi" in a quieter colour.
+/// The Shortcuts icon and the word, so it is clear where it leads.
 private struct InstallButton: View {
     let shortcut: SakuShortcut
+    var wide = false
     var opened: () -> Void = {}
     @Environment(\.openURL) private var openURL
 
@@ -442,11 +470,11 @@ private struct InstallButton: View {
             openURL(shortcut.url)
             opened()
         } label: {
-            Text(again ? L("Pasang lagi") : L("Pasang")).font(.app(15, weight: .semibold)).lineLimit(1).fixedSize()
+            Label(L("Pasang"), systemImage: "square.stack.3d.up.fill").font(.app(15, weight: .semibold)).lineLimit(1)
                 .foregroundStyle(again ? Color.appText : Color.appBackground)
-                .padding(.horizontal, 16).frame(height: 36)
+                .padding(.horizontal, 16).frame(maxWidth: wide ? .infinity : nil).frame(height: 40)
                 .background(again ? Color.stChip : Color.appText, in: Capsule())
-            .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
         .accessibilityLabel(L("Pasang pintasan %@", shortcut.name))
@@ -499,7 +527,6 @@ struct AutoRecipeDetailView: View {
     private var steps: some View {
         let list = recipe.steps
         let count = list.count + 2
-        let ran = recipe.shortcut.lastRunText
         return VStack(alignment: .leading, spacing: 0) {
             numbered(1, of: count) {
                 richText(L("Pasang pintasan **%@**.", recipe.shortcut.name))
@@ -516,11 +543,7 @@ struct AutoRecipeDetailView: View {
                     }
                 }
             }
-            numbered(count, of: count) {
-                Text(recipe.tryIt)
-                if let ran { Label(ran, systemImage: "checkmark.circle.fill").font(.app(13)).foregroundStyle(Color.stSuccessText).padding(.top, 4) }
-                else { Text(L("Belum jalan")).font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.top, 4) }
-            }
+            numbered(count, of: count) { Text(recipe.tryIt) }
         }
     }
 
@@ -544,7 +567,7 @@ struct AutoRecipeDetailView: View {
             Image(systemName: "info.circle").font(.system(size: 19)).foregroundStyle(Color.appTextSecondary).padding(.top, 1)
             VStack(alignment: .leading, spacing: 4) {
                 Text(L("Belum tersedia di iOS-mu")).font(.app(16, weight: .semibold))
-                Text(L("Pemicu ini ada di Shortcuts mulai iOS 27. Sampai iOS-mu diperbarui, pakai Ketuk belakang atau Tombol Aksi."))
+                Text(L("Pemicu ini ada di Shortcuts mulai iOS 27. Sampai iOS-mu diperbarui, pakai Back Tap atau Action Button."))
                     .font(.app(14)).lineSpacing(3).foregroundStyle(Color.appBody)
             }
             Spacer(minLength: 0)

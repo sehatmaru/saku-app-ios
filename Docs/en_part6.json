@@ -1650,5 +1650,16 @@
   "Ketuk **Ketuk Bagian Belakang**, lalu pilih **Ketuk Dua Kali** atau **Ketuk Tiga Kali**.": "Tap **Back Tap**, then pick **Double Tap** or **Triple Tap**.",
   "Gulir ke bagian Pintasan, lalu pilih %@.": "Scroll to the Shortcuts section, then pick %@.",
   "Buka **Pengaturan**, lalu ketuk **Tombol Tindakan**.": "Open **Settings**, then tap **Action Button**.",
-  "Geser ke **Pintasan**, ketuk Pilih Pintasan, lalu pilih %@.": "Swipe to **Shortcut**, tap Choose a Shortcut, then pick %@."
+  "Geser ke **Pintasan**, ketuk Pilih Pintasan, lalu pilih %@.": "Swipe to **Shortcut**, tap Choose a Shortcut, then pick %@.",
+  "1. Pasang Shortcuts": "1. Add Shortcuts",
+  "Notifikasi Bank/Aplikasi": "Bank/App Notification",
+  "Untuk Back Tap, Action Button, dan Screenshot": "For Back Tap, Action Button, and Screenshot",
+  "Untuk Notifikasi Bank/Aplikasi": "For Bank/App Notification",
+  "Notifikasi transaksi jadi draf": "Transaction notifications become drafts",
+  "Ketuk punggung iPhone, layar jadi draf": "Tap the back of your iPhone, the screen becomes a draft",
+  "Tekan tombol, layar jadi draf": "Press the button, the screen becomes a draft",
+  "Setiap screenshot jadi draf": "Every screenshot becomes a draft",
+  "iOS 27 ke atas": "iOS 27 or later",
+  "iPhone 8 ke atas": "iPhone 8 or later",
+  "Pemicu ini ada di Shortcuts mulai iOS 27. Sampai iOS-mu diperbarui, pakai Back Tap atau Action Button.": "This trigger is in Shortcuts from iOS 27. Until your iOS is updated, use Back Tap or Action Button."
 }

@@ -1713,6 +1713,16 @@
         }
       }
     },
+    "1. Pasang Shortcuts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Add Shortcuts"
+          }
+        }
+      }
+    },
     "1. Pasang pintasan": {
       "localizations": {
         "en": {
@@ -11083,6 +11093,16 @@
         }
       }
     },
+    "Ketuk punggung iPhone, layar jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the back of your iPhone, the screen becomes a draft"
+          }
+        }
+      }
+    },
     "Ketuk untuk isi nominal": {
       "localizations": {
         "en": {
@@ -13923,6 +13943,16 @@
         }
       }
     },
+    "Notifikasi Bank/Aplikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank/App Notification"
+          }
+        }
+      }
+    },
     "Notifikasi GoPay": {
       "localizations": {
         "en": {
@@ -14009,6 +14039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transaction notifications from your bank or e-wallet become drafts."
+          }
+        }
+      }
+    },
+    "Notifikasi transaksi jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transaction notifications become drafts"
           }
         }
       }
@@ -14559,6 +14599,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The Notification trigger in Shortcuts only exists on iOS 27 and later. Until your iOS is updated, record by typing or speaking, the Share menu, or Siri."
+          }
+        }
+      }
+    },
+    "Pemicu ini ada di Shortcuts mulai iOS 27. Sampai iOS-mu diperbarui, pakai Back Tap atau Action Button.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This trigger is in Shortcuts from iOS 27. Until your iOS is updated, use Back Tap or Action Button."
           }
         }
       }
@@ -17923,6 +17973,16 @@
         }
       }
     },
+    "Setiap screenshot jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every screenshot becomes a draft"
+          }
+        }
+      }
+    },
     "Setiap screenshot yang tersimpan dibaca jadi draf.": {
       "localizations": {
         "en": {
@@ -19949,6 +20009,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Press the Action Button and the open screen becomes a draft."
+          }
+        }
+      }
+    },
+    "Tekan tombol, layar jadi draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press the button, the screen becomes a draft"
           }
         }
       }
@@ -22035,6 +22105,26 @@
         }
       }
     },
+    "Untuk Back Tap, Action Button, dan Screenshot": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For Back Tap, Action Button, and Screenshot"
+          }
+        }
+      }
+    },
+    "Untuk Notifikasi Bank/Aplikasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For Bank/App Notification"
+          }
+        }
+      }
+    },
     "Untuk apa uang tunai ini?": {
       "localizations": {
         "en": {
@@ -22625,12 +22715,32 @@
         }
       }
     },
+    "iOS 27 ke atas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS 27 or later"
+          }
+        }
+      }
+    },
     "iPhone 15 Pro ke atas": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "iPhone 15 Pro or later"
+          }
+        }
+      }
+    },
+    "iPhone 8 ke atas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone 8 or later"
           }
         }
       }
