@@ -4003,6 +4003,16 @@
         }
       }
     },
+    "Belum dinilai dan tidak dihitung: %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not rated yet and left out: %@."
+          }
+        }
+      }
+    },
     "Belum dipakai": {
       "localizations": {
         "en": {
@@ -4229,6 +4239,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Home"
+          }
+        }
+      }
+    },
+    "Berapa bulan pengeluaran yang bisa ditutup saldomu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How many months of spending your balance can cover."
+          }
+        }
+      }
+    },
+    "Berapa persen pemasukanmu yang tersisa, tidak habis dibelanjakan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The share of your income left over instead of spent."
           }
         }
       }
@@ -10229,6 +10259,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You get"
+          }
+        }
+      }
+    },
+    "Kamu dapat %lld dari 100 poin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You earned %lld out of 100 points."
           }
         }
       }
@@ -17643,6 +17683,26 @@
         }
       }
     },
+    "Seberapa besar limit kartu kreditmu yang terpakai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How much of your credit card limit is used."
+          }
+        }
+      }
+    },
+    "Seberapa jauh pengeluaranmu dari budget bulan ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How far your spending is through this month's budget."
+          }
+        }
+      }
+    },
     "Sebutkan apa dan berapa, misalnya “sabun 18rb”.": {
       "localizations": {
         "en": {
@@ -18063,6 +18123,16 @@
         }
       }
     },
+    "Semua faktor di bawah dalam kondisi baik.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every factor below is in good shape."
+          }
+        }
+      }
+    },
     "Semua faktor skor terpenuhi.": {
       "localizations": {
         "en": {
@@ -18399,6 +18469,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Every time a transaction notification arrives, Shortcuts on your iPhone forwards it to Saku. Set it up once per app."
+          }
+        }
+      }
+    },
+    "Setiap faktor punya poin maksimal, dan skor adalah poin yang kamu dapat dibagi poin yang bisa dinilai. Faktor yang belum bisa dinilai, misalnya karena belum punya kartu kredit, dilewati. Skor diperbarui setiap kamu mencatat transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each factor has a maximum number of points, and the score is the points you earned divided by the points that can be rated. A factor that can't be rated yet, for example because you have no credit card, is skipped. The score updates every time you record a transaction."
           }
         }
       }
@@ -22515,6 +22595,16 @@
         }
       }
     },
+    "Uang yang aman dipakai per hari sampai akhir periode, setelah tagihan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Money safe to spend per day until the period ends, after bills."
+          }
+        }
+      }
+    },
     "Uang yang bisa dipakai per hari lebih kecil dari kebiasaan belanjamu. Tahan pengeluaran yang tidak wajib sampai akhir periode.": {
       "localizations": {
         "en": {
@@ -23051,6 +23141,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What holds your score back"
+          }
+        }
+      }
+    },
+    "Yang paling mengurangi: %@, kurang %lld poin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Costing you the most: %@, %lld points short."
           }
         }
       }

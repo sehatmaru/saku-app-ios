@@ -18,7 +18,7 @@ struct HealthDetailView: View {
                 } else {
                     emptyHero
                 }
-                Text("Dihitung dari pemasukan dan pengeluaran 3 bulan terakhir, saldo dompet, kartu kredit, dan budget bulan ini. Skor diperbarui setiap kamu mencatat transaksi.")
+                Text("Setiap faktor punya poin maksimal, dan skor adalah poin yang kamu dapat dibagi poin yang bisa dinilai. Faktor yang belum bisa dinilai, misalnya karena belum punya kartu kredit, dilewati. Skor diperbarui setiap kamu mencatat transaksi.")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextTertiary)
                     .lineSpacing(2)
@@ -95,9 +95,17 @@ struct HealthDetailView: View {
     }
 
     private var verdict: String {
-        if health.isHealthy { return L("Keuanganmu sehat. Pertahankan kebiasaan ini.") }
-        guard let weakest = health.weakest else { return "" }
-        return L("%@ paling menahan skormu. Perbaiki itu dulu untuk menambah hingga %lld poin.", weakest.title, weakest.missing)
+        var text = L("Kamu dapat %lld dari 100 poin.", health.score)
+        if let weakest = health.weakest {
+            text += " " + L("Yang paling mengurangi: %@, kurang %lld poin.", weakest.title, weakest.missing)
+        } else {
+            text += " " + L("Semua faktor di bawah dalam kondisi baik.")
+        }
+        let pending = health.factors.filter(\.isPending).map(\.title)
+        if !pending.isEmpty {
+            text += " " + L("Belum dinilai dan tidak dihitung: %@.", pending.joined(separator: ", "))
+        }
+        return text
     }
 
     // MARK: Factors
@@ -131,9 +139,14 @@ struct HealthDetailView: View {
                         .font(.app(15))
                         .monospacedDigit()
                 }
+                Text(factor.about)
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextTertiary)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 SegmentBar(value: factor.ratio, color: factor.color, count: 20, height: 6, spacing: 2)
                 Text(factor.summary)
-                    .font(.app(14))
+                    .font(.app(14, weight: .medium))
                     .foregroundStyle(Color.appTextSecondary)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)

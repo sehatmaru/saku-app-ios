@@ -1699,7 +1699,6 @@
   "Apa yang dilakukan Shortcut ini": "What this Shortcut does",
   "Pasang Shortcut **%@**.": "Add the **%@** Shortcut.",
   "Notifikasi, ketuk belakang, Tombol Aksi": "Notifications, Back Tap, Action Button",
-  "Apa yang dikirim, dibuang, dan disimpan": "What is sent, removed, and stored",
   "Hanya teks yang dikirim. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": "Only text is sent. Nothing is recorded until you tap Save.",
   "Hanya teks. Tidak dipakai melatih AI.": "Text only. Not used to train AI.",
   "Nomor panjang dan kode OTP. Gambar mentah tidak pernah dikirim.": "Long numbers and OTP codes. Raw images are never sent.",
@@ -1726,5 +1725,15 @@
   "Bisa dipakai %@ per hari.": "%@ a day is safe to spend.",
   "Bisa dipakai %@ per hari, rata-rata belanjamu %@ per hari.": "%@ a day is safe to spend, you usually spend %@ a day.",
   "Uang yang bisa dipakai per hari lebih kecil dari kebiasaan belanjamu. Tahan pengeluaran yang tidak wajib sampai akhir periode.": "What you can spend per day is below your usual spending. Hold off non-essential spending until the period ends.",
-  "Butuh %lld hari data supaya bisa dinilai. Tinggal %lld hari lagi.": "Needs %lld days of data to be rated. %lld days to go."
+  "Butuh %lld hari data supaya bisa dinilai. Tinggal %lld hari lagi.": "Needs %lld days of data to be rated. %lld days to go.",
+  "Uang yang aman dipakai per hari sampai akhir periode, setelah tagihan.": "Money safe to spend per day until the period ends, after bills.",
+  "Berapa persen pemasukanmu yang tersisa, tidak habis dibelanjakan.": "The share of your income left over instead of spent.",
+  "Berapa bulan pengeluaran yang bisa ditutup saldomu.": "How many months of spending your balance can cover.",
+  "Seberapa besar limit kartu kreditmu yang terpakai.": "How much of your credit card limit is used.",
+  "Seberapa jauh pengeluaranmu dari budget bulan ini.": "How far your spending is through this month's budget.",
+  "Setiap faktor punya poin maksimal, dan skor adalah poin yang kamu dapat dibagi poin yang bisa dinilai. Faktor yang belum bisa dinilai, misalnya karena belum punya kartu kredit, dilewati. Skor diperbarui setiap kamu mencatat transaksi.": "Each factor has a maximum number of points, and the score is the points you earned divided by the points that can be rated. A factor that can't be rated yet, for example because you have no credit card, is skipped. The score updates every time you record a transaction.",
+  "Kamu dapat %lld dari 100 poin.": "You earned %lld out of 100 points.",
+  "Yang paling mengurangi: %@, kurang %lld poin.": "Costing you the most: %@, %lld points short.",
+  "Semua faktor di bawah dalam kondisi baik.": "Every factor below is in good shape.",
+  "Belum dinilai dan tidak dihitung: %@.": "Not rated yet and left out: %@."
 }

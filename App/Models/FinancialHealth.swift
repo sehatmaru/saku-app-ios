@@ -66,6 +66,17 @@ struct FinancialHealth {
         var ratio: Double { isPending ? 0 : Double(points) / Double(maxPoints) }
         var missing: Int { isPending ? 0 : maxPoints - points }
 
+        /// What the factor measures, in plain words; shown under the title so the number makes sense.
+        var about: String {
+            switch kind {
+            case .spendable: L("Uang yang aman dipakai per hari sampai akhir periode, setelah tagihan.")
+            case .cashflow: L("Berapa persen pemasukanmu yang tersisa, tidak habis dibelanjakan.")
+            case .emergencyFund: L("Berapa bulan pengeluaran yang bisa ditutup saldomu.")
+            case .debt: L("Seberapa besar limit kartu kreditmu yang terpakai.")
+            case .budget: L("Seberapa jauh pengeluaranmu dari budget bulan ini.")
+            }
+        }
+
         var title: String {
             switch kind {
             case .spendable: L("Bisa dipakai")
