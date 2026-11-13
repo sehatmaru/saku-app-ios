@@ -106,19 +106,33 @@ struct HealthDetailView: View {
 
     // MARK: Factors
 
+    private var needsWork: [FinancialHealth.Factor] {
+        health.factors.filter { !$0.isPending && $0.missing > 0 }.sorted { $0.missing > $1.missing }
+    }
+    private var doingWell: [FinancialHealth.Factor] { health.factors.filter { !$0.isPending && $0.missing == 0 } }
+    private var notRated: [FinancialHealth.Factor] { health.factors.filter(\.isPending) }
+
+    @ViewBuilder
     private var factorsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SectionHeader(title: L("Yang memengaruhi skor"))
-            ForEach(health.factors) { factor in
-                factorRow(factor)
-            }
-            .padding(.top, 6)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
+        group(L("Perlu dibenahi"), needsWork, compact: false)
+        group(L("Sudah baik"), doingWell, compact: true)
+        group(L("Belum dinilai"), notRated, compact: false)
     }
 
-    private func factorRow(_ factor: FinancialHealth.Factor) -> some View {
+    @ViewBuilder
+    private func group(_ title: String, _ factors: [FinancialHealth.Factor], compact: Bool) -> some View {
+        if !factors.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                SectionHeader(title: title)
+                ForEach(factors) { factorRow($0, compact: compact) }
+                    .padding(.top, 6)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 28)
+        }
+    }
+
+    private func factorRow(_ factor: FinancialHealth.Factor, compact: Bool) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: factor.icon)
                 .font(.system(size: 18))
@@ -135,18 +149,20 @@ struct HealthDetailView: View {
                         .font(.app(15))
                         .monospacedDigit()
                 }
-                Text(factor.about)
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextTertiary)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                if !compact {
+                    Text(factor.about)
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextTertiary)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 SegmentBar(value: factor.ratio, color: factor.color, count: 20, height: 6, spacing: 2)
                 Text(factor.summary)
                     .font(.app(14, weight: .medium))
                     .foregroundStyle(Color.appTextSecondary)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
-                if let tip = factor.tip {
+                if !compact, let tip = factor.tip {
                     VStack(alignment: .leading, spacing: 2) {
                         if factor.missing > 0 {
                             Text("+\(factor.missing) poin")

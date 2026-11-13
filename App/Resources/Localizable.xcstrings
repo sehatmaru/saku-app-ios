@@ -4003,6 +4003,16 @@
         }
       }
     },
+    "Belum dinilai": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not rated yet"
+          }
+        }
+      }
+    },
     "Belum dinilai dan tidak dihitung: %@.": {
       "localizations": {
         "en": {
@@ -15713,6 +15723,16 @@
         }
       }
     },
+    "Perlu dibenahi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs work"
+          }
+        }
+      }
+    },
     "Perlu perbaikan": {
       "localizations": {
         "en": {
@@ -19449,6 +19469,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "“%@” already exists (hidden)"
+          }
+        }
+      }
+    },
+    "Sudah baik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doing well"
           }
         }
       }

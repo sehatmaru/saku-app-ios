@@ -1735,5 +1735,8 @@
   "Kamu dapat %lld dari 100 poin.": "You earned %lld out of 100 points.",
   "Yang paling mengurangi: %@, kurang %lld poin.": "Costing you the most: %@, %lld points short.",
   "Semua faktor di bawah dalam kondisi baik.": "Every factor below is in good shape.",
-  "Belum dinilai dan tidak dihitung: %@.": "Not rated yet and left out: %@."
+  "Belum dinilai dan tidak dihitung: %@.": "Not rated yet and left out: %@.",
+  "Perlu dibenahi": "Needs work",
+  "Sudah baik": "Doing well",
+  "Belum dinilai": "Not rated yet"
 }
