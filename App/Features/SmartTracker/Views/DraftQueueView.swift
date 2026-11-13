@@ -541,8 +541,8 @@ struct DraftQueueView: View {
                     fieldRow(d, field).padding(.horizontal, -24).padding(.trailing, 4)
                 }
                 HStack(spacing: 12) {
-                    Text(L("Nama")).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
-                    TextField("", text: nameBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.appTextTertiary))
+                    Text(L("Judul")).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
+                    TextField("", text: nameBinding(d), prompt: Text("Judul transaksi").foregroundStyle(Color.appTextTertiary))
                         .font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
                         .focused($focusedId, equals: d.id)
                         .submitLabel(.done)
@@ -853,8 +853,8 @@ struct DraftQueueView: View {
     private func noticeCard(_ n: SkippedNotice) -> some View {
         let d = n.draft
         let (kind, name): (String, String) = switch n.match {
-        case .installment(let t): (L("Cicilan"), t)
-        case .bill(let b): (L("Tagihan berulang"), b)
+        case .installment(let t): (L("cicilan"), t)
+        case .bill(let b): (L("tagihan berulang"), b)
         }
         return VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
@@ -882,17 +882,29 @@ struct DraftQueueView: View {
             .frame(maxWidth: .infinity, minHeight: Self.heroHeight, maxHeight: Self.heroHeight, alignment: .topLeading)
             .background(Self.noticeGray, in: RoundedRectangle(cornerRadius: 32))
             VStack(alignment: .leading, spacing: 0) {
-                noticeRow(L("Dicatat"), kind)
-                noticeRow(L("Nama"), name)
-                noticeRow(L("Tanggal"), Self.dateLabel(d.date), icon: "calendar")
-                Text(L("Tidak dibuat jadi draf supaya tidak tercatat dua kali."))
-                    .font(.app(14, weight: .semibold)).foregroundStyle(Color.appText)
-                    .padding(.horizontal, 14).padding(.vertical, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.stGreen.opacity(0.14), in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(alignment: .leading) { Capsule().fill(Color.stGreen).frame(width: 3).padding(.vertical, 8) }
-                    .padding(.top, 16)
-                Spacer(minLength: 16)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        noticeRow(L("Judul"), name)
+                        noticeRow(L("Tanggal"), Self.dateLabel(d.date), icon: "calendar")
+                        if let words = d.rawText?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "quote.opening").font(.system(size: 12, weight: .heavy)).foregroundStyle(Color.appTextTertiary).padding(.top, 3)
+                                Text(words).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineLimit(3)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .padding(.top, 8)
+                        }
+                        richText(L("Sudah ada di %@ **%@**, jadi notifikasi ini tidak dibuat draf agar tidak tercatat dua kali. Bukan itu? Ketuk **Batalkan**.", kind, name))
+                            .font(.app(14)).foregroundStyle(Color.appText).lineSpacing(2)
+                            .padding(.horizontal, 14).padding(.vertical, 12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.stGreen.opacity(0.14), in: RoundedRectangle(cornerRadius: 14))
+                            .overlay(alignment: .leading) { Capsule().fill(Color.stGreen).frame(width: 3).padding(.vertical, 8) }
+                            .padding(.top, 14)
+                    }
+                }
+                .scrollBounceBehavior(.basedOnSize).scrollIndicators(.hidden)
+                Spacer(minLength: 8)
                 HStack(spacing: 12) {
                     Button { if !swiping { withAnimation(.settle(0.3)) { store.cancelNotice(n) } } } label: {
                         Text("Batalkan").font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)

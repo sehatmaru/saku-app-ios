@@ -1689,5 +1689,10 @@
   "Geser ke **Pintasan**, ketuk **Pilih Pintasan**.": "Swipe to **Shortcut**, tap **Choose a Shortcut**.",
   "Pilih %@.": "Pick %@.",
   "Sudah tercatat": "Already recorded",
-  "Tidak dibuat jadi draf supaya tidak tercatat dua kali.": "Not made into a draft so it is not recorded twice."
+  "Tidak dibuat jadi draf supaya tidak tercatat dua kali.": "Not made into a draft so it is not recorded twice.",
+  "Judul": "Title",
+  "Judul transaksi": "Transaction title",
+  "cicilan": "installment",
+  "tagihan berulang": "recurring bill",
+  "Sudah ada di %@ **%@**, jadi notifikasi ini tidak dibuat draf agar tidak tercatat dua kali. Bukan itu? Ketuk **Batalkan**.": "Already in %@ **%@**, so this notification was not made into a draft to avoid recording it twice. Not that one? Tap **Batalkan**."
 }

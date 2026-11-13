@@ -188,7 +188,7 @@ struct QuickResultSheet: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(L("Nominal"))
-            TextField("", text: titleBinding(d), prompt: Text("Nama transaksi").foregroundStyle(Color.white.opacity(0.6)))
+            TextField("", text: titleBinding(d), prompt: Text("Judul transaksi").foregroundStyle(Color.white.opacity(0.6)))
                 .font(.app(17, weight: .medium))
         }
         .foregroundStyle(.white)
