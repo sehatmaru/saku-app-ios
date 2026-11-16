@@ -799,6 +799,10 @@ struct AddTransactionView: View {
     }
 
     private func billingText(card: Account) -> String {
+        // A card declines what its limit can't hold; Saku still records it, but says so.
+        if editing == nil, let available = card.availableCredit, amount > 0, Double(amount) > max(available, 0) {
+            return L("Melebihi sisa limit %@", max(available, 0).formattedAsCurrency())
+        }
         let billing = CreditStatement.billing(forPurchaseOn: date, card: card)
         return L("Tagihan %@ · bayar %@", TransactionDates.dayMonth.string(from: billing.statement), TransactionDates.dayMonth.string(from: billing.due))
     }

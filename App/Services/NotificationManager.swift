@@ -43,6 +43,15 @@ final class NotificationManager: @unchecked Sendable {
             await add(id: "card-due-\(card.id)-1", title: L("Tagihan %@", card.name),
                       body: L("Tagihan %@ jatuh tempo besok. Bayar penuh supaya tidak kena bunga.", amount), daysBefore: 1, date: statement.dueDate)
         }
+        // The statement after this one: set now, so a card still gets reminded when the app isn't opened between
+        // its cut-off and its due date. The amount isn't known yet, so the text sends the user to the app.
+        for (card, statement) in zip(cards, statements) where card.balance >= 1 {
+            let day = TransactionDates.dayMonth.string(from: statement.nextDueDate)
+            await add(id: "card-due-next-\(card.id)-3", title: L("Tagihan %@", card.name),
+                      body: L("Tagihan berikutnya jatuh tempo %@. Buka Saku untuk melihat jumlahnya.", day), daysBefore: 3, date: statement.nextDueDate)
+            await add(id: "card-due-next-\(card.id)-1", title: L("Tagihan %@", card.name),
+                      body: L("Tagihan berikutnya jatuh tempo besok. Bayar penuh supaya tidak kena bunga."), daysBefore: 1, date: statement.nextDueDate)
+        }
     }
 
     static let latePrefix = "card-late-"

@@ -13103,6 +13103,16 @@
         }
       }
     },
+    "Melebihi sisa limit %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over your remaining limit %@"
+          }
+        }
+      }
+    },
     "Melebihi sisa limit %@ · lebih %@": {
       "localizations": {
         "en": {
@@ -19789,6 +19799,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Next bill"
+          }
+        }
+      }
+    },
+    "Tagihan berikutnya jatuh tempo %@. Buka Saku untuk melihat jumlahnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your next bill is due %@. Open Saku to see the amount."
+          }
+        }
+      }
+    },
+    "Tagihan berikutnya jatuh tempo besok. Bayar penuh supaya tidak kena bunga.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your next bill is due tomorrow. Pay in full to avoid interest."
           }
         }
       }
