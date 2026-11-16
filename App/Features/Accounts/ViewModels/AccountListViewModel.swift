@@ -128,29 +128,37 @@ final class AccountListViewModel: ObservableObject {
         // An investment can be worth 0 but never less.
         if type == .investment && newBalance < 0 { return false }
         do {
+            // The starting balance never moves: every change is a logged adjustment on top of it, so
+            // starting balance + transactions always adds up to the stored balance.
+            let opening = accounts.first { $0.id == id }?.openingBalance ?? newBalance
             // A card has two bills: a change to the printed one is dated on the last cut-off, so it lands
             // in this statement; a change to the running one is dated now and waits for the next cut-off.
-            if type == .credit, abs(billedDelta) > 0.001 || abs(runningDelta) > 0.001 {
-                let cutoff = statementDay.map { CreditStatement.lastCutoffNoon(statementDay: $0) } ?? Date()
-                for (delta, date, label) in [(billedDelta, cutoff, "tagihan terbit"), (runningDelta, Date(), "tagihan berjalan")] where abs(delta) > 0.001 {
-                    let note = "Penyesuaian \(label): \(delta > 0 ? "+" : "-")Rp \(String(Int(abs(delta))).formattedWithThousandSeparator)"
-                    do {
-                        try await SupabaseRepository.shared.createAdjustmentLog(accountId: id, amount: delta, note: note, date: date)
-                    } catch {
-                        print("⚠️ adjustment log failed (balance already updated): \(error)")
+            var logged: [String] = []
+            do {
+                if type == .credit, abs(billedDelta) > 0.001 || abs(runningDelta) > 0.001 {
+                    let cutoff = statementDay.map { CreditStatement.lastCutoffNoon(statementDay: $0) } ?? Date()
+                    for (delta, date, label) in [(billedDelta, cutoff, "tagihan terbit"), (runningDelta, Date(), "tagihan berjalan")] where abs(delta) > 0.001 {
+                        let note = "Penyesuaian \(label): \(delta > 0 ? "+" : "-")Rp \(String(Int(abs(delta))).formattedWithThousandSeparator)"
+                        logged.append(try await SupabaseRepository.shared.createAdjustmentLog(accountId: id, amount: delta, note: note, date: date))
                     }
+                } else if abs(newBalance - oldBalance) > 0.001 {
+                    let delta = newBalance - oldBalance
+                    let note = "Penyesuaian Saldo: Rp \(String(Int(oldBalance)).formattedWithThousandSeparator) → Rp \(String(Int(newBalance)).formattedWithThousandSeparator) (perubahan \(delta > 0 ? "+" : "")\(String(Int(delta)).formattedWithThousandSeparator))"
+                    logged.append(try await SupabaseRepository.shared.createAdjustmentLog(accountId: id, amount: delta, note: note, date: Date()))
                 }
-            } else if abs(newBalance - oldBalance) > 0.001 {
-                let delta = newBalance - oldBalance
-                let note = "Penyesuaian Saldo: Rp \(String(Int(oldBalance)).formattedWithThousandSeparator) → Rp \(String(Int(newBalance)).formattedWithThousandSeparator) (perubahan \(delta > 0 ? "+" : "")\(String(Int(delta)).formattedWithThousandSeparator))"
-                do {
-                    try await SupabaseRepository.shared.createAdjustmentLog(accountId: id, amount: delta, note: note, date: Date())
-                } catch {
-                    print("⚠️ adjustment log failed (balance already updated): \(error)")
-                }
+            } catch {
+                // a half-logged edit would leave adjustments the balance never took
+                for rowId in logged { await SupabaseRepository.shared.hideTransaction(id: rowId) }
+                throw error
             }
 
-            let updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: type == .investment ? (accounts.first { $0.id == id }?.openingBalance ?? newBalance) : newBalance, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, clearOpeningUnbilled: abs(billedDelta) > 0.001)
+            let updated: Account
+            do {
+                updated = try await SupabaseRepository.shared.updateAccount(id: id, name: name, type: type, openingBalance: opening, currentBalance: newBalance, icon: icon, isArchived: isArchived, isDefault: nil, creditLimit: creditLimit, dueDate: dueDate, statementDay: statementDay, color: color, cardNetwork: cardNetwork, clearOpeningUnbilled: abs(billedDelta) > 0.001)
+            } catch {
+                for rowId in logged { await SupabaseRepository.shared.hideTransaction(id: rowId) }
+                throw error
+            }
             if let index = accounts.firstIndex(where: { $0.id == id }) {
                 var updatedAccount = updated
                 if abs(newBalance - oldBalance) > 0.001 {

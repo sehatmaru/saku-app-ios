@@ -216,13 +216,22 @@ final class SupabaseRepository: @unchecked Sendable {
         return transaction
     }
 
-    func createAdjustmentLog(accountId: String, amount: Double, note: String, date: Date) async throws {
+    @discardableResult
+    func createAdjustmentLog(accountId: String, amount: Double, note: String, date: Date) async throws -> String {
         try await client.rpc("create_adjustment_log", params: [
             "p_primary_account_id": AnyJSON.string(accountId),
             "p_amount": AnyJSON.double(amount),
             "p_note": AnyJSON.string(note),
             "p_occurred_at": AnyJSON.string(date.iso8601Formatted),
-        ]).execute()
+        ]).execute().value
+    }
+
+    /// Hides a row without touching any balance: for a save that failed halfway, so no transaction is left
+    /// that the wallet doesn't reflect.
+    func hideTransaction(id: String) async {
+        _ = try? await client.from("transactions")
+            .update(["deleted_at": AnyJSON.string("now()")] as [String: AnyJSON])
+            .eq("id", value: id).execute()
     }
 
     /// Records a card bill paid from outside Saku: the card's debt drops, no wallet moves.
@@ -234,11 +243,16 @@ final class SupabaseRepository: @unchecked Sendable {
             "p_note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
             "p_occurred_at": AnyJSON.string(date.iso8601Formatted),
         ]
-        _ = try await client.rpc("create_card_payment", params: params).execute()
-        try await client.rpc("increment_account_balance", params: [
-            "p_account_id": AnyJSON.string(cardId),
-            "p_delta": AnyJSON.double(-amount),
-        ]).execute()
+        let transactionId: String = try await client.rpc("create_card_payment", params: params).execute().value
+        do {
+            try await client.rpc("increment_account_balance", params: [
+                "p_account_id": AnyJSON.string(cardId),
+                "p_delta": AnyJSON.double(-amount),
+            ]).execute()
+        } catch {
+            await hideTransaction(id: transactionId)
+            throw error
+        }
     }
 
     func createTransfer(primaryAccountId: String, counterpartyAccountId: String, amount: Double, description: String?, note: String?, date: Date) async throws -> Transaction {
@@ -264,8 +278,14 @@ final class SupabaseRepository: @unchecked Sendable {
             .execute()
             .value
 
-        let isCredit = try await creditFlags([primaryAccountId, counterpartyAccountId])
-        try await applyBalanceEffects(of: transaction, isCredit: isCredit, sign: 1)
+        do {
+            let isCredit = try await creditFlags([primaryAccountId, counterpartyAccountId])
+            try await applyBalanceEffects(of: transaction, isCredit: isCredit, sign: 1)
+        } catch {
+            // applyBalanceEffects has already put back any leg it moved
+            await hideTransaction(id: transactionId)
+            throw error
+        }
 
         return transaction
     }
@@ -313,16 +333,51 @@ final class SupabaseRepository: @unchecked Sendable {
                 net[accountId, default: 0] += sign * effect
             }
         }
-        for (accountId, change) in net where abs(change) > 0.001 {
-            try await client.rpc("increment_account_balance", params: [
-                "p_account_id": AnyJSON.string(accountId),
-                "p_delta": AnyJSON.double(change),
-            ]).execute()
+        var applied: [(String, Double)] = []
+        do {
+            for (accountId, change) in net where abs(change) > 0.001 {
+                try await increment(accountId, by: change)
+                applied.append((accountId, change))
+            }
+        } catch {
+            // put the balances back and the row as it was, so the edit either happened or didn't
+            for (accountId, change) in applied { try? await increment(accountId, by: -change) }
+            _ = try? await client.from("transactions").update(Self.restoreValues(of: old)).eq("id", value: id).execute()
+            throw error
         }
+        try await syncInstallment(of: updated)
 
         // an edited early salary: its date may have moved, so the period dates are read again
         if updated.startsPeriod == true { await refreshShiftsAndAnnounce() }
         return updated
+    }
+
+    private static func restoreValues(of old: Transaction) -> [String: AnyJSON] {
+        [
+            "primary_account_id": AnyJSON.string(old.accountId),
+            "counterparty_account_id": old.counterpartyAccountId.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "category_id": old.categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "amount": AnyJSON.double(old.amount),
+            "transaction_type": AnyJSON.string(old.type.rawValue),
+            "description": old.description.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "note": old.note.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "occurred_at": AnyJSON.string(old.date.iso8601Formatted),
+        ]
+    }
+
+    /// A 0% installment belongs to its purchase: when the purchase moves to another wallet or stops being an
+    /// expense, the plan follows or goes, so no card keeps billing parts of a purchase it no longer holds.
+    private func syncInstallment(of purchase: Transaction) async throws {
+        let plans: [CardInstallment] = try await client.from("card_installments").select()
+            .eq("transaction_id", value: purchase.id).execute().value
+        for plan in plans {
+            if purchase.type != .expense {
+                try await client.from("card_installments").delete().eq("id", value: plan.id).execute()
+            } else if plan.accountId != purchase.accountId {
+                try await client.from("card_installments").update(["account_id": AnyJSON.string(purchase.accountId)])
+                    .eq("id", value: plan.id).execute()
+            }
+        }
     }
 
     /// How a transaction moves each wallet's balance (credit cards track debt, so the sign flips).
@@ -354,13 +409,25 @@ final class SupabaseRepository: @unchecked Sendable {
         return Dictionary(accounts.map { ($0.id, $0.isCreditCard) }, uniquingKeysWith: { first, _ in first })
     }
 
+    /// Applies every leg or none: a leg that fails puts back the ones already moved.
     private func applyBalanceEffects(of txn: Transaction, isCredit: [String: Bool], sign: Double) async throws {
-        for (accountId, effect) in Self.balanceEffects(of: txn, isCredit: isCredit) {
-            try await client.rpc("increment_account_balance", params: [
-                "p_account_id": AnyJSON.string(accountId),
-                "p_delta": AnyJSON.double(sign * effect),
-            ]).execute()
+        var applied: [(String, Double)] = []
+        do {
+            for (accountId, effect) in Self.balanceEffects(of: txn, isCredit: isCredit) {
+                try await increment(accountId, by: sign * effect)
+                applied.append((accountId, sign * effect))
+            }
+        } catch {
+            for (accountId, delta) in applied { try? await increment(accountId, by: -delta) }
+            throw error
         }
+    }
+
+    private func increment(_ accountId: String, by delta: Double) async throws {
+        try await client.rpc("increment_account_balance", params: [
+            "p_account_id": AnyJSON.string(accountId),
+            "p_delta": AnyJSON.double(delta),
+        ]).execute()
     }
 
     func softDeleteTransaction(id: String) async throws {
@@ -388,6 +455,8 @@ final class SupabaseRepository: @unchecked Sendable {
             .update(["deleted_at": AnyJSON.string("now()")] as [String: AnyJSON])
             .eq("id", value: id)
             .execute()
+        // an installment plan goes with its purchase
+        _ = try? await client.from("card_installments").delete().eq("transaction_id", value: id).execute()
         // deleting an early salary that moved the period brings the usual period back (K4)
         if txn.startsPeriod == true { await refreshShiftsAndAnnounce() }
     }
@@ -705,28 +774,6 @@ final class SupabaseRepository: @unchecked Sendable {
             .update(["deleted_at": AnyJSON.string("now()")] as [String: AnyJSON])
             .eq("id", value: id)
             .execute()
-    }
-
-    // MARK: - Balance Computation
-
-    func computeAccountBalance(accountId: String) async throws -> Double {
-        let rows: [AmountRow] = try await client
-            .from("transaction_entries")
-            .select("signed_amount")
-            .eq("account_id", value: accountId)
-            .execute()
-            .value
-        return rows.reduce(0) { $0 + $1.amount }
-    }
-}
-
-extension SupabaseRepository {
-    struct AmountRow: Decodable {
-        let amount: Double
-
-        enum CodingKeys: String, CodingKey {
-            case amount = "signed_amount"
-        }
     }
 }
 
