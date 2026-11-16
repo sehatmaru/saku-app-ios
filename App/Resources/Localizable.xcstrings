@@ -833,12 +833,12 @@
         }
       }
     },
-    "%lld cicilan · lunas terakhir %@": {
+    "%lld cicilan · lunas %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld installments · last paid off %@"
+            "value": "%lld installments · paid off %@"
           }
         }
       }

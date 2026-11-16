@@ -15,48 +15,40 @@ struct RunningInstallmentsBanner: View {
     @State private var pendingOpen: String?
 
     private var monthly: Double { items.reduce(0) { $0 + $1.monthly } }
-    /// Parts already billed out of all parts.
-    private var progress: Double {
-        let total = items.reduce(0) { $0 + $1.months }
-        return total > 0 ? min(1, Double(items.reduce(0) { $0 + $1.billedParts }) / Double(total)) : 0
-    }
     private var summary: String {
         let last = items.map(\.endDate).max() ?? Date()
         let f = DateFormatter()
         f.locale = AppLanguage.locale
         f.dateFormat = "MMM yyyy"
-        return L("%lld cicilan · lunas terakhir %@", items.count, f.string(from: last))
+        return L("%lld cicilan · lunas %@", items.count, f.string(from: last))
     }
 
     var body: some View {
         Button { showsSheet = true } label: {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Text(L("Cicilan berjalan")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+            HStack(spacing: 12) {
+                Image(systemName: "calendar.badge.clock").font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.appPrimary)
+                    .frame(width: 32, height: 32)
+                    .background(Color.appPrimary.opacity(0.15), in: Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("Cicilan berjalan")).font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
+                    Text(summary).font(.app(12)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
                 }
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("Rp" + (isBalanceVisible ? monthly.formattedAsDigits() : hiddenAmount))
-                        .font(.app(26, weight: .semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
-                        .foregroundStyle(Color.appText)
-                    Text(L("/bulan")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Spacer(minLength: 8)
+                HStack(spacing: 0) {
+                    Text(isBalanceVisible ? CategoryCatalog.short(monthly) : hiddenAmount).monospacedDigit()
+                    Text(L("/bln")).foregroundStyle(Color.appTextSecondary).fontWeight(.regular)
                 }
-                GeometryReader { g in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.appSeparator)
-                        Capsule().fill(Color.appPrimary).frame(width: g.size.width * progress)
-                    }
-                }
-                .frame(height: 4)
-                Text(summary).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                .font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
         }
         .buttonStyle(PressScaleStyle())
-        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 14)
+        .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 16)
         .sheet(isPresented: $showsSheet, onDismiss: {
             if let id = pendingOpen { pendingOpen = nil; onOpen(id) }
         }) {
