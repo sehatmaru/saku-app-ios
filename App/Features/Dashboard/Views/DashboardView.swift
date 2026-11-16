@@ -161,7 +161,8 @@ struct DashboardView: View {
 
     /// The AI agreement is asked once per person (accounts only; guests cannot turn AI on).
     private func askAIConsentOnce() {
-        guard !SmartTrackerConsent.promptSeen, authViewModel.isAuthenticated, authViewModel.currentUser?.isGuest != true else { return }
+        guard authViewModel.isAuthenticated, let user = authViewModel.currentUser, !user.isGuest,
+              !SmartTrackerConsent.isGranted, !SmartTrackerConsent.hasSeenPrompt(for: user.id) else { return }
         showsAIConsent = true
     }
 

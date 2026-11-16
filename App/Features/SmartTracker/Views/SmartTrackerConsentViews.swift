@@ -163,7 +163,6 @@ struct SmartTrackerConsentSheet: View {
     var isPreview = false
     @Environment(\.dismiss) private var dismiss
     @State private var showsDetails = false
-    @State private var height: CGFloat = 560
 
     private var promises: [(String, String)] {
         [("globe", L("Teks yang kamu masukkan dikirim ke penyedia model bahasa.")),
@@ -175,7 +174,7 @@ struct SmartTrackerConsentSheet: View {
         VStack(alignment: .leading, spacing: 20) {
             Image(systemName: "sparkles").font(.system(size: 28)).foregroundStyle(Color.appPrimary)
                 .frame(width: 56, height: 56).background(Color.appPrimary.opacity(0.12), in: Circle())
-            Text(L("Aktifkan AI untuk Smart Tracker")).font(.app(26, weight: .bold)).lineSpacing(2)
+            Text(L("Aktifkan AI untuk Smart Tracker")).font(.app(22, weight: .bold))
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 16) {
                 ForEach(Array(promises.enumerated()), id: \.offset) { _, promise in
@@ -186,32 +185,20 @@ struct SmartTrackerConsentSheet: View {
                     }
                 }
             }
-            VStack(spacing: 4) {
-                PrimaryButton(title: L("Setuju dan aktifkan AI"), action: agree)
-                Button(action: decline) {
-                    Text(L("Nanti saja")).font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
-                        .frame(maxWidth: .infinity, minHeight: 48)
-                }
-                Text(L("AI mati. Smart Tracker tetap jalan dengan aturan di perangkat."))
-                    .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
-                    .padding(.top, -6)
-                Button { showsDetails = true } label: {
-                    Text(L("Cara data diproses")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
+            Text(L("AI mati. Smart Tracker tetap jalan dengan aturan di perangkat."))
+                .font(.app(13)).lineSpacing(2).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
+            Button { showsDetails = true } label: {
+                Text(L("Cara data diproses")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                    .frame(minHeight: 44)
             }
-            .padding(.top, 4)
         }
         .foregroundStyle(Color.appText)
-        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { geo in
-            Color.clear.onAppear { height = geo.size.height }.onChange(of: geo.size.height) { _, new in height = new }
-        })
+        .padding(.horizontal, 24).padding(.top, 8)
+        .filterSheet {
+            SmartSheetFooter(primary: L("Setuju dan aktifkan AI"), secondary: L("Nanti saja"), onPrimary: agree, onSecondary: decline)
+        }
         .background(Color.appBackground)
-        .presentationDetents([.height(height)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(28)
         .sheet(isPresented: $showsDetails) { SmartTrackerPrivacySheet() }
     }
 
@@ -220,7 +207,7 @@ struct SmartTrackerConsentSheet: View {
         // agree now (works offline); the profile is updated in the background and retried at next launch
         SmartTrackerConsent.isGranted = true
         SmartTrackerConsent.since = Date()
-        SmartTrackerConsent.promptSeen = true
+        SmartTrackerConsent.markPromptSeen(for: profileId?.uuidString)
         if let profileId {
             Task {
                 try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
@@ -232,7 +219,7 @@ struct SmartTrackerConsentSheet: View {
 
     private func decline() {
         if !isPreview {
-            SmartTrackerConsent.promptSeen = true
+            SmartTrackerConsent.markPromptSeen(for: profileId?.uuidString)
             if SmartTrackerConsent.isGranted {
                 SmartTrackerConsent.isGranted = false
                 if let profileId { Task { try? await SupabaseSDK.revokeSmartTrackerConsent(profileId: profileId) } }

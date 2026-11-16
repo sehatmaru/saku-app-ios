@@ -307,7 +307,7 @@ final class AuthViewModel: ObservableObject {
             try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
             await DraftStore.shared.syncMemory()
         }
-        if !isGuest { SmartTrackerConsent.promptSeen = true }
+        if !isGuest { SmartTrackerConsent.markPromptSeen(for: profileId.uuidString) }
         var joinedPlus = false
         if setup.joinsPlus, PlusStore.isInternalBuild {
             // Until StoreKit exists the trial starts on the server through the internal test switch, like the paywall.
@@ -385,7 +385,6 @@ final class AuthViewModel: ObservableObject {
         PaydaySetting.shifts = []
         HomeBalanceSetting.mode = nil
         SmartTrackerConsent.isGranted = false
-        SmartTrackerConsent.promptSeen = false
         DraftStore.shared.reset()
         for key in ["paydayCardDismissed", "hasSeenOnboarding", "memberSince", "billReminderSnoozedUntil"] {
             UserDefaults.standard.removeObject(forKey: key)
@@ -544,7 +543,6 @@ final class AuthViewModel: ObservableObject {
     private func resetLocalAccountState() {
         PaydaySetting.shifts = []
         SmartTrackerConsent.isGranted = false
-        SmartTrackerConsent.promptSeen = false
         DraftStore.shared.reset()
         PlusStore.shared.reset()
         GuestCardPolicy.resetCounters()

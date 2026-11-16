@@ -106,8 +106,9 @@ enum SmartTrackerWays {
 enum SmartTrackerConsent {
     static let key = "smartTrackerConsent"
     static let sinceKey = "smartTrackerConsentSince"
-    /// The one-time AI sheet was shown (agreed or "Nanti saja"); existing users see it once.
-    static let promptSeenKey = "smartTrackerAIPromptSeen"
+    /// The accounts that have seen the one-time AI sheet (agreed or "Nanti saja"). It is kept per account, not wiped on
+    /// sign-out, so signing in again does not ask again.
+    static let promptSeenKey = "smartTrackerAIPromptSeenFor"
 
     static var since: Date? {
         get { UserDefaults.standard.object(forKey: sinceKey) as? Date }
@@ -119,9 +120,16 @@ enum SmartTrackerConsent {
         set { UserDefaults.standard.set(newValue, forKey: key) }
     }
 
-    static var promptSeen: Bool {
-        get { UserDefaults.standard.bool(forKey: promptSeenKey) }
-        set { UserDefaults.standard.set(newValue, forKey: promptSeenKey) }
+    private static func seenIds() -> [String] { UserDefaults.standard.stringArray(forKey: promptSeenKey) ?? [] }
+
+    static func hasSeenPrompt(for userId: String?) -> Bool {
+        guard let id = userId?.lowercased() else { return false }
+        return seenIds().contains(id)
+    }
+
+    static func markPromptSeen(for userId: String?) {
+        guard let id = userId?.lowercased(), !seenIds().contains(id) else { return }
+        UserDefaults.standard.set(seenIds() + [id], forKey: promptSeenKey)
     }
 }
 
