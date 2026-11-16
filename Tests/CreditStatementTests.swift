@@ -212,4 +212,50 @@ extension CreditStatementTests {
         XCTAssertTrue(cycles[0].isOpen)
         XCTAssertFalse(cycles[1].isOpen)
     }
+
+    // MARK: Installments in the next statement
+
+    /// A phone bought after the cut-off is billed one part at a time, not in full on the next statement.
+    func testInstallmentBoughtThisPeriodAddsOnlyItsFirstPart() {
+        let purchase = txn("tv", .expense, 6_000_000, date(2026, 9, 25))
+        let plan = CardInstallment(id: "i", accountId: "card", transactionId: "tv", months: 6)
+        let s = statement(card(balance: 6_000_000), [purchase], installments: [plan], today: date(2026, 9, 29))
+        XCTAssertEqual(s.currentPeriod, 1_000_000)
+        XCTAssertEqual(s.installmentsToCome, 5_000_000)
+    }
+
+    func testNextPartOfAnEarlierInstallmentJoinsTheNextStatement() {
+        let old = txn("tv", .expense, 6_000_000, date(2026, 8, 25))
+        let coffee = txn("c", .expense, 300_000, date(2026, 9, 25))
+        let plan = CardInstallment(id: "i", accountId: "card", transactionId: "tv", months: 6)
+        let s = statement(card(balance: 6_300_000), [old, coffee], installments: [plan], today: date(2026, 9, 29))
+        XCTAssertEqual(s.statementAmount, 1_000_000)
+        XCTAssertEqual(s.currentPeriod, 1_300_000)
+        XCTAssertEqual(s.installmentsToCome, 5_000_000)
+    }
+
+    func testInstallmentWhosePurchaseMovedToAnotherCardIsIgnored() {
+        let moved = txn("tv", .expense, 6_000_000, date(2026, 8, 25), from: "other")
+        let plan = CardInstallment(id: "i", accountId: "card", transactionId: "tv", months: 6)
+        let s = statement(card(balance: 6_000_000), [moved], installments: [plan], today: date(2026, 9, 29))
+        XCTAssertEqual(s.installmentsToCome, 0)
+    }
+
+    func testNextDueDateIsTheOneAfterTheNextCutoff() {
+        let s = statement(card(balance: 0), [], today: date(2026, 9, 29))
+        XCTAssertEqual(s.dueDate, calendar.startOfDay(for: date(2026, 10, 5)))
+        XCTAssertEqual(s.nextDueDate, calendar.startOfDay(for: date(2026, 11, 5)))
+    }
+
+    /// A refund lowers what its own period bills; only payments answer the statement printed before.
+    func testRefundIsNotCountedAsPaymentOfThePreviousStatement() {
+        let charge = txn("a", .expense, 1_000_000, date(2026, 9, 10))
+        let refund = txn("r", .income, 200_000, date(2026, 9, 25))
+        let payment = txn("p", .transfer, 300_000, date(2026, 9, 27), from: "bank", to: "card")
+        let cycles = CreditStatement.cycles(card: card(balance: 500_000), transactions: [charge, refund, payment],
+                                            today: date(2026, 9, 29), calendar: calendar)
+        XCTAssertEqual(cycles[0].charged, -200_000)
+        XCTAssertEqual(cycles[1].paid, 300_000)
+        XCTAssertEqual(cycles[1].charged, 1_000_000)
+    }
 }

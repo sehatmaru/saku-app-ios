@@ -25,8 +25,14 @@ struct CreditStatement {
     let remaining: Double
     /// Debt not billed yet: charges since the cut-off and installment parts still to come.
     let unbilled: Double
-    /// Charges since the last cut-off (payments not netted): what the next statement will bill.
+    /// What the next statement will bill: charges since the last cut-off (payments not netted), with an
+    /// installment purchase counting only its first part, plus the next part of each earlier installment.
     let currentPeriod: Double
+    /// Installment parts no statement has billed yet, the one due on the next statement included. Paying these
+    /// early isn't how a 0% installment works, so "pay all" leaves them out.
+    let installmentsToCome: Double
+    /// When the statement after the next one falls due: the next reminder to set.
+    let nextDueDate: Date
     let status: Status
     /// What's left of the minimum payment after what was already paid.
     let minimumDue: Double
@@ -57,6 +63,7 @@ struct CreditStatement {
         statementDate = last
         nextStatementDate = cycle.cutoff(monthAfter: last)
         dueDate = cycle.dueDate(after: last)
+        nextDueDate = cycle.dueDate(after: cycle.cutoff(monthAfter: last))
 
         // Everything that moved the debt after the cut-off, so we can rewind to it.
         var changeSince = 0.0
@@ -75,11 +82,21 @@ struct CreditStatement {
         // Installment parts the statement hasn't reached yet stay out of what was billed.
         let purchases = Dictionary(transactions.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var unbilledParts = 0.0
-        for installment in installments where installment.accountId == card.id {
-            guard let purchase = purchases[installment.transactionId], purchase.date < boundary else { continue }
+        // This period's installment purchases sit in `changeSince` in full; only their first part is billed next.
+        var deferredNow = 0.0
+        var nextParts = 0.0
+        for installment in installments where installment.accountId == card.id && installment.months > 0 {
+            guard let purchase = purchases[installment.transactionId], purchase.type == .expense, purchase.accountId == card.id else { continue }
+            let part = purchase.amount / Double(installment.months)
+            if purchase.date >= boundary {
+                deferredNow += purchase.amount - part
+                continue
+            }
             let billed = cycle.cutoffsReached(from: purchase.date, through: last, cap: installment.months)
-            unbilledParts += purchase.amount / Double(installment.months) * Double(installment.months - billed)
+            unbilledParts += part * Double(installment.months - billed)
+            if billed < installment.months { nextParts += part }
         }
+        installmentsToCome = unbilledParts + deferredNow
 
         // A starting bill entered as "not printed yet" joins the statement at the cut-off it waited for.
         var unbilledOpening = 0.0
@@ -92,7 +109,7 @@ struct CreditStatement {
         paid = paidSince
         remaining = max(0, billedAmount - paidSince)
         unbilled = max(0, card.balance - remaining)
-        currentPeriod = max(0, changeSince + paidSince)
+        currentPeriod = max(0, changeSince + paidSince - deferredNow + nextParts)
 
         let minimum = billedAmount > 0 ? min(billedAmount, max(billedAmount * Self.minimumShare, Self.minimumFloor)) : 0
         minimumDue = max(0, minimum - paidSince)
@@ -228,9 +245,11 @@ struct CreditStatement {
         for txn in transactions.sorted(by: { $0.date > $1.date }) {
             guard let own = index(of: calendar.startOfDay(for: txn.date)) else { continue }
             let effect = debtEffect(of: txn, on: card.id)
-            let target = effect < 0 && own + 1 < result.count ? own + 1 : own
+            // A payment answers the statement printed before it; a refund lowers what its own period bills.
+            let isPayment = effect < 0 && txn.type != .income
+            let target = isPayment && own + 1 < result.count ? own + 1 : own
             result[target].transactions.append(txn)
-            if effect > 0 { result[target].charged += effect } else if effect < 0 { result[target].paid -= effect }
+            if effect > 0 || (effect < 0 && !isPayment) { result[target].charged += effect } else if effect < 0 { result[target].paid -= effect }
         }
         return result
     }

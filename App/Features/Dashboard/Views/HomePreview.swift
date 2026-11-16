@@ -81,6 +81,8 @@ extension CreditStatement {
         remaining = amount
         unbilled = 0
         currentPeriod = 0
+        installmentsToCome = 0
+        nextDueDate = due.addingTimeInterval(40 * day)
         status = .overdue
         minimumDue = max(Self.minimumFloor, amount * Self.minimumShare)
         interestIfMinimum = (amount - minimumDue) * Self.monthlyInterest

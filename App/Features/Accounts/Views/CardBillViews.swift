@@ -141,11 +141,13 @@ struct PayCardBillSheet: View {
     private var source: Account? { isOtherSource ? nil : sources.first { $0.id == sourceId } }
     private var color: Color { isOtherSource ? Color(hex: "48484A") : source?.walletColor ?? .appPrimary }
     /// Nothing billed yet but the card has debt: offer paying all of it.
-    private var fullAmount: Double { statement.remaining > 0 || isRecord ? statement.remaining : card.balance }
+    private var fullAmount: Double { statement.remaining > 0 || isRecord ? statement.remaining : payableEarly }
+    /// Debt that can be paid before it is billed: installment parts nobody has billed yet stay on their schedule.
+    private var payableEarly: Double { max(card.balance - statement.installmentsToCome, 0) }
     private var showsMinimum: Bool { !isRecord && statement.minimumDue > 0 && statement.minimumDue < statement.remaining }
     /// Paying unbilled charges early is fine; more than the whole debt isn't. A recorded payment answers
     /// one statement, so it can't exceed what that statement still owes.
-    private var maxPayable: Double { isRecord ? statement.remaining : max(card.balance, statement.remaining) }
+    private var maxPayable: Double { isRecord ? statement.remaining : max(payableEarly, statement.remaining) }
     private var today: Date { Calendar.current.startOfDay(for: Date()) }
     /// The day the bill was paid; the due date until the user picks another, but never in the future.
     private var payDate: Date { paidOn ?? min(statement.dueDate, today) }

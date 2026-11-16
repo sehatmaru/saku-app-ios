@@ -187,8 +187,8 @@ final class AlreadyRecordedTests: XCTestCase {
 
     // MARK: The notice row and Batalkan
 
-    /// TC 91: the information row lives 7 days, then disappears (K10).
-    func testTC91NoticeIsKeptForSevenDays() {
+    /// TC 91: the information row is gone once the day of the notification is over (it no longer waits 7 days).
+    func testTC91NoticeIsGoneAfterTheDay() {
         let (store, _) = makeStore()
         let setup = installmentSetup()
         let running = setup.running!
@@ -196,10 +196,8 @@ final class AlreadyRecordedTests: XCTestCase {
         store.addFromNotification([notificationDraft(amount: running.monthly, date: running.billingDates[1])], appName: "BCA")
         XCTAssertEqual(store.notices.count, 1)
 
-        store.purgeExpired(now: Date().addingTimeInterval(6 * 24 * 3600))
-        XCTAssertEqual(store.notices.count, 1, "still shown on day 6")
         store.purgeExpired(now: Date().addingTimeInterval(8 * 24 * 3600))
-        XCTAssertTrue(store.notices.isEmpty, "gone after 7 days")
+        XCTAssertTrue(store.notices.isEmpty, "gone once the day is over")
     }
 
     /// TC 92: Batalkan turns the notification back into a draft.
