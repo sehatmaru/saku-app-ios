@@ -84,8 +84,6 @@ struct PlusPaywallView: View {
     @State private var purchaseError: String?
     /// Counts plan changes: the chosen price pulses once on each.
     @State private var pulse = 0
-    /// A sheet at its short height: the same content, smaller (design 1h).
-    @State private var compact = false
     @ObservedObject private var purchases = PlusPurchases.shared
     @State private var restoring = false
 
@@ -117,66 +115,38 @@ struct PlusPaywallView: View {
             }
     }
 
+    /// The sheet in the Trial Ended style: title and subtitle, the hero, the plan and price, labelled lists, and a bar with two actions.
     private var sheetBody: some View {
-        ScrollView {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Saku Plus").font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                Text(reason.title).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(reason.message).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .stEnter(0)
+
+            PaywallHero(compact: false).stEnter(1)
+
             VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text("Saku Plus").font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                    if PlusStore.isInternalBuild {
-                        Text(verbatim: "HARGA CONTOH · BELUM FINAL")
-                            .font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(Color.appWarning)
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.appWarning, style: StrokeStyle(lineWidth: 1, dash: [3])))
-                    }
-                    Spacer()
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextSecondary)
-                            .frame(width: 32, height: 32).background(Color.stChip, in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(L("Tutup"))
-                }
-                Text(reason.title)
-                    .font(.app(compact ? 24 : 30, weight: .bold)).tracking(-0.5).foregroundStyle(Color.appText)
-                    .fixedSize(horizontal: false, vertical: true).padding(.top, compact ? 8 : 14).stEnter(0)
-                Text(reason.message)
-                    .font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true).padding(.top, 10).stEnter(1)
-
-                PaywallHero(compact: compact).padding(.top, compact ? 12 : 20).stEnter(2)
-                // At the short height the switch moves down next to the button, so the plan is always in reach.
-                if !compact {
-                    planSwitch.padding(.top, 26).stEnter(3)
-                    priceBlock.padding(.top, 20)
-                }
-
-                if let second = reason.makeRoomTitle {
-                    Button { dismiss() } label: {
-                        Text(second).font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
-                            .frame(maxWidth: .infinity).frame(height: 44)
-                    }
-                    .buttonStyle(.plain).padding(.top, 8)
-                }
-
-                legalBlock
-            }
-            .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
-        }
-        .scrollIndicators(.hidden)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 10) {
-                if compact { planSwitch }
-                PrimaryButton(title: L("Coba gratis 7 hari"), isLoading: isBuying) { startTrial() }
+                planSwitch
+                priceBlock.padding(.top, 20)
                 Text(L("Gratis 7 hari, lalu %@. Batalkan kapan saja.", price))
-                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity)
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true).padding(.top, 6)
             }
-            .padding(.horizontal, 24).padding(.top, 10).padding(.bottom, 8)
-            .background(Color.paywallSurface)
+            .stEnter(2)
+
+            featureLists
+            legalBlock
         }
-        .background(Color.paywallSurface)
-        .presentationBackground(Color.paywallSurface)
-        .onGeometryChange(for: Bool.self) { $0.size.height < 650 } action: { compact = $0 }
+        .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .filterSheet {
+            SmartSheetFooter(primary: L("Coba gratis 7 hari"), isBusy: isBuying, secondary: reason.makeRoomTitle ?? L("Nanti saja"),
+                             onPrimary: { startTrial() }, onSecondary: { dismiss() })
+        }
         .presentationDetents([.medium, .large])
     }
 
@@ -199,6 +169,23 @@ struct PlusPaywallView: View {
 
     // MARK: Page (Profil › Coba Saku Plus): the same offer in the style of the Trial Ended sheet
 
+    /// The three labelled lists shared by the page and the sheet.
+    @ViewBuilder private var featureLists: some View {
+        pageList(title: L("Catat otomatis"), tint: .appPrimary, rows: [
+            ("bell", L("Dari notifikasi bank"), L("BCA, GoPay, dan lainnya jadi draf"), nil),
+            ("receipt", L("Dari foto struk"), L("Jumlah, toko, dan tanggal terisi"), nil),
+            ("envelope", L("Dari email"), L("Teruskan email, draf siap disimpan"), nil),
+        ])
+        pageList(title: L("Tanpa batas"), tint: .appTextSecondary, rows: [
+            ("wallet.bifold", L("Dompet uang aktif"), nil, FreeLimits.moneyWallets),
+            ("tag", L("Kategori pengeluaran"), nil, FreeLimits.expenseCategories),
+            ("chart.pie", L("Budget"), nil, FreeLimits.budgets),
+        ])
+        pageList(title: L("Dan juga"), tint: .appTextSecondary, rows: [
+            ("doc.text", L("Laporan PDF bulanan"), L("Data tetap milikmu, batalkan kapan saja"), nil),
+        ])
+    }
+
     private var pageTitle: AttributedString {
         let name = "Saku Plus"
         var text = AttributedString(L("Coba Saku Plus"))
@@ -217,24 +204,15 @@ struct PlusPaywallView: View {
 
                 PaywallHero(compact: false, tall: true).stEnter(1)
 
-                pageList(title: L("Yang terbuka"), tint: .appPrimary, rows: [
-                    ("bell", L("Catat dari notifikasi"), nil),
-                    ("camera", L("Foto struk dan screenshot"), nil),
-                    ("envelope", L("Penerusan email"), nil),
-                    ("doc.richtext", L("Laporan PDF"), nil),
-                ])
-                pageList(title: L("Tanpa batas"), tint: .appTextSecondary, rows: [
-                    ("wallet.bifold", L("Dompet uang aktif"), FreeLimits.moneyWallets),
-                    ("tag", L("Kategori pengeluaran"), FreeLimits.expenseCategories),
-                    ("chart.pie", L("Budget"), FreeLimits.budgets),
-                ])
-
                 VStack(alignment: .leading, spacing: 0) {
                     planSwitch
                     priceBlock.padding(.top, 20)
-                    legalBlock.padding(.top, 8)
                 }
-                .stEnter(3)
+                .stEnter(2)
+
+                featureLists
+                legalBlock
+
             }
             .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 24)
         }
@@ -250,30 +228,32 @@ struct PlusPaywallView: View {
             .padding(.horizontal, 24).padding(.top, 10).padding(.bottom, 8)
             .background(Color.appBackground)
         }
-        .navigationTitle(L("Saku Plus"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    /// A labelled list like the Trial Ended sheet's: icon, text, and for the limits what free allows, then infinity.
-    private func pageList(title: String, tint: Color, rows: [(String, String, Int?)]) -> some View {
+    /// A labelled list like the Trial Ended sheet's: a section label, then rows of icon, title and detail; limit rows show free, then infinity.
+    private func pageList(title: String, tint: Color, rows: [(String, String, String?, Int?)]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.app(13, weight: .semibold)).foregroundStyle(tint).padding(.bottom, 4)
+            Text(title).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.bottom, 8)
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 HStack(spacing: 14) {
-                    Image(systemName: row.0).font(.system(size: 18)).foregroundStyle(tint).frame(width: 24)
-                    Text(row.1).font(.app(15)).foregroundStyle(tint == .appPrimary ? Color.appText : Color.appBody)
+                    if row.2 != nil { Image(systemName: row.0).font(.system(size: 20)).foregroundStyle(Color.appPrimary).frame(width: 24) }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(row.1).font(.app(17, weight: row.2 == nil ? .regular : .semibold)).foregroundStyle(Color.appText)
+                        if let detail = row.2 { Text(detail).font(.app(15)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true) }
+                    }
                     Spacer(minLength: 8)
-                    if let limit = row.2 {
-                        HStack(spacing: 6) {
-                            Text("\(limit)").font(.app(15)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
-                            Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
-                            Image(systemName: "infinity").font(.system(size: 17, weight: .bold)).foregroundStyle(Color.appPrimary)
+                    if let limit = row.3 {
+                        HStack(spacing: 8) {
+                            Text("\(limit)").font(.app(17)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
+                            Image(systemName: "arrow.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                            Image(systemName: "infinity").font(.system(size: 19, weight: .bold)).foregroundStyle(Color.appPrimary)
                         }
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(L("%lld menjadi tanpa batas", limit))
                     }
                 }
-                .padding(.vertical, 12)
+                .padding(.vertical, 14)
                 .overlay(alignment: .top) { Rectangle().fill(Color.appBorder.opacity(0.5)).frame(height: 0.5) }
             }
         }
@@ -344,7 +324,7 @@ struct PlusPaywallView: View {
             .frame(maxWidth: .infinity).frame(height: 44)
             .background {
                 if selected {
-                    RoundedRectangle(cornerRadius: 11).fill(asPage ? Color.appBackground : Color.paywallSurface)
+                    RoundedRectangle(cornerRadius: 11).fill(Color.appBackground)
                         .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(best ? Color.appPrimary : Color.appBorder.opacity(0.6), lineWidth: best ? 1.5 : 1))
                 }
             }
@@ -614,12 +594,10 @@ private struct PaywallHero: View {
                 .frame(height: height)
             }
             .clipShape(RoundedRectangle(cornerRadius: 20))
-            .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 20).onEnded { value in
-                if value.translation.width < -30 { go(index + 1) } else if value.translation.width > 30 { go(index - 1) }
-            })
             dots
         }
+        // the hero only plays: no swipe or tap on it, so a finger on it scrolls the sheet
+        .allowsHitTesting(false)
         .task(id: restart) {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(Self.duration))
