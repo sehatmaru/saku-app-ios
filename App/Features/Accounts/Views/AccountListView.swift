@@ -448,6 +448,13 @@ struct AccountListView: View {
             .foregroundStyle(Color.appText)
             .padding(.top, 4)
 
+            let cardDebt = activeCards.reduce(0) { $0 + max($1.balance, 0) }
+            if cardDebt >= 1 {
+                Text(L("Kekayaan bersih %@ setelah utang kartu", masked(total - cardDebt)))
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
+                    .padding(.top, 6)
+            }
+
             if hasAssets {
                 HStack(alignment: .top, spacing: 12) {
                     heroPart(icon: "wallet.bifold", tint: .appTextSecondary, title: L("Saldo kas"), value: viewModel.totalBalance)
