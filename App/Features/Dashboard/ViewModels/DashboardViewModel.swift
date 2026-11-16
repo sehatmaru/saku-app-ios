@@ -155,7 +155,7 @@ final class DashboardViewModel: ObservableObject {
         do {
             errorMessage = nil
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
-            async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
+            async let transactionsTask = TransactionStore.shared.fetchAll(userId: userId)
             async let categoriesTask = SupabaseRepository.shared.fetchCategories()
             async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)
 

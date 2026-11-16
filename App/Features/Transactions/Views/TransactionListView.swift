@@ -122,7 +122,7 @@ struct TransactionListView: View {
                 .onChange(of: viewModel.allTransactions.count) { _, _ in expandInitialMonths() }
                 .onChange(of: isActive) { _, active in if !active { collapseExpandedList() } }
                 .task {
-                    guard let userId = authViewModel.currentUser?.id, viewModel.allTransactions.isEmpty else { return }
+                    guard let userId = authViewModel.currentUser?.id, !viewModel.hasLoadedOnce else { return }
                     await viewModel.loadTransactions(userId: userId)
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in

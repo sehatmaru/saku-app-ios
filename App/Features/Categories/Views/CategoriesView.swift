@@ -458,7 +458,7 @@ final class CategoriesModel: ObservableObject {
         do {
             async let cats = repo.fetchCategories()
             async let prefs = repo.fetchCategoryPreferences()
-            async let txns = repo.fetchTransactions(userId: userId)
+            async let txns = TransactionStore.shared.fetchAll(userId: userId)
             async let buds = repo.fetchBudgets(userId: userId)
             let (c, p, t, b) = try await (cats, prefs, txns, buds)
             categories = c.filter { !CategoryCatalog.isSystem($0) }

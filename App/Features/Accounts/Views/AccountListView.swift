@@ -1201,7 +1201,7 @@ struct AccountListView: View {
         if !forceRefresh, cachedUserId == userId, !accountTransactions.isEmpty { return }
 
         do {
-            let userTransactions = try await SupabaseRepository.shared.fetchTransactions(userId: userId)
+            let userTransactions = try await TransactionStore.shared.fetchAll(userId: userId)
             let grouped = groupTransactionsByAccount(userTransactions)
             accountTransactions = grouped
             cachedUserId = userId

@@ -90,6 +90,28 @@ final class TransactionStore: ObservableObject {
         } catch {}
     }
 
+    private var flight: Task<Void, Error>?
+
+    /// The whole history, fresh, for screens that need all of it (Beranda, Dompet, Budget, export...). Screens that react
+    /// to the same write at the same moment share one download, and the list's own store stays complete afterwards.
+    func fetchAll(userId: String) async throws -> [Transaction] {
+        adopt(userId)
+        if flight == nil {
+            reloadTask?.cancel()
+            flight = Task { [repo] in
+                let rows = try await repo.fetchTransactions(userId: userId)
+                guard self.userId == userId else { return }
+                self.transactions = rows
+                self.loadedSince = .distantPast
+                self.isComplete = true
+            }
+        }
+        let task = flight
+        defer { if flight == task { flight = nil } }
+        try await task?.value
+        return transactions
+    }
+
     /// Reads the loaded months again, after a write or a pull to refresh.
     func reload() async {
         guard let userId, let since = loadedSince else { return }

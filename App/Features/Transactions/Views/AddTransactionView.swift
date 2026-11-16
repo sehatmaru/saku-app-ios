@@ -226,7 +226,7 @@ struct AddTransactionView: View {
 
     private func loadBudgetData() async {
         async let budgets = SupabaseRepository.shared.fetchBudgets(userId: userId)
-        async let transactions = SupabaseRepository.shared.fetchTransactions(userId: userId)
+        async let transactions = TransactionStore.shared.fetchAll(userId: userId)
         monthlyBudget = ((try? await budgets) ?? []).filter(\.isActive).reduce(0) { $0 + $1.amount }
         // The transaction being edited is re-counted with its new amount as you type.
         let all = ((try? await transactions) ?? []).filter { $0.id != editing?.id }

@@ -48,7 +48,7 @@ final class AccountListViewModel: ObservableObject {
         do {
             errorMessage = nil
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
-            async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
+            async let transactionsTask = TransactionStore.shared.fetchAll(userId: userId)
             let (fetchedAccounts, transactions) = try await (accountsTask, transactionsTask)
             accounts = fetchedAccounts
 

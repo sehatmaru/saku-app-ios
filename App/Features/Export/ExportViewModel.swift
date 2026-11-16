@@ -16,7 +16,7 @@ final class ExportViewModel: ObservableObject {
 
     func load(userId: String?) async {
         guard let userId, !isReady else { return }
-        async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
+        async let transactionsTask = TransactionStore.shared.fetchAll(userId: userId)
         async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
         async let categoriesTask = SupabaseRepository.shared.fetchCategories()
         async let budgetsTask = SupabaseRepository.shared.fetchBudgets(userId: userId)

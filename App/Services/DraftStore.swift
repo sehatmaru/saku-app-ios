@@ -129,7 +129,7 @@ final class DraftStore: ObservableObject {
     func refreshReferenceData(userId: String) async {
         async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
         async let categoriesTask = SupabaseRepository.shared.fetchCategories()
-        async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
+        async let transactionsTask = TransactionStore.shared.fetchAll(userId: userId)
         if let fetched = try? await accountsTask { accounts = fetched }
         if let fetched = try? await categoriesTask { categories = fetched }
         if let fetched = try? await transactionsTask { recent = fetched }
