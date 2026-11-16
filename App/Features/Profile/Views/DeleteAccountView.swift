@@ -215,6 +215,15 @@ struct DeleteAccountView: View {
             .animation(.easeOut(duration: 0.24), value: ready)
             .padding(.top, 14)
             Text(L("Bisa dibatalkan sampai %@.", scheduledDay)).font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.top, 12)
+            #if DEBUG
+            // TESTING ONLY, REMOVE BEFORE RELEASE: deletes now, no 30 days.
+            Button { deleteNow() } label: {
+                Text(L("Hanya uji coba: hapus akun dan data")).font(.app(14, weight: .semibold)).foregroundStyle(Color.appError)
+                    .frame(maxWidth: .infinity).frame(height: 44).contentShape(Rectangle())
+            }
+            .disabled(!ready || isWorking).opacity(ready ? 1 : 0.35)
+            .padding(.top, 8)
+            #endif
         }
     }
 
@@ -274,4 +283,19 @@ struct DeleteAccountView: View {
             failed = !ok
         }
     }
+
+    #if DEBUG
+    // TESTING ONLY, REMOVE BEFORE RELEASE.
+    private func deleteNow() {
+        guard ready, !isWorking else { return }
+        isWorking = true
+        failed = false
+        confirmFocused = false
+        Task {
+            let ok = await authViewModel.deleteAccountNow()
+            isWorking = false
+            failed = !ok
+        }
+    }
+    #endif
 }

@@ -357,6 +357,24 @@ final class AuthViewModel: ObservableObject {
             errorMessage = L("Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.")
             return false
         }
+        await forgetAccountOnThisDevice()
+        return true
+    }
+
+    #if DEBUG
+    // TESTING ONLY, REMOVE BEFORE RELEASE: deletes the account on the server right now (no 30 days), then signs out.
+    func deleteAccountNow() async -> Bool {
+        do { try await SupabaseSDK.deleteAccountNow() } catch {
+            errorMessage = L("Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.")
+            return false
+        }
+        await forgetAccountOnThisDevice()
+        return true
+    }
+    #endif
+
+    /// Signs out everywhere and forgets what this device kept for the account.
+    private func forgetAccountOnThisDevice() async {
         try? await SupabaseSDK.client.auth.signOut()
         GIDSignIn.sharedInstance.signOut()
         NotificationManager.shared.cancelAll()
@@ -375,7 +393,6 @@ final class AuthViewModel: ObservableObject {
         needsSetup = false
         currentUser = nil
         withAnimation(.easeInOut(duration: 0.4)) { isAuthenticated = false }
-        return true
     }
 
     /// "Batalkan" on PendingDeletionView: the account is active again with its data intact.

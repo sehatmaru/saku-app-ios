@@ -202,6 +202,13 @@ enum SupabaseSDK {
         return date
     }
 
+    #if DEBUG
+    // TESTING ONLY, REMOVE BEFORE RELEASE: deletes the signed-in account now, without the 30 days.
+    static func deleteAccountNow() async throws {
+        try await client.rpc("delete_my_account_now").execute()
+    }
+    #endif
+
     /// Signing in during the wait and choosing "Batalkan".
     static func cancelAccountDeletion() async throws {
         try await client.rpc("cancel_account_deletion").execute()
