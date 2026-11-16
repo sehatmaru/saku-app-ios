@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// "Mendengarkan" (design 1b): the sentence appears as it is spoken, with what Saku has caught so far
+/// "Mendengarkan" (design 1b, now a sheet): the sentence appears as it is spoken, with what Saku has caught so far
 /// (amount, wallet, date) as chips. Stop to see the result; the keyboard button goes back to typing.
 struct VoiceCaptureView: View {
     var onFinish: (String) -> Void
@@ -25,42 +25,33 @@ struct VoiceCaptureView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button { voice.stop(); dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 15, weight: .bold)).foregroundStyle(Color.appText)
-                        .frame(width: 38, height: 38).background(Color.stChip, in: Circle())
-                }
-                Spacer()
-                HStack(spacing: 7) {
-                    Circle().fill(heardNothing ? Color.appTextTertiary.opacity(0.6) : Color.appError).frame(width: 8, height: 8)
-                        .scaleEffect(voice.isListening ? 1.25 : 1)
-                        .animation(.easeInOut(duration: 0.7).repeatForever(), value: voice.isListening)
-                    Text(heardNothing ? L("Berhenti mendengarkan") : L("Mendengarkan")).font(.app(15, weight: .semibold))
-                }
-                Spacer()
-                Color.clear.frame(width: 38, height: 38)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                Circle().fill(heardNothing ? Color.appTextTertiary.opacity(0.6) : Color.appError).frame(width: 9, height: 9)
+                    .scaleEffect(voice.isListening ? 1.25 : 1)
+                    .animation(.easeInOut(duration: 0.7).repeatForever(), value: voice.isListening)
+                Text(heardNothing ? L("Belum terdengar apa-apa") : L("Mendengarkan"))
+                    .font(.app(22, weight: .bold)).tracking(-0.3)
+                    .foregroundStyle(heardNothing ? Color.appTextTertiary : Color.appText)
             }
-            .padding(.horizontal, 20).padding(.top, 8)
-
-            VStack(alignment: .leading, spacing: 6) {
+            // one fixed-height area: the prompt and the spoken sentence swap in place, so nothing moves or animates when words arrive
+            VStack(alignment: .leading, spacing: 0) {
                 if heardNothing {
-                    Text(L("Belum terdengar apa-apa")).foregroundStyle(Color.appTextTertiary)
                     Text(L("Coba bicara lebih dekat ke mikrofon, atau ketik saja kalimatnya."))
-                        .font(.app(16, weight: .regular)).tracking(0).lineSpacing(3).foregroundStyle(Color.appTextSecondary).padding(.top, 6)
+                        .font(.app(15)).lineSpacing(2).foregroundStyle(Color.appTextSecondary)
                 } else if voice.transcript.isEmpty {
                     Text(L("Sebutkan apa, berapa, dan pakai apa"))
-                        .foregroundStyle(Color.appTextTertiary)
+                        .font(.app(15)).foregroundStyle(Color.appTextSecondary)
                 } else {
                     Text(voice.transcript)
+                        .font(.app(26, weight: .medium)).tracking(-0.5).lineSpacing(3)
+                        .foregroundStyle(Color.appText)
                 }
             }
-            .font(.app(30, weight: .medium))
-            .tracking(-0.6)
-            .lineSpacing(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 28).padding(.top, 72)
-            .frame(minHeight: 220, alignment: .topLeading)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
+            .padding(.top, 8)
+            .transaction { $0.animation = nil }
 
             FlowLayout(spacing: 6) {
                 ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
@@ -71,52 +62,36 @@ struct VoiceCaptureView: View {
                     .foregroundStyle(Color.stSuccessText)
                     .padding(.leading, 9).padding(.trailing, 12).frame(height: 30)
                     .background(Color.stSuccessBg, in: Capsule())
-                    .transition(.scale(scale: 0.97).combined(with: .opacity))
                 }
             }
-            .padding(.horizontal, 28).padding(.top, 24).frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
-            .animation(.easeInOut(duration: 0.2), value: chips.count)
+            .frame(maxWidth: .infinity, minHeight: 30, alignment: .topLeading)
+            .padding(.top, 6)
+            .transaction { $0.animation = nil }
 
             if let message = voice.message {
-                Text(L(message)).font(.app(14)).foregroundStyle(Color.appError).padding(.horizontal, 28).padding(.top, 12)
+                Text(L(message)).font(.app(14)).foregroundStyle(Color.appError).padding(.top, 12)
             }
-            Spacer()
 
             WaveformView(isActive: voice.isListening, isFlat: heardNothing)
-                .frame(height: 72)
-                .padding(.bottom, 24)
-            Text(heardNothing ? L("Ketuk mikrofon untuk coba lagi") : L("Contoh: “makan siang 45rb pakai BCA”"))
-                .font(.app(14)).foregroundStyle(Color.appTextTertiary).padding(.bottom, 40)
-
-            HStack(spacing: 44) {
-                Button { voice.stop(); onKeyboard() } label: {
-                    Image(systemName: "keyboard").font(.system(size: 21)).foregroundStyle(Color.appText)
-                        .frame(width: 52, height: 52).background(Color.stChip, in: Circle())
-                }
-                .accessibilityLabel(L("Ketik saja"))
-                if heardNothing {
-                    Button { Task { await listen() } } label: {
-                        Image(systemName: "mic.fill").font(.system(size: 30)).foregroundStyle(.white)
-                            .frame(width: 76, height: 76)
-                            .background(Color.stGreen, in: Circle())
-                            .overlay(Circle().strokeBorder(Color.stSuccessBg, lineWidth: 6).padding(-6))
-                    }
-                    .accessibilityLabel(L("Coba lagi"))
-                } else {
-                    Button { finish() } label: {
-                        RoundedRectangle(cornerRadius: 7).fill(.white).frame(width: 26, height: 26)
-                            .frame(width: 76, height: 76)
-                            .background(Color.appError, in: Circle())
-                            .overlay(Circle().strokeBorder(Color.stDangerBg, lineWidth: 6).padding(-6))
-                    }
-                    .accessibilityLabel(L("Berhenti merekam"))
-                }
-                Color.clear.frame(width: 52, height: 52)
+                .frame(height: 56).frame(maxWidth: .infinity)
+                .padding(.top, 22)
+            if !heardNothing, voice.transcript.isEmpty {
+                Text(L("Contoh: “makan siang 45rb pakai BCA”"))
+                    .font(.app(13)).foregroundStyle(Color.appTextTertiary)
+                    .frame(maxWidth: .infinity).padding(.top, 6)
             }
-            .padding(.bottom, 44)
         }
-        .background(Color.appBackground)
-        .animation(.settle(0.4), value: heardNothing)
+        .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .filterSheet {
+            SmartSheetFooter(primary: heardNothing ? L("Coba lagi") : L("Berhenti"),
+                             primaryIcon: heardNothing ? "mic.fill" : "stop.fill",
+                             destructive: !heardNothing,
+                             secondary: L("Ketik saja"),
+                             onPrimary: { if heardNothing { Task { await listen() } } else { finish() } },
+                             onSecondary: { voice.stop(); onKeyboard() })
+        }
+        .presentationDetents([.medium, .large])
         .task { await listen() }
         .onDisappear { voice.stop() }
     }

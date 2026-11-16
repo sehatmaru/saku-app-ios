@@ -324,7 +324,10 @@ struct DraftQueueView: View {
     private static var cardWidth: CGFloat { UIScreen.main.bounds.width }
     private static var baseCardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
 
-    private var cardHeight: CGFloat { Self.baseCardHeight }
+    /// One draft and nothing else: the card is shorter and its actions sit in the bar below, like the bulk bar for several.
+    private var singleDraft: Bool { items.count == 1 && queue.count == 1 }
+
+    private var cardHeight: CGFloat { singleDraft ? min(Self.baseCardHeight, 440) : Self.baseCardHeight }
 
     // MARK: Body
 
@@ -415,7 +418,10 @@ struct DraftQueueView: View {
                     .onChange(of: queue.map(\.id)) { old, new in keepFront(old, new) }
                 // the marks sit halfway between the card and the bar below
                 Spacer(minLength: 0)
-                pageDots.overlay { toastView }
+                Group {
+                    if items.count > 1 { pageDots } else { Color.clear.frame(height: 44) }
+                }
+                .overlay { toastView }
                 Spacer(minLength: 0)
             } else {
                 Spacer(minLength: 0)
@@ -423,8 +429,8 @@ struct DraftQueueView: View {
 
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .pinnedFooter(separator: true) {
-            if store.drafts.count > 1 && focusedId == nil { bulkBar }
+        .pinnedFooter(separator: false) {
+            if store.drafts.count > 1 && focusedId == nil { bulkBar } else if singleDraft && focusedId == nil { singleBar }
         }
     }
 
@@ -502,6 +508,18 @@ struct DraftQueueView: View {
         .accessibilityLabel(L("%lld dari %lld", pos + 1, n))
     }
 
+    /// The one draft's actions: Abaikan and Simpan when it is complete, only Abaikan while something is missing.
+    @ViewBuilder private var singleBar: some View {
+        if let d = queue.first {
+            if level(d) == .complete {
+                SmartSheetFooter(primary: failures[d.id] != nil ? L("Coba lagi") : L("Simpan"), isBusy: saving.contains(d.id),
+                                 secondary: L("Abaikan"), onPrimary: { save(d) }, onSecondary: { ignore(d) })
+            } else {
+                SmartSheetFooter(secondary: L("Abaikan"), onSecondary: { ignore(d) })
+            }
+        }
+    }
+
     private var bulkBar: some View {
         SmartSheetFooter(primary: L("Simpan (%lld)", ready.count), isEnabled: !ready.isEmpty,
                          secondary: L("Abaikan (%lld)", store.drafts.count),
@@ -575,35 +593,37 @@ struct DraftQueueView: View {
 
                 Spacer(minLength: 16)
 
-                HStack(spacing: 12) {
-                    if lv == .complete {
-                        Button { if !swiping { ignore(d) } } label: {
-                            Text("Abaikan").font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
-                                .padding(.horizontal, 12).frame(height: 48)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isSaving)
-                        Button { if !swiping { save(d) } } label: {
-                            HStack(spacing: 8) {
-                                if isSaving { ProgressView().tint(.white).scaleEffect(0.8) }
-                                Text(isSaving ? L("Menyimpan…") : failure != nil ? L("Coba lagi") : L("Simpan"))
+                if !singleDraft {
+                    HStack(spacing: 12) {
+                        if lv == .complete {
+                            Button { if !swiping { ignore(d) } } label: {
+                                Text("Abaikan").font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
+                                    .padding(.horizontal, 12).frame(height: 48)
                             }
-                            .font(.app(17, weight: .semibold)).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity).frame(height: 48)
-                            .background(Color.appPrimary, in: Capsule())
-                        }
-                        .buttonStyle(PressScaleStyle())
-                        .disabled(isSaving)
-                    } else {
-                        Button { if !swiping { ignore(d) } } label: {
-                            Text("Abaikan").font(.app(17, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                            .buttonStyle(.plain)
+                            .disabled(isSaving)
+                            Button { if !swiping { save(d) } } label: {
+                                HStack(spacing: 8) {
+                                    if isSaving { ProgressView().tint(.white).scaleEffect(0.8) }
+                                    Text(isSaving ? L("Menyimpan…") : failure != nil ? L("Coba lagi") : L("Simpan"))
+                                }
+                                .font(.app(17, weight: .semibold)).foregroundStyle(.white)
                                 .frame(maxWidth: .infinity).frame(height: 48)
+                                .background(Color.appPrimary, in: Capsule())
+                            }
+                            .buttonStyle(PressScaleStyle())
+                            .disabled(isSaving)
+                        } else {
+                            Button { if !swiping { ignore(d) } } label: {
+                                Text("Abaikan").font(.app(17, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                                    .frame(maxWidth: .infinity).frame(height: 48)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isSaving)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(isSaving)
                     }
                 }
-            }
+                }
             .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 16)
             .frame(maxWidth: .infinity, minHeight: cardHeight - Self.heroHeight, alignment: .topLeading)
             }
@@ -1033,31 +1053,28 @@ struct DraftQueueView: View {
         }
     }
 
+    /// Centred and quiet: a ring of ticks draws itself, then the check, then the words arrive one after another.
     private var allChecked: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer()
-            Image(systemName: "checkmark").font(.system(size: 28, weight: .bold)).foregroundStyle(Color.appPrimary)
-                .frame(width: 64, height: 64).background(Color.stSuccessBg, in: Circle()).stEnter(0)
-            Text("Semua sudah dicek").font(.app(26, weight: .bold)).padding(.top, 28).stEnter(1)
-            Text("Tidak ada draf Smart Tracker yang menunggu. Draf baru akan muncul di sini.")
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 8).stEnter(2)
-            HStack(spacing: 0) {
-                stat(saved, "disimpan ke transaksi", color: Color.appPrimary).frame(maxWidth: .infinity, alignment: .leading)
-                Rectangle().fill(Color.appSeparator).frame(width: 1)
-                stat(ignored, "diabaikan", color: Color.appText).padding(.leading, 20).frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 0) {
+            VStack(spacing: 0) {
+                CheckedRing().frame(width: 120, height: 120)
+                Text("Semua sudah dicek").font(.app(22, weight: .bold)).tracking(-0.3).padding(.top, 22).stEnter(8)
+                Text("Draf baru muncul di sini saat Smart Tracker membacanya.")
+                    .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
+                    .frame(maxWidth: 280).padding(.top, 6).stEnter(10)
+                (Text("\(saved)").fontWeight(.semibold).foregroundStyle(Color.appPrimary) + Text(" " + L("disimpan"))
+                 + Text("   ·   ").foregroundStyle(Color.appTextTertiary)
+                 + Text("\(ignored)").fontWeight(.semibold).foregroundStyle(Color.appText) + Text(" " + L("diabaikan")))
+                    .font(.app(15)).foregroundStyle(Color.appBody).monospacedDigit().padding(.top, 18).stEnter(12)
             }
-            .fixedSize(horizontal: false, vertical: true)
-            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-            .overlay(alignment: .bottom) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-            .padding(.top, 28).stEnter(3)
-            Spacer()
-            PrimaryButton(title: L("Kembali ke Smart Tracker")) {
-                SmartButtonGate.shared.opensBarOnShow = true
+            .frame(maxHeight: .infinity)
+            PrimaryButton(title: L("Tutup")) {
                 dismiss()
             }
             .padding(.bottom, 30)
         }
         .padding(.horizontal, 24)
+        .transition(.opacity)
     }
 
     private func stat(_ value: Int, _ label: String, color: Color) -> some View {
@@ -1285,4 +1302,34 @@ private struct NoSwipeBack: UIViewControllerRepresentable {
     }
     func makeUIViewController(context: Context) -> Host { Host() }
     func updateUIViewController(_ uiViewController: Host, context: Context) {}
+}
+
+
+/// The "all checked" mark: a ring of ticks draws itself, then the check mark, after the last card has gone.
+private struct CheckedRing: View {
+    @State private var on = false
+
+    private struct Tick: Shape {
+        func path(in rect: CGRect) -> Path {
+            var p = Path()
+            p.move(to: CGPoint(x: rect.minX + rect.width * 0.33, y: rect.minY + rect.height * 0.52))
+            p.addLine(to: CGPoint(x: rect.minX + rect.width * 0.46, y: rect.minY + rect.height * 0.65))
+            p.addLine(to: CGPoint(x: rect.minX + rect.width * 0.68, y: rect.minY + rect.height * 0.38))
+            return p
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            Circle().inset(by: 5).trim(from: 0, to: on ? 1 : 0)
+                .stroke(Color.appPrimary, style: StrokeStyle(lineWidth: 8, lineCap: .round, dash: [9, 4.8]))
+                .rotationEffect(.degrees(-90))
+                .animation(.easeOut(duration: 0.9).delay(0.25), value: on)
+            Tick().trim(from: 0, to: on ? 1 : 0)
+                .stroke(Color.appPrimary, style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
+                .animation(.easeOut(duration: 0.45).delay(1.0), value: on)
+        }
+        .onAppear { on = true }
+        .accessibilityHidden(true)
+    }
 }

@@ -64,7 +64,7 @@ struct SmartTrackerHomeOverlay: View {
             pickedPhoto = nil
             Task { if let data = try? await item.loadTransferable(type: Data.self) { read(imageData: data) } }
         }
-        .fullScreenCover(isPresented: $showsVoice) {
+        .sheet(isPresented: $showsVoice) {
             VoiceCaptureView(onFinish: { spoken in submit(spoken, source: .voice) },
                              onKeyboard: { showsVoice = false; isOpen = true; focused = true })
         }
