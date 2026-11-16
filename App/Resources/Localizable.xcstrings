@@ -5843,6 +5843,16 @@
         }
       }
     },
+    "Cicilan %lld dari %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installment %lld of %lld"
+          }
+        }
+      }
+    },
     "Cicilan 0%": {
       "localizations": {
         "en": {

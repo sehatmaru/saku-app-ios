@@ -544,6 +544,7 @@ struct TransactionListView: View {
     private func monthRows(_ section: TransactionSection) -> some View {
         let showAll = fullyShownMonths.contains(section.id)
         let rows = showAll ? section.transactions : Array(section.transactions.prefix(previewCount))
+        let running = Dictionary(viewModel.runningInstallments.map { ($0.transactionId, $0) }, uniquingKeysWith: { first, _ in first })
         ForEach(Array(rows.enumerated()), id: \.element.id) { index, transaction in
             if index == 0 || !Calendar.current.isDate(transaction.date, inSameDayAs: rows[index - 1].date) {
                 dayHeader(for: transaction.date, in: section.transactions)
@@ -555,7 +556,8 @@ struct TransactionListView: View {
                     accounts: viewModel.accounts,
                     showBalance: isBalanceVisible,
                     showDate: false,
-                    showWalletChip: true
+                    showWalletChip: true,
+                    installment: running[transaction.id].map { ($0.billedParts, $0.months) }
                 )
             }
             .buttonStyle(RowPressStyle())

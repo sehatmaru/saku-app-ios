@@ -12,6 +12,8 @@ struct TransactionRowView: View {
     var showArchivedBadge: Bool = false
     /// Under the amount: the wallet's colour swatch and name, or "Sumber → Tujuan" for a transfer.
     var showWalletChip: Bool = false
+    /// A card installment still being billed: parts billed so far and the total. Shown as an icon with "3/12" and a segment line.
+    var installment: (billed: Int, months: Int)? = nil
 
     private var category: Category? {
         transaction.categoryId.flatMap { cid in categories.first { $0.id == cid } }
@@ -121,6 +123,17 @@ struct TransactionRowView: View {
                 .font(.system(size: 19))
                 .foregroundStyle(Color.appTextSecondary)
                 .frame(width: 24)
+                .overlay(alignment: .bottomTrailing) {
+                    if transaction.isRecurring {
+                        ZStack {
+                            Circle().fill(Color.appBackground).frame(width: 16, height: 16)
+                            Circle().fill(Color.appPrimary.opacity(0.18)).frame(width: 13, height: 13)
+                            Image(systemName: "repeat").font(.system(size: 7, weight: .bold)).foregroundStyle(Color.appPrimary)
+                        }
+                        .offset(x: 6, y: 5)
+                        .accessibilityLabel(L("Berulang"))
+                    }
+                }
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -128,15 +141,6 @@ struct TransactionRowView: View {
                         .font(.app(16, weight: .medium))
                         .foregroundStyle(Color.appText)
                         .lineLimit(1)
-                    if transaction.isRecurring {
-                        Label("Berulang", systemImage: "repeat")
-                            .font(.app(11, weight: .medium))
-                            .foregroundStyle(Color.appPrimary)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 1)
-                            .background(Color.appPrimary.opacity(0.12), in: Capsule())
-                            .fixedSize()
-                    }
                     if showArchivedBadge {
                         Text("Diarsipkan")
                             .font(.app(11, weight: .medium))
@@ -151,6 +155,22 @@ struct TransactionRowView: View {
                         .font(.app(13))
                         .foregroundStyle(Color.appTextSecondary)
                         .lineLimit(1)
+                }
+                if let installment, installment.months > 0 {
+                    HStack(spacing: 6) {
+                        HStack(spacing: 2) {
+                            ForEach(0..<installment.months, id: \.self) { index in
+                                Capsule().fill(index < installment.billed ? Color.appPrimary : Color.appFill)
+                            }
+                        }
+                        .frame(width: min(CGFloat(installment.months) * 10, 96), height: 4)
+                        Image(systemName: "calendar.badge.clock").font(.system(size: 11))
+                        Text("\(installment.billed)/\(installment.months)").font(.app(12)).monospacedDigit()
+                    }
+                    .foregroundStyle(Color.appTextSecondary)
+                    .padding(.top, 3)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(L("Cicilan %lld dari %lld", installment.billed, installment.months))
                 }
             }
 

@@ -1757,5 +1757,6 @@
   "Perkiraan denda": "Estimated late fee",
   "Tarik tunai: ada biaya dan bunga": "Cash advance: fee and interest apply",
   "%lld cicilan · lunas %@": "%lld installments · paid off %@",
-  "lunas %@": "paid off %@"
+  "lunas %@": "paid off %@",
+  "Cicilan %lld dari %lld": "Installment %lld of %lld"
 }
