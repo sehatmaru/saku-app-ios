@@ -33,31 +33,55 @@ struct HealthDetailView: View {
 
     // MARK: Score
 
-    /// Before the first transaction there is no score to explain.
+    /// Before the first transaction: the same layout as the filled screen (score, bar, line, factors), every part still waiting.
     private var emptyHero: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("–")
-                    .font(.app(64, weight: .light))
-                    .tracking(-2.4)
-                    .foregroundStyle(Color.appTextTertiary)
-                Text("/ 100")
-                    .font(.app(17))
-                    .foregroundStyle(Color.appTextSecondary)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("–")
+                            .font(.app(64, weight: .light))
+                            .tracking(-2.4)
+                            .foregroundStyle(Color.appTextTertiary)
+                        Text("/ 100")
+                            .font(.app(17))
+                            .foregroundStyle(Color.appTextSecondary)
+                    }
+                    Spacer()
+                    Text(L("Belum ada skor"))
+                        .font(.app(17, weight: .semibold))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+                SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
+                    .padding(.top, 16)
+                Text("Skor muncul setelah kamu mencatat pemasukan atau pengeluaran.")
+                    .font(.app(15))
+                    .foregroundStyle(Color.appBody)
+                    .lineSpacing(3)
+                    .padding(.top, 18)
             }
-            SegmentBar(value: 0, count: 40, height: 22, spacing: 3)
-                .padding(.top, 16)
-            Text("Skor muncul setelah kamu mencatat pemasukan atau pengeluaran.")
-                .font(.app(15))
-                .foregroundStyle(Color.appBody)
-                .lineSpacing(3)
-                .padding(.top, 18)
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 32)
+            SectionDivider()
+            VStack(alignment: .leading, spacing: 0) {
+                SectionHeader(title: L("Yang akan dinilai"))
+                ForEach(waiting) { factorRow($0, compact: false) }
+                    .padding(.top, 6)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 28)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .padding(.bottom, 28)
     }
 
+    /// The factors as they will look, none rated yet. The card factor is left out: it only counts with a card.
+    private var waiting: [FinancialHealth.Factor] {
+        [FinancialHealth.Factor(kind: .spendable, points: 0, maxPoints: 30, summary: L("Dihitung setelah ada transaksi."), tip: nil, isPending: true),
+         FinancialHealth.Factor(kind: .cashflow, points: 0, maxPoints: 20, summary: L("Butuh pemasukan tercatat."), tip: nil, isPending: true),
+         FinancialHealth.Factor(kind: .emergencyFund, points: 0, maxPoints: 20,
+                                summary: L("Butuh %lld hari data.", FinancialHealth.minDays), tip: nil, isPending: true),
+         FinancialHealth.Factor(kind: .budget, points: 0, maxPoints: 10, summary: L("Butuh budget bulan ini."), tip: nil, isPending: true)]
+    }
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 0) {
