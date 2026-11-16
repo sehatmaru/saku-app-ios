@@ -5853,6 +5853,16 @@
         }
       }
     },
+    "Cicilan belum berubah. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The installment didn't change. Try again."
+          }
+        }
+      }
+    },
     "Cicilan berjalan": {
       "localizations": {
         "en": {
@@ -10793,12 +10803,32 @@
         }
       }
     },
+    "Kekayaan bersih %@ setelah utang kartu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net worth %@ after card debt"
+          }
+        }
+      }
+    },
     "Kelola": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Manage"
+          }
+        }
+      }
+    },
+    "Kelola cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage installment"
           }
         }
       }
@@ -12613,6 +12643,16 @@
         }
       }
     },
+    "Lunasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settle"
+          }
+        }
+      }
+    },
     "Lunasi begitu kas cukup.": {
       "localizations": {
         "en": {
@@ -12623,12 +12663,32 @@
         }
       }
     },
+    "Lunasi cicilan sekarang?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settle the installment now?"
+          }
+        }
+      }
+    },
     "Lunasi penuh begitu kasmu cukup, supaya tagihan tidak menumpuk.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Pay it in full as soon as your cash allows, so the bill doesn't pile up."
+          }
+        }
+      }
+    },
+    "Lunasi sekarang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settle now"
           }
         }
       }
@@ -13949,6 +14009,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Net cash flow %@"
+          }
+        }
+      }
+    },
+    "Net dan budget tidak berubah. Tenor dan pelunasan hanya mengatur cara Saku menagih.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net and budget don't change. Tenor and settling only change how Saku bills."
           }
         }
       }
@@ -15719,6 +15789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Estimated impact for the next period"
+          }
+        }
+      }
+    },
+    "Perkiraan denda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated late fee"
           }
         }
       }
@@ -19063,6 +19143,16 @@
         }
       }
     },
+    "Sisa cicilan masuk sekaligus ke tagihan berikutnya. Ini hanya mengubah cara Saku menagih, bukan pembayaran ke bank.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The rest lands on the next statement at once. This only changes how Saku bills it; it is not a payment to the bank."
+          }
+        }
+      }
+    },
     "Sisa limit": {
       "localizations": {
         "en": {
@@ -20663,12 +20753,12 @@
         }
       }
     },
-    "Tarik tunai dari kartu biasanya kena biaya dan bunga harian": {
+    "Tarik tunai: ada biaya dan bunga": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cash advances on a card usually carry a fee and daily interest"
+            "value": "Cash advance: fee and interest apply"
           }
         }
       }
@@ -22841,6 +22931,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Edit bill"
+          }
+        }
+      }
+    },
+    "Ubah tenor ke %lld bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change tenor to %lld months"
           }
         }
       }

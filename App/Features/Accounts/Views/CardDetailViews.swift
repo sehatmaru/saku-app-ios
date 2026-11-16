@@ -110,6 +110,7 @@ struct CardDetailContent: View {
             if s.status == .partial {
                 row(L("Sudah dibayar"), money(s.paid))
             }
+            if s.estimatedLateFee > 0 { row(L("Perkiraan denda"), money(s.estimatedLateFee)) }
             if let extra = v.extra { row(extra.0, money(extra.1)) }
             if v.canPay {
                 Button(action: onPay) {

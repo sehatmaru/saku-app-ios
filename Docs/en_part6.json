@@ -1745,5 +1745,15 @@
   "Tagihan berikutnya jatuh tempo %@. Buka Saku untuk melihat jumlahnya.": "Your next bill is due %@. Open Saku to see the amount.",
   "Tagihan berikutnya jatuh tempo besok. Bayar penuh supaya tidak kena bunga.": "Your next bill is due tomorrow. Pay in full to avoid interest.",
   "Perkiraan denda %@": "Estimated late fee %@",
-  "Tarik tunai dari kartu biasanya kena biaya dan bunga harian": "Cash advances on a card usually carry a fee and daily interest"
+  "Kekayaan bersih %@ setelah utang kartu": "Net worth %@ after card debt",
+  "Lunasi cicilan sekarang?": "Settle the installment now?",
+  "Sisa cicilan masuk sekaligus ke tagihan berikutnya. Ini hanya mengubah cara Saku menagih, bukan pembayaran ke bank.": "The rest lands on the next statement at once. This only changes how Saku bills it; it is not a payment to the bank.",
+  "Lunasi": "Settle",
+  "Cicilan belum berubah. Coba lagi.": "The installment didn't change. Try again.",
+  "Ubah tenor ke %lld bulan": "Change tenor to %lld months",
+  "Lunasi sekarang": "Settle now",
+  "Kelola cicilan": "Manage installment",
+  "Net dan budget tidak berubah. Tenor dan pelunasan hanya mengatur cara Saku menagih.": "Net and budget don't change. Tenor and settling only change how Saku bills.",
+  "Perkiraan denda": "Estimated late fee",
+  "Tarik tunai: ada biaya dan bunga": "Cash advance: fee and interest apply"
 }
