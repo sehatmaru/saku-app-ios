@@ -8,6 +8,8 @@ struct RunningInstallmentsBanner: View {
     let isBalanceVisible: Bool
     /// Opens the purchase transaction of a tapped installment (the sheet closes first).
     var onOpen: (String) -> Void = { _ in }
+    /// Plan id and a new tenor, or nil to settle now; true when it saved.
+    var onChange: (String, Int?) async -> Bool = { _, _ in false }
     @State private var showsSheet = false
     /// Opened only once the sheet is gone; navigating while it is still dismissing is lost.
     @State private var pendingOpen: String?
@@ -35,10 +37,10 @@ struct RunningInstallmentsBanner: View {
         .sheet(isPresented: $showsSheet, onDismiss: {
             if let id = pendingOpen { pendingOpen = nil; onOpen(id) }
         }) {
-            RunningInstallmentsSheet(items: items, isBalanceVisible: isBalanceVisible) { id in
+            RunningInstallmentsSheet(items: items, isBalanceVisible: isBalanceVisible, onOpen: { id in
                 pendingOpen = id
                 showsSheet = false
-            }
+            }, onChange: onChange)
         }
     }
 }
@@ -48,6 +50,9 @@ struct RunningInstallmentsSheet: View {
     let items: [RunningInstallment]
     let isBalanceVisible: Bool
     var onOpen: (String) -> Void = { _ in }
+    var onChange: (String, Int?) async -> Bool = { _, _ in false }
+    @State private var settling: RunningInstallment?
+    @State private var failed = false
     @Environment(\.dismiss) private var dismiss
     @State private var showsAll = false
     @State private var contentHeight: CGFloat = 480
@@ -85,7 +90,7 @@ struct RunningInstallmentsSheet: View {
                         .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
                         .frame(maxWidth: .infinity).frame(height: 44).padding(.top, 8)
                 }
-                Text(L("Hanya penanda: tidak mengubah Net, budget, atau tagihan kartu."))
+                Text(L("Net dan budget tidak berubah. Tenor dan pelunasan hanya mengatur cara Saku menagih."))
                     .font(.app(12)).lineSpacing(2).foregroundStyle(Color.appTextTertiary).padding(.top, 14)
             }
             .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 34)
@@ -97,11 +102,32 @@ struct RunningInstallmentsSheet: View {
         .adaptiveSheet()
 
         .background(Color.appBackground)
+        .confirmDialog(isPresented: Binding(get: { settling != nil }, set: { if !$0 { settling = nil } }),
+                       icon: "checkmark.circle", title: L("Lunasi cicilan sekarang?"),
+                       message: L("Sisa cicilan masuk sekaligus ke tagihan berikutnya. Ini hanya mengubah cara Saku menagih, bukan pembayaran ke bank."),
+                       confirmTitle: L("Lunasi"), cancelTitle: L("Tidak jadi")) {
+            if let item = settling { Task { if await onChange(item.id, nil) == false { failed = true }; settling = nil } }
+        }
+        .confirmDialog(isPresented: $failed, icon: "exclamationmark.triangle", title: L("Gagal menyimpan"),
+                       message: L("Cicilan belum berubah. Coba lagi."), confirmTitle: nil, cancelTitle: L("Tutup"))
     }
 
     private func row(_ item: RunningInstallment) -> some View {
-        Button { onOpen(item.transactionId) } label: { rowContent(item) }
-            .buttonStyle(RowPressStyle())
+        HStack(spacing: 0) {
+            Button { onOpen(item.transactionId) } label: { rowContent(item) }
+                .buttonStyle(RowPressStyle())
+            Menu {
+                ForEach([3, 6, 12, 24].filter { $0 > item.billedParts && $0 != item.months }, id: \.self) { months in
+                    Button(L("Ubah tenor ke %lld bulan", months)) { Task { if await onChange(item.id, months) == false { failed = true } } }
+                }
+                Button(L("Lunasi sekarang")) { settling = item }
+            } label: {
+                Image(systemName: "ellipsis").font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.appTextSecondary).frame(width: 44, height: 44)
+            }
+            .accessibilityLabel(L("Kelola cicilan"))
+        }
+        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
     }
 
     private func rowContent(_ item: RunningInstallment) -> some View {
@@ -113,11 +139,9 @@ struct RunningInstallmentsSheet: View {
             }
             Spacer(minLength: 8)
             Text(money(item.monthly)).font(.app(15)).monospacedDigit()
-            Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
         }
         .contentShape(Rectangle())
         .padding(.vertical, 13)
-        .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
     }
 
     /// "Okt", or "Mei 2027" when it ends in another year.

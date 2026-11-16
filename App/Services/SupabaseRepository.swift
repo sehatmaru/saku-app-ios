@@ -608,6 +608,17 @@ final class SupabaseRepository: @unchecked Sendable {
             .execute()
     }
 
+    /// A new tenor for a running plan; the purchase itself is untouched.
+    func updateInstallmentMonths(id: String, months: Int) async throws {
+        try await client.from("card_installments").update(["months": AnyJSON.integer(months)] as [String: AnyJSON])
+            .eq("id", value: id).execute()
+    }
+
+    /// Settling early drops the plan: what is still unbilled lands on the next statement in one piece.
+    func settleInstallment(id: String) async throws {
+        try await client.from("card_installments").delete().eq("id", value: id).execute()
+    }
+
     // MARK: - Categories
 
     /// Categories under the user's own names (renamed built-in ones included).

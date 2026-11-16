@@ -37,6 +37,17 @@ final class TransactionListViewModel: ObservableObject {
         if let fetched = try? await SupabaseRepository.shared.fetchInstallments(accountIds: ids) { installments = fetched }
     }
 
+    /// `months == nil` settles the plan now. Returns whether it saved.
+    func changeInstallment(id: String, months: Int?) async -> Bool {
+        do {
+            if let months { try await SupabaseRepository.shared.updateInstallmentMonths(id: id, months: months) }
+            else { try await SupabaseRepository.shared.settleInstallment(id: id) }
+        } catch { return false }
+        await refreshInstallments()
+        NotificationCenter.default.post(name: .dataDidChange, object: nil)
+        return true
+    }
+
     func loadTransactions(userId: String, forceRefresh: Bool = false) async {
         guard !isLoading, !isRefreshing else { return }
 

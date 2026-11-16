@@ -78,9 +78,9 @@ struct TransactionListView: View {
                             // 0% installments still billing this period; search and filters never hide it
                             let running = viewModel.runningInstallments
                             if !running.isEmpty {
-                                RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible) { id in
+                                RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible, onOpen: { id in
                                     openedInstallment = viewModel.allTransactions.first { $0.id == id }
-                                }
+                                }, onChange: { id, months in await viewModel.changeInstallment(id: id, months: months) })
                             }
 
                             if !hasNoTransactions {
