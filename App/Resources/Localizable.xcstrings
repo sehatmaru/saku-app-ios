@@ -23795,6 +23795,16 @@
         }
       }
     },
+    "lunas %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "paid off %@"
+          }
+        }
+      }
+    },
     "naik": {
       "localizations": {
         "en": {

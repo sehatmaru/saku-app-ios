@@ -15,40 +15,35 @@ struct RunningInstallmentsBanner: View {
     @State private var pendingOpen: String?
 
     private var monthly: Double { items.reduce(0) { $0 + $1.monthly } }
-    private var summary: String {
-        let last = items.map(\.endDate).max() ?? Date()
+    private var lastPayoff: String {
         let f = DateFormatter()
         f.locale = AppLanguage.locale
         f.dateFormat = "MMM yyyy"
-        return L("%lld cicilan · lunas %@", items.count, f.string(from: last))
+        return L("lunas %@", f.string(from: items.map(\.endDate).max() ?? Date()))
     }
 
     var body: some View {
         Button { showsSheet = true } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "calendar.badge.clock").font(.system(size: 15, weight: .semibold))
+            HStack(spacing: 8) {
+                Image(systemName: "calendar.badge.clock").font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.appPrimary)
-                    .frame(width: 32, height: 32)
-                    .background(Color.appPrimary.opacity(0.15), in: Circle())
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L("Cicilan berjalan")).font(.app(15, weight: .medium)).foregroundStyle(Color.appText)
-                    Text(summary).font(.app(12)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
-                }
+                (Text(L("Cicilan berjalan")).fontWeight(.medium).foregroundColor(Color.appText)
+                 + Text(" · " + lastPayoff).foregroundColor(Color.appTextSecondary))
+                    .font(.app(13)).lineLimit(1).minimumScaleFactor(0.85)
                 Spacer(minLength: 8)
                 HStack(spacing: 0) {
                     Text(isBalanceVisible ? CategoryCatalog.short(monthly) : hiddenAmount).monospacedDigit()
                     Text(L("/bln")).foregroundStyle(Color.appTextSecondary).fontWeight(.regular)
                 }
-                .font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                .font(.app(13, weight: .semibold)).foregroundStyle(Color.appText)
+                Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Color.appTextTertiary)
             }
-            .padding(.vertical, 12)
+            .padding(.top, 12)
             .contentShape(Rectangle())
             .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-            .overlay(alignment: .bottom) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
         }
         .buttonStyle(PressScaleStyle())
-        .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 16)
+        .padding(.horizontal, 24).padding(.top, 0).padding(.bottom, 16)
         .sheet(isPresented: $showsSheet, onDismiss: {
             if let id = pendingOpen { pendingOpen = nil; onOpen(id) }
         }) {
