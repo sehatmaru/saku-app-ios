@@ -46,14 +46,16 @@ struct InvestmentSeries: Equatable {
         var value = account.openingBalance
         var capital = account.openingBalance
         var all: [Point] = []
-        if account.openingBalance > 0 {
-            let opened = account.openedDate ?? transactions.map(\.date).min() ?? now
-            all.append(Point(date: opened, value: value, capital: capital, isChange: true))
-        }
         let ordered = transactions
             .filter { $0.accountId == account.id || $0.counterpartyAccountId == account.id }
             .filter { $0.type == .transfer || ($0.type == .adjustment && $0.accountId == account.id) }
             .sorted { $0.date < $1.date }
+        if account.openingBalance > 0 {
+            // every change is applied on top of the opening balance, so it is the starting state even when a change is
+            // dated before the day the wallet was opened
+            let opened = [account.openedDate ?? ordered.first?.date ?? now, ordered.first?.date].compactMap { $0 }.min() ?? now
+            all.append(Point(date: opened, value: value, capital: capital, isChange: true))
+        }
         for txn in ordered {
             switch txn.type {
             case .transfer where txn.counterpartyAccountId == account.id:
@@ -70,7 +72,9 @@ struct InvestmentSeries: Equatable {
     }
 
     /// The part of a full history that a range shows, oldest first.
-    init(all: [Point], range: Range, now: Date = Date()) {
+    init(all unsorted: [Point], range: Range, now: Date = Date()) {
+        // oldest first, same-moment points in the order given: the opening point can be dated after a first change
+        let all = unsorted.enumerated().sorted { ($0.element.date, $0.offset) < ($1.element.date, $1.offset) }.map(\.element)
         guard let start = range.start(from: now), let first = all.first(where: { $0.date >= start }) else {
             points = range.start(from: now) == nil ? all : []
             return

@@ -37,6 +37,23 @@ final class InvestmentSeriesTests: XCTestCase {
         XCTAssertFalse(s.hasLine)
     }
 
+    func testPointsAreOldestFirstEvenWhenTheOpeningPointIsDatedAfterAChange() {
+        let opening = InvestmentSeries.Point(date: day(10, 5), value: 56_767_083, capital: 56_767_083, isChange: true)
+        let earlier = InvestmentSeries.Point(date: day(10, 3), value: 10, capital: 10, isChange: true)
+        let later = InvestmentSeries.Point(date: day(10, 19), value: 52_467_083, capital: 52_467_083, isChange: true)
+        let s = InvestmentSeries(all: [opening, earlier, later], range: .all, now: now)
+        XCTAssertEqual(s.points.map(\.date), [day(10, 3), day(10, 5), day(10, 19)])
+    }
+
+    func testAChangeDatedBeforeTheOpeningDayStartsFromTheOpeningBalance() {
+        var account = bibit(opening: 49_767_083)
+        account.openedAt = "2026-10-05T09:50:33.968Z"
+        let s = InvestmentSeries(account: account, transactions: [deposit(7_000_000, day(10, 3)), withdraw(4_300_000, day(10, 19))],
+                                 range: .all, now: now)
+        XCTAssertEqual(s.points.map(\.value), [49_767_083, 56_767_083, 52_467_083])
+        XCTAssertEqual(s.points.first?.date, day(10, 3))
+    }
+
     func testNoChangesMeansNoPoints() {
         let s = InvestmentSeries(account: bibit(), transactions: [], range: .all, now: now)
         XCTAssertTrue(s.points.isEmpty)
