@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// "Cicilan berjalan" above the transaction list (design "Cicilan Revamp v2"): one line with the monthly total.
-/// Informative only: it adds to no total, Net or budget, and search and filters never hide it.
+/// Informative only: it adds to no total, Net or budget. Filters never hide it; a text search does.
 /// Tapping opens the sheet with every running installment.
 struct RunningInstallmentsBanner: View {
     let items: [RunningInstallment]

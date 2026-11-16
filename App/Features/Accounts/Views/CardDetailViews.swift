@@ -241,6 +241,8 @@ struct CardHistoryView: View {
 
     @State private var searchText = ""
     @State private var expanded: Set<Date> = []
+    /// Installments of this card still being billed, by purchase transaction id.
+    @State private var running: [String: RunningInstallment] = [:]
 
     private var query: String { searchText.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var cycles: [CreditStatement.BillingCycle] { CreditStatement.cycles(card: account, transactions: transactions) }
@@ -277,6 +279,15 @@ struct CardHistoryView: View {
         .background(Color.appBackground)
         .navigationTitle("Riwayat")
         .navigationBarTitleDisplayMode(.inline)
+        .task(id: transactions.count) { await loadInstallments() }
+    }
+
+    private func loadInstallments() async {
+        guard account.isCreditCard,
+              let plans = try? await SupabaseRepository.shared.fetchInstallments(accountIds: [account.id]) else { return }
+        let end = PaydayCycle.current.period(containing: Date()).end.addingTimeInterval(-1)
+        let found = RunningInstallments.compute(installments: plans, transactions: transactions, accounts: accounts, periodEnd: end)
+        running = Dictionary(found.map { ($0.transactionId, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     private var searchField: some View {
@@ -397,7 +408,9 @@ struct CardHistoryView: View {
 
     private func transactionRow(_ txn: Transaction) -> some View {
         NavigationLink(destination: TransactionDetailView(transaction: txn, categories: categories, accounts: accounts).detailPage()) {
-            TransactionRowView(transaction: txn, categories: categories, accounts: accounts, showBalance: isBalanceVisible, showDate: true)
+            TransactionRowView(transaction: txn, categories: categories, accounts: accounts, showBalance: isBalanceVisible, showDate: true,
+                               installment: running[txn.id].map { ($0.billedParts, $0.months) },
+                               installmentMonthly: running[txn.id]?.monthly)
                 .padding(.horizontal, 16)
         }
         .buttonStyle(RowPressStyle())

@@ -14,6 +14,8 @@ struct TransactionRowView: View {
     var showWalletChip: Bool = false
     /// A card installment still being billed: parts billed so far and the total. Shown as an icon with "3/12" and a segment line.
     var installment: (billed: Int, months: Int)? = nil
+    /// One installment part, shown under the amount where the row has no wallet chip (card history).
+    var installmentMonthly: Double? = nil
 
     private var category: Category? {
         transaction.categoryId.flatMap { cid in categories.first { $0.id == cid } }
@@ -184,6 +186,12 @@ struct TransactionRowView: View {
                     .lineLimit(1)
                     .fixedSize()
                 if showWalletChip { walletChip }
+                if installment != nil, let monthly = installmentMonthly {
+                    Text(showBalance ? CategoryCatalog.short(monthly) + L("/bln") : "Rp" + hiddenAmount)
+                        .font(.app(12))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .lineLimit(1)
+                }
             }
         }
         .padding(.vertical, 14)

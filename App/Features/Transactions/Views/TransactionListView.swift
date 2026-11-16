@@ -75,9 +75,9 @@ struct TransactionListView: View {
                                 .onAppear { showBackToTop = false }
                                 .onDisappear { showBackToTop = true }
 
-                            // 0% installments still billing this period; search and filters never hide it
+                            // 0% installments still billing this period; filters never hide it, a text search does
                             let running = viewModel.runningInstallments
-                            if !running.isEmpty {
+                            if !running.isEmpty, !isSearching {
                                 RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible, onOpen: { id in
                                     openedInstallment = viewModel.allTransactions.first { $0.id == id }
                                 }, onChange: { id, months in await viewModel.changeInstallment(id: id, months: months) })
