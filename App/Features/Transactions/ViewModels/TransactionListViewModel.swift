@@ -9,11 +9,11 @@ struct TransactionSection: Identifiable {
 
 @MainActor
 final class TransactionListViewModel: ObservableObject {
-    @Published var allTransactions: [Transaction] = []
+    @Published var allTransactions: [Transaction] = [] { didSet { runningCache = nil } }
     @Published var categories: [Category] = []
-    @Published var accounts: [Account] = []
+    @Published var accounts: [Account] = [] { didSet { runningCache = nil } }
     /// 0% card installments, for the "Cicilan berjalan" marker above the list.
-    @Published var installments: [CardInstallment] = []
+    @Published var installments: [CardInstallment] = [] { didSet { runningCache = nil } }
     @Published var thisMonthIncome: Double = 0
     @Published var thisMonthExpense: Double = 0
     @Published var isLoading = false
@@ -24,12 +24,25 @@ final class TransactionListViewModel: ObservableObject {
 
     var thisMonthBalance: Double { thisMonthIncome - thisMonthExpense }
 
-    /// Installments still being billed at the end of the current payday period.
-    var runningInstallments: [RunningInstallment] {
-        guard !installments.isEmpty else { return [] }
-        let end = PaydayCycle.current.period(containing: Date()).end.addingTimeInterval(-1)
-        return RunningInstallments.compute(installments: installments, transactions: allTransactions, accounts: accounts, periodEnd: end)
+    /// Cleared whenever the data it is built from changes, so a render never recomputes it.
+    private var runningCache: (list: [RunningInstallment], byTransaction: [String: RunningInstallment])?
+
+    private var running: (list: [RunningInstallment], byTransaction: [String: RunningInstallment]) {
+        if let runningCache { return runningCache }
+        var list: [RunningInstallment] = []
+        if !installments.isEmpty {
+            let end = PaydayCycle.current.period(containing: Date()).end.addingTimeInterval(-1)
+            list = RunningInstallments.compute(installments: installments, transactions: allTransactions, accounts: accounts, periodEnd: end)
+        }
+        let value = (list, Dictionary(list.map { ($0.transactionId, $0) }, uniquingKeysWith: { first, _ in first }))
+        runningCache = value
+        return value
     }
+
+    /// Installments still being billed at the end of the current payday period.
+    var runningInstallments: [RunningInstallment] { running.list }
+    /// The same installments by the id of their purchase, for the list rows.
+    var runningByTransaction: [String: RunningInstallment] { running.byTransaction }
 
     private func refreshInstallments() async {
         let ids = accounts.filter(\.isCreditCard).map(\.id)
@@ -112,9 +125,7 @@ final class TransactionListViewModel: ObservableObject {
             calendar.date(from: calendar.dateComponents([.year, .month], from: tx.date))!
         }
 
-        let formatter = DateFormatter()
-        formatter.locale = AppLanguage.locale
-        formatter.dateFormat = "MMMM yyyy"
+        let formatter = TransactionDates.formatter("MMMM yyyy")
 
         return grouped.map { month, items in
             let label = formatter.string(from: month)

@@ -27,6 +27,10 @@ struct RunningInstallment: Identifiable, Equatable {
     let endDate: Date
 
     var remainingParts: Int { months - billedParts }
+
+    /// Parts whose cut-off has already passed today; `billedParts` counts to the end of the period instead.
+    /// Rows and the detail page show this one so they agree.
+    var billedNow: Int { billingDates.filter { $0 <= Date() }.count }
 }
 
 enum RunningInstallments {

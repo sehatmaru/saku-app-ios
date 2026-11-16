@@ -337,10 +337,19 @@ enum TransactionDates {
     private static var fullWithYear: DateFormatter { formatter("EEEE, d MMM yyyy") }
     private static var time: DateFormatter { formatter("HH.mm") }
 
-    private static func formatter(_ format: String) -> DateFormatter {
+    /// Formatters are costly to build and a list asks for one per row, so each format is built once per language.
+    nonisolated(unsafe) private static var formatters: [String: DateFormatter] = [:]
+    nonisolated(unsafe) private static var formattersLocale = ""
+
+    static func formatter(_ format: String) -> DateFormatter {
+        let locale = AppLanguage.locale
+        if formattersLocale != locale.identifier { formatters = [:]; formattersLocale = locale.identifier }
+        if let cached = formatters[format] { return cached }
         let f = DateFormatter()
         f.dateFormat = format
-        f.locale = AppLanguage.locale
+        f.locale = locale
+        f.timeZone = .autoupdatingCurrent
+        formatters[format] = f
         return f
     }
 }

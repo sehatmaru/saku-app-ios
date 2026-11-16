@@ -70,7 +70,7 @@ struct TransactionRowView: View {
                 parts.append(name)
             }
         }
-        if showDate { parts.append(Self.dateFormatter.string(from: transaction.date)) }
+        if showDate { parts.append(TransactionDates.formatter("d MMM yyyy").string(from: transaction.date)) }
         // SAKU-770: the hour of the transaction, so rows on the same day can be told apart.
         if let time = TransactionDates.timeOfDay(transaction.date) { parts.append(time) }
         return parts.joined(separator: " · ")
@@ -196,13 +196,6 @@ struct TransactionRowView: View {
         }
         .padding(.vertical, 14)
         .contentShape(Rectangle())
-    }
-
-    private static var dateFormatter: DateFormatter {
-        let f = DateFormatter()
-        f.dateFormat = "d MMM yyyy"
-        f.locale = AppLanguage.locale
-        return f
     }
 }
 

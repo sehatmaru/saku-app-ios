@@ -946,14 +946,7 @@ struct DashboardView: View {
         return shortDayFormatter.string(from: date)
     }
 
-    private static func formatter(_ format: String) -> DateFormatter {
-        let f = DateFormatter()
-        f.dateFormat = format
-        f.locale = AppLanguage.locale
-        return f
-    }
-
-    private static var shortDayFormatter: DateFormatter { formatter("EEEE, d MMM") }
+    private static var shortDayFormatter: DateFormatter { TransactionDates.formatter("EEEE, d MMM") }
 }
 
 /// The Dompet pill's mark: the pocket pops in, then the cards rise and fan.

@@ -101,6 +101,11 @@ struct TransactionListView: View {
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
                 .background(Color.appBackground)
                 .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(for: TransactionRoute.self) { route in
+                    if let transaction = viewModel.allTransactions.first(where: { $0.id == route.id }) {
+                        TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts).detailPage()
+                    }
+                }
                 .navigationDestination(isPresented: Binding(get: { openedInstallment != nil }, set: { if !$0 { openedInstallment = nil } })) {
                     if let transaction = openedInstallment {
                         TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts).detailPage()
@@ -544,12 +549,12 @@ struct TransactionListView: View {
     private func monthRows(_ section: TransactionSection) -> some View {
         let showAll = fullyShownMonths.contains(section.id)
         let rows = showAll ? section.transactions : Array(section.transactions.prefix(previewCount))
-        let running = Dictionary(viewModel.runningInstallments.map { ($0.transactionId, $0) }, uniquingKeysWith: { first, _ in first })
+        let running = viewModel.runningByTransaction
         ForEach(Array(rows.enumerated()), id: \.element.id) { index, transaction in
             if index == 0 || !Calendar.current.isDate(transaction.date, inSameDayAs: rows[index - 1].date) {
                 dayHeader(for: transaction.date, in: section.transactions)
             }
-            NavigationLink(destination: TransactionDetailView(transaction: transaction, categories: viewModel.categories, accounts: viewModel.accounts).detailPage()) {
+            NavigationLink(value: TransactionRoute(id: transaction.id)) {
                 TransactionRowView(
                     transaction: transaction,
                     categories: viewModel.categories,
@@ -557,7 +562,7 @@ struct TransactionListView: View {
                     showBalance: isBalanceVisible,
                     showDate: false,
                     showWalletChip: true,
-                    installment: running[transaction.id].map { ($0.billedParts, $0.months) }
+                    installment: running[transaction.id].map { ($0.billedNow, $0.months) }
                 )
             }
             .buttonStyle(RowPressStyle())
@@ -640,6 +645,9 @@ struct TransactionListView: View {
         }
     }
 }
+
+/// A row's push route: the id only, so the detail view is built when it is opened, not once per row.
+struct TransactionRoute: Hashable { let id: String }
 
 struct ActiveFilterChip: View {
     let title: String

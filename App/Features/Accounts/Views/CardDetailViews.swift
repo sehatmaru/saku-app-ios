@@ -401,7 +401,7 @@ struct CardHistoryView: View {
     private func transactionRow(_ txn: Transaction) -> some View {
         NavigationLink(destination: TransactionDetailView(transaction: txn, categories: categories, accounts: accounts).detailPage()) {
             TransactionRowView(transaction: txn, categories: categories, accounts: accounts, showBalance: isBalanceVisible, showDate: true,
-                               installment: running[txn.id].map { ($0.billedParts, $0.months) },
+                               installment: running[txn.id].map { ($0.billedNow, $0.months) },
                                installmentMonthly: running[txn.id]?.monthly)
                 .padding(.horizontal, 16)
                 .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
