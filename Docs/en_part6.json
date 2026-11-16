@@ -1743,5 +1743,7 @@
   "Cara memulai": "How to start",
   "Melebihi sisa limit %@": "Over your remaining limit %@",
   "Tagihan berikutnya jatuh tempo %@. Buka Saku untuk melihat jumlahnya.": "Your next bill is due %@. Open Saku to see the amount.",
-  "Tagihan berikutnya jatuh tempo besok. Bayar penuh supaya tidak kena bunga.": "Your next bill is due tomorrow. Pay in full to avoid interest."
+  "Tagihan berikutnya jatuh tempo besok. Bayar penuh supaya tidak kena bunga.": "Your next bill is due tomorrow. Pay in full to avoid interest.",
+  "Perkiraan denda %@": "Estimated late fee %@",
+  "Tarik tunai dari kartu biasanya kena biaya dan bunga harian": "Cash advances on a card usually carry a fee and daily interest"
 }

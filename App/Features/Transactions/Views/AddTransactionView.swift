@@ -728,6 +728,7 @@ struct AddTransactionView: View {
         VStack(spacing: 0) {
             if isTransfer {
                 row(.account, label: L("Dari"), value: account?.name ?? L("Pilih"), wallet: account,
+                    sub: account?.isCreditCard == true ? L("Tarik tunai dari kartu biasanya kena biaya dan bunga harian") : nil,
                     isLocked: assetMode == .withdraw, isAsset: account?.isInvestment == true, index: 0)
                 row(.target, label: L("Ke"), value: target?.name ?? L("Pilih"), wallet: target,
                     isLocked: assetMode == .deposit, isAsset: target?.isInvestment == true, index: 1)

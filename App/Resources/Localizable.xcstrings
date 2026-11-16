@@ -15723,6 +15723,16 @@
         }
       }
     },
+    "Perkiraan denda %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated late fee %@"
+          }
+        }
+      }
+    },
     "Perkiraan: dihitung dari budget yang aktif sekarang, karena budget belum diatur di periode tersebut.": {
       "localizations": {
         "en": {
@@ -20649,6 +20659,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Withdraw from asset: the source is locked to an investment wallet."
+          }
+        }
+      }
+    },
+    "Tarik tunai dari kartu biasanya kena biaya dan bunga harian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cash advances on a card usually carry a fee and daily interest"
           }
         }
       }
