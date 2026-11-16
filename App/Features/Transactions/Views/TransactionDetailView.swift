@@ -119,11 +119,13 @@ struct TransactionDetailView: View {
     private func loadContext() async {
         guard let userId = authViewModel.currentUser?.id else { return }
         async let fetchedAccounts = SupabaseRepository.shared.fetchAccounts(userId: userId)
-        async let transactions = SupabaseRepository.shared.fetchTransactions(userId: userId)
         async let budgets = SupabaseRepository.shared.fetchBudgets(userId: userId)
+        // The month of this transaction and everything since come from the shared store, not a download of the whole history.
+        let store = TransactionStore.shared
+        try? await store.ensureLoaded(userId: userId, since: PaydayCycle.current.period(containing: txn.date).start)
         if let fetched = try? await fetchedAccounts { accounts = fetched }
         let calendar = Calendar.current
-        let allTransactions = (try? await transactions) ?? []
+        let allTransactions = store.transactions
         monthTransactions = allTransactions.filter {
             PaydayCycle.current.contains($0.date, periodOf: txn.date, calendar: calendar)
         }

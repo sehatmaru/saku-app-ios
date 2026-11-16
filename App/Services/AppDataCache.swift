@@ -36,7 +36,6 @@ final class AppDataCache {
     }
 
     struct TransactionState {
-        var transactions: [Transaction]
         var categories: [Category]
         var accounts: [Account]
     }

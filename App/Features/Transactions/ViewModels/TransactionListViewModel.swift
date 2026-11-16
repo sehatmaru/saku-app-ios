@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 struct TransactionSection: Identifiable {
@@ -21,6 +22,21 @@ final class TransactionListViewModel: ObservableObject {
     @Published var hasLoadedOnce = false
     @Published var errorMessage: String?
     private var loadedUserId: String?
+    private var cancellables = Set<AnyCancellable>()
+    /// Purchases behind running installments that are older than the months loaded.
+    private var extraPurchases: [Transaction] = [] { didSet { runningCache = nil } }
+
+    init() {
+        // The transactions live in the shared store; this keeps `allTransactions` and the month summary in step with it.
+        TransactionStore.shared.$transactions
+            .sink { [weak self] list in
+                guard let self else { return }
+                self.allTransactions = list
+                self.calculateThisMonthSummary()
+                if !self.installments.isEmpty { Task { await self.loadMissingPurchases() } }
+            }
+            .store(in: &cancellables)
+    }
 
     var thisMonthBalance: Double { thisMonthIncome - thisMonthExpense }
 
@@ -32,7 +48,7 @@ final class TransactionListViewModel: ObservableObject {
         var list: [RunningInstallment] = []
         if !installments.isEmpty {
             let end = PaydayCycle.current.period(containing: Date()).end.addingTimeInterval(-1)
-            list = RunningInstallments.compute(installments: installments, transactions: allTransactions, accounts: accounts, periodEnd: end)
+            list = RunningInstallments.compute(installments: installments, transactions: allTransactions + extraPurchases, accounts: accounts, periodEnd: end)
         }
         let value = (list, Dictionary(list.map { ($0.transactionId, $0) }, uniquingKeysWith: { first, _ in first }))
         runningCache = value
@@ -48,6 +64,25 @@ final class TransactionListViewModel: ObservableObject {
         let ids = accounts.filter(\.isCreditCard).map(\.id)
         guard !ids.isEmpty else { installments = []; return }
         if let fetched = try? await SupabaseRepository.shared.fetchInstallments(accountIds: ids) { installments = fetched }
+        await loadMissingPurchases()
+    }
+
+    /// An installment can be older than the months loaded; its purchase is read on its own so the plan still shows.
+    private func loadMissingPurchases() async {
+        let have = Set(allTransactions.map(\.id))
+        let missing = installments.map(\.transactionId).filter { !have.contains($0) }
+        guard Set(missing) != Set(extraPurchases.map(\.id)) else { return }
+        extraPurchases = missing.isEmpty ? [] : ((try? await SupabaseRepository.shared.fetchTransactions(ids: missing)) ?? [])
+    }
+
+    /// A write elsewhere: wallets, categories and installments again. The transactions reload through the store.
+    func refreshSupportData(userId: String) async {
+        async let cats = SupabaseRepository.shared.fetchCategories()
+        async let accts = SupabaseRepository.shared.fetchAccounts(userId: userId)
+        if let c = try? await cats { categories = c }
+        if let a = try? await accts { accounts = a }
+        AppDataCache.shared.setTransactionState(.init(categories: categories, accounts: accounts), for: userId)
+        await refreshInstallments()
     }
 
     /// `months == nil` settles the plan now. Returns whether it saved.
@@ -63,12 +98,13 @@ final class TransactionListViewModel: ObservableObject {
 
     func loadTransactions(userId: String, forceRefresh: Bool = false) async {
         guard !isLoading, !isRefreshing else { return }
+        let store = TransactionStore.shared
 
-        if !forceRefresh, let cached = AppDataCache.shared.transactionState(for: userId) {
+        if !forceRefresh, store.userId == userId, store.hasLoaded, let cached = AppDataCache.shared.transactionState(for: userId) {
             errorMessage = nil
-            allTransactions = cached.transactions
             categories = cached.categories
             accounts = cached.accounts
+            allTransactions = store.transactions
             calculateThisMonthSummary()
             loadedUserId = userId
             hasLoadedOnce = true
@@ -88,19 +124,19 @@ final class TransactionListViewModel: ObservableObject {
 
         do {
             errorMessage = nil
-            async let transactionsTask = SupabaseRepository.shared.fetchTransactions(userId: userId)
             async let categoriesTask = SupabaseRepository.shared.fetchCategories()
             async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
-            let (fetchedTransactions, fetchedCategories, fetchedAccounts) = try await (
-                transactionsTask,
-                categoriesTask,
-                accountsTask
-            )
-            allTransactions = fetchedTransactions
+            if forceRefresh, store.userId == userId, store.hasLoaded {
+                await store.reload()
+            } else {
+                try await store.load(userId: userId)
+            }
+            let (fetchedCategories, fetchedAccounts) = try await (categoriesTask, accountsTask)
+            allTransactions = store.transactions
             categories = fetchedCategories
             accounts = fetchedAccounts
             calculateThisMonthSummary()
-            AppDataCache.shared.setTransactionState(.init(transactions: allTransactions, categories: categories, accounts: accounts), for: userId)
+            AppDataCache.shared.setTransactionState(.init(categories: categories, accounts: accounts), for: userId)
             loadedUserId = userId
             hasLoadedOnce = true
             await refreshInstallments()

@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Supabase
 
 final class SupabaseRepository: @unchecked Sendable {
@@ -111,16 +112,61 @@ final class SupabaseRepository: @unchecked Sendable {
 
     // MARK: - Transactions
 
-    func fetchTransactions(userId: String) async throws -> [Transaction] {
-        try await client
+    /// The server returns at most 1000 rows per request, so a long history is read in pages of 500 until one comes
+    /// back short. `from` and `before` bound `occurred_at` (from inclusive, before exclusive); nil means no bound.
+    func fetchTransactions(userId: String, from: Date? = nil, before: Date? = nil) async throws -> [Transaction] {
+        let started = Date()
+        let pageSize = 500
+        var all: [Transaction] = []
+        var offset = 0
+        while true {
+            var query = client
+                .from("transactions")
+                .select()
+                .eq("user_id", value: userId)
+                .is("deleted_at", value: nil)
+            if let from { query = query.gte("occurred_at", value: from.iso8601Formatted) }
+            if let before { query = query.lt("occurred_at", value: before.iso8601Formatted) }
+            let page: [Transaction] = try await query
+                .order("occurred_at", ascending: false)
+                .order("created_at", ascending: false)
+                .order("id", ascending: false)
+                .range(from: offset, to: offset + pageSize - 1)
+                .execute()
+                .value
+            all += page
+            if page.count < pageSize { break }
+            offset += pageSize
+        }
+        PerfLog.fetch("transactions", rows: all.count, since: started)
+        return all
+    }
+
+    /// Specific transactions by id, for the purchase behind an installment that is older than what is loaded.
+    func fetchTransactions(ids: [String]) async throws -> [Transaction] {
+        guard !ids.isEmpty else { return [] }
+        return try await client
+            .from("transactions")
+            .select()
+            .in("id", values: ids)
+            .is("deleted_at", value: nil)
+            .execute()
+            .value
+    }
+
+    /// The newest transaction older than `before`, to find where the next block of history starts.
+    func newestTransaction(userId: String, before: Date) async throws -> Transaction? {
+        let rows: [Transaction] = try await client
             .from("transactions")
             .select()
             .eq("user_id", value: userId)
             .is("deleted_at", value: nil)
+            .lt("occurred_at", value: before.iso8601Formatted)
             .order("occurred_at", ascending: false)
-            .order("created_at", ascending: false)
+            .limit(1)
             .execute()
             .value
+        return rows.first
     }
 
     func fetchTransactions(accountId: String, userId: String) async throws -> [Transaction] {
@@ -852,5 +898,15 @@ extension SupabaseRepository {
     /// Every budget the user ever had, deleted ones included, for the history.
     func fetchBudgetsForHistory() async throws -> [BudgetHistoryBudget] {
         try await client.from("budgets").select().order("created_at").execute().value
+    }
+}
+
+/// Timings of the loads that feed the lists, readable in Console under the "perf" category.
+enum PerfLog {
+    private static let logger = Logger(subsystem: "id.saku.app", category: "perf")
+
+    static func fetch(_ name: String, rows: Int, since start: Date) {
+        let ms = Int(Date().timeIntervalSince(start) * 1000)
+        logger.info("\(name, privacy: .public): \(rows) rows in \(ms) ms")
     }
 }

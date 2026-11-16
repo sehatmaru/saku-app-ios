@@ -3,6 +3,7 @@ import SwiftUI
 struct TransactionListView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: TransactionListViewModel
+    @ObservedObject private var store = TransactionStore.shared
 
     /// True while the Transaksi tab is showing; leaving it folds the list back (BUG-6).
     private let isActive: Bool
@@ -126,9 +127,11 @@ struct TransactionListView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
                     guard let userId = authViewModel.currentUser?.id else { return }
-                    Task {
-                        await viewModel.loadTransactions(userId: userId, forceRefresh: true)
-                    }
+                    // the transactions reload once through the store; wallets, categories and installments here
+                    Task { await viewModel.refreshSupportData(userId: userId) }
+                }
+                .onChange(of: needsFullHistory) { _, needs in
+                    if needs { Task { await store.loadAll() } }
                 }
                 .overlay(alignment: .bottomTrailing) {
                     if showBackToTop {
@@ -250,6 +253,13 @@ struct TransactionListView: View {
     private var hasNoTransactions: Bool { viewModel.allTransactions.isEmpty }
 
     // MARK: Search
+
+    /// A search or a category or date filter has to look at the whole history, not only the months loaded so far.
+    private var needsFullHistory: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !filter.expenseCategoryIds.isEmpty || !filter.incomeCategoryIds.isEmpty
+            || filter.dateFrom != nil || filter.dateTo != nil
+    }
 
     /// The field has focus or a query: the month summary steps aside.
     private var isSearching: Bool {
@@ -511,9 +521,21 @@ struct TransactionListView: View {
                     monthRows(section)
                 }
             }
+            if !store.isComplete { olderMonthsFooter }
         }
         .padding(.horizontal, 24)
         .padding(.top, 12)
+    }
+
+    /// Reaching the end loads the next months; while a search or filter needs everything, `loadAll` runs instead.
+    private var olderMonthsFooter: some View {
+        ProgressView()
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 28)
+            .task(id: store.loadedSince) {
+                if !needsFullHistory { await store.loadOlder() }
+            }
+            .accessibilityLabel(L("Memuat"))
     }
 
     private func monthHeader(_ section: TransactionSection, expanded: Bool) -> some View {
