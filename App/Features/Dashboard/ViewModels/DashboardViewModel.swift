@@ -182,13 +182,16 @@ final class DashboardViewModel: ObservableObject {
             let billed = cards.compactMap { card in
                 CreditStatement(card: card, transactions: transactions, installments: installments).map { (card, $0) }
             }
-            cardDueTotal = billed.reduce(0) { $0 + $1.1.remaining + $1.1.currentPeriod }
+            let periodEnd = PaydayCycle.current.period(containing: Date(), calendar: calendar).end
+            // this period's charges are due only if their statement falls due before the period ends
+            cardDueTotal = billed.reduce(0) {
+                $0 + $1.1.remaining + ($1.1.nextDueDate < periodEnd ? $1.1.currentPeriod : 0)
+            }
             overdueBills = billed
                 .filter { $0.1.status == .overdue }
                 .map { OverdueCardBill(card: $0.0, statement: $0.1) }
                 .sorted { $0.statement.daysOverdue > $1.statement.daysOverdue }
             let cardIds = Set(cards.map(\.id))
-            let periodEnd = PaydayCycle.current.period(containing: Date(), calendar: calendar).end
             let todayStart = calendar.startOfDay(for: Date())
             upcomingBillsTotal = activeSubs
                 .filter { !cardIds.contains($0.accountId) }
