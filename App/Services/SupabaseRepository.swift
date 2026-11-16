@@ -136,6 +136,23 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
+    /// The atomic balance functions (migration 20261116010000) may not be on the server yet: the first call that
+    /// finds them missing switches every write back to the older step-by-step path.
+    nonisolated(unsafe) private static var atomicMissing = false
+    private static func noteMissing(_ error: Error) -> Bool {
+        let text = "\(error)"
+        guard text.contains("PGRST202") || text.contains("Could not find the function") else { return false }
+        atomicMissing = true
+        return true
+    }
+
+    /// Calls an atomic function that returns an id; nil means it isn't available and the old path must run.
+    private func atomicID(_ name: String, _ params: [String: AnyJSON]) async throws -> String? {
+        guard !Self.atomicMissing else { return nil }
+        do { return try await client.rpc(name, params: params).execute().value }
+        catch { if Self.noteMissing(error) { return nil }; throw error }
+    }
+
     func createTransaction(accountId: String, categoryId: String?, amount: Double, type: Transaction.TransactionType, description: String?, note: String?, date: Date, userId: String, isCreditAccount: Bool = false, clientOperationId: String? = nil, startsPeriod: Bool = false) async throws -> Transaction {
         let operationId = clientOperationId ?? UUID().uuidString
 
@@ -160,7 +177,11 @@ final class SupabaseRepository: @unchecked Sendable {
             "p_transaction_type": AnyJSON.string(rpcType),
         ]
 
-        let transactionId: String = try await client.rpc("create_transaction", params: params).execute().value
+        let atomicId = type == .adjustment ? nil : try await atomicID("create_transaction_atomic", params)
+        let transactionId: String
+        if let atomicId { transactionId = atomicId } else {
+            transactionId = try await client.rpc("create_transaction", params: params).execute().value
+        }
         // an early salary the user chose to start the period with; the flag lives on the transaction so deleting it undoes the shift
         if startsPeriod {
             try await client.from("transactions").update(["starts_period": true]).eq("id", value: transactionId).execute()
@@ -198,7 +219,7 @@ final class SupabaseRepository: @unchecked Sendable {
         case .adjustment: delta = 0
         case .cardPayment: delta = 0
         }
-        if delta != 0 {
+        if delta != 0, atomicId == nil {
             do {
                 try await client.rpc("increment_account_balance", params: [
                     "p_account_id": AnyJSON.string(accountId),
@@ -243,6 +264,7 @@ final class SupabaseRepository: @unchecked Sendable {
             "p_note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
             "p_occurred_at": AnyJSON.string(date.iso8601Formatted),
         ]
+        if try await atomicID("create_card_payment_atomic", params) != nil { return }
         let transactionId: String = try await client.rpc("create_card_payment", params: params).execute().value
         do {
             try await client.rpc("increment_account_balance", params: [
@@ -268,7 +290,11 @@ final class SupabaseRepository: @unchecked Sendable {
             "p_primary_account_id": AnyJSON.string(primaryAccountId),
         ]
 
-        let transactionId: String = try await client.rpc("create_transfer", params: params).execute().value
+        let atomicId = try await atomicID("create_transfer_atomic", params)
+        let transactionId: String
+        if let atomicId { transactionId = atomicId } else {
+            transactionId = try await client.rpc("create_transfer", params: params).execute().value
+        }
 
         let transaction: Transaction = try await client
             .from("transactions")
@@ -277,6 +303,7 @@ final class SupabaseRepository: @unchecked Sendable {
             .single()
             .execute()
             .value
+        if atomicId != nil { return transaction }
 
         do {
             let isCredit = try await creditFlags([primaryAccountId, counterpartyAccountId])
@@ -301,6 +328,25 @@ final class SupabaseRepository: @unchecked Sendable {
             .single()
             .execute()
             .value
+
+        if !Self.atomicMissing {
+            let params: [String: AnyJSON] = [
+                "p_id": .string(id), "p_account_id": .string(accountId),
+                "p_counterparty_account_id": counterpartyAccountId.map { .string($0) } ?? .null,
+                "p_category_id": categoryId.map { .string($0) } ?? .null,
+                "p_amount": .double(amount), "p_type": .string(type.rawValue),
+                "p_description": description.map { .string($0) } ?? .null,
+                "p_note": note.map { .string($0) } ?? .null,
+                "p_occurred_at": .string(date.iso8601Formatted),
+            ]
+            do {
+                try await client.rpc("update_transaction_atomic", params: params).execute()
+                let updated: Transaction = try await client.from("transactions").select()
+                    .eq("id", value: id).single().execute().value
+                if updated.startsPeriod == true { await refreshShiftsAndAnnounce() }
+                return updated
+            } catch { if !Self.noteMissing(error) { throw error } }
+        }
 
         var values: [String: AnyJSON] = [
             "primary_account_id": AnyJSON.string(accountId),
@@ -438,6 +484,14 @@ final class SupabaseRepository: @unchecked Sendable {
             .single()
             .execute()
             .value
+
+        if !Self.atomicMissing {
+            do {
+                try await client.rpc("delete_transaction_atomic", params: ["p_id": AnyJSON.string(id)]).execute()
+                if txn.startsPeriod == true { await refreshShiftsAndAnnounce() }
+                return
+            } catch { if !Self.noteMissing(error) { throw error } }
+        }
 
         if txn.type == .adjustment {
             // Adjustments set the balance directly; undo exactly what they moved.
