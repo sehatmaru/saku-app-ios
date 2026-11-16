@@ -15,21 +15,44 @@ struct RunningInstallmentsBanner: View {
     @State private var pendingOpen: String?
 
     private var monthly: Double { items.reduce(0) { $0 + $1.monthly } }
+    /// Parts already billed out of all parts.
+    private var progress: Double {
+        let total = items.reduce(0) { $0 + $1.months }
+        return total > 0 ? min(1, Double(items.reduce(0) { $0 + $1.billedParts }) / Double(total)) : 0
+    }
+    private var summary: String {
+        let last = items.map(\.endDate).max() ?? Date()
+        let f = DateFormatter()
+        f.locale = AppLanguage.locale
+        f.dateFormat = "MMM yyyy"
+        return L("%lld cicilan · lunas terakhir %@", items.count, f.string(from: last))
+    }
 
     var body: some View {
         Button { showsSheet = true } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "calendar").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary)
-                Text(L("Cicilan berjalan")).font(.app(15)).foregroundStyle(Color.appText)
-                Spacer(minLength: 8)
-                HStack(spacing: 0) {
-                    Text(isBalanceVisible ? CategoryCatalog.short(monthly) : hiddenAmount).monospacedDigit()
-                    Text(L("/bln")).foregroundStyle(Color.appTextSecondary)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Text(L("Cicilan berjalan")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
                 }
-                .font(.app(15))
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("Rp" + (isBalanceVisible ? monthly.formattedAsDigits() : hiddenAmount))
+                        .font(.app(26, weight: .semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+                        .foregroundStyle(Color.appText)
+                    Text(L("/bulan")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                }
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.appSeparator)
+                        Capsule().fill(Color.appPrimary).frame(width: g.size.width * progress)
+                    }
+                }
+                .frame(height: 4)
+                Text(summary).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
             }
-            .padding(.horizontal, 16).padding(.vertical, 14)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(PressScaleStyle())

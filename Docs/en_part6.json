@@ -1755,5 +1755,6 @@
   "Kelola cicilan": "Manage installment",
   "Net dan budget tidak berubah. Tenor dan pelunasan hanya mengatur cara Saku menagih.": "Net and budget don't change. Tenor and settling only change how Saku bills.",
   "Perkiraan denda": "Estimated late fee",
-  "Tarik tunai: ada biaya dan bunga": "Cash advance: fee and interest apply"
+  "Tarik tunai: ada biaya dan bunga": "Cash advance: fee and interest apply",
+  "%lld cicilan · lunas terakhir %@": "%lld installments · last paid off %@"
 }

@@ -833,6 +833,16 @@
         }
       }
     },
+    "%lld cicilan · lunas terakhir %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld installments · last paid off %@"
+          }
+        }
+      }
+    },
     "%lld dari %lld": {
       "localizations": {
         "en": {
