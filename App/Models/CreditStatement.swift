@@ -48,6 +48,10 @@ struct CreditStatement {
     /// Typical Indonesian card interest per month, for estimates only.
     static let monthlyInterest = 0.0175
     static let minimumShare = 0.1
+    /// Typical late fee: 1% of what is owed, capped at Rp100.000. An estimate; each bank sets its own.
+    static let lateFeeShare = 0.01
+    static let lateFeeCap = 100_000.0
+    var estimatedLateFee: Double { daysOverdue > 0 ? min((remaining * Self.lateFeeShare).rounded(), Self.lateFeeCap) : 0 }
     static let minimumFloor = 50_000.0
 
     // MARK: Build

@@ -84,6 +84,12 @@ struct CardBillSummary: View {
                     .font(.app(15))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
+                if statement.estimatedLateFee > 0 {
+                    Text(L("Perkiraan denda %@", isVisible ? statement.estimatedLateFee.formattedAsCurrency() : "Rp" + hiddenAmount))
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .monospacedDigit()
+                }
                 if statement.status == .partial {
                     Text(L("Sudah dibayar %@", isVisible ? statement.paid.formattedAsCurrency() : "Rp" + hiddenAmount))
                         .font(.app(13))

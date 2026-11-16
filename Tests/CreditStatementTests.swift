@@ -101,6 +101,14 @@ final class CreditStatementTests: XCTestCase {
         XCTAssertEqual(statement(card(balance: 1_000_000), charge, today: date(2026, 10, 15)).daysOverdue, 10)
     }
 
+    func testLateFeeEstimateIsOnePercentCappedAndZeroBeforeDue() {
+        let small = [txn("a", .expense, 1_000_000, date(2026, 9, 10))]
+        XCTAssertEqual(statement(card(balance: 1_000_000), small, today: date(2026, 10, 5)).estimatedLateFee, 0)
+        XCTAssertEqual(statement(card(balance: 1_000_000), small, today: date(2026, 10, 6)).estimatedLateFee, 10_000)
+        let big = [txn("b", .expense, 50_000_000, date(2026, 9, 10))]
+        XCTAssertEqual(statement(card(balance: 50_000_000), big, today: date(2026, 10, 6)).estimatedLateFee, 100_000)
+    }
+
     /// A bill paid from outside Saku (card payment) clears the overdue statement like a transfer would.
     func testCardPaymentSettlesTheStatement() {
         let charge = txn("a", .expense, 1_000_000, date(2026, 9, 10))
