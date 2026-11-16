@@ -1,8 +1,7 @@
 import SwiftUI
 import Charts
-import PhotosUI
 
-private enum InvestmentUI {
+enum InvestmentUI {
     static let box = Color(light: 0xF7F7F8, dark: 0x1C1C1E)
     static let line = Color(light: 0xEDEDF0, dark: 0x2C2C2E)
     static let errFill = Color(light: 0xFDECEA, dark: 0x3A1C1A)
@@ -33,30 +32,26 @@ struct InvestmentDetailContent: View {
     let account: Account
     let transactions: [Transaction]
     let isBalanceVisible: Bool
-    @State private var showsReminder = false
-    @State private var reminder = InvestmentReminder.off
 
     var body: some View {
         let summary = InvestmentSummary(account: account, transactions: transactions)
         let gainColor: Color = summary.gain > 0 ? .appPrimary : summary.gain < 0 ? .appError : .appTextSecondary
         VStack(alignment: .leading, spacing: 0) {
-            VStack(spacing: 12) {
-                row(L("Untung/rugi")) {
-                    Text(gainText(summary))
-                        .font(.app(17, weight: .semibold))
+            Text("Untung/rugi").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(gainAmount(summary))
+                    .font(.app(28, weight: .semibold)).tracking(-0.6).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                    .foregroundStyle(gainColor)
+                if isBalanceVisible, let percent = summary.percent {
+                    Text(InvestmentSummary.percentText(percent, signed: true))
+                        .font(.app(13, weight: .semibold)).monospacedDigit()
                         .foregroundStyle(gainColor)
+                        .padding(.horizontal, 10).frame(height: 26)
+                        .background(gainColor.opacity(0.12), in: Capsule())
                 }
-                row(L("Modal disetor")) {
-                    Text(InvestmentUI.money(summary.capital, visible: isBalanceVisible)).font(.app(15))
-                }
-                row(L("Terakhir diperbarui")) {
-                    Text(summary.lastUpdated.map { InvestmentUI.shortDate($0) + " · " + InvestmentUI.daysAgo($0) } ?? "—")
-                        .font(.app(15))
-                }
-                reminderRow
             }
-            .padding(16)
-            .background(InvestmentUI.box, in: RoundedRectangle(cornerRadius: 18))
+            .padding(.top, 3)
 
             if let note = note(summary) {
                 HStack(alignment: .top, spacing: 8) {
@@ -72,47 +67,15 @@ struct InvestmentDetailContent: View {
         }
     }
 
-    private var reminderRow: some View {
-        Button { showsReminder = true } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Pengingat").font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                    if reminder != .off {
-                        Text("Diingatkan pukul 09.00").font(.app(12)).foregroundStyle(Color.appTextTertiary)
-                    }
-                }
-                Spacer(minLength: 8)
-                Text(reminder.title).font(.app(15)).foregroundStyle(Color.appText)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.appTextTertiary)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onAppear { reminder = InvestmentReminderStore().interval(for: account.id) }
-        .sheet(isPresented: $showsReminder, onDismiss: { reminder = InvestmentReminderStore().interval(for: account.id) }) {
-            InvestmentReminderSheet(account: account, transactions: transactions, offer: false)
-        }
-    }
-
-    private func gainText(_ s: InvestmentSummary) -> String {
+    private func gainAmount(_ s: InvestmentSummary) -> String {
         guard isBalanceVisible else { return "••••" }
-        let sign = InvestmentUI.signed(s.gain)
-        let rupiah = sign + abs(s.gain).formattedAsCurrency()
-        return s.percent.map { rupiah + " · " + InvestmentSummary.percentText($0, signed: true) } ?? rupiah
+        return InvestmentUI.signed(s.gain) + abs(s.gain).formattedAsCurrency()
     }
 
     private func note(_ s: InvestmentSummary) -> String? {
         if s.capital <= 0 { return L("Modal Rp0, jadi persen untung/rugi tidak ditampilkan.") }
         if s.value <= 0 { return L("Nilai Rp0 berarti rugi 100% dari modal. Perbarui nilai jika ini keliru.") }
         return nil
-    }
-
-    private func row<V: View>(_ title: String, @ViewBuilder value: () -> V) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(title).font(.app(15)).foregroundStyle(Color.appTextSecondary)
-            Spacer(minLength: 8)
-            value().monospacedDigit()
-        }
     }
 }
 
@@ -127,12 +90,15 @@ struct InvestmentChartView: View {
     var emptyText = L("Grafik muncul setelah ada 2 titik data. Isi lewat Perbarui nilai, setor, atau tarik.")
     /// A dot at every change; off for a long daily history.
     var showsDots = true
+    /// The range tabs and the footnote under the chart; a single wallet shows the last 6 months without them.
+    var showsRanges = true
     @State private var range = InvestmentSeries.Range.months6
 
     /// One investment wallet: its value and capital.
     init(account: Account, transactions: [Transaction], isBalanceVisible: Bool) {
         seriesFor = { InvestmentSeries(account: account, transactions: transactions, range: $0) }
         self.isBalanceVisible = isBalanceVisible
+        showsRanges = false
     }
 
     init(seriesFor: @escaping (InvestmentSeries.Range) -> InvestmentSeries, isBalanceVisible: Bool,
@@ -151,63 +117,99 @@ struct InvestmentChartView: View {
             if !isBalanceVisible {
                 placeholder(icon: "eye.slash", title: L("Grafik disembunyikan"), text: nil)
             } else if series.hasLine {
-                legend
-                chart(series).padding(.top, 8)
+                chart(series)
             } else {
                 placeholder(icon: "chart.line.uptrend.xyaxis", title: L("Grafik belum tersedia"), text: emptyText)
             }
-            ranges.padding(.top, 14).opacity(series.hasLine || !isBalanceVisible ? 1 : 0.4)
-            Text("Angka berdasarkan pembaruanmu, bukan harga pasar")
-                .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
+            if showsRanges {
+                ranges.padding(.top, 14).opacity(series.hasLine || !isBalanceVisible ? 1 : 0.4)
+                Text("Angka berdasarkan pembaruanmu, bukan harga pasar")
+                    .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
+            }
         }
     }
 
-    private var legend: some View {
-        HStack(spacing: 16) {
-            HStack(spacing: 6) {
-                Capsule().fill(Color.appText).frame(width: 14, height: 2)
-                Text(valueLabel)
-            }
-            HStack(spacing: 6) {
-                Capsule().stroke(Color.appTextTertiary, style: StrokeStyle(lineWidth: 2, dash: [3, 2])).frame(width: 14, height: 2)
-                Text(capitalLabel)
-            }
-        }
-        .font(.app(12)).foregroundStyle(Color.appTextSecondary)
-    }
-
+    /// The gap between capital (dashed) and value (solid) is the gain or loss: red under capital, green over it.
+    /// Value and capital that stay equal draw no gap.
     private func chart(_ series: InvestmentSeries) -> some View {
-        Chart {
-            ForEach(Array(series.points.enumerated()), id: \.offset) { _, point in
+        let points = series.points
+        let first = points.first, last = points.last
+        let gap = (last?.value ?? 0) - (last?.capital ?? 0)
+        let isEven = abs(gap) < max(1, abs(last?.capital ?? 0) * 0.0005)
+        let valueBelow = gap <= 0
+        // when the lines coincide, the label goes on the side the line is not coming from
+        let arrivesFromAbove = points.count > 1 && points[points.count - 2].value > (last?.value ?? 0)
+        // headroom above and below, so the end labels sit inside the plot and clear of the date labels
+        let bounds = series.valueBounds
+        let pad = max((bounds.upperBound - bounds.lowerBound) * 0.2, abs(bounds.upperBound) * 0.04)
+        let domain = (bounds.lowerBound - pad)...(bounds.upperBound + pad)
+        let span = bounds.upperBound - bounds.lowerBound
+        return Chart {
+            ForEach(Array(points.enumerated().dropFirst()), id: \.offset) { index, point in
+                let before = points[index - 1]
+                let tint: Color = point.value < point.capital ? .appError : .appPrimary
+                ForEach(Array([before, point].enumerated()), id: \.offset) { _, end in
+                    AreaMark(x: .value("t", end.date), yStart: .value("modal", end.capital), yEnd: .value("nilai", end.value),
+                             series: .value("s", "gap\(index)"))
+                        .foregroundStyle(tint.opacity(abs(point.value - point.capital) < 1 ? 0 : 0.14))
+                }
+            }
+            ForEach(Array(points.enumerated()), id: \.offset) { _, point in
                 LineMark(x: .value("t", point.date), y: .value("modal", point.capital), series: .value("s", "modal"))
                     .foregroundStyle(Color.appTextTertiary)
-                    .lineStyle(StrokeStyle(lineWidth: 1.75, dash: [5, 4]))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
                 LineMark(x: .value("t", point.date), y: .value("nilai", point.value), series: .value("s", "nilai"))
                     .foregroundStyle(Color.appText)
                     .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             }
-            ForEach(Array(series.points.enumerated()).filter { showsDots ? $0.element.isChange : $0.offset == series.points.count - 1 }, id: \.offset) { index, point in
+            ForEach(Array(points.enumerated()).filter { showsDots ? $0.element.isChange : $0.offset == points.count - 1 }, id: \.offset) { index, point in
                 PointMark(x: .value("t", point.date), y: .value("nilai", point.value))
-                    .symbolSize(index == series.points.count - 1 ? 60 : 28)
+                    .symbolSize(index == points.count - 1 ? 60 : 24)
                     .foregroundStyle(Color.appText)
             }
+            if let first, let last {
+                if !isEven {
+                    PointMark(x: .value("t", last.date), y: .value("modal", last.capital))
+                        .symbolSize(0)
+                        .annotation(position: valueBelow ? .top : .bottom, alignment: .trailing, spacing: 4) {
+                            Text(capitalLabel + " " + Self.axisText(last.capital))
+                                .font(.app(11)).foregroundStyle(Color.appTextSecondary).fixedSize()
+                        }
+                    if abs(gap) > span * 0.35 {
+                        PointMark(x: .value("t", Date(timeIntervalSince1970: (first.date.timeIntervalSince1970 + last.date.timeIntervalSince1970) / 2)),
+                                  y: .value("nilai", (last.value + last.capital) / 2))
+                            .symbolSize(0)
+                            .annotation(position: .overlay) {
+                                Text((gap < 0 ? L("Rugi %@", Self.axisText(abs(gap))) : L("Untung %@", Self.axisText(gap))))
+                                    .font(.app(12, weight: .semibold)).foregroundStyle(gap < 0 ? Color.appError : Color.appPrimary)
+                                    .fixedSize()
+                            }
+                    }
+                }
+                PointMark(x: .value("t", last.date), y: .value("nilai", last.value))
+                    .symbolSize(0)
+                    .annotation(position: isEven ? (arrivesFromAbove ? .bottom : .top) : valueBelow ? .bottom : .top, alignment: .trailing, spacing: 6) {
+                        Text(isEven ? L("Nilai = modal") + " " + Self.axisText(last.value) : valueLabel + " " + Self.axisText(last.value))
+                            .font(.app(11, weight: .semibold)).foregroundStyle(Color.appText).fixedSize()
+                    }
+            }
         }
-        .chartYScale(domain: series.valueBounds)
-        .chartYAxis {
-            AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { value in
-                AxisGridLine().foregroundStyle(Color.appDivider)
-                AxisValueLabel {
-                    if let amount = value.as(Double.self) { Text(Self.axisText(amount)).font(.app(11)).foregroundStyle(Color.appTextTertiary) }
+        .chartYScale(domain: domain)
+        .chartXScale(range: .plotDimension(padding: 6))
+        .chartYAxis(.hidden)
+        .chartXAxis {
+            if let first, let last {
+                AxisMarks(values: [first.date, last.date]) { value in
+                    AxisValueLabel(anchor: value.index == 0 ? .topLeading : .topTrailing) {
+                        if let date = value.as(Date.self) {
+                            Text(Calendar.current.isDateInToday(date) ? L("Hari ini") : TransactionDates.dayMonth.string(from: date))
+                                .font(.app(11)).foregroundStyle(Color.appTextTertiary)
+                        }
+                    }
                 }
             }
         }
-        .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 3)) { _ in
-                AxisValueLabel(format: .dateTime.month(.abbreviated).locale(AppLanguage.locale), anchor: .top)
-                    .font(.app(11)).foregroundStyle(Color.appTextTertiary)
-            }
-        }
-        .frame(height: 150)
+        .frame(height: 190)
         .accessibilityLabel(L("Grafik nilai dan modal"))
     }
 
@@ -225,17 +227,19 @@ struct InvestmentChartView: View {
     }
 
     private var ranges: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 22) {
             ForEach(InvestmentSeries.Range.allCases, id: \.self) { item in
                 Button { withAnimation(.settle(0.3)) { range = item } } label: {
-                    Text(item.title).font(.app(14, weight: range == item ? .medium : .regular))
-                        .foregroundStyle(range == item ? Color.appBackground : Color.appText)
-                        .frame(maxWidth: .infinity).frame(height: 32)
-                        .background(range == item ? Color.appText : Color.clear, in: Capsule())
-                        .overlay(Capsule().stroke(range == item ? Color.clear : Color.appBorder, lineWidth: 1))
+                    Text(item.title).font(.app(15, weight: range == item ? .semibold : .regular))
+                        .foregroundStyle(range == item ? Color.appText : Color.appTextSecondary)
+                        .frame(minHeight: 36)
+                        .overlay(alignment: .bottom) {
+                            Rectangle().fill(range == item ? Color.appText : Color.clear).frame(height: 2)
+                        }
                 }
                 .buttonStyle(.plain)
             }
+            Spacer(minLength: 0)
         }
     }
 
@@ -259,9 +263,23 @@ struct InvestmentChartView: View {
 struct InvestmentAllocationView: View {
     let allocation: InvestmentAllocation
     let isBalanceVisible: Bool
+    /// Each wallet's own card colour, so a share matches its card below.
+    var colors: [String: Color] = [:]
 
     private static let palette: [Color] = [.appInvestment, .appPrimary, .appText, .appTextTertiary, .appSecondary, .appWarning]
-    private func color(_ index: Int) -> Color { Self.palette[index % Self.palette.count] }
+    private func color(_ index: Int) -> Color {
+        colors[allocation.slices[index].id] ?? Self.palette[index % Self.palette.count]
+    }
+
+    /// The two biggest shares and the rest: "Bibit 70% · Stockbit 26% · lainnya 4%".
+    private var summary: String {
+        let slices = allocation.slices
+        func pct(_ f: Double) -> String { isBalanceVisible ? InvestmentSummary.percentText(f) : "••%" }
+        let shown = slices.count > 3 ? Array(slices.prefix(2)) : slices
+        var parts = shown.map { "\($0.name) \(pct($0.fraction))" }
+        if slices.count > 3 { parts.append(L("lainnya") + " " + pct(slices.dropFirst(2).reduce(0) { $0 + $1.fraction })) }
+        return parts.joined(separator: " · ")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -278,19 +296,10 @@ struct InvestmentAllocationView: View {
                 }
             }
             .frame(height: 8)
-            FlowLayout(spacing: 14) {
-                ForEach(Array(allocation.slices.enumerated()), id: \.element.id) { index, slice in
-                    HStack(spacing: 6) {
-                        Circle().fill(isBalanceVisible ? color(index) : Color.appTextTertiary).frame(width: 8, height: 8)
-                        Text(slice.name).font(.app(13)).foregroundStyle(Color.appText).lineLimit(1)
-                        Text(isBalanceVisible ? InvestmentSummary.percentText(slice.fraction) : "••%")
-                            .font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
-                    }
-                }
-            }
-            .padding(.top, 10)
-            Text("Porsi dari total aset investasi. Angka berdasarkan pembaruanmu, bukan harga pasar")
-                .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 8)
+            Text(summary)
+                .font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .padding(.top, 8)
         }
         .accessibilityElement(children: .combine)
     }
@@ -460,15 +469,6 @@ struct UpdateValueView: View {
     @State private var done: (value: Double, delta: Double)?
     @State private var failed = false
     @FocusState private var noteFocused: Bool
-    // Isi dari gambar (Fitur 7 US4): the picture is read on the device and only an amount comes out of it
-    private enum ImageStep: Equatable { case none, reading, result(String), candidates([InvestmentValueReader.Candidate]), unreadable }
-    @State private var imageStep = ImageStep.none
-    @State private var showsSource = false
-    @State private var showsCamera = false
-    @State private var showsLibrary = false
-    @State private var pickedPhoto: PhotosPickerItem?
-    @State private var cameraOff = false
-    @State private var chosenCandidate: InvestmentValueReader.Candidate?
 
     private static let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "neg", "0", "del"]
 
@@ -488,7 +488,7 @@ struct UpdateValueView: View {
     var body: some View {
         VStack(spacing: 0) {
             panel
-            statusArea
+            hint
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
             rows
@@ -508,213 +508,6 @@ struct UpdateValueView: View {
             }
         }
         .alert(L("Gagal memperbarui nilai"), isPresented: $failed) { Button("OK", role: .cancel) {} }
-        .alert(L("Kamera belum diizinkan"), isPresented: $cameraOff) { Button("OK", role: .cancel) {} } message: {
-            Text("Saku belum boleh memakai kamera. Kamu masih bisa memilih gambar dari Galeri atau mengetik nilainya.")
-        }
-        .sheet(isPresented: $showsSource) { sourceSheet }
-        .sheet(isPresented: Binding(
-            get: { if case .candidates = imageStep { return true } else { return false } },
-            set: { if !$0, case .candidates = imageStep { imageStep = .none } }
-        )) { candidatesSheet }
-        .fullScreenCover(isPresented: $showsCamera) { CameraPicker { read($0) }.ignoresSafeArea() }
-        .photosPicker(isPresented: $showsLibrary, selection: $pickedPhoto, matching: .images)
-        .onChange(of: pickedPhoto) { _, item in
-            guard let item else { return }
-            pickedPhoto = nil
-            Task { if let data = try? await item.loadTransferable(type: Data.self) { read(data) } }
-        }
-    }
-
-    // MARK: Isi dari gambar
-
-    private var isReading: Bool { imageStep == .reading }
-
-    @ViewBuilder private var statusArea: some View {
-        switch imageStep {
-        case .reading:
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 8).fill(Color.appDivider).frame(width: 36, height: 36)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Membaca gambar…").font(.app(15, weight: .semibold))
-                    Text("Diproses di iPhone-mu").font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                }
-                Spacer(minLength: 0)
-                ProgressView()
-            }
-            .padding(.horizontal, 14).frame(height: 56)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
-        case .result(let label):
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    HStack(spacing: 10) {
-                        Image(systemName: "photo").font(.system(size: 14)).foregroundStyle(Color.appTextSecondary)
-                            .frame(width: 28, height: 28).background(Color.appDivider, in: RoundedRectangle(cornerRadius: 6))
-                        Text(L("Dari gambar · %@", L(label))).font(.app(14))
-                    }
-                    Spacer(minLength: 8)
-                    Button { showsSource = true } label: {
-                        Text("Ganti").font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 14).frame(height: 44)
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
-                Text("Periksa angkanya. Kamu bisa mengubahnya sebelum menyimpan; belum ada yang tersimpan.")
-                    .font(.app(12)).foregroundStyle(Color.appTextSecondary)
-            }
-        case .unreadable:
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "viewfinder").font(.system(size: 22)).foregroundStyle(Color.appTextSecondary).padding(.top, 1)
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Angka tidak terbaca").font(.app(15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
-                        Spacer(minLength: 8)
-                        Button { showsSource = true } label: {
-                            Text("Pilih gambar lain").font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary).fixedSize()
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    Text("Coba gambar yang lebih jelas, atau ketik angkanya sendiri di bawah.")
-                        .font(.app(13)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(.horizontal, 16).padding(.vertical, 12)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-        default:
-            VStack(alignment: .leading, spacing: 4) {
-                hint
-                if !isError {
-                    Label("Gambar tidak disimpan dan tidak dikirim keluar perangkat.", systemImage: "lock")
-                        .font(.app(12)).foregroundStyle(Color.appTextSecondary).labelStyle(.titleAndIcon)
-                }
-            }
-        }
-    }
-
-    private var sourceSheet: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Isi dari gambar").font(.app(20, weight: .semibold))
-            Text("Pilih tangkapan layar atau foto dari aplikasi investasimu.")
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 4).padding(.bottom, 10)
-            sourceRow("camera", L("Kamera")) { pickSource(camera: true) }
-            sourceRow("photo", L("Galeri")) { pickSource(camera: false) }
-            Label("Gambar tidak disimpan dan tidak dikirim keluar perangkat.", systemImage: "lock")
-                .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.vertical, 12)
-        }
-        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .filterSheet {
-            SmartSheetFooter(primary: nil, secondary: L("Batal")) { showsSource = false }
-        }
-
-        .background(Color.appBackground)
-    }
-
-    private func sourceRow(_ icon: String, _ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
-                Text(title).font(.app(17)).foregroundStyle(Color.appText)
-                Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextTertiary)
-            }
-            .frame(height: 56).contentShape(Rectangle())
-            .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var candidatesSheet: some View {
-        let list: [InvestmentValueReader.Candidate] = { if case .candidates(let items) = imageStep { return items } else { return [] } }()
-        let selected = chosenCandidate ?? list.first
-        return VStack(alignment: .leading, spacing: 0) {
-            Text("Pilih angka").font(.app(20, weight: .semibold))
-            Text("Kami menemukan beberapa angka di gambar.").font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 4).padding(.bottom, 8)
-            ForEach(list) { item in
-                Button { chosenCandidate = item } label: {
-                    HStack(spacing: 14) {
-                        Circle().strokeBorder(selected == item ? Color.appPrimary : Color.appBorder, lineWidth: selected == item ? 6 : 1.5)
-                            .frame(width: 22, height: 22)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(L(item.label)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                            Text(item.amount.formattedAsCurrency()).font(.app(19, weight: .light)).monospacedDigit().foregroundStyle(Color.appText)
-                        }
-                        Spacer()
-                    }
-                    .frame(height: 62).contentShape(Rectangle())
-                    .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-                }
-                .buttonStyle(.plain)
-            }
-            Button { imageStep = .none; chosenCandidate = nil; noteFocused = false } label: {
-                HStack(spacing: 14) {
-                    Image(systemName: "keyboard").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 22)
-                    Text("Ketik sendiri").font(.app(16)).foregroundStyle(Color.appBody)
-                    Spacer()
-                }
-                .frame(height: 52).contentShape(Rectangle())
-                .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .filterSheet {
-            Button {
-                if let selected { use(selected) }
-                chosenCandidate = nil
-            } label: {
-                Text("Pakai angka ini").font(.app(17, weight: .semibold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).frame(height: 52).background(Color.appPrimary, in: Capsule())
-            }
-            .buttonStyle(PressScaleStyle())
-        }
-
-        .background(Color.appBackground)
-    }
-
-    /// Camera or gallery. Reading pictures needs the short agreement (asked once, the same as Catat dari gambar).
-    private func pickSource(camera: Bool) {
-        showsSource = false
-        let go = {
-            if camera {
-                guard CameraPicker.isAllowed else { cameraOff = true; return }
-                showsCamera = true
-            } else {
-                showsLibrary = true
-            }
-        }
-        Task {
-            try? await Task.sleep(for: .milliseconds(450)) // the sheet is closing
-            go()
-        }
-    }
-
-    /// Reads the picture on the device and lands on one of: the amount, a choice of amounts, or "tidak terbaca".
-    private func read(_ data: Data) {
-        noteFocused = false
-        withAnimation(.settle(0.3)) { imageStep = .reading }
-        Task {
-            let lines: [String]
-            if let image = ImageReader.downscaled(data) { lines = await ImageReader.lines(in: image) } else { lines = [] }
-            let found = InvestmentValueReader.candidates(lines: lines)
-            withAnimation(.settle(0.3)) {
-                switch found.count {
-                case 0: imageStep = .unreadable
-                case 1: use(found[0])
-                default: chosenCandidate = found[0]; imageStep = .candidates(found)
-                }
-            }
-        }
-    }
-
-    /// The amount only fills the number: nothing is saved until Terapkan.
-    private func use(_ candidate: InvestmentValueReader.Candidate) {
-        negative = false
-        digits = String(Int(candidate.amount.rounded()).description.prefix(11))
-        fresh = false
-        imageStep = .result(candidate.label)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     // MARK: Panel
@@ -724,19 +517,8 @@ struct UpdateValueView: View {
             HStack {
                 Button("Batal") { dismiss() }.font(.app(17)).disabled(isSaving)
                 Spacer()
-                Button { noteFocused = false; showsSource = true } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "camera").font(.system(size: 14))
-                        Text("Isi dari gambar")
-                    }
-                    .font(.app(12, weight: .semibold))
-                    .padding(.horizontal, 10).frame(height: 30)
-                    .background(.white.opacity(0.2), in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(isSaving || isReading || done != nil)
             }
-            .overlay { Text("Perbarui nilai").font(.app(17, weight: .semibold)).offset(x: -18) }
+            .overlay { Text("Perbarui nilai").font(.app(17, weight: .semibold)) }
             .frame(height: 44)
             .padding(.horizontal, 20)
 
@@ -751,17 +533,12 @@ struct UpdateValueView: View {
 
                     HStack(alignment: .top, spacing: 4) {
                         Text(negative ? "−Rp" : "Rp").font(.app(22)).opacity(0.8).padding(.top, 8)
-                        if isReading {
-                            RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.22)).frame(width: 210, height: 44).padding(.top, 6)
-                                .frame(height: 68, alignment: .top)
-                        } else {
-                            Text(Double(magnitude).formattedAsDigits())
-                                .font(.app(56, weight: .light))
-                                .tracking(-2)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.5)
-                                .contentTransition(.numericText())
-                        }
+                        Text(Double(magnitude).formattedAsDigits())
+                            .font(.app(56, weight: .light))
+                            .tracking(-2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .contentTransition(.numericText())
                     }
                     .monospacedDigit()
                     .opacity(fresh ? 0.7 : 1)
@@ -770,20 +547,22 @@ struct UpdateValueView: View {
                     .animation(.easeOut(duration: 0.12), value: bump)
                     .padding(.top, 14)
 
-                    HStack(alignment: .top, spacing: 8) {
-                        stat(L("Nilai sebelumnya"), money(account.balance))
-                        stat(L("Nilai baru"), (isError ? "−" : "") + money(magnitude))
-                        VStack(alignment: .trailing, spacing: 3) {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Nilai sebelumnya").font(.app(12)).opacity(0.85)
+                            Text(money(account.balance)).font(.app(17, weight: .semibold))
+                                .lineLimit(1).minimumScaleFactor(0.6)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .trailing, spacing: 4) {
                             Text("Selisih").font(.app(12)).opacity(0.85)
-                            Label(isError ? "—" : InvestmentUI.signed(delta) + money(abs(delta)),
-                                  systemImage: isError ? "xmark" : delta > 0 ? "chart.line.uptrend.xyaxis" : delta < 0 ? "chart.line.downtrend.xyaxis" : "equal")
-                                .font(.app(14, weight: .bold))
-                                .minimumScaleFactor(0.7)
-                                .foregroundStyle(Color.appInvestmentPanel)
-                                .padding(.horizontal, 9)
-                                .frame(height: 24)
-                                .background(.white, in: Capsule())
-                                .lineLimit(1)
+                            HStack(spacing: 5) {
+                                Image(systemName: isError ? "xmark" : delta > 0 ? "chart.line.uptrend.xyaxis" : delta < 0 ? "chart.line.downtrend.xyaxis" : "equal")
+                                    .font(.system(size: 13, weight: .bold))
+                                Text(isError ? "—" : InvestmentUI.signed(delta) + money(abs(delta)))
+                                    .font(.app(17, weight: .semibold))
+                                    .lineLimit(1).minimumScaleFactor(0.6)
+                            }
                         }
                         .frame(maxWidth: .infinity, alignment: .trailing)
                     }
@@ -824,14 +603,6 @@ struct UpdateValueView: View {
         .animation(.settle(0.4), value: done == nil)
     }
 
-    private func stat(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title).font(.app(12)).opacity(0.85).lineLimit(1).minimumScaleFactor(0.8)
-            Text(value).font(.app(15, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
     // MARK: Hint and rows
 
     @ViewBuilder private var hint: some View {
@@ -839,14 +610,6 @@ struct UpdateValueView: View {
             banner("exclamationmark.circle.fill", L("Nilai tidak bisa negatif. Isi 0 jika asetmu sudah habis."), ink: .appError, fill: InvestmentUI.errFill)
         } else if magnitude == 0 {
             banner("info.circle.fill", L("Nilai Rp0 diterima. Ini berarti rugi 100%% dari modal %@.", money(capital)), ink: InvestmentUI.warnInk, fill: InvestmentUI.warnFill)
-        } else {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "info.circle").font(.system(size: 17)).padding(.top, 1)
-                Text("Ketik nilai terbaru dari aplikasi investasimu. Selisih bukan pemasukan atau pengeluaran.")
-                    .font(.app(14)).lineSpacing(2)
-            }
-            .foregroundStyle(Color.appTextSecondary)
-            .padding(.vertical, 10)
         }
     }
 
@@ -926,7 +689,7 @@ struct UpdateValueView: View {
                     }
                 }
                 .frame(width: geo.size.width - side - 6)
-                SaveKey(color: Color.appInvestmentPanel, isEnabled: !isError && !isSaving && !isReading && imageStep != .unreadable, isSaving: isSaving, title: "Terapkan", action: apply)
+                SaveKey(color: Color.appInvestmentPanel, isEnabled: !isError && !isSaving, isSaving: isSaving, title: "Terapkan", action: apply)
                     .frame(width: side)
                     .offset(x: shake == 0 ? 0 : 0)
             }
@@ -935,8 +698,7 @@ struct UpdateValueView: View {
     }
 
     private func press(_ key: String) {
-        guard done == nil, !isSaving, !isReading else { return }
-        if imageStep != .none { imageStep = .none }
+        guard done == nil, !isSaving else { return }
         switch key {
         case "neg": negative.toggle(); fresh = false
         case "del": digits = fresh ? "" : String(digits.dropLast()); fresh = false

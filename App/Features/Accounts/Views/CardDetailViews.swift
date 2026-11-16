@@ -186,14 +186,8 @@ struct CardDetailContent: View {
     }
 
     private var upcomingHeader: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("Akan datang").font(.app(17, weight: .semibold))
-            Spacer()
-            Button(action: onSubscriptions) {
-                Text("Tagihan berulang").font(.app(15)).foregroundStyle(Color.appPrimary)
-            }
-        }
-        .padding(.bottom, 4)
+        Text("Akan datang").font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+            .padding(.bottom, 2)
     }
 
     @ViewBuilder private var upcomingRows: some View {

@@ -62,6 +62,8 @@ struct AccountListView: View {
     /// Shown as the main wallet at once while the change is saved.
     @State private var pendingDefaultID: String?
     @State private var archiving: Account?
+    @State private var makingMain: Account?
+    @State private var reminding: Account?
     @State private var toastText = ""
     @State private var isToastShown = false
     /// Rolls the hero's numbers in; replayed when the page opens and when a card closes.
@@ -93,7 +95,7 @@ struct AccountListView: View {
 
     private var groups: [WalletGroup] {
         let active = viewModel.accounts.filter(\.isActive)
-        let titled: [(Account.AccountType, String)] = [(.bank, L("Bank")), (.ewallet, L("E-Wallet")), (.cash, L("Cash")), (.investment, L("Investasi")), (.credit, L("Kartu kredit"))]
+        let titled: [(Account.AccountType, String)] = [(.bank, L("Bank")), (.ewallet, L("E-Wallet")), (.cash, L("Cash")), (.credit, L("Kartu kredit")), (.investment, L("Investasi"))]
         return titled.compactMap { type, title in
             let accounts = active.filter { $0.type == type }.sorted { $0.isDefault && !$1.isDefault }
             return accounts.isEmpty ? nil : WalletGroup(type: type, title: title, accounts: accounts)
@@ -147,6 +149,15 @@ struct AccountListView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationBarBackButtonHidden(selectedID != nil)
+            // The edge swipe closes the open card (back to the list) instead of leaving the page.
+            .background { BackSwipeOff(isOff: selectedID != nil && path.count <= 1) }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 20).onEnded { value in
+                    guard selectedID != nil, value.startLocation.x < 40, value.translation.width > 70,
+                          abs(value.translation.height) < 80 else { return }
+                    closeDetail()
+                }
+            )
             // The card pile sits at the bottom while a card's detail is open.
             .hidesDetailAddButton(isOverlayOn)
             .toolbar { toolbarItems }
@@ -220,6 +231,15 @@ struct AccountListView: View {
                     archiving = nil
                     archive(account)
                 }
+            }
+            .sheet(item: $makingMain) { account in
+                MakeMainWalletSheet(name: account.name, previous: viewModel.accounts.first(where: \.isDefault)?.name) {
+                    makingMain = nil
+                    makeDefault(account)
+                }
+            }
+            .sheet(item: $reminding) { account in
+                InvestmentReminderSheet(account: account, transactions: accountTransactions[account.id] ?? [], offer: false)
             }
             .toast(toastText, isShown: $isToastShown)
             .fullScreenCover(item: $payCard) { card in
@@ -422,7 +442,6 @@ struct AccountListView: View {
 
     /// Total saldo rolling in, plus one box summing every credit card (design 3a, v14).
     private var hero: some View {
-        let count = viewModel.accounts.filter(\.isActive).count
         let hasAssets = viewModel.accounts.contains { $0.isActive && $0.isInvestment }
         // With an investment wallet the big number is Total kekayaan; without one nothing changes.
         let total = hasAssets ? viewModel.totalBalance + viewModel.assetsTotal : viewModel.totalBalance
@@ -430,7 +449,6 @@ struct AccountListView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(hasAssets ? "Total kekayaan" : "Total saldo").font(.app(15)).foregroundStyle(Color.appTextSecondary)
                 Spacer()
-                Text("\(count) dompet").font(.app(13)).foregroundStyle(Color.appTextTertiary)
             }
             HStack(alignment: .top, spacing: 4) {
                 Text(total < 0 && isBalanceVisible ? "−Rp" : "Rp")
@@ -448,24 +466,11 @@ struct AccountListView: View {
             .foregroundStyle(Color.appText)
             .padding(.top, 4)
 
-            let cardDebt = activeCards.reduce(0) { $0 + max($1.balance, 0) }
-            if cardDebt >= 1 {
-                Text(L("Kekayaan bersih %@ setelah utang kartu", masked(total - cardDebt)))
-                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
-                    .padding(.top, 6)
+            if hasAssets, viewModel.totalBalance + viewModel.assetsTotal > 0 {
+                compositionBar(cash: max(viewModel.totalBalance, 0), assets: max(viewModel.assetsTotal, 0))
+                    .padding(.top, 14)
             }
 
-            if hasAssets {
-                HStack(alignment: .top, spacing: 12) {
-                    heroPart(icon: "wallet.bifold", tint: .appTextSecondary, title: L("Saldo kas"), value: viewModel.totalBalance)
-                    heroPart(icon: "chart.line.uptrend.xyaxis", tint: .appInvestment, title: L("Total aset"), value: viewModel.assetsTotal)
-                }
-                .padding(.top, 12)
-            }
-
-            if !activeCards.isEmpty {
-                creditSummary.padding(.top, 18)
-            }
         }
         .padding(.horizontal, 24)
         .padding(.top, 6)
@@ -474,6 +479,15 @@ struct AccountListView: View {
     }
 
     /// "+4%" with a trend arrow, or the rupiah gain/loss when there is no capital to take a percentage of.
+    /// "Modal disetor" and "Terakhir diperbarui", shown on the open investment card.
+    private func investmentFacts(for account: Account) -> [(String, String)] {
+        guard account.isInvestment else { return [] }
+        let summary = InvestmentSummary(account: account, transactions: accountTransactions[account.id] ?? [])
+        return [(L("Modal disetor"), InvestmentUI.money(summary.capital, visible: isBalanceVisible)),
+                (L("Terakhir diperbarui"),
+                 summary.lastUpdated.map { InvestmentUI.shortDate($0) + " · " + InvestmentUI.daysAgo($0) } ?? "—")]
+    }
+
     private func investmentPill(for account: Account) -> (symbol: String, text: String)? {
         guard account.isInvestment else { return nil }
         let summary = InvestmentSummary(account: account, transactions: accountTransactions[account.id] ?? [])
@@ -485,86 +499,75 @@ struct AccountListView: View {
         return (symbol, text)
     }
 
-    private func heroPart(icon: String, tint: Color, title: String, value: Double) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 6) {
-                Image(systemName: icon).font(.system(size: 13)).foregroundStyle(tint)
-                Text(title).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+    /// Cash against investments, in the same thin segmented style as the Investasi group's bar.
+    private func compositionBar(cash: Double, assets: Double) -> some View {
+        let sum = cash + assets
+        let cashShare = sum > 0 ? cash / sum : 0
+        let cashPct = Int((cashShare * 100).rounded()), assetPct = 100 - cashPct
+        return VStack(alignment: .leading, spacing: 8) {
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    if isBalanceVisible {
+                        if cash > 0 {
+                            RoundedRectangle(cornerRadius: 2).fill(Color.appTextTertiary)
+                                .frame(width: max(2, (geo.size.width - 2) * cashShare))
+                        }
+                        if assets > 0 { RoundedRectangle(cornerRadius: 2).fill(Color.appInvestment) }
+                    } else {
+                        RoundedRectangle(cornerRadius: 2).fill(Color.appDivider)
+                    }
+                }
             }
-            Text(masked(value)).font(.app(16, weight: .medium)).monospacedDigit().foregroundStyle(Color.appText)
+            .frame(height: 8)
+            Text(isBalanceVisible ? L("Kas %lld%% · Investasi %lld%%", cashPct, assetPct) : L("Kas ••%% · Investasi ••%%"))
+                .font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
-    private var creditSummary: some View {
+    /// Under the Kartu kredit title, like the Investasi bar: how much of the combined limit is used.
+    private var creditUsage: some View {
         let debt = activeCards.reduce(0) { $0 + max($1.balance, 0) }
         let limit = activeCards.reduce(0) { $0 + ($1.creditLimit ?? 0) }
-        let share = limit > 0 ? min(debt / limit, 1) : 0
-        // One card: its due day in the subtitle. Several: each card gets its own row below.
-        let nextDue = activeCards.count == 1 ? activeCards.first.flatMap(dueDate(of:)) : nil
-        return VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(hex: "1A1F71"))
-                    .frame(width: 32, height: 32)
-                    .overlay(Image(systemName: "creditcard").font(.system(size: 15)).foregroundStyle(.white))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Kartu kredit").font(.app(15, weight: .semibold))
-                    Text(nextDue.map { L("Terpakai · tempo %@", Self.dayMonth.string(from: $0)) }
-                         ?? (activeCards.count > 1 ? L("Terpakai · %lld kartu", activeCards.count) : L("Terpakai")))
-                        .font(.app(12))
-                        .foregroundStyle(Color.appTextSecondary)
-                }
-                .lineLimit(1)
-                Spacer(minLength: 8)
-                HStack(spacing: 0) {
-                    Text("Rp")
-                    if isBalanceVisible {
-                        OdometerText(text: debt.formattedAsDigits(), digitHeight: 22,
-                                     font: .app(17, weight: .semibold), delay: 0.35, isOn: odometerOn)
-                    } else {
-                        Text(hiddenAmount)
-                    }
-                }
-                .font(.app(17, weight: .semibold))
-            }
+        let left = masked(max(limit - debt, 0))
+        // each card's share of the combined limit, biggest first
+        let used = activeCards.map { (card: $0, share: limit > 0 ? min(max($0.balance, 0) / limit, 1) : 0) }
+            .sorted { $0.share > $1.share }
+        func pct(_ f: Double) -> String { isBalanceVisible ? "\(Int((f * 100).rounded()))%" : "••%" }
+        let text: String
+        if used.count == 1 {
+            text = isBalanceVisible
+                ? L("%lld%% dari limit %@ · Sisa %@", Int(((used.first?.share ?? 0) * 100).rounded()), masked(limit), left)
+                : L("••%% dari limit %@ · Sisa %@", masked(limit), left)
+        } else {
+            let shown = used.count > 3 ? Array(used.prefix(2)) : used
+            var parts = shown.map { "\($0.card.name) \(pct($0.share))" }
+            if used.count > 3 { parts.append(L("lainnya") + " " + pct(used.dropFirst(2).reduce(0) { $0 + $1.share })) }
+            text = (parts + [L("Sisa %@", left)]).joined(separator: " · ")
+        }
+        return VStack(alignment: .leading, spacing: 0) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color(light: 0xE5E5EA, dark: 0x3A3A3C))
-                    Capsule().fill(Color.appText)
-                        .frame(width: geo.size.width * (odometerOn ? share : 0))
-                        .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 1.1).delay(0.5), value: odometerOn)
-                }
-            }
-            .frame(height: 4)
-            HStack {
-                Text("\(Int((share * 100).rounded()))% dari limit \(masked(limit))")
-                Spacer()
-                Text("Sisa \(masked(max(limit - debt, 0)))")
-            }
-            .font(.app(12))
-            .foregroundStyle(Color.appTextSecondary)
-            .monospacedDigit()
-            if activeCards.count > 1 {
-                Divider().padding(.vertical, 2)
-                ForEach(activeCards) { card in
-                    HStack(spacing: 8) {
-                        Circle().fill(card.walletColor).frame(width: 8, height: 8)
-                        Text(card.name).foregroundStyle(Color.appText).lineLimit(1)
-                        if let due = dueDate(of: card) {
-                            Text(L("tempo %@", Self.dayMonth.string(from: due))).foregroundStyle(Color.appTextSecondary)
+                    Capsule().fill(Color.appDivider)
+                    HStack(spacing: 2) {
+                        if isBalanceVisible {
+                            ForEach(Array(used.enumerated()), id: \.element.card.id) { _, item in
+                                Rectangle().fill(item.card.walletColor)
+                                    .frame(width: max(2, geo.size.width * (odometerOn ? item.share : 0)))
+                            }
                         }
-                        Spacer(minLength: 8)
-                        Text(masked(max(card.balance, 0))).foregroundStyle(Color.appText)
                     }
-                    .font(.app(13))
-                    .monospacedDigit()
+                    .clipShape(Capsule())
+                    .animation(.timingCurve(0.16, 1, 0.3, 1, duration: 1.1).delay(0.5), value: odometerOn)
                 }
             }
+            .frame(height: 8)
+            Text(text)
+                .font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .padding(.top, 8)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityElement(children: .combine)
     }
 
     /// The bill still owed, or for a card with nothing owed, the next cycle's due day.
@@ -624,12 +627,17 @@ struct AccountListView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .disabled(group.accounts.count < 2)
+            .allowsHitTesting(group.accounts.count >= 2)
             .accessibilityHint(group.accounts.count < 2 ? "" : isOpen ? L("Tutup tumpukan") : L("Buka tumpukan"))
-            .padding(.bottom, group.type == .investment && InvestmentAllocation(accounts: group.accounts) != nil ? 4 : 12)
+            .padding(.bottom, group.type == .credit || (group.type == .investment && InvestmentAllocation(accounts: group.accounts) != nil) ? 4 : 12)
+
+            if group.type == .credit {
+                creditUsage.padding(.bottom, 14)
+            }
 
             if group.type == .investment, let allocation = InvestmentAllocation(accounts: group.accounts) {
-                InvestmentAllocationView(allocation: allocation, isBalanceVisible: isBalanceVisible)
+                InvestmentAllocationView(allocation: allocation, isBalanceVisible: isBalanceVisible,
+                                         colors: Dictionary(uniqueKeysWithValues: group.accounts.map { ($0.id, $0.walletColor) }))
                     .padding(.bottom, 14)
             }
 
@@ -778,7 +786,8 @@ struct AccountListView: View {
                         // An open card keeps its usage bar; the pile doesn't need it.
                         showsUsage: !shown || account.id == selectedID,
                         isMain: account.id == mainWalletID,
-                        investmentPill: investmentPill(for: account)
+                        investmentPill: investmentPill(for: account),
+                        investmentFacts: shown && account.id == selectedID ? investmentFacts(for: account) : []
                     )
                     .frame(height: cardHeight)
                     .scaleEffect(layout.scale, anchor: .top)
@@ -816,16 +825,26 @@ struct AccountListView: View {
         let statement = viewModel.statement(for: account, transactions: accountTransactions[account.id] ?? [])
         if account.isInvestment {
             return AnyView(VStack(alignment: .leading, spacing: 0) {
-                actionsRow(account, [.transfer, .history, .update, .archive, .delete])
-                    .padding(.bottom, 18)
                 InvestmentDetailContent(
                     account: account, transactions: accountTransactions[account.id] ?? [], isBalanceVisible: isBalanceVisible)
+                listSection(L("Aktivitas")) {
+                    listRow("arrow.triangle.2.circlepath", L("Perbarui nilai"), tint: .appPrimary) { updatingValue = account }
+                    listRow("arrow.left.arrow.right", L("Transfer")) { transferFrom = account }
+                    listRow("clock.arrow.circlepath", L("Riwayat")) { path.append(WalletHistoryRoute(account: account)) }
+                }
+                listSection(L("Pengaturan")) {
+                    let reminder = InvestmentReminderStore().interval(for: account.id)
+                    listRow("bell", L("Pengingat"), detail: reminder == .off ? nil : L("Diingatkan pukul 09.00"),
+                            value: reminder.title) { reminding = account }
+                }
+                listSection(L("Lainnya")) {
+                    listRow("archivebox", L("Arsipkan"), chevron: false) { archiving = account }
+                    listRow("trash", L("Hapus dompet"), chevron: false, destructive: true) { deleting = account }
+                }
             })
         }
         if account.isCreditCard {
             return AnyView(VStack(alignment: .leading, spacing: 0) {
-                actionsRow(account, [.history, .archive, .delete])
-                    .padding(.bottom, 18)
                 CardDetailContent(
                     card: account, statement: statement,
                     subscriptions: viewModel.subscriptions.filter { $0.accountId == account.id },
@@ -833,47 +852,76 @@ struct AccountListView: View {
                     onPay: { payCard = account }, onRecord: { recordCard = account },
                     onSubscriptions: { path.append(WalletSubscriptionsRoute(account: account)) },
                     onHistory: { path.append(WalletHistoryRoute(account: account)) })
+                listSection(L("Aktivitas")) {
+                    listRow("clock.arrow.circlepath", L("Riwayat")) { path.append(WalletHistoryRoute(account: account)) }
+                    subscriptionsRow(account)
+                }
+                listSection(L("Lainnya")) {
+                    listRow("archivebox", L("Arsipkan"), chevron: false) { archiving = account }
+                    listRow("trash", L("Hapus dompet"), chevron: false, destructive: true) { deleting = account }
+                }
             })
         }
         return AnyView(VStack(alignment: .leading, spacing: 0) {
-            actionsRow(account, [.transfer, .history, .archive, .delete])
-
             if let statement {
                 billBox(statement, card: account)
-                    .padding(.top, 18)
             }
 
-            defaultToggle(account)
-                .padding(.top, 14)
-
-            if account.type != .cash && !account.isInvestment {
-                subscriptionsLink(account)
-                    .padding(.top, 6)
+            listSection(L("Aktivitas"), first: statement == nil) {
+                listRow("arrow.left.arrow.right", L("Transfer")) { transferFrom = account }
+                listRow("clock.arrow.circlepath", L("Riwayat")) { path.append(WalletHistoryRoute(account: account)) }
+                if account.type != .cash { subscriptionsRow(account) }
+            }
+            listSection(L("Pengaturan")) { mainRow(account) }
+            listSection(L("Lainnya")) {
+                listRow("archivebox", L("Arsipkan"), chevron: false) { archiving = account }
+                listRow("trash", L("Hapus dompet"), chevron: false, destructive: true) { deleting = account }
             }
         })
     }
 
-    private enum DetailAction { case transfer, history, update, archive, delete }
+    private func subscriptionsRow(_ account: Account) -> some View {
+        let active = viewModel.subscriptions.filter { $0.accountId == account.id && $0.isActive }
+        let monthly = active.reduce(0) { $0 + $1.monthlyAmount }
+        return listRow("repeat", L("Tagihan berulang"),
+                       detail: active.isEmpty ? L("Belum ada") : L("%lld tagihan · %@/bulan", active.count, masked(monthly))) {
+            path.append(WalletSubscriptionsRoute(account: account))
+        }
+    }
 
-    /// The actions under the open card: icon over label, Hapus in red.
-    private func actionsRow(_ account: Account, _ items: [DetailAction]) -> some View {
-        HStack(spacing: 0) {
-            ForEach(items, id: \.self) { item in
-                switch item {
-                case .transfer:
-                    detailAction(L("Transfer"), icon: "arrow.left.arrow.right") { transferFrom = account }
-                case .history:
-                    detailAction(L("Riwayat"), icon: "clock.arrow.circlepath") { path.append(WalletHistoryRoute(account: account)) }
-                case .update:
-                    detailAction(L("Perbarui"), icon: "arrow.triangle.2.circlepath", isPrimary: true) { updatingValue = account }
-                case .archive:
-                    detailAction(L("Arsipkan"), icon: "archivebox") { archiving = account }
-                case .delete:
-                    detailAction(L("Hapus"), icon: "trash", isDestructive: true) { deleting = account }
+    private func listSection<Content: View>(_ title: String, first: Bool = false,
+                                            @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                .padding(.top, first ? 18 : 26).padding(.bottom, 2)
+            content()
+        }
+    }
+
+    /// One plain row of the wallet detail: icon, title, optional detail line, hairline underneath.
+    private func listRow(_ icon: String, _ title: String, detail: String? = nil, value: String? = nil, chevron: Bool = true,
+                         destructive: Bool = false, tint: Color? = nil, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: icon).font(.system(size: 20))
+                    .foregroundStyle(destructive ? Color(hex: "D93636") : tint ?? Color.appTextSecondary).frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.app(17)).foregroundStyle(destructive ? Color(hex: "D93636") : Color.appText)
+                    if let detail {
+                        Text(detail).font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
+                    }
+                }
+                Spacer(minLength: 8)
+                if let value { Text(value).font(.app(15)).foregroundStyle(Color.appTextSecondary) }
+                if chevron {
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
                 }
             }
+            .frame(minHeight: 56)
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.appBorder.opacity(0.5)).frame(height: 0.5) }
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, -8)
+        .buttonStyle(RowPressStyle())
     }
 
     /// The last statement: a warm question once it is overdue (Pengingat Tagihan 2f), a quiet
@@ -1027,59 +1075,34 @@ struct AccountListView: View {
         .animation(.settle(0.4), value: statement.remaining + statement.unbilled)
     }
 
-    /// The system switch: on makes this the main wallet; there's always one, so it can't
-    /// be switched off here.
-    private func defaultToggle(_ account: Account) -> some View {
-        let isDefault = account.id == mainWalletID
-        return HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Dompet utama")
-                    .font(.app(16))
-                    .foregroundStyle(Color.appText)
-                Text("Dipilih otomatis saat mencatat transaksi")
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextSecondary)
-            }
-            Spacer(minLength: 8)
-            Toggle("Dompet utama", isOn: Binding(get: { isDefault }, set: { if $0 { makeDefault(account) } }))
-                .labelsHidden()
-                .tint(.appPrimary)
-                .allowsHitTesting(!isDefault)
-        }
-        .frame(height: 64)
-        .sensoryFeedback(.success, trigger: isDefault) { _, now in now }
-    }
-
-    private func subscriptionsLink(_ account: Account) -> some View {
-        let active = viewModel.subscriptions.filter { $0.accountId == account.id && $0.isActive }
-        let monthly = active.reduce(0) { $0 + $1.monthlyAmount }
-        return Button { path.append(WalletSubscriptionsRoute(account: account)) } label: {
+    /// A status row, not a switch: there is always one main wallet, so it can't be turned off. On another wallet,
+    /// tapping it opens the confirmation sheet.
+    private func mainRow(_ account: Account) -> some View {
+        let isMain = account.id == mainWalletID
+        return Button { if !isMain { makingMain = account } } label: {
             HStack(spacing: 14) {
-                Image(systemName: "repeat")
-                    .font(.system(size: 17))
-                    .foregroundStyle(Color.appBody)
-                    .frame(width: 40, height: 40)
-                    .background(Color.appFill, in: Circle())
+                Image(systemName: isMain ? "star.fill" : "star").font(.system(size: 20))
+                    .foregroundStyle(isMain ? Color.appPrimary : Color.appTextSecondary).frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Tagihan berulang")
-                        .font(.app(16))
-                        .foregroundStyle(Color.appText)
-                    Text(active.isEmpty ? L("Belum ada") : L("%lld tagihan · %@/bulan", active.count, masked(monthly)))
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
-                        .monospacedDigit()
+                    Text(isMain ? L("Dompet utama") : L("Jadikan dompet utama")).font(.app(17)).foregroundStyle(Color.appText)
+                    if !isMain {
+                        Text("Dipilih otomatis saat mencatat transaksi").font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    }
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.appTextTertiary)
+                if isMain {
+                    Image(systemName: "checkmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                        .transition(.scale(scale: 0.4).combined(with: .opacity))
+                }
             }
-            .frame(height: 64)
-            .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
-            .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+            .frame(minHeight: 56)
+            .overlay(alignment: .bottom) { Rectangle().fill(Color.appBorder.opacity(0.5)).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
         .buttonStyle(RowPressStyle())
+        .disabled(isMain)
+        .animation(.spring(duration: 0.45, bounce: 0.35), value: isMain)
+        .sensoryFeedback(.success, trigger: isMain) { _, now in now }
     }
 
     /// The main wallet, switched at once while a change is saving.
@@ -1124,23 +1147,6 @@ struct AccountListView: View {
         }
     }
 
-    private func detailAction(_ title: String, icon: String, isPrimary: Bool = false, isDestructive: Bool = false,
-                              perform: @escaping () -> Void) -> some View {
-        Button(action: perform) {
-            VStack(spacing: 7) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundStyle(isPrimary || isDestructive ? .white : Color.appText)
-                    .frame(width: 52, height: 52)
-                    .background(isDestructive ? Color(hex: "D93636") : isPrimary ? Color.appPrimary : Color.appFill, in: Circle())
-                Text(title)
-                    .font(.app(13))
-                    .foregroundStyle(Color.appBody)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(PressScaleStyle())
-    }
 
     private func masked(_ amount: Double) -> String {
         isBalanceVisible ? amount.formattedAsCurrency() : "Rp" + hiddenAmount
@@ -1404,6 +1410,8 @@ struct WalletCard: View {
     var isMain = false
     /// Investment wallets: the gain pill on the card ("+4%", or the rupiah gain while nothing was put in).
     var investmentPill: (symbol: String, text: String)?
+    /// Investment wallets, on the open card: label and value lines under the name.
+    var investmentFacts: [(String, String)] = []
 
     /// Text on the card: white, or dark on a bright brand colour.
     private var ink: Color { account.walletColor.isLight ? Color(hex: "1C1C1E") : .white }
@@ -1515,6 +1523,23 @@ struct WalletCard: View {
                 .padding(.bottom, 18)
                 .animation(.easeInOut(duration: 0.25), value: showsUsage)
             }
+            .overlay(alignment: .topLeading) {
+                if !investmentFacts.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(Array(investmentFacts.enumerated()), id: \.offset) { _, fact in
+                            HStack(spacing: 6) {
+                                Text(fact.0).foregroundStyle(ink.opacity(0.8))
+                                Text(fact.1).fontWeight(.semibold).monospacedDigit()
+                            }
+                        }
+                    }
+                    .font(.app(13))
+                    .lineLimit(1)
+                    .padding(.horizontal, 20).padding(.top, 62)
+                    .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: investmentFacts.isEmpty)
             .foregroundStyle(ink)
             .contentShape(RoundedRectangle(cornerRadius: 22))
             .accessibilityElement(children: .combine)
@@ -1574,62 +1599,130 @@ struct ArchivedWalletsView: View {
     let onRestore: (Account) async -> Bool
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
     @State private var restoring: Set<String> = []
+    @State private var openGroups: Set<Account.AccountType> = []
+
+    private struct ArchiveGroup: Identifiable {
+        let type: Account.AccountType
+        let title: String
+        let accounts: [Account]
+        var id: Account.AccountType { type }
+    }
+
+    /// Same groups and order as the wallet page.
+    private var groups: [ArchiveGroup] {
+        let titled: [(Account.AccountType, String)] = [(.bank, L("Bank")), (.ewallet, L("E-Wallet")), (.cash, L("Cash")), (.investment, L("Investasi")), (.credit, L("Kartu kredit"))]
+        return titled.compactMap { type, title in
+            let list = accounts.filter { $0.type == type }
+            return list.isEmpty ? nil : ArchiveGroup(type: type, title: title, accounts: list)
+        }
+    }
 
     var body: some View {
         ScrollView {
             if accounts.isEmpty {
-                EmptyMessage(icon: "archivebox", title: L("Belum ada yang diarsipkan"),
-                             message: L("Dompet yang diarsipkan disimpan di sini, lengkap dengan riwayatnya."))
-                    .padding(.horizontal, 40)
-                    .padding(.top, 120)
-                    .transition(.opacity)
+                emptyState.padding(.top, 120).transition(.opacity)
             }
-            LazyVStack(spacing: 0) {
-                ForEach(accounts) { account in
-                    HStack(spacing: 14) {
-                        MiniWalletCard(account: account)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(account.name)
-                                .font(.app(16, weight: .medium))
-                                .foregroundStyle(Color.appText)
-                            Text(isBalanceVisible ? account.balance.formattedAsCurrency() : "Rp" + hiddenAmount)
-                                .font(.app(13))
-                                .monospacedDigit()
-                                .foregroundStyle(Color.appTextSecondary)
-                        }
-                        Spacer()
-                        Button {
-                            restoring.insert(account.id)
-                            Task {
-                                _ = await onRestore(account)
-                                restoring.remove(account.id)
-                            }
-                        } label: {
-                            Group {
-                                if restoring.contains(account.id) {
-                                    ProgressView().controlSize(.small)
-                                } else {
-                                    Text("Pulihkan").font(.app(14, weight: .semibold))
-                                }
-                            }
-                            .foregroundStyle(Color.appText)
-                            .frame(width: 88, height: 34)
-                            .background(Color.appFill, in: Capsule())
-                        }
-                        .buttonStyle(PressScaleStyle())
-                        .disabled(restoring.contains(account.id))
-                    }
-                    .padding(.vertical, 12)
-                    .rowSeparator()
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(groups.enumerated()), id: \.element.id) { index, group in
+                    section(group)
+                        .padding(.top, index == 0 ? 12 : 26)
+                        .transition(.opacity)
                 }
             }
             .padding(.horizontal, 24)
+            .padding(.bottom, 40)
             .animation(.settle(0.4), value: accounts.map(\.id))
         }
         .background(Color.appBackground)
         .navigationTitle("Diarsipkan")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func section(_ group: ArchiveGroup) -> some View {
+        let isOpen = openGroups.contains(group.type) || group.accounts.count < 2
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.46)) {
+                    if openGroups.contains(group.type) { openGroups.remove(group.type) } else { openGroups.insert(group.type) }
+                }
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(group.title).font(.app(20, weight: .semibold)).tracking(-0.2).foregroundStyle(Color.appText)
+                    Text("\(group.accounts.count)").font(.app(13)).foregroundStyle(Color.appTextTertiary)
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .allowsHitTesting(group.accounts.count >= 2)
+            .padding(.bottom, 12)
+
+            VStack(spacing: 0) {
+                ForEach(Array(group.accounts.enumerated()), id: \.element.id) { index, account in
+                    WalletCard(account: account, showsStripAmount: !isOpen && index != group.accounts.count - 1,
+                               isBalanceVisible: isBalanceVisible)
+                        .frame(height: 216)
+                        .opacity(0.55)
+                        .overlay(alignment: .topTrailing) {
+                            if isOpen { restoreButton(account) }
+                        }
+                        .padding(.top, index == 0 ? 0 : isOpen ? 12 : 56 - 216)
+                        .zIndex(Double(index))
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
+            }
+        }
+    }
+
+    private func restoreButton(_ account: Account) -> some View {
+        Button {
+            restoring.insert(account.id)
+            Task {
+                _ = await onRestore(account)
+                restoring.remove(account.id)
+            }
+        } label: {
+            Group {
+                if restoring.contains(account.id) {
+                    ProgressView().controlSize(.small).tint(Color.appText)
+                } else {
+                    Text("Pulihkan").font(.app(14, weight: .semibold))
+                }
+            }
+            .foregroundStyle(Color.appText)
+            .frame(width: 88, height: 34)
+            .background(Color.white, in: Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+        .disabled(restoring.contains(account.id))
+        .padding(.top, 11).padding(.trailing, 16)
+    }
+
+    /// The wallet page's stacked ghost cards, with the archive box in front.
+    private var emptyState: some View {
+        VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(Color.appTextTertiary.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                    .frame(height: 96).padding(.horizontal, 24)
+                RoundedRectangle(cornerRadius: 14).fill(Color.appBackground)
+                    .overlay(RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(Color.appTextTertiary.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                    .frame(height: 100).padding(.horizontal, 12).padding(.top, 16)
+                RoundedRectangle(cornerRadius: 14).fill(Color.appFill).frame(height: 100)
+                    .overlay(Image(systemName: "archivebox").font(.system(size: 26)).foregroundStyle(Color.appTextTertiary))
+                    .padding(.top, 32)
+            }
+            .frame(width: 176, height: 132)
+            .accessibilityHidden(true)
+            Text("Belum ada yang diarsipkan").font(.app(20, weight: .semibold)).tracking(-0.2).foregroundStyle(Color.appText)
+                .padding(.top, 28)
+            Text("Dompet yang diarsipkan disimpan di sini, lengkap dengan riwayatnya.")
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(3).multilineTextAlignment(.center)
+                .padding(.top, 8)
+        }
+        .padding(.horizontal, 40)
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -1648,6 +1741,22 @@ private struct ArchiveWalletSheet: View {
         SmartSheet(tone: .neutral, icon: "archivebox", title: L("Arsipkan %@?", name),
                    message: L("Dompet disembunyikan dari daftar dan total. Riwayat transaksi tetap tersimpan dan bisa dipulihkan kapan saja.")) {
             SmartSheetFooter(primary: L("Arsipkan"), secondary: L("Batal"), onPrimary: onArchive) { dismiss() }
+        }
+    }
+}
+
+/// "Jadikan <dompet> utama?": names the wallet that stops being the main one.
+private struct MakeMainWalletSheet: View {
+    let name: String
+    let previous: String?
+    let onConfirm: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        SmartSheet(tone: .neutral, icon: "star", title: L("Jadikan %@ utama?", name),
+                   message: previous.map { L("Transaksi baru memilih dompet ini lebih dulu. %@ tidak lagi jadi dompet utama.", $0) }
+                       ?? L("Transaksi baru memilih dompet ini lebih dulu.")) {
+            SmartSheetFooter(primary: L("Jadikan utama"), secondary: L("Batal"), onPrimary: onConfirm) { dismiss() }
         }
     }
 }
@@ -1698,4 +1807,35 @@ private struct DeleteWalletSheet: View {
             }
         }
     }
+}
+
+
+/// Turns the system edge-swipe back off while `isOff` and this view is on screen. A plain view, not a child view
+/// controller, so it never touches the navigation stack; the swipe comes back as soon as the view leaves the window.
+private struct BackSwipeOff: UIViewRepresentable {
+    let isOff: Bool
+
+    final class Probe: UIView {
+        var isOff = false { didSet { apply() } }
+        private var nav: UINavigationController? {
+            var r: UIResponder? = self
+            while let next = r?.next { if let n = next as? UINavigationController { return n }; r = next }
+            return nil
+        }
+        func apply() {
+            let off = isOff && window != nil
+            nav?.interactivePopGestureRecognizer?.isEnabled = !off
+            if #available(iOS 26.0, *) { nav?.interactiveContentPopGestureRecognizer?.isEnabled = !off }
+        }
+        override func didMoveToWindow() { super.didMoveToWindow(); apply() }
+        override func willMove(toWindow newWindow: UIWindow?) {
+            if newWindow == nil {
+                nav?.interactivePopGestureRecognizer?.isEnabled = true
+                if #available(iOS 26.0, *) { nav?.interactiveContentPopGestureRecognizer?.isEnabled = true }
+            }
+        }
+    }
+
+    func makeUIView(context: Context) -> Probe { Probe() }
+    func updateUIView(_ view: Probe, context: Context) { view.isOff = isOff }
 }
