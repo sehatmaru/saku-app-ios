@@ -323,49 +323,57 @@ struct CardHistoryView: View {
         }
     }
 
+    /// One header for every bill box: title and period on the left, the amount over its status on the right.
+    private func cycleHeader(_ cycle: CreditStatement.BillingCycle, title: String, amount: Double,
+                             status: String?, statusColor: Color, chevron: String? = nil) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.app(16, weight: .semibold)).lineLimit(1)
+                Text(period(cycle)).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(money(amount)).font(.app(16, weight: .semibold)).monospacedDigit().lineLimit(1)
+                if let status {
+                    Text(status).font(.app(13)).fontWeight(.medium).foregroundStyle(statusColor).lineLimit(1)
+                }
+            }
+            if let chevron {
+                Image(systemName: chevron).font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(CardUI.box)
+        .contentShape(Rectangle())
+    }
+
     private func expandedBox(_ cycle: CreditStatement.BillingCycle, rows: [Transaction], isLatestBilled: Bool) -> some View {
         let s = statement
         let amount = cycle.isOpen ? (s?.unbilled ?? cycle.charged) : (s?.statementAmount ?? cycle.charged)
         let remaining = isLatestBilled ? (s?.remaining ?? 0) : 0
         let overdue = s?.status == .overdue
+        let status: String?
+        let color: Color
+        if cycle.isOpen {
+            status = L("Ditagih %@", TransactionDates.dayMonth.string(from: cycle.end)); color = Color.appTextSecondary
+        } else if remaining >= 1 {
+            status = L("Sisa %@", money(remaining)); color = overdue ? Color.appError : CardUI.warmInk
+        } else if amount >= 1 {
+            status = L("Lunas"); color = Color.appPrimary
+        } else {
+            status = nil; color = Color.appTextSecondary
+        }
         return VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(cycle.isOpen ? L("Belum ditagih") : L("Tagihan %@", CardUI.month(cycle.dueDate)))
-                        .font(.app(16, weight: .semibold))
-                    Spacer()
-                    Text(money(amount)).font(.app(16, weight: .semibold)).monospacedDigit()
-                }
-                HStack {
-                    Text(period(cycle)).foregroundStyle(Color.appTextSecondary)
-                    Spacer()
-                    if cycle.isOpen {
-                        Text(L("Ditagih %@", TransactionDates.dayMonth.string(from: cycle.end)))
-                            .fontWeight(.semibold).foregroundStyle(Color.appTextSecondary)
-                    } else if remaining >= 1 {
-                        Text(L("Sisa %@", money(remaining)))
-                            .fontWeight(.semibold).foregroundStyle(overdue ? Color.appError : CardUI.warmInk)
-                    } else if amount >= 1 {
-                        Label(L("Lunas"), systemImage: "checkmark.circle.fill")
-                            .fontWeight(.semibold).foregroundStyle(Color.appPrimary)
-                    }
-                }
-                .font(.app(13))
-                if !cycle.isOpen, amount >= 1 {
-                    ProgressView(value: min(max((amount - remaining) / amount, 0), 1))
-                        .tint(Color.appPrimary)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(CardUI.box)
+            cycleHeader(cycle, title: cycle.isOpen ? L("Belum ditagih") : L("Tagihan %@", CardUI.month(cycle.dueDate)),
+                        amount: amount, status: status, statusColor: color)
             ForEach(rows) { txn in transactionRow(txn) }
         }
         .foregroundStyle(Color.appText)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.appSeparator, lineWidth: 1))
-        .padding(.top, 14)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.appSeparator, lineWidth: 1))
+        .padding(.top, 16)
     }
 
     private func collapsedBox(_ cycle: CreditStatement.BillingCycle, rows: [Transaction], isExpanded: Bool) -> some View {
@@ -376,26 +384,10 @@ struct CardHistoryView: View {
                     if expanded.contains(cycle.id) { expanded.remove(cycle.id) } else { expanded.insert(cycle.id) }
                 }
             } label: {
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L("Tagihan %@", CardUI.month(cycle.dueDate))).font(.app(15, weight: .semibold))
-                        Text(period(cycle) + " · " + L("%lld transaksi", cycle.transactions.count))
-                            .font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                    }
-                    Spacer(minLength: 8)
-                    if settled {
-                        Label(L("Lunas"), systemImage: "checkmark.circle.fill")
-                            .font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                    } else {
-                        Text(L("Sisa %@", money(max(cycle.charged - cycle.paid, 0))))
-                            .font(.app(13, weight: .semibold)).foregroundStyle(CardUI.warmInk)
-                    }
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
-                }
-                .padding(.horizontal, 16)
-                .frame(minHeight: 56)
-                .contentShape(Rectangle())
+                cycleHeader(cycle, title: L("Tagihan %@", CardUI.month(cycle.dueDate)), amount: cycle.charged,
+                            status: settled ? L("Lunas") : L("Sisa %@", money(max(cycle.charged - cycle.paid, 0))),
+                            statusColor: settled ? Color.appPrimary : CardUI.warmInk,
+                            chevron: isExpanded ? "chevron.up" : "chevron.down")
             }
             .buttonStyle(.plain)
             if isExpanded { ForEach(rows) { txn in transactionRow(txn) } }
@@ -403,7 +395,7 @@ struct CardHistoryView: View {
         .foregroundStyle(Color.appText)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.appSeparator, lineWidth: 1))
-        .padding(.top, 14)
+        .padding(.top, 16)
     }
 
     private func transactionRow(_ txn: Transaction) -> some View {
@@ -412,6 +404,7 @@ struct CardHistoryView: View {
                                installment: running[txn.id].map { ($0.billedParts, $0.months) },
                                installmentMonthly: running[txn.id]?.monthly)
                 .padding(.horizontal, 16)
+                .overlay(alignment: .top) { Rectangle().fill(Color.appSeparator).frame(height: 1) }
         }
         .buttonStyle(RowPressStyle())
     }
