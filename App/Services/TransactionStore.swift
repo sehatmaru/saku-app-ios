@@ -49,10 +49,12 @@ final class TransactionStore: ObservableObject {
             append(rows)
             loadedSince = min(loadedSince ?? start, start)
         } else {
+            let stamp = try? await repo.latestTransactionStamp(userId: userId)
             let rows = try await repo.fetchTransactions(userId: userId, from: start)
             guard self.userId == userId else { return }
             transactions = rows
             loadedSince = start
+            cursor = stamp
         }
     }
 
@@ -98,12 +100,15 @@ final class TransactionStore: ObservableObject {
         adopt(userId)
         if flight == nil {
             reloadTask?.cancel()
-            flight = Task { [repo] in
-                let rows = try await repo.fetchTransactions(userId: userId)
+            flight = Task {
+                if self.isComplete, await self.applyChanges() { return }
+                let stamp = try? await self.repo.latestTransactionStamp(userId: userId)
+                let rows = try await self.repo.fetchTransactions(userId: userId)
                 guard self.userId == userId else { return }
                 self.transactions = rows
                 self.loadedSince = .distantPast
                 self.isComplete = true
+                self.cursor = stamp
             }
         }
         let task = flight
@@ -115,11 +120,31 @@ final class TransactionStore: ObservableObject {
     /// Reads the loaded months again, after a write or a pull to refresh.
     func reload() async {
         guard let userId, let since = loadedSince else { return }
+        if await applyChanges() { return }
         do {
+            let stamp = try? await repo.latestTransactionStamp(userId: userId)
             let rows = try await repo.fetchTransactions(userId: userId, from: isComplete ? nil : since)
             guard self.userId == userId else { return }
             transactions = rows
+            cursor = stamp
         } catch {}
+    }
+
+    /// Where the last full read stopped, as the server's own `updated_at`. nil until a full read has run.
+    private var cursor: String?
+
+    /// Reads only what changed since the cursor and folds it in. False when it could not (no cursor, too many changes, offline), so the caller reads everything.
+    private func applyChanges() async -> Bool {
+        guard let userId, let since = cursor, let loaded = loadedSince else { return false }
+        guard let changes = try? await repo.transactionChanges(userId: userId, since: since), self.userId == userId else { return false }
+        let touched = Set(changes.live.map(\.id)).union(changes.deleted)
+        // a row outside the months loaded stays out; one that moved out of them leaves
+        let inWindow = changes.live.filter { $0.date >= loaded }
+        if !touched.isEmpty {
+            transactions = (inWindow + transactions.filter { !touched.contains($0.id) }).newestFirst()
+        }
+        cursor = changes.cursor
+        return true
     }
 
     /// Several writes in a row become one reload.
@@ -141,6 +166,7 @@ final class TransactionStore: ObservableObject {
         transactions = []
         loadedSince = nil
         isComplete = false
+        cursor = nil
     }
 
     private func append(_ rows: [Transaction]) {

@@ -154,6 +154,35 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
+    private struct TransactionStamp: Decodable {
+        let id: String
+        let updatedAt: String
+        let deletedAt: String?
+        enum CodingKeys: String, CodingKey { case id, updatedAt = "updated_at", deletedAt = "deleted_at" }
+        /// "+00:00" would reach the next query as "+", which a URL reads as a space; "Z" says the same without it.
+        var cursor: String { updatedAt.replacingOccurrences(of: "+00:00", with: "Z") }
+    }
+
+    /// The newest `updated_at` the user has, deleted rows included: where a later delta read starts from.
+    func latestTransactionStamp(userId: String) async throws -> String? {
+        let rows: [TransactionStamp] = try await client.from("transactions").select("id,updated_at,deleted_at")
+            .eq("user_id", value: userId).order("updated_at", ascending: false).limit(1).execute().value
+        return rows.first?.cursor
+    }
+
+    /// What changed after `since`: rows to add or replace, ids that were deleted, and the new cursor.
+    /// nil when too much changed for one page; the caller then reads everything again.
+    func transactionChanges(userId: String, since: String) async throws -> (live: [Transaction], deleted: Set<String>, cursor: String)? {
+        let stamps: [TransactionStamp] = try await client.from("transactions").select("id,updated_at,deleted_at")
+            .eq("user_id", value: userId).gt("updated_at", value: since)
+            .order("updated_at", ascending: true).limit(1000).execute().value
+        guard stamps.count < 1000 else { return nil }
+        guard let cursor = stamps.last?.cursor else { return ([], [], since) }
+        let liveIds = stamps.filter { $0.deletedAt == nil }.map(\.id)
+        let live = liveIds.isEmpty ? [] : try await fetchTransactions(ids: liveIds)
+        return (live, Set(stamps.filter { $0.deletedAt != nil }.map(\.id)), cursor)
+    }
+
     /// The newest transaction older than `before`, to find where the next block of history starts.
     func newestTransaction(userId: String, before: Date) async throws -> Transaction? {
         let rows: [Transaction] = try await client
