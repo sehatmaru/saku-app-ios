@@ -1758,5 +1758,8 @@
   "Tarik tunai: ada biaya dan bunga": "Cash advance: fee and interest apply",
   "%lld cicilan · lunas %@": "%lld installments · paid off %@",
   "lunas %@": "paid off %@",
-  "Cicilan %lld dari %lld": "Installment %lld of %lld"
+  "Cicilan %lld dari %lld": "Installment %lld of %lld",
+  "Hapus semuanya sekarang?": "Erase everything now?",
+  "Akun, dompet, transaksi, budget, dan semua data langsung dihapus permanen, tanpa masa tunggu 30 hari. Ini tidak bisa dibatalkan.": "Your account, wallets, transactions, budgets and all data are erased permanently right now, with no 30-day wait. This can't be undone.",
+  "Hapus semuanya": "Erase everything"
 }

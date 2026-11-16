@@ -15,6 +15,9 @@ struct DeleteAccountView: View {
     @State private var confirmation = ""
     @State private var isWorking = false
     @State private var failed = false
+    #if DEBUG
+    @State private var confirmsInstant = false
+    #endif
     @FocusState private var confirmFocused: Bool
 
     private var scheduledDate: Date {
@@ -46,6 +49,13 @@ struct DeleteAccountView: View {
         .navigationBarBackButtonHidden(true)
         .animation(.spring(duration: 0.42, bounce: 0.1), value: step)
         .sheet(isPresented: $showsExport) { ExportSheet() }
+        #if DEBUG
+        // TESTING ONLY, REMOVE BEFORE RELEASE
+        .confirmDialog(isPresented: $confirmsInstant, icon: "trash", destructive: true,
+                       title: L("Hapus semuanya sekarang?"),
+                       message: L("Akun, dompet, transaksi, budget, dan semua data langsung dihapus permanen, tanpa masa tunggu 30 hari. Ini tidak bisa dibatalkan."),
+                       confirmTitle: L("Hapus semuanya"), cancelTitle: L("Batal")) { deleteNow() }
+        #endif
     }
 
     // MARK: Header: back, three ticks, step
@@ -217,7 +227,7 @@ struct DeleteAccountView: View {
             Text(L("Bisa dibatalkan sampai %@.", scheduledDay)).font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.top, 12)
             #if DEBUG
             // TESTING ONLY, REMOVE BEFORE RELEASE: deletes now, no 30 days.
-            Button { deleteNow() } label: {
+            Button { confirmsInstant = true } label: {
                 Text(L("Hanya uji coba: hapus akun dan data")).font(.app(14, weight: .semibold)).foregroundStyle(Color.appError)
                     .frame(maxWidth: .infinity).frame(height: 44).contentShape(Rectangle())
             }

@@ -2233,6 +2233,16 @@
         }
       }
     },
+    "Akun, dompet, transaksi, budget, dan semua data langsung dihapus permanen, tanpa masa tunggu 30 hari. Ini tidak bisa dibatalkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account, wallets, transactions, budgets and all data are erased permanently right now, with no 30-day wait. This can't be undone."
+          }
+        }
+      }
+    },
     "Akunmu dijadwalkan dihapus": {
       "localizations": {
         "en": {
@@ -9259,6 +9269,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete all drafts?"
+          }
+        }
+      }
+    },
+    "Hapus semuanya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase everything"
+          }
+        }
+      }
+    },
+    "Hapus semuanya sekarang?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase everything now?"
           }
         }
       }
