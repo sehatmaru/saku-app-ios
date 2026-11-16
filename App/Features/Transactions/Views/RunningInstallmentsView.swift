@@ -65,12 +65,8 @@ struct RunningInstallmentsSheet: View {
     }
 
     var body: some View {
-        ScrollView {
+        PickerSheet(title: L("Cicilan berjalan"), actionTitle: L("Mengerti"), onDone: { dismiss() }) {
             VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text(L("Cicilan berjalan")).font(.app(20, weight: .semibold))
-                    Spacer()
-                }
                 HStack(alignment: .top, spacing: 4) {
                     Text("Rp").font(.app(15)).foregroundStyle(Color.appTextTertiary).padding(.top, 6)
                     Text(isBalanceVisible ? monthly.formattedAsDigits() : hiddenAmount)
@@ -91,17 +87,9 @@ struct RunningInstallmentsSheet: View {
                 Text(L("Net dan budget tidak berubah. Tenor dan pelunasan hanya mengatur cara Saku menagih."))
                     .font(.app(12)).lineSpacing(2).foregroundStyle(Color.appTextTertiary).padding(.top, 14)
             }
-            .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 34)
+            .padding(.horizontal, 24).padding(.bottom, 24)
         }
-        .scrollIndicators(.hidden)
-        .foregroundStyle(Color.appText)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            PrimaryButton(title: L("Mengerti")) { dismiss() }
-                .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 12)
-                .background(Color.appBackground)
-        }
-        .presentationDetents([.medium, .large])
-
+        .environment(\.fixedSheetDetents, true)
         .background(Color.appBackground)
         .confirmDialog(isPresented: Binding(get: { settling != nil }, set: { if !$0 { settling = nil } }),
                        icon: "checkmark.circle", title: L("Lunasi cicilan sekarang?"),
