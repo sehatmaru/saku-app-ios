@@ -1761,5 +1761,7 @@
   "Cicilan %lld dari %lld": "Installment %lld of %lld",
   "Hapus semuanya sekarang?": "Erase everything now?",
   "Akun, dompet, transaksi, budget, dan semua data langsung dihapus permanen, tanpa masa tunggu 30 hari. Ini tidak bisa dibatalkan.": "Your account, wallets, transactions, budgets and all data are erased permanently right now, with no 30-day wait. This can't be undone.",
-  "Hapus semuanya": "Erase everything"
+  "Hapus semuanya": "Erase everything",
+  "Ditagih tiap bulan": "Billed monthly",
+  "Gratis 7 hari, lalu %@. Batalkan kapan saja.": "Free for 7 days, then %@. Cancel anytime."
 }

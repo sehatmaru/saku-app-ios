@@ -101,6 +101,12 @@ struct PlusPaywallView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Text("Saku Plus").font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                    if PlusStore.isInternalBuild {
+                        Text(verbatim: "HARGA CONTOH · BELUM FINAL")
+                            .font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(Color.appWarning)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.appWarning, style: StrokeStyle(lineWidth: 1, dash: [3])))
+                    }
                     Spacer()
                     Button { dismiss() } label: {
                         Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextSecondary)
@@ -117,32 +123,11 @@ struct PlusPaywallView: View {
                     .fixedSize(horizontal: false, vertical: true).padding(.top, 10).stEnter(1)
 
                 PaywallHero(compact: compact).padding(.top, compact ? 12 : 20).stEnter(2)
+                // At the short height the switch moves down next to the button, so the plan is always in reach.
                 if !compact {
-                    Text("Juga: laporan PDF dan lebih banyak bantuan AI")
-                        .font(.app(12)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).padding(.top, 12)
-                    HStack(spacing: 14) {
-                        Label(L("Data tetap milikmu"), systemImage: "checkmark.shield")
-                        Label(L("Batalkan kapan saja"), systemImage: "xmark.circle")
-                    }
-                    .font(.app(12)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).padding(.top, 12)
+                    planSwitch.padding(.top, 26).stEnter(3)
+                    priceBlock.padding(.top, 20)
                 }
-
-                if PlusStore.isInternalBuild {
-                    Text(verbatim: "HARGA CONTOH · BELUM FINAL")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced)).foregroundStyle(Color.appWarning)
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.appWarning, style: StrokeStyle(lineWidth: 1, dash: [3])))
-                        .padding(.top, 24)
-                }
-
-                HStack(spacing: 10) {
-                    planCard(name: L("1 tahun"), strike: PlusPricing.yearlyStrike, price: yearlyPrice,
-                             per: L("Setara %@/bln", yearlyPerMonth), best: true, selected: yearly) { yearly = true; pulse += 1 }
-                    planCard(name: L("Bulanan"), strike: nil, price: monthlyPrice, per: L("per bulan"), best: false, selected: !yearly) { yearly = false; pulse += 1 }
-                }
-                .padding(.top, PlusStore.isInternalBuild ? 12 : (compact ? 16 : 28)).stEnter(3)
-                Text(L("Harga peluncuran sampai %@", PlusPricing.launchUntil))
-                    .font(.app(12)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
 
                 if let second = reason.makeRoomTitle {
                     Button { dismiss() } label: {
@@ -152,7 +137,8 @@ struct PlusPaywallView: View {
                     .buttonStyle(.plain).padding(.top, 8)
                 }
 
-                Text(L("Langganan diperpanjang otomatis %@ kecuali dimatikan minimal 24 jam sebelum periode berakhir. Pembayaran ditagih ke Apple ID. Kelola atau batalkan di Pengaturan App Store.",
+                Text(L("Harga peluncuran sampai %@", PlusPricing.launchUntil) + ". "
+                     + L("Langganan diperpanjang otomatis %@ kecuali dimatikan minimal 24 jam sebelum periode berakhir. Pembayaran ditagih ke Apple ID. Kelola atau batalkan di Pengaturan App Store.",
                        yearly ? L("setiap tahun sebesar %@", yearlyPrice) : L("setiap bulan sebesar %@", monthlyPrice)))
                     .font(.app(11)).foregroundStyle(Color.appTextTertiary).multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.top, 12)
@@ -168,8 +154,9 @@ struct PlusPaywallView: View {
         .scrollIndicators(.hidden)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 10) {
+                if compact { planSwitch }
                 PrimaryButton(title: L("Coba gratis 7 hari"), isLoading: isBuying) { startTrial() }
-                Text(L("Gratis 7 hari, lalu %@. Batalkan kapan saja di Pengaturan iPhone › Apple ID.", price))
+                Text(L("Gratis 7 hari, lalu %@. Batalkan kapan saja.", price))
                     .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity)
             }
@@ -233,43 +220,65 @@ struct PlusPaywallView: View {
         }
     }
 
-    private func planCard(name: String, strike: String?, price: String, per: String, best: Bool, selected: Bool,
-                          action: @escaping () -> Void) -> some View {
+    /// Tahunan and Bulanan in one switch. Tahunan always carries "Paling hemat", chosen or not, because it is the better price.
+    private var planSwitch: some View {
+        HStack(spacing: 0) {
+            segment(L("Tahunan"), selected: yearly, best: true) { yearly = true; pulse += 1 }
+            segment(L("Bulanan"), selected: !yearly, best: false) { yearly = false; pulse += 1 }
+        }
+        .padding(3)
+        .background(Color.stChip, in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func segment(_ title: String, selected: Bool, best: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(name).font(.app(14)).foregroundStyle(Color.appTextSecondary)
-                Text(strike ?? " ").font(.app(13)).strikethrough(strike != nil).foregroundStyle(Color.appTextTertiary)
+            HStack(spacing: 6) {
+                Text(title).font(.app(15, weight: selected ? .semibold : .regular)).lineLimit(1)
+                if best {
+                    Text("Paling hemat").font(.app(11, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
+                        .padding(.horizontal, 7).padding(.vertical, 2).background(Color.appPrimary, in: Capsule())
+                        .overlay { Shine().clipShape(Capsule()) }
+                }
+            }
+            .foregroundStyle(selected ? Color.appText : Color.appTextSecondary)
+            .frame(maxWidth: .infinity).frame(height: 44)
+            .background {
+                if selected {
+                    RoundedRectangle(cornerRadius: 11).fill(Color.paywallSurface)
+                        .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(best ? Color.appPrimary : Color.appBorder.opacity(0.6), lineWidth: best ? 1.5 : 1))
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .animation(.spring(duration: 0.32, bounce: 0.2), value: selected)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// One price at a time: the chosen plan's, with what it works out to.
+    private var priceBlock: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 // the chosen price pulses once each time the plan changes
-                Text(price).font(.app(26, weight: .light)).tracking(-0.6).foregroundStyle(Color.appText)
-                    .keyframeAnimator(initialValue: 1.0, trigger: selected ? pulse : -1) { content, scale in
+                Text(yearly ? yearlyPrice : monthlyPrice).font(.app(44, weight: .light)).tracking(-1).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.7).foregroundStyle(Color.appText)
+                    .keyframeAnimator(initialValue: 1.0, trigger: pulse) { content, scale in
                         content.scaleEffect(scale, anchor: .leading)
                     } keyframes: { _ in
                         CubicKeyframe(1.04, duration: 0.21)
                         CubicKeyframe(1.0, duration: 0.21)
                     }
-                Text(per).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Text("/" + (yearly ? L("tahun") : L("bulan"))).font(.app(16)).foregroundStyle(Color.appTextSecondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, compact ? 14 : 22).padding([.horizontal, .bottom], compact ? 14 : 16)
-            .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(selected ? Color.appText : Color.appBorder.opacity(0.6), lineWidth: selected ? 2 : 1))
-            .overlay(alignment: .topTrailing) {
-                if selected {
-                    Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Color.paywallSurface)
-                        .frame(width: 20, height: 20).background(Color.appText, in: Circle()).padding(14)
-                        .transition(.scale(scale: 0.4).combined(with: .opacity))
-                }
+            if yearly {
+                (Text(L("Setara %@/bln", yearlyPerMonth)) + Text(" · ") + Text(PlusPricing.yearlyStrike).strikethrough().foregroundColor(Color.appTextTertiary))
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            } else {
+                Text(L("Ditagih tiap bulan")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
             }
-            .overlay(alignment: .topLeading) {
-                if best {
-                    Text("Paling hemat").font(.app(11, weight: .semibold)).foregroundStyle(.white)
-                        .padding(.horizontal, 9).padding(.vertical, 3).background(Color.appPrimary, in: Capsule())
-                        .overlay { Shine().clipShape(Capsule()) }
-                        .offset(x: 14, y: -10)
-                }
-            }
-            .animation(.spring(duration: 0.32, bounce: 0.4), value: selected)
         }
-        .buttonStyle(PressScaleStyle())
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(.easeOut(duration: 0.2), value: yearly)
     }
 }
 
@@ -474,8 +483,8 @@ private struct PaywallHero: View {
     /// Changes when the user moves the hero, so the 4.8 s timer starts over.
     @State private var restart = 0
 
-    private var height: CGFloat { compact ? 116 : 200 }
-    private var scale: CGFloat { compact ? 0.62 : 1.1 }
+    private var height: CGFloat { compact ? 116 : 164 }
+    private var scale: CGFloat { compact ? 0.62 : 0.9 }
 
     private var captions: [String] { [
         L("Notifikasi bank jadi draf, tinggal simpan"), L("Foto struk dibaca otomatis"), L("Teruskan email, draf siap disimpan"),

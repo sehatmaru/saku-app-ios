@@ -7243,6 +7243,16 @@
         }
       }
     },
+    "Ditagih tiap bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billed monthly"
+          }
+        }
+      }
+    },
     "Ditagih tiap bulan di tanggal yang sama, dan dicatat otomatis saat kamu buka Saku di tanggal itu. Titik = sudah ada tagihan.": {
       "localizations": {
         "en": {
@@ -8729,6 +8739,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Free for 7 days, then %@. Cancel any time in iPhone Settings › Apple ID."
+          }
+        }
+      }
+    },
+    "Gratis 7 hari, lalu %@. Batalkan kapan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free for 7 days, then %@. Cancel anytime."
           }
         }
       }
