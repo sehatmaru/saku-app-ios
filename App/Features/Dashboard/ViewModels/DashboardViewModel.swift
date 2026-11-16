@@ -188,18 +188,18 @@ final class DashboardViewModel: ObservableObject {
                 .map { OverdueCardBill(card: $0.0, statement: $0.1) }
                 .sorted { $0.statement.daysOverdue > $1.statement.daysOverdue }
             let cardIds = Set(cards.map(\.id))
-            let monthEnd = calendar.dateInterval(of: .month, for: Date())?.end ?? Date()
+            let periodEnd = PaydayCycle.current.period(containing: Date(), calendar: calendar).end
             let todayStart = calendar.startOfDay(for: Date())
             upcomingBillsTotal = activeSubs
                 .filter { !cardIds.contains($0.accountId) }
-                .filter { sub in sub.nextBillingDateAsDate.map { $0 >= todayStart && $0 < monthEnd } ?? false }
+                .filter { sub in sub.nextBillingDateAsDate.map { $0 >= todayStart && $0 < periodEnd } ?? false }
                 .reduce(0) { $0 + $1.amount }
             await NotificationManager.shared.resyncCardDue(cards: billed.map(\.0), statements: billed.map(\.1))
             await NotificationManager.shared.resyncInvestmentReminders(accounts: fetchedAccounts, transactions: transactions)
 
             // Archived wallets leave the totals, same as on Dompet.
             balance = WealthSummary(accounts: activeAccounts).cash
-            creditDebt = cards.reduce(0) { $0 + $1.balance }
+            creditDebt = cards.reduce(0) { $0 + max($1.balance, 0) }
             investmentCapital = activeAccounts.filter(\.isInvestment).reduce(0) { sum, account in
                 sum + InvestmentSummary(account: account, transactions: transactions.filter {
                     $0.accountId == account.id || $0.counterpartyAccountId == account.id }).capital
@@ -297,7 +297,7 @@ final class DashboardViewModel: ObservableObject {
             monthlyIncome: cashflow.income,
             monthlyExpense: cashflow.expense,
             liquidBalance: balance,
-            creditDebt: max(cards.reduce(0) { $0 + $1.balance }, 0),
+            creditDebt: cards.reduce(0) { $0 + max($1.balance, 0) },
             creditLimit: cards.reduce(0) { $0 + ($1.creditLimit ?? 0) },
             hasCreditCard: !cards.isEmpty,
             budgetTotal: totalBudget,

@@ -227,7 +227,7 @@ struct ReportModel {
         let health = FinancialHealth.Input(
             monthlyIncome: cashflow.map(\.income), monthlyExpense: cashflow.map(\.expense),
             liquidBalance: accounts.filter { $0.isActive && !$0.isCreditCard && $0.type != .investment }.reduce(0) { $0 + $1.balance },
-            creditDebt: max(cards.reduce(0) { $0 + $1.balance }, 0),
+            creditDebt: cards.reduce(0) { $0 + max($1.balance, 0) },
             creditLimit: cards.reduce(0) { $0 + ($1.creditLimit ?? 0) },
             hasCreditCard: !cards.isEmpty,
             budgetTotal: lines.reduce(0) { $0 + $1.amount }, budgetSpent: lines.reduce(0) { $0 + $1.spent },
