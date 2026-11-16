@@ -55,7 +55,6 @@ struct RunningInstallmentsSheet: View {
     @State private var failed = false
     @Environment(\.dismiss) private var dismiss
     @State private var showsAll = false
-    @State private var contentHeight: CGFloat = 480
 
     private static let preview = 5
 
@@ -71,7 +70,6 @@ struct RunningInstallmentsSheet: View {
                 HStack {
                     Text(L("Cicilan berjalan")).font(.app(20, weight: .semibold))
                     Spacer()
-                    Button(L("Tutup")) { dismiss() }.font(.app(16, weight: .semibold)).foregroundStyle(Color.appPrimary)
                 }
                 HStack(alignment: .top, spacing: 4) {
                     Text("Rp").font(.app(15)).foregroundStyle(Color.appTextTertiary).padding(.top, 6)
@@ -94,12 +92,15 @@ struct RunningInstallmentsSheet: View {
                     .font(.app(12)).lineSpacing(2).foregroundStyle(Color.appTextTertiary).padding(.top, 14)
             }
             .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 34)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
         }
-        .sheetScrollSlack()
         .scrollIndicators(.hidden)
         .foregroundStyle(Color.appText)
-        .adaptiveSheet()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            PrimaryButton(title: L("Mengerti")) { dismiss() }
+                .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 12)
+                .background(Color.appBackground)
+        }
+        .presentationDetents([.medium, .large])
 
         .background(Color.appBackground)
         .confirmDialog(isPresented: Binding(get: { settling != nil }, set: { if !$0 { settling = nil } }),
