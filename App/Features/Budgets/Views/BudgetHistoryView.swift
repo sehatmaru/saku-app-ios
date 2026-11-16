@@ -24,9 +24,7 @@ struct BudgetHistoryView: View {
                 } else if !isLoaded {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
                 } else if periods.isEmpty {
-                    EmptyMessage(icon: "clock.arrow.circlepath", title: L("Belum ada riwayat"),
-                                 message: L("Riwayat muncul setelah periode budget pertamamu selesai."))
-                        .padding(.top, 48)
+                    runningPeriod
                 } else {
                     ForEach(periods) { period in
                         NavigationLink(destination: BudgetHistoryPeriodView(period: period, viewModel: viewModel).detailPage()) {
@@ -62,6 +60,42 @@ struct BudgetHistoryView: View {
         .navigationTitle(L("Riwayat budget"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
+    }
+
+    /// No finished period yet: the running one, laid out like a history row, with how far it has gone. It joins the list when it ends.
+    private var runningPeriod: some View {
+        let cycle = PaydayCycle.current
+        let days = cycle.days()
+        return VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title: L("Periode berjalan"))
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+                .padding(.bottom, 4)
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(cycle.label())
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(Color.appText)
+                    Spacer(minLength: 0)
+                    Text(L("Berjalan"))
+                        .font(.app(14))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
+                SegmentBar(value: Double(days.total - days.left) / Double(max(days.total, 1)), color: .appTextTertiary, replays: false)
+                Text(L("Tinggal %lld hari", days.left))
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .monospacedDigit()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
+            Text(L("Riwayat muncul setelah periode budget pertamamu selesai."))
+                .font(.app(13))
+                .lineSpacing(2)
+                .foregroundStyle(Color.appTextTertiary)
+                .padding(.horizontal, 24)
+                .padding(.top, 6)
+        }
     }
 
     private func money(_ amount: Double) -> String {

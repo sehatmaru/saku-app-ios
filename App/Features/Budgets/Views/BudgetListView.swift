@@ -99,6 +99,11 @@ struct BudgetListView: View {
             }
             .background(Color.appBackground)
             .toolbar(.hidden, for: .navigationBar)
+            // before the sheets below: a sheet inherits what is applied outside it, and must not get pull-to-refresh
+            .refreshable {
+                guard let userId = authViewModel.currentUser?.id else { return }
+                await viewModel.loadBudgets(userId: userId, forceRefresh: true)
+            }
             .fullScreenCover(item: $addTarget) { target in
                 if let userId = authViewModel.currentUser?.id {
                     AddBudgetView(viewModel: viewModel, userId: userId, category: target.category) { category in
@@ -108,7 +113,7 @@ struct BudgetListView: View {
             }
             .plusOffer($limitReason)
             .sheet(isPresented: $showPaydaySheet) {
-                PaydaySheet(context: .card) { day in paydayPicked(day) }
+                PaydaySheet(context: .card, onDone: { day in paydayPicked(day) }, onWillSave: { frozenPayday = paydayRaw })
             }
             .toast(toastText, isShown: $isToastShown)
             .onAppear { isBalanceVisible = isBalanceVisibleStorage }
@@ -122,10 +127,6 @@ struct BudgetListView: View {
                 Task {
                     await viewModel.loadBudgets(userId: userId, forceRefresh: true)
                 }
-            }
-            .refreshable {
-                guard let userId = authViewModel.currentUser?.id else { return }
-                await viewModel.loadBudgets(userId: userId, forceRefresh: true)
             }
         }
     }
@@ -184,46 +185,34 @@ struct BudgetListView: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// One plain row, like the budget rows below it: tap anywhere to set the payday.
     private var paydayCard: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: "calendar.badge.checkmark")
-                .font(.system(size: 19))
-                .foregroundStyle(Color.appPrimary)
-                .frame(width: 40, height: 40)
-                .background(Color.appBackground, in: Circle())
-                .shadow(color: .black.opacity(0.06), radius: 1, y: 1)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Kapan kamu gajian?")
-                    .font(.app(16, weight: .semibold))
-                    .foregroundStyle(Color.appText)
-                Text("Kami pakai tanggal ini supaya budget dan ringkasan bulananmu dimulai saat gaji masuk, bukan tanggal 1.")
-                    .font(.app(14))
-                    .lineSpacing(2)
-                    .foregroundStyle(Color.appTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 14) {
-                    Button {
-                        frozenPayday = paydayRaw
-                        showPaydaySheet = true
-                    } label: {
-                        Text("Atur")
-                            .font(.app(15, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 18)
-                            .frame(height: 34)
-                            .background(Color.appPrimary, in: Capsule())
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    Button("Nanti saja") { isPaydayCardDismissed = true }
-                        .font(.app(15, weight: .medium))
+        Button { showPaydaySheet = true } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "calendar.badge.checkmark")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.appPrimary)
+                    .frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Kapan kamu gajian?")
+                        .font(.app(16, weight: .medium))
+                        .foregroundStyle(Color.appText)
+                    Text(L("Periode budget mulai saat gaji masuk, bukan tanggal 1."))
+                        .font(.app(13))
+                        .lineSpacing(2)
                         .foregroundStyle(Color.appTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.top, 8)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextTertiary)
             }
-            Spacer(minLength: 0)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
         }
-        .padding(16)
-        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+        .buttonStyle(RowPressStyle())
     }
 
     /// Card sheet closed: fade the header out, bring it back on the new period, then say so.
@@ -322,16 +311,18 @@ struct BudgetListView: View {
     /// A category without a budget: tap to set one, starting on the amount.
     private func unsetRow(_ category: Category) -> some View {
         let average = viewModel.threeMonthAverage(categoryId: category.id)
-        return HStack(spacing: 14) {
+        return HStack(alignment: .top, spacing: 14) {
             Image(systemName: category.icon ?? "tag")
                 .font(.system(size: 20))
-                .foregroundStyle(Color.appTextTertiary)
+                .foregroundStyle(Color.appTextSecondary)
                 .frame(width: 24)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 9) {
                 Text(category.name)
                     .font(.app(16, weight: .medium))
                     .foregroundStyle(Color.appText)
                     .lineLimit(1)
+                // the same bar as a budget row, still empty
+                SegmentBar(value: 0, replays: false)
                 Text(average > 0
                      ? L("Rata-rata 3 bulan %@", isBalanceVisible ? average.formattedAsCurrency() : "Rp" + hiddenAmount)
                      : L("Belum dipakai"))
@@ -341,14 +332,12 @@ struct BudgetListView: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
-            Text("Atur")
-                .font(.app(14, weight: .semibold))
-                .foregroundStyle(Color.appPrimary)
-                .padding(.horizontal, 14)
-                .frame(height: 32)
-                .background(Color.appPrimary.opacity(0.1), in: Capsule())
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.appTextTertiary)
+                .padding(.top, 4)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 13)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityHint("Atur budget")
