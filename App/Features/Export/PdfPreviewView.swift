@@ -12,24 +12,49 @@ struct PdfPreviewView: View {
     @State private var paywall: PlusReason?
 
     var body: some View {
-        VStack(spacing: 0) {
-            Color.clear.frame(height: 24)
-            ScrollView {
-                VStack(spacing: 18) {
-                    page
-                    PrimaryButton(title: L("Buka dengan Saku Plus")) { paywall = .pdfReport }
-                    Text("Ekspor CSV tetap gratis.").font(.app(13)).foregroundStyle(Color.appTextTertiary)
-                }
-                .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 30)
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L("Laporan PDF lengkap")).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
+                Text(L("Pratinjau %@. Analisis dan saran terbuka dengan Saku Plus.", periodLabel))
+                    .font(.app(15)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
             }
-            .scrollIndicators(.hidden)
+
+            page
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(L("Di laporan lengkap")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary).padding(.bottom, 4)
+                ForEach(Array(contents.enumerated()), id: \.offset) { _, row in
+                    HStack(spacing: 14) {
+                        Image(systemName: row.0).font(.system(size: 20)).foregroundStyle(Color.appPrimary).frame(width: 24)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(row.1).font(.app(17, weight: .semibold)).foregroundStyle(Color.appText)
+                            Text(row.2).font(.app(15)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.vertical, 12)
+                    .overlay(alignment: .top) { Rectangle().fill(Color.appBorder.opacity(0.5)).frame(height: 0.5) }
+                }
+            }
+
+            Text(L("Ekspor CSV tetap gratis.")).font(.app(13)).foregroundStyle(Color.appTextTertiary)
+        }
+        .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .filterSheet {
+            SmartSheetFooter(primary: L("Buka dengan Saku Plus"), secondary: L("Nanti saja"),
+                             onPrimary: { paywall = .pdfReport }, onSecondary: { dismiss() })
         }
         .presentationDetents([.large])
-
-        .background(Color.appBackground)
         .plusOffer($paywall)
         // bought from here: the preview has done its job
         .onChange(of: plus.isPlus) { _, isPlus in if isPlus { dismiss() } }
+    }
+
+    private var contents: [(String, String, String)] {
+        [("chart.bar", L("Analisis periode"), L("Apa yang berubah dibanding periode lalu")),
+         ("lightbulb", L("Saran"), L("Langkah untuk periode berikutnya")),
+         ("square.and.arrow.up", L("Siap dibagikan"), L("Kirim sebagai PDF lewat Bagikan"))]
     }
 
     private var page: some View {
