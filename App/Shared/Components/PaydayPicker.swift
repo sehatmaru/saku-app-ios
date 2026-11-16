@@ -156,6 +156,8 @@ struct PaydaySheet: View {
     let context: PaydayContext
     /// The saved day, or nil when closed without a change.
     let onDone: (Int?) -> Void
+    /// Called just before a changed day is saved, so the screen behind can hold still until the sheet is gone.
+    let onWillSave: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var selection: Int?
@@ -164,77 +166,53 @@ struct PaydaySheet: View {
     @State private var didFinish = false
     @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
 
-    init(context: PaydayContext, onDone: @escaping (Int?) -> Void) {
+    init(context: PaydayContext, onDone: @escaping (Int?) -> Void, onWillSave: @escaping () -> Void = {}) {
         self.context = context
         self.onDone = onDone
+        self.onWillSave = onWillSave
         _selection = State(initialValue: context == .settings ? PaydaySetting.day : nil)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Color.clear.frame(height: 24)
-
-            // the running period stays as is; the next one follows the picked day (design)
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L("Periode berjalan")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                        Text(PaydayCycle.current.rangeLabel())
-                            .font(.app(17, weight: .medium)).monospacedDigit()
-                            .foregroundStyle(Color.appText)
-                    }
-                    Spacer(minLength: 8)
-                    Text(L("Tidak berubah")).font(.app(12, weight: .medium))
-                        .foregroundStyle(Color.appTextSecondary)
-                        .padding(.horizontal, 10).frame(height: 22)
-                        .background(Color.appBackground, in: Capsule())
-                }
-                .padding(.horizontal, 16).padding(.vertical, 12)
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
-
-                Image(systemName: "arrow.down")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.appTextTertiary)
-                    .frame(maxWidth: .infinity)
-
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L("Periode berikutnya")).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                        Text(nextPeriodLabel)
-                            .font(.app(19, weight: .semibold)).monospacedDigit()
-                            .foregroundStyle(Color.appPrimary)
-                            .contentTransition(.numericText())
-                    }
-                    Spacer(minLength: 8)
-                    if isChanged {
-                        Text(L("Tanggal baru")).font(.app(12, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 10).frame(height: 22)
-                            .background(Color.appPrimary, in: Capsule())
-                            .transition(.scale(scale: 0.6).combined(with: .opacity))
-                    }
-                }
-                .padding(.horizontal, 16).padding(.vertical, 12)
-                .background(Color.appPrimary.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
-                .animation(.easeOut(duration: 0.3), value: isChanged)
+                Text(L("Tanggal gajian")).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
+                Text(L("Periode budget dan ringkasan mulai di tanggal ini."))
+                    .font(.app(15)).foregroundStyle(Color.appTextSecondary)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 24).padding(.top, 20)
+
+            // the running period stays as is; the next one follows the picked day: two plain rows, like the lists in the other sheets
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(L("Periode berjalan")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    Spacer(minLength: 8)
+                    Text(PaydayCycle.current.rangeLabel())
+                        .font(.app(17, weight: .medium)).monospacedDigit().foregroundStyle(Color.appText)
+                }
+                .padding(.vertical, 12)
+                Divider().overlay(Color.appBorder.opacity(0.5))
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(L("Periode berikutnya")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    Spacer(minLength: 8)
+                    Text(nextPeriodLabel)
+                        .font(.app(17, weight: .semibold)).monospacedDigit().foregroundStyle(Color.appPrimary)
+                        .contentTransition(.numericText())
+                }
+                .padding(.vertical, 12)
+            }
+            .padding(.horizontal, 24).padding(.top, 14)
 
             PaydayDayPicker(selection: $selection)
-                .padding(.top, 16)
+                .padding(.top, 12)
 
-            // the info box and the save button (design)
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "info.circle").font(.system(size: 18)).foregroundStyle(Color.appPrimary)
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: "info.circle").font(.system(size: 18)).foregroundStyle(Color.appPrimary).frame(width: 24)
                 Text(changeNote)
-                    .font(.app(14)).lineSpacing(2).foregroundStyle(Color.appBody)
+                    .font(.app(15)).lineSpacing(2).foregroundStyle(Color.appBody)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 14).padding(.vertical, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
+            .padding(.horizontal, 24).padding(.top, 16)
 
             if let errorMessage {
                 Text(errorMessage)
@@ -243,10 +221,11 @@ struct PaydaySheet: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 10)
             }
-
         }
         .disabled(isSaving)
-        .filterSheet { PrimaryButton(title: L("Simpan"), isLoading: isSaving, action: done).disabled(isSaving) }
+        .filterSheet {
+            SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Nanti saja"), onPrimary: done, onSecondary: { dismiss() })
+        }
         .onDisappear { if !didFinish { onDone(nil) } }
     }
 
@@ -281,6 +260,7 @@ struct PaydaySheet: View {
         guard let day = selection, day != PaydaySetting.day else { dismiss(); return }
         isSaving = true
         errorMessage = nil
+        onWillSave()
         Task {
             if await savePayday(day) {
                 didFinish = true
