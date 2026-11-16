@@ -1223,6 +1223,16 @@
         }
       }
     },
+    "%lld menjadi tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld becomes unlimited"
+          }
+        }
+      }
+    },
     "%lld periode": {
       "localizations": {
         "en": {

@@ -46,8 +46,8 @@ struct ProfileView: View {
         case system = "Sistem"
     }
 
-    /// The free card's "Coba Saku Plus" opens the paywall with the general pitch.
-    @State private var plusReason: PlusReason?
+    /// The free card's "Coba Saku Plus" opens the offer as a page.
+    @State private var showsPlusPage = false
     /// Entrance motion of the Plus hero (design "Profil Revamp"): pop-in and the trial ring growing.
     @State private var heroIn = false
     @State private var ringGrown = false
@@ -154,7 +154,9 @@ struct ProfileView: View {
                 Text("Gagal menyimpan. Coba lagi.")
             }
             .toast(L("Tanggal gajian disimpan"), isShown: $isPaydayToastShown)
-            .plusOffer($plusReason)
+            .navigationDestination(isPresented: $showsPlusPage) {
+                PlusPaywallView(reason: .general, asPage: true).detailPage()
+            }
             .onAppear {
                 viewModel.loadProfile(from: authViewModel.currentUser)
             }
@@ -307,7 +309,7 @@ struct ProfileView: View {
                 benefit(L("Bantuan AI tanpa batas"))
                 benefit(L("Ekspor dan laporan lengkap"))
             }
-            PrimaryButton(title: L("Coba Saku Plus")) { plusReason = .general }
+            PrimaryButton(title: L("Coba Saku Plus")) { showsPlusPage = true }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

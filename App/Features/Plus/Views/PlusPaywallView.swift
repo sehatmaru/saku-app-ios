@@ -74,6 +74,8 @@ enum PlusPricing {
 /// Full-screen paywall (design 1g). Buying goes through StoreKit 2 (`PlusPurchases`).
 struct PlusPaywallView: View {
     let reason: PlusReason
+    /// Opened from Profil as a page of its own (back button, scrolls, one button at the bottom) instead of a sheet.
+    var asPage = false
     @Environment(\.dismiss) private var dismiss
     @State private var yearly = true
     /// The purchase went through.
@@ -97,6 +99,25 @@ struct PlusPaywallView: View {
     private var price: String { yearly ? "\(yearlyPrice)/\(L("tahun"))" : "\(monthlyPrice)/\(L("bulan"))" }
 
     var body: some View {
+        withPurchaseUI(asPage ? AnyView(pageBody) : AnyView(sheetBody))
+    }
+
+    /// The success screen, the error alert and the dismiss guard that both forms share.
+    private func withPurchaseUI<V: View>(_ content: V) -> some View {
+        content
+            .overlay {
+                if purchased {
+                    PlusSuccessView(reason: reason) { dismiss() }
+                        .transition(.opacity)
+                }
+            }
+            .interactiveDismissDisabled(purchased || isBuying)
+            .alert(purchaseError ?? "", isPresented: Binding(get: { purchaseError != nil }, set: { if !$0 { purchaseError = nil } })) {
+                Button("OK", role: .cancel) {}
+            }
+    }
+
+    private var sheetBody: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
@@ -137,17 +158,7 @@ struct PlusPaywallView: View {
                     .buttonStyle(.plain).padding(.top, 8)
                 }
 
-                Text(L("Harga peluncuran sampai %@", PlusPricing.launchUntil) + ". "
-                     + L("Langganan diperpanjang otomatis %@ kecuali dimatikan minimal 24 jam sebelum periode berakhir. Pembayaran ditagih ke Apple ID. Kelola atau batalkan di Pengaturan App Store.",
-                       yearly ? L("setiap tahun sebesar %@", yearlyPrice) : L("setiap bulan sebesar %@", monthlyPrice)))
-                    .font(.app(11)).foregroundStyle(Color.appTextTertiary).multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.top, 12)
-                HStack(spacing: 16) {
-                    Link("Syarat", destination: PlusLinks.terms)
-                    Link("Kebijakan Privasi", destination: PlusLinks.privacy)
-                    Button { restore() } label: { Text(restoring ? L("Memeriksa...") : L("Pulihkan pembelian")) }.disabled(restoring || isBuying)
-                }
-                .font(.app(12, weight: .medium)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).padding(.top, 8)
+                legalBlock
             }
             .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
         }
@@ -167,15 +178,104 @@ struct PlusPaywallView: View {
         .presentationBackground(Color.paywallSurface)
         .onGeometryChange(for: Bool.self) { $0.size.height < 650 } action: { compact = $0 }
         .presentationDetents([.medium, .large])
-        .overlay {
-            if purchased {
-                PlusSuccessView(reason: reason) { dismiss() }
-                    .transition(.opacity)
+    }
+
+    /// Auto-renewal terms, the launch-price line, and the links the App Store asks for.
+    private var legalBlock: some View {
+        VStack(spacing: 0) {
+            Text(L("Harga peluncuran sampai %@", PlusPricing.launchUntil) + ". "
+                 + L("Langganan diperpanjang otomatis %@ kecuali dimatikan minimal 24 jam sebelum periode berakhir. Pembayaran ditagih ke Apple ID. Kelola atau batalkan di Pengaturan App Store.",
+                   yearly ? L("setiap tahun sebesar %@", yearlyPrice) : L("setiap bulan sebesar %@", monthlyPrice)))
+                .font(.app(11)).foregroundStyle(Color.appTextTertiary).multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity).padding(.top, 12)
+            HStack(spacing: 16) {
+                Link("Syarat", destination: PlusLinks.terms)
+                Link("Kebijakan Privasi", destination: PlusLinks.privacy)
+                Button { restore() } label: { Text(restoring ? L("Memeriksa...") : L("Pulihkan pembelian")) }.disabled(restoring || isBuying)
             }
+            .font(.app(12, weight: .medium)).foregroundStyle(Color.appTextSecondary).frame(maxWidth: .infinity).padding(.top, 8)
         }
-        .interactiveDismissDisabled(purchased || isBuying)
-        .alert(purchaseError ?? "", isPresented: Binding(get: { purchaseError != nil }, set: { if !$0 { purchaseError = nil } })) {
-            Button("OK", role: .cancel) {}
+    }
+
+    // MARK: Page (Profil › Coba Saku Plus): the same offer in the style of the Trial Ended sheet
+
+    private var pageTitle: AttributedString {
+        let name = "Saku Plus"
+        var text = AttributedString(L("Coba Saku Plus"))
+        if let range = text.range(of: name) { text[range].foregroundColor = Color.appPrimary }
+        return text
+    }
+
+    private var pageBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(pageTitle).font(.app(28, weight: .bold)).tracking(-0.5).fixedSize(horizontal: false, vertical: true)
+                    Text(reason.message).font(.app(15)).foregroundStyle(Color.appTextSecondary).fixedSize(horizontal: false, vertical: true)
+                }
+                .stEnter(0)
+
+                PaywallHero(compact: false, tall: true).stEnter(1)
+
+                pageList(title: L("Yang terbuka"), tint: .appPrimary, rows: [
+                    ("bell", L("Catat dari notifikasi"), nil),
+                    ("camera", L("Foto struk dan screenshot"), nil),
+                    ("envelope", L("Penerusan email"), nil),
+                    ("doc.richtext", L("Laporan PDF"), nil),
+                ])
+                pageList(title: L("Tanpa batas"), tint: .appTextSecondary, rows: [
+                    ("wallet.bifold", L("Dompet uang aktif"), FreeLimits.moneyWallets),
+                    ("tag", L("Kategori pengeluaran"), FreeLimits.expenseCategories),
+                    ("chart.pie", L("Budget"), FreeLimits.budgets),
+                ])
+
+                VStack(alignment: .leading, spacing: 0) {
+                    planSwitch
+                    priceBlock.padding(.top, 20)
+                    legalBlock.padding(.top, 8)
+                }
+                .stEnter(3)
+            }
+            .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 24)
+        }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 10) {
+                PrimaryButton(title: L("Coba gratis 7 hari"), isLoading: isBuying) { startTrial() }
+                Text(L("Gratis 7 hari, lalu %@. Batalkan kapan saja.", price))
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 24).padding(.top, 10).padding(.bottom, 8)
+            .background(Color.appBackground)
+        }
+        .navigationTitle(L("Saku Plus"))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// A labelled list like the Trial Ended sheet's: icon, text, and for the limits what free allows, then infinity.
+    private func pageList(title: String, tint: Color, rows: [(String, String, Int?)]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title).font(.app(13, weight: .semibold)).foregroundStyle(tint).padding(.bottom, 4)
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                HStack(spacing: 14) {
+                    Image(systemName: row.0).font(.system(size: 18)).foregroundStyle(tint).frame(width: 24)
+                    Text(row.1).font(.app(15)).foregroundStyle(tint == .appPrimary ? Color.appText : Color.appBody)
+                    Spacer(minLength: 8)
+                    if let limit = row.2 {
+                        HStack(spacing: 6) {
+                            Text("\(limit)").font(.app(15)).foregroundStyle(Color.appTextSecondary).monospacedDigit()
+                            Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+                            Image(systemName: "infinity").font(.system(size: 17, weight: .bold)).foregroundStyle(Color.appPrimary)
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(L("%lld menjadi tanpa batas", limit))
+                    }
+                }
+                .padding(.vertical, 12)
+                .overlay(alignment: .top) { Rectangle().fill(Color.appBorder.opacity(0.5)).frame(height: 0.5) }
+            }
         }
     }
 
@@ -244,7 +344,7 @@ struct PlusPaywallView: View {
             .frame(maxWidth: .infinity).frame(height: 44)
             .background {
                 if selected {
-                    RoundedRectangle(cornerRadius: 11).fill(Color.paywallSurface)
+                    RoundedRectangle(cornerRadius: 11).fill(asPage ? Color.appBackground : Color.paywallSurface)
                         .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(best ? Color.appPrimary : Color.appBorder.opacity(0.6), lineWidth: best ? 1.5 : 1))
                 }
             }
@@ -474,6 +574,8 @@ private extension Color {
 /// also advances by itself every 4.8 s.
 private struct PaywallHero: View {
     let compact: Bool
+    /// The page has room for a taller scene.
+    var tall = false
 
     private static let sceneCount = 8
     private static let duration = 4.8
@@ -483,8 +585,8 @@ private struct PaywallHero: View {
     /// Changes when the user moves the hero, so the 4.8 s timer starts over.
     @State private var restart = 0
 
-    private var height: CGFloat { compact ? 116 : 164 }
-    private var scale: CGFloat { compact ? 0.62 : 0.9 }
+    private var height: CGFloat { compact ? 116 : (tall ? 196 : 164) }
+    private var scale: CGFloat { compact ? 0.62 : (tall ? 1.05 : 0.9) }
 
     private var captions: [String] { [
         L("Notifikasi bank jadi draf, tinggal simpan"), L("Foto struk dibaca otomatis"), L("Teruskan email, draf siap disimpan"),
