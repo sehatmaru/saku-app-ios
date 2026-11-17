@@ -765,7 +765,7 @@ final class SupabaseRepository: @unchecked Sendable {
                     "category_id": AnyJSON.string(id),
                     "is_hidden": AnyJSON.bool(hidden),
                     "updated_at": AnyJSON.string(Date().iso8601Formatted),
-                ] as [String: AnyJSON], onConflict: "user_id,category_id")
+                ] as [String: AnyJSON], onConflict: "space_id,category_id")
                 .execute()
         } catch {
             throw FreeLimits.friendly(error)
@@ -780,7 +780,7 @@ final class SupabaseRepository: @unchecked Sendable {
                 "category_id": AnyJSON.string(id),
                 "custom_name": name.map { AnyJSON.string($0) } ?? AnyJSON.null,
                 "updated_at": AnyJSON.string(Date().iso8601Formatted),
-            ] as [String: AnyJSON], onConflict: "user_id,category_id")
+            ] as [String: AnyJSON], onConflict: "space_id,category_id")
             .execute()
     }
 
@@ -793,7 +793,7 @@ final class SupabaseRepository: @unchecked Sendable {
         }
         try await client
             .from("category_preferences")
-            .upsert(rows, onConflict: "user_id,category_id")
+            .upsert(rows, onConflict: "space_id,category_id")
             .execute()
     }
 
