@@ -97,8 +97,9 @@ struct RootView: View {
                 .zIndex(10)
             }
         }
+        .toastHost()
         .guestLinkDialogs()
-        // a guest who saved their account is no longer a guest: Ingatan on the server and the rest open up
+        // a guest who saved their account is no longer a guest: AI and the rest open up
         .onChange(of: authViewModel.currentUser?.isGuest) { _, isGuest in DraftStore.shared.isGuest = isGuest == true }
         .task { await authViewModel.checkSession() }
         .preferredColorScheme(appTheme.colorScheme)
