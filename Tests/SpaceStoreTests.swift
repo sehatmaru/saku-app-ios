@@ -48,8 +48,19 @@ final class SpaceStoreTests: XCTestCase {
         XCTAssertNil(SpaceStore.activeSpaceId)
     }
 
+    func testOnlyTheDefaultIsRemembered() {
+        let other = UUID().uuidString
+        SpaceStore.setDefault(sample)
+        SpaceStore.setActive(other)
+        XCTAssertEqual(SpaceStore.activeSpaceId, other.lowercased())
+        XCTAssertEqual(SpaceStore.defaultSpaceId, sample.lowercased())
+        XCTAssertEqual(UserDefaults(suiteName: ShareInbox.appGroup)?.string(forKey: "activeSpaceId"), sample.lowercased())
+        SpaceStore.setActive(nil)
+        XCTAssertEqual(SpaceStore.activeSpaceId, sample.lowercased())
+    }
+
     func testSurvivesAProcessRestart() {
-        SpaceStore.setActive(sample)
+        SpaceStore.setDefault(sample)
         // a fresh process (Siri/Shortcuts) has an empty cache and reads the App Group
         UserDefaults(suiteName: ShareInbox.appGroup)?.synchronize()
         XCTAssertEqual(UserDefaults(suiteName: ShareInbox.appGroup)?.string(forKey: "activeSpaceId"), sample.lowercased())

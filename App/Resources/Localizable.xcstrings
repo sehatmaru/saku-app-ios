@@ -551,6 +551,16 @@
         }
       }
     },
+    "%@ sudah ada di daftar Workspace-mu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is now in your Workspace list."
+          }
+        }
+      }
+    },
     "%@ sudah lewat": {
       "localizations": {
         "en": {
@@ -607,6 +617,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ · %lld days left"
+          }
+        }
+      }
+    },
+    "%@ · Baca saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Read only"
+          }
+        }
+      }
+    },
+    "%@ · Hanya Pemilik yang bisa mengubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Only the Owner can change this"
           }
         }
       }
@@ -1269,6 +1299,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld becomes unlimited"
+          }
+        }
+      }
+    },
+    "%lld orang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld people"
           }
         }
       }
@@ -2533,6 +2573,26 @@
         }
       }
     },
+    "Anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Members"
+          }
+        }
+      }
+    },
+    "Anggota · %lld orang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Member · %lld people"
+          }
+        }
+      }
+    },
     "Angka berdasarkan pembaruanmu, bukan harga pasar": {
       "localizations": {
         "en": {
@@ -2899,6 +2959,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Read image needs Saku Plus"
+          }
+        }
+      }
+    },
+    "Baca saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read only"
           }
         }
       }
@@ -4853,6 +4923,16 @@
         }
       }
     },
+    "Buat Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create Workspace"
+          }
+        }
+      }
+    },
     "Buat budget": {
       "localizations": {
         "en": {
@@ -5413,6 +5493,36 @@
         }
       }
     },
+    "Buka Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Workspace"
+          }
+        }
+      }
+    },
+    "Buka Workspace ini dulu untuk mengubah tanggal gajian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this Workspace first to change the payday"
+          }
+        }
+      }
+    },
+    "Buka Workspace ini saat app dijalankan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this Workspace when the app starts"
+          }
+        }
+      }
+    },
     "Buka dengan Saku Plus": {
       "localizations": {
         "en": {
@@ -5429,6 +5539,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open wallet"
+          }
+        }
+      }
+    },
+    "Buka saat app dijalankan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open when the app starts"
           }
         }
       }
@@ -6383,6 +6503,16 @@
         }
       }
     },
+    "Contoh: Rumah, Liburan Bali, Usaha": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: Home, Bali Trip, Business"
+          }
+        }
+      }
+    },
     "Contoh: “makan siang 45rb pakai BCA”": {
       "localizations": {
         "en": {
@@ -6429,6 +6559,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fairly healthy"
+          }
+        }
+      }
+    },
+    "Daftar Workspace belum bisa dimuat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Workspace list could not be loaded."
+          }
+        }
+      }
+    },
+    "Daftar standar, tanpa kategori buatanmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The standard list, without the categories you made."
           }
         }
       }
@@ -7273,6 +7423,16 @@
         }
       }
     },
+    "Dibuka saat app dijalankan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens when the app starts"
+          }
+        }
+      }
+    },
     "Dicatat Smart Tracker · periksa dulu": {
       "localizations": {
         "en": {
@@ -7339,6 +7499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deleted as soon as the draft is made"
+          }
+        }
+      }
+    },
+    "Dihapus dalam %lld hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted in %lld days"
           }
         }
       }
@@ -9363,6 +9533,16 @@
         }
       }
     },
+    "Hanya Pemilik yang bisa mengubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the Owner can change this"
+          }
+        }
+      }
+    },
     "Hanya bulan ini": {
       "localizations": {
         "en": {
@@ -9389,6 +9569,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only this"
+          }
+        }
+      }
+    },
+    "Hanya kamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only you"
           }
         }
       }
@@ -10029,6 +10219,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Custom icon"
+          }
+        }
+      }
+    },
+    "Ikon dan warna": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon and color"
           }
         }
       }
@@ -10853,6 +11053,16 @@
         }
       }
     },
+    "Kamu Pemilik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are the Owner"
+          }
+        }
+      }
+    },
     "Kamu akan keluar. Datamu tetap tersimpan.": {
       "localizations": {
         "en": {
@@ -10869,6 +11079,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You'll sign in to %@ with its own data."
+          }
+        }
+      }
+    },
+    "Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You only have your Personal Workspace so far. Create a Workspace to track money together with others."
           }
         }
       }
@@ -10969,6 +11189,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You're offline. The draft stays safe here; try again when you're connected."
+          }
+        }
+      }
+    },
+    "Kamu sudah memiliki 1 Workspace. Berlangganan Plus untuk membuat lebih banyak.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You already own 1 Workspace. Subscribe to Plus to create more."
           }
         }
       }
@@ -11223,6 +11453,16 @@
         }
       }
     },
+    "Kategori awal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting categories"
+          }
+        }
+      }
+    },
     "Kategori baru": {
       "localizations": {
         "en": {
@@ -11243,12 +11483,42 @@
         }
       }
     },
+    "Kategori bawaan Saku": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku's default categories"
+          }
+        }
+      }
+    },
+    "Kategori buatanmu ikut disalin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The categories you made are copied too."
+          }
+        }
+      }
+    },
     "Kategori dan dompet favoritmu": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Your favourite categories and wallets"
+          }
+        }
+      }
+    },
+    "Kategori di Workspace ini berdiri sendiri. Mengubahnya tidak memengaruhi Workspace lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Categories in this Workspace stand on their own. Changing them does not affect other Workspaces."
           }
         }
       }
@@ -12309,6 +12579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallet breakdown"
+          }
+        }
+      }
+    },
+    "Koneksi terputus atau ada yang berubah. Coba lagi sebentar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection dropped or something changed. Try again in a moment."
           }
         }
       }
@@ -14463,6 +14743,16 @@
         }
       }
     },
+    "Mulai dari mana?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where to start?"
+          }
+        }
+      }
+    },
     "Mulai ditagih": {
       "localizations": {
         "en": {
@@ -14549,6 +14839,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Name & color"
+          }
+        }
+      }
+    },
+    "Nama Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace name"
           }
         }
       }
@@ -15843,6 +16143,16 @@
         }
       }
     },
+    "Pemilik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Owner"
+          }
+        }
+      }
+    },
     "Pemisah kolom": {
       "localizations": {
         "en": {
@@ -15869,6 +16179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Settings"
+          }
+        }
+      }
+    },
+    "Pengaturan Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace settings"
           }
         }
       }
@@ -16413,6 +16733,16 @@
         }
       }
     },
+    "Periode budget dan ringkasan mulai di tanggal ini. Boleh dikosongkan, Pemilik bisa mengaturnya nanti.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget and summary periods start on this day. You can leave it empty; the Owner can set it later."
+          }
+        }
+      }
+    },
     "Periode budget diperbarui": {
       "localizations": {
         "en": {
@@ -16849,6 +17179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pick Screenshot"
+          }
+        }
+      }
+    },
+    "Pilih Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a Workspace"
           }
         }
       }
@@ -18459,6 +18799,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your balances still count in Total saldo."
+          }
+        }
+      }
+    },
+    "Salin dari Workspace Pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy from Personal Workspace"
           }
         }
       }
@@ -21443,6 +21793,16 @@
         }
       }
     },
+    "Tanggal gajian Workspace ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace's payday"
+          }
+        }
+      }
+    },
     "Tanggal gajian disimpan": {
       "localizations": {
         "en": {
@@ -22259,6 +22619,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stays on your phone until you save or drop the draft. Drafts disappear after 30 days."
+          }
+        }
+      }
+    },
+    "Tetap di sini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stay here"
           }
         }
       }
@@ -23865,6 +24235,16 @@
         }
       }
     },
+    "Ubah Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Workspace"
+          }
+        }
+      }
+    },
     "Ubah budget hanya untuk bulan berjalan": {
       "localizations": {
         "en": {
@@ -24291,6 +24671,96 @@
           "stringUnit": {
             "state": "translated",
             "value": "Card color · type the name on the card"
+          }
+        }
+      }
+    },
+    "Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace"
+          }
+        }
+      }
+    },
+    "Workspace Pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal Workspace"
+          }
+        }
+      }
+    },
+    "Workspace aktif: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active Workspace: %@"
+          }
+        }
+      }
+    },
+    "Workspace baca saja tidak bisa dipilih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A read-only Workspace cannot be chosen"
+          }
+        }
+      }
+    },
+    "Workspace belum bisa dibuat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Workspace could not be created"
+          }
+        }
+      }
+    },
+    "Workspace default-mu sudah tidak tersedia. Saku membuka Workspace Pribadi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your default Workspace is no longer available. Saku opened your Personal Workspace."
+          }
+        }
+      }
+    },
+    "Workspace dibuat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace created"
+          }
+        }
+      }
+    },
+    "Workspace saya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Workspaces"
+          }
+        }
+      }
+    },
+    "Workspace tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited Workspaces"
           }
         }
       }

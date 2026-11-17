@@ -18,7 +18,7 @@ enum SupabaseSDK {
             .single()
             .execute()
             .value
-        SpaceStore.setActive(profile.defaultSpaceId?.uuidString)
+        SpaceStore.setDefault(profile.defaultSpaceId?.uuidString)
         PaydaySetting.day = profile.paydayDay
         HomeBalanceSetting.mode = profile.homeBalanceMode
         await syncSmartTrackerConsent(profile)

@@ -17,22 +17,31 @@ enum SpaceStore {
         raw.flatMap { UUID(uuidString: $0)?.uuidString.lowercased() }
     }
 
-    /// The workspace in use; nil means "let the server pick the person's Workspace Pribadi".
-    static var activeSpaceId: String? {
+    /// The workspace opened at launch (profile choice, K12). Kept in the App Group: Siri and Shortcuts can run before the profile loads.
+    static var defaultSpaceId: String? {
         if let known = cache.withLock({ $0 }) { return known }
         let saved = normalized(defaults.string(forKey: key))
         cache.withLock { $0 = .some(saved) }
         return saved
     }
 
-    static func setActive(_ id: String?) {
+    /// Chosen in the switcher; lives only in memory, so the next launch opens the default again.
+    private static let session = OSAllocatedUnfairLock<String?>(initialState: nil)
+
+    /// The workspace in use; nil means "let the server pick the person's Workspace Pribadi".
+    static var activeSpaceId: String? { session.withLock { $0 } ?? defaultSpaceId }
+
+    static func setDefault(_ id: String?) {
         let value = normalized(id)
         cache.withLock { $0 = .some(value) }
         if let value { defaults.set(value, forKey: key) } else { defaults.removeObject(forKey: key) }
     }
 
+    /// Switches the app to `id` for this run; nil goes back to the default.
+    static func setActive(_ id: String?) { session.withLock { $0 = normalized(id) } }
+
     /// Sign-out, account switch or deletion: nothing of the old account may steer the next request.
-    static func clear() { setActive(nil) }
+    static func clear() { setActive(nil); setDefault(nil) }
 
     /// The server refused the workspace (not a member any more, or it is gone). The caller falls back to Workspace Pribadi.
     static func isSpaceError(_ error: Error) -> Bool {

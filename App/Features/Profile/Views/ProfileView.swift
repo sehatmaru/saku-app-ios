@@ -21,6 +21,7 @@ struct ProfileView: View {
     /// The ✦ button would sit on top of the pop-up's Batal button, so it steps aside while the pop-up is open.
     @State private var smartButtonHold = SmartButtonHold()
     @State private var showsPayday = false
+@ObservedObject private var workspaceStore = WorkspaceStore.shared
     @State private var isCancellingPayday = false
     @State private var isPaydayFlashing = false
     /// Mirrors PaydaySetting.day (0 = not set) so the row updates when the payday changes.
@@ -363,21 +364,36 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 0) {
             sectionCaption(L("Data"))
 
+            if workspaceStore.showsSwitcher {
+                NavigationLink(destination: WorkspaceListView().detailPage()) {
+                    row(icon: "person.2", title: L("Workspace")) {
+                        Text(workspaceStore.active?.displayName ?? L("Workspace Pribadi"))
+                            .font(.app(15))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .lineLimit(1)
+                        chevron
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(RowPressStyle())
+            }
+
             NavigationLink(destination: CategoriesView()) {
-                row(icon: "square.grid.2x2", title: L("Kategori")) {
+                row(icon: "square.grid.2x2", title: L("Kategori"), subtitle: sharedSpaceName) {
                     chevron
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(RowPressStyle())
 
-            Button { showsPayday = true } label: {
-                row(icon: "calendar", title: L("Tanggal gajian")) {
+            Button { if canEditPayday { showsPayday = true } } label: {
+                row(icon: "calendar", title: L("Tanggal gajian"),
+                    subtitle: sharedSpaceName.map { canEditPayday ? $0 : L("%@ · Hanya Pemilik yang bisa mengubah", $0) }) {
                     Text(paydayDay == 0 ? L("Belum diatur") : "\(paydayDay)")
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
                         .contentTransition(.numericText())
-                    chevron
+                    if canEditPayday { chevron }
                 }
                 .background(isPaydayFlashing ? Color(light: 0xE8F5EE, dark: 0x1E3A2C) : .clear)
                 .contentShape(Rectangle())
@@ -427,6 +443,15 @@ struct ProfileView: View {
             }
         }
     }
+
+    /// K34: what changes here applies to everyone in the open Workspace, so it is named; Workspace Pribadi needs no label.
+    private var sharedSpaceName: String? {
+        guard workspaceStore.showsSwitcher, let active = workspaceStore.active, !active.isPersonal else { return nil }
+        return active.displayName
+    }
+
+    /// K33: only the Owner changes the payday; members see it.
+    private var canEditPayday: Bool { !workspaceStore.showsSwitcher || workspaceStore.canEditActive }
 
     private var pendingPayday: PaydayEntry? {
         _ = paydaySchedule
