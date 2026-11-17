@@ -260,7 +260,9 @@ struct AccountListView: View {
                     if ok, let userId = authViewModel.currentUser?.id {
                         await syncAccountTransactions(userId: userId, forceRefresh: true)
                         // the next reminder counts from this update
-                        await NotificationManager.shared.resyncInvestmentReminders(accounts: viewModel.accounts, transactions: accountTransactions.values.flatMap { $0 })
+                        if ReminderSync.ownsReminders { await ReminderSync.run(userId: userId) } else {
+                            await NotificationManager.shared.resyncInvestmentReminders(accounts: viewModel.accounts, transactions: accountTransactions.values.flatMap { $0 })
+                        }
                     }
                     return ok
                 }

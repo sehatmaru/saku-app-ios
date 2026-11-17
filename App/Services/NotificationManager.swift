@@ -5,6 +5,14 @@ final class NotificationManager: @unchecked Sendable {
     static let shared = NotificationManager()
     private init() {}
 
+    /// Which Workspace an account or subscription belongs to, set by `ReminderSync` when the person has shared ones.
+    /// The text then names it and a tap can open it (T4). Personal items have no tag, so their text stays as it was.
+    struct SpaceTag: Sendable { let id: String; let name: String }
+    private let tagLock = NSLock()
+    nonisolated(unsafe) private var tags: [String: SpaceTag] = [:]
+    func setTags(_ new: [String: SpaceTag]) { tagLock.lock(); tags = new; tagLock.unlock() }
+    private func tag(_ key: String) -> SpaceTag? { tagLock.lock(); defer { tagLock.unlock() }; return tags[key] }
+
     func requestPermissionIfNeeded() async {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
@@ -25,7 +33,7 @@ final class NotificationManager: @unchecked Sendable {
     func schedule(for sub: CardSubscription) async {
         guard sub.isActive, let billingDate = sub.nextBillingDateAsDate else { return }
         let body = L("%@ diperpanjang 3 hari lagi sebesar %@. Batalkan sebelum itu kalau sudah tidak dipakai.", sub.name, sub.amount.formattedAsCurrency())
-        await add(id: identifier(for: sub), title: L("Langganan: %@", sub.name), body: body, daysBefore: 3, date: billingDate)
+        await add(id: identifier(for: sub), title: L("Langganan: %@", sub.name), body: body, daysBefore: 3, date: billingDate, space: tag(sub.id))
     }
 
     /// Card bills still owed: a reminder three days and one day before the due date.
@@ -39,18 +47,18 @@ final class NotificationManager: @unchecked Sendable {
             await scheduleLateReminder(card: card, statement: statement, store: store)
             let amount = statement.remaining.formattedAsCurrency()
             await add(id: "card-due-\(card.id)-3", title: L("Tagihan %@", card.name),
-                      body: L("Tagihan %@ jatuh tempo 3 hari lagi.", amount), daysBefore: 3, date: statement.dueDate)
+                      body: L("Tagihan %@ jatuh tempo 3 hari lagi.", amount), daysBefore: 3, date: statement.dueDate, space: tag(card.id))
             await add(id: "card-due-\(card.id)-1", title: L("Tagihan %@", card.name),
-                      body: L("Tagihan %@ jatuh tempo besok. Bayar penuh supaya tidak kena bunga.", amount), daysBefore: 1, date: statement.dueDate)
+                      body: L("Tagihan %@ jatuh tempo besok. Bayar penuh supaya tidak kena bunga.", amount), daysBefore: 1, date: statement.dueDate, space: tag(card.id))
         }
         // The statement after this one: set now, so a card still gets reminded when the app isn't opened between
         // its cut-off and its due date. The amount isn't known yet, so the text sends the user to the app.
         for (card, statement) in zip(cards, statements) where card.balance >= 1 {
             let day = TransactionDates.dayMonth.string(from: statement.nextDueDate)
             await add(id: "card-due-next-\(card.id)-3", title: L("Tagihan %@", card.name),
-                      body: L("Tagihan berikutnya jatuh tempo %@. Buka Saku untuk melihat jumlahnya.", day), daysBefore: 3, date: statement.nextDueDate)
+                      body: L("Tagihan berikutnya jatuh tempo %@. Buka Saku untuk melihat jumlahnya.", day), daysBefore: 3, date: statement.nextDueDate, space: tag(card.id))
             await add(id: "card-due-next-\(card.id)-1", title: L("Tagihan %@", card.name),
-                      body: L("Tagihan berikutnya jatuh tempo besok. Bayar penuh supaya tidak kena bunga."), daysBefore: 1, date: statement.nextDueDate)
+                      body: L("Tagihan berikutnya jatuh tempo besok. Bayar penuh supaya tidak kena bunga."), daysBefore: 1, date: statement.nextDueDate, space: tag(card.id))
         }
     }
 
@@ -75,7 +83,7 @@ final class NotificationManager: @unchecked Sendable {
         let text = Self.lateText(card: card, statement: statement)
         await add(id: Self.latePrefix + card.id, title: text.title, body: text.body,
                   daysBefore: daysBefore, date: fireDay, category: Self.lateCategory,
-                  userInfo: Self.lateInfo(cardId: card.id, statementDate: statement.statementDate))
+                  userInfo: Self.lateInfo(cardId: card.id, statementDate: statement.statementDate), space: tag(card.id))
     }
 
     static func lateText(card: Account, statement: CreditStatement) -> (title: String, body: String) {
@@ -88,13 +96,16 @@ final class NotificationManager: @unchecked Sendable {
     }
 
     /// "Belum": stay quiet until tomorrow 09:00 and ask again then.
-    func snoozeLateReminder(cardId: String, statementDate: Date, title: String, body: String) async {
+    func snoozeLateReminder(cardId: String, statementDate: Date, title: String, body: String, spaceId: String? = nil) async {
         let wake = BillReminderStore.tomorrowMorning()
         BillReminderStore().snooze(card: cardId, statementDate: statementDate, until: wake)
         // "Ingatkan besok" only works with notifications on, so ask right when the user wants one.
         await requestPermissionIfNeeded()
+        // the title already names the Workspace; only the id has to travel again
+        var info = Self.lateInfo(cardId: cardId, statementDate: statementDate)
+        if let spaceId { info["spaceId"] = spaceId }
         await add(id: Self.latePrefix + cardId, title: title, body: body, daysBefore: 0, date: wake,
-                  category: Self.lateCategory, userInfo: Self.lateInfo(cardId: cardId, statementDate: statementDate))
+                  category: Self.lateCategory, userInfo: info)
     }
 
     /// Registers the "Sudah, catat" / "Belum" buttons on the overdue-bill notification.
@@ -129,7 +140,7 @@ final class NotificationManager: @unchecked Sendable {
                                                                     to: Calendar.current.startOfDay(for: fire)).day ?? 0) }
         let body = age.map { L("%@ terakhir diperbarui %lld hari lalu", account.name, $0) } ?? L("Waktunya memperbarui nilai %@", account.name)
         await add(id: id, title: account.name, body: body, daysBefore: 0, date: fire,
-                  userInfo: ["route": Self.investmentRoute, "accountId": account.id])
+                  userInfo: ["route": Self.investmentRoute, "accountId": account.id], space: tag(account.id))
     }
 
     /// Every investment wallet's reminder follows its last update; wallets that were archived or deleted lose theirs.
@@ -170,7 +181,7 @@ final class NotificationManager: @unchecked Sendable {
 
     /// A one-off reminder at 09:00, `daysBefore` days before `date`; skipped once that's past.
     private func add(id: String, title: String, body: String, daysBefore: Int, date: Date,
-                     category: String? = nil, userInfo: [String: Any] = [:]) async {
+                     category: String? = nil, userInfo: [String: Any] = [:], space: SpaceTag? = nil) async {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
         guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
@@ -181,11 +192,11 @@ final class NotificationManager: @unchecked Sendable {
               fireDate > Date() else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = title
+        content.title = space.map { "\(title) · \($0.name)" } ?? title
         content.body = body
         content.sound = .default
         if let category { content.categoryIdentifier = category }
-        content.userInfo = userInfo
+        content.userInfo = space.map { userInfo.merging(["spaceId": $0.id]) { a, _ in a } } ?? userInfo
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))

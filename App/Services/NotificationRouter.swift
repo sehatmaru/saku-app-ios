@@ -15,6 +15,13 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
     /// The investment wallet whose "Perbarui nilai" the user was reminded of; Dompet opens it and clears this.
     @Published var pendingInvestmentId: String?
 
+    /// The reminder is about a card or wallet of another Workspace: open that one first, so the sheet finds it.
+    static func openSpace(_ id: String?) {
+        guard let id = SpaceStore.normalized(id), id != SpaceStore.activeSpaceId,
+              let space = WorkspaceStore.shared.spaces.first(where: { $0.id.uuidString.lowercased() == id }) else { return }
+        WorkspaceStore.shared.open(space)
+    }
+
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .sound]
@@ -31,6 +38,7 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
         let cardId = content.userInfo["cardId"] as? String
         let investmentId = content.userInfo["accountId"] as? String
         let statementTime = content.userInfo["statementDate"] as? Double ?? 0
+        let spaceId = content.userInfo["spaceId"] as? String
         let action = response.actionIdentifier
         let title = content.title
         let body = content.body
@@ -43,14 +51,16 @@ final class NotificationRouter: NSObject, ObservableObject, UNUserNotificationCe
                 return
             }
             if route == NotificationManager.investmentRoute, let investmentId {
+                NotificationRouter.openSpace(spaceId)
                 NotificationRouter.shared.pendingInvestmentId = investmentId
                 return
             }
             guard category == NotificationManager.lateCategory, let cardId else { return }
             if action == NotificationManager.notYetAction {
                 await NotificationManager.shared.snoozeLateReminder(
-                    cardId: cardId, statementDate: Date(timeIntervalSince1970: statementTime), title: title, body: body)
+                    cardId: cardId, statementDate: Date(timeIntervalSince1970: statementTime), title: title, body: body, spaceId: spaceId)
             } else {
+                NotificationRouter.openSpace(spaceId)
                 NotificationRouter.shared.pendingCardId = cardId
             }
         }
