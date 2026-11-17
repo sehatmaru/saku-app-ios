@@ -34,8 +34,8 @@ final class WorkspaceStore: ObservableObject {
     var active: Workspace? { spaces.first { $0.id == activeId } ?? personal }
     var shared: [Workspace] { spaces.filter { !$0.isPersonal } }
     var owned: [Workspace] { shared.filter(\.isOwner) }
-    /// Beranda shows the switcher only when there is something to switch to, or for the testers while this is not public (K30).
-    var showsSwitcher: Bool { PlusStore.shared.isTester }
+    /// Beranda shows the switcher only when there is something to switch to, or for testers and internal builds while this is not public (K30).
+    var showsSwitcher: Bool { PlusStore.shared.isTester || PlusStore.isInternalBuild }
     var activeIsPersonal: Bool { active?.isPersonal ?? true }
     var canEditActive: Bool { activeIsPersonal || active?.isOwner == true }
 
