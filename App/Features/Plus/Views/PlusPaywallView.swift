@@ -173,6 +173,12 @@ struct PlusPaywallView: View {
 
     /// The three labelled lists shared by the page and the sheet.
     @ViewBuilder private var featureLists: some View {
+        // K37: Workspace is the top benefit once it is open to the person
+        if WorkspaceStore.shared.showsSwitcher {
+            pageList(title: L("Catat bersama"), tint: .appPrimary, rows: [
+                ("person.2", L("Workspace tanpa batas"), L("Kelola uang bersama pasangan, keluarga, atau usaha"), nil),
+            ])
+        }
         pageList(title: L("Catat otomatis"), tint: .appPrimary, rows: [
             ("bell", L("Dari notifikasi bank"), L("BCA, GoPay, dan lainnya jadi draf"), nil),
             ("receipt", L("Dari foto struk"), L("Jumlah, toko, dan tanggal terisi"), nil),

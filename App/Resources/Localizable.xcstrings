@@ -1983,6 +1983,16 @@
         }
       }
     },
+    "2 anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 members"
+          }
+        }
+      }
+    },
     "2 dari 4": {
       "localizations": {
         "en": {
@@ -2249,6 +2259,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld drafts not checked yet"
+          }
+        }
+      }
+    },
+    "Ajak pasangan, keluarga, atau rekan usaha. Setiap catatan menunjukkan siapa yang mencatat. Workspace Pribadi-mu tetap milikmu sendiri.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invite a partner, family, or business partner. Every record shows who made it. Your Personal Workspace stays yours alone."
           }
         }
       }
@@ -3863,6 +3883,16 @@
         }
       }
     },
+    "Belanja bulanan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly groceries"
+          }
+        }
+      }
+    },
     "Belanja setelah tanggal ini masuk ke tagihan bulan berikutnya.": {
       "localizations": {
         "en": {
@@ -5173,6 +5203,16 @@
         }
       }
     },
+    "Buat Workspace untuk pasangan, keluarga, atau usaha. Setiap catatan menunjukkan siapa yang mencatat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make a Workspace for a partner, family, or business. Every record shows who made it."
+          }
+        }
+      }
+    },
     "Buat budget": {
       "localizations": {
         "en": {
@@ -6233,6 +6273,26 @@
         }
       }
     },
+    "Catat bersama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record together"
+          }
+        }
+      }
+    },
+    "Catat bersama, tetap rapi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record together, stay tidy."
+          }
+        }
+      }
+    },
     "Catat cepat": {
       "localizations": {
         "en": {
@@ -6529,6 +6589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Record transactions every day, even small ones, so your score and advice stay accurate."
+          }
+        }
+      }
+    },
+    "Catat uang bersama di Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep money together in Workspace"
           }
         }
       }
@@ -12353,6 +12423,16 @@
         }
       }
     },
+    "Kelola uang bersama pasangan, keluarga, atau usaha": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage money with a partner, family, or business"
+          }
+        }
+      }
+    },
     "Keluar": {
       "localizations": {
         "en": {
@@ -14273,6 +14353,16 @@
         }
       }
     },
+    "Listrik dan air": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Electricity and water"
+          }
+        }
+      }
+    },
     "Luar Saku": {
       "localizations": {
         "en": {
@@ -14409,6 +14499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Food & drink"
+          }
+        }
+      }
+    },
+    "Makan malam": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dinner"
           }
         }
       }
@@ -15708,7 +15808,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not now"
+            "value": "Maybe later"
           }
         }
       }
@@ -19139,6 +19239,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Loss %@"
+          }
+        }
+      }
+    },
+    "Rumah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
           }
         }
       }
@@ -25681,6 +25791,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The Workspace could not be created"
+          }
+        }
+      }
+    },
+    "Workspace bersama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared Workspace"
           }
         }
       }

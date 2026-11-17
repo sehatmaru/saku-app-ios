@@ -36,7 +36,9 @@ struct OnboardingView: View {
     @State private var started = false
     @State private var dragBase: Double?
 
-    private static let slideCount = 3
+    /// The Workspace slide shows only while Workspace is open to the person (K37).
+    private var hasWorkspaceSlide: Bool { WorkspaceStore.shared.showsSwitcher }
+    private var slideCount: Int { hasWorkspaceSlide ? 4 : 3 }
 
     var body: some View {
         GeometryReader { geo in
@@ -47,8 +49,8 @@ struct OnboardingView: View {
             VStack(spacing: 0) {
                 skipBar
                 ZStack {
-                    ForEach(0..<Self.slideCount, id: \.self) { i in
-                        IntroSlide(index: i, pos: pos, isActive: started && act == i, width: w, column: column, scale: scale, reduce: reduce)
+                    ForEach(0..<slideCount, id: \.self) { i in
+                        IntroSlide(index: i, kind: i == 2 && !hasWorkspaceSlide ? 3 : i, pos: pos, isActive: started && act == i, width: w, column: column, scale: scale, reduce: reduce)
                     }
                 }
                 .frame(maxHeight: .infinity)
@@ -78,7 +80,7 @@ struct OnboardingView: View {
                 if p < 0 { p *= 0.35 }
                 if p > 2 { p = 2 + (p - 2) * 0.35 }
                 pos = p
-                act = min(max(Int(p.rounded()), 0), Self.slideCount - 1)
+                act = min(max(Int(p.rounded()), 0), slideCount - 1)
             }
             .onEnded { value in
                 let base = dragBase ?? pos
@@ -90,7 +92,7 @@ struct OnboardingView: View {
     }
 
     private func go(_ index: Int) {
-        let target = min(max(index, 0), Self.slideCount - 1)
+        let target = min(max(index, 0), slideCount - 1)
         withAnimation(reduce ? .easeOut(duration: 0.25) : .sp(190, 21)) { pos = Double(target) }
         act = target
     }
@@ -112,7 +114,7 @@ struct OnboardingView: View {
         let t = min(max(pos - 1, 0), 1)
         return VStack(spacing: 28) {
             HStack(spacing: 26) {
-                ForEach(0..<Self.slideCount, id: \.self) { i in
+                ForEach(0..<slideCount, id: \.self) { i in
                     let near = reduce ? (act == i ? 1.0 : 0) : max(0, 1 - abs(pos - Double(i)))
                     Capsule()
                         .fill(Color.appPrimary)
@@ -127,7 +129,7 @@ struct OnboardingView: View {
             .accessibilityElement()
             .accessibilityLabel(L("Halaman %lld dari 3", act + 1))
 
-            Button { if act < Self.slideCount - 1 { go(act + 1) } else { onFinish() } } label: {
+            Button { if act < slideCount - 1 { go(act + 1) } else { onFinish() } } label: {
                 ZStack {
                     Text("Lanjut").opacity(1 - t).offset(y: reduce ? 0 : -12 * t)
                     Text("Yuk, masuk").opacity(t).offset(y: reduce ? 0 : 12 * (1 - t))
@@ -139,7 +141,7 @@ struct OnboardingView: View {
                 .background(Color.appPrimary, in: Capsule())
             }
             .buttonStyle(PressScaleStyle())
-            .accessibilityLabel(act < Self.slideCount - 1 ? L("Lanjut") : L("Yuk, masuk"))
+            .accessibilityLabel(act < slideCount - 1 ? L("Lanjut") : L("Yuk, masuk"))
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 10)
@@ -150,6 +152,8 @@ struct OnboardingView: View {
 
 private struct IntroSlide: View {
     let index: Int
+    /// What the slide shows: 0 sentence, 1 wallets, 2 Workspace, 3 control. Differs from `index` when the Workspace slide is off.
+    let kind: Int
     let pos: Double
     let isActive: Bool
     let width: CGFloat
@@ -161,9 +165,10 @@ private struct IntroSlide: View {
 
     private struct Copy { let title: String; let text: String }
     private var copy: Copy {
-        switch index {
+        switch kind {
         case 0: Copy(title: L("Catat cukup satu kalimat."), text: L("Ketik atau ucapkan, misalnya “kopi 25rb gopay”. Sisanya Saku yang rapikan."))
         case 1: Copy(title: L("Semua dompet dan budgetmu, satu layar."), text: L("Bank, e-wallet, tunai, sampai kartu kredit. Sisa budget kelihatan jelas, dari hijau sampai merah."))
+        case 2: Copy(title: L("Catat bersama, tetap rapi."), text: L("Buat Workspace untuk pasangan, keluarga, atau usaha. Setiap catatan menunjukkan siapa yang mencatat."))
         default: Copy(title: L("Kamu yang pegang kendali."), text: L("Tiap catatan kamu cek dulu sebelum tersimpan. Datamu bisa kamu hapus kapan saja."))
         }
     }
@@ -173,19 +178,20 @@ private struct IntroSlide: View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .topLeading) {
                 Circle()
-                    .fill(Color.appPrimary.opacity(index == 1 ? 0.0 : 0.10))
-                    .overlay { if index == 1 { Circle().fill(Color.appFill) } }
+                    .fill(Color.appPrimary.opacity(kind == 1 ? 0.0 : 0.10))
+                    .overlay { if kind == 1 { Circle().fill(Color.appFill) } }
                     .frame(width: 320, height: 320)
                     .offset(x: 11, y: 26)
                     .enters(isActive, y: 0, zoom: true, delay: 0, k: 90, c: 14, reduce: reduce)
                     .parallax(d, width, 0.55, reduce: reduce)
-                IntroDots(index: index, reduce: reduce)
+                IntroDots(index: kind, reduce: reduce)
                     .enters(isActive, y: -20, zoom: false, delay: 0.1, k: 110, c: 11, reduce: reduce)
                     .parallax(d, width, 1.7, reduce: reduce)
                 Group {
-                    switch index {
+                    switch kind {
                     case 0: IntroTypeDemo(isActive: isActive, reduce: reduce)
                     case 1: IntroWalletsScene(isActive: isActive, reduce: reduce)
+                    case 2: IntroWorkspaceScene(isActive: isActive, reduce: reduce)
                     default: IntroControlScene(isActive: isActive, reduce: reduce)
                     }
                 }
@@ -275,6 +281,7 @@ private struct IntroDots: View {
         switch index {
         case 0: return [(208, 338, 18, tint), (302, 350, 10, grey), (-20, 70, 14, tint), (346, 196, 12, .appPrimary)]
         case 1: return [(-18, 150, 22, grey), (336, 96, 14, tint), (-14, 60, 10, .appPrimary)]
+        case 2: return [(-16, 110, 16, tint), (338, 150, 12, grey), (320, 330, 18, tint)]
         default: return []
         }
     }
@@ -572,7 +579,90 @@ private struct IntroWalletsScene: View {
     }
 }
 
-// MARK: - Slide 3: the draft waits for you
+// MARK: - Slide 3: a Workspace shared by two people
+
+private struct IntroWorkspaceScene: View {
+    let isActive: Bool
+    let reduce: Bool
+
+    private struct Item { let name: String; let who: Int; let amount: String }
+    private static let people: [(initial: String, color: Color)] = [("D", Color(hex: "16875A")), ("R", Color(hex: "143A73"))]
+    private let items = [
+        Item(name: "Belanja bulanan", who: 0, amount: "−Rp320.000"),
+        Item(name: "Listrik dan air", who: 1, amount: "−Rp450.000"),
+        Item(name: "Makan malam", who: 0, amount: "−Rp85.000"),
+        Item(name: "Bensin", who: 1, amount: "−Rp150.000"),
+    ]
+    @State private var shown = 0
+    @State private var headerOn = false
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            header
+            VStack(spacing: 0) {
+                ForEach(items.indices, id: \.self) { i in row(i) }
+            }
+            .offset(y: 120)
+        }
+        .frame(width: 342, height: 372, alignment: .topLeading)
+        .task(id: isActive) {
+            if isActive {
+                if reduce { headerOn = true; shown = items.count; return }
+                try? await Task.sleep(for: .milliseconds(250))
+                withAnimation(.sp(150, 15)) { headerOn = true }
+                for _ in items {
+                    try? await Task.sleep(for: .milliseconds(380))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.sp(170, 16)) { shown += 1 }
+                }
+            } else {
+                withAnimation(reduce ? .easeOut(duration: 0.15) : .sp(300, 26)) { headerOn = false; shown = 0 }
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "house.fill").font(.system(size: 24)).foregroundStyle(.white)
+                .frame(width: 56, height: 56).background(Color.appPrimary, in: Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Rumah").font(.app(22, weight: .bold)).tracking(-0.3)
+                HStack(spacing: -8) {
+                    ForEach(Self.people.indices, id: \.self) { i in avatar(i, size: 24) }
+                    Text("2 anggota").font(.app(13)).foregroundStyle(Color.appTextSecondary).padding(.leading, 14)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(Color.appText)
+        .frame(width: 342, alignment: .leading)
+        .opacity(headerOn ? 1 : 0)
+        .offset(y: headerOn ? 0 : 18)
+        .offset(y: 20)
+    }
+
+    private func avatar(_ i: Int, size: CGFloat) -> some View {
+        Text(Self.people[i].initial).font(.app(size * 0.5, weight: .semibold)).foregroundStyle(.white)
+            .frame(width: size, height: size).background(Self.people[i].color, in: Circle())
+            .overlay(Circle().stroke(Color.appBackground, lineWidth: 2))
+    }
+
+    private func row(_ i: Int) -> some View {
+        let item = items[i], on = i < shown
+        return HStack(spacing: 12) {
+            Text(L(item.name)).font(.app(16)).foregroundStyle(Color.appText)
+            Spacer(minLength: 0)
+            Text(item.amount).font(.app(16)).monospacedDigit().foregroundStyle(Color.appText)
+            avatar(item.who, size: 28)
+        }
+        .frame(width: 342, height: 56)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.appDivider).frame(height: 1) }
+        .opacity(on ? 1 : 0)
+        .offset(y: on ? 0 : 14)
+    }
+}
+
+// MARK: - Slide 4: the draft waits for you
 
 private struct IntroControlScene: View {
     let isActive: Bool

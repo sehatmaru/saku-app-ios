@@ -169,9 +169,23 @@ struct WorkspaceHost: ViewModifier {
     @State private var plusReason: PlusReason?
     @State private var showsWizard = false
     @State private var showsJoin = false
+    @State private var showsNews = false
+    private static let newsKey = "workspaceNewsSeen"
 
     func body(content: Content) -> some View {
         content
+            // K37: a "Baru" sheet, once, after Workspace opens to the person
+            .task(id: store.hasLoaded) {
+                guard store.hasLoaded, store.showsSwitcher, !UserDefaults.standard.bool(forKey: Self.newsKey) else { return }
+                try? await Task.sleep(for: .milliseconds(1500))
+                guard !Task.isCancelled else { return }
+                UserDefaults.standard.set(true, forKey: Self.newsKey)
+                showsNews = true
+            }
+            .sheet(isPresented: $showsNews) {
+                WorkspaceNewsSheet { showsNews = false; store.requestCreate() }
+                    .presentationDetents([.height(430)])
+            }
             .onChange(of: store.createRequests) { _, _ in start() }
             .onChange(of: store.joinRequests) { _, _ in
                 if authViewModel.currentUser?.isGuest == true { authViewModel.startGuestLink() } else { showsJoin = true }
@@ -241,5 +255,32 @@ struct WorkspaceStatusBanner: View {
         Task {
             do { try await store.cancelDeletion(of: workspace) } catch { failed = true }
         }
+    }
+}
+
+
+/// "Baru": one sheet that tells a person Workspace exists (K37).
+struct WorkspaceNewsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let onCreate: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Image(systemName: "person.2.fill").font(.system(size: 30)).foregroundStyle(.white)
+                .frame(width: 72, height: 72).background(Color.appPrimary, in: Circle())
+                .padding(.top, 32)
+            Text(L("Baru")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary).padding(.top, 20)
+            Text(L("Catat uang bersama di Workspace"))
+                .font(.app(24, weight: .bold)).tracking(-0.4).multilineTextAlignment(.center).padding(.top, 6)
+            Text(L("Ajak pasangan, keluarga, atau rekan usaha. Setiap catatan menunjukkan siapa yang mencatat. Workspace Pribadi-mu tetap milikmu sendiri."))
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center).lineSpacing(3).padding(.top, 8)
+            Spacer(minLength: 16)
+            PrimaryButton(title: L("Buat Workspace")) { onCreate() }
+            Button(L("Nanti saja")) { dismiss() }
+                .font(.app(15, weight: .semibold)).foregroundStyle(Color.appTextSecondary).frame(height: 44)
+        }
+        .padding(.horizontal, 24).padding(.bottom, 8)
+        .foregroundStyle(Color.appText)
+        .background(Color.appBackground)
     }
 }
