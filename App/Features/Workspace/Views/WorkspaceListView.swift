@@ -267,6 +267,13 @@ struct EditWorkspaceSheet: View {
                     .multilineTextAlignment(.center).tint(.appPrimary)
                     .frame(height: 36)
                     .onChange(of: name) { _, value in if value.count > 40 { name = String(value.prefix(40)) } }
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button(L("Selesai")) { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
+                                .font(.app(17, weight: .semibold))
+                        }
+                    }
                 if let errorMessage {
                     Text(errorMessage).font(.app(13)).foregroundStyle(Color.appError)
                 }

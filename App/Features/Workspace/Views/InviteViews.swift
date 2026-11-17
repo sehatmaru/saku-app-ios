@@ -198,11 +198,22 @@ struct JoinWorkspaceSheet: View {
                 .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(.top, 14)
                 .onChange(of: text) { _, value in
-                    let grouped = InviteCode.grouped(value)
-                    if grouped != value { text = grouped }
+                    // no spaces inserted while typing: rewriting the field under the keyboard drops characters
+                    let clean = InviteCode.normalized(value)
+                    if clean != value { text = clean }
                     problem = nil
                 }
+                .submitLabel(.go)
                 .onSubmit { if InviteCode.isComplete(text) { Task { await check() } } }
+                // the sheet's own footer sits under the keyboard while typing
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button(L("Lanjut")) { Task { await check() } }
+                            .font(.app(17, weight: .semibold))
+                            .disabled(!InviteCode.isComplete(text))
+                    }
+                }
             if let problem {
                 Text(problem).font(.app(13)).foregroundStyle(Color.appError).padding(.top, 8)
             }
