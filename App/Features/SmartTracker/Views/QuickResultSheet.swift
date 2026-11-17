@@ -130,7 +130,7 @@ struct QuickResultSheet: View {
         }
         .font(.app(13)).foregroundStyle(Color.appTextSecondary)
         .padding(.horizontal, 24)
-        if let target = WorkspaceStore.shared.defaultWorkspace, !target.isPersonal {
+        if let target = WorkspaceStore.shared.active, !target.isPersonal {
             Label(L("Disimpan ke %@", target.displayName), systemImage: "person.2")
                 .font(.app(12)).foregroundStyle(Color.appTextSecondary)
                 .padding(.horizontal, 24).padding(.top, 6)

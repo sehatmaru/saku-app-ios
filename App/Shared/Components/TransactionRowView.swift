@@ -163,8 +163,7 @@ struct TransactionRowView: View {
                     HStack(spacing: 5) {
                         if let recorder {
                             MemberAvatar(member: recorder, size: 16)
-                            Text(recorder.firstName).font(.app(13, weight: .medium)).foregroundStyle(Color.appText).lineLimit(1)
-                            if !subtitle.isEmpty { Text("·") }
+                                .accessibilityElement().accessibilityLabel(L("Dicatat oleh %@", recorder.name))
                         }
                         Text(subtitle).lineLimit(1)
                     }

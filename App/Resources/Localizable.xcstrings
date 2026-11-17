@@ -7683,6 +7683,16 @@
         }
       }
     },
+    "Dicatat oleh %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added by %@"
+          }
+        }
+      }
+    },
     "Dicatat otomatis oleh Smart Tracker. Periksa dulu sebelum disimpan.": {
       "localizations": {
         "en": {
