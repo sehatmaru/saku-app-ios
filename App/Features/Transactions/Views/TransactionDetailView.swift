@@ -26,13 +26,6 @@ struct TransactionDetailView: View {
 
     @State private var isConfirmingDelete = false
     @State private var pendingDelete: Task<Void, Never>?
-    @State private var toast: Toast?
-
-    private struct Toast: Equatable {
-        let message: String
-        let icon: String
-        var canUndo = false
-    }
 
     init(transaction: Transaction, categories: [Category], accounts: [Account], isEditable: Bool = true, onUpdate: ((Transaction) -> Void)? = nil) {
         self.categories = categories
@@ -84,8 +77,6 @@ struct TransactionDetailView: View {
                     .opacity(isDeleted ? 0.3 : 1)
                     .allowsHitTesting(!isDeleted)
             }
-
-            toastView
         }
         .background(Color.appBackground)
         .confirmDialog(isPresented: $isConfirmingDelete, icon: "trash", destructive: true,
@@ -423,21 +414,22 @@ struct TransactionDetailView: View {
 
     private var deleteButton: some View {
         HStack(spacing: 12) {
-            Button { isConfirmingDelete = true } label: {
-                Image(systemName: "trash").font(.system(size: 19, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 50, height: 50)
-                    .background(Color(hex: "D93636"), in: Circle())
-            }
-            .accessibilityLabel(L("Hapus"))
             if canEdit {
                 Button { showsForm = true } label: {
-                    Label("Ubah", systemImage: "square.and.pencil")
-                        .font(.app(17, weight: .semibold))
+                    Image(systemName: "square.and.pencil").font(.system(size: 19, weight: .semibold))
                         .foregroundStyle(Color.appBackground)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.appText, in: Capsule())
+                        .frame(width: 50, height: 50)
+                        .background(Color.appText, in: Circle())
                 }
+                .accessibilityLabel(L("Ubah"))
+            }
+            Button { isConfirmingDelete = true } label: {
+                Label("Hapus", systemImage: "trash")
+                    .font(.app(17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color(hex: "D93636"), in: Capsule())
             }
         }
         .buttonStyle(PressScaleStyle())
@@ -473,7 +465,7 @@ struct TransactionDetailView: View {
 
     /// Hides the transaction and offers Urungkan; the real delete runs when the toast ends.
     private func startDelete() {
-        show(Toast(message: L("Transaksi dihapus"), icon: "trash.fill", canUndo: true), duration: 3.8)
+        ToastCenter.shared.show(L("Transaksi dihapus"), icon: .trash, undo: .init(run: undoDelete), duration: 3.8)
         pendingDelete = Task {
             try? await Task.sleep(for: .seconds(3.8))
             guard !Task.isCancelled else { return }
@@ -484,7 +476,6 @@ struct TransactionDetailView: View {
     private func undoDelete() {
         pendingDelete?.cancel()
         pendingDelete = nil
-        toast = nil
     }
 
     private func finishDelete(now: Bool) {
@@ -497,44 +488,9 @@ struct TransactionDetailView: View {
                 NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 if !now { dismiss() }
             } catch {
-                show(Toast(message: L("Gagal menghapus"), icon: "exclamationmark.circle.fill"))
+                ToastCenter.shared.show(L("Gagal menghapus"), icon: .error)
             }
         }
-    }
-
-    // MARK: - Toast
-
-    private func show(_ newToast: Toast, duration: Double = 1.8) {
-        withAnimation { toast = newToast }
-        Task {
-            try? await Task.sleep(for: .seconds(duration))
-            if toast == newToast { withAnimation { toast = nil } }
-        }
-    }
-
-    private var toastView: some View {
-        HStack(spacing: 10) {
-            Image(systemName: toast?.icon ?? "checkmark.circle.fill")
-                .font(.system(size: 17))
-                .foregroundStyle(Color(hex: "5CD49A"))
-            Text(toast?.message ?? "")
-                .font(.app(15, weight: .medium))
-            if toast?.canUndo == true {
-                Button("Urungkan", action: undoDelete)
-                    .font(.app(15, weight: .semibold))
-                    .foregroundStyle(Color(hex: "5CD49A"))
-                    .padding(.leading, 4)
-            }
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(Color(hex: "111111"), in: Capsule())
-        .padding(.bottom, 72)
-        .opacity(toast == nil ? 0 : 1)
-        .offset(y: toast == nil ? 16 : 0)
-        .animation(.timingCurve(0.3, 1.4, 0.5, 1, duration: 0.38), value: toast)
-        .allowsHitTesting(toast != nil)
     }
 
     /// Card surface that stays distinct from the black page in dark mode.
