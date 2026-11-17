@@ -8,7 +8,6 @@ struct SmartTrackerHomeOverlay: View {
     /// Nothing recorded yet (design 3a): the button pulses and a tip points at it.
     var isFresh = false
     var onOpenQueue: () -> Void
-    var onToast: (String) -> Void
     @ObservedObject private var store = DraftStore.shared
     /// The tip over the button is shown until the button is first tapped, then never again.
     @AppStorage("smartTrackerTipSeen") private var tipSeen = false
@@ -56,7 +55,7 @@ struct SmartTrackerHomeOverlay: View {
             // the draft to fill in by hand opens once the Plus offer is closed
             guard new == nil, let input = afterOffer else { return }
             afterOffer = nil
-            result = input
+            present(input)
         }
         .photosPicker(isPresented: $showsLibrary, selection: $pickedPhoto, matching: .images)
         .onChange(of: pickedPhoto) { _, item in
@@ -70,7 +69,7 @@ struct SmartTrackerHomeOverlay: View {
         }
         .sheet(item: $result, onDismiss: { store.pruneImages(after: 65) }) { input in
             QuickResultSheet(sentence: input.sentence, source: input.source, drafts: input.drafts, userId: userId,
-                             onSaved: { onToast($0) }, onSaveLater: { store.add($0) },
+                             onSaved: { ToastCenter.shared.show($0) }, onSaveLater: { store.add($0) },
                              onRedo: { sentence in
                                  text = sentence
                                  retryHint = true
@@ -82,6 +81,13 @@ struct SmartTrackerHomeOverlay: View {
             await NotificationManager.shared.requestPermissionIfNeeded()
             await store.refreshReferenceData(userId: userId)
         }
+    }
+
+    /// Every reading goes straight to Draf with a toast; the quick result sheet no longer opens.
+    private func present(_ input: QuickInput) {
+        store.add(input.drafts)
+        Haptics.add()
+        ToastCenter.shared.show(L("%lld draf masuk ke Draf", input.drafts.count))
     }
 
     // MARK: Button and bar
@@ -353,7 +359,7 @@ struct SmartTrackerHomeOverlay: View {
         let pending = pendingResult
         thumbnail = nil
         close()
-        result = pending
+        if let pending { present(pending) }
     }
 
     private func startVoice() {
@@ -427,7 +433,7 @@ struct SmartTrackerHomeOverlay: View {
             thumbnail = nil
             close()
             let input = QuickInput(sentence: "", source: .photo, drafts: reading.drafts)
-            if outOfQuota { afterOffer = input; plusReason = .aiHelp } else { result = input }
+            if outOfQuota { afterOffer = input; plusReason = .aiHelp } else { present(input) }
         }
     }
 
@@ -460,7 +466,7 @@ struct SmartTrackerHomeOverlay: View {
             guard !final.isEmpty else { return }
             close()
             let input = QuickInput(sentence: sentence, source: source, drafts: final)
-            if outOfQuota { afterOffer = input; plusReason = .aiHelp } else { result = input }
+            if outOfQuota { afterOffer = input; plusReason = .aiHelp } else { present(input) }
         }
     }
 

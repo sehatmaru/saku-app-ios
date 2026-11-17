@@ -16,8 +16,6 @@ struct WalletSubscriptionsView: View {
     @State private var form: Editing?
     @State private var monthOffset = 0
     @State private var selectedDay = Calendar.current.component(.day, from: Date())
-    @State private var toastText = ""
-    @State private var isToastShown = false
     @AppStorage("isBalanceVisible") private var isBalanceVisible = true
 
     static let dueColor = Color(light: 0xC2410C, dark: 0xF07A45)
@@ -98,16 +96,15 @@ struct WalletSubscriptionsView: View {
         .background(Color.appBackground)
         .navigationTitle("Tagihan berulang")
         .navigationBarTitleDisplayMode(.inline)
-        .toast(toastText, isShown: $isToastShown)
         .fullScreenCover(item: $form) { form in
             AddSubscriptionView(categories: categories, account: account, subscriptions: subscriptions,
                                 existing: form.existing, day: form.day) {
-                toastText = form.existing == nil ? L("Tagihan berulang ditambahkan") : L("Perubahan disimpan")
+                let message = form.existing == nil ? L("Tagihan berulang ditambahkan") : L("Perubahan disimpan")
                 if form.existing == nil { selectedDay = form.day }
                 Task {
                     // After the cover has slid away.
                     try? await Task.sleep(for: .milliseconds(400))
-                    isToastShown = true
+                    ToastCenter.shared.show(message)
                 }
             }
         }

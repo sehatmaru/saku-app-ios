@@ -108,8 +108,6 @@ struct EditWalletView: View {
     @State private var isBusy = false
     /// Save feedback: check badge + card pop, then the toast.
     @State private var saved = false
-    @State private var toast = false
-    @State private var toastText = L("Perubahan disimpan")
     @State private var pop = false
     // Number pad
     // End screen after archive
@@ -199,9 +197,7 @@ struct EditWalletView: View {
         .animation(.easeInOut(duration: 0.4), value: isDeleting)
         .background(Color.appBackground.ignoresSafeArea())
         .foregroundStyle(Color.appText)
-        .toast(toastText, isShown: $toast)
         .sheet(isPresented: $isConfirmingDelete) { deleteDialog }
-        .overlay(alignment: .bottom) { undoToast }
         .overlay { endScreen }
         .onDisappear {
             // Leaving during the undo window still deletes.
@@ -767,30 +763,6 @@ struct EditWalletView: View {
         }
     }
 
-    /// "Dompet dihapus · Urungkan" for the few seconds before the delete really happens.
-    private var undoToast: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "trash.fill")
-                .font(.system(size: 17))
-                .foregroundStyle(Color(hex: "5CD49A"))
-            Text("Dompet dihapus")
-                .font(.app(15, weight: .medium))
-            Button("Urungkan", action: undoDelete)
-                .font(.app(15, weight: .semibold))
-                .foregroundStyle(Color(hex: "5CD49A"))
-                .padding(.leading, 4)
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(Color(hex: "111111"), in: Capsule())
-        .padding(.bottom, 32)
-        .opacity(isDeleting ? 1 : 0)
-        .offset(y: isDeleting ? 0 : 16)
-        .allowsHitTesting(isDeleting)
-        .animation(.spring(duration: 0.4, bounce: 0.3), value: isDeleting)
-    }
-
     // MARK: End screen
 
     private var endScreen: some View {
@@ -931,9 +903,8 @@ struct EditWalletView: View {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             cur.name = trimmedName
             orig = cur
-            toastText = L("Perubahan disimpan")
             saved = true
-            toast = true
+            ToastCenter.shared.show(L("Perubahan disimpan"))
             try? await Task.sleep(for: .seconds(1.4))
             saved = false
         }
@@ -952,6 +923,7 @@ struct EditWalletView: View {
     /// Hides the wallet's page and offers Urungkan; the real delete runs when the toast ends.
     private func startDelete() {
         isConfirmingDelete = false
+        ToastCenter.shared.show(L("Dompet dihapus"), icon: .trash, undo: .init(run: undoDelete), duration: Self.undoSeconds)
         pendingDelete = Task {
             try? await Task.sleep(for: .seconds(Self.undoSeconds))
             guard !Task.isCancelled else { return }
@@ -977,7 +949,7 @@ struct EditWalletView: View {
         }
     }
 
-    private static let undoSeconds = 1.0
+    private static let undoSeconds = 3.8
 
     private func showEnd() async {
         sheet = nil
@@ -995,8 +967,7 @@ struct EditWalletView: View {
         if fromEnd {
             endShown = false
         } else {
-            toastText = L("Dompet dipulihkan")
-            toast = true
+            ToastCenter.shared.show(L("Dompet dipulihkan"))
         }
     }
 }

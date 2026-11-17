@@ -29,6 +29,9 @@ struct TransactionListView: View {
     @State private var hasInitialExpanded = false
     /// The purchase behind a tapped running installment.
     @State private var openedInstallment: Transaction?
+    /// Swiped away and waiting out the Urungkan window; the delete runs when it ends.
+    @State private var hiddenIds: Set<String> = []
+    @State private var deleteTasks: [String: Task<Void, Never>] = [:]
 
     /// Rows shown per month before "Tampilkan N lainnya".
     private let previewCount = 7
@@ -36,69 +39,80 @@ struct TransactionListView: View {
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Color.clear
-                            .frame(height: 0)
-                            .id("scrollTop")
+                // A List, so rows get the native swipe-to-delete; every other block is a full-width, unstyled row.
+                List {
+                    Color.clear
+                        .frame(height: 0)
+                        .id("scrollTop")
+                        .flatRow()
 
-                        ScreenHeader(title: L("Transaksi")) {
-                            Button {
-                                withAnimation(.smooth) { isBalanceVisible.toggle() }
-                                isBalanceVisibleStorage = isBalanceVisible
-                            } label: {
-                                Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
-                            }
-                            .accessibilityLabel(isBalanceVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
+                    ScreenHeader(title: L("Transaksi")) {
+                        Button {
+                            withAnimation(.smooth) { isBalanceVisible.toggle() }
+                            isBalanceVisibleStorage = isBalanceVisible
+                        } label: {
+                            Image(systemName: isBalanceVisible ? "eye" : "eye.slash")
+                        }
+                        .accessibilityLabel(isBalanceVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
+                    }
+                    .flatRow()
+
+                    searchField
+                        .padding(.horizontal, 24)
+                        .padding(.top, 14)
+                        .flatRow()
+
+                    if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
+                        errorStateView(message: error)
+                            .padding(24)
+                            .flatRow()
+                    } else if !viewModel.hasLoadedOnce {
+                        transactionSkeleton.flatRow()
+                    } else {
+                        if let error = viewModel.errorMessage {
+                            ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16).flatRow()
+                        }
+                        // The month hero gives way while searching, so results start higher.
+                        if !isSearching {
+                            summary.flatRow()
                         }
 
-                        searchField
-                            .padding(.horizontal, 24)
-                            .padding(.top, 14)
+                        Color.clear
+                            .frame(height: 1)
+                            .onAppear { showBackToTop = false }
+                            .onDisappear { showBackToTop = true }
+                            .flatRow()
 
-                        if let error = viewModel.errorMessage, !viewModel.hasLoadedOnce {
-                            errorStateView(message: error)
-                                .padding(24)
-                        } else if !viewModel.hasLoadedOnce {
-                            transactionSkeleton
+                        // 0% installments still billing this period; filters never hide it, a text search does
+                        let running = viewModel.runningInstallments
+                        if !running.isEmpty, !isSearching {
+                            RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible, onOpen: { id in
+                                openedInstallment = viewModel.allTransactions.first { $0.id == id }
+                            }, onChange: { id, months in await viewModel.changeInstallment(id: id, months: months) })
+                            .flatRow()
+                        }
+
+                        if !hasNoTransactions {
+                            filterChips
+                                .padding(.top, isSearching ? 16 : 0)
+                                .flatRow()
+                        }
+
+                        if filteredTransactions.isEmpty {
+                            emptyState.flatRow()
                         } else {
-                            if let error = viewModel.errorMessage {
-                                ErrorBanner(message: error).padding(.horizontal, 24).padding(.top, 16)
-                            }
-                            // The month hero gives way while searching, so results start higher.
-                            if !isSearching {
-                                summary
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
-                            }
-
-                            Color.clear
-                                .frame(height: 1)
-                                .onAppear { showBackToTop = false }
-                                .onDisappear { showBackToTop = true }
-
-                            // 0% installments still billing this period; filters never hide it, a text search does
-                            let running = viewModel.runningInstallments
-                            if !running.isEmpty, !isSearching {
-                                RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible, onOpen: { id in
-                                    openedInstallment = viewModel.allTransactions.first { $0.id == id }
-                                }, onChange: { id, months in await viewModel.changeInstallment(id: id, months: months) })
-                            }
-
-                            if !hasNoTransactions {
-                                filterChips
-                                    .padding(.top, isSearching ? 16 : 0)
-                            }
-
-                            if filteredTransactions.isEmpty {
-                                emptyState
-                            } else {
-                                groupedTransactionList
-                            }
+                            groupedTransactionList
                         }
                     }
-                    .padding(.bottom, 24)
-                    .animation(.smooth(duration: 0.4), value: isSearching)
+
+                    Color.clear.frame(height: 24).flatRow()
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .environment(\.defaultMinListRowHeight, 0)
+                .listRowSpacing(0)
+                .animation(.smooth(duration: 0.4), value: isSearching)
+                .animation(.smooth(duration: 0.38), value: hiddenIds)
                 .animation(.easeInOut(duration: 0.3), value: viewModel.hasLoadedOnce)
                 .background(Color.appBackground)
                 .toolbar(.hidden, for: .navigationBar)
@@ -160,6 +174,33 @@ struct TransactionListView: View {
                 }
             }
         }
+    }
+
+    // MARK: Swipe to delete
+
+    /// Hides the row at once and offers Urungkan; the real delete runs when the toast ends.
+    private func delete(_ transaction: Transaction) {
+        let id = transaction.id
+        withAnimation(.smooth(duration: 0.38)) { _ = hiddenIds.insert(id) }
+        ToastCenter.shared.show(L("Transaksi dihapus"), icon: .trash, undo: .init(run: { undoDelete(id) }), duration: 3.8)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        deleteTasks[id] = Task {
+            try? await Task.sleep(for: .seconds(3.8))
+            guard !Task.isCancelled else { return }
+            do {
+                try await SupabaseRepository.shared.softDeleteTransaction(id: id)
+                NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            } catch {
+                withAnimation { _ = hiddenIds.remove(id) }
+            }
+            deleteTasks[id] = nil
+        }
+    }
+
+    private func undoDelete(_ id: String) {
+        deleteTasks[id]?.cancel()
+        deleteTasks[id] = nil
+        withAnimation(.smooth(duration: 0.38)) { _ = hiddenIds.remove(id) }
     }
 
     private func errorStateView(message: String) -> some View {
@@ -447,7 +488,7 @@ struct TransactionListView: View {
     // MARK: Filtered Transactions
 
     private var filteredTransactions: [Transaction] {
-        var result = viewModel.allTransactions
+        var result = viewModel.allTransactions.filter { !hiddenIds.contains($0.id) }
 
         if !filter.transactionTypes.isEmpty {
             result = result.filter { filter.transactionTypes.contains($0.type) }
@@ -493,38 +534,37 @@ struct TransactionListView: View {
 
     // MARK: Grouped List
 
+    @ViewBuilder
     private var groupedTransactionList: some View {
         let sections = viewModel.sections(for: filteredTransactions)
-        return LazyVStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
-                let expanded = expandedMonths.contains(section.id)
-                Button {
-                    withAnimation {
-                        if expanded {
-                            expandedMonths.remove(section.id)
-                        } else {
-                            expandedMonths.insert(section.id)
-                        }
-                    }
-                } label: {
-                    monthHeader(section, expanded: expanded)
-                }
-                .buttonStyle(.plain)
-                .overlay(alignment: .top) {
-                    if index > 0 {
-                        Rectangle().fill(Color.appDivider).frame(height: 1)
+        ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
+            let expanded = expandedMonths.contains(section.id)
+            Button {
+                withAnimation {
+                    if expanded {
+                        expandedMonths.remove(section.id)
+                    } else {
+                        expandedMonths.insert(section.id)
                     }
                 }
-                .padding(.top, index > 0 && expandedMonths.contains(sections[index - 1].id) ? 14 : 0)
-
-                if expanded {
-                    monthRows(section)
+            } label: {
+                monthHeader(section, expanded: expanded)
+            }
+            .buttonStyle(.plain)
+            .overlay(alignment: .top) {
+                if index > 0 {
+                    Rectangle().fill(Color.appDivider).frame(height: 1)
                 }
             }
-            if !store.isComplete { olderMonthsFooter }
+            .padding(.top, index > 0 && expandedMonths.contains(sections[index - 1].id) ? 14 : (index == 0 ? 12 : 0))
+            .padding(.horizontal, 24)
+            .flatRow()
+
+            if expanded {
+                monthRows(section)
+            }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 12)
+        if !store.isComplete { olderMonthsFooter.flatRow() }
     }
 
     /// Reaching the end loads the next months; while a search or filter needs everything, `loadAll` runs instead.
@@ -575,8 +615,12 @@ struct TransactionListView: View {
         ForEach(Array(rows.enumerated()), id: \.element.id) { index, transaction in
             if index == 0 || !Calendar.current.isDate(transaction.date, inSameDayAs: rows[index - 1].date) {
                 dayHeader(for: transaction.date, in: section.transactions)
+                    .padding(.horizontal, 24)
+                    .flatRow()
             }
-            NavigationLink(value: TransactionRoute(id: transaction.id)) {
+            // The link sits behind the row so the List draws no disclosure chevron.
+            ZStack {
+                NavigationLink(value: TransactionRoute(id: transaction.id)) { EmptyView() }.opacity(0)
                 TransactionRowView(
                     transaction: transaction,
                     categories: viewModel.categories,
@@ -587,7 +631,17 @@ struct TransactionListView: View {
                     installment: running[transaction.id].map { ($0.billedNow, $0.months) }
                 )
             }
-            .buttonStyle(RowPressStyle())
+            .padding(.horizontal, 24)
+            .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .leading)),
+                                    removal: .opacity.combined(with: .move(edge: .trailing))))
+            .flatRow()
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) { delete(transaction) } label: {
+                    Image(systemName: "trash")
+                }
+                .accessibilityLabel(L("Hapus"))
+                .tint(Color(hex: "D93636"))
+            }
         }
         if !showAll, section.transactions.count > previewCount {
             Button("Tampilkan \(section.transactions.count - previewCount) lainnya") {
@@ -598,6 +652,7 @@ struct TransactionListView: View {
             .frame(maxWidth: .infinity)
             .padding(.top, 18)
             .padding(.bottom, 6)
+            .flatRow()
         }
     }
 
@@ -699,5 +754,14 @@ struct RowPressStyle: ButtonStyle {
         configuration.label
             .opacity(configuration.isPressed ? 0.5 : 1.0)
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+private extension View {
+    /// A List row with no insets, separator or background: the page lays itself out, only the swipe is native.
+    func flatRow() -> some View {
+        listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
     }
 }

@@ -83,7 +83,6 @@ struct DraftQueueView: View {
 @State private var periodChoice: Draft?
     @State private var failures: [UUID: Failure] = [:]
     @State private var sheet: DraftSheet?
-    @State private var toast: Toast?
     @State private var showsSaveAll = false
     @State private var showsDeleteAll = false
     @State private var errorMessage: String?
@@ -321,28 +320,55 @@ struct DraftQueueView: View {
     /// One height for every card, state and kind: the tallest realistic content, capped so it fits small screens.
     /// The coloured head is about a third of the card; 24 pt side padding matches the rows below.
     private static let heroHeight: CGFloat = 176
+    /// With the keyboard up the coloured head shrinks to kind, time and amount, so the rows keep their room.
+    private var compact: Bool { focusedId != nil }
+    private var heroH: CGFloat { compact ? 112 : Self.heroHeight }
+    /// The source text opens inside the head and pushes the rows down; the card keeps its height.
+    private func heroTotal(_ d: Draft) -> CGFloat {
+        heroH + (!compact && expandedWords.contains(d.id) ? max(0, (wordsHeights[d.id] ?? 17) - 17) + 8 : 0)
+    }
+    /// Height of each draft's source text at full length, measured so the head can grow to fit it.
+    @State private var wordsHeights: [UUID: CGFloat] = [:]
     private static var cardWidth: CGFloat { UIScreen.main.bounds.width }
     private static var baseCardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
 
-    /// One draft and nothing else: the card is shorter and its actions sit in the bar below, like the bulk bar for several.
-    private var singleDraft: Bool { items.count == 1 && queue.count == 1 }
+    /// Bumped when Simpan is tapped on a draft that lacks something; the missing rows shake and flash.
+    @State private var nudges: [UUID: Int] = [:]
+    @State private var flashing: Set<UUID> = []
 
-    private var cardHeight: CGFloat { singleDraft ? min(Self.baseCardHeight, 440) : Self.baseCardHeight }
+    private func nudge(_ d: Draft) {
+        focusedId = nil
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        withAnimation(.linear(duration: 0.5)) { nudges[d.id, default: 0] += 1 }
+        withAnimation(.easeOut(duration: 0.2)) { _ = flashing.insert(d.id) }
+        Task {
+            try? await Task.sleep(for: .milliseconds(900))
+            withAnimation(.easeOut(duration: 0.4)) { _ = flashing.remove(d.id) }
+        }
+    }
+
+    private var cardHeight: CGFloat { Self.baseCardHeight }
 
     // MARK: Body
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        // Top aligned: when the keyboard shrinks the page the card keeps its place and the keyboard covers its lower part,
+        // instead of the card being pushed up under the navigation bar.
+        ZStack(alignment: .top) {
             VStack(spacing: 0) {
                 if !store.drafts.isEmpty || !store.notices.isEmpty {
-                    list
+                    // The card is taller than the room left above the keyboard; pinned to the proposed size it overflows
+                    // downward, instead of the whole page being centred and pushed up under the navigation bar.
+                    GeometryReader { geo in
+                        list.frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                            .animation(.easeInOut(duration: 0.25), value: focusedId)
+                    }
                 } else if saved + ignored == 0 {
                     emptyQueue
                 } else {
                     allChecked
                 }
             }
-            if store.drafts.isEmpty { toastView.padding(.bottom, 110) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBackground)
@@ -421,7 +447,6 @@ struct DraftQueueView: View {
                 Group {
                     if items.count > 1 { pageDots } else { Color.clear.frame(height: 44) }
                 }
-                .overlay { toastView }
                 Spacer(minLength: 0)
             } else {
                 Spacer(minLength: 0)
@@ -430,7 +455,7 @@ struct DraftQueueView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .pinnedFooter(separator: false) {
-            if store.drafts.count > 1 && focusedId == nil { bulkBar } else if singleDraft && focusedId == nil { singleBar }
+            if store.drafts.count > 1 && focusedId == nil { bulkBar }
         }
     }
 
@@ -508,18 +533,6 @@ struct DraftQueueView: View {
         .accessibilityLabel(L("%lld dari %lld", pos + 1, n))
     }
 
-    /// The one draft's actions: Abaikan and Simpan when it is complete, only Abaikan while something is missing.
-    @ViewBuilder private var singleBar: some View {
-        if let d = queue.first {
-            if level(d) == .complete {
-                SmartSheetFooter(primary: failures[d.id] != nil ? L("Coba lagi") : L("Simpan"), isBusy: saving.contains(d.id),
-                                 secondary: L("Abaikan"), onPrimary: { save(d) }, onSecondary: { ignore(d) })
-            } else {
-                SmartSheetFooter(secondary: L("Abaikan"), onSecondary: { ignore(d) })
-            }
-        }
-    }
-
     private var bulkBar: some View {
         SmartSheetFooter(primary: L("Simpan (%lld)", ready.count), isEnabled: !ready.isEmpty,
                          secondary: L("Abaikan (%lld)", store.drafts.count),
@@ -546,14 +559,6 @@ struct DraftQueueView: View {
             cardHeader(d, reading: rescanning.contains(d.id)).zIndex(1)
             ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                if d.isUnreadable {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Smart Tracker belum paham kalimat ini").font(.app(15, weight: .semibold))
-                        Text("“\(d.title)”").font(.app(15)).italic().foregroundStyle(Color.appTextSecondary)
-                        Text("Isi nominal dan detailnya di bawah.").font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                    }
-                    .padding(.bottom, 8)
-                }
                 // the same rows as the manual form: label, mark and value, chevron; the name field closes the list
                 ForEach(Array(rows.enumerated()), id: \.element.label) { _, field in
                     fieldRow(d, field).padding(.horizontal, -24).padding(.trailing, 4)
@@ -593,7 +598,7 @@ struct DraftQueueView: View {
 
                 Spacer(minLength: 16)
 
-                if !singleDraft {
+                do {
                     HStack(spacing: 12) {
                         if lv == .complete {
                             Button { if !swiping { ignore(d) } } label: {
@@ -615,21 +620,30 @@ struct DraftQueueView: View {
                             .disabled(isSaving)
                         } else {
                             Button { if !swiping { ignore(d) } } label: {
-                                Text("Abaikan").font(.app(17, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                                    .frame(maxWidth: .infinity).frame(height: 48)
+                                Text("Abaikan").font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
+                                    .padding(.horizontal, 12).frame(height: 48)
                             }
                             .buttonStyle(.plain)
                             .disabled(isSaving)
+                            // Looks off but still answers a tap: it shows what is missing.
+                            Button { if !swiping { nudge(d) } } label: {
+                                Text("Simpan")
+                                    .font(.app(17, weight: .semibold)).foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity).frame(height: 48)
+                                    .background(Color.appPrimary, in: Capsule())
+                                    .opacity(0.4)
+                            }
+                            .buttonStyle(PressScaleStyle())
                         }
                     }
                 }
                 }
             .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 16)
-            .frame(maxWidth: .infinity, minHeight: cardHeight - Self.heroHeight, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: cardHeight - heroTotal(d), alignment: .topLeading)
             }
             .scrollBounceBehavior(.basedOnSize)
             .scrollIndicators(.hidden)
-            .frame(height: cardHeight - Self.heroHeight)
+            .frame(height: cardHeight - heroTotal(d))
         }
         .background(Color.appBackground)
         .clipShape(RoundedRectangle(cornerRadius: 32))
@@ -646,7 +660,9 @@ struct DraftQueueView: View {
     private func cardHeader(_ d: Draft, reading: Bool) -> some View {
         let thumb = d.imageId.flatMap { DraftImageStore.thumbnail($0) }
         let failed = rescanFailed.contains(d.id)
-        return VStack(alignment: .leading, spacing: 12) {
+        // a sentence the reader could not understand lives in the title, not in rawText
+        let words = (d.rawText ?? (d.isUnreadable ? d.title : "")).trimmingCharacters(in: .whitespacesAndNewlines)
+        return VStack(alignment: .leading, spacing: compact ? 4 : words.isEmpty ? 12 : 8) {
             HStack(spacing: 8) {
                 Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: .type) } } label: {
                     HStack(spacing: 8) {
@@ -666,25 +682,23 @@ struct DraftQueueView: View {
                 Label(DateFormatter.arrivalTime.string(from: d.createdAt), systemImage: "clock")
                     .font(.app(12, weight: .medium)).monospacedDigit().foregroundStyle(.white.opacity(0.92))
                     .padding(.trailing, 4)
-                Button { if !swiping { sourceSheet = DraftImageItem(id: d.id) } } label: {
-                    Group {
-                        if let thumb {
-                            Image(uiImage: thumb).resizable().scaledToFill()
-                        } else {
-                            Image(systemName: d.sourceIcon).font(.system(size: 16, weight: .medium)).foregroundStyle(.white)
-                        }
+                if let thumb {
+                    Button { if !swiping { sourceSheet = DraftImageItem(id: d.id) } } label: {
+                        Image(uiImage: thumb).resizable().scaledToFill()
+                            .frame(width: 36, height: 36)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay { RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.white, lineWidth: 2) }
+                            .padding(4).contentShape(Rectangle())
+                            .opacity(reading && pulse ? 0.45 : 1)
                     }
-                    .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.28))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .overlay {
-                        if thumb != nil { RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.white, lineWidth: 2) }
-                    }
-                    .padding(4).contentShape(Rectangle())
-                    .opacity(reading && pulse ? 0.45 : 1)
+                    .buttonStyle(PressScaleStyle())
+                    .accessibilityLabel(L("Lihat gambar asli"))
+                } else {
+                    Image(systemName: d.sourceIcon).font(.system(size: 16, weight: .medium)).foregroundStyle(.white.opacity(0.9))
+                        .frame(width: 44, height: 44)
+                        .opacity(reading && pulse ? 0.45 : 1)
+                        .accessibilityLabel(d.sourceLabel)
                 }
-                .buttonStyle(PressScaleStyle())
-                .accessibilityLabel(thumb != nil ? L("Lihat gambar asli") : d.sourceLabel)
             }
 
             if reading {
@@ -699,30 +713,31 @@ struct DraftQueueView: View {
                             HStack(alignment: .top, spacing: 2) {
                                 Text("Rp").font(.app(16, weight: .medium)).opacity(0.85).padding(.top, 6)
                                 Text(amount.formattedAsDigits())
-                                    .font(.app(amount.formattedAsDigits().count > 7 ? 38 : 46, weight: .light)).tracking(-1.5).monospacedDigit()
+                                    .font(.app(compact ? 30 : amount.formattedAsDigits().count > 7 ? 38 : 46, weight: .light)).tracking(-1.5).monospacedDigit()
                                     .lineLimit(1).minimumScaleFactor(0.5)
                             }
                         } else {
-                            HStack(spacing: 16) {
+                            VStack(alignment: .leading, spacing: 0) {
                                 HStack(alignment: .top, spacing: 8) {
                                     Text("Rp").font(.app(16, weight: .medium)).padding(.top, 6)
-                                    Text("0").font(.app(46, weight: .light)).tracking(-1.5)
+                                    Text("0").font(.app(compact ? 30 : 46, weight: .light)).tracking(-1.5)
                                 }
-                                .opacity(0.5)
-                                Label("Ketuk untuk isi nominal", systemImage: "pencil").font(.app(13, weight: .semibold))
-                                    .multilineTextAlignment(.leading).frame(maxWidth: 130, alignment: .leading)
+                                .opacity(0.55)
                             }
                         }
                     }
                     .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: compact ? 36 : 52, alignment: .topLeading)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .modifier(ShakeEffect(shakes: CGFloat(nudges[d.id] ?? 0)))
                 .accessibilityLabel(L("Nominal"))
             }
+            if !compact, !reading, !words.isEmpty { sourceRow(d, words) }
         }
-        .padding(.horizontal, 24).padding(.vertical, 16)
-        .frame(maxWidth: .infinity, minHeight: Self.heroHeight, maxHeight: Self.heroHeight, alignment: .topLeading)
+        .padding(.horizontal, 24).padding(.vertical, compact ? 10 : 16)
+        .frame(maxWidth: .infinity, minHeight: heroTotal(d), maxHeight: heroTotal(d), alignment: .topLeading)
         .background(headerColor(d), in: RoundedRectangle(cornerRadius: 32))
         .overlay(alignment: .bottomTrailing) {
             HStack(spacing: 8) {
@@ -743,7 +758,44 @@ struct DraftQueueView: View {
                     sparkleButton(d)
                 }
                 .offset(y: 24).padding(.trailing, 24)
+                // nothing to read again when no words were kept: no button, rather than one that explains why
+                .opacity(compact || d.rawText == nil ? 0 : 1)
+                .allowsHitTesting(!compact && d.rawText != nil)
         }
+    }
+
+    /// The words the draft was made from, under the amount: one line, a tap opens all of it with where it came from.
+    private func sourceRow(_ d: Draft, _ words: String) -> some View {
+        let open = expandedWords.contains(d.id)
+        let expandable = (wordsHeights[d.id] ?? 0) > 20
+        let row = HStack(alignment: .top, spacing: 6) {
+            Image(systemName: "quote.opening").font(.system(size: 11, weight: .heavy)).opacity(0.7).padding(.top, 3)
+            Text(words).font(.app(13, weight: .medium)).lineLimit(open ? nil : 1).multilineTextAlignment(.leading)
+                .background {
+                    Text(words).font(.app(13, weight: .medium)).fixedSize(horizontal: false, vertical: true).hidden()
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wordsHeights[d.id] = $0 }
+                }
+            Spacer(minLength: 0)
+            if expandable {
+                Image(systemName: open ? "chevron.up" : "chevron.down").font(.system(size: 10, weight: .bold)).opacity(0.7).padding(.top, 4)
+            }
+        }
+        .foregroundStyle(.white.opacity(0.92))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        return Group {
+            if expandable {
+                Button {
+                    if swiping { return }
+                    withAnimation(.settle(0.3)) { if open { expandedWords.remove(d.id) } else { expandedWords.insert(d.id) } }
+                } label: { row }
+                .buttonStyle(.plain)
+            } else {
+                row
+            }
+        }
+        .accessibilityLabel(L("Teks asli"))
+        .accessibilityValue(words)
     }
 
     /// Short flags under the rows: looks like another draft, about to expire.
@@ -815,7 +867,7 @@ struct DraftQueueView: View {
         let busy = rescanning.contains(d.id), failed = rescanFailed.contains(d.id), out = aiOut
         let done = d.reader == .ai
         // why the button cannot read again: nothing left to read, or AI is off
-        let blocked: String? = done ? L("Sudah dibaca AI") : d.rawText == nil ? L("Tidak ada teks asli") : !(aiOn && RemoteSmartParser.isAvailable) ? L("AI belum aktif") : nil
+        let blocked: String? = done ? L("Sudah dibaca AI") : !(aiOn && RemoteSmartParser.isAvailable) ? L("AI belum aktif") : nil
         let grey = blocked != nil && !done
         return Button {
             if swiping { return }
@@ -1026,9 +1078,12 @@ struct DraftQueueView: View {
         return Button { if !swiping { sheet = DraftSheet(draftId: d.id, kind: f.kind) } } label: {
             DetailRow(label: f.label, value: f.isMissing ? (f.kind == .category ? L("Belum dipilih") : L("Pilih")) : f.value,
                       wallet: f.isMissing ? nil : f.wallet, categoryMark: f.isMissing ? nil : f.category,
-                      icon: isDate ? "calendar" : nil, showsChevron: true, height: 48, isPlaceholder: f.isMissing)
+                      icon: isDate ? "calendar" : nil, showsChevron: true, height: 48, isPlaceholder: f.isMissing,
+                      placeholderColor: Color.stWarn)
         }
         .buttonStyle(.plain)
+        .background(f.isMissing && flashing.contains(d.id) ? Color.stWarn.opacity(0.16) : Color.clear)
+        .modifier(ShakeEffect(shakes: f.isMissing ? CGFloat(nudges[d.id] ?? 0) : 0))
         .accessibilityLabel(f.label)
         .accessibilityValue(f.isMissing ? "" : f.value)
     }
@@ -1085,33 +1140,12 @@ struct DraftQueueView: View {
         .padding(.vertical, 18)
     }
 
-    /// "Draf diabaikan  Urungkan": a dark pill with words only (a check mark would read as "done", which is wrong for
-    /// Abaikan). Sits in the band of page marks between the card and the bottom bar, so it never covers a button.
-    @ViewBuilder private var toastView: some View {
-        if let toast {
-            HStack(spacing: 14) {
-                Text(toast.text).font(.app(15, weight: .medium)).lineLimit(1)
-                Button { undo(toast) } label: {
-                    Text("Urungkan").font(.app(15, weight: .semibold)).foregroundStyle(Color(light: 0x3DDC97, dark: 0x3DDC97))
-                        .padding(.horizontal, 14).frame(height: 36)
-                        .background(Color.white.opacity(0.12), in: Capsule())
-                }
-                .buttonStyle(PressScaleStyle())
-            }
-            .foregroundStyle(.white)
-            .padding(.leading, 20).padding(.trailing, 6).frame(height: 48)
-            .background(Color(light: 0x111111, dark: 0x2C2C2E), in: Capsule())
-            .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
-    }
-
     // MARK: Sheets
 
     @ViewBuilder private func sheetContent(_ item: DraftSheet) -> some View {
         if let d = store.drafts.first(where: { $0.id == item.draftId }) {
             DraftFieldSheet(draft: d, kind: item.kind, accounts: store.accounts, categories: store.categories,
-                            edit: { change in edit(d.id, change) }, learn: { learn(d.id) }, close: { sheet = nil })
+                            edit: { change in edit(d.id, change) }, close: { sheet = nil })
         }
     }
 
@@ -1137,11 +1171,6 @@ struct DraftQueueView: View {
     private func nameBinding(_ d: Draft) -> Binding<String> {
         Binding(get: { d.isUnreadable ? "" : d.title },
                 set: { value in edit(d.id) { $0.clearUnreadable(); $0.title = value } })
-    }
-
-    /// A correction teaches Ingatan, same as saving does.
-    private func learn(_ id: UUID) {
-        if let draft = store.drafts.first(where: { $0.id == id }) { store.learnCorrection(from: draft) }
     }
 
     private func openFirstMissing(_ d: Draft) {
@@ -1218,7 +1247,6 @@ struct DraftQueueView: View {
 
     /// Urungkan: a saved transaction is removed again (balances go back) and its draft returns; an ignored draft just returns.
     private func undo(_ t: Toast) {
-        toast = nil
         Task {
             do {
                 for id in t.transactionIds { try await SupabaseRepository.shared.softDeleteTransaction(id: id) }
@@ -1232,11 +1260,7 @@ struct DraftQueueView: View {
     }
 
     private func show(_ t: Toast) {
-        withAnimation(.settle(0.4)) { toast = t }
-        Task {
-            try? await Task.sleep(for: .seconds(6))
-            if toast?.id == t.id { withAnimation(.settle(0.3)) { toast = nil } }
-        }
+        ToastCenter.shared.show(t.text, icon: t.kind == .saved ? .success : .trash, undo: .init(run: { undo(t) }), duration: 6)
     }
 
     // MARK: Words

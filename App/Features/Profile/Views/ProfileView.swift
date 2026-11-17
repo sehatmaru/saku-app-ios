@@ -22,7 +22,6 @@ struct ProfileView: View {
     @State private var smartButtonHold = SmartButtonHold()
     @State private var showsPayday = false
     @State private var isCancellingPayday = false
-    @State private var isPaydayToastShown = false
     @State private var isPaydayFlashing = false
     /// Mirrors PaydaySetting.day (0 = not set) so the row updates when the payday changes.
     @AppStorage("paydayDay") private var paydayDay = 0
@@ -120,7 +119,7 @@ struct ProfileView: View {
             .sheet(isPresented: $showsPayday) {
                 PaydaySheet(context: .settings) { day in
                     guard day != nil else { return }
-                    isPaydayToastShown = true
+                    ToastCenter.shared.show(L("Tanggal gajian disimpan"))
                     withAnimation(.easeOut(duration: 0.2)) { isPaydayFlashing = true }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
                         withAnimation(.easeOut(duration: 0.6)) { isPaydayFlashing = false }
@@ -153,8 +152,7 @@ struct ProfileView: View {
             } message: {
                 Text("Gagal menyimpan. Coba lagi.")
             }
-            .toast(L("Tanggal gajian disimpan"), isShown: $isPaydayToastShown)
-            .navigationDestination(isPresented: $showsPlusPage) {
+                .navigationDestination(isPresented: $showsPlusPage) {
                 PlusPaywallView(reason: .general, asPage: true).detailPage()
             }
             .onAppear {
@@ -566,9 +564,6 @@ struct ProfileEditView: View {
     @ObservedObject var authViewModel: AuthViewModel
     @ObservedObject private var plus = PlusStore.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var showToast = false
-    @State private var toastIsError = false
-    @State private var toastMessage = ""
     @State private var pickerItem: PhotosPickerItem?
     @State private var deletesAccount = false
     @State private var isSavingPhoto = false
@@ -627,7 +622,6 @@ struct ProfileEditView: View {
             viewModel.loadProfile(from: authViewModel.currentUser)
             entered = true
         }
-        .toast(isPresented: $showToast, message: toastMessage, icon: toastIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
         .navigationDestination(isPresented: $deletesAccount) {
             DeleteAccountView(authViewModel: authViewModel).detailPage()
         }
@@ -791,13 +785,10 @@ struct ProfileEditView: View {
             if let updated = await viewModel.saveProfile(user: authViewModel.currentUser, photo: image, removePhoto: image == nil, name: name) {
                 authViewModel.currentUser = updated
                 authViewModel.avatarImage = image
-                toastIsError = false
-                toastMessage = image == nil ? L("Foto dihapus") : L("Foto profil diperbarui")
+                ToastCenter.shared.show(image == nil ? L("Foto dihapus") : L("Foto profil diperbarui"))
             } else {
-                toastIsError = true
-                toastMessage = viewModel.errorMessage ?? L("Foto belum tersimpan. Coba lagi.")
+                ToastCenter.shared.show(viewModel.errorMessage ?? L("Foto belum tersimpan. Coba lagi."), icon: .error)
             }
-            withAnimation { showToast = true }
         }
     }
 
@@ -806,13 +797,9 @@ struct ProfileEditView: View {
         Task {
             if let updated = await viewModel.saveProfile(user: authViewModel.currentUser, photo: nil) {
                 authViewModel.currentUser = updated
-                toastIsError = false
-                toastMessage = L("Profil berhasil disimpan")
-                withAnimation { showToast = true }
+                ToastCenter.shared.show(L("Profil berhasil disimpan"))
             } else if let error = viewModel.errorMessage {
-                toastIsError = true
-                toastMessage = error
-                withAnimation { showToast = true }
+                ToastCenter.shared.show(error, icon: .error)
             }
         }
     }

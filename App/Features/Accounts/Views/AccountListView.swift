@@ -64,8 +64,6 @@ struct AccountListView: View {
     @State private var archiving: Account?
     @State private var makingMain: Account?
     @State private var reminding: Account?
-    @State private var toastText = ""
-    @State private var isToastShown = false
     /// Rolls the hero's numbers in; replayed when the page opens and when a card closes.
     @State private var odometerOn = false
 
@@ -241,18 +239,17 @@ struct AccountListView: View {
             .sheet(item: $reminding) { account in
                 InvestmentReminderSheet(account: account, transactions: accountTransactions[account.id] ?? [], offer: false)
             }
-            .toast(toastText, isShown: $isToastShown)
-            .fullScreenCover(item: $payCard) { card in
+                .fullScreenCover(item: $payCard) { card in
                 if let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) {
                     PayCardBillSheet(card: card, statement: statement, wallets: viewModel.accounts,
-                                     onPaid: { _, _, _ in showToast(L("Pembayaran tercatat")) })
+                                     onPaid: { _, _, _ in ToastCenter.shared.show(L("Pembayaran tercatat")) })
                 }
             }
             .fullScreenCover(item: $recordCard) { card in
                 if let statement = viewModel.statement(for: card, transactions: accountTransactions[card.id] ?? []) {
                     PayCardBillSheet(card: card, statement: statement, wallets: viewModel.accounts, mode: .record,
                                      onPaid: { amount, _, isFull in
-                        showToast(isFull ? L("%@ lunas · pembayaran tercatat", card.name) : L("Pembayaran %@ tercatat", amount.formattedAsCurrency()))
+                        ToastCenter.shared.show(isFull ? L("%@ lunas · pembayaran tercatat", card.name) : L("Pembayaran %@ tercatat", amount.formattedAsCurrency()))
                     })
                 }
             }
@@ -1116,7 +1113,7 @@ struct AccountListView: View {
         Task {
             try? await Task.sleep(for: .milliseconds(600))
             if await viewModel.toggleAccountArchive(id: account.id) {
-                showToast(L("%@ diarsipkan", account.name))
+                ToastCenter.shared.show(L("%@ diarsipkan", account.name))
             }
         }
     }
@@ -1127,14 +1124,9 @@ struct AccountListView: View {
         Task {
             try? await Task.sleep(for: .milliseconds(600))
             if await viewModel.removeAccount(id: account.id) {
-                showToast(L("%@ dihapus", account.name))
+                ToastCenter.shared.show(L("%@ dihapus", account.name))
             }
         }
-    }
-
-    private func showToast(_ text: String) {
-        toastText = text
-        isToastShown = true
     }
 
     private func makeDefault(_ account: Account) {

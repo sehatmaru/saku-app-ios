@@ -371,10 +371,11 @@ struct GuestLinkPresentation: ViewModifier {
                     .background(Color.appBackground)
                     .interactiveDismissDisabled(isWorking)
             }
-            .toast(L("Akun tertaut"), isShown: Binding(
-                get: { authViewModel.linkSucceeded },
-                set: { authViewModel.linkSucceeded = $0 }
-            ))
+            .onChange(of: authViewModel.linkSucceeded) { _, done in
+                guard done else { return }
+                ToastCenter.shared.show(L("Akun tertaut"))
+                authViewModel.linkSucceeded = false
+            }
     }
 }
 

@@ -20,8 +20,6 @@ struct BudgetDetailView: View {
     @State private var isDeleting = false
     @State private var isCancellingTemporary = false
     @State private var failed = false
-    @State private var toastText = ""
-    @State private var isToastShown = false
     @State private var detailTransaction: Transaction?
 
     /// The budget as the list has it now (amount changes land there), else the one we were opened with.
@@ -66,11 +64,9 @@ struct BudgetDetailView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) { deleteBar }
         .navigationTitle(category.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toast(toastText, isShown: $isToastShown)
         .fullScreenCover(isPresented: $showAdjust) {
             AdjustBudgetView(budget: live, category: category, viewModel: viewModel) {
-                toastText = L("Budget disesuaikan")
-                isToastShown = true
+                ToastCenter.shared.show(L("Budget disesuaikan"))
             }
         }
         .confirmDialog(isPresented: $showCancelTemporaryDialog, icon: "arrow.uturn.backward",
@@ -216,8 +212,7 @@ struct BudgetDetailView: View {
             isCancellingTemporary = false
             showCancelTemporaryDialog = false
             if ok {
-                toastText = L("Kembali ke budget awal")
-                isToastShown = true
+                ToastCenter.shared.show(L("Kembali ke budget awal"))
             } else {
                 failed = true
             }

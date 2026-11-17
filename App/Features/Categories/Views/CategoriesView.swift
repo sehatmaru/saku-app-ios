@@ -13,8 +13,6 @@ struct CategoriesView: View {
     @State private var form: FormItem?
     @State private var limitReason: PlusReason?
     @ObservedObject private var plus = PlusStore.shared
-    @State private var toastText = ""
-    @State private var showsToast = false
     private let loadsOnAppear: Bool
 
     init() {
@@ -68,7 +66,6 @@ struct CategoriesView: View {
         .background(Color.appBackground)
         .navigationTitle(L("Kategori"))
         .navigationBarTitleDisplayMode(.inline)
-        .toast(toastText, isShown: $showsToast)
         .sheet(item: $form) { item in
             let id: String? = if case .edit(let c) = item.mode { c.id } else { nil }
             CategoryFormView(
@@ -349,8 +346,7 @@ struct CategoriesView: View {
     }
 
     private func say(_ text: String) {
-        toastText = text
-        showsToast = true
+        ToastCenter.shared.show(text)
     }
 
     private func flash(_ id: String, for seconds: Double) {

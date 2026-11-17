@@ -26,8 +26,6 @@ struct BudgetListView: View {
     @State private var isPeriodHidden = false
     /// Row that just got a budget, tinted for a moment.
     @State private var flashId: String?
-    @State private var toastText = ""
-    @State private var isToastShown = false
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
     /// Local copy so the toggle animates (an @AppStorage change ignores withAnimation); same as Transaksi.
     @State private var isBalanceVisible = true
@@ -115,8 +113,7 @@ struct BudgetListView: View {
             .sheet(isPresented: $showPaydaySheet) {
                 PaydaySheet(context: .card, onDone: { day in paydayPicked(day) }, onWillSave: { frozenPayday = paydayRaw })
             }
-            .toast(toastText, isShown: $isToastShown)
-            .onAppear { isBalanceVisible = isBalanceVisibleStorage }
+                .onAppear { isBalanceVisible = isBalanceVisibleStorage }
             .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }
             .task {
                 guard let userId = authViewModel.currentUser?.id else { return }
@@ -138,11 +135,6 @@ struct BudgetListView: View {
                 await viewModel.loadBudgets(userId: userId, forceRefresh: true)
             }
         }
-    }
-
-    private func showToast(_ text: String) {
-        toastText = text
-        isToastShown = true
     }
 
     // MARK: Period
@@ -224,7 +216,7 @@ struct BudgetListView: View {
             frozenPayday = nil
             isPeriodHidden = false
             try? await Task.sleep(for: .milliseconds(140))
-            showToast(L("Periode budget diperbarui"))
+            ToastCenter.shared.show(L("Periode budget diperbarui"))
         }
     }
 
@@ -360,7 +352,7 @@ struct BudgetListView: View {
         flashId = category.id
         Task {
             try? await Task.sleep(for: .milliseconds(300))
-            showToast(L("Budget %@ aktif", category.name))
+            ToastCenter.shared.show(L("Budget %@ aktif", category.name))
             try? await Task.sleep(for: .milliseconds(1100))
             flashId = nil
         }
