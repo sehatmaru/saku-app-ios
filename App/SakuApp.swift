@@ -26,6 +26,7 @@ struct SakuApp: App {
 struct RootView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @ObservedObject private var workspaceStore = WorkspaceStore.shared
+    @Environment(\.scenePhase) private var scenePhase
     /// A new account or a switch of Workspace starts Beranda over.
     private var dashboardIdentity: String {
         let user: String = authViewModel.currentUser?.id ?? ""
@@ -106,6 +107,10 @@ struct RootView: View {
         .toastHost()
         .guestLinkDialogs()
         .workspaceHost()
+        // someone may have removed this person from a Workspace, or handed it over, while the app was away
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, authViewModel.currentUser != nil { Task { await workspaceStore.load() } }
+        }
         .task(id: authViewModel.currentUser?.id) {
             if authViewModel.currentUser != nil { await workspaceStore.load() } else { workspaceStore.reset() }
         }

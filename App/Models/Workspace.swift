@@ -34,11 +34,11 @@ struct Workspace: Identifiable, Equatable, Decodable, Sendable {
 
     /// Whole days until the workspace is deleted, nil when it is not waiting for deletion.
     var daysUntilDeletion: Int? {
-        guard let raw = deletionScheduledFor, let date = Self.parse(raw) else { return nil }
+        guard let raw = deletionScheduledFor, let date = Self.parseTimestamp(raw) else { return nil }
         return max(0, Calendar.current.dateComponents([.day], from: Date(), to: date).day ?? 0)
     }
 
-    private static func parse(_ raw: String) -> Date? {
+    static func parseTimestamp(_ raw: String) -> Date? {
         let fractional = ISO8601DateFormatter()
         fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return fractional.date(from: raw) ?? ISO8601DateFormatter().date(from: raw)

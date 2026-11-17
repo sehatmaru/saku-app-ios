@@ -3,12 +3,13 @@ import SwiftUI
 
 /// Failures of the workspace calls the screens tell apart (TD T4 error codes).
 enum WorkspaceError: Error, Equatable {
-    case limit, guest, other
+    case limit, guest, ownerDeleting, other
 
     init(_ error: Error) {
         let text = String(describing: error)
         if text.contains("space_limit") { self = .limit }
         else if text.contains("guest_not_allowed") { self = .guest }
+        else if text.contains("space_owner_deleting") { self = .ownerDeleting }
         else { self = .other }
     }
 }
@@ -114,6 +115,71 @@ final class WorkspaceStore: ObservableObject {
             await load()
         } catch { throw WorkspaceError(error) }
     }
+
+    // MARK: Invites and members (stage 3)
+
+    /// The live code, or a new one. `renew` retires the live code first (K23).
+    func invite(for workspace: Workspace, renew: Bool = false) async throws -> WorkspaceInvite {
+        struct Params: Encodable, Sendable { let p_space: UUID, p_renew: Bool }
+        do {
+            let rows: [WorkspaceInvite] = try await SupabaseSDK.client.rpc("create_invite", params: Params(p_space: workspace.id, p_renew: renew)).execute().value
+            guard let invite = rows.first else { throw WorkspaceError.other }
+            return invite
+        } catch { throw WorkspaceError(error) }
+    }
+
+    func revokeInvite(of workspace: Workspace) async throws {
+        do { try await SupabaseSDK.client.rpc("revoke_invite", params: ["p_space": workspace.id]).execute() }
+        catch { throw WorkspaceError(error) }
+    }
+
+    func preview(code: String) async throws -> InvitePreview {
+        do {
+            let rows: [InvitePreview] = try await SupabaseSDK.client.rpc("preview_invite", params: ["p_code": InviteCode.normalized(code)]).execute().value
+            guard let row = rows.first else { throw WorkspaceError.other }
+            return row
+        } catch { throw WorkspaceError(error) }
+    }
+
+    /// Joins with a code. A refused code comes back as a status; `load()` runs so the new Workspace is in the list.
+    func join(code: String) async throws -> JoinOutcome {
+        do {
+            let rows: [JoinOutcome] = try await SupabaseSDK.client.rpc("join_space", params: ["p_code": InviteCode.normalized(code)]).execute().value
+            guard let row = rows.first else { throw WorkspaceError.other }
+            if row.status == .joined || row.status == .alreadyMember { await load() }
+            return row
+        } catch { throw WorkspaceError(error) }
+    }
+
+    func members(of workspace: Workspace) async throws -> [WorkspaceMember] {
+        do { return try await SupabaseSDK.client.rpc("space_members", params: ["p_space": workspace.id]).execute().value }
+        catch { throw WorkspaceError(error) }
+    }
+
+    func leave(_ workspace: Workspace) async throws {
+        do {
+            try await SupabaseSDK.client.rpc("leave_space", params: ["p_space": workspace.id]).execute()
+            await load()
+        } catch { throw WorkspaceError(error) }
+    }
+
+    func remove(_ member: WorkspaceMember, from workspace: Workspace) async throws {
+        struct Params: Encodable, Sendable { let p_space: UUID, p_profile: UUID }
+        do { try await SupabaseSDK.client.rpc("remove_member", params: Params(p_space: workspace.id, p_profile: member.profileId)).execute() }
+        catch { throw WorkspaceError(error) }
+    }
+
+    func transfer(_ workspace: Workspace, to member: WorkspaceMember) async throws {
+        struct Params: Encodable, Sendable { let p_space: UUID, p_profile: UUID }
+        do {
+            try await SupabaseSDK.client.rpc("transfer_ownership", params: Params(p_space: workspace.id, p_profile: member.profileId)).execute()
+            await load()
+        } catch { throw WorkspaceError(error) }
+    }
+
+    /// Counts "join with a code" requests; `WorkspaceHost` answers each one.
+    @Published private(set) var joinRequests = 0
+    func requestJoin() { joinRequests += 1 }
 
     /// Back to the signed-out state: nothing of this account stays in memory.
     func reset() {

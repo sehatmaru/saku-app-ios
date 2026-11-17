@@ -115,6 +115,7 @@ struct WorkspaceSwitcherSheet: View {
     @ObservedObject private var store = WorkspaceStore.shared
     @Environment(\.dismiss) private var dismiss
     let onCreate: () -> Void
+    let onJoin: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -148,7 +149,8 @@ struct WorkspaceSwitcherSheet: View {
             }
         }
         .filterSheet {
-            SmartSheetFooter(primary: L("Buat Workspace"), primaryIcon: "plus", onPrimary: { dismiss(); onCreate() })
+            SmartSheetFooter(primary: L("Buat Workspace"), primaryIcon: "plus", secondary: L("Gabung dengan kode"),
+                             onPrimary: { dismiss(); onCreate() }, onSecondary: { dismiss(); onJoin() })
         }
     }
 
@@ -166,10 +168,15 @@ struct WorkspaceHost: ViewModifier {
     @ObservedObject private var store = WorkspaceStore.shared
     @State private var plusReason: PlusReason?
     @State private var showsWizard = false
+    @State private var showsJoin = false
 
     func body(content: Content) -> some View {
         content
             .onChange(of: store.createRequests) { _, _ in start() }
+            .onChange(of: store.joinRequests) { _, _ in
+                if authViewModel.currentUser?.isGuest == true { authViewModel.startGuestLink() } else { showsJoin = true }
+            }
+            .sheet(isPresented: $showsJoin) { JoinWorkspaceSheet() }
             .onChange(of: store.resetNotice) { _, notice in
                 guard notice else { return }
                 store.resetNotice = false

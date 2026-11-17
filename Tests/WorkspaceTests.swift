@@ -52,3 +52,51 @@ final class WorkspaceTests: XCTestCase {
         XCTAssertEqual(WalletIcon.presetColors.count, 10)
     }
 }
+
+final class InviteTests: XCTestCase {
+    func testCodeIsNormalizedFromAnyTyping() {
+        XCTAssertEqual(InviteCode.normalized("abcd-efgh"), "ABCDEFGH")
+        XCTAssertEqual(InviteCode.normalized(" a b c d e f g h "), "ABCDEFGH")
+        XCTAssertEqual(InviteCode.normalized("ABCDEFGH9999"), "ABCDEFGH")
+        XCTAssertEqual(InviteCode.normalized("é💡ab"), "AB")
+    }
+
+    func testCodeIsGroupedInFours() {
+        XCTAssertEqual(InviteCode.grouped("abcdefgh"), "ABCD EFGH")
+        XCTAssertEqual(InviteCode.grouped("abc"), "ABC")
+        XCTAssertEqual(InviteCode.grouped("abcde"), "ABCD E")
+        XCTAssertTrue(InviteCode.isComplete("abcd efgh"))
+        XCTAssertFalse(InviteCode.isComplete("abcd efg"))
+    }
+
+    func testEveryRefusedStatusHasAMessageAndGoodOnesDoNot() {
+        for status in [InviteStatus.invalid, .expired, .revoked, .full, .rateLimited, .closed, .alreadyMember] {
+            XCTAssertNotNil(status.problem, "\(status)")
+        }
+        XCTAssertNil(InviteStatus.ok.problem)
+        XCTAssertNil(InviteStatus.joined.problem)
+    }
+
+    func testDecodesPreviewJoinAndMembers() throws {
+        let preview = try JSONDecoder().decode([InvitePreview].self, from: Data("""
+        [{"status":"ok","space_id":"6f0f3b9e-8b7e-4b8e-9d5c-1f2a3b4c5d6e","name":"Rumah","icon":"house","color":"hijau","owner_name":"Ruth","member_count":2}]
+        """.utf8))
+        XCTAssertEqual(preview.first?.status, .ok)
+        XCTAssertEqual(preview.first?.memberCount, 2)
+        let refused = try JSONDecoder().decode([JoinOutcome].self, from: Data(#"[{"status":"rate_limited","space_id":null}]"#.utf8))
+        XCTAssertEqual(refused.first?.status, .rateLimited)
+        XCTAssertNil(refused.first?.spaceId)
+        let members = try JSONDecoder().decode([WorkspaceMember].self, from: Data("""
+        [{"profile_id":"6f0f3b9e-8b7e-4b8e-9d5c-1f2a3b4c5d6e","display_name":"Ruth","avatar_url":null,"role":"owner","joined_at":"2026-11-17T10:00:00+00:00","left_at":null,"is_me":true},
+         {"profile_id":"2f0f3b9e-8b7e-4b8e-9d5c-1f2a3b4c5d6e","display_name":null,"avatar_url":null,"role":"member","joined_at":"2026-11-17T10:00:00+00:00","left_at":"2026-11-18T10:00:00+00:00","is_me":false}]
+        """.utf8))
+        XCTAssertTrue(members[0].isOwner && members[0].isMe && !members[0].isFormer)
+        XCTAssertTrue(members[1].isFormer)
+        XCTAssertEqual(members[0].initial, "R")
+    }
+
+    func testServerErrorsOfStage3() {
+        struct E: Error, CustomStringConvertible { let description: String }
+        XCTAssertEqual(WorkspaceError(E(description: "space_owner_deleting")), .ownerDeleting)
+    }
+}

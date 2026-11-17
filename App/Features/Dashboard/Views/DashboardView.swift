@@ -380,7 +380,9 @@ struct DashboardView: View {
         .padding(.top, 10)
         .sheet(isPresented: $showsSwitcher) {
             // the sheet has to be gone before the create flow can open over the app
-            WorkspaceSwitcherSheet { Task { try? await Task.sleep(for: .milliseconds(400)); workspaceStore.requestCreate() } }
+            WorkspaceSwitcherSheet(
+                onCreate: { Task { try? await Task.sleep(for: .milliseconds(400)); workspaceStore.requestCreate() } },
+                onJoin: { Task { try? await Task.sleep(for: .milliseconds(400)); workspaceStore.requestJoin() } })
         }
     }
 

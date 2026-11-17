@@ -40,6 +40,23 @@ struct WorkspaceListView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(RowPressStyle())
+                    Button { store.requestJoin() } label: {
+                        HStack(spacing: 14) {
+                            Image(systemName: "number")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.appPrimary)
+                                .frame(width: 40, height: 40)
+                                .background(Color.appFill, in: Circle())
+                            Text(L("Gabung dengan kode"))
+                                .font(.app(16, weight: .semibold))
+                                .foregroundStyle(Color.appPrimary)
+                            Spacer(minLength: 8)
+                        }
+                        .frame(minHeight: 64)
+                        .padding(.horizontal, 24)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(RowPressStyle())
                     if store.shared.isEmpty {
                         Text(L("Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain."))
                             .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
@@ -122,12 +139,11 @@ struct WorkspaceSettingsView: View {
                         row(L("Tanggal gajian"), value: workspace.paydayDay.map { "\($0)" } ?? L("Belum diatur"),
                             editable: workspace.isOwner) { editPayday(workspace) }
                         defaultRow(workspace)
-                        if !workspace.isPersonal {
-                            row(L("Pemilik"), value: workspace.ownerName ?? "-", editable: false) {}
-                            row(L("Anggota"), value: L("%lld orang", workspace.memberCount), editable: false) {}
-                        }
                     }
                     .padding(.horizontal, 24)
+                    if !workspace.isPersonal {
+                        WorkspaceMembersSection(workspace: workspace).padding(.horizontal, 24)
+                    }
                     if !workspace.isOwner {
                         Text(L("Hanya Pemilik yang bisa mengubah"))
                             .font(.app(13)).foregroundStyle(Color.appTextSecondary)

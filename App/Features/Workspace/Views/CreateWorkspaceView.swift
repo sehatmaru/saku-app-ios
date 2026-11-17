@@ -24,6 +24,7 @@ struct CreateWorkspaceView: View {
     @State private var created: Workspace?
     @State private var opensAtLaunch = false
     @State private var bump = false
+    @State private var showsInvite = false
     @FocusState private var nameFocused: Bool
 
     private static let nameLimit = 40
@@ -74,6 +75,7 @@ struct CreateWorkspaceView: View {
         .animation(.settle(0.42), value: step)
         .onAppear { nameFocused = true }
         .interactiveDismissDisabled(isSaving)
+        .sheet(isPresented: $showsInvite) { if let created { InviteSheet(workspace: created) } }
         .alert(L("Workspace belum bisa dibuat"), isPresented: $failed) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -320,15 +322,20 @@ struct CreateWorkspaceView: View {
     private var buttons: some View {
         VStack(spacing: 10) {
             if isDone {
-                primaryButton(L("Buka Workspace")) { finish(open: true) }
-                Button { finish(open: false) } label: {
-                    Text(L("Tetap di sini"))
+                // the PRD asks the next screen to offer inviting right away
+                primaryButton(L("Undang anggota")) { showsInvite = true }
+                Button { finish(open: true) } label: {
+                    Text(L("Buka Workspace"))
                         .font(.app(17, weight: .semibold))
                         .foregroundStyle(Color.appText)
                         .frame(maxWidth: .infinity).frame(height: 52)
                         .background(Color.appFill, in: Capsule())
                 }
                 .buttonStyle(PressScaleStyle())
+                Button(L("Tetap di sini")) { finish(open: false) }
+                    .font(.app(15, weight: .semibold))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .frame(height: 36)
             } else {
                 primaryButton(step == .payday ? L("Buat Workspace") : L("Lanjut"), enabled: isValid) { next() }
             }
@@ -390,7 +397,7 @@ struct CreateWorkspaceView: View {
             switch error {
             case .limit: dismiss(); onLimit()
             case .guest: dismiss()
-            case .other: failed = true
+            case .ownerDeleting, .other: failed = true
             }
         } catch { failed = true }
     }
