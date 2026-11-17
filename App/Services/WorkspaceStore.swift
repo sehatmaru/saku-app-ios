@@ -50,6 +50,10 @@ final class WorkspaceStore: ObservableObject {
     /// Beranda shows the switcher only for testers and internal builds until Workspace opens for everyone, after stage 7 (K30).
     var showsSwitcher: Bool { PlusStore.shared.isTester || PlusStore.isInternalBuild }
     var activeIsPersonal: Bool { active?.isPersonal ?? true }
+    /// K35: a shared Workspace calls the cycle date "Awal periode"; Workspace Pribadi keeps "Tanggal gajian". Same data and maths.
+    static func paydayTitle(shared: Bool) -> String { shared ? L("Awal periode") : L("Tanggal gajian") }
+    static func paydaySaved(shared: Bool) -> String { shared ? L("Awal periode disimpan") : L("Tanggal gajian disimpan") }
+    var paydayTitle: String { Self.paydayTitle(shared: !activeIsPersonal) }
     /// Read-only (K9, A3) or waiting to be deleted (K21): the open Workspace takes no new records.
     var activeBlocksWriting: Bool { active.map { $0.isReadOnly || $0.daysUntilDeletion != nil } ?? false }
 

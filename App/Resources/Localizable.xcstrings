@@ -2993,12 +2993,42 @@
         }
       }
     },
+    "Awal periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period start"
+          }
+        }
+      }
+    },
+    "Awal periode Workspace ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace's period start"
+          }
+        }
+      }
+    },
     "Awal periode budget": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Budget period start"
+          }
+        }
+      }
+    },
+    "Awal periode disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period start saved"
           }
         }
       }
@@ -5699,6 +5729,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Workspace"
+          }
+        }
+      }
+    },
+    "Buka Workspace ini dulu untuk mengubah awal periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this Workspace first to change the period start"
           }
         }
       }

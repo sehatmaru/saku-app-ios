@@ -138,7 +138,7 @@ struct WorkspaceSettingsView: View {
                             row(L("Nama"), value: workspace.displayName, editable: workspace.isOwner) { showsEdit = true }
                             row(L("Ikon dan warna"), editable: workspace.isOwner, trailing: { WorkspaceBadge(workspace, size: 28) }) { showsEdit = true }
                         }
-                        row(L("Tanggal gajian"), value: workspace.paydayDay.map { "\($0)" } ?? L("Belum diatur"),
+                        row(WorkspaceStore.paydayTitle(shared: !workspace.isPersonal), value: workspace.paydayDay.map { "\($0)" } ?? L("Belum diatur"),
                             editable: workspace.isOwner) { editPayday(workspace) }
                         defaultRow(workspace)
                     }
@@ -172,7 +172,7 @@ struct WorkspaceSettingsView: View {
         .sheet(isPresented: $showsPayday) {
             PaydaySheet(context: .settings) { day in
                 guard day != nil else { return }
-                ToastCenter.shared.show(L("Tanggal gajian disimpan"))
+                ToastCenter.shared.show(WorkspaceStore.paydaySaved(shared: !store.activeIsPersonal))
                 Task { await store.load() }
             }
         }
@@ -275,7 +275,7 @@ struct WorkspaceSettingsView: View {
     /// The payday sheet reads and saves the Workspace that is open, so another one has to be opened first.
     private func editPayday(_ workspace: Workspace) {
         if workspace.id == store.active?.id { showsPayday = true }
-        else { ToastCenter.shared.show(L("Buka Workspace ini dulu untuk mengubah tanggal gajian")) }
+        else { ToastCenter.shared.show(workspace.isPersonal ? L("Buka Workspace ini dulu untuk mengubah tanggal gajian") : L("Buka Workspace ini dulu untuk mengubah awal periode")) }
     }
 }
 

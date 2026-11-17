@@ -126,7 +126,7 @@ struct CreateWorkspaceView: View {
         case .name: L("Buat Workspace")
         case .look: L("Ikon dan warna")
         case .categories: L("Kategori awal")
-        case .payday: L("Tanggal gajian")
+        case .payday: L("Awal periode")
         case .done: L("Selesai")
         }
     }
@@ -286,7 +286,7 @@ struct CreateWorkspaceView: View {
 
     private var paydayStep: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(L("Tanggal gajian Workspace ini"))
+            Text(L("Awal periode Workspace ini"))
                 .font(.app(22, weight: .bold)).tracking(-0.3)
             Text(L("Periode budget dan ringkasan mulai di tanggal ini. Boleh dikosongkan, Pemilik bisa mengaturnya nanti."))
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)

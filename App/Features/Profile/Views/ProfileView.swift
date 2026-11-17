@@ -120,7 +120,7 @@ struct ProfileView: View {
             .sheet(isPresented: $showsPayday) {
                 PaydaySheet(context: .settings) { day in
                     guard day != nil else { return }
-                    ToastCenter.shared.show(L("Tanggal gajian disimpan"))
+                    ToastCenter.shared.show(workspaceStore.showsSwitcher ? WorkspaceStore.paydaySaved(shared: !workspaceStore.activeIsPersonal) : L("Tanggal gajian disimpan"))
                     withAnimation(.easeOut(duration: 0.2)) { isPaydayFlashing = true }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
                         withAnimation(.easeOut(duration: 0.6)) { isPaydayFlashing = false }
@@ -387,7 +387,7 @@ struct ProfileView: View {
             .buttonStyle(RowPressStyle())
 
             Button { if canEditPayday { showsPayday = true } } label: {
-                row(icon: "calendar", title: L("Tanggal gajian"),
+                row(icon: "calendar", title: workspaceStore.showsSwitcher ? workspaceStore.paydayTitle : L("Tanggal gajian"),
                     subtitle: sharedSpaceName.map { canEditPayday ? $0 : L("%@ · Hanya Pemilik yang bisa mengubah", $0) }) {
                     Text(paydayDay == 0 ? L("Belum diatur") : "\(paydayDay)")
                         .font(.app(15))
