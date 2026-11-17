@@ -7,6 +7,9 @@ enum SupabaseSDK {
         supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlbm9wdW5heWRmaHRrcHl3bGRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NTMzMjcsImV4cCI6MjA5NjUyOTMyN30.UtViSySycifdW09nTht1mt-8Oxkt30qattOa7SBO_gg"
     )
 
+    /// Workspace data (wallets, transactions, budgets, categories, payday): the same client, with the workspace header.
+    static let space = SpaceClient(base: client)
+
     static func fetchProfile(authUserId: UUID) async throws -> UserProfile {
         let profile: UserProfile = try await client
             .from("user_profiles")
@@ -15,6 +18,7 @@ enum SupabaseSDK {
             .single()
             .execute()
             .value
+        SpaceStore.setActive(profile.defaultSpaceId?.uuidString)
         PaydaySetting.day = profile.paydayDay
         HomeBalanceSetting.mode = profile.homeBalanceMode
         await syncSmartTrackerConsent(profile)
@@ -169,7 +173,7 @@ enum SupabaseSDK {
 
     /// Mirrors `payday_changes` on the device. Keeps the old schedule when offline.
     static func refreshPaydaySchedule() async {
-        guard let rows: [PaydayChangeRow] = try? await client
+        guard let rows: [PaydayChangeRow] = try? await space
             .from("payday_changes").select().order("effective_from").execute().value else { return }
         let format = DateFormatter()
         format.dateFormat = "yyyy-MM-dd"
@@ -186,7 +190,7 @@ enum SupabaseSDK {
 
     /// Mirrors the early-salary dates (live transactions with `starts_period`) on the device. Keeps the old list when offline.
     static func refreshPaydayShifts() async {
-        guard let rows: [ShiftRow] = try? await client.from("transactions").select("occurred_at")
+        guard let rows: [ShiftRow] = try? await space.from("transactions").select("occurred_at")
             .eq("starts_period", value: true).is("deleted_at", value: nil).order("occurred_at").execute().value else { return }
         PaydaySetting.shifts = rows.map(\.occurredAt)
     }
@@ -219,7 +223,7 @@ enum SupabaseSDK {
     @discardableResult
     static func updatePayday(day: Int) async throws -> Date {
         let day = min(max(day, 1), 31)
-        let effective: String = try await client.rpc("set_payday", params: ["p_day": day]).execute().value
+        let effective: String = try await space.rpc("set_payday", params: ["p_day": day]).execute().value
         PaydaySetting.day = day
         await refreshPaydaySchedule()
         await refreshPaydayShifts()
@@ -231,7 +235,7 @@ enum SupabaseSDK {
 
     /// Drops a payday change that has not taken effect yet.
     static func cancelPendingPayday() async throws {
-        try await client.rpc("cancel_pending_payday").execute()
+        try await space.rpc("cancel_pending_payday").execute()
         await refreshPaydaySchedule()
         await refreshPaydayShifts()
         PaydaySetting.day = PaydayCycle.current.day
@@ -316,6 +320,8 @@ struct UserProfile: Codable, Identifiable {
     var plusPlan: String? = nil
     /// Tester accounts may use the internal Plus switch.
     var isTester: Bool? = nil
+    /// The workspace opened at launch: the person's Workspace Pribadi until shared workspaces exist.
+    var defaultSpaceId: UUID? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -333,6 +339,7 @@ struct UserProfile: Codable, Identifiable {
         case plusUntil = "plus_until"
         case plusPlan = "plus_plan"
         case isTester = "is_tester"
+        case defaultSpaceId = "default_space_id"
     }
 }
 

@@ -379,6 +379,7 @@ final class AuthViewModel: ObservableObject {
         GIDSignIn.sharedInstance.signOut()
         NotificationManager.shared.cancelAll()
         AppDataCache.shared.clearAll()
+        SpaceStore.clear()
         PaydaySetting.day = nil
         PlusStore.shared.reset()
         PaydaySetting.schedule = []
@@ -541,6 +542,7 @@ final class AuthViewModel: ObservableObject {
     /// What lives on this device for one account: the agreement, drafts, what Saku learned, the Plus state, and
     /// the guest card's own counters.
     private func resetLocalAccountState() {
+        SpaceStore.clear()
         PaydaySetting.shifts = []
         SmartTrackerConsent.isGranted = false
         DraftStore.shared.reset()
