@@ -119,6 +119,9 @@ final class DeletionTests: XCTestCase {
     func testServerErrorsOfStage6() {
         struct E: Error, CustomStringConvertible { let description: String }
         XCTAssertEqual(WorkspaceError(E(description: "space_owner_must_transfer")), .ownerMustTransfer)
+        XCTAssertEqual(WorkspaceError(E(description: "wallet_limit_money")), .walletLimit)
+        XCTAssertEqual(WorkspaceError(E(description: "account_card_not_movable")), .notMovable)
+        XCTAssertEqual(WorkspaceError(E(description: "space_read_only")), .readOnly)
     }
 }
 

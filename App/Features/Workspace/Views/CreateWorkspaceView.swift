@@ -9,9 +9,14 @@ struct CreateWorkspaceView: View {
     /// The server said the free plan is full (K29): the Plus offer opens over Beranda once this closes.
     let onLimit: () -> Void
 
-    private enum Step: Int, CaseIterable { case name, look, categories, payday, done }
+    private enum Step: Int, CaseIterable { case start, name, look, categories, payday, warning, done }
+    /// K38: how the new Workspace begins. `convert` turns Workspace Pribadi itself into it, with its history.
+    private enum Start { case empty, convert, moveAll }
 
-    @State private var step: Step = .name
+    @State private var step: Step = .start
+    @State private var start: Start = .empty
+    @State private var movedCount: Int?
+    @State private var moveFailed = false
     @State private var forward = true
     @State private var name = ""
     @State private var icon: String?
@@ -28,7 +33,8 @@ struct CreateWorkspaceView: View {
     @FocusState private var nameFocused: Bool
 
     private static let nameLimit = 40
-    private static let questionSteps: [Step] = [.name, .look, .categories, .payday]
+    /// Converting keeps categories and start of period of Workspace Pribadi, so those two questions are skipped.
+    private var questionSteps: [Step] { start == .convert ? [.start, .name, .look, .warning] : [.start, .name, .look, .categories, .payday] }
 
     init(onLimit: @escaping () -> Void) {
         self.onLimit = onLimit
@@ -39,7 +45,7 @@ struct CreateWorkspaceView: View {
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var isDone: Bool { step == .done }
-    private var stepIndex: Int { isDone ? Self.questionSteps.count : Self.questionSteps.firstIndex(of: step) ?? 0 }
+    private var stepIndex: Int { isDone ? questionSteps.count : questionSteps.firstIndex(of: step) ?? 0 }
 
     private var isValid: Bool {
         switch step {
@@ -73,7 +79,7 @@ struct CreateWorkspaceView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) { buttons }
         .foregroundStyle(Color.appText)
         .animation(.settle(0.42), value: step)
-        .onAppear { nameFocused = true }
+        .onChange(of: step) { _, value in nameFocused = value == .name }
         .interactiveDismissDisabled(isSaving)
         .sheet(isPresented: $showsInvite) { if let created { InviteSheet(workspace: created) } }
         .alert(L("Workspace belum bisa dibuat"), isPresented: $failed) {
@@ -92,8 +98,8 @@ struct CreateWorkspaceView: View {
                     Button(L("Batal")) { dismiss() }
                         .font(.app(17))
                         .foregroundStyle(Color.appPrimary)
-                        .opacity(step == .name ? 1 : 0)
-                        .allowsHitTesting(step == .name)
+                        .opacity(step == .start ? 1 : 0)
+                        .allowsHitTesting(step == .start)
                     Button(action: back) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 22, weight: .medium))
@@ -101,11 +107,11 @@ struct CreateWorkspaceView: View {
                             .frame(width: 32, height: 32)
                     }
                     .accessibilityLabel(L("Kembali"))
-                    .opacity(step != .name && !isDone ? 1 : 0)
-                    .allowsHitTesting(step != .name && !isDone && !isSaving)
+                    .opacity(step != .start && !isDone ? 1 : 0)
+                    .allowsHitTesting(step != .start && !isDone && !isSaving)
                 }
                 Spacer()
-                Text("\(stepIndex + 1)/\(Self.questionSteps.count)")
+                Text("\(stepIndex + 1)/\(questionSteps.count)")
                     .font(.app(15))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
@@ -123,17 +129,19 @@ struct CreateWorkspaceView: View {
 
     private var title: String {
         switch step {
-        case .name: L("Buat Workspace")
+        case .start: L("Buat Workspace")
+        case .name: L("Nama Workspace")
         case .look: L("Ikon dan warna")
         case .categories: L("Kategori awal")
         case .payday: L("Awal periode")
+        case .warning: L("Sebelum lanjut")
         case .done: L("Selesai")
         }
     }
 
     private var progress: some View {
         HStack(spacing: 4) {
-            ForEach(0..<Self.questionSteps.count, id: \.self) { i in
+            ForEach(0..<questionSteps.count, id: \.self) { i in
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.appDivider)
@@ -152,7 +160,9 @@ struct CreateWorkspaceView: View {
 
     @ViewBuilder private var content: some View {
         switch step {
+        case .start: startStep
         case .name: nameStep
+        case .warning: warningStep
         case .look: lookStep
         case .categories: categoriesStep
         case .payday: paydayStep
@@ -166,6 +176,35 @@ struct CreateWorkspaceView: View {
             .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.38), value: bump)
             .animation(.easeInOut(duration: 0.24), value: color)
             .frame(maxWidth: .infinity)
+    }
+
+    private var startStep: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("Mau mulai dengan apa?"))
+                .font(.app(22, weight: .bold)).tracking(-0.3)
+            Text(L("Pilih bagaimana Workspace baru ini dimulai."))
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+                .padding(.top, 6)
+            VStack(spacing: 0) {
+                choiceRow(L("Mulai kosong"), L("Workspace baru tanpa dompet dan catatan."), on: start == .empty) { start = .empty }
+                choiceRow(L("Ubah Workspace Pribadi saya"), L("Semua dompet dan riwayat ikut jadi milik Workspace ini."), on: start == .convert) { start = .convert }
+                choiceRow(L("Pindahkan semua dompet"), L("Dompet ikut pindah dengan saldo terakhir, tanpa riwayat."), on: start == .moveAll) { start = .moveAll }
+            }
+            .padding(.top, 12)
+        }
+    }
+
+    private var warningStep: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("Seluruh riwayat akan terlihat anggota"))
+                .font(.app(22, weight: .bold)).tracking(-0.3)
+            Text(L("Workspace Pribadi-mu berubah jadi %@. Semua dompet, catatan, budget, dan kategori di dalamnya bisa dilihat siapa pun yang kamu undang, termasuk catatan lama.", trimmedName))
+                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+                .padding(.top, 6)
+            Text(L("Kamu langsung dapat Workspace Pribadi baru yang kosong. Perubahan ini tidak bisa dikembalikan."))
+                .font(.app(15, weight: .semibold)).foregroundStyle(Color.appText).lineSpacing(2)
+                .padding(.top, 14)
+        }
     }
 
     private var nameStep: some View {
@@ -301,7 +340,7 @@ struct CreateWorkspaceView: View {
         VStack(spacing: 6) {
             WorkspaceBadge(icon: icon, color: color, size: 96).padding(.top, 24).padding(.bottom, 10)
             Text(L("Workspace dibuat")).font(.app(22, weight: .semibold)).tracking(-0.3)
-            Text(L("%@ sudah ada di daftar Workspace-mu.", trimmedName))
+            Text(doneMessage)
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary)
                 .multilineTextAlignment(.center).lineSpacing(3)
             if store.shared.count == 1 {
@@ -315,6 +354,13 @@ struct CreateWorkspaceView: View {
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var doneMessage: String {
+        if start == .convert { return L("Workspace Pribadi-mu sekarang jadi %@. Workspace Pribadi baru yang kosong sudah menunggumu.", trimmedName) }
+        if moveFailed { return L("%@ sudah dibuat, tapi dompet belum bisa dipindah karena batas dompet gratis. Tidak ada yang berubah di dompetmu.", trimmedName) }
+        if let movedCount { return L("%@ sudah ada di daftar Workspace-mu. %lld dompet ikut pindah.", trimmedName, movedCount) }
+        return L("%@ sudah ada di daftar Workspace-mu.", trimmedName)
     }
 
     // MARK: Buttons
@@ -337,7 +383,7 @@ struct CreateWorkspaceView: View {
                     .foregroundStyle(Color.appTextSecondary)
                     .frame(height: 36)
             } else {
-                primaryButton(step == .payday ? L("Buat Workspace") : L("Lanjut"), enabled: isValid) { next() }
+                primaryButton(step == questionSteps.last ? (start == .convert ? L("Ubah Workspace Pribadi") : L("Buat Workspace")) : L("Lanjut"), enabled: isValid) { next() }
             }
         }
         .padding(.horizontal, 24)
@@ -370,18 +416,16 @@ struct CreateWorkspaceView: View {
     }
 
     private func back() {
-        guard let previous = Step(rawValue: step.rawValue - 1) else { return }
-        nameFocused = false
+        guard let at = questionSteps.firstIndex(of: step), at > 0 else { return }
         forward = false
-        step = previous
+        step = questionSteps[at - 1]
     }
 
     private func next() {
-        nameFocused = false
-        if step == .payday { Task { await save() }; return }
-        guard let following = Step(rawValue: step.rawValue + 1) else { return }
+        guard let at = questionSteps.firstIndex(of: step) else { return }
+        if at == questionSteps.count - 1 { Task { await save() }; return }
         forward = true
-        step = following
+        step = questionSteps[at + 1]
     }
 
     private func save() async {
@@ -389,7 +433,14 @@ struct CreateWorkspaceView: View {
         isSaving = true
         defer { isSaving = false }
         do {
-            created = try await store.create(name: trimmedName, icon: icon, color: color, copyCategories: copiesCategories, paydayDay: paydayDay)
+            if start == .convert {
+                created = try await store.convertPersonal(name: trimmedName, icon: icon, color: color)
+            } else {
+                created = try await store.create(name: trimmedName, icon: icon, color: color, copyCategories: copiesCategories, paydayDay: paydayDay)
+                if start == .moveAll, let created {
+                    do { movedCount = try await store.moveAllWallets(to: created) } catch { moveFailed = true }
+                }
+            }
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             forward = true
             step = .done
@@ -397,7 +448,7 @@ struct CreateWorkspaceView: View {
             switch error {
             case .limit: dismiss(); onLimit()
             case .guest: dismiss()
-            case .ownerDeleting, .ownerMustTransfer, .other: failed = true
+            case .ownerDeleting, .ownerMustTransfer, .walletLimit, .notMovable, .readOnly, .other: failed = true
             }
         } catch { failed = true }
     }

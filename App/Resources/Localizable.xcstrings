@@ -371,6 +371,16 @@
         }
       }
     },
+    "%@ dipindah ke %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ moved to %@"
+          }
+        }
+      }
+    },
     "%@ disembunyikan": {
       "localizations": {
         "en": {
@@ -521,6 +531,16 @@
         }
       }
     },
+    "%@ pindah dengan saldo terakhir, tanpa riwayat. Dompet lama diarsipkan. Pindah ini satu arah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ moves with its latest balance and no history. The old wallet is archived. Moving is one way."
+          }
+        }
+      }
+    },
     "%@ pos terbesar": {
       "localizations": {
         "en": {
@@ -607,6 +627,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ is now in your Workspace list."
+          }
+        }
+      }
+    },
+    "%@ sudah ada di daftar Workspace-mu. %lld dompet ikut pindah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is in your Workspace list. %lld wallets moved too."
+          }
+        }
+      }
+    },
+    "%@ sudah dibuat, tapi dompet belum bisa dipindah karena batas dompet gratis. Tidak ada yang berubah di dompetmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ was created, but the wallets could not move because of the free wallet limit. Nothing changed in your wallets."
           }
         }
       }
@@ -3539,6 +3579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Budget limit reached"
+          }
+        }
+      }
+    },
+    "Batas dompet gratis di %@ sudah penuh.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free wallet limit in %@ is full."
           }
         }
       }
@@ -8283,6 +8333,16 @@
         }
       }
     },
+    "Dompet belum bisa dipindah. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The wallet could not be moved. Try again."
+          }
+        }
+      }
+    },
     "Dompet dan budget selalu disertakan lengkap.": {
       "localizations": {
         "en": {
@@ -8349,6 +8409,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallet added"
+          }
+        }
+      }
+    },
+    "Dompet ikut pindah dengan saldo terakhir, tanpa riwayat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets move with their latest balance, without history."
           }
         }
       }
@@ -11583,6 +11653,16 @@
         }
       }
     },
+    "Kamu langsung dapat Workspace Pribadi baru yang kosong. Perubahan ini tidak bisa dikembalikan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You get a new, empty Personal Workspace right away. This cannot be undone."
+          }
+        }
+      }
+    },
     "Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.": {
       "localizations": {
         "en": {
@@ -14733,6 +14813,16 @@
         }
       }
     },
+    "Mau mulai dengan apa?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How do you want to start?"
+          }
+        }
+      }
+    },
     "Melebihi limit": {
       "localizations": {
         "en": {
@@ -15409,6 +15499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Billing starts"
+          }
+        }
+      }
+    },
+    "Mulai kosong": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start empty"
           }
         }
       }
@@ -17913,6 +18013,16 @@
         }
       }
     },
+    "Pilih bagaimana Workspace baru ini dimulai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose how this new Workspace begins."
+          }
+        }
+      }
+    },
     "Pilih bank": {
       "localizations": {
         "en": {
@@ -18233,12 +18343,32 @@
         }
       }
     },
+    "Pindahkan ke Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to Workspace"
+          }
+        }
+      }
+    },
     "Pindahkan ke tabungan atau investasi begitu gajian masuk, sebelum dipakai belanja.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Move it to savings or investments as soon as your pay arrives, before it gets spent."
+          }
+        }
+      }
+    },
+    "Pindahkan semua dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move all wallets"
           }
         }
       }
@@ -19693,6 +19823,16 @@
         }
       }
     },
+    "Sebelum lanjut": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before you continue"
+          }
+        }
+      }
+    },
     "Sebelumnya %@": {
       "localizations": {
         "en": {
@@ -19899,6 +20039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The full amount uses up the card limit right away, but each bill only charges one part."
+          }
+        }
+      }
+    },
+    "Seluruh riwayat akan terlihat anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everyone you invite will see the whole history"
           }
         }
       }
@@ -20129,6 +20279,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "All your wallets and budgets, on one screen."
+          }
+        }
+      }
+    },
+    "Semua dompet dan riwayat ikut jadi milik Workspace ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All wallets and history become part of this Workspace."
           }
         }
       }
@@ -24985,6 +25145,26 @@
         }
       }
     },
+    "Ubah Workspace Pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert Personal Workspace"
+          }
+        }
+      }
+    },
+    "Ubah Workspace Pribadi saya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn my Personal Workspace into it"
+          }
+        }
+      }
+    },
     "Ubah budget hanya untuk bulan berjalan": {
       "localizations": {
         "en": {
@@ -25445,6 +25625,26 @@
         }
       }
     },
+    "Workspace Pribadi-mu berubah jadi %@. Semua dompet, catatan, budget, dan kategori di dalamnya bisa dilihat siapa pun yang kamu undang, termasuk catatan lama.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Personal Workspace becomes %@. Every wallet, record, budget and category in it can be seen by anyone you invite, old records included."
+          }
+        }
+      }
+    },
+    "Workspace Pribadi-mu sekarang jadi %@. Workspace Pribadi baru yang kosong sudah menunggumu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Personal Workspace is now %@. A new, empty Personal Workspace is waiting for you."
+          }
+        }
+      }
+    },
     "Workspace aktif: %@": {
       "localizations": {
         "en": {
@@ -25461,6 +25661,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "A read-only Workspace cannot be chosen"
+          }
+        }
+      }
+    },
+    "Workspace baru tanpa dompet dan catatan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new Workspace with no wallets or records."
           }
         }
       }

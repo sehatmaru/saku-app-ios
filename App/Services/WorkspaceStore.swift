@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Failures of the workspace calls the screens tell apart (TD T4 error codes).
 enum WorkspaceError: Error, Equatable {
-    case limit, guest, ownerDeleting, ownerMustTransfer, other
+    case limit, guest, ownerDeleting, ownerMustTransfer, walletLimit, notMovable, readOnly, other
 
     init(_ error: Error) {
         let text = String(describing: error)
@@ -11,6 +11,9 @@ enum WorkspaceError: Error, Equatable {
         else if text.contains("guest_not_allowed") { self = .guest }
         else if text.contains("space_owner_deleting") { self = .ownerDeleting }
         else if text.contains("space_owner_must_transfer") { self = .ownerMustTransfer }
+        else if text.contains("wallet_limit") { self = .walletLimit }
+        else if text.contains("account_not_movable") || text.contains("account_card_not_movable") { self = .notMovable }
+        else if text.contains("space_read_only") { self = .readOnly }
         else { self = .other }
     }
 }
@@ -134,6 +137,37 @@ final class WorkspaceStore: ObservableObject {
         } catch {
             throw WorkspaceError(error)
         }
+    }
+
+    /// K38/A5: Workspace Pribadi becomes this shared Workspace with its history; a new empty Workspace Pribadi takes its place.
+    /// The server keeps the id, so the default and the open workspace stay on the converted one.
+    func convertPersonal(name: String, icon: String, color: String) async throws -> Workspace {
+        struct Params: Encodable, Sendable { let p_name: String, p_icon: String, p_color: String }
+        do {
+            let id: UUID = try await SupabaseSDK.client.rpc("convert_personal_space", params: Params(p_name: name, p_icon: icon, p_color: color)).execute().value
+            await load()
+            reloadApp()
+            guard let made = spaces.first(where: { $0.id == id }) else { throw WorkspaceError.other }
+            return made
+        } catch { throw WorkspaceError(error) }
+    }
+
+    /// K36/A4: moves every non credit card wallet of Workspace Pribadi into `target`, no history; all or nothing. Returns how many.
+    func moveAllWallets(to target: Workspace) async throws -> Int {
+        do {
+            let count: Int = try await SupabaseSDK.client.rpc("move_all_accounts_to_space", params: ["p_target": target.id]).execute().value
+            AppDataCache.shared.clearAll()
+            return count
+        } catch { throw WorkspaceError(error) }
+    }
+
+    /// K36: one wallet, from the wallet's detail.
+    func moveWallet(_ accountId: String, to target: Workspace) async throws {
+        struct Params: Encodable, Sendable { let p_account: String, p_target: UUID }
+        do {
+            let _: UUID = try await SupabaseSDK.client.rpc("move_account_to_space", params: Params(p_account: accountId, p_target: target.id)).execute().value
+            AppDataCache.shared.clearAll()
+        } catch { throw WorkspaceError(error) }
     }
 
     func update(_ workspace: Workspace, name: String, icon: String, color: String) async throws {
