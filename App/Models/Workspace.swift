@@ -32,10 +32,10 @@ struct Workspace: Identifiable, Equatable, Decodable, Sendable {
     /// Workspace Pribadi is named by the app so it follows the language; shared ones keep the name their Owner typed.
     var displayName: String { isPersonal ? L("Workspace Pribadi") : (name ?? "") }
 
-    /// Whole days until the workspace is deleted, nil when it is not waiting for deletion.
+    /// Days left until the workspace is deleted, rounded up so a fresh request reads 7. Nil when not waiting for deletion.
     var daysUntilDeletion: Int? {
         guard let raw = deletionScheduledFor, let date = Self.parseTimestamp(raw) else { return nil }
-        return max(0, Calendar.current.dateComponents([.day], from: Date(), to: date).day ?? 0)
+        return max(0, Int((date.timeIntervalSinceNow / 86_400).rounded(.up)))
     }
 
     static func parseTimestamp(_ raw: String) -> Date? {

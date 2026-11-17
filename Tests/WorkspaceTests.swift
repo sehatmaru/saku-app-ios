@@ -34,8 +34,8 @@ final class WorkspaceTests: XCTestCase {
         XCTAssertEqual(w.displayName, L("Workspace Pribadi"))
     }
 
-    func testDaysUntilDeletionCountsWholeDays() throws {
-        let when = ISO8601DateFormatter().string(from: Date().addingTimeInterval(5 * 86_400 + 3_600))
+    func testDaysUntilDeletionRoundsUp() throws {
+        let when = ISO8601DateFormatter().string(from: Date().addingTimeInterval(4 * 86_400 + 3_600))
         let w = try decode(shared.replacingOccurrences(of: "\"deletion_scheduled_for\":null", with: "\"deletion_scheduled_for\":\"\(when)\""))
         XCTAssertEqual(w.daysUntilDeletion, 5)
     }
@@ -112,7 +112,7 @@ final class DeletionTests: XCTestCase {
 
     func testDaysUntilDeletion() throws {
         XCTAssertNil(try space(scheduled: nil).daysUntilDeletion)
-        let in3 = ISO8601DateFormatter().string(from: Date().addingTimeInterval(3 * 86400 + 600))
+        let in3 = ISO8601DateFormatter().string(from: Date().addingTimeInterval(2 * 86400 + 600))
         XCTAssertEqual(try space(scheduled: in3).daysUntilDeletion, 3)
     }
 
