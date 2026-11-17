@@ -1979,5 +1979,7 @@
   "Workspace ini sudah penuh, maksimal 5 anggota.": "This Workspace is full, 5 members at most.",
   "Dicatat": "Added by",
   "Diubah": "Changed by",
-  "Filter anggota": "Filter by member"
+  "Filter anggota": "Filter by member",
+  "Disimpan ke %@": "Saved to %@",
+  "Draf disimpan ke": "Drafts are saved to"
 }

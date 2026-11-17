@@ -4,6 +4,7 @@ import SwiftUI
 /// Smart Tracker itself is always on; the AI switch needs the one AI agreement. Notifikasi keeps a sub-menu with the steps.
 struct SmartTrackerSettingsView: View {
     @ObservedObject private var plus = PlusStore.shared
+    @ObservedObject private var workspaces = WorkspaceStore.shared
     @ObservedObject private var quotaStore = AIQuotaStore.shared
     @EnvironmentObject private var authViewModel: AuthViewModel
     @AppStorage(SmartTrackerConsent.key) private var aiOn = false
@@ -35,6 +36,7 @@ struct SmartTrackerSettingsView: View {
                 }
 
                 if !isGuest { autoRecordRow }
+                if !isGuest, !workspaces.shared.isEmpty { targetRow }
 
                 sectionLabel(L("Pengingat"))
                 wayRow(.reminder, L("Diingatkan 5 jam dan 1 hari setelah draf masuk")) {
@@ -146,6 +148,23 @@ struct SmartTrackerSettingsView: View {
                 }
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
                     .frame(minHeight: 44)
+            }
+            .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// K12, A1: every draft is saved to the default workspace; it is changed in the Workspace list.
+    private var targetRow: some View {
+        NavigationLink(destination: WorkspaceListView().detailPage()) {
+            HStack(spacing: 14) {
+                Image(systemName: "person.2").font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("Draf disimpan ke")).font(.app(17)).foregroundStyle(Color.appText)
+                    Text(workspaces.defaultWorkspace?.displayName ?? L("Workspace Pribadi")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).frame(minHeight: 44)
             }
             .padding(.horizontal, 24).padding(.vertical, 12).frame(minHeight: 64).contentShape(Rectangle())
         }

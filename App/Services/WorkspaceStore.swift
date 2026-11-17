@@ -40,6 +40,8 @@ final class WorkspaceStore: ObservableObject {
         return activeMembers.first { $0.profileId == id }
     }
 
+    /// Where Smart Tracker drafts land (K12, A1).
+    var defaultWorkspace: Workspace? { spaces.first { $0.isDefault } ?? personal }
     var personal: Workspace? { spaces.first { $0.isPersonal } }
     var active: Workspace? { spaces.first { $0.id == activeId } ?? personal }
     var shared: [Workspace] { spaces.filter { !$0.isPersonal } }

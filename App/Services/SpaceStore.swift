@@ -28,6 +28,9 @@ enum SpaceStore {
     /// Chosen in the switcher; lives only in memory, so the next launch opens the default again.
     private static let session = OSAllocatedUnfairLock<String?>(initialState: nil)
 
+    /// A request that must go to one workspace whichever is open (Smart Tracker drafts, K12): set around the calls with `$override.withValue`.
+    @TaskLocal static var override: String?
+
     /// The workspace in use; nil means "let the server pick the person's Workspace Pribadi".
     static var activeSpaceId: String? { session.withLock { $0 } ?? defaultSpaceId }
 
@@ -66,19 +69,19 @@ struct SpaceClient: Sendable {
 
     func from(_ table: String) -> PostgrestQueryBuilder {
         let builder = base.from(table)
-        if let id = SpaceStore.activeSpaceId { builder.setHeader(name: SpaceStore.headerName, value: id) }
+        if let id = SpaceStore.override ?? SpaceStore.activeSpaceId { builder.setHeader(name: SpaceStore.headerName, value: id) }
         return builder
     }
 
     func rpc(_ fn: String) throws -> PostgrestFilterBuilder {
         let builder = try base.rpc(fn)
-        if let id = SpaceStore.activeSpaceId { builder.setHeader(name: SpaceStore.headerName, value: id) }
+        if let id = SpaceStore.override ?? SpaceStore.activeSpaceId { builder.setHeader(name: SpaceStore.headerName, value: id) }
         return builder
     }
 
     func rpc(_ fn: String, params: some Encodable & Sendable) throws -> PostgrestFilterBuilder {
         let builder = try base.rpc(fn, params: params)
-        if let id = SpaceStore.activeSpaceId { builder.setHeader(name: SpaceStore.headerName, value: id) }
+        if let id = SpaceStore.override ?? SpaceStore.activeSpaceId { builder.setHeader(name: SpaceStore.headerName, value: id) }
         return builder
     }
 }

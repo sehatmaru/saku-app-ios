@@ -127,9 +127,20 @@ final class DraftStore: ObservableObject {
 
     /// Reloads wallets, categories and recent transactions; keeps the old ones when offline.
     func refreshReferenceData(userId: String) async {
+        await Self.inTarget { await self.loadReferenceData(userId: userId) }
+    }
+
+    /// K12: a draft belongs to the default workspace, whichever one is open now. Its wallets, categories and the save itself go there.
+    static func inTarget<T>(_ body: () async throws -> T) async rethrows -> T {
+        try await SpaceStore.$override.withValue(SpaceStore.defaultSpaceId, operation: body)
+    }
+
+    private func loadReferenceData(userId: String) async {
         async let accountsTask = SupabaseRepository.shared.fetchAccounts(userId: userId)
         async let categoriesTask = SupabaseRepository.shared.fetchCategories()
-        async let transactionsTask = TransactionStore.shared.fetchAll(userId: userId)
+        // the shared store holds the open workspace; read the default one directly when they differ
+        let sameSpace = SpaceStore.defaultSpaceId == SpaceStore.activeSpaceId
+        async let transactionsTask = sameSpace ? TransactionStore.shared.fetchAll(userId: userId) : SupabaseRepository.shared.fetchTransactions(userId: userId)
         if let fetched = try? await accountsTask { accounts = fetched }
         if let fetched = try? await categoriesTask { categories = fetched }
         if let fetched = try? await transactionsTask { recent = fetched }
@@ -430,6 +441,10 @@ final class DraftStore: ObservableObject {
     /// Returns the new transaction's id so a save can be undone.
     @discardableResult
     func save(_ saved: Draft, userId: String, remember: Bool = true) async throws -> String? {
+        try await Self.inTarget { try await self.performSave(saved, userId: userId, remember: remember) }
+    }
+
+    private func performSave(_ saved: Draft, userId: String, remember: Bool) async throws -> String? {
         // stamped with the chosen day and the time the draft arrived, not the time it is saved
         var draft = saved
         draft.date = saved.date.atTime(of: saved.createdAt)
@@ -464,6 +479,10 @@ final class DraftStore: ObservableObject {
 
     /// A card bill paid from outside Saku (no source wallet named): lowers the card's debt only.
     func saveOutsideCardPayment(_ draft: Draft) async throws {
+        try await Self.inTarget { try await self.performOutsideCardPayment(draft) }
+    }
+
+    private func performOutsideCardPayment(_ draft: Draft) async throws {
         guard let amount = draft.amount, let card = draft.counterpartyAccountId else { throw SaveError.incomplete }
         try await SupabaseRepository.shared.createCardPayment(cardId: card, amount: amount, note: draft.savedTitle, date: draft.date)
         discard(draft.id)

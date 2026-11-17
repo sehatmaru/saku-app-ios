@@ -1249,7 +1249,7 @@ struct DraftQueueView: View {
     private func undo(_ t: Toast) {
         Task {
             do {
-                for id in t.transactionIds { try await SupabaseRepository.shared.softDeleteTransaction(id: id) }
+                try await DraftStore.inTarget { for id in t.transactionIds { try await SupabaseRepository.shared.softDeleteTransaction(id: id) } }
                 if !t.transactionIds.isEmpty { NotificationCenter.default.post(name: .dataDidChange, object: nil) }
                 t.drafts.forEach { store.restore($0) }
                 if t.kind == .saved { saved -= t.drafts.count } else { ignored -= t.drafts.count }

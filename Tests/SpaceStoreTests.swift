@@ -112,4 +112,15 @@ final class SpaceStoreTests: XCTestCase {
         let profile = try JSONDecoder().decode(UserProfile.self, from: Data(json.utf8))
         XCTAssertEqual(profile.defaultSpaceId?.uuidString, sample)
     }
+
+    @MainActor
+    func testDraftsGoToTheDefaultWorkspaceWhicheverIsOpen() async {
+        let home = UUID().uuidString.lowercased(), open = UUID().uuidString.lowercased()
+        SpaceStore.setDefault(home)
+        SpaceStore.setActive(open)
+        let seen: String? = await DraftStore.inTarget { SpaceStore.override }
+        XCTAssertEqual(seen, home)
+        XCTAssertEqual(SpaceStore.activeSpaceId, open)
+        XCTAssertNil(SpaceStore.override)
+    }
 }

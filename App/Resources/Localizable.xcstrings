@@ -7993,6 +7993,16 @@
         }
       }
     },
+    "Disimpan ke %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved to %@"
+          }
+        }
+      }
+    },
     "Ditagih %@": {
       "localizations": {
         "en": {
@@ -8489,6 +8499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Draft ignored"
+          }
+        }
+      }
+    },
+    "Draf disimpan ke": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drafts are saved to"
           }
         }
       }
