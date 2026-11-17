@@ -20,6 +20,13 @@ struct StatistikView: View {
     private var cycle: PaydayCycle { PaydayCycle.current }
     private var userId: String? { authViewModel.currentUser?.id }
     private var money: StatistikMoney { StatistikMoney(isVisible: isVisible) }
+    @ObservedObject private var workspace = WorkspaceStore.shared
+    @State private var recorderId: String?
+    /// The transactions the blocks read: all of them, or only what one member recorded (K17).
+    private var scoped: [Transaction] {
+        guard let recorderId, workspace.showsAttribution else { return data.transactions }
+        return data.transactions.filter { $0.recorderId == recorderId }
+    }
     private var firstRecord: Date? { data.transactions.map(\.date).min() }
 
     struct Pick: Identifiable {
@@ -120,6 +127,10 @@ struct StatistikView: View {
             if data.transactions.isEmpty {
                 emptyState
             } else {
+                if workspace.showsAttribution {
+                    HStack { MemberFilterMenu(members: workspace.activeMembers, selection: $recorderId); Spacer(minLength: 0) }
+                        .padding(.horizontal, 24).padding(.top, 8)
+                }
                 section { assetsBlock }
                 SectionDivider()
                 section { flowBlock }
@@ -269,8 +280,8 @@ struct StatistikView: View {
 
     private var flowBlock: some View {
         let now = period(.flow), other = compare(.flow)
-        let a = StatistikBlocks.flow(data.transactions, in: now.interval)
-        let b = other.map { StatistikBlocks.flow(data.transactions, in: StatistikBlocks.comparable($0.interval, to: now.interval)) }
+        let a = StatistikBlocks.flow(scoped, in: now.interval)
+        let b = other.map { StatistikBlocks.flow(scoped, in: StatistikBlocks.comparable($0.interval, to: now.interval)) }
         let rate: (Double, Double) -> Double? = { income, expense in income > 0 ? (income - expense) / income : nil }
         return VStack(alignment: .leading, spacing: 0) {
             header(.flow)
@@ -321,8 +332,8 @@ struct StatistikView: View {
     private var categoriesBlock: some View {
         let now = period(.categories), other = compare(.categories)
         let type: Transaction.TransactionType = incomeTab ? .income : .expense
-        let a = StatistikBlocks.byCategory(data.transactions, categories: data.categories, type: type, in: now.interval)
-        let b = other.map { StatistikBlocks.byCategory(data.transactions, categories: data.categories, type: type,
+        let a = StatistikBlocks.byCategory(scoped, categories: data.categories, type: type, in: now.interval)
+        let b = other.map { StatistikBlocks.byCategory(scoped, categories: data.categories, type: type,
                                                        in: StatistikBlocks.comparable($0.interval, to: now.interval)) }
         let total = a.reduce(0) { $0 + $1.amount }
         let shown = showsAllCategories ? a : Array(a.prefix(5))
@@ -391,10 +402,10 @@ struct StatistikView: View {
 
     private var trendBlock: some View {
         let now = period(.trend), other = compare(.trend)
-        let dailyA = StatistikBlocks.daily(data.transactions, in: now.interval)
+        let dailyA = StatistikBlocks.daily(scoped, in: now.interval)
         let elapsed = StatistikBlocks.elapsedDays(now.interval)
         let lineA = StatistikBlocks.cumulative(dailyA, through: elapsed)
-        let lineB = other.map { StatistikBlocks.cumulative(StatistikBlocks.daily(data.transactions, in: $0.interval)) }
+        let lineB = other.map { StatistikBlocks.cumulative(StatistikBlocks.daily(scoped, in: $0.interval)) }
         let day = lineA.count
         let sameA = lineA.last ?? 0
         let sameB: Double? = lineB.flatMap { $0.isEmpty || day == 0 ? nil : $0[min(day, $0.count) - 1] }
@@ -432,7 +443,7 @@ struct StatistikView: View {
         let ids = Set(data.categories.filter { $0.type == .expense }.map(\.id))
         let names = Dictionary(data.categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         let rows = BudgetHistory.period(now.interval, budgets: data.historyBudgets, changes: data.amountChanges,
-                                        transactions: data.transactions, shownCategoryIds: ids)?.rows ?? []
+                                        transactions: scoped, shownCategoryIds: ids)?.rows ?? []
         let hot = rows.filter { $0.amount > 0 && $0.spent / $0.amount >= 0.7 }.sorted { $0.spent / $0.amount > $1.spent / $1.amount }.prefix(3)
         return VStack(alignment: .leading, spacing: 0) {
             header(.budget)
@@ -472,7 +483,7 @@ struct StatistikView: View {
 
     private var walletBlock: some View {
         let now = period(.wallet)
-        let rows = StatistikBlocks.byWallet(data.transactions, accounts: data.accounts, in: now.interval)
+        let rows = StatistikBlocks.byWallet(scoped, accounts: data.accounts, in: now.interval)
         let total = rows.reduce(0) { $0 + $1.amount }
         return VStack(alignment: .leading, spacing: 0) {
             header(.wallet)
@@ -504,7 +515,7 @@ struct StatistikView: View {
 
     private var habitBlock: some View {
         let now = period(.habit)
-        let daily = StatistikBlocks.daily(data.transactions, in: now.interval)
+        let daily = StatistikBlocks.daily(scoped, in: now.interval)
         let elapsed = StatistikBlocks.elapsedDays(now.interval)
         let spent = Array(daily.prefix(elapsed))
         let averages = StatistikBlocks.weekdayAverages(spent, start: now.interval.start)

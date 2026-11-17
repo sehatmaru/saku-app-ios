@@ -31,6 +31,15 @@ final class WorkspaceStore: ObservableObject {
     /// Counts "make a workspace" requests; `WorkspaceHost` answers each one.
     @Published private(set) var createRequests = 0
 
+    /// Members of the active shared Workspace, former ones included (K8, K17); empty in Workspace Pribadi.
+    @Published private(set) var activeMembers: [WorkspaceMember] = []
+    /// Rows show who recorded them only where more than one person can (K17).
+    var showsAttribution: Bool { !activeIsPersonal && !activeMembers.isEmpty }
+    func member(_ profileId: String?) -> WorkspaceMember? {
+        guard let profileId, let id = UUID(uuidString: profileId) else { return nil }
+        return activeMembers.first { $0.profileId == id }
+    }
+
     var personal: Workspace? { spaces.first { $0.isPersonal } }
     var active: Workspace? { spaces.first { $0.id == activeId } ?? personal }
     var shared: [Workspace] { spaces.filter { !$0.isPersonal } }
@@ -59,6 +68,7 @@ final class WorkspaceStore: ObservableObject {
             if let active, !active.isPersonal, let day = active.paydayDay { PaydaySetting.day = day }
             if SpaceStore.activeSpaceId != before { reloadApp() }
             if rows.contains(where: { $0.defaultReset }) { resetNotice = true }
+            await loadMembers()
         } catch {
             loadFailed = true
         }
@@ -70,7 +80,14 @@ final class WorkspaceStore: ObservableObject {
         SpaceStore.setActive(workspace.id.uuidString)
         activeId = workspace.id
         PaydaySetting.day = workspace.paydayDay ?? 0
+        activeMembers = []
         reloadApp()
+        Task { await loadMembers() }
+    }
+
+    func loadMembers() async {
+        guard let active, !active.isPersonal else { activeMembers = []; return }
+        activeMembers = (try? await members(of: active)) ?? activeMembers
     }
 
     private func reloadApp() {

@@ -114,18 +114,7 @@ struct WorkspaceMembersSection: View {
         .contentShape(Rectangle())
     }
 
-    private func avatar(_ member: WorkspaceMember) -> some View {
-        ZStack {
-            Circle().fill(Color.appFill)
-            Text(member.initial).font(.app(16, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-            if let raw = member.avatarUrl, let url = URL(string: raw) {
-                AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Color.clear }
-                    .clipShape(Circle())
-            }
-        }
-        .frame(width: 40, height: 40)
-        .accessibilityHidden(true)
-    }
+    private func avatar(_ member: WorkspaceMember) -> some View { MemberAvatar(member: member, size: 40) }
 
     private func load() async {
         do { members = try await store.members(of: workspace); failed = false } catch { failed = true }
@@ -153,5 +142,56 @@ struct WorkspaceMembersSection: View {
             ToastCenter.shared.show(L("Kamu keluar dari %@", workspace.displayName))
             dismiss()
         } catch { ToastCenter.shared.show(L("Belum bisa keluar. Coba lagi.")) }
+    }
+}
+
+/// A member's photo, or their initial on a soft fill; one drawing for the members list, transaction rows and filters.
+struct MemberAvatar: View {
+    let member: WorkspaceMember
+    var size: CGFloat = 20
+
+    var body: some View {
+        ZStack {
+            Circle().fill(Color.appFill)
+            Text(member.initial).font(.app(size * 0.4, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+            if let raw = member.avatarUrl, let url = URL(string: raw) {
+                AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Color.clear }
+                    .clipShape(Circle())
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+/// "Semua anggota" or one member: the chip that narrows a list or the statistics to what that person recorded (K17).
+struct MemberFilterMenu: View {
+    let members: [WorkspaceMember]
+    @Binding var selection: String?
+
+    private var chosen: WorkspaceMember? { members.first { $0.profileId.uuidString.lowercased() == selection?.lowercased() } }
+
+    var body: some View {
+        Menu {
+            Button { selection = nil } label: { Label(L("Semua anggota"), systemImage: selection == nil ? "checkmark" : "person.2") }
+            ForEach(members) { member in
+                Button { selection = member.profileId.uuidString.lowercased() } label: {
+                    Label(member.isMe ? L("%@ (kamu)", member.name) : member.name, systemImage: chosen?.id == member.id ? "checkmark" : "person")
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                if let chosen { MemberAvatar(member: chosen, size: 20) } else { Image(systemName: "person.2").font(.system(size: 13)) }
+                Text(chosen?.firstName ?? L("Semua anggota")).lineLimit(1)
+                Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
+            }
+            .font(.app(14, weight: chosen == nil ? .regular : .medium))
+            .padding(.horizontal, 12)
+            .frame(height: 34)
+            .foregroundStyle(chosen == nil ? Color.appText : Color.appBackground)
+            .background(chosen == nil ? Color.clear : Color.appText, in: Capsule())
+            .overlay(Capsule().strokeBorder(chosen == nil ? Color.appBorder : Color.clear))
+        }
+        .accessibilityLabel(L("Filter anggota"))
     }
 }

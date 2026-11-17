@@ -100,3 +100,32 @@ final class InviteTests: XCTestCase {
         XCTAssertEqual(WorkspaceError(E(description: "space_owner_deleting")), .ownerDeleting)
     }
 }
+
+final class AttributionTests: XCTestCase {
+    private func tx(_ json: String) throws -> Transaction {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(Transaction.self, from: Data(json.utf8))
+    }
+
+    func testTransactionReadsRecorderAndEditor() throws {
+        let t = try tx("""
+        {"id":"t1","primary_account_id":"a","counterparty_account_id":null,"category_id":null,"amount":1000,"transaction_type":"expense",
+         "description":null,"note":null,"occurred_at":"2026-11-17T03:00:00+00:00","delta":null,
+         "user_id":"6f0f3b9e-8b7e-4b8e-9d5c-1f2a3b4c5d6e","updated_by":"2f0f3b9e-8b7e-4b8e-9d5c-1f2a3b4c5d6e","updated_at":"2026-11-18T03:00:00+00:00"}
+        """)
+        XCTAssertEqual(t.recorderId, "6f0f3b9e-8b7e-4b8e-9d5c-1f2a3b4c5d6e")
+        XCTAssertNotEqual(t.updatedBy, t.recorderId)
+        XCTAssertNotNil(Workspace.parseTimestamp(t.updatedAtRaw ?? ""))
+    }
+
+    func testRecorderFilterCountsAsActiveAndResets() {
+        var f = TransactionFilter()
+        XCTAssertFalse(f.hasActiveFilters)
+        f.recorderId = "x"
+        XCTAssertTrue(f.hasActiveFilters)
+        XCTAssertEqual(f.activeFilterCount, 1)
+        f.reset()
+        XCTAssertNil(f.recorderId)
+    }
+}

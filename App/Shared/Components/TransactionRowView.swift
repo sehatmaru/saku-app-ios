@@ -17,6 +17,13 @@ struct TransactionRowView: View {
     /// One installment part, shown under the amount where the row has no wallet chip (card history).
     var installmentMonthly: Double? = nil
 
+    @ObservedObject private var workspace = WorkspaceStore.shared
+
+    /// Who recorded it, shown only inside a shared Workspace (K17).
+    private var recorder: WorkspaceMember? {
+        workspace.showsAttribution ? workspace.member(transaction.recorderId) : nil
+    }
+
     private var category: Category? {
         transaction.categoryId.flatMap { cid in categories.first { $0.id == cid } }
     }
@@ -152,11 +159,17 @@ struct TransactionRowView: View {
                             .overlay(Capsule().strokeBorder(Color.appBorder))
                     }
                 }
-                if !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
-                        .lineLimit(1)
+                if !subtitle.isEmpty || recorder != nil {
+                    HStack(spacing: 5) {
+                        if let recorder {
+                            MemberAvatar(member: recorder, size: 16)
+                            Text(recorder.firstName).font(.app(13, weight: .medium)).foregroundStyle(Color.appText).lineLimit(1)
+                            if !subtitle.isEmpty { Text("·") }
+                        }
+                        Text(subtitle).lineLimit(1)
+                    }
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
                 }
                 if let installment, installment.months > 0 {
                     HStack(spacing: 6) {

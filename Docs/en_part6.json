@@ -1976,5 +1976,8 @@
   "Tidak ada yang bisa bergabung dengan kode ini lagi. Anggota yang sudah masuk tetap di Workspace.": "Nobody can join with this code any more. Members who are already in stay in the Workspace.",
   "Undang anggota": "Invite members",
   "Workspace ini sedang tidak menerima anggota baru.": "This Workspace is not accepting new members right now.",
-  "Workspace ini sudah penuh, maksimal 5 anggota.": "This Workspace is full, 5 members at most."
+  "Workspace ini sudah penuh, maksimal 5 anggota.": "This Workspace is full, 5 members at most.",
+  "Dicatat": "Added by",
+  "Diubah": "Changed by",
+  "Filter anggota": "Filter by member"
 }

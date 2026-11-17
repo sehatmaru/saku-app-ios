@@ -7663,6 +7663,16 @@
         }
       }
     },
+    "Dicatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added by"
+          }
+        }
+      }
+    },
     "Dicatat Smart Tracker · periksa dulu": {
       "localizations": {
         "en": {
@@ -8089,6 +8099,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Declined. Turn it on in iPhone Settings for bill reminders."
+          }
+        }
+      }
+    },
+    "Diubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changed by"
           }
         }
       }
@@ -8769,6 +8789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Filter"
+          }
+        }
+      }
+    },
+    "Filter anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter by member"
           }
         }
       }

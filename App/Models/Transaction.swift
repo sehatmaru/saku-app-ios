@@ -15,6 +15,10 @@ struct Transaction: Identifiable, Codable {
     var clientReferenceId: String? = nil
     /// An early salary that started a new period on its date; deleting the transaction takes the shift away.
     var startsPeriod: Bool? = nil
+    /// Who recorded it (K17) and who changed it last (K24). Both profile ids; nil for rows from before Workspace or a deleted account.
+    var recorderId: String? = nil
+    var updatedBy: String? = nil
+    var updatedAtRaw: String? = nil
 
     enum TransactionType: String, Codable {
         case income = "income"
@@ -38,6 +42,9 @@ struct Transaction: Identifiable, Codable {
         case delta
         case clientReferenceId = "client_reference_id"
         case startsPeriod = "starts_period"
+        case recorderId = "user_id"
+        case updatedBy = "updated_by"
+        case updatedAtRaw = "updated_at"
     }
 
     /// The "Catatan" the user typed (saved as `description`), else the system `note`.

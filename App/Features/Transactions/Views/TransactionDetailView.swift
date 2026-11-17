@@ -7,6 +7,7 @@ import SwiftUI
 /// Edit reopens the add form prefilled with this transaction.
 struct TransactionDetailView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
+    @ObservedObject private var workspace = WorkspaceStore.shared
     @Environment(\.dismiss) private var dismiss
 
     let categories: [Category]
@@ -226,7 +227,29 @@ struct TransactionDetailView: View {
                 row(label: L("Sumber"), value: L("Tagihan berulang · otomatis"), icon: "repeat", index: 2)
             }
             row(label: L("Catatan"), value: txn.description?.isEmpty == false ? txn.description! : "—", icon: "square.and.pencil", index: 3)
+            if workspace.showsAttribution, let by = workspace.member(txn.recorderId) {
+                memberRow(label: L("Dicatat"), member: by, sub: nil, index: 4)
+                if let editor = workspace.member(txn.updatedBy), editor.id != by.id {
+                    let when = Workspace.parseTimestamp(txn.updatedAtRaw ?? "").map { TransactionDates.long($0, withYear: false) }
+                    memberRow(label: L("Diubah"), member: editor, sub: when, index: 5)
+                }
+            }
         }
+    }
+
+    /// Who recorded or last changed it (K17, K24): the photo, the name and, for a change, when.
+    private func memberRow(label: String, member: WorkspaceMember, sub: String?, index: Int) -> some View {
+        HStack(spacing: 12) {
+            Text(label).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
+            MemberAvatar(member: member, size: 24)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(member.name).font(.app(16, weight: .medium)).foregroundStyle(Color.appText).lineLimit(1)
+                if let sub { Text(sub).font(.app(12)).foregroundStyle(Color.appTextSecondary) }
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(height: 50)
+        .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
     }
 
     private func row(label: String, value: String, wallet: Account? = nil, categoryMark: Category? = nil, icon: String? = nil, index: Int) -> some View {

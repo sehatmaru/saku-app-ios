@@ -13,6 +13,7 @@ struct WorkspaceMember: Identifiable, Equatable, Decodable, Sendable {
     var isOwner: Bool { role == "owner" }
     var isFormer: Bool { leftAt != nil }
     var name: String { displayName?.trimmingCharacters(in: .whitespaces).isEmpty == false ? displayName! : L("Tanpa nama") }
+    var firstName: String { name.split(separator: " ").first.map(String.init) ?? name }
     var initial: String { String(name.prefix(1)).uppercased() }
 
     enum CodingKeys: String, CodingKey {
