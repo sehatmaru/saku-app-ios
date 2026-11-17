@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Statistik (Enhancement 1, Epic 8): the whole payday period on one page, free for everyone. It replaces the old
-/// Analitik page and follows the "Beranda" privacy switch. All figures are worked out on the device by `PeriodStatistics`.
+/// Statistik: one page that answers "am I doing better?". Every block has its own period and, if wanted, one other
+/// period to compare with, chosen freely. Figures come from `StatistikBlocks`, worked out on the device.
 struct StatistikView: View {
     /// "Buat budget": the Budget tab, with this page closed behind it.
     var onOpenBudget: () -> Void = {}
@@ -9,44 +9,30 @@ struct StatistikView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var data = ExportViewModel()
     @AppStorage("isBalanceVisible") private var isVisible = true
-    /// 0 is the running period, -1 the one before, and so on.
-    @State private var offset = 0
+    @State private var periodIds: [StatBlock: String] = [:]
+    @State private var compareIds: [StatBlock: String] = [:]
+    @State private var pick: Pick?
+    @State private var incomeTab = false
+    @State private var showsAllCategories = false
+    @State private var history: WealthHistory?
     @State private var showsAdd = false
 
     private var cycle: PaydayCycle { PaydayCycle.current }
     private var userId: String? { authViewModel.currentUser?.id }
+    private var money: StatistikMoney { StatistikMoney(isVisible: isVisible) }
     private var firstRecord: Date? { data.transactions.map(\.date).min() }
 
-    private var result: PeriodStatistics.Result {
-        let interval = cycle.period(offset: offset)
-        let expenseIds = Set(data.categories.filter { $0.type == .expense }.map(\.id))
-        let names = Dictionary(data.categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
-        let period = BudgetHistory.period(interval, budgets: data.historyBudgets, changes: data.amountChanges,
-                                          transactions: data.transactions, shownCategoryIds: expenseIds)
-        let lines = (period?.rows ?? []).map {
-            ReportModel.BudgetLine(name: names[$0.categoryId] ?? L("Tanpa kategori"), spent: $0.spent, amount: $0.amount,
-                                   isProvisional: $0.source == .temporary)
-        }
-        return PeriodStatistics.make(transactions: data.transactions, categories: data.categories, accounts: data.accounts,
-                                     budgetLines: lines, cycle: cycle, interval: interval)
-    }
-
-    /// An earlier period is only worth opening when it ends after the first record.
-    private var canGoBack: Bool {
-        guard let firstRecord else { return false }
-        return cycle.period(offset: offset - 1).end > firstRecord
+    struct Pick: Identifiable {
+        let block: StatBlock
+        var id: String { block.rawValue }
     }
 
     var body: some View {
         Group {
             if data.isReady {
                 ScrollView {
-                    StatistikPage(result: result, isVisible: isVisible, canGoBack: canGoBack, canGoForward: offset < 0,
-                                  onBack: { withAnimation(.smooth) { offset -= 1 } },
-                                  onForward: { withAnimation(.smooth) { offset += 1 } },
-                                  onAdd: { showsAdd = true },
-                                  onOpenBudget: { onOpenBudget(); dismiss() })
-                        .id(offset)
+                    page.padding(.bottom, 100)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .scrollIndicators(.hidden)
             } else if data.loadFailed {
@@ -63,805 +49,759 @@ struct StatistikView: View {
             }
         }
         .background(Color.appBackground)
+        .navigationTitle(L("Statistik"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    withAnimation(.smooth) { isVisible.toggle() }
-                } label: {
-                    // eye.slash is taller than eye; a fixed frame keeps the bar still.
-                    Image(systemName: isVisible ? "eye" : "eye.slash").font(.system(size: 18)).foregroundStyle(Color.appTextSecondary)
-                        .frame(width: 28, height: 25)
-                }
-                .accessibilityLabel(isVisible ? L("Sembunyikan saldo") : L("Tampilkan saldo"))
-            }
+        .task {
+            await data.load(userId: userId)
+            history = PeriodStatistics.assets(accounts: data.accounts, transactions: data.transactions)?.history
         }
-        .task { await data.load(userId: userId) }
+        .sheet(item: $pick) { item in
+            StatPickSheet(title: item.block.title, isAssets: item.block == .assets,
+                          periods: options(item.block, compare: false), selected: period(item.block).id,
+                          compareOptions: item.block.allowsCompare ? options(item.block, compare: true) : nil,
+                          compareSelected: compareId(item.block),
+                          onPeriod: { choice in
+                              withAnimation(.smooth) {
+                                  periodIds[item.block] = choice.id
+                                  if compareIds[item.block] == choice.id { compareIds[item.block] = nil }
+                              }
+                          },
+                          onCompare: { choice in withAnimation(.smooth) { compareIds[item.block] = choice?.id ?? (item.block == .trend ? "" : nil) } },
+                          onDone: { pick = nil })
+                .presentationDetents([.medium, .large])
+        }
         .sheet(isPresented: $showsAdd) {
             if let userId {
                 AddTransactionView(categories: data.categories, accounts: data.accounts, userId: userId, onSave: {})
             }
         }
     }
-}
 
-// MARK: - Page
+    // MARK: Periods
 
-/// The page for one computed period. Pure: it is handed the numbers, so it can be drawn for a check without a network.
-struct StatistikPage: View {
-    let result: PeriodStatistics.Result
-    var isVisible = true
-    var canGoBack = true
-    var canGoForward = false
-    var animated = true
-    var onBack: () -> Void = {}
-    var onForward: () -> Void = {}
-    var onAdd: () -> Void = {}
-    var onOpenBudget: () -> Void = {}
-    @State private var appeared = false
+    private func options(_ block: StatBlock, compare: Bool) -> [StatPeriod] {
+        let now = Date()
+        if block == .assets {
+            let current = cycle.period(offset: 0, from: now, calendar: .current)
+            return [StatPeriod(id: "p0", title: L("Periode ini"), interval: current),
+                    StatPeriod(id: "a3", title: L("3 periode terakhir"), interval: current),
+                    StatPeriod(id: "a6", title: L("6 periode terakhir"), interval: current),
+                    StatPeriod(id: "all", title: L("Semua periode"), interval: current)]
+        }
+        if block == .trend {
+            let list = StatistikBlocks.singles(now: now, cycle: cycle, firstRecord: firstRecord)
+            return compare ? list.filter { $0.id != period(block).id } : list
+        }
+        return compare ? StatistikBlocks.compareOptions(now: now, cycle: cycle, firstRecord: firstRecord, excluding: period(block).id)
+                       : StatistikBlocks.periods(now: now, cycle: cycle) + StatistikBlocks.olderPeriods(now: now, cycle: cycle, firstRecord: firstRecord)
+    }
 
-    // Flat sections: hairlines instead of cards, so numbers get the full width of the page.
-    private let titleSize: CGFloat = 17, heroSize: CGFloat = 40
+    private func period(_ block: StatBlock) -> StatPeriod {
+        let list = options(block, compare: false)
+        return list.first { $0.id == (periodIds[block] ?? (block == .assets ? "all" : nil)) } ?? list[0]
+    }
 
-    private var money: StatistikMoney { StatistikMoney(isVisible: isVisible) }
-    private var isShown: Bool { appeared || !animated }
+    /// Spending trend compares with the last period until the user says otherwise ("" = none chosen).
+    private func compareId(_ block: StatBlock) -> String? {
+        let id = compareIds[block] ?? (block == .trend ? "p1" : nil)
+        return id == "" ? nil : id
+    }
 
-    var body: some View {
+    private func compare(_ block: StatBlock) -> StatPeriod? {
+        guard let id = compareId(block) else { return nil }
+        return options(block, compare: true).first { $0.id == id }
+    }
+
+    // MARK: Page
+
+    private var page: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Statistik").font(.app(34, weight: .bold)).tracking(-0.7).padding(.bottom, 6)
-            periodPicker
-            if result.isEmpty {
+            if data.transactions.isEmpty {
                 emptyState
-                if let assets = result.assets { assetsCard(assets) }
             } else {
-                summaryCard.rise(isShown, y: 14, delay: 0.06)
-                if let assets = result.assets { assetsCard(assets).rise(isShown, y: 14, delay: 0.09) }
-                calendarCard.rise(isShown, y: 14, delay: 0.12)
-                trendCard.rise(isShown, y: 14, delay: 0.18)
-                expenseCard.rise(isShown, y: 14, delay: 0.24)
-                incomeCard.rise(isShown, y: 14, delay: 0.30)
-                walletCard.rise(isShown, y: 14, delay: 0.36)
-                timeCard.rise(isShown, y: 14, delay: 0.42)
-                budgetCard.rise(isShown, y: 14, delay: 0.48)
-                highlightsCard.rise(isShown, y: 14, delay: 0.54)
+                section { assetsBlock }
+                SectionDivider()
+                section { flowBlock }
+                SectionDivider()
+                section { categoriesBlock }
+                SectionDivider()
+                section { trendBlock }
+                SectionDivider()
+                section { budgetBlock }
+                SectionDivider()
+                section { walletBlock }
+                SectionDivider()
+                section { habitBlock }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-        .padding(.bottom, 100)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .onAppear { appeared = true }
     }
 
-    // MARK: Chrome
-
-    private func card<Content: View>(_ title: String, trailing: String? = nil, @ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.app(titleSize, weight: .semibold))
-                if let trailing {
-                    Spacer(minLength: 8)
-                    Text(trailing).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                }
-            }
-            content()
-        }
-        .padding(.vertical, 20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .top) { Rectangle().fill(Color.appDivider).frame(height: 1) }
-    }
-
-    private func label(_ text: String) -> some View { Text(text).font(.app(12)).foregroundStyle(Color.appTextSecondary) }
-
-    private func stat(_ title: String, _ value: String, color: Color = .appText, sub: String? = nil, bold: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            label(title)
-            Text(value).font(.app(bold ? 15 : 17, weight: bold ? .semibold : .medium)).monospacedDigit().foregroundStyle(color).lineLimit(1).minimumScaleFactor(0.7)
-            if let sub { label(sub).monospacedDigit().lineLimit(2).fixedSize(horizontal: false, vertical: true) }
-        }
-    }
-
-    private var periodPicker: some View {
-        HStack {
-            stepButton("chevron.left", enabled: canGoBack, action: onBack)
-            Spacer()
-            VStack(spacing: 0) {
-                Text(result.label).font(.app(15, weight: .semibold))
-                Text(periodSub).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-            }
-            Spacer()
-            stepButton("chevron.right", enabled: canGoForward, action: onForward)
-        }
-        .padding(.bottom, 12)
-        .rise(isShown, y: 14, delay: 0)
-    }
-
-    private var periodSub: String {
-        result.isCurrent ? L("Periode gajian · hari ke-%lld dari %lld", result.elapsedDays, result.totalDays) : L("Periode gajian · selesai")
-    }
-
-    private func stepButton(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 14, weight: .bold)).foregroundStyle(Color.appText)
-                .frame(width: 36, height: 36)
-        }
-        .disabled(!enabled)
-        .opacity(enabled ? 1 : 0.25)
-        .accessibilityLabel(symbol == "chevron.left" ? L("Periode sebelumnya") : L("Periode berikutnya"))
+    /// A block of the page: 24 at the sides and 28 above and below, like the sections of Beranda.
+    private func section<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content().padding(.horizontal, 24).padding(.vertical, 28).frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var emptyState: some View {
         VStack(spacing: 14) {
-            HStack(alignment: .bottom, spacing: 10) {
-                ForEach([30.0, 48, 22, 58], id: \.self) { h in
-                    RoundedRectangle(cornerRadius: 4).fill(Color.appBorder.opacity(0.6)).frame(width: 18, height: h)
-                }
-            }
-            .frame(height: 64, alignment: .bottom)
-            Rectangle().fill(Color.appBorder).frame(width: 124, height: 1.5)
             Text("Belum ada transaksi").font(.app(20, weight: .semibold))
-            Text(L("Pemasukan dan pengeluaran yang kamu catat di %@ akan muncul di sini.", result.label))
+            Text("Pemasukan dan pengeluaran yang kamu catat akan muncul di sini.")
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
-                .frame(maxWidth: 280)
-            Button(action: onAdd) {
-                Text("Catat transaksi").font(.app(16, weight: .semibold)).foregroundStyle(.white)
-                    .padding(.horizontal, 28).frame(height: 48).background(Color.appPrimary, in: Capsule())
-            }
-            .padding(.top, 6)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 72)
-        .rise(isShown, y: 14, delay: 0.06)
-    }
-
-    // MARK: A. Ringkasan
-
-    private var summaryCard: some View {
-        let s = result.summary
-        return card(L("Ringkasan periode")) {
-            VStack(alignment: .leading, spacing: 0) {
-                label(L("Net periode ini")).font(.app(13))
-                HStack(alignment: .top, spacing: 4) {
-                    Text((s.net < 0 ? "−" : "") + "Rp").font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, heroSize * 0.12)
-                    Text(isVisible ? s.net.formattedAsDigits() : hiddenAmount)
-                        .font(.app(heroSize, weight: .light)).tracking(-1.2).monospacedDigit()
-                        .foregroundStyle(s.net < 0 ? Color.appError : Color.appText)
-                        .lineLimit(1).minimumScaleFactor(0.5)
-                }
-            }
-            Sparkline(values: s.remaining, animated: animated, shown: isShown).frame(height: 44)
-            LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading), GridItem(.flexible(), alignment: .topLeading)], alignment: .leading, spacing: 14) {
-                stat(L("Masuk"), money.full(s.income), color: .appPrimary)
-                stat(L("Keluar"), money.full(s.expense))
-                stat(L("Rasio tabungan"), s.savingsRate.map { StatistikMoney.percent($0) } ?? "—",
-                     color: (s.savingsRate ?? 0) < 0 ? .appError : .appPrimary)
-                stat(L("Transaksi"), "\(s.transactions)")
-                stat(L("Rata-rata per hari"), money.full(s.perDay))
-                stat(L("Rata-rata per transaksi"), s.perTransaction.map { money.full($0) } ?? "—")
-            }
-            Divider().overlay(Color.appDivider)
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    label(L("Proyeksi pengeluaran akhir periode"))
-                    Text(projectionNote(s.projectionNote)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                }
-                Spacer(minLength: 12)
-                Text(s.projection.map { money.full($0) } ?? "—").font(.app(17, weight: .medium)).monospacedDigit().lineLimit(1)
+            Button { showsAdd = true } label: {
+                Text("Catat transaksi").font(.app(16, weight: .semibold)).foregroundStyle(Color.appBackground)
+                    .padding(.horizontal, 24).frame(height: 48).background(Color.appText, in: Capsule())
             }
         }
+        .frame(maxWidth: .infinity).padding(.horizontal, 24).padding(.top, 60)
     }
 
-    private func projectionNote(_ note: PeriodStatistics.ProjectionNote) -> String {
-        switch note {
-        case .fromAverage(let perDay): L("Dari rata-rata %@/hari", money.full(perDay))
-        case .needsHistory: L("Butuh minimal 1 periode data")
-        case .finished: L("Periode sudah selesai")
+    // MARK: Block chrome
+
+    /// Title and what it shows on the left, the period chip on the right. The comparison is chosen in the chip's sheet.
+    private func header(_ block: StatBlock) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                SectionHeader(title: block.title)
+                Text(block.subtitle).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                if let other = compare(block) {
+                    Text(L("vs %@", other.title)).font(.app(13, weight: .medium)).foregroundStyle(Color.appPrimary)
+                }
+            }
+            Spacer(minLength: 0)
+            Button { pick = Pick(block: block) } label: {
+                HStack(spacing: 4) {
+                    Text(period(block).title).lineLimit(1)
+                    Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
+                }
+                .font(.app(14)).foregroundStyle(Color.appText).padding(.leading, 14).padding(.trailing, 10).frame(height: 34)
+                .background(Color.appFill, in: Capsule())
+                .contentShape(Capsule())
+            }
         }
+        .padding(.bottom, 12)
     }
 
-    // MARK: Total aset
+    private func label(_ text: String) -> some View { Text(text).font(.app(13)).foregroundStyle(Color.appTextSecondary) }
 
-    /// What the wallets hold today, split by wallet type. It is the balance now, whichever period is open.
-    private func assetsCard(_ assets: PeriodStatistics.Assets) -> some View {
-        let shades: [Double] = [1, 0.7, 0.45, 0.25]
-        let topShare = assets.rows.map(\.share).max() ?? 1
-        return card(L("Total aset"), trailing: L("Per hari ini")) {
-            VStack(alignment: .leading, spacing: 0) {
-                label(L("Kas dan investasi")).font(.app(13))
-                HStack(alignment: .top, spacing: 4) {
-                    Text("Rp").font(.app(14)).foregroundStyle(Color.appTextSecondary).padding(.top, (heroSize - 10) * 0.12)
-                    Text(isVisible ? assets.total.formattedAsDigits() : hiddenAmount)
-                        .font(.app(heroSize - 10, weight: .light)).tracking(-1.0).monospacedDigit()
-                        .lineLimit(1).minimumScaleFactor(0.5)
-                }
-            }
-            HStack(alignment: .top, spacing: 12) {
-                stat(L("Kas"), money.full(assets.cash)).frame(maxWidth: .infinity, alignment: .leading)
-                stat(L("Investasi"), money.full(assets.invested)).frame(maxWidth: .infinity, alignment: .leading)
-            }
-            InvestmentChartView(seriesFor: { assets.history.series(range: $0) }, isBalanceVisible: isVisible,
-                                valueLabel: L("Total aset"), capitalLabel: L("Investasi"),
-                                emptyText: L("Grafik muncul setelah ada catatan di 2 hari yang berbeda."), showsDots: false)
-            if let investment = assets.investment {
-                VStack(spacing: 10) {
-                    HStack(alignment: .firstTextBaseline) {
-                        label(L("Untung/rugi investasi")).font(.app(14))
-                        Spacer(minLength: 8)
-                        Text(gainText(investment)).font(.app(15, weight: .semibold)).monospacedDigit()
-                            .lineLimit(1).minimumScaleFactor(0.7)
-                            .foregroundStyle(investment.gain > 0 ? Color.appPrimary : investment.gain < 0 ? Color.appError : Color.appTextSecondary)
-                    }
-                    HStack(alignment: .firstTextBaseline) {
-                        label(L("Modal disetor")).font(.app(14))
-                        Spacer(minLength: 8)
-                        Text(money.full(investment.capital)).font(.app(14)).monospacedDigit()
-                    }
-                    HStack(alignment: .firstTextBaseline) {
-                        label(L("Terakhir diperbarui")).font(.app(14))
-                        Spacer(minLength: 8)
-                        Text(investment.lastUpdated.map { StatistikMoney.dayLabel($0) } ?? "—").font(.app(14))
-                    }
-                }
-            }
-            Divider().overlay(Color.appDivider)
-            VStack(spacing: 12) {
-                ForEach(assets.rows.indices, id: \.self) { index in
-                    let row = assets.rows[index]
-                    let color = Color.appText.opacity(shades[min(index, 3)])
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            HStack(spacing: 8) {
-                                Circle().fill(color).frame(width: 8, height: 8)
-                                Text(row.name).lineLimit(1)
-                                Text("\(row.count)").font(.app(12)).foregroundStyle(Color.appTextSecondary)
-                            }
-                            Spacer(minLength: 8)
-                            Text(money.full(row.amount)).monospacedDigit()
-                        }
-                        .font(.app(14))
-                        ProgressTrack(fraction: topShare > 0 ? row.share / topShare : 0, color: color, shown: isShown)
-                        label(L("%@ dari total aset", StatistikMoney.percent(row.share))).monospacedDigit()
-                    }
-                }
-            }
-            label(L("Saldo dompet aktif hari ini. Kartu kredit tidak dihitung."))
+    private func noData(_ title: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Belum ada data untuk dibandingkan").font(.app(15))
+            label(L("Belum ada transaksi di %@. Pilih periode lain.", title))
         }
+        .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.top, 8)
     }
 
-    private func gainText(_ investment: PeriodStatistics.InvestmentTotals) -> String {
-        guard isVisible else { return "••••" }
-        let sign = investment.gain > 0 ? "+" : investment.gain < 0 ? "−" : ""
-        let rupiah = sign + abs(investment.gain).formattedAsCurrency()
-        return investment.percent.map { rupiah + " · " + InvestmentSummary.percentText($0, signed: true) } ?? rupiah
+    /// Spending going up is bad, income and assets going up is good.
+    private func tone(_ value: Double, goodWhenUp: Bool) -> Color {
+        value == 0 ? .appTextSecondary : (value > 0) == goodWhenUp ? .appPrimary : .appError
     }
 
-    // MARK: B. Kalender
+    private func arrow(_ value: Double) -> String { value > 0 ? "↑" : value < 0 ? "↓" : "" }
 
-    private var calendarCard: some View {
-        let c = result.calendar
-        return card(L("Kalender pengeluaran"), trailing: result.label) {
-            SpendingCalendarGrid(calendar: c, money: money)
-            Divider().overlay(Color.appDivider)
-            HStack(alignment: .top, spacing: 12) {
-                stat(L("Total periode"), money.full(c.total), bold: true).frame(maxWidth: .infinity, alignment: .leading)
-                stat(L("Hari terboros"), c.peakDate.map { StatistikMoney.dayLabel($0) } ?? "—", sub: c.peakDate == nil ? nil : money.full(c.peakAmount), bold: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                stat(L("Tanpa pengeluaran"), L("%lld hari", c.zeroDays), bold: true).frame(maxWidth: .infinity, alignment: .leading)
+    private func verb(_ value: Double) -> String { value > 0 ? L("naik") : value < 0 ? L("turun") : L("tetap") }
+
+    // MARK: 1. Assets
+
+    private var assetsBlock: some View {
+        let calendar = Calendar.current
+        let current = history.flatMap { StatistikBlocks.wealth(on: Date(), history: $0) }
+        let format = DateFormatter(); format.locale = AppLanguage.locale; format.dateFormat = "MMM"
+        var marks: [WealthArea.Mark] = []
+        if let history {
+            let id = period(.assets).id
+            if id == "p0" {
+                // one point per day of the running period
+                let range = cycle.period(offset: 0, from: Date(), calendar: calendar)
+                let days = max(calendar.dateComponents([.day], from: calendar.startOfDay(for: range.start), to: calendar.startOfDay(for: Date())).day ?? 0, 0)
+                let day = DateFormatter(); day.locale = AppLanguage.locale; day.dateFormat = "d MMM"
+                for offset in 0...days {
+                    guard let date = calendar.date(byAdding: .day, value: offset, to: calendar.startOfDay(for: range.start)),
+                          let w = StatistikBlocks.wealth(on: date, history: history) else { continue }
+                    let shown = offset == 0 || offset == days || (days >= 6 && offset % (days / 3) == 0 && days - offset >= days / 3)
+                    marks.append(.init(label: shown ? (offset == days ? L("Hari ini") : day.string(from: date)) : "", total: w.total, invested: w.invested))
+                }
+            } else {
+                // the balance at the end of each payday period, then today
+                let count = id == "a3" ? 3 : id == "a6" ? 6 : 12
+                for back in (1...count).reversed() {
+                    let range = cycle.period(offset: -back, from: Date(), calendar: calendar)
+                    if let firstRecord, range.end <= firstRecord { continue }
+                    guard let end = calendar.date(byAdding: .day, value: -1, to: range.end),
+                          let w = StatistikBlocks.wealth(on: end, history: history) else { continue }
+                    marks.append(.init(label: format.string(from: end), total: w.total, invested: w.invested))
+                }
+                if let now = current { marks.append(.init(label: L("Hari ini"), total: now.total, invested: now.invested)) }
+            }
+        }
+        return VStack(alignment: .leading, spacing: 0) {
+            header(.assets)
+            if let current {
+                HStack(alignment: .top, spacing: 3) {
+                    Text("Rp").font(.app(18)).foregroundStyle(Color.appTextSecondary).padding(.top, 8)
+                    Text(isVisible ? current.total.formattedAsDigits() : hiddenAmount)
+                        .font(.app(44, weight: .ultraLight)).tracking(-1.5).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+                }
+                .padding(.top, 6)
+                if marks.count > 1 {
+                    WealthArea(marks: marks).frame(height: 190).padding(.top, 16)
+                }
+            } else {
+                label(L("Belum ada data di tanggal ini.")).padding(.top, 8)
             }
         }
     }
 
-    // MARK: C. Tren
-
-    private var trendCard: some View {
-        let t = result.trend
-        return card(L("Tren %lld periode", t.points.count)) {
-            HStack(spacing: 10) {
-                legend(L("Masuk"), color: .appPrimary)
-                legend(L("Keluar"), color: .appTextTertiary)
-                HStack(spacing: 4) { Rectangle().fill(Color.appText).frame(width: 10, height: 2); label(L("Net")).font(.app(11)) }
+    private func compareBar(_ title: String, _ value: Double, top: Double, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            label(title).lineLimit(1)
+            GeometryReader { proxy in
+                RoundedRectangle(cornerRadius: 4).fill(color).frame(width: proxy.size.width * max(value, 0) / top)
             }
-            TrendChart(points: t.points, shown: isShown, animated: animated)
-            Divider().overlay(Color.appDivider)
-            LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading), GridItem(.flexible(), alignment: .topLeading)], alignment: .leading, spacing: 12) {
-                if t.points.count > 1, let last = t.points.last {
-                    stat(L("Keluar vs periode lalu"), StatistikMoney.signedPercent(t.expenseChange), color: (t.expenseChange ?? 0) > 0 ? .appWarning : .appPrimary,
-                         sub: money.full(last.expense), bold: true)
-                    stat(L("Net vs periode lalu"), StatistikMoney.signedPercent(t.netChange), color: (t.netChange ?? 0) >= 0 ? .appPrimary : .appWarning,
-                         sub: money.full(last.net), bold: true)
-                    stat(L("Rata-rata Masuk"), money.full(t.averageIncome), sub: L("%lld periode", t.points.count), bold: true)
-                    stat(L("Rata-rata Keluar"), money.full(t.averageExpense), sub: L("%lld periode", t.points.count), bold: true)
+            .frame(height: 8)
+            Text(money.full(value)).font(.app(14)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: 2. Cash flow
+
+    private var flowBlock: some View {
+        let now = period(.flow), other = compare(.flow)
+        let a = StatistikBlocks.flow(data.transactions, in: now.interval)
+        let b = other.map { StatistikBlocks.flow(data.transactions, in: StatistikBlocks.comparable($0.interval, to: now.interval)) }
+        let rate: (Double, Double) -> Double? = { income, expense in income > 0 ? (income - expense) / income : nil }
+        return VStack(alignment: .leading, spacing: 0) {
+            header(.flow)
+            if let other, let b {
+                if b.income == 0 && b.expense == 0 {
+                    noData(other.title)
                 } else {
-                    stat(L("Baru satu periode"), "—", color: .appTextSecondary, sub: L("Persentase muncul periode depan"), bold: true)
-                    stat(L("Keluar sejauh ini"), money.full(result.summary.expense), sub: L("%lld hari", result.elapsedDays), bold: true)
-                }
-            }
-        }
-    }
-
-    private func legend(_ title: String, color: Color) -> some View {
-        HStack(spacing: 4) { RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 8, height: 8); label(title).font(.app(11)) }
-    }
-
-    // MARK: D. Pengeluaran per kategori
-
-    private var expenseCard: some View {
-        let slices = result.expenseSlices
-        let shades: [Double] = [1, 0.7, 0.45, 0.25, 0.12]
-        let topShare = slices.first?.share ?? 1
-        return card(L("Pengeluaran per kategori")) {
-            if slices.isEmpty {
-                emptyLine(L("Belum ada pengeluaran di periode ini."))
-            } else {
-                HStack(spacing: 16) {
-                    Donut(shares: slices.map(\.share), colors: slices.indices.map { Color.appText.opacity(shades[min($0, 4)]) }, size: 104, shown: isShown)
-                        .overlay {
-                            VStack(spacing: 0) {
-                                label(L("Keluar")).font(.app(11))
-                                Text(money.short(result.summary.expense)).font(.app(15, weight: .medium)).monospacedDigit()
-                            }
-                        }
-                    (Text(L("Terbesar: ")) + Text(slices[0].name).fontWeight(.semibold).foregroundStyle(Color.appText)
-                        + Text(" · " + L("%@ dari total", StatistikMoney.percent(slices[0].share))))
-                        .font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                }
-                VStack(spacing: 12) {
-                    ForEach(slices.indices, id: \.self) { index in
-                        let slice = slices[index]
-                        let color = Color.appText.opacity(shades[min(index, 4)])
-                        VStack(spacing: 6) {
-                            HStack {
-                                HStack(spacing: 8) { Circle().fill(color).frame(width: 8, height: 8); Text(slice.name).lineLimit(1) }
-                                Spacer(minLength: 8)
-                                Text(money.full(slice.amount)).monospacedDigit()
-                            }
-                            .font(.app(14))
-                            HStack(spacing: 8) {
-                                ProgressTrack(fraction: topShare > 0 ? slice.share / topShare : 0, color: color, shown: isShown)
-                                label(StatistikMoney.percent(slice.share)).frame(width: 34, alignment: .trailing)
-                                changeLabel(slice.change).frame(width: 56, alignment: .trailing)
-                            }
-                        }
+                    let before = other.title
+                    HStack(alignment: .top, spacing: 24) {
+                        flowColumn(Lx("Masuk", en: "In"), a.income, b.income, before: before)
+                        flowColumn(Lx("Keluar", en: "Out"), a.expense, b.expense, before: before)
                     }
+                    .padding(.top, 6)
+                    flowColumn(L("Net"), a.income - a.expense, b.income - b.expense, before: before, big: true).padding(.top, 16)
+                    let netDelta = (a.income - a.expense) - (b.income - b.expense)
+                    let spend = StatistikBlocks.change(a.expense, b.expense)
+                    Text("\(arrow(netDelta)) " + L("Net %@ %@", verb(netDelta), money.full(abs(netDelta)))
+                         + (spend.map { " · " + L("pengeluaran %@ %@", verb($0), StatistikMoney.percent(abs($0))) } ?? ""))
+                        .font(.app(15)).foregroundStyle(tone(netDelta, goodWhenUp: true)).padding(.top, 14)
                 }
+            } else {
+                HStack(spacing: 24) {
+                    VStack(alignment: .leading, spacing: 1) { label(Lx("Masuk", en: "In")); Text(money.full(a.income)).font(.app(20, weight: .light)).monospacedDigit() }
+                    VStack(alignment: .leading, spacing: 1) { label(Lx("Keluar", en: "Out")); Text(money.full(a.expense)).font(.app(20, weight: .light)).monospacedDigit() }
+                }
+                .padding(.top, 6)
+                label(L("Net")).padding(.top, 16)
+                Text(money.full(a.income - a.expense)).font(.app(36, weight: .ultraLight)).tracking(-1).monospacedDigit()
+                    .foregroundStyle((a.income - a.expense) < 0 ? Color.appError : (a.income - a.expense) > 0 ? Color.appPrimary : Color.appText).lineLimit(1).minimumScaleFactor(0.6)
+                if let r = rate(a.income, a.expense) { label(L("Rasio tabungan %@", StatistikMoney.signedPercent(r))).padding(.top, 2) }
             }
         }
     }
 
-    @ViewBuilder
-    private func changeLabel(_ change: Double?) -> some View {
-        if let change {
-            if abs(change) < 0.01 {
-                label(L("Sama"))
-            } else {
-                HStack(spacing: 2) {
-                    Image(systemName: change > 0 ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill").font(.system(size: 7))
-                    Text("\(Int((abs(change) * 100).rounded()))%")
-                }
-                .font(.app(12)).foregroundStyle(change > 0 ? Color.appWarning : Color.appPrimary).lineLimit(1)
-            }
-        } else {
-            Color.clear.frame(height: 1)
+    /// One figure of the cash flow with the compared period's figure small underneath.
+    private func flowColumn(_ title: String, _ a: Double, _ b: Double, before: String, big: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            label(title)
+            Text(money.full(a)).font(.app(big ? 36 : 20, weight: big ? .ultraLight : .light)).tracking(big ? -1 : 0).monospacedDigit()
+                .foregroundStyle(a < 0 ? Color.appError : (big && a > 0 ? Color.appPrimary : Color.appText))
+                .lineLimit(1).minimumScaleFactor(0.6)
+            label(before + " " + money.full(b)).padding(.top, 2)
         }
     }
 
-    private func emptyLine(_ text: String) -> some View {
-        Text(text).font(.app(14)).foregroundStyle(Color.appTextSecondary)
-    }
+    // MARK: 3. Categories
 
-    // MARK: E. Pemasukan per kategori
-
-    private var incomeCard: some View {
-        let slices = result.incomeSlices
-        let shades: [Double] = [1, 0.7, 0.45, 0.28]
-        return card(L("Pemasukan per kategori")) {
-            if slices.isEmpty {
-                emptyLine(L("Belum ada pemasukan di periode ini."))
+    private var categoriesBlock: some View {
+        let now = period(.categories), other = compare(.categories)
+        let type: Transaction.TransactionType = incomeTab ? .income : .expense
+        let a = StatistikBlocks.byCategory(data.transactions, categories: data.categories, type: type, in: now.interval)
+        let b = other.map { StatistikBlocks.byCategory(data.transactions, categories: data.categories, type: type,
+                                                       in: StatistikBlocks.comparable($0.interval, to: now.interval)) }
+        let total = a.reduce(0) { $0 + $1.amount }
+        let shown = showsAllCategories ? a : Array(a.prefix(5))
+        return VStack(alignment: .leading, spacing: 0) {
+            header(.categories)
+            HStack(spacing: 0) {
+                segment(Lx("Keluar", en: "Out"), selected: !incomeTab) { incomeTab = false }
+                segment(Lx("Masuk", en: "In"), selected: incomeTab) { incomeTab = true }
+            }
+            .padding(2).background(Color.appFill, in: Capsule()).padding(.top, 2).padding(.bottom, 8)
+            if a.isEmpty {
+                label(L("Belum ada transaksi di periode ini.")).padding(.vertical, 8)
             } else {
-                HStack(spacing: 16) {
-                    Donut(shares: slices.map(\.share), colors: slices.indices.map { Color.appPrimary.opacity(shades[min($0, 3)]) }, size: 88, shown: isShown)
-                        .overlay {
-                            VStack(spacing: 0) {
-                                label(L("Masuk")).font(.app(11))
-                                Text(money.short(result.summary.income)).font(.app(14, weight: .medium)).monospacedDigit()
-                            }
+                ForEach(Array(shown.enumerated()), id: \.offset) { _, row in
+                    let earlier = b?.first { $0.name == row.name }?.amount
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(spacing: 12) {
+                            Image(systemName: data.categories.first { $0.name == row.name }?.icon ?? "tag")
+                                .font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 30)
+                            Text(row.name).font(.app(15)).lineLimit(1)
+                            Spacer(minLength: 0)
+                            Text(money.full(row.amount)).font(.app(15)).monospacedDigit()
                         }
-                    VStack(spacing: 10) {
-                        ForEach(slices.indices, id: \.self) { index in
-                            VStack(alignment: .leading, spacing: 0) {
-                                HStack {
-                                    HStack(spacing: 8) {
-                                        Circle().fill(Color.appPrimary.opacity(shades[min(index, 3)])).frame(width: 8, height: 8)
-                                        Text(slices[index].name).lineLimit(1)
-                                    }
-                                    Spacer(minLength: 6)
-                                    Text(money.full(slices[index].amount)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                        GeometryReader { proxy in
+                            Capsule().fill(Color.appFill)
+                                .overlay(alignment: .leading) {
+                                    Capsule().fill(incomeTab ? Color.appPrimary : Color.appText)
+                                        .frame(width: proxy.size.width * (a[0].amount > 0 ? row.amount / a[0].amount : 0))
                                 }
-                                .font(.app(14))
-                                label(StatistikMoney.percent(slices[index].share)).padding(.leading, 16)
+                        }
+                        .frame(height: 6).padding(.top, 8).padding(.bottom, 5)
+                        HStack {
+                            label(L("%@ dari total", StatistikMoney.percent(total > 0 ? row.amount / total : 0))).monospacedDigit()
+                            Spacer()
+                            if let b {
+                                if let earlier, let change = StatistikBlocks.change(row.amount, earlier) {
+                                    Text(StatistikMoney.signedPercent(change) + " " + L("vs %@", compare(.categories)?.title ?? ""))
+                                        .font(.app(13)).foregroundStyle(tone(change, goodWhenUp: incomeTab))
+                                } else if !b.isEmpty {
+                                    Text(earlier == nil ? L("baru") : L("tetap")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                                }
                             }
                         }
+                    }
+                    .padding(.vertical, 9)
+                }
+                if a.count > 5 {
+                    Button { withAnimation(.smooth) { showsAllCategories.toggle() } } label: {
+                        Text(showsAllCategories ? "Lihat lebih sedikit" : "Lihat semua").font(.app(15)).foregroundStyle(Color.appPrimary)
+                            .frame(minHeight: 44).contentShape(Rectangle())
                     }
                 }
             }
         }
     }
 
-    // MARK: F. Dompet
+    private func segment(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.app(14)).foregroundStyle(selected ? Color.appBackground : Color.appTextSecondary)
+                .padding(.horizontal, 16).frame(height: 32)
+                .background(selected ? Color.appText : Color.clear, in: Capsule())
+        }
+    }
 
-    private var walletCard: some View {
-        let wallets = result.wallets
-        let shades: [Double] = [1, 0.7, 0.45, 0.25, 0.12]
-        let topShare = wallets.map(\.share).max() ?? 1
-        return card(L("Komposisi dompet")) {
-            if wallets.isEmpty {
-                emptyLine(L("Belum ada transaksi di dompet mana pun."))
+    // MARK: 4. Trend
+
+    private var trendBlock: some View {
+        let now = period(.trend), other = compare(.trend)
+        let dailyA = StatistikBlocks.daily(data.transactions, in: now.interval)
+        let elapsed = StatistikBlocks.elapsedDays(now.interval)
+        let lineA = StatistikBlocks.cumulative(dailyA, through: elapsed)
+        let lineB = other.map { StatistikBlocks.cumulative(StatistikBlocks.daily(data.transactions, in: $0.interval)) }
+        let day = lineA.count
+        let sameA = lineA.last ?? 0
+        let sameB: Double? = lineB.flatMap { $0.isEmpty || day == 0 ? nil : $0[min(day, $0.count) - 1] }
+        return VStack(alignment: .leading, spacing: 0) {
+            header(.trend)
+            Color.clear.frame(height: 10)
+            legend(now.title, other?.title)
+            TrendCurve(current: lineA, other: lineB, days: max(dailyA.count, lineB?.count ?? 0), money: money)
+                .frame(height: 210).padding(.top, 12)
+            if let other, let sameB, sameB > 0 {
+                let change = (sameA - sameB) / sameB
+                (Text(L("Kamu") + " ") + Text(L("%@ lebih %@", StatistikMoney.percent(abs(change)), change > 0 ? L("boros") : L("hemat")))
+                    .foregroundColor(tone(change, goodWhenUp: false)) + Text(" " + L("dari %@ di titik yang sama (hari ke-%lld).", other.title, day)))
+                    .font(.app(16)).padding(.top, 10)
+            } else if other != nil {
+                label(L("Belum ada data untuk dibandingkan")).padding(.top, 10)
             } else {
-                HStack(spacing: 16) {
-                    Donut(shares: wallets.map(\.share), colors: wallets.indices.map { Color.appText.opacity(shades[min($0, 4)]) }, size: 88, shown: isShown)
-                    if let used = result.mostUsedWallet {
-                        VStack(alignment: .leading, spacing: 2) {
-                            label(L("Paling sering dipakai"))
-                            Text(used.name).font(.app(17, weight: .semibold)).lineLimit(1)
-                            label(L("%lld transaksi", used.count))
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+                Text("Pilih pembanding untuk melihat apakah kamu lebih hemat di titik yang sama.")
+                    .font(.app(15)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
+            }
+        }
+    }
+
+    private func legend(_ now: String, _ other: String?) -> some View {
+        HStack(spacing: 16) {
+            HStack(spacing: 6) { Circle().fill(Color.appText).frame(width: 8, height: 8); label(now) }
+            if let other { HStack(spacing: 6) { Circle().fill(Color.appText.opacity(0.18)).frame(width: 8, height: 8); label(other) } }
+        }
+    }
+
+    // MARK: 5. Budget
+
+    private var budgetBlock: some View {
+        let now = period(.budget)
+        let ids = Set(data.categories.filter { $0.type == .expense }.map(\.id))
+        let names = Dictionary(data.categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let rows = BudgetHistory.period(now.interval, budgets: data.historyBudgets, changes: data.amountChanges,
+                                        transactions: data.transactions, shownCategoryIds: ids)?.rows ?? []
+        let hot = rows.filter { $0.amount > 0 && $0.spent / $0.amount >= 0.7 }.sorted { $0.spent / $0.amount > $1.spent / $1.amount }.prefix(3)
+        return VStack(alignment: .leading, spacing: 0) {
+            header(.budget)
+            if rows.isEmpty {
+                Button(action: { onOpenBudget(); dismiss() }) {
+                    Text("Buat budget").font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary).frame(minHeight: 44)
                 }
-                VStack(spacing: 12) {
-                    ForEach(wallets.indices, id: \.self) { index in
-                        let wallet = wallets[index]
-                        let color = Color.appText.opacity(shades[min(index, 4)])
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                HStack(spacing: 8) { Circle().fill(color).frame(width: 8, height: 8); Text(wallet.name).lineLimit(1) }
-                                Spacer(minLength: 8)
-                                Text(money.full(wallet.expense)).monospacedDigit()
-                            }
-                            .font(.app(14))
-                            ProgressTrack(fraction: topShare > 0 ? wallet.share / topShare : 0, color: color, shown: isShown)
-                            label(L("Masuk %@ · %@ dari pengeluaran", money.full(wallet.income), StatistikMoney.percent(wallet.share))).monospacedDigit()
+            } else if hot.isEmpty {
+                label(L("Semua budget masih aman.")).padding(.vertical, 8)
+            } else {
+                ForEach(Array(hot.enumerated()), id: \.offset) { _, row in
+                    let ratio = row.spent / row.amount
+                    let color: Color = ratio > 1 ? .appError : .appWarning
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 12) {
+                            Image(systemName: data.categories.first { $0.id == row.categoryId }?.icon ?? "tag")
+                                .font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 30)
+                            Text(names[row.categoryId] ?? L("Tanpa kategori")).font(.app(15)).lineLimit(1)
+                            Spacer(minLength: 0)
+                            Text(ratio > 1 ? L("Lewat %@", money.full(row.spent - row.amount)) : L("Sisa %@ · %@", money.full(row.amount - row.spent), StatistikMoney.percent(ratio)))
+                                .font(.app(15)).monospacedDigit().foregroundStyle(color)
                         }
+                        GeometryReader { proxy in
+                            Capsule().fill(Color.appFill).overlay(alignment: .leading) {
+                                Capsule().fill(color).frame(width: proxy.size.width * min(ratio, 1))
+                            }
+                        }
+                        .frame(height: 8)
                     }
+                    .padding(.vertical, 9)
                 }
             }
         }
     }
 
-    // MARK: G. Pola waktu
+    // MARK: 6. Wallets
 
-    private var timeCard: some View {
-        let t = result.time
-        let top = t.weekdays.map(\.average).max() ?? 0
-        return card(L("Pola waktu")) {
-            if t.peak == nil {
-                emptyLine(L("Belum ada pengeluaran di periode ini."))
-            } else {
-                HStack(alignment: .bottom, spacing: 8) {
-                    ForEach(t.weekdays.indices, id: \.self) { index in
-                        let isPeak = t.peak == index
+    private var walletBlock: some View {
+        let now = period(.wallet)
+        let rows = StatistikBlocks.byWallet(data.transactions, accounts: data.accounts, in: now.interval)
+        let total = rows.reduce(0) { $0 + $1.amount }
+        return VStack(alignment: .leading, spacing: 0) {
+            header(.wallet)
+            if rows.isEmpty {
+                label(L("Belum ada pengeluaran di periode ini.")).padding(.vertical, 8)
+            }
+            ForEach(Array(rows.prefix(4).enumerated()), id: \.offset) { _, row in
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 12) {
+                        WalletSwatch(account: data.accounts.first { $0.name == row.name }, width: 30, height: 20)
+                        Text(row.name).font(.app(15)).lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text(money.full(row.amount)).font(.app(15)).monospacedDigit()
+                    }
+                    GeometryReader { proxy in
+                        Capsule().fill(Color.appFill).overlay(alignment: .leading) {
+                            Capsule().fill(Color.appText).frame(width: proxy.size.width * (rows[0].amount > 0 ? row.amount / rows[0].amount : 0))
+                        }
+                    }
+                    .frame(height: 6).padding(.top, 8).padding(.bottom, 5)
+                    label(L("%@ dari pengeluaran", StatistikMoney.percent(total > 0 ? row.amount / total : 0))).monospacedDigit()
+                }
+                .padding(.vertical, 9)
+            }
+        }
+    }
+
+    // MARK: 7. Habit
+
+    private var habitBlock: some View {
+        let now = period(.habit)
+        let daily = StatistikBlocks.daily(data.transactions, in: now.interval)
+        let elapsed = StatistikBlocks.elapsedDays(now.interval)
+        let spent = Array(daily.prefix(elapsed))
+        let averages = StatistikBlocks.weekdayAverages(spent, start: now.interval.start)
+        let peak = averages.enumerated().max { $0.element < $1.element }
+        let top = max(averages.max() ?? 0, 1)
+        let calendar = daily.count <= 35
+            ? PeriodStatistics.spendingCalendar(daily: spent, totalDays: daily.count, startOfPeriod: Calendar.current.startOfDay(for: now.interval.start)) : nil
+        return VStack(alignment: .leading, spacing: 0) {
+            header(.habit)
+            if let peak, peak.element > 0 {
+                (Text(L("Paling boros tiap") + " ") + Text(StatistikMoney.weekdays[peak.offset].full).fontWeight(.semibold)
+                 + Text(", " + L("rata-rata %@.", money.short(peak.element)))).font(.app(16)).padding(.bottom, 14)
+                HStack(spacing: 8) {
+                    ForEach(0..<7, id: \.self) { index in
                         VStack(spacing: 6) {
                             Spacer(minLength: 0)
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(isPeak ? Color.appText : Color.chartBar)
-                                .frame(height: max(4, 100 * t.weekdays[index].average / max(top, 1)))
-                                .scaleEffect(y: isShown ? 1 : 0, anchor: .bottom)
-                                .animation(animated ? .settle(0.6) : nil, value: isShown)
-                            Text(StatistikMoney.weekdays[index].short).font(.app(11, weight: isPeak ? .bold : .regular))
-                                .foregroundStyle(isPeak ? Color.appText : Color.appTextSecondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .frame(height: 132)
-                if let peak = t.peak {
-                    (Text(L("Paling boros: ")) + Text(StatistikMoney.weekdays[peak].full).fontWeight(.semibold).foregroundStyle(Color.appText)
-                        + Text(" · " + L("%@ rata-rata", money.full(t.weekdays[peak].average))))
-                        .font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                }
-                HStack(alignment: .top, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        label(L("3 hari puncak"))
-                        ForEach(t.topDays.indices, id: \.self) { index in
-                            HStack {
-                                Text(StatistikMoney.dayLabel(t.topDays[index].date))
-                                Spacer(minLength: 6)
-                                Text(money.full(t.topDays[index].amount)).fontWeight(.semibold)
-                            }
-                            .font(.app(13)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(index == peak.offset ? Color.appText : Color.appBorder)
+                                .frame(height: max(averages[index] / top * 72, 3))
+                            label(StatistikMoney.weekdays[index].short)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    Rectangle().fill(Color.appDivider).frame(width: 1)
-                    VStack(alignment: .leading, spacing: 4) {
-                        label(L("Hemat beruntun"))
-                        Text("\(t.longestZeroStreak)").font(.app(28, weight: .light)).tracking(-0.6)
-                        label(L("hari tanpa pengeluaran"))
-                    }
-                    .frame(width: 112, alignment: .leading)
                 }
-                .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    // MARK: H. Budget
-
-    private var budgetCard: some View {
-        card(L("Budget")) {
-            if result.hasBudget {
-                VStack(spacing: 14) {
-                    ForEach(result.budgets.indices, id: \.self) { index in
-                        let row = result.budgets[index]
-                        let color: Color = row.ratio >= 1 ? .appError : row.ratio >= 0.8 ? .appWarning : .appPrimary
-                        let filled = min(30, Int((row.ratio * 30).rounded()))
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(row.name).font(.app(14)).lineLimit(1)
-                                Spacer(minLength: 8)
-                                Text(row.ratio >= 1 ? L("Lewat %@", money.full(row.spent - row.amount))
-                                     : row.ratio >= 0.8 ? L("Hampir habis") : L("Sisa %@", money.full(row.amount - row.spent)))
-                                    .font(.app(12)).monospacedDigit().foregroundStyle(row.ratio >= 0.8 ? color : Color.appTextSecondary)
-                            }
-                            HStack(spacing: 2) {
-                                ForEach(0..<30, id: \.self) { tick in
-                                    RoundedRectangle(cornerRadius: 1).fill(tick < filled ? color : Color.chartBar)
-                                }
-                            }
-                            .frame(height: 12)
-                            HStack {
-                                label(L("%@ dari %@", money.full(row.spent), money.full(row.amount))).monospacedDigit()
-                                Spacer()
-                                label(StatistikMoney.percent(row.ratio))
-                            }
-                        }
-                    }
-                    Divider().overlay(Color.appDivider)
-                    HStack(alignment: .firstTextBaseline) {
-                        label(L("Sisa budget periode")).font(.app(13))
-                        Spacer()
-                        Text(money.full(result.budgetRemaining)).font(.app(20, weight: .light)).monospacedDigit().foregroundStyle(Color.appPrimary)
-                    }
-                }
+                .frame(height: 96)
             } else {
-                VStack(alignment: .leading, spacing: 10) {
-                    emptyLine(L("Belum ada budget aktif. Atur batas per kategori supaya pengeluaranmu terpantau."))
-                    Button(action: onOpenBudget) {
-                        Text("Buat budget").font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                            .padding(.horizontal, 22).frame(height: 40).background(Color.appPrimary.opacity(0.12), in: Capsule())
-                    }
-                }
+                label(L("Belum ada pengeluaran di periode ini.")).padding(.vertical, 8)
             }
-        }
-    }
-
-    // MARK: I. Sorotan
-
-    private var highlightsCard: some View {
-        let h = result.highlights
-        return card(L("Sorotan")) {
-            VStack(alignment: .leading, spacing: 10) {
-                label(L("Transaksi terbesar"))
-                if h.biggest.isEmpty {
-                    emptyLine(L("Belum ada pengeluaran di periode ini."))
-                }
-                ForEach(h.biggest.indices, id: \.self) { index in
-                    HStack(spacing: 12) {
-                        Text("\(index + 1)").font(.app(13)).foregroundStyle(Color.appTextSecondary).monospacedDigit().frame(width: 22, alignment: .leading)
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(h.biggest[index].name).font(.app(14)).lineLimit(1)
-                            label(StatistikMoney.dayLabel(h.biggest[index].date))
-                        }
-                        Spacer(minLength: 8)
-                        Text(money.full(h.biggest[index].amount)).font(.app(14, weight: .medium)).monospacedDigit()
-                    }
-                }
+            if let calendar {
+                label(L("Pengeluaran per hari")).padding(.top, 22).padding(.bottom, 12)
+                SpendingCalendarGrid(calendar: calendar, money: money)
             }
-            if let frequent = h.frequent {
-                HStack {
-                    VStack(alignment: .leading, spacing: 0) {
-                        label(L("Kategori paling sering"))
-                        Text(frequent.name).font(.app(15, weight: .semibold)).lineLimit(1)
-                    }
-                    Spacer(minLength: 8)
-                    Text(L("%lld transaksi", frequent.count)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                }
-            }
-            Divider().overlay(Color.appDivider)
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    label(L("Dibanding periode sama bulan lalu"))
-                    Spacer(minLength: 8)
-                    if let change = h.comparison?.change {
-                        HStack(spacing: 2) {
-                            Image(systemName: change > 0 ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill").font(.system(size: 8))
-                            Text("\(Int((abs(change) * 100).rounded()))%")
-                        }
-                        .font(.app(13, weight: .semibold)).foregroundStyle(change > 0 ? Color.appWarning : Color.appPrimary)
-                    }
-                }
-                if let comparison = h.comparison {
-                    let longest = max(comparison.now, comparison.previous, 1)
-                    compareBar(L("Periode ini"), money.full(comparison.now), fraction: comparison.now / longest, color: .appText, strong: true)
-                    compareBar(comparison.label, money.full(comparison.previous), fraction: comparison.previous / longest, color: .appTextTertiary, strong: false)
-                } else {
-                    emptyLine(L("Perbandingan muncul setelah satu periode penuh tercatat."))
-                }
-            }
-        }
-    }
-
-    private func compareBar(_ title: String, _ value: String, fraction: Double, color: Color, strong: Bool) -> some View {
-        VStack(spacing: 5) {
-            HStack {
-                Text(title); Spacer(minLength: 8); Text(value).monospacedDigit()
-            }
-            .font(.app(13)).foregroundStyle(strong ? Color.appText : Color.appTextSecondary)
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.chartBar)
-                    Capsule().fill(color).frame(width: max(4, proxy.size.width * fraction))
-                        .scaleEffect(x: isShown ? 1 : 0, anchor: .leading)
-                        .animation(animated ? .settle(0.7) : nil, value: isShown)
-                }
-            }
-            .frame(height: 10)
         }
     }
 }
 
-// MARK: - Charts
+// MARK: - Blocks
 
-private extension Color {
-    /// The empty part of a bar: pale in light mode, dark grey in dark mode.
-    static let chartBar = Color(light: 0xD9D9DE, dark: 0x3A3A3C)
+enum StatBlock: String, CaseIterable {
+    case assets, flow, categories, trend, budget, wallet, habit
+
+    /// Budget, wallets and habits show one period only.
+    var allowsCompare: Bool { self == .flow || self == .trend }
+
+    var title: String {
+        switch self {
+        case .assets: L("Total aset")
+        case .flow: L("Arus kas")
+        case .categories: L("Kategori")
+        case .trend: L("Tren pengeluaran")
+        case .budget: L("Budget")
+        case .wallet: L("Dompet")
+        case .habit: L("Kebiasaan")
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .assets: L("Total uang di semua dompetmu.")
+        case .flow: L("Uang yang masuk dan keluar.")
+        case .categories: L("Ke mana uangmu pergi.")
+        case .trend: L("Apakah pengeluaranmu membaik atau memburuk.")
+        case .budget: L("Budget yang hampir habis atau terlewat.")
+        case .wallet: L("Dompet yang paling banyak dipakai.")
+        case .habit: L("Hari dan tanggal kamu paling boros.")
+        }
+    }
 }
 
-/// Remaining money across the days of the period: a line with a soft area under it.
-private struct Sparkline: View {
-    let values: [Double]
-    let animated: Bool
-    let shown: Bool
+/// The half sheet behind a block's chip: the period to show and, above it where it makes sense, a row that opens
+/// a second sheet to pick the period to compare with.
+private struct StatPickSheet: View {
+    let title: String
+    let isAssets: Bool
+    let periods: [StatPeriod]
+    let selected: String
+    let compareOptions: [StatPeriod]?
+    let compareSelected: String?
+    let onPeriod: (StatPeriod) -> Void
+    let onCompare: (StatPeriod?) -> Void
+    let onDone: () -> Void
+    @State private var showsCompare = false
+
+    private var compareTitle: String {
+        compareOptions?.first { $0.id == compareSelected }?.title ?? L("Tanpa pembanding")
+    }
 
     var body: some View {
-        GeometryReader { proxy in
-            let points = self.points(in: proxy.size)
-            ZStack {
-                if points.count > 1 {
-                    Path { path in
-                        path.move(to: CGPoint(x: points[0].x, y: proxy.size.height))
-                        points.forEach { path.addLine(to: $0) }
-                        path.addLine(to: CGPoint(x: points.last!.x, y: proxy.size.height))
-                        path.closeSubpath()
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title).font(.app(22, weight: .bold)).tracking(-0.3).padding(.top, 4).padding(.bottom, 8)
+            if compareOptions != nil {
+                Button { showsCompare = true } label: {
+                    HStack(spacing: 6) {
+                        Text("Bandingkan").font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
+                        Spacer()
+                        Text(compareSelected == nil ? compareTitle : L("vs %@", compareTitle)).font(.app(15))
+                            .foregroundStyle(compareSelected == nil ? Color.appTextSecondary : Color.appPrimary).lineLimit(1)
+                        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
                     }
-                    .fill(Color.appPrimary.opacity(0.12))
-                    .opacity(shown ? 1 : 0)
-                    .animation(animated ? .easeOut(duration: 0.8).delay(0.2) : nil, value: shown)
-                    Path { path in
-                        path.move(to: points[0])
-                        points.dropFirst().forEach { path.addLine(to: $0) }
-                    }
-                    .stroke(Color.appPrimary, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                }
-                if let last = points.last {
-                    Circle().fill(Color.appPrimary).frame(width: 7, height: 7).position(last)
+                    .frame(minHeight: 52).contentShape(Rectangle())
                 }
             }
+            Text(L("Periode")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                .padding(.top, 12).padding(.bottom, 10)
+            FlowLayout(spacing: 8) {
+                ForEach(periods) { option in StatChip(title: option.title, isOn: option.id == selected) { onPeriod(option) } }
+            }
+            .padding(.bottom, 8)
         }
-    }
-
-    private func points(in size: CGSize) -> [CGPoint] {
-        guard let low = values.min(), let high = values.max() else { return [] }
-        let span = high - low > 0 ? high - low : 1
-        let step = values.count > 1 ? size.width / CGFloat(values.count - 1) : 0
-        return values.enumerated().map { index, value in
-            CGPoint(x: step * CGFloat(index), y: size.height - 4 - CGFloat((value - low) / span) * (size.height - 8))
-        }
-    }
-}
-
-/// Grouped bars for money in and out, with the Net as a line over them.
-private struct TrendChart: View {
-    let points: [PeriodStatistics.TrendPoint]
-    let shown: Bool
-    let animated: Bool
-    private let plotHeight: CGFloat = 104
-
-    var body: some View {
-        let peak = max(points.map { max($0.income, $0.expense) }.max() ?? 1, 1) * 1.08
-        VStack(spacing: 6) {
-            GeometryReader { proxy in
-                let slot = proxy.size.width / CGFloat(max(points.count, 1))
-                ZStack(alignment: .bottomLeading) {
-                    Rectangle().fill(Color.appBorder).frame(height: 1).frame(maxHeight: .infinity, alignment: .bottom)
-                    ForEach(points.indices, id: \.self) { index in
-                        HStack(alignment: .bottom, spacing: 4) {
-                            bar(points[index].income, peak: peak, color: .appPrimary, delay: 0)
-                            bar(points[index].expense, peak: peak, color: .appTextTertiary, delay: 0.06)
+        .foregroundStyle(Color.appText)
+        .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 12)
+        .filterSheet { SmartSheetFooter(primary: L("Selesai"), onPrimary: onDone) }
+        .background(Color.appBackground)
+        .sheet(isPresented: $showsCompare) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Bandingkan dengan").font(.app(22, weight: .bold)).tracking(-0.3).padding(.top, 4).padding(.bottom, 12)
+                FlowLayout(spacing: 8) {
+                    Button { onCompare(nil); showsCompare = false } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
+                            Text(L("Tanpa pembanding")).font(.app(14)).lineLimit(1)
                         }
-                        .frame(width: slot)
-                        .offset(x: slot * CGFloat(index))
+                        .foregroundStyle(compareSelected == nil ? Color.appPrimary : Color.appTextSecondary)
+                        .padding(.horizontal, 14).frame(height: 36)
+                        .overlay(Capsule().strokeBorder(compareSelected == nil ? Color.appPrimary : Color.appDivider, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
                     }
-                    Path { path in
-                        for (index, point) in points.enumerated() {
-                            let location = CGPoint(x: slot * (CGFloat(index) + 0.5), y: proxy.size.height - 1 - CGFloat(max(point.net, 0) / peak) * plotHeight)
-                            index == 0 ? path.move(to: location) : path.addLine(to: location)
-                        }
-                    }
-                    .stroke(Color.appText, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    ForEach(points.indices, id: \.self) { index in
-                        Circle().fill(Color.appText).overlay(Circle().stroke(Color.appFill, lineWidth: 2)).frame(width: 8, height: 8)
-                            .position(x: slot * (CGFloat(index) + 0.5), y: proxy.size.height - 1 - CGFloat(max(points[index].net, 0) / peak) * plotHeight)
+                    .accessibilityAddTraits(compareSelected == nil ? .isSelected : [])
+                    ForEach(compareOptions ?? []) { option in
+                        StatChip(title: option.title, isOn: option.id == compareSelected) { onCompare(option); showsCompare = false }
                     }
                 }
+                .padding(.bottom, 8)
             }
-            .frame(height: 120)
-            HStack(spacing: 0) {
-                ForEach(points.indices, id: \.self) { index in
-                    Text(points[index].label + (points[index].isCurrent ? "*" : "")).font(.app(11)).foregroundStyle(Color.appTextSecondary)
-                        .frame(maxWidth: .infinity)
-                }
-            }
+            .foregroundStyle(Color.appText)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 12)
+            .background(Color.appBackground)
+            .presentationDetents([.medium, .large])
         }
     }
 
-    private func bar(_ value: Double, peak: Double, color: Color, delay: Double) -> some View {
-        RoundedRectangle(cornerRadius: 3).fill(color)
-            .frame(width: 18, height: max(2, CGFloat(value / peak) * plotHeight))
-            .scaleEffect(y: shown ? 1 : 0, anchor: .bottom)
-            .animation(animated ? .settle(0.6).delay(delay) : nil, value: shown)
+}
+
+/// A pill to pick from: dark when chosen. The dark sheet is itself 1C1C1E, so the idle fill is lighter, like the wallet picker's tiles.
+private struct StatChip: View {
+    let title: String
+    let isOn: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title).font(.app(14)).lineLimit(1)
+                .foregroundStyle(isOn ? Color.appBackground : Color.appText)
+                .padding(.horizontal, 14).frame(height: 36)
+                .background(isOn ? Color.appText : Color(light: 0xF2F2F4, dark: 0x2C2C2E), in: Capsule())
+        }
+        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }
 
-/// A ring cut into shares, with a hair of gap between them.
-private struct Donut: View {
-    let shares: [Double]
-    let colors: [Color]
-    let size: CGFloat
-    let shown: Bool
+/// What the wallets held in total over time, as one smooth area.
+private struct WealthArea: View {
+    struct Mark { let label: String; let total: Double; let invested: Double }
+    let marks: [Mark]
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        let width = size * 0.14
-        ZStack {
-            Circle().stroke(Color.chartBar.opacity(0.25), lineWidth: width)
-            ForEach(shares.indices, id: \.self) { index in
-                let start = shares[..<index].reduce(0, +)
-                Circle()
-                    .trim(from: start, to: max(start, start + shares[index] - 0.006))
-                    .stroke(colors[index], style: StrokeStyle(lineWidth: width, lineCap: .butt))
-                    .rotationEffect(.degrees(-90))
+        Canvas { ctx, size in
+            let bottom: CGFloat = 24, left: CGFloat = 44
+            let plot = CGRect(x: left, y: 8, width: size.width - left, height: size.height - bottom - 8)
+            let top = marks.map(\.total).max() ?? 1
+            let low = marks.map(\.total).min() ?? 0
+            let span = max(top - low, top * 0.04, 1)
+            let raw = span * 1.5 / 4
+            let mag = pow(10, floor(log10(raw)))
+            let step = ([1, 2, 2.5, 5, 10].first { $0 * mag >= raw } ?? 10) * mag
+            let lo = max(floor((low - span * 0.35) / step) * step, 0)
+            let peak = max(ceil((top + span * 0.15) / step) * step, lo + step * 2)
+            let ink = scheme == .dark ? Color.white : Color.black
+            func x(_ i: Int) -> CGFloat { plot.minX + plot.width * CGFloat(i) / CGFloat(max(marks.count - 1, 1)) }
+            func y(_ v: Double) -> CGFloat { plot.maxY - plot.height * CGFloat((v - lo) / (peak - lo)) }
+            var tick = lo
+            while tick <= peak + step / 2 {
+                let gy = y(tick)
+                var line = Path(); line.move(to: CGPoint(x: plot.minX, y: gy)); line.addLine(to: CGPoint(x: size.width, y: gy))
+                ctx.stroke(line, with: .color(ink.opacity(0.06)), lineWidth: 1)
+                ctx.draw(Text(StatistikMoney(isVisible: true).short(tick)).font(.app(11)).foregroundColor(.secondary),
+                         at: CGPoint(x: plot.minX - 8, y: gy), anchor: .trailing)
+                tick += step
+            }
+            func layer(_ values: [Double], _ color: Color, _ fill: Double) {
+                let pts = values.enumerated().map { CGPoint(x: x($0.offset), y: y($0.element)) }
+                let curve = TrendCurve.smooth(pts)
+                var area = curve
+                area.addLine(to: CGPoint(x: pts.last!.x, y: plot.maxY)); area.addLine(to: CGPoint(x: pts[0].x, y: plot.maxY)); area.closeSubpath()
+                ctx.fill(area, with: .color(color.opacity(fill)))
+                ctx.stroke(curve, with: .color(color), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            }
+            layer(marks.map(\.total), .appPrimary, 0.28)
+            for (i, mark) in marks.enumerated() where !mark.label.isEmpty {
+                ctx.draw(Text(mark.label).font(.app(11)).foregroundColor(.secondary), at: CGPoint(x: x(i), y: size.height - 8),
+                         anchor: i == 0 ? .leading : (i == marks.count - 1 ? .trailing : .center))
             }
         }
-        .padding(width / 2)
-        .frame(width: size, height: size)
-        .opacity(shown ? 1 : 0)
-        .animation(.easeOut(duration: 0.6), value: shown)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("Grafik total aset"))
     }
 }
 
-/// A horizontal bar that grows from the left.
-private struct ProgressTrack: View {
-    let fraction: Double
-    let color: Color
-    let shown: Bool
+/// Cumulative spending as soft curves: the running period filled underneath, the other one a lighter line, a dot at today.
+private struct TrendCurve: View {
+    let current: [Double]
+    let other: [Double]?
+    let days: Int
+    let money: StatistikMoney
+    /// False for a balance: the axis then starts near the lowest value so small moves show.
+    var fromZero = true
+    /// Words under the first and last point, instead of day numbers.
+    var labels: (String, String)?
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.chartBar)
-                Capsule().fill(color).frame(width: max(4, proxy.size.width * min(max(fraction, 0), 1)))
-                    .scaleEffect(x: shown ? 1 : 0, anchor: .leading)
-                    .animation(.settle(0.7), value: shown)
+        Canvas { ctx, size in
+            let left: CGFloat = 40, bottom: CGFloat = 22, top: CGFloat = 8, right: CGFloat = 8
+            let plot = CGRect(x: left, y: top, width: size.width - left - right, height: size.height - top - bottom)
+            let all = current + (other ?? [])
+            let hi = max(all.max() ?? 0, 1), lowest = fromZero ? 0 : (all.min() ?? 0)
+            let raw = max((hi - lowest) * 1.15 / 3, 1)
+            let mag = pow(10, floor(log10(raw)))
+            let step = ([1, 2, 2.5, 5, 10].first { $0 * mag >= raw } ?? 10) * mag
+            let lo = fromZero ? 0 : floor(lowest / step) * step - (fromZero ? 0 : 0)
+            let peak = lo + step * 3
+            let ink = scheme == .dark ? Color.white : Color.black
+            func point(_ i: Int, _ v: Double) -> CGPoint {
+                CGPoint(x: plot.minX + plot.width * CGFloat(i) / CGFloat(max(days - 1, 1)),
+                        y: plot.maxY - plot.height * CGFloat((v - lo) / (peak - lo)))
             }
+            for tick in 0...3 {
+                let y = plot.maxY - plot.height * CGFloat(tick) / 3
+                var line = Path(); line.move(to: CGPoint(x: plot.minX, y: y)); line.addLine(to: CGPoint(x: plot.maxX, y: y))
+                ctx.stroke(line, with: .color(ink.opacity(0.06)), lineWidth: 1)
+                ctx.draw(Text(tick == 0 && fromZero ? "0" : money.short(lo + step * Double(tick))).font(.app(11)).foregroundColor(.secondary),
+                         at: CGPoint(x: plot.minX - 8, y: y), anchor: .trailing)
+            }
+            let marks: [(Int, String)] = labels.map { [(0, $0.0), (max(days - 1, 0), $0.1)] }
+                ?? [(0, "1"), (max(days - 1, 0) / 2, "\(max(days - 1, 0) / 2 + 1)"), (max(days - 1, 0), "\(days)")]
+            for (i, label) in marks {
+                ctx.draw(Text(label).font(.app(11)).foregroundColor(.secondary),
+                         at: CGPoint(x: point(i, 0).x, y: size.height - 8), anchor: i == 0 ? .leading : (i == days - 1 ? .trailing : .center))
+            }
+            if let other, other.count > 1 {
+                let line = Self.smooth(other.enumerated().map { point($0.offset, $0.element) })
+                var area = line
+                area.addLine(to: CGPoint(x: point(other.count - 1, 0).x, y: plot.maxY)); area.addLine(to: CGPoint(x: plot.minX, y: plot.maxY)); area.closeSubpath()
+                ctx.fill(area, with: .color(ink.opacity(0.05)))
+                ctx.stroke(line, with: .color(ink.opacity(0.3)), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            }
+            guard current.count > 1 else { return }
+            let pts = current.enumerated().map { point($0.offset, $0.element) }
+            let curve = Self.smooth(pts)
+            var area = curve
+            area.addLine(to: CGPoint(x: pts.last!.x, y: plot.maxY)); area.addLine(to: CGPoint(x: pts[0].x, y: plot.maxY)); area.closeSubpath()
+            ctx.fill(area, with: .color(ink.opacity(0.14)))
+            ctx.stroke(curve, with: .color(ink), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+            let end = pts.last!
+            ctx.fill(Path(ellipseIn: CGRect(x: end.x - 9, y: end.y - 9, width: 18, height: 18)), with: .color(ink.opacity(0.12)))
+            ctx.fill(Path(ellipseIn: CGRect(x: end.x - 4.5, y: end.y - 4.5, width: 9, height: 9)), with: .color(ink))
         }
-        .frame(height: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("Grafik pengeluaran kumulatif"))
+    }
+
+    /// Monotone cubic through the points: smooth, and never dips below or above them.
+    fileprivate static func smooth(_ p: [CGPoint]) -> Path {
+        var path = Path()
+        guard p.count > 1 else { return path }
+        let n = p.count
+        var d = [CGFloat](repeating: 0, count: n - 1), m = [CGFloat](repeating: 0, count: n)
+        for i in 0..<n - 1 { d[i] = (p[i + 1].y - p[i].y) / max(p[i + 1].x - p[i].x, 0.001) }
+        m[0] = d[0]; m[n - 1] = d[n - 2]
+        for i in 1..<n - 1 { m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2 }
+        for i in 0..<n - 1 where d[i] == 0 { m[i] = 0; m[i + 1] = 0 }
+        for i in 0..<n - 1 {
+            let a = m[i] / d[i], b = m[i + 1] / d[i]
+            if d[i] != 0, a * a + b * b > 9 { let t = 3 / (a * a + b * b).squareRoot(); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i] }
+        }
+        path.move(to: p[0])
+        for i in 0..<n - 1 {
+            let h = p[i + 1].x - p[i].x
+            path.addCurve(to: p[i + 1], control1: CGPoint(x: p[i].x + h / 3, y: p[i].y + m[i] * h / 3),
+                          control2: CGPoint(x: p[i + 1].x - h / 3, y: p[i + 1].y - m[i + 1] * h / 3))
+        }
+        return path
     }
 }
 
 // MARK: - Formatting
 
-/// Rupiah and percentages for the page, with the privacy switch applied: amounts become dots, percentages stay.
 struct StatistikMoney {
     let isVisible: Bool
 

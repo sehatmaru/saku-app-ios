@@ -37,8 +37,6 @@ struct DashboardView: View {
     /// Catat tagihan for an overdue card bill, from the banner or a notification.
     /// Kept as the bill it was opened with, so the sheet survives the reload after paying.
     @State private var recordCard: OverdueCardBill?
-    @State private var toastText = ""
-    @State private var isToastShown = false
     @ObservedObject private var notificationRouter = NotificationRouter.shared
     @Environment(\.scenePhase) private var scenePhase
 
@@ -75,10 +73,6 @@ struct DashboardView: View {
                 }
             }
         }
-        .onChange(of: scenePhase) { _, phase in
-            // Ingatan follows the account: pick up what other devices learned while this one was away
-            if phase == .active { Task { await DraftStore.shared.syncMemory() } }
-        }
         .onChange(of: isBalanceVisibleStorage) { _, newValue in
             isBalanceVisible = newValue
         }
@@ -92,8 +86,7 @@ struct DashboardView: View {
         .fullScreenCover(item: $recordCard) { bill in
             PayCardBillSheet(card: bill.card, statement: bill.statement, wallets: viewModel.accounts, mode: .record,
                              onPaid: { amount, _, isFull in
-                toastText = isFull ? L("%@ lunas · pembayaran tercatat", bill.card.name) : L("Pembayaran %@ tercatat", amount.formattedAsCurrency())
-                isToastShown = true
+                ToastCenter.shared.show(isFull ? L("%@ lunas · pembayaran tercatat", bill.card.name) : L("Pembayaran %@ tercatat", amount.formattedAsCurrency()))
             })
         }
         .onChange(of: notificationRouter.pendingCardId) { _, _ in openPendingRecord() }
@@ -103,10 +96,7 @@ struct DashboardView: View {
             if selectedTab != .home || homePath.isEmpty, viewModel.hasLoadedOnce, let userId = authViewModel.currentUser?.id {
                 // the gate is watched inside, so a page opening or closing does not re-run this whole screen
                 SmartButtonGated {
-                    SmartTrackerHomeOverlay(userId: userId, isFresh: viewModel.recentTransactions.isEmpty, onOpenQueue: { openDraftsPage() }) { text in
-                        toastText = text
-                        isToastShown = true
-                    }
+                    SmartTrackerHomeOverlay(userId: userId, isFresh: viewModel.recentTransactions.isEmpty, onOpenQueue: { openDraftsPage() })
                 }
             }
         }
@@ -125,7 +115,6 @@ struct DashboardView: View {
         .plusOffer($trialEndedOffer)
         .onChange(of: viewModel.overdueBills.map(\.id)) { _, _ in openPendingRecord() }
         .onReceive(NotificationCenter.default.publisher(for: .openFirstEntry)) { _ in openFirstEntry() }
-        .toast(toastText, isShown: $isToastShown)
         .fullScreenCover(isPresented: $showAddSheet) {
             if let userId = authViewModel.currentUser?.id {
                 AddTransactionView(
@@ -154,8 +143,7 @@ struct DashboardView: View {
                                                      stored: defaults.string(forKey: "referralRewardSeenTotal"))
             defaults.set(result.stored, forKey: "referralRewardSeenTotal")
             guard result.newFriends > 0 else { return }
-            toastText = L("Temanmu mencatat transaksi pertama. +%lld jatah AI masuk.", result.newFriends * ReferralSummary.perFriend)
-            isToastShown = true
+            ToastCenter.shared.show(L("Temanmu mencatat transaksi pertama. +%lld jatah AI masuk.", result.newFriends * ReferralSummary.perFriend))
         }
     }
 
@@ -296,8 +284,7 @@ struct DashboardView: View {
                             if let card = viewModel.accounts.first(where: { $0.isActive && $0.isCreditCard }) {
                                 homePath.append(HomeRoute.card(card.id))
                             } else {
-                                toastText = "Contoh tagihan: belum ada kartu kredit untuk dibuka"
-                                isToastShown = true
+                                ToastCenter.shared.show("Contoh tagihan: belum ada kartu kredit untuk dibuka")
                             }
                         }
                         .id(homePreview.kind)
@@ -590,7 +577,7 @@ struct DashboardView: View {
         }
         .buttonStyle(.plain)
         .accessibilityHint("Lihat rincian")
-        .sheet(isPresented: $showsSafeInfo) { safeToSpendSheet }
+        .sheet(isPresented: $showsSafeInfo) { safeToSpendSheet.presentationDetents([.medium]) }
     }
 
     /// "Bisa dipakai": the per-day amount big, then what it is made of.

@@ -241,6 +241,16 @@
         }
       }
     },
+    "%@ dari pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of spending"
+          }
+        }
+      }
+    },
     "%@ dari total": {
       "localizations": {
         "en": {
@@ -357,6 +367,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ shown again"
+          }
+        }
+      }
+    },
+    "%@ lebih %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@"
           }
         }
       }
@@ -1023,6 +1043,16 @@
         }
       }
     },
+    "%lld draf masuk ke Draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld draft(s) added to Drafts"
+          }
+        }
+      }
+    },
     "%lld draf transaksi menunggu dicek di Saku.": {
       "localizations": {
         "en": {
@@ -1503,12 +1533,32 @@
         }
       }
     },
+    "(sebelumnya %@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(before: %@)"
+          }
+        }
+      }
+    },
     "**Selesai**. Lakukan satu transaksi kecil untuk mencoba.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**Done**. Make one small transaction to try it."
+          }
+        }
+      }
+    },
+    "+ Bandingkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+ Compare"
           }
         }
       }
@@ -1843,12 +1893,32 @@
         }
       }
     },
+    "3 bulan terakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 3 months"
+          }
+        }
+      }
+    },
     "3 hari puncak": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Top 3 days"
+          }
+        }
+      }
+    },
+    "3 periode terakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 3 periods"
           }
         }
       }
@@ -1869,6 +1939,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "6 months"
+          }
+        }
+      }
+    },
+    "6 bulan terakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 6 months"
+          }
+        }
+      }
+    },
+    "6 periode terakhir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 6 periods"
           }
         }
       }
@@ -2323,6 +2413,16 @@
         }
       }
     },
+    "Aman atau tidak?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safe or not?"
+          }
+        }
+      }
+    },
     "Aman dipakai": {
       "localizations": {
         "en": {
@@ -2539,6 +2639,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What is stored"
+          }
+        }
+      }
+    },
+    "Apakah pengeluaranmu membaik atau memburuk.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Whether your spending is getting better or worse."
           }
         }
       }
@@ -2939,6 +3049,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Good"
+          }
+        }
+      }
+    },
+    "Bandingkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compare"
+          }
+        }
+      }
+    },
+    "Bandingkan dengan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compare with"
           }
         }
       }
@@ -3633,6 +3763,26 @@
         }
       }
     },
+    "Belum ada data di tanggal ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No data on this date."
+          }
+        }
+      }
+    },
+    "Belum ada data untuk dibandingkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing to compare yet"
+          }
+        }
+      }
+    },
     "Belum ada dompet": {
       "localizations": {
         "en": {
@@ -3923,6 +4073,16 @@
         }
       }
     },
+    "Belum ada transaksi di %@. Pilih periode lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions in %@. Pick another period."
+          }
+        }
+      }
+    },
     "Belum ada transaksi di dompet mana pun.": {
       "localizations": {
         "en": {
@@ -3939,6 +4099,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No transactions in this category yet."
+          }
+        }
+      }
+    },
+    "Belum ada transaksi di periode ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transactions in this period."
           }
         }
       }
@@ -4349,6 +4519,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "How many months of spending your balance can cover."
+          }
+        }
+      }
+    },
+    "Berapa hartaku?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How much do I own?"
           }
         }
       }
@@ -5033,6 +5213,16 @@
         }
       }
     },
+    "Budget yang hampir habis atau terlewat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budgets nearly used up or over."
+          }
+        }
+      }
+    },
     "Buka **%@**, lalu nyalakan **Automation**.": {
       "localizations": {
         "en": {
@@ -5319,6 +5509,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This month onwards"
+          }
+        }
+      }
+    },
+    "Bulan lalu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last month"
           }
         }
       }
@@ -7733,6 +7933,16 @@
         }
       }
     },
+    "Dompet yang paling banyak dipakai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The wallets you spend from most."
+          }
+        }
+      }
+    },
     "Dompet · %lld akun": {
       "localizations": {
         "en": {
@@ -7779,6 +7989,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Draft"
+          }
+        }
+      }
+    },
+    "Draf Smart Tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Tracker drafts"
           }
         }
       }
@@ -8923,6 +9143,36 @@
         }
       }
     },
+    "Grafik pengeluaran kumulatif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cumulative spending chart"
+          }
+        }
+      }
+    },
+    "Grafik pengeluaran per minggu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly spending chart"
+          }
+        }
+      }
+    },
+    "Grafik total aset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total assets chart"
+          }
+        }
+      }
+    },
     "Gratis": {
       "localizations": {
         "en": {
@@ -9433,6 +9683,16 @@
         }
       }
     },
+    "Hapus pembanding": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove comparison"
+          }
+        }
+      }
+    },
     "Hapus pencarian": {
       "localizations": {
         "en": {
@@ -9633,6 +9893,16 @@
         }
       }
     },
+    "Hari dan tanggal kamu paling boros.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The days you spend the most."
+          }
+        }
+      }
+    },
     "Hari ini": {
       "localizations": {
         "en": {
@@ -9679,6 +9949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Biggest day"
+          }
+        }
+      }
+    },
+    "Hemat atau boros?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving or overspending?"
           }
         }
       }
@@ -10563,6 +10843,16 @@
         }
       }
     },
+    "Kamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You spent"
+          }
+        }
+      }
+    },
     "Kamu akan keluar. Datamu tetap tersimpan.": {
       "localizations": {
         "en": {
@@ -10739,6 +11029,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "When do you get paid?"
+          }
+        }
+      }
+    },
+    "Kapan paling boros?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When do I spend most?"
           }
         }
       }
@@ -11079,6 +11379,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "To wallet"
+          }
+        }
+      }
+    },
+    "Ke mana uangmu pergi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your money goes."
+          }
+        }
+      }
+    },
+    "Ke mana uangnya?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where does it go?"
+          }
+        }
+      }
+    },
+    "Kebiasaan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habits"
           }
         }
       }
@@ -12733,6 +13063,16 @@
         }
       }
     },
+    "Lewat mana uang keluar?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which wallet pays?"
+          }
+        }
+      }
+    },
     "Lewati": {
       "localizations": {
         "en": {
@@ -13643,6 +13983,16 @@
         }
       }
     },
+    "Membaik atau memburuk?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Better or worse?"
+          }
+        }
+      }
+    },
     "Membatalkan…": {
       "localizations": {
         "en": {
@@ -13919,6 +14269,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saving…"
+          }
+        }
+      }
+    },
+    "Mgg %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wk %lld"
           }
         }
       }
@@ -14309,6 +14669,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Net"
+          }
+        }
+      }
+    },
+    "Net %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Net %@ %@"
           }
         }
       }
@@ -15073,6 +15443,16 @@
         }
       }
     },
+    "Paling boros tiap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending peaks every"
+          }
+        }
+      }
+    },
     "Paling boros: ": {
       "localizations": {
         "en": {
@@ -15239,6 +15619,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Income and spending are even."
+          }
+        }
+      }
+    },
+    "Pemasukan dan pengeluaran yang kamu catat akan muncul di sini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The income and spending you record will show up here."
           }
         }
       }
@@ -15523,6 +15913,16 @@
         }
       }
     },
+    "Pengeluaran harian kumulatif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cumulative daily spending"
+          }
+        }
+      }
+    },
     "Pengeluaran kategori ini bulan ini muncul di sini.": {
       "localizations": {
         "en": {
@@ -15559,6 +15959,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spending exceeds income. Cut your biggest category, %@, and put off non-urgent purchases."
+          }
+        }
+      }
+    },
+    "Pengeluaran per hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending per day"
+          }
+        }
+      }
+    },
+    "Pengeluaran per hari · semakin pekat semakin besar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending per day · darker means more"
           }
         }
       }
@@ -16023,6 +16443,16 @@
         }
       }
     },
+    "Periode gajian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payday period"
+          }
+        }
+      }
+    },
     "Periode gajian · gajian tanggal %lld": {
       "localizations": {
         "en": {
@@ -16079,6 +16509,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This period only"
+          }
+        }
+      }
+    },
+    "Periode lalu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last period"
           }
         }
       }
@@ -16613,6 +17053,16 @@
         }
       }
     },
+    "Pilih pembanding untuk melihat apakah kamu lebih hemat di titik yang sama.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a comparison to see whether you spend less at the same point."
+          }
+        }
+      }
+    },
     "Pilih pemicu": {
       "localizations": {
         "en": {
@@ -17099,6 +17549,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Savings rate"
+          }
+        }
+      }
+    },
+    "Rasio tabungan %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Savings rate %@"
           }
         }
       }
@@ -18533,12 +18993,32 @@
         }
       }
     },
+    "Semua budget masih aman.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All budgets are still safe."
+          }
+        }
+      }
+    },
     "Semua cara mencatat berhenti. %lld draf dan %lld ingatan dihapus dari HP ini. Transaksi yang sudah tersimpan tetap aman.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Every way of recording stops. %lld drafts and %lld memories are deleted from this phone. Transactions already saved stay safe."
+          }
+        }
+      }
+    },
+    "Semua cara mencatat berhenti. %lld draf dihapus dari HP ini. Transaksi yang sudah tersimpan tetap aman.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All ways of recording stop. %lld draft(s) are deleted from this phone. Saved transactions stay safe."
           }
         }
       }
@@ -18769,6 +19249,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Every rupiah amount becomes dots. Percentages and statuses stay visible."
+          }
+        }
+      }
+    },
+    "Semua periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All periods"
           }
         }
       }
@@ -19389,6 +19879,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The remaining %@ incurs about %@/month in interest"
+          }
+        }
+      }
+    },
+    "Sisa %@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ left · %@"
           }
         }
       }
@@ -20543,6 +21043,16 @@
         }
       }
     },
+    "Tahun ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This year"
+          }
+        }
+      }
+    },
     "Tahunan": {
       "localizations": {
         "en": {
@@ -20863,6 +21373,16 @@
         }
       }
     },
+    "Tanggal acuan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference date"
+          }
+        }
+      }
+    },
     "Tanggal baru": {
       "localizations": {
         "en": {
@@ -21069,6 +21589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Without income, the analysis can't compare this period with others."
+          }
+        }
+      }
+    },
+    "Tanpa pembanding": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No comparison"
           }
         }
       }
@@ -22615,6 +23145,16 @@
         }
       }
     },
+    "Total uang di semua dompetmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All the money in your wallets."
+          }
+        }
+      }
+    },
     "Total utang": {
       "localizations": {
         "en": {
@@ -22795,6 +23335,46 @@
         }
       }
     },
+    "Transaksi yang kamu simpan dan jatah AI (selama AI menyala).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions you save and your AI quota (while AI is on)."
+          }
+        }
+      }
+    },
+    "Transaksi yang kamu simpan dan jatah AI.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions you save and your AI quota."
+          }
+        }
+      }
+    },
+    "Transaksi yang kamu simpan, dan hitungan jatah AI selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions you save, your AI quota count while AI is on. The original sentence you type, say or share, the picture you choose and the text read from it, and the notification and Siri text, stay on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save."
+          }
+        }
+      }
+    },
+    "Transaksi yang kamu simpan, dan hitungan jatah AI selama AI menyala. Server Saku tidak menyimpan kalimat yang dikirim ke AI. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transactions you save, your AI quota count while AI is on. The original sentence you type, say or share, the picture you choose and the text read from it, and the notification and Siri text, stay on the phone until you save or drop the draft. Drafts you do not process disappear after 30 days. Nothing is recorded until you tap Save. Saku's server does not store the sentence sent to AI."
+          }
+        }
+      }
+    },
     "Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.": {
       "localizations": {
         "en": {
@@ -22951,6 +23531,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld-period trend"
+          }
+        }
+      }
+    },
+    "Tren pengeluaran": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending trend"
           }
         }
       }
@@ -23241,6 +23831,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What you can spend per day is below your usual spending. Hold off non-essential spending until the period ends."
+          }
+        }
+      }
+    },
+    "Uang yang masuk dan keluar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Money coming in and going out."
           }
         }
       }
@@ -23865,6 +24465,16 @@
         }
       }
     },
+    "baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "new"
+          }
+        }
+      }
+    },
     "berulang": {
       "localizations": {
         "en": {
@@ -23881,6 +24491,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "tomorrow"
+          }
+        }
+      }
+    },
+    "boros": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "more"
           }
         }
       }
@@ -23951,6 +24571,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "from %@"
+          }
+        }
+      }
+    },
+    "dari %@ di titik yang sama (hari ke-%lld).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "than %@ at the same point (day %lld)."
           }
         }
       }
@@ -24101,6 +24731,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "days without spending"
+          }
+        }
+      }
+    },
+    "hemat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "less"
           }
         }
       }
@@ -24305,6 +24945,16 @@
         }
       }
     },
+    "pengeluaran %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "spending %@ %@"
+          }
+        }
+      }
+    },
     "per bulan": {
       "localizations": {
         "en": {
@@ -24321,6 +24971,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "a year"
+          }
+        }
+      }
+    },
+    "rata-rata %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "averaging %@."
           }
         }
       }
@@ -24505,6 +25165,16 @@
         }
       }
     },
+    "tetap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unchanged"
+          }
+        }
+      }
+    },
     "tiap tgl %lld": {
       "localizations": {
         "en": {
@@ -24561,6 +25231,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "for %lld days left."
+          }
+        }
+      }
+    },
+    "vs %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs %@"
           }
         }
       }
