@@ -92,6 +92,7 @@ final class WorkspaceStore: ObservableObject {
 
     private func reloadApp() {
         AppDataCache.shared.clearAll()
+        TransactionStore.shared.reset()
         PaydaySetting.schedule = []
         epoch += 1
         Task {

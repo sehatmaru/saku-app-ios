@@ -158,6 +158,17 @@ final class TransactionStore: ObservableObject {
         }
     }
 
+    /// A different Workspace is open: nothing loaded belongs to it (rows, delta cursor and any download in flight).
+    func reset() {
+        reloadTask?.cancel()
+        flight = nil
+        userId = nil
+        transactions = []
+        loadedSince = nil
+        isComplete = false
+        cursor = nil
+    }
+
     // MARK: Helpers
 
     private func adopt(_ id: String) {

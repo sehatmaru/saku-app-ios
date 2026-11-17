@@ -249,6 +249,9 @@ struct TransactionDetailView: View {
             Spacer(minLength: 0)
         }
         .frame(height: 50)
+        .padding(.leading, 24)
+        .padding(.trailing, 20)
+        .rowSeparator()
         .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
     }
 
