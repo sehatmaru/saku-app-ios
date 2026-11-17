@@ -149,7 +149,7 @@ struct WorkspaceSwitcherSheet: View {
             }
         }
         .filterSheet {
-            SmartSheetFooter(primary: L("Buat Workspace"), primaryIcon: "plus", secondary: L("Gabung dengan kode"),
+            SmartSheetFooter(primary: L("Buat Workspace"), primaryIcon: "plus", secondary: L("Punya kode?"),
                              onPrimary: { dismiss(); onCreate() }, onSecondary: { dismiss(); onJoin() })
         }
     }

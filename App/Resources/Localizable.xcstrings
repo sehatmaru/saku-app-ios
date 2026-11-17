@@ -18513,6 +18513,16 @@
         }
       }
     },
+    "Punya kode?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Have a code?"
+          }
+        }
+      }
+    },
     "Rab": {
       "localizations": {
         "en": {

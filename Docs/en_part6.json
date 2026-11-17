@@ -1993,5 +1993,6 @@
   "%@ langsung tersembunyi dari semua anggota dan dihapus permanen setelah 7 hari, dengan semua datanya. Selama itu kamu bisa membatalkannya.": "%@ is hidden from every member right away and deleted for good after 7 days, with all its data. You can cancel until then.",
   "Hapus Workspace": "Delete Workspace",
   "Belum berhasil. Periksa koneksi lalu coba lagi.": "Didn't work. Check your connection and try again.",
-  "Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.": "You still own a Workspace with other members. Hand over ownership first in Profile, Workspace, then Members."
+  "Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.": "You still own a Workspace with other members. Hand over ownership first in Profile, Workspace, then Members.",
+  "Punya kode?": "Have a code?"
 }
