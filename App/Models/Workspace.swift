@@ -4,7 +4,8 @@ import Foundation
 struct Workspace: Identifiable, Equatable, Decodable, Sendable {
     let id: UUID
     let kind: String
-    let name: String
+    /// Null for Workspace Pribadi: the app names it.
+    let name: String?
     let icon: String?
     let color: String?
     let role: String
@@ -29,7 +30,7 @@ struct Workspace: Identifiable, Equatable, Decodable, Sendable {
     var isOwner: Bool { role == "owner" }
 
     /// Workspace Pribadi is named by the app so it follows the language; shared ones keep the name their Owner typed.
-    var displayName: String { isPersonal ? L("Workspace Pribadi") : name }
+    var displayName: String { isPersonal ? L("Workspace Pribadi") : (name ?? "") }
 
     /// Whole days until the workspace is deleted, nil when it is not waiting for deletion.
     var daysUntilDeletion: Int? {

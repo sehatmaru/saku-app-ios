@@ -116,7 +116,7 @@ struct WorkspaceSettingsView: View {
                     header(workspace)
                     VStack(spacing: 0) {
                         if !workspace.isPersonal {
-                            row(L("Nama"), value: workspace.name, editable: workspace.isOwner) { showsEdit = true }
+                            row(L("Nama"), value: workspace.displayName, editable: workspace.isOwner) { showsEdit = true }
                             row(L("Ikon dan warna"), editable: workspace.isOwner, trailing: { WorkspaceBadge(workspace, size: 28) }) { showsEdit = true }
                         }
                         row(L("Tanggal gajian"), value: workspace.paydayDay.map { "\($0)" } ?? L("Belum diatur"),
@@ -232,7 +232,7 @@ struct EditWorkspaceSheet: View {
 
     init(workspace: Workspace) {
         self.workspace = workspace
-        _name = State(initialValue: workspace.name)
+        _name = State(initialValue: workspace.displayName)
         _icon = State(initialValue: workspace.icon ?? "person.2.fill")
         _color = State(initialValue: workspace.color ?? "hijau")
     }

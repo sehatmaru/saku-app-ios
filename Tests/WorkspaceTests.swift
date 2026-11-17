@@ -25,7 +25,7 @@ final class WorkspaceTests: XCTestCase {
 
     func testPersonalHasNoIconOrOwnerAndIsNamedByTheApp() throws {
         let w = try decode("""
-        {"id":"6f0f3b9e-8b7e-4b8e-9d5c-1f2a3b4c5d6e","kind":"personal","name":"Pribadi","icon":null,"color":null,"role":"owner",
+        {"id":"6f0f3b9e-8b7e-4b8e-9d5c-1f2a3b4c5d6e","kind":"personal","name":null,"icon":null,"color":null,"role":"owner",
          "owner_id":null,"owner_name":null,"member_count":1,"is_read_only":false,"is_default":true,
          "default_reset":false,"deletion_scheduled_for":null,"payday_day":null}
         """)
