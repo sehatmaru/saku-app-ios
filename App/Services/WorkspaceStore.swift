@@ -47,8 +47,8 @@ final class WorkspaceStore: ObservableObject {
     var active: Workspace? { spaces.first { $0.id == activeId } ?? personal }
     var shared: [Workspace] { spaces.filter { !$0.isPersonal } }
     var owned: [Workspace] { shared.filter(\.isOwner) }
-    /// Beranda shows the switcher only when there is something to switch to, or for testers and internal builds while this is not public (K30).
-    var showsSwitcher: Bool { PlusStore.shared.isTester || PlusStore.isInternalBuild }
+    /// Workspace is open to everyone (K30): the pill and the Workspace settings show for every signed-in person.
+    var showsSwitcher: Bool { true }
     var activeIsPersonal: Bool { active?.isPersonal ?? true }
     /// Read-only (K9, A3) or waiting to be deleted (K21): the open Workspace takes no new records.
     var activeBlocksWriting: Bool { active.map { $0.isReadOnly || $0.daysUntilDeletion != nil } ?? false }
