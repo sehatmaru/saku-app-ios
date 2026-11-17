@@ -199,3 +199,47 @@ struct WorkspaceHost: ViewModifier {
 extension View {
     func workspaceHost() -> some View { modifier(WorkspaceHost()) }
 }
+
+
+/// On Beranda: why the open Workspace is read-only (K9, A3, only the Owner gets the button) or when it will be deleted (K21).
+struct WorkspaceStatusBanner: View {
+    @ObservedObject private var store = WorkspaceStore.shared
+    @State private var plusReason: PlusReason?
+    @State private var failed = false
+
+    var body: some View {
+        if let workspace = store.active, !workspace.isPersonal {
+            if let days = workspace.daysUntilDeletion {
+                banner(icon: "trash", tone: .critical,
+                       text: L("Workspace ini dihapus dalam %lld hari. Semua data ikut hilang.", days),
+                       action: workspace.isOwner ? (L("Batalkan penghapusan"), { cancel(workspace) }) : nil)
+            } else if workspace.isReadOnly {
+                banner(icon: "lock", tone: .warning,
+                       text: workspace.isOwner ? L("Plus-mu berakhir, jadi Workspace ini baca saja untuk semua anggota.")
+                                              : L("Plus Pemilik berakhir, jadi Workspace ini baca saja untuk semua anggota."),
+                       action: workspace.isOwner ? (L("Aktifkan Plus lagi"), { plusReason = .general }) : nil)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func banner(icon: String, tone: NoticeTone, text: String, action: (String, () -> Void)?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            NoticeLine(icon: icon, tone: tone, text: text)
+            if let action {
+                Button(action.0, action: action.1)
+                    .font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+                    .frame(minHeight: 44).padding(.horizontal, 24)
+            }
+        }
+        .plusOffer($plusReason)
+        .confirmDialog(isPresented: $failed, icon: "exclamationmark.triangle", title: L("Belum berhasil"),
+                       message: L("Periksa koneksi internetmu lalu coba lagi."), confirmTitle: nil, cancelTitle: L("Tutup"))
+    }
+
+    private func cancel(_ workspace: Workspace) {
+        Task {
+            do { try await store.cancelDeletion(of: workspace) } catch { failed = true }
+        }
+    }
+}

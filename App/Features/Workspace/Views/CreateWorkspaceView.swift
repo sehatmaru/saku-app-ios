@@ -397,7 +397,7 @@ struct CreateWorkspaceView: View {
             switch error {
             case .limit: dismiss(); onLimit()
             case .guest: dismiss()
-            case .ownerDeleting, .other: failed = true
+            case .ownerDeleting, .ownerMustTransfer, .other: failed = true
             }
         } catch { failed = true }
     }

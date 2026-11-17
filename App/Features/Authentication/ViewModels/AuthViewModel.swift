@@ -354,7 +354,9 @@ final class AuthViewModel: ObservableObject {
             _ = try await SupabaseSDK.requestAccountDeletion(reason: reason?.rawValue, note: reason == .other ? String(note.prefix(AccountDeletion.noteLimit)) : nil)
         } catch {
             // the server's own message is technical and in English; nothing was changed, so just say so
-            errorMessage = L("Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.")
+            errorMessage = WorkspaceError(error) == .ownerMustTransfer
+                ? L("Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.")
+                : L("Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.")
             return false
         }
         await forgetAccountOnThisDevice()

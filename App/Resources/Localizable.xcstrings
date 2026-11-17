@@ -401,6 +401,16 @@
         }
       }
     },
+    "%@ langsung tersembunyi dari semua anggota dan dihapus permanen setelah 7 hari, dengan semua datanya. Selama itu kamu bisa membatalkannya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is hidden from every member right away and deleted for good after 7 days, with all its data. You can cancel until then."
+          }
+        }
+      }
+    },
     "%@ lebih %@": {
       "localizations": {
         "en": {
@@ -2309,6 +2319,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Turn on AI for Smart Tracker"
+          }
+        }
+      }
+    },
+    "Aktifkan Plus lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn Plus back on"
           }
         }
       }
@@ -4349,6 +4369,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't change it. Try again in a moment."
+          }
+        }
+      }
+    },
+    "Belum berhasil. Periksa koneksi lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Didn't work. Check your connection and try again."
           }
         }
       }
@@ -10093,6 +10123,26 @@
         }
       }
     },
+    "Hapus Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Workspace"
+          }
+        }
+      }
+    },
+    "Hapus Workspace?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Workspace?"
+          }
+        }
+      }
+    },
     "Hapus akun": {
       "localizations": {
         "en": {
@@ -11489,6 +11539,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You left %@"
+          }
+        }
+      }
+    },
+    "Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You still own a Workspace with other members. Hand over ownership first in Profile, Workspace, then Members."
           }
         }
       }
@@ -17153,6 +17213,16 @@
         }
       }
     },
+    "Periksa koneksi internetmu lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your internet connection and try again."
+          }
+        }
+      }
+    },
     "Periksa koneksi internetmu lalu coba lagi. Pengaturanmu belum berubah.": {
       "localizations": {
         "en": {
@@ -18163,6 +18233,16 @@
         }
       }
     },
+    "Plus Pemilik berakhir, jadi Workspace ini baca saja untuk semua anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Owner's Plus ended, so this Workspace is read-only for every member."
+          }
+        }
+      }
+    },
     "Plus berakhir": {
       "localizations": {
         "en": {
@@ -18199,6 +18279,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plus stays open until %@. Update your payment method in the App Store."
+          }
+        }
+      }
+    },
+    "Plus-mu berakhir, jadi Workspace ini baca saja untuk semua anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Plus ended, so this Workspace is read-only for every member."
           }
         }
       }
@@ -25351,6 +25441,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Workspace created"
+          }
+        }
+      }
+    },
+    "Workspace ini baca saja, jadi belum bisa menambah catatan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace is read-only, so you can't add records yet."
+          }
+        }
+      }
+    },
+    "Workspace ini dihapus dalam %lld hari. Semua data ikut hilang.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace will be deleted in %lld days. All its data goes with it."
           }
         }
       }

@@ -101,6 +101,27 @@ final class InviteTests: XCTestCase {
     }
 }
 
+final class DeletionTests: XCTestCase {
+    private func space(scheduled: String?, readOnly: Bool = false) throws -> Workspace {
+        let json = """
+        {"id":"6f0f3b9e-8b7e-4b8e-9d5c-1f2a3b4c5d6e","kind":"shared","name":"Rumah","icon":"house","color":"hijau","role":"owner","owner_id":null,"owner_name":null,
+         "member_count":2,"is_read_only":\(readOnly),"is_default":false,"default_reset":false,"deletion_scheduled_for":\(scheduled.map { "\"\($0)\"" } ?? "null"),"payday_day":25}
+        """
+        return try JSONDecoder().decode(Workspace.self, from: Data(json.utf8))
+    }
+
+    func testDaysUntilDeletion() throws {
+        XCTAssertNil(try space(scheduled: nil).daysUntilDeletion)
+        let in3 = ISO8601DateFormatter().string(from: Date().addingTimeInterval(3 * 86400 + 600))
+        XCTAssertEqual(try space(scheduled: in3).daysUntilDeletion, 3)
+    }
+
+    func testServerErrorsOfStage6() {
+        struct E: Error, CustomStringConvertible { let description: String }
+        XCTAssertEqual(WorkspaceError(E(description: "space_owner_must_transfer")), .ownerMustTransfer)
+    }
+}
+
 final class AttributionTests: XCTestCase {
     private func tx(_ json: String) throws -> Transaction {
         let decoder = JSONDecoder()

@@ -123,6 +123,8 @@ struct WorkspaceSettingsView: View {
     @ObservedObject private var store = WorkspaceStore.shared
     @State private var showsEdit = false
     @State private var showsPayday = false
+    @State private var confirmsDelete = false
+    @State private var isDeleting = false
 
     private var workspace: Workspace? { store.spaces.first { $0.id == workspaceId } }
 
@@ -144,6 +146,7 @@ struct WorkspaceSettingsView: View {
                     if !workspace.isPersonal {
                         WorkspaceMembersSection(workspace: workspace).padding(.horizontal, 24)
                     }
+                    if workspace.isOwner && !workspace.isPersonal { deleteRow(workspace) }
                     if !workspace.isOwner {
                         Text(L("Hanya Pemilik yang bisa mengubah"))
                             .font(.app(13)).foregroundStyle(Color.appTextSecondary)
@@ -157,6 +160,12 @@ struct WorkspaceSettingsView: View {
         .background(Color.appBackground)
         .navigationTitle(L("Pengaturan Workspace"))
         .navigationBarTitleDisplayMode(.inline)
+        .confirmDialog(isPresented: $confirmsDelete, icon: "trash", destructive: true, title: L("Hapus Workspace?"),
+                       message: L("%@ langsung tersembunyi dari semua anggota dan dihapus permanen setelah 7 hari, dengan semua datanya. Selama itu kamu bisa membatalkannya.", workspace?.displayName ?? ""),
+                       confirmTitle: L("Hapus"), isBusy: isDeleting) {
+            guard let workspace else { return }
+            Task { await delete(workspace) }
+        }
         .sheet(isPresented: $showsEdit) {
             if let workspace { EditWorkspaceSheet(workspace: workspace) }
         }
@@ -167,6 +176,42 @@ struct WorkspaceSettingsView: View {
                 Task { await store.load() }
             }
         }
+    }
+
+    /// K21: delete with 7 days of grace, or take it back while the days run.
+    private func deleteRow(_ workspace: Workspace) -> some View {
+        let waiting = workspace.daysUntilDeletion != nil
+        return Button {
+            if waiting { Task { await cancelDeletion(workspace) } } else { confirmsDelete = true }
+        } label: {
+            HStack {
+                Text(waiting ? L("Batalkan penghapusan") : L("Hapus Workspace"))
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(waiting ? Color.appPrimaryText : Color.appError)
+                Spacer(minLength: 8)
+                if let days = workspace.daysUntilDeletion {
+                    Text(L("Dihapus dalam %lld hari", days)).font(.app(13)).foregroundStyle(Color.appError)
+                }
+            }
+            .frame(minHeight: 52)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+        .padding(.horizontal, 24).padding(.top, 12)
+    }
+
+    private func delete(_ workspace: Workspace) async {
+        isDeleting = true
+        defer { isDeleting = false }
+        do {
+            try await store.requestDeletion(of: workspace)
+            confirmsDelete = false
+        } catch { ToastCenter.shared.show(L("Belum berhasil. Periksa koneksi lalu coba lagi.")) }
+    }
+
+    private func cancelDeletion(_ workspace: Workspace) async {
+        do { try await store.cancelDeletion(of: workspace) }
+        catch { ToastCenter.shared.show(L("Belum berhasil. Periksa koneksi lalu coba lagi.")) }
     }
 
     private func header(_ workspace: Workspace) -> some View {

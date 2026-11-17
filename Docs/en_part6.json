@@ -1982,5 +1982,16 @@
   "Filter anggota": "Filter by member",
   "Disimpan ke %@": "Saved to %@",
   "Draf disimpan ke": "Drafts are saved to",
-  "Dicatat oleh %@": "Added by %@"
+  "Dicatat oleh %@": "Added by %@",
+  "Workspace ini baca saja, jadi belum bisa menambah catatan.": "This Workspace is read-only, so you can't add records yet.",
+  "Workspace ini dihapus dalam %lld hari. Semua data ikut hilang.": "This Workspace will be deleted in %lld days. All its data goes with it.",
+  "Plus-mu berakhir, jadi Workspace ini baca saja untuk semua anggota.": "Your Plus ended, so this Workspace is read-only for every member.",
+  "Plus Pemilik berakhir, jadi Workspace ini baca saja untuk semua anggota.": "The Owner's Plus ended, so this Workspace is read-only for every member.",
+  "Aktifkan Plus lagi": "Turn Plus back on",
+  "Periksa koneksi internetmu lalu coba lagi.": "Check your internet connection and try again.",
+  "Hapus Workspace?": "Delete Workspace?",
+  "%@ langsung tersembunyi dari semua anggota dan dihapus permanen setelah 7 hari, dengan semua datanya. Selama itu kamu bisa membatalkannya.": "%@ is hidden from every member right away and deleted for good after 7 days, with all its data. You can cancel until then.",
+  "Hapus Workspace": "Delete Workspace",
+  "Belum berhasil. Periksa koneksi lalu coba lagi.": "Didn't work. Check your connection and try again.",
+  "Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.": "You still own a Workspace with other members. Hand over ownership first in Profile, Workspace, then Members."
 }

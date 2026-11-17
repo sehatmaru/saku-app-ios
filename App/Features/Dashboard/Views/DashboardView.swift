@@ -207,7 +207,7 @@ struct DashboardView: View {
         TabView(selection: Binding(
             get: { selectedTab },
             set: { tab in
-                if tab == .add { showAddSheet = true } else { selectedTab = tab }
+                if tab == .add { if WorkspaceStore.shared.allowsWriting() { showAddSheet = true } } else { selectedTab = tab }
             }
         )) {
             mainTabs
@@ -233,7 +233,7 @@ struct DashboardView: View {
             .onChange(of: homePath.count) { _, count in if count == 0 { addsWalletOnOpen = false } }
         } label: { tabLabel(L("Beranda"), "house.fill") }
         Tab(value: AppTab.transactions) {
-            TransactionListView(isActive: selectedTab == .transactions) { showAddSheet = true }
+            TransactionListView(isActive: selectedTab == .transactions) { if WorkspaceStore.shared.allowsWriting() { showAddSheet = true } }
         } label: { tabLabel(L("Transaksi"), "list.bullet") }
         Tab(value: AppTab.add) {
             Color.clear
@@ -271,6 +271,7 @@ struct DashboardView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 homeHeader
+                WorkspaceStatusBanner()
 
                 if fullErrorMessage != nil {
                     // drawn over the page below, so it sits in the middle of the screen

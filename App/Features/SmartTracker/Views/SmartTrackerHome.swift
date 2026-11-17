@@ -338,6 +338,7 @@ struct SmartTrackerHomeOverlay: View {
     // MARK: Actions
 
     private func open() {
+        guard WorkspaceStore.shared.allowsWriting() else { return }
         tipSeen = true
         isOpen = true
         focused = true

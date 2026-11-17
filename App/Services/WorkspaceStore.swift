@@ -3,13 +3,14 @@ import SwiftUI
 
 /// Failures of the workspace calls the screens tell apart (TD T4 error codes).
 enum WorkspaceError: Error, Equatable {
-    case limit, guest, ownerDeleting, other
+    case limit, guest, ownerDeleting, ownerMustTransfer, other
 
     init(_ error: Error) {
         let text = String(describing: error)
         if text.contains("space_limit") { self = .limit }
         else if text.contains("guest_not_allowed") { self = .guest }
         else if text.contains("space_owner_deleting") { self = .ownerDeleting }
+        else if text.contains("space_owner_must_transfer") { self = .ownerMustTransfer }
         else { self = .other }
     }
 }
@@ -49,6 +50,16 @@ final class WorkspaceStore: ObservableObject {
     /// Beranda shows the switcher only when there is something to switch to, or for testers and internal builds while this is not public (K30).
     var showsSwitcher: Bool { PlusStore.shared.isTester || PlusStore.isInternalBuild }
     var activeIsPersonal: Bool { active?.isPersonal ?? true }
+    /// Read-only (K9, A3) or waiting to be deleted (K21): the open Workspace takes no new records.
+    var activeBlocksWriting: Bool { active.map { $0.isReadOnly || $0.daysUntilDeletion != nil } ?? false }
+
+    /// True when a record may be added here; otherwise says why, once.
+    func allowsWriting() -> Bool {
+        guard activeBlocksWriting else { return true }
+        ToastCenter.shared.show(L("Workspace ini baca saja, jadi belum bisa menambah catatan."))
+        return false
+    }
+
     var canEditActive: Bool { activeIsPersonal || active?.isOwner == true }
 
     func requestCreate() { createRequests += 1 }
@@ -174,6 +185,23 @@ final class WorkspaceStore: ObservableObject {
     func members(of workspace: Workspace) async throws -> [WorkspaceMember] {
         do { return try await SupabaseSDK.client.rpc("space_members", params: ["p_space": workspace.id]).execute().value }
         catch { throw WorkspaceError(error) }
+    }
+
+    /// K21: hidden from every member at once; the owner has 7 days to cancel.
+    func requestDeletion(of workspace: Workspace) async throws {
+        do {
+            _ = try await SupabaseSDK.client.rpc("request_space_deletion", params: ["p_space": workspace.id]).execute()
+            // the owner may not stay inside a Workspace that is going away
+            if workspace.id == activeId, let personal { open(personal) }
+            await load()
+        } catch { throw WorkspaceError(error) }
+    }
+
+    func cancelDeletion(of workspace: Workspace) async throws {
+        do {
+            try await SupabaseSDK.client.rpc("cancel_space_deletion", params: ["p_space": workspace.id]).execute()
+            await load()
+        } catch { throw WorkspaceError(error) }
     }
 
     func leave(_ workspace: Workspace) async throws {
