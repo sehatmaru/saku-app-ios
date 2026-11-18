@@ -204,7 +204,7 @@ struct JoinWorkspaceSheet: View {
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary)
             codeSlots
                 .frame(maxWidth: .infinity).frame(height: 84)
-                .background(Color.appCardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(Color.appSheetField, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(problem != nil ? Color.appError : (focused ? Color.appPrimary : Color.clear), lineWidth: 1.5)
@@ -279,11 +279,11 @@ struct JoinWorkspaceSheet: View {
                 .multilineTextAlignment(.center).lineLimit(2).padding(.top, 16)
             VStack(spacing: 0) {
                 previewRow(L("Pemilik"), preview.ownerName ?? "-")
-                Divider().overlay(Color.appBorder)
+                Divider().overlay(Color.appBorder.opacity(0.6))
                 previewRow(L("Anggota"), L("%lld dari 5", preview.memberCount ?? 0))
             }
             .padding(.horizontal, 16)
-            .background(Color.appCardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color.appSheetField, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .padding(.top, 24)
             if let problem {
                 Text(problem).font(.app(13)).foregroundStyle(Color.appError).multilineTextAlignment(.center).padding(.top, 12)
