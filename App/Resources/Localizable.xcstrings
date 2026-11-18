@@ -7113,16 +7113,6 @@
         }
       }
     },
-    "Contoh: ABCD EFGH": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Example: ABCD EFGH"
-          }
-        }
-      }
-    },
     "Contoh: Netflix": {
       "localizations": {
         "en": {
