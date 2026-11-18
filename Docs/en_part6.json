@@ -2063,5 +2063,6 @@
   "Awal periode disimpan, berlaku untuk semua anggota": "Period start saved, applies to every member",
   "Dicatat oleh": "Recorded by",
   "Semua anggota": "All members",
-  "Pencatat": "Recorded by"
+  "Pencatat": "Recorded by",
+  "Dompet ini masih punya transaksi, jadi tidak bisa dihapus. Arsipkan saja.": "This wallet still has transactions, so it can't be deleted. Archive it instead."
 }

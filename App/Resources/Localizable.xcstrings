@@ -8693,6 +8693,16 @@
         }
       }
     },
+    "Dompet ini masih punya transaksi, jadi tidak bisa dihapus. Arsipkan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This wallet still has transactions, so it can't be deleted. Archive it instead."
+          }
+        }
+      }
+    },
     "Dompet ini sudah diarsipkan, riwayatnya tetap tersimpan.": {
       "localizations": {
         "en": {
