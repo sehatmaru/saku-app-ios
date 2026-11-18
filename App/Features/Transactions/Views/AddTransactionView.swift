@@ -1246,6 +1246,7 @@ struct DetailRow: View {
     var height: CGFloat = 52
     /// Nothing chosen yet: the value reads grey.
     var isPlaceholder = false
+    var placeholderColor: Color = .appTextTertiary
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1269,7 +1270,7 @@ struct DetailRow: View {
                     HStack(spacing: 8) {
                         Text(value)
                             .font(.app(16, weight: .medium))
-                            .foregroundStyle(isPlaceholder ? Color.appTextTertiary : Color.appText)
+                            .foregroundStyle(isPlaceholder ? placeholderColor : Color.appText)
                             .lineLimit(1)
                         if isAsset {
                             Label(L("Aset"), systemImage: "chart.line.uptrend.xyaxis")
