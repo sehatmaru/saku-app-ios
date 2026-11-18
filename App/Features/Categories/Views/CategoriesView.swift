@@ -322,7 +322,10 @@ struct CategoriesView: View {
                     .background(flashId == category.id ? Color.appFill : Color.appBackground)
                     .animation(.easeInOut(duration: 0.6), value: flashId)
                     .contentShape(Rectangle())
-                    .onTapGesture { form = FormItem(id: category.id, mode: .edit(category)) }
+                    .onTapGesture {
+                guard WorkspaceStore.shared.requireOwner() else { return }
+                form = FormItem(id: category.id, mode: .edit(category))
+            }
                 }
             }
             .frame(height: isOpen ? CGFloat(hidden.count) * 56 : 0, alignment: .top)
