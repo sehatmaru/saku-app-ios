@@ -41,35 +41,14 @@ struct MergeWizardView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
-            ScrollView {
-                content.padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 24)
-            }
-            .scrollIndicators(.hidden)
-            buttons
-        }
-        .background(Color.appBackground)
-        .foregroundStyle(Color.appText)
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(Color.appText)
+            .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 12)
+            .filterSheet { footer }
+            .background(Color.appBackground)
         .interactiveDismissDisabled(isMoving)
         .task { if case .merge(let preset) = mode { targetId = preset ?? targets.first?.id }; await reload() }
-    }
-
-    // MARK: Chrome
-
-    private var topBar: some View {
-        ZStack {
-            HStack {
-                if step == .done { Color.clear.frame(width: 44) }
-                else {
-                    Button(step == .summary ? L("Batal") : L("Kembali")) { back() }
-                        .font(.app(17)).foregroundStyle(Color.appPrimary).disabled(isMoving)
-                }
-                Spacer()
-            }
-            Text(isRescue ? L("Bawa data saya") : L("Gabungkan dengan riwayat")).font(.app(17, weight: .semibold)).lineLimit(1).padding(.horizontal, 90)
-        }
-        .padding(.horizontal, 20).frame(height: 44)
     }
 
     @ViewBuilder private var content: some View {
@@ -213,26 +192,27 @@ struct MergeWizardView: View {
             .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
     }
 
-    // MARK: Buttons
+    // MARK: Footer
 
-    private var buttons: some View {
-        VStack(spacing: 10) {
-            switch step {
-            case .summary:
-                primary(L("Lanjut"), enabled: load == .ready && (preview?.wallets ?? 0) + (preview?.transactions ?? 0) > 0) { step = needsMapping.isEmpty ? .confirm : .mapping }
+    @ViewBuilder private var footer: some View {
+        switch step {
+        case .summary:
+            VStack(spacing: 10) {
                 if load == .ready, let preview, preview.wallets + preview.transactions == 0 {
                     Text(L("Tidak ada dompet atau transaksi yang bisa dipindah.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
                 }
-            case .mapping: primary(L("Lanjut"), enabled: mappingComplete) { step = .confirm }
-            case .confirm: primary(isRescue ? L("Bawa data saya") : L("Gabungkan"), enabled: true, busy: isMoving) { Task { await move() } }
-            case .done: primary(L("Selesai"), enabled: true) { dismiss() }
+                SmartSheetFooter(primary: L("Lanjut"), isEnabled: load == .ready && (preview?.wallets ?? 0) + (preview?.transactions ?? 0) > 0,
+                                 secondary: L("Batal"), onPrimary: { step = needsMapping.isEmpty ? .confirm : .mapping }, onSecondary: { dismiss() })
             }
+        case .mapping:
+            SmartSheetFooter(primary: L("Lanjut"), isEnabled: mappingComplete, secondary: L("Kembali"),
+                             onPrimary: { step = .confirm }, onSecondary: { back() })
+        case .confirm:
+            SmartSheetFooter(primary: isRescue ? L("Bawa data saya") : L("Gabungkan"), isBusy: isMoving, secondary: L("Kembali"),
+                             onPrimary: { Task { await move() } }, onSecondary: { back() })
+        case .done:
+            SmartSheetFooter(primary: L("Selesai"), onPrimary: { dismiss() })
         }
-        .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 12).background(Color.appBackground)
-    }
-
-    private func primary(_ title: String, enabled: Bool, busy: Bool = false, action: @escaping () -> Void) -> some View {
-        PrimaryButton(title: title, isLoading: busy, isEnabled: enabled, action: action)
     }
 
     // MARK: Actions

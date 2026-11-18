@@ -184,7 +184,6 @@ struct WorkspaceHost: ViewModifier {
             }
             .sheet(isPresented: $showsNews) {
                 WorkspaceNewsSheet { showsNews = false; store.requestCreate() }
-                    .presentationDetents([.height(430)])
             }
             .onChange(of: store.createRequests) { _, _ in start() }
             .onChange(of: store.joinRequests) { _, _ in
@@ -192,7 +191,7 @@ struct WorkspaceHost: ViewModifier {
             }
             .sheet(isPresented: $showsJoin) { JoinWorkspaceSheet() }
             .sheet(item: $store.notice) { notice in
-                WorkspaceNoticeSheet(notice: notice).presentationDetents([.height(340)])
+                WorkspaceNoticeSheet(notice: notice)
             }
             .onChange(of: store.resetNotice) { _, notice in
                 guard notice else { return }
@@ -268,23 +267,10 @@ struct WorkspaceNewsSheet: View {
     let onCreate: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            Image(systemName: "person.2.fill").font(.system(size: 30)).foregroundStyle(.white)
-                .frame(width: 72, height: 72).background(Color.appPrimary, in: Circle())
-                .padding(.top, 32)
-            Text(L("Baru")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary).padding(.top, 20)
-            Text(L("Catat uang bersama di Workspace"))
-                .font(.app(24, weight: .bold)).tracking(-0.4).multilineTextAlignment(.center).padding(.top, 6)
-            Text(L("Ajak pasangan, keluarga, atau rekan usaha. Setiap catatan menunjukkan siapa yang mencatat. Workspace Pribadi-mu tetap milikmu sendiri."))
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center).lineSpacing(3).padding(.top, 8)
-            Spacer(minLength: 16)
-            PrimaryButton(title: L("Buat Workspace")) { onCreate() }
-            Button(L("Nanti saja")) { dismiss() }
-                .font(.app(15, weight: .semibold)).foregroundStyle(Color.appTextSecondary).frame(height: 44)
+        SmartSheet(tone: .consent, icon: "person.2.fill", title: L("Catat uang bersama di Workspace"),
+                   message: L("Ajak pasangan, keluarga, atau rekan usaha. Setiap catatan menunjukkan siapa yang mencatat. Workspace Pribadi-mu tetap milikmu sendiri.")) {
+            SmartSheetFooter(primary: L("Buat Workspace"), secondary: L("Nanti saja"), onPrimary: onCreate, onSecondary: { dismiss() })
         }
-        .padding(.horizontal, 24).padding(.bottom, 8)
-        .foregroundStyle(Color.appText)
-        .background(Color.appBackground)
     }
 }
 
@@ -294,18 +280,9 @@ struct WorkspaceNoticeSheet: View {
     let notice: WorkspaceStore.Notice
 
     var body: some View {
-        VStack(spacing: 0) {
-            Image(systemName: notice.icon).font(.system(size: 26)).foregroundStyle(.white)
-                .frame(width: 64, height: 64).background(Color.appPrimary, in: Circle())
-                .padding(.top, 32)
-            Text(notice.title).font(.app(22, weight: .bold)).tracking(-0.3).multilineTextAlignment(.center).padding(.top, 18)
-            Text(notice.message).font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                .multilineTextAlignment(.center).lineSpacing(3).padding(.top, 8)
-            Spacer(minLength: 16)
-            PrimaryButton(title: L("Mengerti")) { dismiss() }
+        SmartSheet(tone: notice.kind == .draftSaved || notice.kind == .sharedChange ? .consent : .neutral,
+                   icon: notice.icon, title: notice.title, message: notice.message) {
+            SmartSheetFooter(primary: L("Mengerti"), onPrimary: { dismiss() })
         }
-        .padding(.horizontal, 24).padding(.bottom, 12)
-        .foregroundStyle(Color.appText)
-        .background(Color.appBackground)
     }
 }
