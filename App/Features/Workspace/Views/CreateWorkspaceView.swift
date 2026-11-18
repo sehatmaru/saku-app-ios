@@ -20,6 +20,8 @@ struct CreateWorkspaceView: View {
     @State private var forward = true
     @State private var name = ""
     @State private var icon: String?
+    @State private var photo: UIImage?
+    @State private var photoRemoved = false
     @State private var color: String
     @State private var showsAllIcons = false
     @State private var copiesCategories = false
@@ -129,7 +131,7 @@ struct CreateWorkspaceView: View {
 
     private var title: String {
         switch step {
-        case .start: L("Buat Workspace")
+        case .start: L("Tambah Workspace")
         case .name: L("Nama Workspace")
         case .look: L("Ikon dan warna")
         case .categories: L("Kategori awal")
@@ -171,7 +173,7 @@ struct CreateWorkspaceView: View {
     }
 
     private var preview: some View {
-        WorkspaceBadge(icon: icon, color: color, size: 72)
+        WorkspacePhotoBadge(icon: icon, color: color, imageUrl: nil, photo: $photo, removed: $photoRemoved)
             .scaleEffect(bump ? 1.1 : 1)
             .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.38), value: bump)
             .animation(.easeInOut(duration: 0.24), value: color)
@@ -338,7 +340,7 @@ struct CreateWorkspaceView: View {
 
     private var doneStep: some View {
         VStack(spacing: 6) {
-            WorkspaceBadge(icon: icon, color: color, size: 96).padding(.top, 24).padding(.bottom, 10)
+            WorkspaceBadge(icon: icon, color: color, size: 96, image: photo).padding(.top, 24).padding(.bottom, 10)
             Text(L("Workspace dibuat")).font(.app(22, weight: .semibold)).tracking(-0.3)
             Text(doneMessage)
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary)
@@ -383,7 +385,7 @@ struct CreateWorkspaceView: View {
                     .foregroundStyle(Color.appTextSecondary)
                     .frame(height: 36)
             } else {
-                primaryButton(step == questionSteps.last ? (start == .convert ? L("Ubah Workspace Pribadi") : L("Buat Workspace")) : L("Lanjut"), enabled: isValid) { next() }
+                primaryButton(step == questionSteps.last ? (start == .convert ? L("Ubah Workspace Pribadi") : L("Tambah Workspace")) : L("Lanjut"), enabled: isValid) { next() }
             }
         }
         .padding(.horizontal, 24)
@@ -440,6 +442,10 @@ struct CreateWorkspaceView: View {
                 if start == .moveAll, let created {
                     do { movedCount = try await store.moveAllWallets(to: created) } catch { moveFailed = true }
                 }
+            }
+            // the picture needs the new workspace's id, so it goes up after creating; a failure here leaves the icon
+            if let photo, let created, let jpeg = ProfileViewModel.avatarJPEG(photo) {
+                try? await store.setImage(of: created, jpeg: jpeg)
             }
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             forward = true

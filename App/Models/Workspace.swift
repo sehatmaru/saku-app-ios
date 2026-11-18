@@ -18,12 +18,14 @@ struct Workspace: Identifiable, Equatable, Decodable, Sendable {
     let defaultReset: Bool
     let deletionScheduledFor: String?
     let paydayDay: Int?
+    /// The Owner's picture for the Workspace; it replaces the icon on the badge.
+    let imageUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case id, kind, name, icon, color, role
         case ownerId = "owner_id", ownerName = "owner_name", memberCount = "member_count"
         case isReadOnly = "is_read_only", isDefault = "is_default", defaultReset = "default_reset"
-        case deletionScheduledFor = "deletion_scheduled_for", paydayDay = "payday_day"
+        case deletionScheduledFor = "deletion_scheduled_for", paydayDay = "payday_day", imageUrl = "image_url"
     }
 
     var isPersonal: Bool { kind == "personal" }

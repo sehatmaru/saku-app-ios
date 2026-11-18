@@ -31,7 +31,7 @@ struct WorkspaceListView: View {
                                 .foregroundStyle(Color.appPrimary)
                                 .frame(width: 40, height: 40)
                                 .background(Color.appFill, in: Circle())
-                            Text(L("Buat Workspace"))
+                            Text(L("Tambah Workspace"))
                                 .font(.app(16, weight: .semibold))
                                 .foregroundStyle(Color.appPrimary)
                             Spacer(minLength: 8)
@@ -322,6 +322,8 @@ struct EditWorkspaceSheet: View {
     @State private var name: String
     @State private var icon: String
     @State private var color: String
+    @State private var photo: UIImage?
+    @State private var photoRemoved = false
     @State private var showsAllIcons = false
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -341,7 +343,7 @@ struct EditWorkspaceSheet: View {
                 .font(.app(22, weight: .bold)).tracking(-0.3)
                 .padding(.horizontal, 24).padding(.top, 20)
             VStack(spacing: 10) {
-                WorkspaceBadge(icon: icon, color: color, size: 72)
+                WorkspacePhotoBadge(icon: icon, color: color, imageUrl: workspace.imageUrl, photo: $photo, removed: $photoRemoved)
                 TextField("", text: $name, prompt: Text(L("Nama Workspace")).foregroundStyle(Color.appTextTertiary))
                     .font(.app(26, weight: .bold)).tracking(-0.3)
                     .multilineTextAlignment(.center).tint(.appPrimary)
@@ -413,6 +415,11 @@ struct EditWorkspaceSheet: View {
         Task {
             do {
                 try await store.update(workspace, name: trimmed, icon: icon, color: color)
+                if let photo, let jpeg = ProfileViewModel.avatarJPEG(photo) {
+                    try await store.setImage(of: workspace, jpeg: jpeg)
+                } else if photoRemoved, workspace.imageUrl?.isEmpty == false {
+                    try await store.setImage(of: workspace, jpeg: nil)
+                }
                 dismiss()
             } catch {
                 isSaving = false

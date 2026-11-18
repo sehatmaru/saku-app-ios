@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 /// The colour a workspace carries: one of `WalletIcon.presetColors` by name (K32).
 enum WorkspaceStyle {
@@ -7,30 +8,117 @@ enum WorkspaceStyle {
     }
 }
 
-/// A workspace's face: its colour with its icon in white.
+/// A workspace's face: its picture when the Owner set one, else its colour with its icon in white.
 struct WorkspaceBadge: View {
     let icon: String?
     let color: String?
     var size: CGFloat = 40
+    var imageUrl: String?
+    /// A picture chosen but not saved yet.
+    var image: UIImage?
 
-    init(icon: String?, color: String?, size: CGFloat = 40) {
-        self.icon = icon; self.color = color; self.size = size
+    init(icon: String?, color: String?, size: CGFloat = 40, imageUrl: String? = nil, image: UIImage? = nil) {
+        self.icon = icon; self.color = color; self.size = size; self.imageUrl = imageUrl; self.image = image
     }
 
     init(_ workspace: Workspace, size: CGFloat = 40) {
-        self.init(icon: workspace.isPersonal ? "person.fill" : workspace.icon, color: workspace.isPersonal ? "abu" : workspace.color, size: size)
+        self.init(icon: workspace.isPersonal ? "person.fill" : workspace.icon, color: workspace.isPersonal ? "abu" : workspace.color, size: size,
+                  imageUrl: workspace.isPersonal ? nil : workspace.imageUrl)
     }
 
     var body: some View {
-        Circle()
-            .fill(WorkspaceStyle.color(color))
-            .frame(width: size, height: size)
-            .overlay {
-                Image(systemName: icon ?? "person.2.fill")
-                    .font(.system(size: size * 0.45))
-                    .foregroundStyle(.white)
+        ZStack {
+            Circle().fill(WorkspaceStyle.color(color))
+            Image(systemName: icon ?? "person.2.fill")
+                .font(.system(size: size * 0.45))
+                .foregroundStyle(.white)
+            if let image {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else if let raw = imageUrl, !raw.isEmpty, let url = URL(string: raw) {
+                AsyncImage(url: url) { loaded in loaded.resizable().scaledToFill() } placeholder: { Color.clear }
             }
-            .accessibilityHidden(true)
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .accessibilityHidden(true)
+    }
+}
+
+/// The big badge of the create and edit sheets: tap it to choose a picture; the icon stays as the fallback.
+struct WorkspacePhotoBadge: View {
+    let icon: String?
+    let color: String?
+    let imageUrl: String?
+    @Binding var photo: UIImage?
+    @Binding var removed: Bool
+    @State private var item: PhotosPickerItem?
+
+    private var shownUrl: String? { removed ? nil : imageUrl }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            PhotosPicker(selection: $item, matching: .images) {
+                WorkspaceBadge(icon: icon, color: color, size: 72, imageUrl: shownUrl, image: photo)
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "camera.fill").font(.system(size: 12)).foregroundStyle(Color.appPrimary)
+                            .frame(width: 26, height: 26).background(Color.appBackground, in: Circle())
+                            .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
+                            .offset(x: 4, y: 4)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(L("Ganti foto"))
+            if photo != nil || (shownUrl?.isEmpty == false) {
+                Button(L("Hapus foto")) { photo = nil; removed = true }
+                    .font(.app(13, weight: .semibold)).foregroundStyle(Color.appError)
+            }
+        }
+        .onChange(of: item) { _, picked in
+            guard let picked else { return }
+            Task {
+                if let data = try? await picked.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                    photo = image; removed = false
+                }
+                item = nil
+            }
+        }
+    }
+}
+
+/// Overlapping faces of a Workspace's members, the Owner first with a crown on the edge of the picture.
+struct WorkspaceMemberStack: View {
+    let members: [WorkspaceMember]
+    var size: CGFloat = 28
+    var limit = 5
+
+    var body: some View {
+        let shown = Array(members.prefix(limit))
+        HStack(spacing: -size * 0.28) {
+            ForEach(Array(shown.enumerated()), id: \.element.id) { index, member in
+                MemberAvatar(member: member, size: size)
+                    .overlay(Circle().stroke(Color.appBackground, lineWidth: 2.5))
+                    .overlay(alignment: .topTrailing) { if member.isOwner { crown } }
+                    .zIndex(Double(shown.count - index))
+            }
+            if members.count > limit {
+                Text("+\(members.count - limit)")
+                    .font(.app(size * 0.38, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                    .frame(width: size, height: size).background(Color.appFill, in: Circle())
+                    .overlay(Circle().stroke(Color.appBackground, lineWidth: 2.5))
+            }
+        }
+        .padding(.vertical, 3)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(members.map(\.name).joined(separator: ", "))
+    }
+
+    private var crown: some View {
+        Image(systemName: "crown.fill")
+            .font(.system(size: size * 0.3, weight: .bold)).foregroundStyle(.white)
+            .frame(width: size * 0.5, height: size * 0.5)
+            .background(Color.appWarning, in: Circle())
+            .overlay(Circle().stroke(Color.appBackground, lineWidth: 1.5))
+            .offset(x: size * 0.14, y: -size * 0.14)
     }
 }
 
@@ -66,6 +154,8 @@ struct WorkspacePill: View {
 /// One line of the switcher and of "Workspace saya".
 struct WorkspaceRow<Trailing: View>: View {
     let workspace: Workspace
+    /// The faces under the name of a shared Workspace, once known.
+    var members: [WorkspaceMember]?
     @ViewBuilder var trailing: () -> Trailing
 
     var secondLine: String {
@@ -81,10 +171,14 @@ struct WorkspaceRow<Trailing: View>: View {
                     .font(.app(16, weight: .semibold))
                     .foregroundStyle(Color.appText)
                     .lineLimit(1)
-                Text(secondLine)
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .lineLimit(1)
+                if let members, !workspace.isPersonal, !members.isEmpty {
+                    WorkspaceMemberStack(members: members)
+                } else {
+                    Text(secondLine)
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                        .lineLimit(1)
+                }
             }
             Spacer(minLength: 8)
             tag
@@ -119,10 +213,20 @@ struct WorkspaceSwitcherSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(L("Workspace"))
-                .font(.app(22, weight: .bold)).tracking(-0.3)
-                .foregroundStyle(Color.appText)
-                .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 8)
+            HStack {
+                Text(L("Workspace"))
+                    .font(.app(22, weight: .bold)).tracking(-0.3)
+                    .foregroundStyle(Color.appText)
+                Spacer(minLength: 12)
+                Button { dismiss(); onJoin() } label: {
+                    Text(L("Punya kode?"))
+                        .font(.app(13, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                        .padding(.horizontal, 12).frame(height: 32)
+                        .background(Color.appPrimary.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(PressScaleStyle())
+            }
+            .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 8)
 
             if store.loadFailed && store.spaces.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
@@ -136,7 +240,7 @@ struct WorkspaceSwitcherSheet: View {
 
             ForEach(store.spaces.filter { $0.daysUntilDeletion == nil }) { workspace in
                 Button { choose(workspace) } label: {
-                    WorkspaceRow(workspace: workspace) {
+                    WorkspaceRow(workspace: workspace, members: store.memberPreviews[workspace.id]) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(Color.appPrimary)
@@ -149,9 +253,9 @@ struct WorkspaceSwitcherSheet: View {
             }
         }
         .filterSheet {
-            SmartSheetFooter(primary: L("Buat Workspace"), primaryIcon: "plus", secondary: L("Punya kode?"),
-                             onPrimary: { dismiss(); onCreate() }, onSecondary: { dismiss(); onJoin() })
+            SmartSheetFooter(primary: L("Tambah Workspace"), primaryIcon: "plus", onPrimary: { dismiss(); onCreate() })
         }
+        .task { await store.loadMemberPreviews() }
     }
 
     private func choose(_ workspace: Workspace) {
@@ -269,7 +373,7 @@ struct WorkspaceNewsSheet: View {
     var body: some View {
         SmartSheet(tone: .consent, icon: "person.2.fill", title: L("Catat uang bersama di Workspace"),
                    message: L("Ajak pasangan, keluarga, atau rekan usaha. Setiap catatan menunjukkan siapa yang mencatat. Workspace Pribadi-mu tetap milikmu sendiri.")) {
-            SmartSheetFooter(primary: L("Buat Workspace"), secondary: L("Nanti saja"), onPrimary: onCreate, onSecondary: { dismiss() })
+            SmartSheetFooter(primary: L("Tambah Workspace"), secondary: L("Nanti saja"), onPrimary: onCreate, onSecondary: { dismiss() })
         }
     }
 }

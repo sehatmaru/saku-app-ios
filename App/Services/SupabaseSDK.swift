@@ -261,6 +261,15 @@ enum SupabaseSDK {
         return "\(url.absoluteString)?v=\(Int(Date().timeIntervalSince1970))"
     }
 
+    /// Workspace picture: `workspace-images/<space id>/image.jpg`, only the Owner may write (storage policy). Same cache-busting `v` as avatars.
+    static func uploadWorkspaceImage(spaceId: UUID, jpeg: Data) async throws -> String {
+        let path = "\(spaceId.uuidString.lowercased())/image.jpg"
+        let bucket = client.storage.from("workspace-images")
+        try await bucket.upload(path, data: jpeg, options: FileOptions(contentType: "image/jpeg", upsert: true))
+        let url = try bucket.getPublicURL(path: path)
+        return "\(url.absoluteString)?v=\(Int(Date().timeIntervalSince1970))"
+    }
+
     static func updateProfile(id: UUID, displayName: String?, avatarURL: String? = nil) async throws {
         var payload: [String: AnyJSON] = [:]
         if let displayName {
