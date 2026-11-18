@@ -7,84 +7,60 @@ struct WorkspaceListView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 28) {
                 if store.loadFailed && store.spaces.isEmpty {
-                    failure.padding(.horizontal, 24).padding(.top, 8)
+                    failure
                 } else {
                     if store.shared.isEmpty == false { launchRow }
-                    label(L("Workspace saya"))
-                    ForEach(store.spaces) { workspace in
-                        NavigationLink(destination: WorkspaceSettingsView(workspaceId: workspace.id).detailPage()) {
-                            WorkspaceRow(workspace: workspace) {
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(Color.appTextTertiary)
+                    VStack(alignment: .leading, spacing: 10) {
+                        label(L("Workspace saya"))
+                        VStack(spacing: 0) {
+                            ForEach(Array(store.spaces.enumerated()), id: \.element.id) { index, workspace in
+                                if index > 0 { Divider().overlay(Color.appBorder.opacity(0.5)).padding(.leading, 70) }
+                                NavigationLink(destination: WorkspaceSettingsView(workspaceId: workspace.id).detailPage()) {
+                                    WorkspaceRow(workspace: workspace) {
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(Color.appTextTertiary)
+                                    }
+                                    .padding(.horizontal, 16)
+                                }
+                                .buttonStyle(RowPressStyle())
                             }
-                            .padding(.horizontal, 24)
                         }
-                        .buttonStyle(RowPressStyle())
+                        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     }
-                    Button { store.requestCreate() } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color.appPrimary)
-                                .frame(width: 40, height: 40)
-                                .background(Color.appFill, in: Circle())
-                            Text(L("Tambah Workspace"))
-                                .font(.app(16, weight: .semibold))
-                                .foregroundStyle(Color.appPrimary)
-                            Spacer(minLength: 8)
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            tile("plus", L("Tambah Workspace")) { store.requestCreate() }
+                            tile("number", L("Gabung dengan kode")) { store.requestJoin() }
                         }
-                        .frame(minHeight: 64)
-                        .padding(.horizontal, 24)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(RowPressStyle())
-                    Button { store.requestJoin() } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: "number")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color.appPrimary)
-                                .frame(width: 40, height: 40)
-                                .background(Color.appFill, in: Circle())
-                            Text(L("Gabung dengan kode"))
-                                .font(.app(16, weight: .semibold))
-                                .foregroundStyle(Color.appPrimary)
-                            Spacer(minLength: 8)
-                        }
-                        .frame(minHeight: 64)
-                        .padding(.horizontal, 24)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(RowPressStyle())
-                    if store.shared.contains(where: { !$0.isReadOnly && $0.daysUntilDeletion == nil }) {
-                        Button { showsMerge = true } label: {
-                            HStack(spacing: 14) {
-                                Image(systemName: "arrow.triangle.merge")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(Color.appPrimary)
-                                    .frame(width: 40, height: 40)
-                                    .background(Color.appFill, in: Circle())
-                                Text(L("Gabungkan Workspace Pribadi"))
-                                    .font(.app(16, weight: .semibold))
-                                    .foregroundStyle(Color.appPrimary)
-                                Spacer(minLength: 8)
+                        if store.shared.contains(where: { !$0.isReadOnly && $0.daysUntilDeletion == nil }) {
+                            Button { showsMerge = true } label: {
+                                HStack(spacing: 12) {
+                                    icon("arrow.triangle.merge")
+                                    Text(L("Gabungkan Workspace Pribadi"))
+                                        .font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
+                                    Spacer(minLength: 8)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+                                }
+                                .padding(16)
+                                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                .contentShape(Rectangle())
                             }
-                            .frame(minHeight: 64)
-                            .padding(.horizontal, 24)
-                            .contentShape(Rectangle())
+                            .buttonStyle(PressScaleStyle())
                         }
-                        .buttonStyle(RowPressStyle())
-                    }
-                    if store.shared.isEmpty {
-                        Text(L("Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain."))
-                            .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                            .padding(.horizontal, 24).padding(.top, 8)
+                        if store.shared.isEmpty {
+                            Text(L("Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain."))
+                                .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+                                .padding(.horizontal, 4).padding(.top, 4)
+                        }
                     }
                 }
             }
-            .padding(.bottom, 24)
+            .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 32)
         }
         .background(Color.appBackground)
         .navigationTitle(L("Workspace"))
@@ -94,8 +70,28 @@ struct WorkspaceListView: View {
     }
 
     private func label(_ text: String) -> some View {
-        Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-            .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 2)
+        Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.horizontal, 4)
+    }
+
+    private func icon(_ name: String) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.appPrimary)
+            .frame(width: 36, height: 36).background(Color.appPrimary.opacity(0.14), in: Circle())
+    }
+
+    private func tile(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 12) {
+                icon(symbol)
+                Text(title).font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
+                    .multilineTextAlignment(.leading).lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+            .padding(16)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressScaleStyle())
     }
 
     private var failure: some View {
@@ -109,7 +105,7 @@ struct WorkspaceListView: View {
 
     /// "Dibuka saat app dijalankan": a Workspace that is read-only or waiting for deletion cannot be the default.
     private var launchRow: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 10) {
             label(L("Dibuka saat app dijalankan"))
             Menu {
                 ForEach(store.spaces) { workspace in
@@ -130,8 +126,9 @@ struct WorkspaceListView: View {
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
                 }
-                .frame(minHeight: 48)
-                .padding(.horizontal, 24)
+                .frame(minHeight: 52)
+                .padding(.horizontal, 16)
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .contentShape(Rectangle())
             }
         }
