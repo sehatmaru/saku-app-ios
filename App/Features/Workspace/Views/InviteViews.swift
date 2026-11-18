@@ -172,12 +172,17 @@ struct JoinWorkspaceSheet: View {
     /// Medium until the keyboard comes up, full while it is up, medium again after.
     @State private var detent: PresentationDetent = .medium
 
+    private static let phaseChange = AnyTransition.asymmetric(
+        insertion: .opacity.combined(with: .offset(y: 14)), removal: .opacity)
+    /// Counts refused codes, so the code box shakes once per refusal.
+    @State private var refusals = 0
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             switch phase {
-            case .entry: entry
-            case .preview(let preview): previewView(preview)
-            case .joined(let id): joined(id)
+            case .entry: entry.transition(Self.phaseChange)
+            case .preview(let preview): previewView(preview).transition(Self.phaseChange)
+            case .joined(let id): joined(id).transition(Self.phaseChange)
             }
         }
         .animation(.settle(0.36), value: phase)
@@ -204,6 +209,14 @@ struct JoinWorkspaceSheet: View {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(problem != nil ? Color.appError : (focused ? Color.appPrimary : Color.clear), lineWidth: 1.5)
                 }
+                .animation(.settle(0.2), value: problem)
+                .animation(.settle(0.2), value: focused)
+                .keyframeAnimator(initialValue: 0.0, trigger: refusals) { view, x in view.offset(x: x) } keyframes: { _ in
+                    KeyframeTrack {
+                        LinearKeyframe(-9, duration: 0.05); LinearKeyframe(9, duration: 0.08)
+                        LinearKeyframe(-6, duration: 0.08); LinearKeyframe(4, duration: 0.07); LinearKeyframe(0, duration: 0.06)
+                    }
+                }
                 .padding(.top, 24)
                 .background {
                     // the system keyboard types into this field; the boxes only show what it holds
@@ -227,10 +240,13 @@ struct JoinWorkspaceSheet: View {
             Group {
                 if let problem {
                     Text(problem).foregroundStyle(Color.appError)
+                        .transition(.opacity.combined(with: .offset(y: -6)))
                 } else {
                     Text(L("Contoh: ABCD EFGH")).foregroundStyle(Color.appTextSecondary)
+                        .transition(.opacity)
                 }
             }
+            .animation(.settle(0.25), value: problem)
             .font(.app(14)).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 10).padding(.horizontal, 4)
             Button { text = InviteCode.normalized(UIPasteboard.general.string ?? ""); problem = nil } label: {
                 Label(L("Tempel dari papan klip"), systemImage: "doc.on.clipboard")
@@ -258,7 +274,7 @@ struct JoinWorkspaceSheet: View {
 
     private func previewView(_ preview: InvitePreview) -> some View {
         VStack(spacing: 0) {
-            WorkspaceBadge(icon: preview.icon, color: preview.color, size: 88, imageUrl: preview.imageUrl)
+            WorkspaceBadge(icon: preview.icon, color: preview.color, size: 88, imageUrl: preview.imageUrl).popIn()
             Text(preview.name ?? "").font(.app(24, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
                 .multilineTextAlignment(.center).lineLimit(2).padding(.top, 16)
             VStack(spacing: 0) {
@@ -289,7 +305,7 @@ struct JoinWorkspaceSheet: View {
     private func joined(_ id: UUID) -> some View {
         let workspace = store.spaces.first { $0.id == id }
         return VStack(spacing: 8) {
-            if let workspace { WorkspaceBadge(workspace, size: 72).padding(.top, 8) }
+            if let workspace { WorkspaceBadge(workspace, size: 72).padding(.top, 8).popIn() }
             Text(L("Kamu sudah bergabung")).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
             Text(L("%@ ada di daftar Workspace-mu.", workspace?.displayName ?? ""))
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
@@ -326,6 +342,12 @@ struct JoinWorkspaceSheet: View {
 
     // MARK: Actions
 
+    private func refuse(_ message: String) {
+        problem = message
+        refusals += 1
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+    }
+
     private func check() async {
         focused = false
         guard InviteCode.isComplete(text) else { return }
@@ -337,11 +359,11 @@ struct JoinWorkspaceSheet: View {
                 problem = result.status == .ok ? nil : result.status.problem
                 phase = .preview(result)
             } else {
-                problem = result.status.problem
+                refuse(result.status.problem ?? L("Kode belum bisa dicek. Coba lagi."))
             }
         } catch let error as WorkspaceError {
-            problem = error == .guest ? L("Gabung ke Workspace perlu akun.") : L("Kode belum bisa dicek. Coba lagi.")
-        } catch { problem = L("Kode belum bisa dicek. Coba lagi.") }
+            refuse(error == .guest ? L("Gabung ke Workspace perlu akun.") : L("Kode belum bisa dicek. Coba lagi."))
+        } catch { refuse(L("Kode belum bisa dicek. Coba lagi.")) }
     }
 
     private func join() async {
@@ -368,3 +390,14 @@ struct JoinWorkspaceSheet: View {
         }
     }
 }
+
+
+/// The badge grows in with a soft spring when its screen appears.
+private struct PopIn: ViewModifier {
+    @State private var shown = false
+    func body(content: Content) -> some View {
+        content.scaleEffect(shown ? 1 : 0.7).opacity(shown ? 1 : 0)
+            .onAppear { withAnimation(.spring(response: 0.45, dampingFraction: 0.72).delay(0.08)) { shown = true } }
+    }
+}
+private extension View { func popIn() -> some View { modifier(PopIn()) } }
