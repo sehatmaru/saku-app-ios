@@ -168,6 +168,8 @@ struct JoinWorkspaceSheet: View {
     @State private var showsMerge = false
     @State private var mergeTarget: UUID?
     @State private var opensAtLaunch = false
+    @FocusState private var focused: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             switch phase {
@@ -178,12 +180,8 @@ struct JoinWorkspaceSheet: View {
         }
         .animation(.settle(0.36), value: phase)
         .disabled(isBusy)
-        .filterSheet(fullHeight: true) {
-            VStack(spacing: 12) {
-                if phase == .entry { keypad }
-                footer
-            }
-        }
+        .filterSheet(fullHeight: true) { footer }
+        .onAppear { focused = true }
     }
 
     // MARK: Phases
@@ -196,6 +194,24 @@ struct JoinWorkspaceSheet: View {
             codeSlots
                 .frame(maxWidth: .infinity)
                 .padding(.top, 28)
+                .background {
+                    // the system keyboard types into this field; the boxes only show what it holds
+                    TextField("", text: $text)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .keyboardType(.asciiCapable)
+                        .focused($focused)
+                        .submitLabel(.go)
+                        .onSubmit { if InviteCode.isComplete(text) { Task { await check() } } }
+                        .opacity(0.02)
+                        .onChange(of: text) { _, value in
+                            let clean = InviteCode.normalized(value)
+                            if clean != value { text = clean }
+                            problem = nil
+                        }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { focused = true }
             Button { text = InviteCode.normalized(UIPasteboard.general.string ?? ""); problem = nil } label: {
                 Label(L("Tempel dari papan klip"), systemImage: "doc.on.clipboard")
                     .font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
@@ -239,50 +255,6 @@ struct JoinWorkspaceSheet: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("Kode undangan"))
         .accessibilityValue(text)
-    }
-
-    /// The code's own keyboard: letters and digits only, every key the same size, no suggestions, nothing sliding over the sheet.
-    private var keypad: some View {
-        let rows = ["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
-        let gap: CGFloat = 6
-        return GeometryReader { proxy in
-            let key = (proxy.size.width - gap * 9) / 10
-            VStack(spacing: 8) {
-                ForEach(rows.indices, id: \.self) { index in
-                    HStack(spacing: gap) {
-                        ForEach(Array(rows[index]), id: \.self) { char in
-                            keyButton(width: key) { Text(String(char)).font(.app(19, weight: .semibold)).foregroundStyle(Color.appText) } action: { type(char) }
-                                .disabled(InviteCode.isComplete(text))
-                        }
-                        if index == rows.count - 1 {
-                            keyButton(width: key * 1.5) { Image(systemName: "delete.left").font(.system(size: 18)).foregroundStyle(Color.appText) } action: { backspace() }
-                                .disabled(text.isEmpty).accessibilityLabel(L("Hapus"))
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-        }
-        .frame(height: 4 * 52 + 3 * 8)
-        .padding(.horizontal, 12)
-    }
-
-    private func keyButton<Label: View>(width: CGFloat, @ViewBuilder _ label: () -> Label, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            label().frame(width: width, height: 52)
-                .background(Color.appText.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(PressScaleStyle())
-    }
-
-    private func type(_ key: Character) {
-        UISelectionFeedbackGenerator().selectionChanged()
-        text = InviteCode.normalized(text + String(key)); problem = nil
-    }
-
-    private func backspace() {
-        UISelectionFeedbackGenerator().selectionChanged()
-        text = String(text.dropLast()); problem = nil
     }
 
     private func previewView(_ preview: InvitePreview) -> some View {
