@@ -69,6 +69,13 @@ final class WorkspaceStore: ObservableObject {
 
     var canEditActive: Bool { activeIsPersonal || active?.isOwner == true }
 
+    /// K45: in a shared Workspace only the Owner sets up categories and budgets; a member who tries is told once.
+    func requireOwner() -> Bool {
+        guard !canEditActive else { return true }
+        ToastCenter.shared.show(L("Hanya Pemilik yang bisa mengatur kategori dan budget Workspace ini."))
+        return false
+    }
+
     func requestCreate() { createRequests += 1 }
 
     func load() async {

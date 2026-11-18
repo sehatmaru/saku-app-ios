@@ -10083,6 +10083,16 @@
         }
       }
     },
+    "Hanya Pemilik yang bisa mengatur kategori dan budget Workspace ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the Owner can manage this Workspace's categories and budgets."
+          }
+        }
+      }
+    },
     "Hanya Pemilik yang bisa mengubah": {
       "localizations": {
         "en": {

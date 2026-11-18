@@ -128,7 +128,7 @@ struct BudgetDetailView: View {
                     if isCancellingTemporary {
                         ProgressView()
                     } else {
-                        Button(L("Batalkan")) { showCancelTemporaryDialog = true }
+                        Button(L("Batalkan")) { if WorkspaceStore.shared.requireOwner() { showCancelTemporaryDialog = true } }
                             .font(.app(13, weight: .semibold))
                             .foregroundStyle(Color.appPrimary)
                     }
@@ -138,7 +138,7 @@ struct BudgetDetailView: View {
                 .padding(.top, 10)
             }
 
-            Button { showAdjust = true } label: {
+            Button { if WorkspaceStore.shared.requireOwner() { showAdjust = true } } label: {
                 Label(L("Sesuaikan"), systemImage: "slider.horizontal.3")
                     .font(.app(16, weight: .semibold))
                     .foregroundStyle(Color.appText)
@@ -188,7 +188,7 @@ struct BudgetDetailView: View {
     // MARK: Delete bar
 
     private var deleteBar: some View {
-        Button { showUnsetDialog = true } label: {
+        Button { if WorkspaceStore.shared.requireOwner() { showUnsetDialog = true } } label: {
             Label(L("Hapus budget"), systemImage: "trash")
                 .font(.app(16, weight: .semibold))
                 .foregroundStyle(Color(light: 0xD1343A, dark: 0xFF6B6B))

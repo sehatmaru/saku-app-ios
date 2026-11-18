@@ -91,6 +91,7 @@ struct CategoriesView: View {
     }
 
     private func add() {
+        guard WorkspaceStore.shared.requireOwner() else { return }
         if atLimit(type) { limitReason = .categories(type) } else { form = FormItem(id: "new-\(type.rawValue)", mode: .new(type)) }
     }
 
@@ -238,6 +239,7 @@ struct CategoriesView: View {
 
     private func row(_ category: Category) -> some View {
         Button {
+            guard WorkspaceStore.shared.requireOwner() else { return }
             form = FormItem(id: category.id, mode: .edit(category))
         } label: {
             HStack(spacing: 14) {
@@ -309,7 +311,7 @@ struct CategoriesView: View {
                         }
                         .opacity(0.65)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        Button("Tampilkan") { show(category) }
+                        Button("Tampilkan") { if WorkspaceStore.shared.requireOwner() { show(category) } }
                             .font(.app(14, weight: .semibold))
                             .foregroundStyle(Color.appPrimary)
                             .frame(minWidth: 44, minHeight: 44)

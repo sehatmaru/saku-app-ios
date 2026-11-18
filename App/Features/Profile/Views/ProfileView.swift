@@ -379,7 +379,8 @@ struct ProfileView: View {
             }
 
             NavigationLink(destination: CategoriesView()) {
-                row(icon: "square.grid.2x2", title: L("Kategori"), subtitle: sharedSpaceName) {
+                row(icon: "square.grid.2x2", title: L("Kategori"),
+                    subtitle: sharedSpaceName.map { workspaceStore.canEditActive ? $0 : L("%@ · Hanya Pemilik yang bisa mengubah", $0) }) {
                     chevron
                 }
                 .contentShape(Rectangle())
