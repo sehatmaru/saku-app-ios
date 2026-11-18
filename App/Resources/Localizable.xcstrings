@@ -3173,6 +3173,16 @@
         }
       }
     },
+    "Awal periode disimpan, berlaku untuk semua anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period start saved, applies to every member"
+          }
+        }
+      }
+    },
     "BCA, GoPay, dan lainnya jadi draf": {
       "localizations": {
         "en": {
@@ -6779,6 +6789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@'s records stay in the Workspace, marked as a former member. They need a new code to join again."
+          }
+        }
+      }
+    },
+    "Catatan ini sudah dihapus oleh anggota lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This record was already deleted by another member."
           }
         }
       }
@@ -12119,6 +12139,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You can't use your own code."
+          }
+        }
+      }
+    },
+    "Kamu tidak lagi punya akses ke Workspace itu. Kembali ke Workspace utama.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You no longer have access to that Workspace. Back to your main Workspace."
           }
         }
       }
@@ -18209,6 +18239,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This change takes effect on %@. The current period (%@ - %@) keeps the old payday so this month's and past months' numbers don't change."
+          }
+        }
+      }
+    },
+    "Perubahan ini berlaku untuk semua anggota Workspace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This change applies to every member of the Workspace."
           }
         }
       }
@@ -26191,6 +26231,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This Workspace is full, 5 members at most."
+          }
+        }
+      }
+    },
+    "Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf di %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace can't take new records. Your entry was saved as a draft in %@."
           }
         }
       }

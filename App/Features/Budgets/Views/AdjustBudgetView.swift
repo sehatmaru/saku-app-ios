@@ -325,6 +325,7 @@ struct AdjustBudgetView: View {
             if ok {
                 dismiss()
                 onSaved()
+                WorkspaceStore.shared.announceSharedChange()
             } else {
                 failed = true
             }

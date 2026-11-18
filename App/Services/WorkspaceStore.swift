@@ -56,7 +56,7 @@ final class WorkspaceStore: ObservableObject {
     var activeIsPersonal: Bool { active?.isPersonal ?? true }
     /// K35: a shared Workspace calls the cycle date "Awal periode"; Workspace Pribadi keeps "Tanggal gajian". Same data and maths.
     static func paydayTitle(shared: Bool) -> String { shared ? L("Awal periode") : L("Tanggal gajian") }
-    static func paydaySaved(shared: Bool) -> String { shared ? L("Awal periode disimpan") : L("Tanggal gajian disimpan") }
+    static func paydaySaved(shared: Bool) -> String { shared ? L("Awal periode disimpan, berlaku untuk semua anggota") : L("Tanggal gajian disimpan") }
     var paydayTitle: String { Self.paydayTitle(shared: !activeIsPersonal) }
     /// Read-only (K9, A3) or waiting to be deleted (K21): the open Workspace takes no new records.
     var activeBlocksWriting: Bool { active.map { $0.isReadOnly || $0.daysUntilDeletion != nil } ?? false }
@@ -66,6 +66,12 @@ final class WorkspaceStore: ObservableObject {
         guard activeBlocksWriting else { return true }
         ToastCenter.shared.show(L("Workspace ini baca saja, jadi belum bisa menambah catatan."))
         return false
+    }
+
+    /// A8 (13): an Owner's change to categories, budgets or the period start touches every member; say so once it is saved.
+    func announceSharedChange() {
+        guard !activeIsPersonal else { return }
+        ToastCenter.shared.show(L("Perubahan ini berlaku untuk semua anggota Workspace."))
     }
 
     var canEditActive: Bool { activeIsPersonal || active?.isOwner == true }
@@ -79,6 +85,18 @@ final class WorkspaceStore: ObservableObject {
 
     func requestCreate() { createRequests += 1 }
 
+    /// Set around a loss the person caused themselves (leaving), so `load()` does not announce it.
+    private var quietLoss = false
+
+    /// K44 / A8 (6): a new record was refused because access is gone or the Workspace turned read-only. Reloads the list
+    /// (A2 moves the default to Workspace Pribadi when needed) and says whether the refusal was of that kind.
+    func handleRejection(_ error: Error) async -> Bool {
+        let text = String(describing: error)
+        guard text.contains("space_forbidden") || text.contains("space_read_only") else { return false }
+        await load()
+        return true
+    }
+
     func load() async {
         do {
             let rows: [Workspace] = try await SupabaseSDK.client.rpc("my_spaces").execute().value
@@ -91,7 +109,10 @@ final class WorkspaceStore: ObservableObject {
             // the workspace in use is gone or hidden (left, removed, deleted): back to the default (K21)
             if let current = SpaceStore.activeSpaceId.flatMap(UUID.init(uuidString:)), !rows.contains(where: { $0.id == current }) {
                 SpaceStore.setActive(nil)
+                // A8 (5): told once when removed or the Workspace was deleted; leaving on purpose says nothing
+                if !quietLoss { ToastCenter.shared.show(L("Kamu tidak lagi punya akses ke Workspace itu. Kembali ke Workspace utama.")) }
             }
+            quietLoss = false
             activeId = SpaceStore.activeSpaceId.flatMap(UUID.init(uuidString:)) ?? home?.id
             if let active, !active.isPersonal, let day = active.paydayDay { PaydaySetting.day = day }
             if SpaceStore.activeSpaceId != before { reloadApp() }
@@ -273,6 +294,7 @@ final class WorkspaceStore: ObservableObject {
     func leave(_ workspace: Workspace) async throws {
         do {
             try await SupabaseSDK.client.rpc("leave_space", params: ["p_space": workspace.id]).execute()
+            quietLoss = true
             await load()
         } catch { throw WorkspaceError(error) }
     }
