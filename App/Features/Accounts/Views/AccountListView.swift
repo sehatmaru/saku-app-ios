@@ -233,14 +233,11 @@ struct AccountListView: View {
                     archive(account)
                 }
             }
-            .confirmationDialog(L("Pindahkan ke Workspace"), isPresented: Binding(get: { moving != nil }, set: { if !$0 { moving = nil } }),
-                                titleVisibility: .visible, presenting: moving) { account in
-                ForEach(moveTargets) { target in
-                    Button(target.displayName) { move(account, to: target) }
-                }
-                Button(L("Batal"), role: .cancel) {}
-            } message: { account in
-                Text(L("%@ pindah dengan saldo terakhir, tanpa riwayat. Dompet lama diarsipkan. Pindah ini satu arah.", account.name))
+            .sheet(item: $moving) { account in
+                WorkspaceChoiceSheet(
+                    title: L("Pindahkan ke Workspace"),
+                    message: L("%@ pindah dengan saldo terakhir, tanpa riwayat. Dompet lama diarsipkan. Pindah ini satu arah.", account.name),
+                    options: moveTargets.map { target in .init(title: target.displayName, workspace: target) { move(account, to: target) } })
             }
             .sheet(item: $makingMain) { account in
                 MakeMainWalletSheet(name: account.name, previous: viewModel.accounts.first(where: \.isDefault)?.name) {

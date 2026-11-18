@@ -50,14 +50,17 @@ struct InviteSheet: View {
             }
         }
         .task { await load() }
-        .alert(L("Buat kode baru?"), isPresented: $confirmsRenew) {
-            Button(L("Buat kode baru")) { Task { await load(renew: true) } }
-            Button(L("Batal"), role: .cancel) {}
-        } message: { Text(L("Kode yang lama langsung tidak berlaku.")) }
-        .alert(L("Cabut kode?"), isPresented: $confirmsRevoke) {
-            Button(L("Cabut kode"), role: .destructive) { Task { await revoke() } }
-            Button(L("Batal"), role: .cancel) {}
-        } message: { Text(L("Tidak ada yang bisa bergabung dengan kode ini lagi. Anggota yang sudah masuk tetap di Workspace.")) }
+        .confirmDialog(isPresented: $confirmsRenew, icon: "arrow.triangle.2.circlepath", title: L("Buat kode baru?"),
+                       message: L("Kode yang lama langsung tidak berlaku."), confirmTitle: L("Buat kode baru")) {
+            confirmsRenew = false
+            Task { await load(renew: true) }
+        }
+        .confirmDialog(isPresented: $confirmsRevoke, icon: "xmark.circle", destructive: true, title: L("Cabut kode?"),
+                       message: L("Tidak ada yang bisa bergabung dengan kode ini lagi. Anggota yang sudah masuk tetap di Workspace."),
+                       confirmTitle: L("Cabut kode")) {
+            confirmsRevoke = false
+            Task { await revoke() }
+        }
         .filterSheet { footer }
     }
 

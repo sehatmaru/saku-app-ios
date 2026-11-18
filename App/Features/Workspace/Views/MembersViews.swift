@@ -66,30 +66,39 @@ struct WorkspaceMembersSection: View {
         }
         .task(id: workspace.id) { await load() }
         .sheet(isPresented: $showsInvite, onDismiss: { Task { await load() } }) { InviteSheet(workspace: workspace) }
-        .confirmationDialog(picked?.name ?? "", isPresented: Binding(get: { picked != nil }, set: { if !$0 { picked = nil } }), titleVisibility: .visible) {
-            if let member = picked {
-                Button(L("Jadikan Pemilik")) { asking = .transfer(member) }
-                Button(L("Keluarkan dari Workspace"), role: .destructive) { asking = .remove(member) }
-            }
+        .sheet(item: $picked) { member in
+            WorkspaceChoiceSheet(title: member.name, options: [
+                .init(title: L("Jadikan Pemilik"), icon: "key.fill") { asking = .transfer(member) },
+                .init(title: L("Keluarkan dari Workspace"), icon: "person.fill.xmark", destructive: true) { asking = .remove(member) }
+            ])
         }
-        .alert(item: $asking) { ask in
-            switch ask {
-            case .remove(let member):
-                Alert(title: Text(L("Keluarkan %@?", member.name)),
-                      message: Text(L("Catatan %@ tetap di Workspace dan ditandai mantan anggota. Data yang dia bawa ke sini lewat gabung dengan riwayat juga tetap di Workspace. Semua kode undangan yang aktif dicabut, jadi dia perlu kode baru untuk masuk lagi.", member.name)),
-                      primaryButton: .destructive(Text(L("Keluarkan"))) { Task { await remove(member) } },
-                      secondaryButton: .cancel(Text(L("Batal"))))
-            case .transfer(let member):
-                Alert(title: Text(L("Jadikan %@ Pemilik?", member.name)),
-                      message: Text(L("Kamu menjadi anggota biasa. %@ yang bisa mengundang, mengeluarkan anggota, dan mengubah Workspace.", member.name)),
-                      primaryButton: .default(Text(L("Jadikan Pemilik"))) { Task { await transfer(member) } },
-                      secondaryButton: .cancel(Text(L("Batal"))))
-            }
+        .confirmDialog(isPresented: Binding(get: { if case .remove = asking { true } else { false } }, set: { if !$0 { asking = nil } }),
+                       icon: "person.fill.xmark", destructive: true, title: L("Keluarkan %@?", askedMember?.name ?? ""),
+                       message: L("Catatan %@ tetap di Workspace dan ditandai mantan anggota. Data yang dia bawa ke sini lewat gabung dengan riwayat juga tetap di Workspace. Semua kode undangan yang aktif dicabut, jadi dia perlu kode baru untuk masuk lagi.", askedMember?.name ?? ""),
+                       confirmTitle: L("Keluarkan")) {
+            guard let member = askedMember else { return }
+            asking = nil
+            Task { await remove(member) }
         }
-        .alert(L("Keluar dari %@?", workspace.displayName), isPresented: $confirmsLeave) {
-            Button(L("Keluar"), role: .destructive) { Task { await leave() } }
-            Button(L("Batal"), role: .cancel) {}
-        } message: { Text(L("Catatanmu tetap di Workspace dan ditandai mantan anggota. Kamu perlu kode baru untuk masuk lagi.")) }
+        .confirmDialog(isPresented: Binding(get: { if case .transfer = asking { true } else { false } }, set: { if !$0 { asking = nil } }),
+                       icon: "key.fill", title: L("Jadikan %@ Pemilik?", askedMember?.name ?? ""),
+                       message: L("Kamu menjadi anggota biasa. %@ yang bisa mengundang, mengeluarkan anggota, dan mengubah Workspace.", askedMember?.name ?? ""),
+                       confirmTitle: L("Jadikan Pemilik")) {
+            guard let member = askedMember else { return }
+            asking = nil
+            Task { await transfer(member) }
+        }
+        .confirmDialog(isPresented: $confirmsLeave, icon: "rectangle.portrait.and.arrow.right", destructive: true,
+                       title: L("Keluar dari %@?", workspace.displayName),
+                       message: L("Catatanmu tetap di Workspace dan ditandai mantan anggota. Kamu perlu kode baru untuk masuk lagi."),
+                       confirmTitle: L("Keluar")) {
+            confirmsLeave = false
+            Task { await leave() }
+        }
+    }
+
+    private var askedMember: WorkspaceMember? {
+        switch asking { case .remove(let m), .transfer(let m): m; case nil: nil }
     }
 
     private func label(_ text: String) -> some View {

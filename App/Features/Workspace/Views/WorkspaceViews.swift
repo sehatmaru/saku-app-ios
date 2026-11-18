@@ -286,3 +286,58 @@ struct WorkspaceNoticeSheet: View {
         }
     }
 }
+
+/// A list of choices on the shared sheet frame (replaces the system action sheet): a title, an optional line, tappable rows, Batal.
+/// The picked action runs once the sheet is gone, so it may open another sheet.
+struct WorkspaceChoiceSheet: View {
+    struct Option: Identifiable {
+        let id = UUID()
+        let title: String
+        var icon: String?
+        var workspace: Workspace?
+        var destructive = false
+        let action: () -> Void
+    }
+
+    @Environment(\.dismiss) private var dismiss
+    let title: String
+    var message: String?
+    let options: [Option]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title).font(.app(22, weight: .bold)).tracking(-0.3).fixedSize(horizontal: false, vertical: true)
+            if let message {
+                Text(message).font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2).padding(.top, 6)
+            }
+            VStack(spacing: 0) {
+                ForEach(options) { option in
+                    Button {
+                        dismiss()
+                        Task { try? await Task.sleep(for: .milliseconds(450)); option.action() }
+                    } label: {
+                        HStack(spacing: 12) {
+                            if let workspace = option.workspace { WorkspaceBadge(workspace, size: 36) }
+                            else if let icon = option.icon {
+                                Image(systemName: icon).font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(option.destructive ? Color.appError : Color.appTextSecondary)
+                                    .frame(width: 36, height: 36).background(Color.appFill, in: Circle())
+                            }
+                            Text(option.title).font(.app(16, weight: .medium))
+                                .foregroundStyle(option.destructive ? Color.appError : Color.appText)
+                            Spacer(minLength: 8)
+                        }
+                        .frame(minHeight: 56).contentShape(Rectangle())
+                    }
+                    .buttonStyle(RowPressStyle())
+                }
+            }
+            .padding(.top, 10)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(Color.appText)
+        .padding(.horizontal, 24).padding(.top, 18).padding(.bottom, 12)
+        .filterSheet { SmartSheetFooter(secondary: L("Batal"), onSecondary: { dismiss() }) }
+        .background(Color.appBackground)
+    }
+}
