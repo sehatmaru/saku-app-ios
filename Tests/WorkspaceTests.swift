@@ -175,4 +175,15 @@ final class MovePreviewTests: XCTestCase {
         XCTAssertEqual(WorkspaceError(E(description: "merge_map_invalid")), .mapInvalid)
         XCTAssertEqual(WorkspaceError(E(description: "wallet_limit_investment")), .walletLimit)
     }
+
+    func testCsvNamesTheRecorderOnlyWhenAsked() {
+        var txn = Transaction(id: "t", accountId: "a", counterpartyAccountId: nil, categoryId: nil, amount: 5000, type: .expense,
+                              description: nil, note: nil, date: Date(), delta: nil)
+        txn.recorderId = "ABC"
+        let plain = CsvExport.transactions([txn], accounts: [], categories: [], delimiter: .comma)
+        XCTAssertFalse(plain.contains(L("Pencatat")))
+        let named = CsvExport.transactions([txn], accounts: [], categories: [], delimiter: .comma, recorders: ["abc": "Ruth"])
+        XCTAssertTrue(named.contains(L("Pencatat")))
+        XCTAssertTrue(named.contains("Ruth"))
+    }
 }

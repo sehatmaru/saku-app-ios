@@ -2060,5 +2060,8 @@
   "Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf di %@.": "This Workspace can't take new records. Your entry was saved as a draft in %@.",
   "Catatan ini sudah dihapus oleh anggota lain.": "This record was already deleted by another member.",
   "Perubahan ini berlaku untuk semua anggota Workspace.": "This change applies to every member of the Workspace.",
-  "Awal periode disimpan, berlaku untuk semua anggota": "Period start saved, applies to every member"
+  "Awal periode disimpan, berlaku untuk semua anggota": "Period start saved, applies to every member",
+  "Dicatat oleh": "Recorded by",
+  "Semua anggota": "All members",
+  "Pencatat": "Recorded by"
 }

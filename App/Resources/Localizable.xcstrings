@@ -8063,6 +8063,16 @@
         }
       }
     },
+    "Dicatat oleh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded by"
+          }
+        }
+      }
+    },
     "Dicatat oleh %@": {
       "localizations": {
         "en": {
@@ -17313,6 +17323,16 @@
         }
       }
     },
+    "Pencatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded by"
+          }
+        }
+      }
+    },
     "Penerusan email": {
       "localizations": {
         "en": {
@@ -20639,6 +20659,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "All %lld drafts from Smart Tracker will be discarded. Transactions already saved are not affected."
+          }
+        }
+      }
+    },
+    "Semua anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All members"
           }
         }
       }

@@ -14,6 +14,26 @@ final class ExportViewModel: ObservableObject {
     @Published private(set) var historyBudgets: [BudgetHistoryBudget] = []
     @Published private(set) var amountChanges: [BudgetAmountChange] = []
 
+    /// A8 (14): in a shared Workspace the file can be limited to one member (nil = everyone); the PDF and CSV name who recorded.
+    @Published var recorder: String?
+    var isShared: Bool { !WorkspaceStore.shared.activeIsPersonal }
+    var members: [WorkspaceMember] { isShared ? WorkspaceStore.shared.activeMembers : [] }
+    /// The transactions the file is made of: everyone's, or one member's.
+    var scoped: [Transaction] { recorder.map { id in transactions.filter { $0.recorderId == id } } ?? transactions }
+    /// Who recorded, by id, for the CSV column; nil outside a shared Workspace.
+    var recorderNames: [String: String]? {
+        guard isShared else { return nil }
+        return Dictionary(members.map { ($0.profileId.uuidString.lowercased(), $0.isFormer ? L("Mantan anggota") : $0.name) },
+                          uniquingKeysWith: { first, _ in first })
+    }
+    /// Line under the PDF title: the Workspace and whose records it holds.
+    private var reportOwnerLabel: String? {
+        guard isShared, let workspace = WorkspaceStore.shared.active else { return nil }
+        let who = recorder.flatMap { id in members.first { $0.profileId.uuidString.lowercased() == id.lowercased() } }
+            .map { $0.isFormer ? L("Mantan anggota") : $0.name } ?? L("Semua anggota")
+        return "\(workspace.displayName) · \(who)"
+    }
+
     func load(userId: String?) async {
         guard let userId, !isReady else { return }
         async let transactionsTask = TransactionStore.shared.fetchAll(userId: userId)
@@ -44,15 +64,16 @@ final class ExportViewModel: ObservableObject {
     func reportModel(interval: DateInterval, cycle: PaydayCycle, userName: String, isPrivate: Bool,
                      isPreview: Bool = false) -> ReportModel {
         let expenseIds = Set(categories.filter { $0.type == .expense }.map(\.id))
-        let period = BudgetHistory.period(interval, budgets: historyBudgets, changes: amountChanges, transactions: transactions,
+        let period = BudgetHistory.period(interval, budgets: historyBudgets, changes: amountChanges, transactions: scoped,
                                           shownCategoryIds: expenseIds)
-        return ReportModel.make(interval: interval, cycle: cycle, userName: userName, transactions: transactions,
+        return ReportModel.make(interval: interval, cycle: cycle, userName: reportOwnerLabel ?? userName, transactions: scoped,
                                 accounts: accounts, categories: categories, period: period, isPrivate: isPrivate,
                                 isPreview: isPreview)
     }
 
     func transactionsCsv(interval: DateInterval?, delimiter: CsvExport.Delimiter) -> String {
-        CsvExport.transactions(transactions, accounts: accounts, categories: categories, interval: interval, delimiter: delimiter)
+        CsvExport.transactions(scoped, accounts: accounts, categories: categories, interval: interval, delimiter: delimiter,
+                               recorders: recorderNames)
     }
 
     func walletsCsv(delimiter: CsvExport.Delimiter) -> String {
