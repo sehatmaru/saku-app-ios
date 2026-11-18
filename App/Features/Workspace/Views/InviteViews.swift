@@ -191,7 +191,7 @@ struct JoinWorkspaceSheet: View {
         // the buttons ride up above the keyboard while it is open, like the other flows
         .scrollDismissesKeyboard(.interactively)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in detent = .large }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in detent = .medium }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in detent = .medium }
     }
 
     // MARK: Phases
@@ -234,7 +234,7 @@ struct JoinWorkspaceSheet: View {
                         }
                 }
                 .contentShape(Rectangle())
-                .onTapGesture { focused = true }
+                .onTapGesture { openKeyboard() }
             // the error shows under the box and gives way again when it clears
             if let problem {
                 Text(problem).foregroundStyle(Color.appError)
@@ -335,6 +335,16 @@ struct JoinWorkspaceSheet: View {
     }
 
     // MARK: Actions
+
+    /// The sheet grows first and the keyboard follows, so the buttons never ride up inside a sheet that is still short.
+    private func openKeyboard() {
+        guard !focused else { return }
+        detent = .large
+        Task {
+            try? await Task.sleep(for: .milliseconds(280))
+            focused = true
+        }
+    }
 
     private func refuse(_ message: String) {
         problem = message
