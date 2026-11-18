@@ -182,7 +182,7 @@ struct JoinWorkspaceSheet: View {
         }
         .animation(.settle(0.36), value: phase)
         .disabled(isBusy)
-        .filterSheet(detent: $detent) { footer }
+        .filterSheet(detent: $detent, atLeastMedium: true) { footer }
         // the buttons stay where they are; the keyboard simply covers them while it is up
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .scrollDismissesKeyboard(.interactively)
