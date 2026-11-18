@@ -606,7 +606,7 @@ struct ExportSheet: View {
                         }
                     }
                     ForEach(periods.indices, id: \.self) { index in
-                        let count = viewModel.transactions.filter { $0.date >= periods[index].interval.start && $0.date < periods[index].interval.end }.count
+                        let count = viewModel.scoped.filter { $0.date >= periods[index].interval.start && $0.date < periods[index].interval.end }.count
                         pickRow(periods[index].label, detail: L("%lld transaksi", count),
                                 isOn: list == .pdf ? pdfPeriodIndex == index : (!selectsAll && !usesCustomRange && selectedPeriods.contains(index))) {
                             if list == .pdf { pdfPeriodIndex = index; return }
