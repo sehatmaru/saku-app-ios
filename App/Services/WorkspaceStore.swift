@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Failures of the workspace calls the screens tell apart (TD T4 error codes).
 enum WorkspaceError: Error, Equatable {
-    case limit, guest, ownerDeleting, ownerMustTransfer, walletLimit, notMovable, readOnly, other
+    case limit, guest, ownerDeleting, ownerMustTransfer, walletLimit, notMovable, readOnly, mapInvalid, other
 
     init(_ error: Error) {
         let text = String(describing: error)
@@ -14,6 +14,7 @@ enum WorkspaceError: Error, Equatable {
         else if text.contains("wallet_limit") { self = .walletLimit }
         else if text.contains("account_not_movable") || text.contains("account_card_not_movable") { self = .notMovable }
         else if text.contains("space_read_only") { self = .readOnly }
+        else if text.contains("merge_map_invalid") || text.contains("space_forbidden") { self = .mapInvalid }
         else { self = .other }
     }
 }
@@ -168,6 +169,26 @@ final class WorkspaceStore: ObservableObject {
         } catch { throw WorkspaceError(error) }
     }
 
+    /// K39/K42: what moving would bring (counts, limit check, category suggestions). `rescue` reads a Workspace in its grace period.
+    func movePreview(rescue: Bool, space: UUID) async throws -> MovePreview {
+        do {
+            let params = rescue ? ["p_space": space] : ["p_target": space]
+            return try await SupabaseSDK.client.rpc(rescue ? "rescue_preview" : "merge_preview", params: params).execute().value
+        } catch { throw WorkspaceError(error) }
+    }
+
+    /// Moves it all or nothing (A6, A7). `map` sends each source category to a destination category id or "new".
+    func moveApply(rescue: Bool, space: UUID, map: [String: String]) async throws -> MoveResult {
+        struct Params: Encodable, Sendable { let p_space: UUID?, p_target: UUID?, p_map: [String: String] }
+        do {
+            let params = Params(p_space: rescue ? space : nil, p_target: rescue ? nil : space, p_map: map)
+            let result: MoveResult = try await SupabaseSDK.client.rpc(rescue ? "rescue_from_deleting_space" : "merge_personal_into_space", params: params).execute().value
+            await load()
+            reloadApp()
+            return result
+        } catch { throw WorkspaceError(error) }
+    }
+
     /// K36: one wallet, from the wallet's detail.
     func moveWallet(_ accountId: String, to target: Workspace) async throws {
         struct Params: Encodable, Sendable { let p_account: String, p_target: UUID }
@@ -279,3 +300,32 @@ final class WorkspaceStore: ObservableObject {
         spaces = []; activeId = nil; hasLoaded = false; loadFailed = false; resetNotice = false
     }
 }
+
+
+/// What `merge_preview` and `rescue_preview` return (TD 6.1).
+struct MovePreview: Decodable, Equatable {
+    struct Source: Decodable, Equatable, Identifiable {
+        let id: String, name: String, kind: String, uses: Int, suggested: String?
+        let icon: String?, color: String?
+    }
+    struct Destination: Decodable, Equatable, Identifiable {
+        let id: String, name: String, kind: String, hidden: Bool
+    }
+    let targetName: String
+    let canCreate: Bool
+    let wallets: Int, cards: Int, transactions: Int
+    let limitOk: Bool
+    let moneyAfter: Int, investmentAfter: Int
+    let source: [Source]
+    let destination: [Destination]
+
+    enum CodingKeys: String, CodingKey {
+        case targetName = "target_name", canCreate = "can_create", wallets, cards, transactions
+        case limitOk = "limit_ok", moneyAfter = "money_after", investmentAfter = "investment_after", source, destination
+    }
+
+    /// Categories that a moved record uses: these need an answer before the move (A7).
+    var needsMapping: [Source] { source.filter { $0.uses > 0 } }
+}
+
+struct MoveResult: Decodable, Equatable { let wallets: Int, transactions: Int }

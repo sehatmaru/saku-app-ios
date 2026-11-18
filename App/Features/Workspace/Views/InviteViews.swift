@@ -162,6 +162,8 @@ struct JoinWorkspaceSheet: View {
     @State private var problem: String?
     @State private var isBusy = false
     @State private var wasFirst = false
+    @State private var showsMerge = false
+    @State private var mergeTarget: UUID?
     @State private var opensAtLaunch = false
     @FocusState private var focused: Bool
 
@@ -250,9 +252,13 @@ struct JoinWorkspaceSheet: View {
                 .frame(minHeight: 48)
                 .padding(.top, 14)
             }
+            // K39: the offer to bring history, once, right after joining
+            Button(L("Gabungkan Workspace Pribadi saya")) { mergeTarget = id; showsMerge = true }
+                .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary).frame(minHeight: 44).padding(.top, 6)
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 24).padding(.top, 28)
+        .sheet(isPresented: $showsMerge) { MergeWizardView(mode: .merge(target: mergeTarget)) }
     }
 
     @ViewBuilder private var footer: some View {

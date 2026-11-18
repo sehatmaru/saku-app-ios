@@ -153,3 +153,26 @@ final class AttributionTests: XCTestCase {
         XCTAssertNil(f.recorderId)
     }
 }
+
+
+final class MovePreviewTests: XCTestCase {
+    func testDecodesTheServerPreviewAndListsWhatNeedsAnAnswer() throws {
+        let json = """
+        {"target_name":"Rumah","can_create":false,"wallets":3,"cards":1,"transactions":2,"limit_ok":true,"money_after":3,"investment_after":0,
+         "source":[{"id":"a","name":"Kopi","kind":"expense","icon":null,"color":null,"uses":2,"suggested":"x"},
+                   {"id":"b","name":"Kosong","kind":"expense","icon":null,"color":null,"uses":0,"suggested":null}],
+         "destination":[{"id":"x","name":"KOPI","kind":"expense","icon":null,"color":null,"hidden":false}]}
+        """
+        let preview = try JSONDecoder().decode(MovePreview.self, from: Data(json.utf8))
+        XCTAssertEqual(preview.wallets, 3)
+        XCTAssertFalse(preview.canCreate)
+        XCTAssertEqual(preview.needsMapping.map(\.id), ["a"])
+        XCTAssertEqual(preview.needsMapping.first?.suggested, "x")
+    }
+
+    func testServerErrorsOfMerge() {
+        struct E: Error, CustomStringConvertible { let description: String }
+        XCTAssertEqual(WorkspaceError(E(description: "merge_map_invalid")), .mapInvalid)
+        XCTAssertEqual(WorkspaceError(E(description: "wallet_limit_investment")), .walletLimit)
+    }
+}

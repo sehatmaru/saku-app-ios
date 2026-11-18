@@ -134,7 +134,7 @@ struct WorkspaceSwitcherSheet: View {
                 .padding(.horizontal, 24).padding(.vertical, 12)
             }
 
-            ForEach(store.spaces) { workspace in
+            ForEach(store.spaces.filter { $0.daysUntilDeletion == nil }) { workspace in
                 Button { choose(workspace) } label: {
                     WorkspaceRow(workspace: workspace) {
                         Image(systemName: "checkmark")

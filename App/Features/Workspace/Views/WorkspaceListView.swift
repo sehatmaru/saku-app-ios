@@ -3,6 +3,7 @@ import SwiftUI
 /// Profil → Workspace: which Workspace opens at launch, and the list of the person's Workspaces with the way to make one (K33).
 struct WorkspaceListView: View {
     @ObservedObject private var store = WorkspaceStore.shared
+    @State private var showsMerge = false
 
     var body: some View {
         ScrollView {
@@ -57,6 +58,25 @@ struct WorkspaceListView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(RowPressStyle())
+                    if store.shared.contains(where: { !$0.isReadOnly && $0.daysUntilDeletion == nil }) {
+                        Button { showsMerge = true } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: "arrow.triangle.merge")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(Color.appPrimary)
+                                    .frame(width: 40, height: 40)
+                                    .background(Color.appFill, in: Circle())
+                                Text(L("Gabungkan Workspace Pribadi"))
+                                    .font(.app(16, weight: .semibold))
+                                    .foregroundStyle(Color.appPrimary)
+                                Spacer(minLength: 8)
+                            }
+                            .frame(minHeight: 64)
+                            .padding(.horizontal, 24)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(RowPressStyle())
+                    }
                     if store.shared.isEmpty {
                         Text(L("Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain."))
                             .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
@@ -70,6 +90,7 @@ struct WorkspaceListView: View {
         .navigationTitle(L("Workspace"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.load() }
+        .sheet(isPresented: $showsMerge) { MergeWizardView(mode: .merge(target: nil)) }
     }
 
     private func label(_ text: String) -> some View {
@@ -125,6 +146,7 @@ struct WorkspaceSettingsView: View {
     @State private var showsPayday = false
     @State private var confirmsDelete = false
     @State private var isDeleting = false
+    @State private var showsRescue = false
 
     private var workspace: Workspace? { store.spaces.first { $0.id == workspaceId } }
 
@@ -147,6 +169,18 @@ struct WorkspaceSettingsView: View {
                         WorkspaceMembersSection(workspace: workspace).padding(.horizontal, 24)
                     }
                     if workspace.isOwner && !workspace.isPersonal { deleteRow(workspace) }
+                    // K42: a member can still bring their own wallets out while the Workspace waits to be deleted
+                    if !workspace.isOwner && !workspace.isPersonal, let days = workspace.daysUntilDeletion {
+                        Text(L("Dihapus dalam %lld hari", days)).font(.app(13)).foregroundStyle(Color.appError)
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 14)
+                        Button { showsRescue = true } label: {
+                            Text(L("Bawa data saya ke Workspace Pribadi"))
+                                .font(.app(16, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+                                .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).contentShape(Rectangle())
+                        }
+                        .buttonStyle(RowPressStyle())
+                        .padding(.horizontal, 24)
+                    }
                     if !workspace.isOwner {
                         Text(L("Hanya Pemilik yang bisa mengubah"))
                             .font(.app(13)).foregroundStyle(Color.appTextSecondary)
@@ -169,6 +203,7 @@ struct WorkspaceSettingsView: View {
         .sheet(isPresented: $showsEdit) {
             if let workspace { EditWorkspaceSheet(workspace: workspace) }
         }
+        .sheet(isPresented: $showsRescue) { MergeWizardView(mode: .rescue(space: workspaceId)) }
         .sheet(isPresented: $showsPayday) {
             PaydaySheet(context: .settings) { day in
                 guard day != nil else { return }
