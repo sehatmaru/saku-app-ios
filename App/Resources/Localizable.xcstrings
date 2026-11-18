@@ -6763,6 +6763,16 @@
         }
       }
     },
+    "Catatan %@ tetap di Workspace dan ditandai mantan anggota. Data yang dia bawa ke sini lewat gabung dengan riwayat juga tetap di Workspace. Semua kode undangan yang aktif dicabut, jadi dia perlu kode baru untuk masuk lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@'s records stay in the Workspace and are marked as a former member. Data they brought here by merging with history also stays. Every active invite code is revoked, so they need a new code to join again."
+          }
+        }
+      }
+    },
     "Catatan %@ tetap di Workspace dan ditandai mantan anggota. Dia perlu kode baru untuk masuk lagi.": {
       "localizations": {
         "en": {

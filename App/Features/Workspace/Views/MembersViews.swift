@@ -76,7 +76,7 @@ struct WorkspaceMembersSection: View {
             switch ask {
             case .remove(let member):
                 Alert(title: Text(L("Keluarkan %@?", member.name)),
-                      message: Text(L("Catatan %@ tetap di Workspace dan ditandai mantan anggota. Dia perlu kode baru untuk masuk lagi.", member.name)),
+                      message: Text(L("Catatan %@ tetap di Workspace dan ditandai mantan anggota. Data yang dia bawa ke sini lewat gabung dengan riwayat juga tetap di Workspace. Semua kode undangan yang aktif dicabut, jadi dia perlu kode baru untuk masuk lagi.", member.name)),
                       primaryButton: .destructive(Text(L("Keluarkan"))) { Task { await remove(member) } },
                       secondaryButton: .cancel(Text(L("Batal"))))
             case .transfer(let member):

@@ -2054,5 +2054,6 @@
   "Akunmu sedang dalam proses penghapusan, jadi belum bisa memindahkan data.": "Your account is being deleted, so data cannot be moved yet.",
   "Gabungkan Workspace Pribadi": "Merge Personal Workspace",
   "Gabungkan Workspace Pribadi saya": "Merge my Personal Workspace",
-  "Bawa data saya ke Workspace Pribadi": "Bring my data to my Personal Workspace"
+  "Bawa data saya ke Workspace Pribadi": "Bring my data to my Personal Workspace",
+  "Catatan %@ tetap di Workspace dan ditandai mantan anggota. Data yang dia bawa ke sini lewat gabung dengan riwayat juga tetap di Workspace. Semua kode undangan yang aktif dicabut, jadi dia perlu kode baru untuk masuk lagi.": "%@'s records stay in the Workspace and are marked as a former member. Data they brought here by merging with history also stays. Every active invite code is revoked, so they need a new code to join again."
 }
