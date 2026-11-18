@@ -100,6 +100,8 @@ struct WalletPickerSheet: View {
     let mainId: String?
     /// Most recent first; only the first three show.
     let recentIds: [String]
+    /// Title of the recent group; the draft sheets show the most used instead of the last used.
+    var recentTitle: String = L("Terakhir dipakai")
     let onDone: () -> Void
     let onPick: (Account) -> Void
     /// Wallets shown but not pickable, with the reason shown where the balance would be.
@@ -144,7 +146,7 @@ struct WalletPickerSheet: View {
                 }
             } else {
                 if !recent.isEmpty {
-                    sectionTitle(L("Terakhir dipakai"), top: 12)
+                    sectionTitle(recentTitle, top: 12)
                     smallGrid(recent).padding(.top, 8)
                 }
                 ForEach(groups, id: \.title) { group in

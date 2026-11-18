@@ -305,7 +305,6 @@ final class AuthViewModel: ObservableObject {
         let budgetTotal = await createBudgets(setup.budgets, userId: profileId.uuidString)
         if setup.smartTrackerConsent {
             try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
-            await DraftStore.shared.syncMemory()
         }
         if !isGuest { SmartTrackerConsent.markPromptSeen(for: profileId.uuidString) }
         var joinedPlus = false

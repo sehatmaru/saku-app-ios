@@ -17,10 +17,10 @@ enum ImageParser {
     private static let apps: [(name: String, words: [String])] = [
         ("GoPay", ["gopay", "gojek"]), ("OVO", ["ovo"]), ("DANA", ["dana"]), ("BCA", ["bca"]), ("BNI", ["bni", "wondr"]),
         ("Mandiri", ["mandiri", "livin"]), ("BRI", ["bri", "brimo"]), ("Jago", ["jago"]), ("BNC", ["bnc", "neo commerce"]),
-        ("CIMB", ["cimb"])]
+        ("CIMB", ["cimb"]), ("ShopeePay", ["shopeepay", "shopee pay"])]
 
     static func parse(lines raw: [String], context: SmartParser.Context) -> Reading {
-        let lines = raw.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty && !isBalance($0) }
+        let lines = raw.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty && !isBalance($0) && !isStatusBar($0) }
         guard !lines.isEmpty else { return Reading() }
         let joined = lines.joined(separator: "\n").lowercased()
         let app = apps.first { entry in entry.words.contains { word in wordMatch(word, in: joined) } }?.name ?? ""
@@ -105,6 +105,11 @@ enum ImageParser {
         let lower = line.lowercased()
         return lower.contains("saldo") || lower.contains("balance") || lower.contains("no. rek") || lower.contains("no rek")
             || line.range(of: #"(?<![\d.,])\d{9,}(?![\d.,])"#, options: .regularExpression) != nil
+    }
+
+    /// The phone's own status bar in a screenshot ("9.05 !!!! LTE"): signal, clock and network name, never part of the payment.
+    private static func isStatusBar(_ line: String) -> Bool {
+        line.count <= 24 && line.range(of: #"(?i)\b(lte|5g|4g|3g|wi-?fi)\b"#, options: .regularExpression) != nil
     }
 
     private struct Block { var date: Date; var lines: [String] }
@@ -211,7 +216,12 @@ enum ImageParser {
 
     /// "ke X", "kepada X", "merchant X", else the first line that looks like a shop name.
     private static func merchant(in lines: [String]) -> String {
-        let label = try! NSRegularExpression(pattern: #"(?i)^(?:ke|kepada|penerima|merchant|to|tujuan)\s*[:\-]?\s+(.{2,30})$"#)
+        // e-wallet receipts (DANA, ShopeePay, GoPay): the shop name is the line above "Order Amount"
+        if let i = lines.firstIndex(where: { $0.range(of: #"(?i)^(order|total)\s*amount"#, options: .regularExpression) != nil }), i > 0,
+           let above = lines[..<i].last(where: { $0.filter(\.isLetter).count >= 3 && amount(in: $0) == nil && $0.range(of: #"(?i)^(success|berhasil|sukses)"#, options: .regularExpression) == nil }) {
+            return clean(above)
+        }
+        let label = try! NSRegularExpression(pattern: #"(?i)^(?:ke|kepada|penerima|merchant|to|tujuan)\s*[:\-]?\s+(?!area\b|id\b)(.{2,30})$"#)
         for line in lines {
             if let m = label.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)), let r = Range(m.range(at: 1), in: line),
                amount(in: line) == nil { return clean(String(line[r])) }
@@ -224,7 +234,7 @@ enum ImageParser {
 
     /// The first line made of words: no date, amount, phone, address or label.
     private static func title(from lines: [String]) -> String {
-        let skip = #"(?i)(struk|nota|invoice|receipt|npwp|telp|tel\.|jl\.|jalan|berhasil|sukses|berhasil|transaksi|pembayaran|bukti|total|jumlah|nominal|tanggal|waktu|status|kode|ref|id )"#
+        let skip = #"(?i)(success|order amount|payment|acquirer|merchant area|split bill|mpan|discount|struk|nota|invoice|receipt|npwp|telp|tel\.|jl\.|jalan|berhasil|sukses|berhasil|transaksi|pembayaran|bukti|total|jumlah|nominal|tanggal|waktu|status|kode|ref|id )"#
         for line in lines {
             let letters = line.filter(\.isLetter).count
             if letters >= 3, line.range(of: skip, options: .regularExpression) == nil, amount(in: line) == nil,

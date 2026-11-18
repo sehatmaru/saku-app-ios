@@ -118,14 +118,6 @@ final class SmartParserTests: XCTestCase {
         XCTAssertNil(d.amount)
     }
 
-    func testLearnedChoiceBeatsKeywords() {
-        var learned = context
-        learned.memory = [MerchantMemory.Entry(keyword: "kopi", kind: .expense, categoryId: "makan", accountId: "cash")]
-        let d = SmartParser.parse("kopi 25rb", context: learned)[0]
-        XCTAssertEqual(d.categoryId, "makan")
-        XCTAssertEqual(d.accountId, "cash")
-    }
-
     // MARK: Category lists (Perampingan Kategori)
 
     private func categoryName(_ text: String, in names: [String]) -> String? {

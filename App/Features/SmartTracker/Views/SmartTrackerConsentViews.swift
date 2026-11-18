@@ -31,8 +31,8 @@ private struct PrivacyPoints: View {
           L("Hanya saat AI menyala: teks yang kamu ketik, bagikan, atau baca dari gambar, hasil pengenalan suara, serta nama dompet dan kategorimu, tanpa saldo. Teks dikirim ke penyedia model bahasa untuk dibaca AI. Tidak dipakai melatih AI. Suara dikenali oleh Apple di iPhone-mu; Saku hanya mengirim teksnya.")),
          ("lock", L("Apa yang dibuang di perangkat"), L("Nomor panjang dan kode OTP. Gambar mentah tidak pernah dikirim."),
           L("Nomor panjang (rekening, kartu) dan kode OTP dihapus sebelum teks dikirim. Gambar mentah tidak pernah dikirim.")),
-         ("tray", L("Apa yang disimpan"), L("Transaksi yang kamu simpan, jatah AI, dan Ingatan."),
-          L("Transaksi yang kamu simpan, hitungan jatah AI, dan Ingatan (kata kunci, kategori, dompet) selama AI menyala. Server Saku tidak menyimpan kalimat yang dikirim ke AI. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.")),
+         ("tray", L("Apa yang disimpan"), L("Transaksi yang kamu simpan dan jatah AI."),
+          L("Transaksi yang kamu simpan, dan hitungan jatah AI selama AI menyala. Server Saku tidak menyimpan kalimat yang dikirim ke AI. Kalimat asli yang kamu ketik, ucapkan, atau bagikan, gambar yang kamu pilih beserta teks yang terbaca darinya, serta teks notifikasi dan Siri, tetap di HP sampai drafnya kamu simpan atau buang. Draf yang tidak kamu proses hilang sendiri setelah 30 hari. Tidak ada yang tercatat sebelum kamu ketuk Simpan.")),
          ("trash", L("Cara menghapus"), L("Profil, lalu Hapus akun."), L("Buka Profil, lalu Hapus akun. Datamu dihapus permanen setelah 30 hari."))]
     }
 
@@ -89,7 +89,7 @@ struct SmartTrackerPrivacyPage: View {
                 row("mic", L("Suara"), L("Dikenali oleh pengenalan suara Apple. Saku hanya mengirim teksnya."))
                 row("lock", L("Apa yang dibuang di perangkat"), L("Nomor panjang, kode OTP, dan gambar mentah tidak ikut dikirim."))
                 section(L("Disimpan"))
-                row("tray", L("Apa yang disimpan"), L("Transaksi yang kamu simpan, jatah AI, dan Ingatan (selama AI menyala)."))
+                row("tray", L("Apa yang disimpan"), L("Transaksi yang kamu simpan dan jatah AI (selama AI menyala)."))
                 row("doc.text", L("Teks asli dan gambar"), L("Tetap di HP sampai kamu simpan atau buang draf, atau hilang sendiri setelah 30 hari. Server Saku tidak menyimpan kalimatnya."))
                 section(L("Hapus"))
                 row("trash", L("Cara menghapus"), L("Profil, lalu Hapus akun. Datamu dihapus permanen setelah 30 hari."))
@@ -209,10 +209,7 @@ struct SmartTrackerConsentSheet: View {
         SmartTrackerConsent.since = Date()
         SmartTrackerConsent.markPromptSeen(for: profileId?.uuidString)
         if let profileId {
-            Task {
-                try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId)
-                await DraftStore.shared.syncMemory()
-            }
+            Task { try? await SupabaseSDK.recordSmartTrackerConsent(profileId: profileId) }
         }
         onAgree()
     }

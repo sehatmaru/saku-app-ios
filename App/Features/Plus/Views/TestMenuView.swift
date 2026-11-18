@@ -21,7 +21,7 @@ struct TestMenuView: View {
     }
 
     enum PreviewConfirm: String, Identifiable {
-        case off, offBusy, forget, deleteAll, failedOff, failed
+        case off, offBusy, deleteAll, failedOff, failed
         var id: String { rawValue }
     }
 
@@ -58,7 +58,6 @@ struct TestMenuView: View {
                 item("Simpan N transaksi", selected: false) { sheet = .saveAll }
                 item("Matikan Smart Tracker?", selected: false) { confirm = .off }
                 item("Matikan Smart Tracker? (sibuk)", selected: false) { confirm = .offBusy }
-                item("Lupakan semua?", selected: false) { confirm = .forget }
                 item("Abaikan semua draf?", selected: false) { confirm = .deleteAll }
 
                 header("Smart Tracker · pengingat")
@@ -94,14 +93,11 @@ struct TestMenuView: View {
             }
         }
         .confirmDialog(isPresented: flag(.off), icon: "power", destructive: true, title: L("Matikan Smart Tracker?"),
-                       message: L("Semua cara mencatat berhenti. %lld draf dan %lld ingatan dihapus dari HP ini. Transaksi yang sudah tersimpan tetap aman.", 3, 12),
+                       message: L("Semua cara mencatat berhenti. %lld draf dihapus dari HP ini. Transaksi yang sudah tersimpan tetap aman.", 3),
                        confirmTitle: L("Matikan dan hapus")) { confirm = nil }
         .confirmDialog(isPresented: flag(.offBusy), icon: "power", destructive: true, title: L("Matikan Smart Tracker?"),
-                       message: L("Semua cara mencatat berhenti. %lld draf dan %lld ingatan dihapus dari HP ini. Transaksi yang sudah tersimpan tetap aman.", 3, 12),
+                       message: L("Semua cara mencatat berhenti. %lld draf dihapus dari HP ini. Transaksi yang sudah tersimpan tetap aman.", 3),
                        confirmTitle: L("Matikan dan hapus"), isBusy: true) {}
-        .confirmDialog(isPresented: flag(.forget), icon: "brain", destructive: true, title: L("Lupakan semua?"),
-                       message: L("Semua pilihan yang diingat dihapus. Transaksi yang sudah tersimpan tidak berubah."),
-                       confirmTitle: L("Lupakan semua")) { confirm = nil }
         .confirmDialog(isPresented: flag(.deleteAll), icon: "eye.slash", inkButton: true, title: L("Abaikan semua draf?"),
                        message: L("Semua %lld draf dari Smart Tracker akan dibuang. Transaksi yang sudah tersimpan tidak terpengaruh.", 3),
                        confirmTitle: L("Abaikan semua")) { confirm = nil }

@@ -136,6 +136,8 @@ struct SmartSheetFooter: View {
     var ink = false
     var isBusy = false
     var isEnabled = true
+    /// Looks off but still takes a tap (to show what is missing).
+    var dimmed = false
     var secondary: String?
     var onPrimary: () -> Void = {}
     var onSecondary: () -> Void = {}
@@ -162,7 +164,7 @@ struct SmartSheetFooter: View {
                         .lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, 8)
                         .frame(maxWidth: .infinity).frame(height: 50)
                         .background(destructive ? Color(hex: "D93636") : ink ? Color.appText : Color.appPrimary, in: Capsule())
-                        .opacity(isEnabled ? 1 : 0.4)
+                        .opacity(isEnabled && !dimmed ? 1 : 0.4)
                     }
                     .disabled(!isEnabled)
                 }
@@ -176,7 +178,7 @@ struct SmartSheetFooter: View {
                     .font(.app(17, weight: .semibold)).foregroundStyle(ink ? Color.appBackground : .white)
                     .frame(maxWidth: .infinity).frame(height: 50)
                     .background(destructive ? Color(hex: "D93636") : ink ? Color.appText : Color.appPrimary, in: Capsule())
-                    .opacity(isEnabled ? 1 : 0.4)
+                    .opacity(isEnabled && !dimmed ? 1 : 0.4)
                 }
                 .disabled(!isEnabled)
             } else if let secondary {

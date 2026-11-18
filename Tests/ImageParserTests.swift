@@ -27,6 +27,18 @@ final class ImageParserTests: XCTestCase {
         XCTAssertNil(r.drafts[0].note)
     }
 
+    /// An e-wallet receipt: the shop is the line above "Order Amount", the status bar and "Merchant Area" are not the title,
+    /// and the total is the Payment Amount after the discount.
+    func testEwalletReceiptTakesShopAndSkipsStatusBar() {
+        let lines = ["9.05  !!!! LTE •", "Success", "Rp17.000", "FamilyMart CAPITAL PLACE", "Order Amount  Rp17.000", "Discount Amount  -Rp3",
+                     "Payment Amount  Rp16.997", "Payment Details", "Acquirer Name  ShopeePay", "Merchant Area  KOTA JAKARTA SE",
+                     "Transaction Time  13 Nov 2026 09:04:58", "Split Bill  Done"]
+        let r = ImageParser.parse(lines: lines, context: context)
+        XCTAssertEqual(r.drafts.count, 1)
+        XCTAssertEqual(r.drafts[0].title, "Familymart Capital Place")
+        XCTAssertEqual(r.drafts[0].amount, 16_997)
+    }
+
     /// A bank history whose date is stacked over three lines, as Vision reads it (28 / Oct / 2026).
     func testHistoryWithStackedDatesBecomesOneDraftPerRow() {
         let lines = ["2810/FTSCY/WS95271 50000.00 OJAK", "28", "HOTMATUA SINA", "Oct  TRSF E-BANKING DB", "2026  IDR 50,000.00",

@@ -233,7 +233,7 @@ struct SmartTrackerSettingsView: View {
         return aiOn ? L("Baca teks, suara, dan gambar dengan AI") : L("Mati. Dibaca dengan aturan di perangkat")
     }
 
-    /// Turning on needs the agreement sheet; turning off just stops AI and Ingatan sync (nothing is deleted).
+    /// Turning on needs the agreement sheet; turning off just stops AI (nothing is deleted).
     private func setAI(_ on: Bool) {
         guard !isGuest else { return }
         if on { showsConsent = true; return }

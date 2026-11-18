@@ -100,7 +100,7 @@ struct DeleteAccountView: View {
             Text("Yang ikut terhapus").font(.app(20, weight: .semibold)).padding(.top, 28)
             VStack(spacing: 0) {
                 point("wallet.bifold", L("Semua dompet, transaksi, budget, dan kategorimu"))
-                point("sparkle", L("Ingatan dan draf Smart Tracker"))
+                point("sparkle", L("Draf Smart Tracker"))
                 point("person.crop.circle", L("Foto dan nama profilmu"))
                 point("bell.slash", L("Pengingat di HP ini dimatikan sekarang"))
             }

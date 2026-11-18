@@ -14,7 +14,6 @@ final class DraftStore: ObservableObject {
     @Published private(set) var notices: [SkippedNotice] = []
     /// A draft the queue should open in the editor as soon as it appears ("Isi manual" in the quick result).
     @Published var editRequest: UUID?
-    @Published private(set) var memory: [MerchantMemory.Entry] = []
     /// Wallets, categories and recent transactions, kept for parsing offline and the duplicate check.
     @Published private(set) var accounts: [Account] = []
     @Published private(set) var categories: [Category] = []
@@ -29,22 +28,12 @@ final class DraftStore: ObservableObject {
         var drafts: [Draft] = []
         /// Skipped notices; optional so older files still load (Enhancement 3).
         var notices: [SkippedNotice]?
-        var memory: [MerchantMemory.Entry] = []
         var accounts: [Account] = []
         var categories: [Category] = []
         var connectedApps: [String] = []
-        /// Forgotten Ingatan entries, kept so the server and other devices drop them too (optional: older files lack it).
-        var memoryTombstones: [MerchantMemory.Entry]?
-        /// "Lupakan semua" pressed at this moment and not yet told to the server.
-        var memoryForgottenAt: Date?
     }
 
-    private var memoryTombstones: [MerchantMemory.Entry] = []
-    private var memoryForgottenAt: Date?
-    /// Guests keep Ingatan on the device only.
     var isGuest = false
-    private var isSyncingMemory = false
-    private var memorySyncTask: Task<Void, Never>?
 
     private let fileURL: URL
 
@@ -75,19 +64,15 @@ final class DraftStore: ObservableObject {
             copy.counterpartyAccountId = nil
             return copy
         }
-        memory = snapshot.memory
         accounts = snapshot.accounts
         categories = snapshot.categories
         connectedApps = snapshot.connectedApps
         notices = snapshot.notices ?? []
-        memoryTombstones = snapshot.memoryTombstones ?? []
-        memoryForgottenAt = snapshot.memoryForgottenAt
         purgeExpired()
     }
 
     private func persist() {
-        let snapshot = Snapshot(drafts: drafts, notices: notices, memory: memory, accounts: accounts, categories: categories, connectedApps: connectedApps,
-                                memoryTombstones: memoryTombstones, memoryForgottenAt: memoryForgottenAt)
+        let snapshot = Snapshot(drafts: drafts, notices: notices, accounts: accounts, categories: categories, connectedApps: connectedApps)
         if let data = try? JSONEncoder().encode(snapshot) { try? data.write(to: fileURL, options: .atomic) }
         updateBadge()
         DraftReminder.reschedule(drafts)
@@ -144,7 +129,6 @@ final class DraftStore: ObservableObject {
         }
         persist()
         recheckDuplicates()
-        await syncMemory()
     }
 
     /// Reference data without the network (tests).
@@ -156,43 +140,8 @@ final class DraftStore: ObservableObject {
         if let subscriptions { self.subscriptions = subscriptions }
     }
 
-    // MARK: Ingatan sync
-
-    /// Syncs a moment after something changed, so a burst of edits is one round trip.
-    private func scheduleMemorySync() {
-        guard SmartTrackerMemorySync.isGranted, !isGuest else { return }
-        memorySyncTask?.cancel()
-        memorySyncTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(2))
-            guard !Task.isCancelled else { return }
-            await self?.syncMemory()
-        }
-    }
-
-    /// Ingatan follows the account: merged with the server's copy (latest change wins), then what the server lacks
-    /// is sent. Nothing leaves the device for guests or before the user agreed. Offline, it simply tries again later.
-    func syncMemory() async {
-        guard !isGuest, SmartTrackerConsent.isGranted, SmartTrackerMemorySync.isGranted, !isSyncingMemory else { return }
-        isSyncingMemory = true
-        defer { isSyncingMemory = false }
-        do {
-            if let forgotten = memoryForgottenAt {
-                try await SupabaseSDK.forgetAllMemory(before: forgotten)
-                if memoryForgottenAt == forgotten { memoryForgottenAt = nil }
-            }
-            let remote = try await SupabaseSDK.fetchMemory()
-            let result = MerchantMemory.merge(local: memory, tombstones: memoryTombstones, remote: remote)
-            memory = result.live
-            memoryTombstones = result.tombstones
-            persist()
-            try await SupabaseSDK.pushMemory(result.toPush)
-        } catch {
-            // offline or the server said no: the device copy stays as it is and the next sync retries
-        }
-    }
-
     var context: SmartParser.Context {
-        SmartParser.Context(accounts: accounts, categories: categories, memory: memory)
+        SmartParser.Context(accounts: accounts, categories: categories)
     }
 
     // MARK: Adding
@@ -429,7 +378,7 @@ final class DraftStore: ObservableObject {
     /// Writes the draft as a real transaction, then remembers the user's choices for next time.
     /// Returns the new transaction's id so a save can be undone.
     @discardableResult
-    func save(_ saved: Draft, userId: String, remember: Bool = true) async throws -> String? {
+    func save(_ saved: Draft, userId: String) async throws -> String? {
         // stamped with the chosen day and the time the draft arrived, not the time it is saved
         var draft = saved
         draft.date = saved.date.atTime(of: saved.createdAt)
@@ -451,7 +400,6 @@ final class DraftStore: ObservableObject {
             created = try await repo.createTransfer(primaryAccountId: accountId, counterpartyAccountId: counterparty, amount: amount,
                                               description: draft.savedTitle, note: nil, date: draft.date)
         }
-        if remember { learn(from: draft) }
         discard(draft.id)
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
         return created.id
@@ -470,66 +418,13 @@ final class DraftStore: ObservableObject {
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
     }
 
-    // MARK: Memory
-
-    /// Editing a draft is a correction: remember the choice now, without counting a use (saving counts it).
-    func learnCorrection(from draft: Draft) {
-        guard draft.categoryId != nil || draft.accountId != nil else { return }
-        learn(from: draft, countsUse: false)
-    }
-
-    private func learn(from draft: Draft, countsUse: Bool = true) {
-        guard let keyword = MerchantMemory.keyword(for: draft), draft.kind == .expense || draft.kind == .income else { return }
-        var entry = MerchantMemory.Entry(keyword: keyword, kind: draft.kind, categoryId: draft.categoryId, accountId: draft.accountId)
-        if let old = memory.first(where: { $0.id == entry.id }) {
-            // the same choice again counts up; a new choice starts over
-            let same = old.categoryId == entry.categoryId && old.accountId == entry.accountId
-            entry.uses = same ? old.uses + (countsUse ? 1 : 0) : 1
-        }
-        memory.removeAll { $0.id == entry.id }
-        memoryTombstones.removeAll { $0.id == entry.id }
-        memory.insert(entry, at: 0)
-        persist()
-        scheduleMemorySync()
-    }
-
-    /// Forgets one remembered choice: the category part or the wallet part of a keyword.
-    func forget(_ entry: MerchantMemory.Entry, field: MerchantMemory.Field) {
-        guard let index = memory.firstIndex(where: { $0.id == entry.id }) else { return }
-        switch field {
-        case .category: memory[index].categoryId = nil
-        case .account: memory[index].accountId = nil
-        }
-        memory[index].updatedAt = Date()
-        if memory[index].categoryId == nil && memory[index].accountId == nil { tombstone(at: index) }
-        persist()
-        scheduleMemorySync()
-    }
-
-    /// Moves a live entry to the tombstones, dated now, so the server and other devices forget it too.
-    private func tombstone(at index: Int) {
-        var entry = memory.remove(at: index)
-        entry.deletedAt = Date()
-        entry.updatedAt = Date()
-        memoryTombstones.removeAll { $0.id == entry.id }
-        memoryTombstones.append(entry)
-    }
-
     func noteConnected(app: String) {
         guard !app.isEmpty, !connectedApps.contains(app) else { return }
         connectedApps.append(app)
         persist()
     }
 
-    func forget(_ entry: MerchantMemory.Entry) {
-        guard let index = memory.firstIndex(where: { $0.id == entry.id }) else { return }
-        tombstone(at: index)
-        persist()
-        scheduleMemorySync()
-    }
-
     func forgetEverything() {
-        forgetAllMemory()
         drafts = []
         DraftImageStore.removeAll()
         connectedApps = []
@@ -537,30 +432,9 @@ final class DraftStore: ObservableObject {
         persist()
     }
 
-    /// Forgets every remembered choice but keeps the drafts.
-    func forgetMemory() {
-        forgetAllMemory()
-        persist()
-        scheduleMemorySync()
-    }
-
-    private func forgetAllMemory() {
-        let now = Date()
-        for var entry in memory {
-            entry.deletedAt = now
-            entry.updatedAt = now
-            memoryTombstones.removeAll { $0.id == entry.id }
-            memoryTombstones.append(entry)
-        }
-        memory = []
-        // entries only the server knows about are dropped there at this moment
-        memoryForgottenAt = now
-    }
-
     /// Signing out: nothing of this account stays on the device for the next one.
     func reset() {
         AIQuotaStore.shared.reset()
-        memory = []
         drafts = []
         DraftImageStore.removeAll()
         accounts = []
@@ -568,8 +442,6 @@ final class DraftStore: ObservableObject {
         connectedApps = []
         recent = []
         NotificationFilter.clearRecent()
-        memoryTombstones = []
-        memoryForgottenAt = nil
         persist()
     }
 }

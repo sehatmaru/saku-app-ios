@@ -20,8 +20,6 @@ struct DraftFieldSheet: View {
     let categories: [Category]
     /// Applies a change to the draft the sheet was opened for.
     let edit: ((inout Draft) -> Void) -> Void
-    /// A category or wallet pick teaches Ingatan.
-    var learn: () -> Void = {}
     let close: () -> Void
 
     var body: some View {
@@ -46,9 +44,8 @@ struct DraftFieldSheet: View {
         case .category:
             let type: CategoryType = draft.kind == .income ? .income : .expense
             CategoryPickerSheet(title: L("Kategori"), categories: categories.filter { $0.type == type && !CategoryCatalog.isSystem($0) },
-                                selectedId: draft.categoryId, frequentIds: [], onDone: close) { category in
-                edit { $0.categoryId = category.id; $0.fromMemory = false }
-                learn()
+                                selectedId: draft.categoryId, frequentIds: frequentCategoryIds(type), onDone: close) { category in
+                edit { $0.categoryId = category.id }
                 close()
             }
         case .wallet:
@@ -56,10 +53,8 @@ struct DraftFieldSheet: View {
                         title: draft.kind == .transfer ? L("Dari dompet") : L("Dompet")) { account in
                 edit { d in
                     d.accountId = account.id
-                    d.fromMemory = false
                     if d.counterpartyAccountId == account.id { d.counterpartyAccountId = nil }
                 }
-                learn()
             }
         case .target:
             let source = accounts.first { $0.id == draft.accountId }
@@ -86,8 +81,29 @@ struct DraftFieldSheet: View {
 
     private func walletSheet(_ list: [Account], selected: String?, title: String, onPick: @escaping (Account) -> Void) -> some View {
         WalletPickerSheet(title: title, accounts: list, selectedId: selected,
-                          mainId: accounts.first(where: \.isDefault)?.id, recentIds: [],
-                          onDone: close, onPick: { account in onPick(account); close() })
+                          mainId: accounts.first(where: \.isDefault)?.id, recentIds: frequentWalletIds(among: list),
+                          recentTitle: L("Sering dipakai"), onDone: close, onPick: { account in onPick(account); close() })
+    }
+
+    /// What was recorded in the last 30 days; the sheets list the three most used.
+    private var lastMonth: [Transaction] {
+        let from = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+        return TransactionStore.shared.transactions.filter { $0.date >= from }
+    }
+
+    private func frequentCategoryIds(_ type: CategoryType) -> [String] {
+        let allowed = Set(categories.filter { $0.type == type && !CategoryCatalog.isSystem($0) }.map(\.id))
+        let kind: Transaction.TransactionType = type == .income ? .income : .expense
+        let counts = lastMonth.filter { $0.type == kind }.compactMap(\.categoryId).filter(allowed.contains)
+            .reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        return counts.sorted { $0.value > $1.value }.prefix(3).map(\.key)
+    }
+
+    private func frequentWalletIds(among list: [Account]) -> [String] {
+        let allowed = Set(list.map(\.id))
+        let counts = lastMonth.flatMap { [$0.accountId, $0.counterpartyAccountId].compactMap { $0 } }.filter(allowed.contains)
+            .reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        return counts.sorted { $0.value > $1.value }.prefix(3).map(\.key)
     }
 
     /// Moves `date` to `day` but keeps its time.
@@ -143,8 +159,6 @@ struct DraftTypeSheet: View {
 struct DraftAmountSheet: View {
     @State private var amount: Int
     @State private var isFresh = true
-    /// The sheet is as tall as its content, so there is no empty space under the keypad.
-    @State private var height: CGFloat = 420
     let onChange: (Int) -> Void
     let onDone: () -> Void
 
@@ -157,22 +171,22 @@ struct DraftAmountSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 4) {
-                Text("Rp").font(.app(20)).foregroundStyle(Color.appTextSecondary).padding(.top, 7)
+                Text("Rp").font(.app(26)).foregroundStyle(Color.appTextSecondary).padding(.top, 10)
                 Text(Double(amount).formattedAsDigits())
-                    .font(.app(48, weight: .light)).tracking(-1.8)
+                    .font(.app(72, weight: .light)).tracking(-2.5)
                     .foregroundStyle(amount > 0 ? Color.appText : Color(light: 0xC7C7CC, dark: 0x48484A))
-                    .lineLimit(1).minimumScaleFactor(0.6).contentTransition(.numericText())
+                    .lineLimit(1).minimumScaleFactor(0.4).contentTransition(.numericText())
             }
             .monospacedDigit()
-            .frame(maxWidth: .infinity).padding(.top, 28).padding(.bottom, 18)
+            .padding(.horizontal, 24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             AmountPad(color: .stGreen, isEnabled: amount > 0, onPress: press, onSave: onDone, title: "Terapkan")
-                .padding(.horizontal, 12).padding(.bottom, 8)
+                .padding(.horizontal, 12).padding(.bottom, 16)
         }
         .foregroundStyle(Color.appText)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
-        .filterSheet()
-
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(Color.appBackground)
+        .presentationDetents([.medium])
     }
 
     private func press(_ key: String) {

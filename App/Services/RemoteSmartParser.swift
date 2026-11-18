@@ -28,7 +28,8 @@ enum RemoteSmartParser {
     }
 
     /// How long the screen waits for AI before the rules' reading is used.
-    static let timeout: Duration = .seconds(4)
+    /// A picture's text is long, so the model needs more time than for a sentence.
+    static func timeout(for source: Draft.Source) -> Duration { source == .photo || source == .share ? .seconds(12) : .seconds(4) }
 
     /// Shown on the draft the user fills in by hand when the monthly AI help is used up.
     static var outOfQuotaNote: String { L("Jatah bantuan AI bulan ini habis. Isi manual.") }
@@ -53,7 +54,7 @@ enum RemoteSmartParser {
         await withTaskGroup(of: Outcome.self) { group in
             group.addTask { await request(text, source: source, context: context) }
             group.addTask {
-                try? await Task.sleep(for: timeout)
+                try? await Task.sleep(for: timeout(for: source))
                 return .unavailable(.slow)
             }
             let first = await group.next() ?? .unavailable(.failed)
@@ -96,7 +97,6 @@ enum RemoteSmartParser {
             draft.counterpartyAccountId = context.accounts.first { $0.name == item.toWallet }?.id
             draft.categoryId = context.categories.first { $0.name == item.category }?.id
             draft.date = Calendar.current.date(byAdding: .day, value: -(item.daysAgo ?? 0), to: context.now) ?? context.now
-            MerchantMemory.override(&draft, text: text, context: context)
             return draft
         }
         return drafts.isEmpty ? .unavailable(.failed) : .drafts(drafts)

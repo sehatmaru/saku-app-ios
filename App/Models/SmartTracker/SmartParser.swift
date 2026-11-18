@@ -8,7 +8,6 @@ enum SmartParser {
         var accounts: [Account]
         var categories: [Category]
         /// Learned keyword -> choices, from earlier saves.
-        var memory: [MerchantMemory.Entry] = []
         var now = Date()
         var calendar = Calendar.current
     }
@@ -362,16 +361,6 @@ enum SmartParser {
         let wanted: CategoryType = draft.kind == .income ? .income : .expense
         let pool = context.categories.filter { $0.type == wanted && !CategoryCatalog.isSystem($0) }
         let lower = text.lowercased()
-        // 1. what the user chose before for this merchant
-        if let hit = MerchantMemory.match(in: lower, entries: context.memory, kind: draft.kind) {
-            draft.merchant = hit.keyword
-            if let id = hit.categoryId, pool.contains(where: { $0.id == id }) { draft.categoryId = id; draft.fromMemory = true }
-            if draft.accountId == nil, let id = hit.accountId, context.accounts.contains(where: { $0.id == id && $0.isActive }) {
-                draft.accountId = id
-                draft.fromMemory = true
-            }
-            if draft.categoryId != nil { return }
-        }
         // 2. the category's own name in the sentence
         if let named = pool.first(where: { wordRange(of: $0.name.lowercased(), in: lower) != nil }) {
             draft.categoryId = named.id

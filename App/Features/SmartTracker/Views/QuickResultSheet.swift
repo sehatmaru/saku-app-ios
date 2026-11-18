@@ -111,7 +111,6 @@ struct QuickResultSheet: View {
             if let d = drafts.first(where: { $0.id == item.draftId }) {
                 DraftFieldSheet(draft: d, kind: item.kind, accounts: store.accounts, categories: store.categories,
                                 edit: { change in edit(d.id, change, field: item.kind) },
-                                learn: { if let updated = drafts.first(where: { $0.id == d.id }) { store.learnCorrection(from: updated) } },
                                 close: { picker = nil })
             }
         }
@@ -219,7 +218,7 @@ struct QuickResultSheet: View {
         let category = store.categories.first { $0.id == d.categoryId }
         func origin(_ key: String, present: Bool) -> Origin? {
             if changed.contains("\(d.id)-\(key)") { return .changed }
-            return key != "date" && present && !d.fromMemory && !isManual(d) ? .sentence : nil
+            return key != "date" && present && !isManual(d) ? .sentence : nil
         }
         var result: [Field] = []
         if includeType { result.append(Field(key: "type", label: L("Tipe"), value: d.kindTitle, icon: d.kindIcon, kind: .type, origin: nil)) }
