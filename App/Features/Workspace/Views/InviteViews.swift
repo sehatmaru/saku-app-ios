@@ -169,6 +169,8 @@ struct JoinWorkspaceSheet: View {
     @State private var mergeTarget: UUID?
     @State private var opensAtLaunch = false
     @FocusState private var focused: Bool
+    /// Medium until the keyboard comes up, full while it is up, medium again after.
+    @State private var detent: PresentationDetent = .medium
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -180,8 +182,10 @@ struct JoinWorkspaceSheet: View {
         }
         .animation(.settle(0.36), value: phase)
         .disabled(isBusy)
-        .filterSheet(fullHeight: true) { footer }
-        .onAppear { focused = true }
+        .filterSheet(detent: $detent) { footer }
+        .scrollDismissesKeyboard(.interactively)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in detent = .large }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in detent = .medium }
     }
 
     // MARK: Phases
@@ -203,7 +207,7 @@ struct JoinWorkspaceSheet: View {
                         .focused($focused)
                         .submitLabel(.go)
                         .onSubmit { if InviteCode.isComplete(text) { Task { await check() } } }
-                        .opacity(0.02)
+                        .frame(width: 1, height: 1).clipped().opacity(0.01)
                         .onChange(of: text) { _, value in
                             let clean = InviteCode.normalized(value)
                             if clean != value { text = clean }
@@ -221,9 +225,11 @@ struct JoinWorkspaceSheet: View {
             .buttonStyle(PressScaleStyle())
             .frame(maxWidth: .infinity)
             .padding(.top, 20)
-            Text(L("Contoh: ABCD EFGH"))
-                .font(.app(14)).foregroundStyle(Color.appTextSecondary)
-                .frame(maxWidth: .infinity).padding(.top, 14)
+            if text.isEmpty {
+                Text(L("Contoh: ABCD EFGH"))
+                    .font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                    .frame(maxWidth: .infinity).padding(.top, 14)
+            }
             if let problem {
                 Text(problem).font(.app(14)).foregroundStyle(Color.appError).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 16)
             }
@@ -231,30 +237,15 @@ struct JoinWorkspaceSheet: View {
         .padding(.horizontal, 24).padding(.top, 20)
     }
 
-    /// Eight boxes in two groups of four: the next one to fill has the green edge.
+    /// The typed code in the same face the Owner sees it: big, monospaced, two groups of four.
     private var codeSlots: some View {
-        let chars = Array(InviteCode.normalized(text))
-        return HStack(spacing: 14) {
-            ForEach(0..<2, id: \.self) { group in
-                HStack(spacing: 8) {
-                    ForEach(0..<4, id: \.self) { i in
-                        let at = group * 4 + i
-                        Text(at < chars.count ? String(chars[at]) : "")
-                            .font(.system(size: 24, weight: .bold, design: .monospaced)).foregroundStyle(Color.appText)
-                            .frame(maxWidth: .infinity).frame(height: 62)
-                            .background(Color.appText.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .stroke(Color.appPrimary, lineWidth: 2).opacity(at == chars.count ? 1 : 0)
-                            }
-                    }
-                }
-            }
-        }
-        .animation(.easeOut(duration: 0.12), value: chars.count)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L("Kode undangan"))
-        .accessibilityValue(text)
+        Text(text.isEmpty ? "ABCD EFGH" : InviteCode.grouped(text))
+            .font(.system(size: 34, weight: .bold, design: .monospaced))
+            .tracking(2)
+            .foregroundStyle(text.isEmpty ? Color.appTextTertiary : Color.appText)
+            .minimumScaleFactor(0.7).lineLimit(1)
+            .accessibilityLabel(L("Kode undangan"))
+            .accessibilityValue(text)
     }
 
     private func previewView(_ preview: InvitePreview) -> some View {
@@ -312,6 +303,7 @@ struct JoinWorkspaceSheet: View {
     // MARK: Actions
 
     private func check() async {
+        focused = false
         guard InviteCode.isComplete(text) else { return }
         isBusy = true
         defer { isBusy = false }
