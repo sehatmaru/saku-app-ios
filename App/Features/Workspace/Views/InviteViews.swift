@@ -236,18 +236,12 @@ struct JoinWorkspaceSheet: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { focused = true }
-            // one line under the box: the error when there is one, the example otherwise
-            Group {
-                if let problem {
-                    Text(problem).foregroundStyle(Color.appError)
-                        .transition(.opacity.combined(with: .offset(y: -6)))
-                } else {
-                    Text(L("Contoh: ABCD EFGH")).foregroundStyle(Color.appTextSecondary)
-                        .transition(.opacity)
-                }
+            // the error shows under the box and gives way again when it clears
+            if let problem {
+                Text(problem).foregroundStyle(Color.appError)
+                    .font(.app(14)).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 10).padding(.horizontal, 4)
+                    .transition(.opacity.combined(with: .offset(y: -6)))
             }
-            .animation(.settle(0.25), value: problem)
-            .font(.app(14)).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 10).padding(.horizontal, 4)
             Button { text = InviteCode.normalized(UIPasteboard.general.string ?? ""); problem = nil } label: {
                 Label(L("Tempel dari papan klip"), systemImage: "doc.on.clipboard")
                     .font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
@@ -258,6 +252,7 @@ struct JoinWorkspaceSheet: View {
             .frame(maxWidth: .infinity)
             .padding(.top, 20)
         }
+        .animation(.settle(0.25), value: problem)
         .padding(.horizontal, 24).padding(.top, 20)
     }
 
