@@ -2393,6 +2393,16 @@
         }
       }
     },
+    "Akses Workspace hilang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace access lost"
+          }
+        }
+      }
+    },
     "Aksesibilitas": {
       "localizations": {
         "en": {
@@ -5139,6 +5149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "How long does it apply?"
+          }
+        }
+      }
+    },
+    "Berlaku untuk semua anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies to every member"
           }
         }
       }
@@ -8403,6 +8423,16 @@
         }
       }
     },
+    "Disimpan sebagai draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved as a draft"
+          }
+        }
+      }
+    },
     "Ditagih %@": {
       "localizations": {
         "en": {
@@ -10353,16 +10383,6 @@
         }
       }
     },
-    "Hanya Pemilik yang bisa mengatur kategori dan budget Workspace ini.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Only the Owner can manage this Workspace's categories and budgets."
-          }
-        }
-      }
-    },
     "Hanya Pemilik yang bisa mengubah": {
       "localizations": {
         "en": {
@@ -11963,6 +11983,16 @@
         }
       }
     },
+    "Kamu belum bisa menambah catatan di sini. Catatan yang sudah ada tetap bisa dilihat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can't add records here yet. Existing records stay visible."
+          }
+        }
+      }
+    },
     "Kamu bisa memulihkannya dari Dompet › Diarsipkan.": {
       "localizations": {
         "en": {
@@ -12163,12 +12193,12 @@
         }
       }
     },
-    "Kamu tidak lagi punya akses ke Workspace itu. Kembali ke Workspace utama.": {
+    "Kamu tidak lagi punya akses ke Workspace itu. Saku membuka Workspace utamamu.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You no longer have access to that Workspace. Back to your main Workspace."
+            "value": "You no longer have access to that Workspace. Saku opened your main Workspace."
           }
         }
       }
@@ -12439,6 +12469,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The categories you made are copied too."
+          }
+        }
+      }
+    },
+    "Kategori dan budget Workspace ini hanya diatur oleh Pemilik. Kamu tetap bisa melihatnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the Owner sets up categories and budgets in this Workspace. You can still view them."
           }
         }
       }
@@ -18273,12 +18313,12 @@
         }
       }
     },
-    "Perubahan ini berlaku untuk semua anggota Workspace.": {
+    "Perubahan tadi terlihat oleh semua anggota Workspace ini.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This change applies to every member of the Workspace."
+            "value": "Every member of this Workspace can see that change."
           }
         }
       }
@@ -26235,12 +26275,12 @@
         }
       }
     },
-    "Workspace ini baca saja, jadi belum bisa menambah catatan.": {
+    "Workspace ini baca saja": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This Workspace is read-only, so you can't add records yet."
+            "value": "This Workspace is read-only"
           }
         }
       }
@@ -26275,12 +26315,12 @@
         }
       }
     },
-    "Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf.": {
+    "Workspace ini tidak bisa diisi lagi, jadi catatanmu disimpan sebagai draf. Cek di Konfirmasi transaksi.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This Workspace can't take new records. Your entry was saved as a draft."
+            "value": "This Workspace can't take new records, so your entry was saved as a draft. Check it under Konfirmasi transaksi."
           }
         }
       }

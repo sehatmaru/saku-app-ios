@@ -191,6 +191,9 @@ struct WorkspaceHost: ViewModifier {
                 if authViewModel.currentUser?.isGuest == true { authViewModel.startGuestLink() } else { showsJoin = true }
             }
             .sheet(isPresented: $showsJoin) { JoinWorkspaceSheet() }
+            .sheet(item: $store.notice) { notice in
+                WorkspaceNoticeSheet(notice: notice).presentationDetents([.height(340)])
+            }
             .onChange(of: store.resetNotice) { _, notice in
                 guard notice else { return }
                 store.resetNotice = false
@@ -280,6 +283,28 @@ struct WorkspaceNewsSheet: View {
                 .font(.app(15, weight: .semibold)).foregroundStyle(Color.appTextSecondary).frame(height: 44)
         }
         .padding(.horizontal, 24).padding(.bottom, 8)
+        .foregroundStyle(Color.appText)
+        .background(Color.appBackground)
+    }
+}
+
+/// One message about a Workspace (access lost, draft saved, read-only, owner-only, applies to all). A sheet, not a toast.
+struct WorkspaceNoticeSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let notice: WorkspaceStore.Notice
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Image(systemName: notice.icon).font(.system(size: 26)).foregroundStyle(.white)
+                .frame(width: 64, height: 64).background(Color.appPrimary, in: Circle())
+                .padding(.top, 32)
+            Text(notice.title).font(.app(22, weight: .bold)).tracking(-0.3).multilineTextAlignment(.center).padding(.top, 18)
+            Text(notice.message).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                .multilineTextAlignment(.center).lineSpacing(3).padding(.top, 8)
+            Spacer(minLength: 16)
+            PrimaryButton(title: L("Mengerti")) { dismiss() }
+        }
+        .padding(.horizontal, 24).padding(.bottom, 12)
         .foregroundStyle(Color.appText)
         .background(Color.appBackground)
     }

@@ -64,14 +64,14 @@ final class WorkspaceStore: ObservableObject {
     /// True when a record may be added here; otherwise says why, once.
     func allowsWriting() -> Bool {
         guard activeBlocksWriting else { return true }
-        ToastCenter.shared.show(L("Workspace ini baca saja, jadi belum bisa menambah catatan."))
+        tell(.readOnly)
         return false
     }
 
     /// A8 (13): an Owner's change to categories, budgets or the period start touches every member; say so once it is saved.
     func announceSharedChange() {
         guard !activeIsPersonal else { return }
-        ToastCenter.shared.show(L("Perubahan ini berlaku untuk semua anggota Workspace."))
+        tell(.sharedChange)
     }
 
     var canEditActive: Bool { activeIsPersonal || active?.isOwner == true }
@@ -79,11 +79,53 @@ final class WorkspaceStore: ObservableObject {
     /// K45: in a shared Workspace only the Owner sets up categories and budgets; a member who tries is told once.
     func requireOwner() -> Bool {
         guard !canEditActive else { return true }
-        ToastCenter.shared.show(L("Hanya Pemilik yang bisa mengatur kategori dan budget Workspace ini."))
+        tell(.ownerOnly)
         return false
     }
 
     func requestCreate() { createRequests += 1 }
+
+    /// What a person is told in a sheet (not a toast): short hints would be cut to one line and missed.
+    struct Notice: Identifiable, Equatable {
+        enum Kind { case accessLost, draftSaved, readOnly, ownerOnly, sharedChange }
+        let kind: Kind
+        var id: Int { kind.hashValue }
+        var icon: String {
+            switch kind {
+            case .accessLost: "person.crop.circle.badge.xmark"
+            case .draftSaved: "tray.and.arrow.down.fill"
+            case .readOnly: "lock.fill"
+            case .ownerOnly: "person.badge.key.fill"
+            case .sharedChange: "person.2.fill"
+            }
+        }
+        var title: String {
+            switch kind {
+            case .accessLost: L("Akses Workspace hilang")
+            case .draftSaved: L("Disimpan sebagai draf")
+            case .readOnly: L("Workspace ini baca saja")
+            case .ownerOnly: L("Hanya Pemilik yang bisa mengubah")
+            case .sharedChange: L("Berlaku untuk semua anggota")
+            }
+        }
+        var message: String {
+            switch kind {
+            case .accessLost: L("Kamu tidak lagi punya akses ke Workspace itu. Saku membuka Workspace utamamu.")
+            case .draftSaved: L("Workspace ini tidak bisa diisi lagi, jadi catatanmu disimpan sebagai draf. Cek di Konfirmasi transaksi.")
+            case .readOnly: L("Kamu belum bisa menambah catatan di sini. Catatan yang sudah ada tetap bisa dilihat.")
+            case .ownerOnly: L("Kategori dan budget Workspace ini hanya diatur oleh Pemilik. Kamu tetap bisa melihatnya.")
+            case .sharedChange: L("Perubahan tadi terlihat oleh semua anggota Workspace ini.")
+            }
+        }
+    }
+    @Published var notice: Notice?
+    /// Shown a moment later, so a screen that is closing (or a reload) does not swallow the sheet.
+    func tell(_ kind: Notice.Kind) {
+        Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            notice = Notice(kind: kind)
+        }
+    }
 
     /// Set around a loss the person caused themselves (leaving), so `load()` does not announce it.
     private var quietLoss = false
@@ -116,7 +158,7 @@ final class WorkspaceStore: ObservableObject {
             if let current = SpaceStore.activeSpaceId.flatMap(UUID.init(uuidString:)), !rows.contains(where: { $0.id == current }) {
                 SpaceStore.setActive(nil)
                 // A8 (5): told once when removed or the Workspace was deleted; leaving on purpose says nothing
-                if !quietLoss { ToastCenter.shared.show(L("Kamu tidak lagi punya akses ke Workspace itu. Kembali ke Workspace utama.")) }
+                if !quietLoss { tell(.accessLost) }
             }
             quietLoss = false
             activeId = SpaceStore.activeSpaceId.flatMap(UUID.init(uuidString:)) ?? home?.id

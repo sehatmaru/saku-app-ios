@@ -1170,7 +1170,7 @@ struct AddTransactionView: View {
         draft.date = date
         DraftStore.shared.add([draft])
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
-        ToastCenter.shared.show(L("Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf."))
+        WorkspaceStore.shared.tell(.draftSaved)
         dismiss()
     }
 
