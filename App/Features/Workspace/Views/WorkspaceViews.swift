@@ -99,48 +99,6 @@ struct WorkspacePhotoPanel: View {
     }
 }
 
-/// Overlapping faces of a Workspace's members, the Owner first with a crown on the edge of the picture.
-struct WorkspaceMemberStack: View {
-    let members: [WorkspaceMember]
-    var size: CGFloat = 30
-    var limit = 5
-
-    var body: some View {
-        let shown = Array(members.prefix(limit))
-        HStack(spacing: -size * 0.12) {
-            ForEach(Array(shown.enumerated()), id: \.element.id) { index, member in
-                face { MemberAvatar(member: member, size: size) }
-                    .overlay(alignment: .topTrailing) { if member.isOwner { crown } }
-                    .zIndex(Double(shown.count - index))
-            }
-            if members.count > limit {
-                face {
-                    Text("+\(members.count - limit)")
-                        .font(.app(size * 0.38, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                        .frame(width: size, height: size).background(Color.appFill, in: Circle())
-                }
-            }
-        }
-        .padding(.top, 5).padding(.bottom, 2)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(members.map(\.name).joined(separator: ", "))
-    }
-
-    /// A ring in the sheet's colour cuts each face out of the one behind it.
-    private func face<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        content().padding(2.5).background(Color.appBackground, in: Circle())
-    }
-
-    private var crown: some View {
-        Image(systemName: "crown.fill")
-            .font(.system(size: size * 0.3, weight: .bold)).foregroundStyle(.white)
-            .frame(width: size * 0.5, height: size * 0.5)
-            .background(Color.appWarning, in: Circle())
-            .overlay(Circle().stroke(Color.appBackground, lineWidth: 1.5))
-            .offset(x: size * 0.06, y: -size * 0.04)
-    }
-}
-
 /// Beranda's left side while the Workspace is open to testers: who the numbers below belong to.
 struct WorkspacePill: View {
     @ObservedObject private var store = WorkspaceStore.shared
@@ -173,8 +131,6 @@ struct WorkspacePill: View {
 /// One line of the switcher and of "Workspace saya".
 struct WorkspaceRow<Trailing: View>: View {
     let workspace: Workspace
-    /// The faces under the name of a shared Workspace, once known.
-    var members: [WorkspaceMember]?
     @ViewBuilder var trailing: () -> Trailing
 
     var secondLine: String {
@@ -190,14 +146,10 @@ struct WorkspaceRow<Trailing: View>: View {
                     .font(.app(16, weight: .semibold))
                     .foregroundStyle(Color.appText)
                     .lineLimit(1)
-                if let members, !workspace.isPersonal, !members.isEmpty {
-                    WorkspaceMemberStack(members: members)
-                } else {
-                    Text(secondLine)
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
-                        .lineLimit(1)
-                }
+                Text(secondLine)
+                    .font(.app(13))
+                    .foregroundStyle(Color.appTextSecondary)
+                    .lineLimit(1)
             }
             Spacer(minLength: 8)
             tag
@@ -259,7 +211,7 @@ struct WorkspaceSwitcherSheet: View {
 
             ForEach(store.spaces.filter { $0.daysUntilDeletion == nil }) { workspace in
                 Button { choose(workspace) } label: {
-                    WorkspaceRow(workspace: workspace, members: store.memberPreviews[workspace.id]) {
+                    WorkspaceRow(workspace: workspace) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(Color.appPrimary)
@@ -274,7 +226,6 @@ struct WorkspaceSwitcherSheet: View {
         .filterSheet {
             SmartSheetFooter(primary: L("Tambah Workspace"), primaryIcon: "plus", onPrimary: { dismiss(); onCreate() })
         }
-        .task { await store.loadMemberPreviews() }
     }
 
     private func choose(_ workspace: Workspace) {

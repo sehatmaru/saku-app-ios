@@ -286,23 +286,6 @@ final class WorkspaceStore: ObservableObject {
         } catch { throw WorkspaceError(error) }
     }
 
-    /// Who is in each shared Workspace, for the faces in the switcher. Owner first; kept between openings.
-    @Published private(set) var memberPreviews: [UUID: [WorkspaceMember]] = [:]
-
-    func loadMemberPreviews() async {
-        let targets = shared.filter { $0.daysUntilDeletion == nil }
-        await withTaskGroup(of: (UUID, [WorkspaceMember])?.self) { group in
-            for workspace in targets {
-                group.addTask { [self] in
-                    guard let all = try? await members(of: workspace) else { return nil }
-                    let active = all.filter { !$0.isFormer }.sorted { $0.isOwner && !$1.isOwner }
-                    return (workspace.id, active)
-                }
-            }
-            for await result in group { if let (id, list) = result { memberPreviews[id] = list } }
-        }
-    }
-
     func setDefault(_ workspace: Workspace) async throws {
         do {
             try await SupabaseSDK.client.rpc("set_default_space", params: ["p_space": workspace.id]).execute()
