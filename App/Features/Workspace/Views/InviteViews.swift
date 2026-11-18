@@ -193,52 +193,84 @@ struct JoinWorkspaceSheet: View {
             Text(L("Gabung ke Workspace")).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
             Text(L("Masukkan kode 8 karakter dari Pemilik Workspace."))
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary)
-            Text(text.isEmpty ? "ABCD EFGH" : InviteCode.grouped(text))
-                .font(.system(size: 30, weight: .bold, design: .monospaced))
-                .foregroundStyle(text.isEmpty ? Color.appTextTertiary : Color.appText)
-                .frame(maxWidth: .infinity).frame(height: 56)
-                .background(Color.appText.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .padding(.top, 14)
-                .accessibilityLabel(L("Kode undangan"))
-                .accessibilityValue(text)
-            Button(L("Tempel dari papan klip")) {
-                text = InviteCode.normalized(UIPasteboard.general.string ?? "")
-                problem = nil
+            codeSlots
+                .frame(maxWidth: .infinity)
+                .padding(.top, 28)
+            Button { text = InviteCode.normalized(UIPasteboard.general.string ?? ""); problem = nil } label: {
+                Label(L("Tempel dari papan klip"), systemImage: "doc.on.clipboard")
+                    .font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                    .padding(.horizontal, 20).frame(height: 50)
+                    .background(Color.appPrimary.opacity(0.12), in: Capsule())
             }
-            .font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
-            .frame(maxWidth: .infinity, minHeight: 40)
+            .buttonStyle(PressScaleStyle())
+            .frame(maxWidth: .infinity)
+            .padding(.top, 20)
+            Text(L("Contoh: ABCD EFGH"))
+                .font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                .frame(maxWidth: .infinity).padding(.top, 14)
             if let problem {
-                Text(problem).font(.app(13)).foregroundStyle(Color.appError).padding(.top, 8)
+                Text(problem).font(.app(14)).foregroundStyle(Color.appError).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 16)
             }
         }
         .padding(.horizontal, 24).padding(.top, 20)
     }
 
-    /// The code's own keyboard: letters and digits only, no suggestions, no keyboard sliding over the sheet.
-    private var keypad: some View {
-        let rows = ["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
-        return VStack(spacing: 8) {
-            ForEach(rows.indices, id: \.self) { index in
-                HStack(spacing: 6) {
-                    ForEach(Array(rows[index]), id: \.self) { key in
-                        keyButton { Text(String(key)).font(.app(18, weight: .semibold)).foregroundStyle(Color.appText) } action: { type(key) }
-                            .disabled(InviteCode.isComplete(text))
-                    }
-                    if index == rows.count - 1 {
-                        keyButton { Image(systemName: "delete.left").font(.system(size: 17)).foregroundStyle(Color.appText) } action: { backspace() }
-                            .frame(width: 56).disabled(text.isEmpty)
-                            .accessibilityLabel(L("Hapus"))
+    /// Eight boxes in two groups of four: the next one to fill has the green edge.
+    private var codeSlots: some View {
+        let chars = Array(InviteCode.normalized(text))
+        return HStack(spacing: 14) {
+            ForEach(0..<2, id: \.self) { group in
+                HStack(spacing: 8) {
+                    ForEach(0..<4, id: \.self) { i in
+                        let at = group * 4 + i
+                        Text(at < chars.count ? String(chars[at]) : "")
+                            .font(.system(size: 24, weight: .bold, design: .monospaced)).foregroundStyle(Color.appText)
+                            .frame(maxWidth: .infinity).frame(height: 62)
+                            .background(Color.appText.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(Color.appPrimary, lineWidth: 2).opacity(at == chars.count ? 1 : 0)
+                            }
                     }
                 }
             }
         }
+        .animation(.easeOut(duration: 0.12), value: chars.count)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("Kode undangan"))
+        .accessibilityValue(text)
+    }
+
+    /// The code's own keyboard: letters and digits only, every key the same size, no suggestions, nothing sliding over the sheet.
+    private var keypad: some View {
+        let rows = ["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
+        let gap: CGFloat = 6
+        return GeometryReader { proxy in
+            let key = (proxy.size.width - gap * 9) / 10
+            VStack(spacing: 8) {
+                ForEach(rows.indices, id: \.self) { index in
+                    HStack(spacing: gap) {
+                        ForEach(Array(rows[index]), id: \.self) { char in
+                            keyButton(width: key) { Text(String(char)).font(.app(19, weight: .semibold)).foregroundStyle(Color.appText) } action: { type(char) }
+                                .disabled(InviteCode.isComplete(text))
+                        }
+                        if index == rows.count - 1 {
+                            keyButton(width: key * 1.5) { Image(systemName: "delete.left").font(.system(size: 18)).foregroundStyle(Color.appText) } action: { backspace() }
+                                .disabled(text.isEmpty).accessibilityLabel(L("Hapus"))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .frame(height: 4 * 52 + 3 * 8)
         .padding(.horizontal, 12)
     }
 
-    private func keyButton<Label: View>(@ViewBuilder _ label: () -> Label, action: @escaping () -> Void) -> some View {
+    private func keyButton<Label: View>(width: CGFloat, @ViewBuilder _ label: () -> Label, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            label().frame(maxWidth: .infinity).frame(height: 46)
-                .background(Color.appText.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            label().frame(width: width, height: 52)
+                .background(Color.appText.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(PressScaleStyle())
     }
