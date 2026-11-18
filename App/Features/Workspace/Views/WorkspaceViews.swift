@@ -44,35 +44,49 @@ struct WorkspaceBadge: View {
     }
 }
 
-/// The big badge of the create and edit sheets: tap it to choose a picture; the icon stays as the fallback.
-struct WorkspacePhotoBadge: View {
-    let icon: String?
-    let color: String?
+enum WorkspaceLookMode { case icon, photo }
+
+/// "Ikon | Foto": what the Workspace's badge shows.
+struct WorkspaceLookModePicker: View {
+    @Binding var mode: WorkspaceLookMode
+
+    var body: some View {
+        Picker("", selection: $mode) {
+            Text(L("Ikon")).tag(WorkspaceLookMode.icon)
+            Text(L("Foto")).tag(WorkspaceLookMode.photo)
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 6).padding(.top, 4)
+    }
+}
+
+/// The "Foto" side of the look step: choose, change or remove the picture; the icon stays as the fallback.
+struct WorkspacePhotoPanel: View {
     let imageUrl: String?
     @Binding var photo: UIImage?
     @Binding var removed: Bool
     @State private var item: PhotosPickerItem?
 
-    private var shownUrl: String? { removed ? nil : imageUrl }
+    private var hasPhoto: Bool { photo != nil || (!removed && imageUrl?.isEmpty == false) }
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 12) {
             PhotosPicker(selection: $item, matching: .images) {
-                WorkspaceBadge(icon: icon, color: color, size: 72, imageUrl: shownUrl, image: photo)
-                    .overlay(alignment: .bottomTrailing) {
-                        Image(systemName: "camera.fill").font(.system(size: 12)).foregroundStyle(Color.appPrimary)
-                            .frame(width: 26, height: 26).background(Color.appBackground, in: Circle())
-                            .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
-                            .offset(x: 4, y: 4)
-                    }
+                Label(hasPhoto ? L("Ganti foto") : L("Pilih foto"), systemImage: "photo")
+                    .font(.app(16, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                    .frame(maxWidth: .infinity).frame(height: 50)
+                    .background(Color.appPrimary.opacity(0.12), in: Capsule())
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(L("Ganti foto"))
-            if photo != nil || (shownUrl?.isEmpty == false) {
+            .buttonStyle(PressScaleStyle())
+            if hasPhoto {
                 Button(L("Hapus foto")) { photo = nil; removed = true }
-                    .font(.app(13, weight: .semibold)).foregroundStyle(Color.appError)
+                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.appError)
+                    .frame(height: 36)
             }
+            Text(L("Foto menggantikan ikon. Hanya Owner yang bisa mengubahnya."))
+                .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
         }
+        .padding(.horizontal, 6).padding(.top, 14)
         .onChange(of: item) { _, picked in
             guard let picked else { return }
             Task {
@@ -88,28 +102,33 @@ struct WorkspacePhotoBadge: View {
 /// Overlapping faces of a Workspace's members, the Owner first with a crown on the edge of the picture.
 struct WorkspaceMemberStack: View {
     let members: [WorkspaceMember]
-    var size: CGFloat = 28
+    var size: CGFloat = 30
     var limit = 5
 
     var body: some View {
         let shown = Array(members.prefix(limit))
-        HStack(spacing: -size * 0.28) {
+        HStack(spacing: -size * 0.12) {
             ForEach(Array(shown.enumerated()), id: \.element.id) { index, member in
-                MemberAvatar(member: member, size: size)
-                    .overlay(Circle().stroke(Color.appBackground, lineWidth: 2.5))
+                face { MemberAvatar(member: member, size: size) }
                     .overlay(alignment: .topTrailing) { if member.isOwner { crown } }
                     .zIndex(Double(shown.count - index))
             }
             if members.count > limit {
-                Text("+\(members.count - limit)")
-                    .font(.app(size * 0.38, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
-                    .frame(width: size, height: size).background(Color.appFill, in: Circle())
-                    .overlay(Circle().stroke(Color.appBackground, lineWidth: 2.5))
+                face {
+                    Text("+\(members.count - limit)")
+                        .font(.app(size * 0.38, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+                        .frame(width: size, height: size).background(Color.appFill, in: Circle())
+                }
             }
         }
-        .padding(.vertical, 3)
+        .padding(.top, 5).padding(.bottom, 2)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(members.map(\.name).joined(separator: ", "))
+    }
+
+    /// A ring in the sheet's colour cuts each face out of the one behind it.
+    private func face<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content().padding(2.5).background(Color.appBackground, in: Circle())
     }
 
     private var crown: some View {
@@ -118,7 +137,7 @@ struct WorkspaceMemberStack: View {
             .frame(width: size * 0.5, height: size * 0.5)
             .background(Color.appWarning, in: Circle())
             .overlay(Circle().stroke(Color.appBackground, lineWidth: 1.5))
-            .offset(x: size * 0.14, y: -size * 0.14)
+            .offset(x: size * 0.06, y: -size * 0.04)
     }
 }
 

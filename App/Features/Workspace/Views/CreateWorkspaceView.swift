@@ -22,6 +22,7 @@ struct CreateWorkspaceView: View {
     @State private var icon: String?
     @State private var photo: UIImage?
     @State private var photoRemoved = false
+    @State private var lookMode = WorkspaceLookMode.icon
     @State private var color: String
     @State private var showsAllIcons = false
     @State private var copiesCategories = false
@@ -52,7 +53,7 @@ struct CreateWorkspaceView: View {
     private var isValid: Bool {
         switch step {
         case .name: !trimmedName.isEmpty
-        case .look: icon != nil
+        case .look: icon != nil || photo != nil
         default: true
         }
     }
@@ -133,7 +134,7 @@ struct CreateWorkspaceView: View {
         switch step {
         case .start: L("Tambah Workspace")
         case .name: L("Nama Workspace")
-        case .look: L("Ikon dan warna")
+        case .look: L("Ikon, warna, dan foto")
         case .categories: L("Kategori awal")
         case .payday: L("Awal periode")
         case .warning: L("Sebelum lanjut")
@@ -173,7 +174,7 @@ struct CreateWorkspaceView: View {
     }
 
     private var preview: some View {
-        WorkspacePhotoBadge(icon: icon, color: color, imageUrl: nil, photo: $photo, removed: $photoRemoved)
+        WorkspaceBadge(icon: icon, color: color, size: 72, image: photo)
             .scaleEffect(bump ? 1.1 : 1)
             .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.38), value: bump)
             .animation(.easeInOut(duration: 0.24), value: color)
@@ -236,6 +237,10 @@ struct CreateWorkspaceView: View {
                 .font(.app(26, weight: .bold)).tracking(-0.3)
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .frame(height: 36)
+            WorkspaceLookModePicker(mode: $lookMode)
+            if lookMode == .photo {
+                WorkspacePhotoPanel(imageUrl: nil, photo: $photo, removed: $photoRemoved)
+            } else {
             VStack(spacing: 4) {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 6), spacing: 4) {
                     ForEach(CategoryCatalog.visibleIcons(expanded: showsAllIcons), id: \.self) { symbol in
@@ -284,6 +289,7 @@ struct CreateWorkspaceView: View {
             }
             .padding(.horizontal, 6)
             .padding(.top, 8)
+            }
         }
     }
 
@@ -431,7 +437,8 @@ struct CreateWorkspaceView: View {
     }
 
     private func save() async {
-        guard let icon, !isSaving else { return }
+        guard icon != nil || photo != nil, !isSaving else { return }
+        let icon = icon ?? "person.2.fill"
         isSaving = true
         defer { isSaving = false }
         do {

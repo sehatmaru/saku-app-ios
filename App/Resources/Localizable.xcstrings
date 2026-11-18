@@ -9373,6 +9373,16 @@
         }
       }
     },
+    "Foto menggantikan ikon. Hanya Owner yang bisa mengubahnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The photo replaces the icon. Only the Owner can change it."
+          }
+        }
+      }
+    },
     "Foto profil diperbarui": {
       "localizations": {
         "en": {
@@ -11109,6 +11119,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Built-in category icons and colors can't be changed"
+          }
+        }
+      }
+    },
+    "Ikon, warna, dan foto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon, color, and photo"
           }
         }
       }
@@ -18579,6 +18599,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose e-wallet"
+          }
+        }
+      }
+    },
+    "Pilih foto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose photo"
           }
         }
       }

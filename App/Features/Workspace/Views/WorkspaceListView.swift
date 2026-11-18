@@ -158,7 +158,7 @@ struct WorkspaceSettingsView: View {
                     VStack(spacing: 0) {
                         if !workspace.isPersonal {
                             row(L("Nama"), value: workspace.displayName, editable: workspace.isOwner) { showsEdit = true }
-                            row(L("Ikon dan warna"), editable: workspace.isOwner, trailing: { WorkspaceBadge(workspace, size: 28) }) { showsEdit = true }
+                            row(L("Ikon, warna, dan foto"), editable: workspace.isOwner, trailing: { WorkspaceBadge(workspace, size: 28) }) { showsEdit = true }
                         }
                         row(WorkspaceStore.paydayTitle(shared: !workspace.isPersonal), value: workspace.paydayDay.map { "\($0)" } ?? L("Belum diatur"),
                             editable: workspace.isOwner) { editPayday(workspace) }
@@ -324,6 +324,7 @@ struct EditWorkspaceSheet: View {
     @State private var color: String
     @State private var photo: UIImage?
     @State private var photoRemoved = false
+    @State private var lookMode = WorkspaceLookMode.icon
     @State private var showsAllIcons = false
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -333,6 +334,7 @@ struct EditWorkspaceSheet: View {
         _name = State(initialValue: workspace.displayName)
         _icon = State(initialValue: workspace.icon ?? "person.2.fill")
         _color = State(initialValue: workspace.color ?? "hijau")
+        _lookMode = State(initialValue: workspace.imageUrl?.isEmpty == false ? .photo : .icon)
     }
 
     private var trimmed: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -343,7 +345,7 @@ struct EditWorkspaceSheet: View {
                 .font(.app(22, weight: .bold)).tracking(-0.3)
                 .padding(.horizontal, 24).padding(.top, 20)
             VStack(spacing: 10) {
-                WorkspacePhotoBadge(icon: icon, color: color, imageUrl: workspace.imageUrl, photo: $photo, removed: $photoRemoved)
+                WorkspaceBadge(icon: icon, color: color, size: 72, imageUrl: photoRemoved ? nil : workspace.imageUrl, image: photo)
                 TextField("", text: $name, prompt: Text(L("Nama Workspace")).foregroundStyle(Color.appTextTertiary))
                     .font(.app(26, weight: .bold)).tracking(-0.3)
                     .multilineTextAlignment(.center).tint(.appPrimary)
@@ -361,6 +363,10 @@ struct EditWorkspaceSheet: View {
                 }
             }
             .padding(.horizontal, 24).padding(.top, 16)
+            WorkspaceLookModePicker(mode: $lookMode).padding(.horizontal, 24).padding(.top, 8)
+            if lookMode == .photo {
+                WorkspacePhotoPanel(imageUrl: workspace.imageUrl, photo: $photo, removed: $photoRemoved).padding(.horizontal, 24)
+            } else {
             VStack(spacing: 4) {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 6), spacing: 4) {
                     ForEach(CategoryCatalog.visibleIcons(expanded: showsAllIcons), id: \.self) { symbol in
@@ -401,6 +407,7 @@ struct EditWorkspaceSheet: View {
                 }
             }
             .padding(.horizontal, 30).padding(.top, 12)
+            }
         }
         .disabled(isSaving)
         .filterSheet {
