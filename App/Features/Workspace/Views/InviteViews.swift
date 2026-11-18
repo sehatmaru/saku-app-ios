@@ -183,6 +183,8 @@ struct JoinWorkspaceSheet: View {
         .animation(.settle(0.36), value: phase)
         .disabled(isBusy)
         .filterSheet(detent: $detent) { footer }
+        // the buttons stay where they are; the keyboard simply covers them while it is up
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .scrollDismissesKeyboard(.interactively)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in detent = .large }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in detent = .medium }
@@ -205,8 +207,8 @@ struct JoinWorkspaceSheet: View {
                         .autocorrectionDisabled()
                         .keyboardType(.asciiCapable)
                         .focused($focused)
-                        .submitLabel(.go)
-                        .onSubmit { if InviteCode.isComplete(text) { Task { await check() } } }
+                        .submitLabel(.done)
+                        .onSubmit { focused = false }
                         .frame(width: 1, height: 1).clipped().opacity(0.01)
                         .onChange(of: text) { _, value in
                             let clean = InviteCode.normalized(value)
