@@ -13,13 +13,22 @@ struct RecorderFilterRow: View {
                         chip(L("Semua anggota"), selected: viewModel.recorder == nil) { viewModel.recorder = nil }
                         ForEach(viewModel.members) { member in
                             let id = member.profileId.uuidString.lowercased()
-                            chip(member.isFormer ? L("Mantan anggota") : member.name, selected: viewModel.recorder == id) { viewModel.recorder = id }
+                            chip(label(member), selected: viewModel.recorder == id) { viewModel.recorder = id }
                         }
                     }
                     .padding(.vertical, 1)
                 }
             }
         }
+    }
+
+    /// Two members can share a name: the one signed in is marked "(kamu)", the others with a twin get a number.
+    private func label(_ member: WorkspaceMember) -> String {
+        if member.isFormer { return L("Mantan anggota") }
+        if member.isMe { return "\(member.name) (\(L("kamu")))" }
+        let twins = viewModel.members.filter { !$0.isMe && !$0.isFormer && $0.name == member.name }
+        guard twins.count > 1, let index = twins.firstIndex(where: { $0.id == member.id }) else { return member.name }
+        return "\(member.name) (\(index + 1))"
     }
 
     private func chip(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {

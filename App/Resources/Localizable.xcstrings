@@ -26815,6 +26815,16 @@
         }
       }
     },
+    "kamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "you"
+          }
+        }
+      }
+    },
     "kartu": {
       "localizations": {
         "en": {
