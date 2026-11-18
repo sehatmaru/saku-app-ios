@@ -224,7 +224,7 @@ struct WorkspaceSwitcherSheet: View {
             }
         }
         .filterSheet {
-            SmartSheetFooter(primary: L("Tambah Workspace"), primaryIcon: "plus", onPrimary: { dismiss(); onCreate() })
+            SmartSheetFooter(primary: L("Tambah workspace"), primaryIcon: "plus", onPrimary: { dismiss(); onCreate() })
         }
     }
 
@@ -343,7 +343,7 @@ struct WorkspaceNewsSheet: View {
     var body: some View {
         SmartSheet(tone: .consent, icon: "person.2.fill", title: L("Catat uang bersama di Workspace"),
                    message: L("Ajak pasangan, keluarga, atau rekan usaha. Setiap catatan menunjukkan siapa yang mencatat. Workspace Pribadi-mu tetap milikmu sendiri.")) {
-            SmartSheetFooter(primary: L("Tambah Workspace"), secondary: L("Nanti saja"), onPrimary: onCreate, onSecondary: { dismiss() })
+            SmartSheetFooter(primary: L("Tambah workspace"), secondary: L("Nanti saja"), onPrimary: onCreate, onSecondary: { dismiss() })
         }
     }
 }

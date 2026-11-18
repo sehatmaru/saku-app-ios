@@ -22913,16 +22913,6 @@
         }
       }
     },
-    "Tambah Workspace": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add Workspace"
-          }
-        }
-      }
-    },
     "Tambah budget": {
       "localizations": {
         "en": {

@@ -132,7 +132,7 @@ struct CreateWorkspaceView: View {
 
     private var title: String {
         switch step {
-        case .start: L("Tambah Workspace")
+        case .start: L("Tambah workspace")
         case .name: L("Nama Workspace")
         case .look: L("Ikon, warna, dan foto")
         case .categories: L("Kategori awal")
@@ -391,7 +391,7 @@ struct CreateWorkspaceView: View {
                     .foregroundStyle(Color.appTextSecondary)
                     .frame(height: 36)
             } else {
-                primaryButton(step == questionSteps.last ? (start == .convert ? L("Ubah Workspace Pribadi") : L("Tambah Workspace")) : L("Lanjut"), enabled: isValid) { next() }
+                primaryButton(step == questionSteps.last ? (start == .convert ? L("Ubah Workspace Pribadi") : L("Tambah workspace")) : L("Lanjut"), enabled: isValid) { next() }
             }
         }
         .padding(.horizontal, 24)
