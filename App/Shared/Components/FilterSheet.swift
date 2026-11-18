@@ -55,7 +55,12 @@ private struct PinnedFooter<Bar: View>: ViewModifier {
     }
 
     /// With the keyboard up the inset is the keyboard's height, not the home indicator's: the buttons sit just above it.
-    private static func gap(below inset: CGFloat) -> CGFloat { inset > 80 ? 12 : 24 - inset }
+    /// A ramp, not a step: the inset grows frame by frame while the keyboard rises, and a jump in the gap made the buttons overshoot it.
+    private static func gap(below inset: CGFloat) -> CGFloat {
+        let home = 24 - min(inset, 34)
+        let ramp = min(max((inset - 34) / 66, 0), 1)
+        return home + (12 - home) * ramp
+    }
 
     func body(content: Content) -> some View {
         content
