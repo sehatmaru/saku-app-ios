@@ -13683,6 +13683,16 @@
         }
       }
     },
+    "Kode undangan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invite code"
+          }
+        }
+      }
+    },
     "Kode valid. Dipakai saat kamu menekan Lanjut.": {
       "localizations": {
         "en": {
@@ -23669,6 +23679,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your friend signs up"
+          }
+        }
+      }
+    },
+    "Tempel dari papan klip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste from clipboard"
           }
         }
       }

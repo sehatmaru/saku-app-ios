@@ -168,8 +168,6 @@ struct JoinWorkspaceSheet: View {
     @State private var showsMerge = false
     @State private var mergeTarget: UUID?
     @State private var opensAtLaunch = false
-    @FocusState private var focused: Bool
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             switch phase {
@@ -180,8 +178,12 @@ struct JoinWorkspaceSheet: View {
         }
         .animation(.settle(0.36), value: phase)
         .disabled(isBusy)
-        .filterSheet { footer }
-        .onAppear { focused = true }
+        .filterSheet(fullHeight: true) {
+            VStack(spacing: 12) {
+                if phase == .entry { keypad }
+                footer
+            }
+        }
     }
 
     // MARK: Phases
@@ -191,39 +193,64 @@ struct JoinWorkspaceSheet: View {
             Text(L("Gabung ke Workspace")).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
             Text(L("Masukkan kode 8 karakter dari Pemilik Workspace."))
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary)
-            TextField("", text: $text, prompt: Text("ABCD EFGH").foregroundStyle(Color.appTextTertiary))
+            Text(text.isEmpty ? "ABCD EFGH" : InviteCode.grouped(text))
                 .font(.system(size: 30, weight: .bold, design: .monospaced))
-                .multilineTextAlignment(.center)
-                .textInputAutocapitalization(.characters)
-                .autocorrectionDisabled()
-                .keyboardType(.asciiCapable)
-                .tint(.appPrimary)
-                .focused($focused)
-                .frame(height: 56)
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .foregroundStyle(text.isEmpty ? Color.appTextTertiary : Color.appText)
+                .frame(maxWidth: .infinity).frame(height: 56)
+                .background(Color.appText.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(.top, 14)
-                .onChange(of: text) { _, value in
-                    // no spaces inserted while typing: rewriting the field under the keyboard drops characters
-                    let clean = InviteCode.normalized(value)
-                    if clean != value { text = clean }
-                    problem = nil
-                }
-                .submitLabel(.go)
-                .onSubmit { if InviteCode.isComplete(text) { Task { await check() } } }
-                // the sheet's own footer sits under the keyboard while typing
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Spacer()
-                        Button(L("Lanjut")) { Task { await check() } }
-                            .font(.app(17, weight: .semibold))
-                            .disabled(!InviteCode.isComplete(text))
-                    }
-                }
+                .accessibilityLabel(L("Kode undangan"))
+                .accessibilityValue(text)
+            Button(L("Tempel dari papan klip")) {
+                text = InviteCode.normalized(UIPasteboard.general.string ?? "")
+                problem = nil
+            }
+            .font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
+            .frame(maxWidth: .infinity, minHeight: 40)
             if let problem {
                 Text(problem).font(.app(13)).foregroundStyle(Color.appError).padding(.top, 8)
             }
         }
         .padding(.horizontal, 24).padding(.top, 20)
+    }
+
+    /// The code's own keyboard: letters and digits only, no suggestions, no keyboard sliding over the sheet.
+    private var keypad: some View {
+        let rows = ["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
+        return VStack(spacing: 8) {
+            ForEach(rows.indices, id: \.self) { index in
+                HStack(spacing: 6) {
+                    ForEach(Array(rows[index]), id: \.self) { key in
+                        keyButton { Text(String(key)).font(.app(18, weight: .semibold)).foregroundStyle(Color.appText) } action: { type(key) }
+                            .disabled(InviteCode.isComplete(text))
+                    }
+                    if index == rows.count - 1 {
+                        keyButton { Image(systemName: "delete.left").font(.system(size: 17)).foregroundStyle(Color.appText) } action: { backspace() }
+                            .frame(width: 56).disabled(text.isEmpty)
+                            .accessibilityLabel(L("Hapus"))
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+    }
+
+    private func keyButton<Label: View>(@ViewBuilder _ label: () -> Label, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            label().frame(maxWidth: .infinity).frame(height: 46)
+                .background(Color.appText.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(PressScaleStyle())
+    }
+
+    private func type(_ key: Character) {
+        UISelectionFeedbackGenerator().selectionChanged()
+        text = InviteCode.normalized(text + String(key)); problem = nil
+    }
+
+    private func backspace() {
+        UISelectionFeedbackGenerator().selectionChanged()
+        text = String(text.dropLast()); problem = nil
     }
 
     private func previewView(_ preview: InvitePreview) -> some View {
