@@ -59,9 +59,11 @@ struct InvitePreview: Equatable, Decodable, Sendable {
     let color: String?
     let ownerName: String?
     let memberCount: Int?
+    let imageUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case status, name, icon, color
+        case imageUrl = "image_url"
         case spaceId = "space_id", ownerName = "owner_name", memberCount = "member_count"
     }
 }

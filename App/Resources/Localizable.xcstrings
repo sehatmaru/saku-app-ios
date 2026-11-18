@@ -1093,6 +1093,16 @@
         }
       }
     },
+    "%lld dari 5": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of 5"
+          }
+        }
+      }
+    },
     "%lld dari 5 anggota": {
       "localizations": {
         "en": {

@@ -251,17 +251,33 @@ struct JoinWorkspaceSheet: View {
     }
 
     private func previewView(_ preview: InvitePreview) -> some View {
-        VStack(spacing: 8) {
-            WorkspaceBadge(icon: preview.icon, color: preview.color, size: 72).padding(.top, 8)
-            Text(preview.name ?? "").font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
-            Text(L("Pemilik: %@", preview.ownerName ?? "-")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
-            Text(L("%lld dari 5 anggota", preview.memberCount ?? 0)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+        VStack(spacing: 0) {
+            WorkspaceBadge(icon: preview.icon, color: preview.color, size: 88, imageUrl: preview.imageUrl)
+            Text(preview.name ?? "").font(.app(24, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
+                .multilineTextAlignment(.center).lineLimit(2).padding(.top, 16)
+            VStack(spacing: 0) {
+                previewRow(L("Pemilik"), preview.ownerName ?? "-")
+                Divider().overlay(Color.appBorder)
+                previewRow(L("Anggota"), L("%lld dari 5", preview.memberCount ?? 0))
+            }
+            .padding(.horizontal, 16)
+            .background(Color.appCardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.top, 24)
             if let problem {
-                Text(problem).font(.app(13)).foregroundStyle(Color.appError).multilineTextAlignment(.center).padding(.top, 6)
+                Text(problem).font(.app(13)).foregroundStyle(Color.appError).multilineTextAlignment(.center).padding(.top, 12)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 24).padding(.top, 28)
+        .padding(.horizontal, 24).padding(.top, 20)
+    }
+
+    private func previewRow(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+            Spacer(minLength: 12)
+            Text(value).font(.app(15, weight: .semibold)).foregroundStyle(Color.appText).lineLimit(1)
+        }
+        .frame(minHeight: 52)
     }
 
     private func joined(_ id: UUID) -> some View {

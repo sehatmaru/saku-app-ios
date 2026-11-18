@@ -1921,6 +1921,7 @@
   "%@ dikeluarkan": "%@ was removed",
   "%@ sekarang Pemilik": "%@ is now the Owner",
   "%lld dari 5 anggota": "%lld of 5 members",
+"%lld dari 5": "%lld of 5",
   "Akunmu sedang dalam masa penghapusan, jadi belum bisa membuat undangan.": "Your account is waiting to be deleted, so you cannot make invites right now.",
   "Anggota · %lld dari 5": "Members · %lld of 5",
   "Bagikan": "Share",
