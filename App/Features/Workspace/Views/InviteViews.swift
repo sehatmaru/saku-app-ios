@@ -198,8 +198,13 @@ struct JoinWorkspaceSheet: View {
             Text(L("Masukkan kode 8 karakter dari Pemilik Workspace."))
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary)
             codeSlots
-                .frame(maxWidth: .infinity)
-                .padding(.top, 28)
+                .frame(maxWidth: .infinity).frame(height: 84)
+                .background(Color.appCardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(problem != nil ? Color.appError : (focused ? Color.appPrimary : Color.clear), lineWidth: 1.5)
+                }
+                .padding(.top, 24)
                 .background {
                     // the system keyboard types into this field; the boxes only show what it holds
                     TextField("", text: $text)
@@ -218,23 +223,24 @@ struct JoinWorkspaceSheet: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { focused = true }
+            // one line under the box: the error when there is one, the example otherwise
+            Group {
+                if let problem {
+                    Text(problem).foregroundStyle(Color.appError)
+                } else {
+                    Text(L("Contoh: ABCD EFGH")).foregroundStyle(Color.appTextSecondary)
+                }
+            }
+            .font(.app(14)).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 10).padding(.horizontal, 4)
             Button { text = InviteCode.normalized(UIPasteboard.general.string ?? ""); problem = nil } label: {
                 Label(L("Tempel dari papan klip"), systemImage: "doc.on.clipboard")
                     .font(.app(14, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                    .padding(.horizontal, 20).frame(height: 50)
+                    .padding(.horizontal, 20).frame(height: 44)
                     .background(Color.appPrimary.opacity(0.12), in: Capsule())
             }
             .buttonStyle(PressScaleStyle())
             .frame(maxWidth: .infinity)
             .padding(.top, 20)
-            if text.isEmpty {
-                Text(L("Contoh: ABCD EFGH"))
-                    .font(.app(14)).foregroundStyle(Color.appTextSecondary)
-                    .frame(maxWidth: .infinity).padding(.top, 14)
-            }
-            if let problem {
-                Text(problem).font(.app(14)).foregroundStyle(Color.appError).frame(maxWidth: .infinity).multilineTextAlignment(.center).padding(.top, 16)
-            }
         }
         .padding(.horizontal, 24).padding(.top, 20)
     }
