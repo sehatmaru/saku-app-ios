@@ -1,97 +1,75 @@
 import SwiftUI
 
-/// Profil → Workspace: which Workspace opens at launch, and the list of the person's Workspaces with the way to make one (K33).
+/// Profil → Workspace: the list of the person's Workspaces (the default one carries a tag) and the way to make or join one (K33).
 struct WorkspaceListView: View {
     @ObservedObject private var store = WorkspaceStore.shared
-    @State private var showsMerge = false
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 0) {
                 if store.loadFailed && store.spaces.isEmpty {
-                    failure
+                    failure.padding(.horizontal, 24).padding(.top, 8)
                 } else {
-                    if store.shared.isEmpty == false { launchRow }
-                    VStack(alignment: .leading, spacing: 10) {
-                        label(L("Workspace saya"))
-                        VStack(spacing: 0) {
-                            ForEach(Array(store.spaces.enumerated()), id: \.element.id) { index, workspace in
-                                if index > 0 { Divider().overlay(Color.appBorder.opacity(0.5)).padding(.leading, 70) }
-                                NavigationLink(destination: WorkspaceSettingsView(workspaceId: workspace.id).detailPage()) {
-                                    WorkspaceRow(workspace: workspace) {
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 13, weight: .semibold))
-                                            .foregroundStyle(Color.appTextTertiary)
-                                    }
-                                    .padding(.horizontal, 16)
-                                }
-                                .buttonStyle(RowPressStyle())
-                            }
-                        }
-                        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    }
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            tile("plus", L("Tambah Workspace")) { store.requestCreate() }
-                            tile("number", L("Gabung dengan kode")) { store.requestJoin() }
-                        }
-                        if store.shared.contains(where: { !$0.isReadOnly && $0.daysUntilDeletion == nil }) {
-                            Button { showsMerge = true } label: {
-                                HStack(spacing: 12) {
-                                    icon("arrow.triangle.merge")
-                                    Text(L("Gabungkan Workspace Pribadi"))
-                                        .font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
-                                    Spacer(minLength: 8)
+                    label(L("Workspace saya"))
+                    ForEach(store.spaces) { workspace in
+                        NavigationLink(destination: WorkspaceSettingsView(workspaceId: workspace.id).detailPage()) {
+                            WorkspaceRow(workspace: workspace) {
+                                HStack(spacing: 10) {
+                                    if workspace.isDefault { defaultTag }
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(Color.appTextTertiary)
                                 }
-                                .padding(16)
-                                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                                .contentShape(Rectangle())
                             }
-                            .buttonStyle(PressScaleStyle())
+                            .padding(.horizontal, 24)
                         }
-                        if store.shared.isEmpty {
-                            Text(L("Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain."))
-                                .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                                .padding(.horizontal, 4).padding(.top, 4)
-                        }
+                        .buttonStyle(RowPressStyle())
+                    }
+                    label(L("Kelola"))
+                    actionRow("plus", L("Tambah workspace")) { store.requestCreate() }
+                    actionRow("number", L("Gabung workspace")) { store.requestJoin() }
+                    if store.shared.isEmpty {
+                        Text(L("Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain."))
+                            .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+                            .padding(.horizontal, 24).padding(.top, 8)
                     }
                 }
             }
-            .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 32)
+            .padding(.bottom, 24)
         }
         .background(Color.appBackground)
         .navigationTitle(L("Workspace"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.load() }
-        .sheet(isPresented: $showsMerge) { MergeWizardView(mode: .merge(target: nil)) }
     }
 
     private func label(_ text: String) -> some View {
-        Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.horizontal, 4)
+        Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+            .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 2)
     }
 
-    private func icon(_ name: String) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.appPrimary)
-            .frame(width: 36, height: 36).background(Color.appPrimary.opacity(0.14), in: Circle())
+    private var defaultTag: some View {
+        Text(L("Utama")).font(.app(12, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+            .padding(.horizontal, 10).frame(height: 24)
+            .background(Color.appPrimary.opacity(0.14), in: Capsule())
     }
 
-    private func tile(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
+    private func actionRow(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                icon(symbol)
-                Text(title).font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
-                    .multilineTextAlignment(.leading).lineLimit(2)
+            HStack(spacing: 14) {
+                Image(systemName: symbol)
+                    .font(.system(size: 17)).foregroundStyle(Color.appTextSecondary)
+                    .frame(width: 40, height: 40)
+                Text(title).font(.app(16)).foregroundStyle(Color.appText)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
-            .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
-            .padding(16)
-            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .frame(minHeight: 56)
+            .padding(.horizontal, 24)
             .contentShape(Rectangle())
         }
-        .buttonStyle(PressScaleStyle())
+        .buttonStyle(RowPressStyle())
     }
 
     private var failure: some View {
@@ -100,37 +78,6 @@ struct WorkspaceListView: View {
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary)
             Button(L("Coba lagi")) { Task { await store.load() } }
                 .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
-        }
-    }
-
-    /// "Dibuka saat app dijalankan": a Workspace that is read-only or waiting for deletion cannot be the default.
-    private var launchRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            label(L("Dibuka saat app dijalankan"))
-            Menu {
-                ForEach(store.spaces) { workspace in
-                    let blocked = workspace.isReadOnly || workspace.daysUntilDeletion != nil
-                    Button {
-                        Task { try? await store.setDefault(workspace) }
-                    } label: {
-                        if workspace.isDefault { Label(workspace.displayName, systemImage: "checkmark") }
-                        else { Text(blocked ? L("%@ · Baca saja", workspace.displayName) : workspace.displayName) }
-                    }
-                    .disabled(blocked)
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text(store.spaces.first(where: \.isDefault)?.displayName ?? L("Workspace Pribadi"))
-                        .font(.app(16)).foregroundStyle(Color.appText).lineLimit(1)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
-                }
-                .frame(minHeight: 52)
-                .padding(.horizontal, 16)
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .contentShape(Rectangle())
-            }
         }
     }
 }

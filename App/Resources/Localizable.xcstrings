@@ -9503,6 +9503,16 @@
         }
       }
     },
+    "Gabung workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Join workspace"
+          }
+        }
+      }
+    },
     "Gabungkan": {
       "localizations": {
         "en": {
@@ -23049,6 +23059,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add to Shortcuts again"
+          }
+        }
+      }
+    },
+    "Tambah workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add workspace"
           }
         }
       }
