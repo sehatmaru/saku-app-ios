@@ -2057,7 +2057,6 @@
   "Bawa data saya ke Workspace Pribadi": "Bring my data to my Personal Workspace",
   "Catatan %@ tetap di Workspace dan ditandai mantan anggota. Data yang dia bawa ke sini lewat gabung dengan riwayat juga tetap di Workspace. Semua kode undangan yang aktif dicabut, jadi dia perlu kode baru untuk masuk lagi.": "%@'s records stay in the Workspace and are marked as a former member. Data they brought here by merging with history also stays. Every active invite code is revoked, so they need a new code to join again.",
   "Kamu tidak lagi punya akses ke Workspace itu. Kembali ke Workspace utama.": "You no longer have access to that Workspace. Back to your main Workspace.",
-  "Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf di %@.": "This Workspace can't take new records. Your entry was saved as a draft in %@.",
   "Catatan ini sudah dihapus oleh anggota lain.": "This record was already deleted by another member.",
   "Perubahan ini berlaku untuk semua anggota Workspace.": "This change applies to every member of the Workspace.",
   "Awal periode disimpan, berlaku untuk semua anggota": "Period start saved, applies to every member",
@@ -2065,5 +2064,6 @@
   "Semua anggota": "All members",
   "Pencatat": "Recorded by",
   "Dompet ini masih punya transaksi, jadi tidak bisa dihapus. Arsipkan saja.": "This wallet still has transactions, so it can't be deleted. Archive it instead.",
-  "kamu": "you"
+  "kamu": "you",
+  "Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf.": "This Workspace can't take new records. Your entry was saved as a draft."
 }

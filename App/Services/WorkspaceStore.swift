@@ -90,9 +90,15 @@ final class WorkspaceStore: ObservableObject {
 
     /// K44 / A8 (6): a new record was refused because access is gone or the Workspace turned read-only. Reloads the list
     /// (A2 moves the default to Workspace Pribadi when needed) and says whether the refusal was of that kind.
-    func handleRejection(_ error: Error) async -> Bool {
+    static func isRejection(_ error: Error) -> Bool {
         let text = String(describing: error)
-        guard text.contains("space_forbidden") || text.contains("space_read_only") else { return false }
+        return text.contains("space_forbidden") || text.contains("space_read_only")
+    }
+
+    /// `quiet`: the caller already tells the person what happened, so the access-lost toast stays away.
+    func handleRejection(_ error: Error, quiet: Bool = false) async -> Bool {
+        guard Self.isRejection(error) else { return false }
+        quietLoss = quiet
         await load()
         return true
     }

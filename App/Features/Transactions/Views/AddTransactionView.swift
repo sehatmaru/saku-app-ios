@@ -1143,8 +1143,10 @@ struct AddTransactionView: View {
             } catch {
                 isSaving = false
                 // K44: a new record refused because access is gone or the Workspace turned read-only is kept as a draft
-                if editing == nil, await WorkspaceStore.shared.handleRejection(error) {
+                if editing == nil, WorkspaceStore.isRejection(error) {
+                    // the draft first: reloading the Workspace list rebuilds the whole app and closes this screen
                     saveAsDraft(amount: value, description: description)
+                    _ = await WorkspaceStore.shared.handleRejection(error, quiet: true)
                     return
                 }
                 // A8 (7): another member deleted this record meanwhile
@@ -1168,8 +1170,8 @@ struct AddTransactionView: View {
         draft.date = date
         DraftStore.shared.add([draft])
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
-        closesAfterAlert = true
-        errorMessage = L("Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf di %@.", WorkspaceStore.shared.defaultWorkspace?.displayName ?? L("Workspace Pribadi"))
+        ToastCenter.shared.show(L("Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf."))
+        dismiss()
     }
 
     private static func dayString(_ date: Date) -> String {

@@ -26275,12 +26275,12 @@
         }
       }
     },
-    "Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf di %@.": {
+    "Workspace ini tidak bisa diisi lagi. Catatanmu disimpan sebagai draf.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This Workspace can't take new records. Your entry was saved as a draft in %@."
+            "value": "This Workspace can't take new records. Your entry was saved as a draft."
           }
         }
       }
