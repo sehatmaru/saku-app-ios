@@ -54,6 +54,9 @@ private struct PinnedFooter<Bar: View>: ViewModifier {
         _padding = State(initialValue: initial)
     }
 
+    /// With the keyboard up the inset is the keyboard's height, not the home indicator's: the buttons sit just above it.
+    private static func gap(below inset: CGFloat) -> CGFloat { inset > 80 ? 12 : 24 - inset }
+
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -67,8 +70,8 @@ private struct PinnedFooter<Bar: View>: ViewModifier {
             .background {
                 GeometryReader { proxy in
                     Color.clear
-                        .onAppear { padding = 24 - proxy.safeAreaInsets.bottom }
-                        .onChange(of: proxy.safeAreaInsets.bottom) { _, bottom in padding = 24 - bottom }
+                        .onAppear { padding = Self.gap(below: proxy.safeAreaInsets.bottom) }
+                        .onChange(of: proxy.safeAreaInsets.bottom) { _, bottom in padding = Self.gap(below: bottom) }
                 }
             }
     }

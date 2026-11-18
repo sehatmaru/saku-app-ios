@@ -188,8 +188,7 @@ struct JoinWorkspaceSheet: View {
         .animation(.settle(0.36), value: phase)
         .disabled(isBusy)
         .filterSheet(detent: $detent, atLeastMedium: true) { footer }
-        // the buttons stay where they are; the keyboard simply covers them while it is up
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        // the buttons ride up above the keyboard while it is open, like the other flows
         .scrollDismissesKeyboard(.interactively)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in detent = .large }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in detent = .medium }
