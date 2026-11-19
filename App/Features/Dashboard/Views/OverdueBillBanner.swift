@@ -111,6 +111,16 @@ struct OverdueBillBanner: View {
     /// Where a card sits in the stack: the ones behind rise toward the front as the front card is dragged away.
     private var progress: CGFloat { min(abs(dx) / 120, 1) }
 
+    /// Late bills say so; bills still ahead of their due date count down ("H-3", then "hari ini").
+    private func title(for bill: OverdueCardBill, many: Bool) -> String {
+        let name = bill.card.name
+        switch bill.statement.daysUntilDue {
+        case nil: return many ? L("%@ sudah lewat", name) : L("Tagihan %@ sudah lewat", name)
+        case 0?: return many ? L("%@ jatuh tempo hari ini", name) : L("Tagihan %@ jatuh tempo hari ini", name)
+        case let days?: return many ? L("%@ H-%lld", name, days) : L("Tagihan %@ H-%lld", name, days)
+        }
+    }
+
     private func card(_ bill: OverdueCardBill, position: Int, count: Int, recorded: Bool) -> some View {
         let isFront = position == 0
         let behind = CGFloat(min(position, 2)) - (isFront ? 0 : progress)
@@ -122,9 +132,10 @@ struct OverdueBillBanner: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 logoChip(bill.card, color: color)
-                Text(count > 1 ? L("%@ sudah lewat", bill.card.name) : L("Tagihan %@ sudah lewat", bill.card.name))
+                Text(title(for: bill, many: count > 1))
                     .font(.app(17, weight: .semibold))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
                 if universe.count > 1 {
                     Text("\(index)/\(universe.count)")

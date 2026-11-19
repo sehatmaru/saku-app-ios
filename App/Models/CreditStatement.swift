@@ -40,6 +40,8 @@ struct CreditStatement {
     let interestIfMinimum: Double
     /// Days past the due date while the statement is still owed; 0 otherwise.
     let daysOverdue: Int
+    /// Days left until the due date (0 on the day itself) while the statement is still owed and not late; nil otherwise.
+    let daysUntilDue: Int?
 
     /// The first day whose purchases get the longest interest-free period, and when they're due.
     let bestPurchaseDate: Date
@@ -130,6 +132,9 @@ struct CreditStatement {
         daysOverdue = status == .overdue
             ? max(calendar.dateComponents([.day], from: dueDate, to: todayStart).day ?? 0, 0)
             : 0
+        daysUntilDue = status == .unpaid || status == .partial
+            ? max(calendar.dateComponents([.day], from: todayStart, to: dueDate).day ?? 0, 0)
+            : nil
 
         // Buying the day after a cut-off pushes the bill out a full cycle.
         bestPurchaseDate = boundary == todayStart ? todayStart : cycle.dayAfter(nextStatementDate)

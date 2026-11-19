@@ -101,6 +101,17 @@ final class CreditStatementTests: XCTestCase {
         XCTAssertEqual(statement(card(balance: 1_000_000), charge, today: date(2026, 10, 15)).daysOverdue, 10)
     }
 
+    func testDaysUntilDueCountsDownToTheDueDateAndStopsWhenLateOrPaid() {
+        let charge = [txn("a", .expense, 1_000_000, date(2026, 9, 10))]
+        let owing = card(balance: 1_000_000)
+        XCTAssertEqual(statement(owing, charge, today: date(2026, 10, 2)).daysUntilDue, 3)
+        XCTAssertEqual(statement(owing, charge, today: date(2026, 10, 4)).daysUntilDue, 1)
+        XCTAssertEqual(statement(owing, charge, today: date(2026, 10, 5)).daysUntilDue, 0)
+        XCTAssertNil(statement(owing, charge, today: date(2026, 10, 6)).daysUntilDue)
+        let paid = charge + [txn("p", .transfer, 1_000_000, date(2026, 9, 28), from: "bank", to: "card")]
+        XCTAssertNil(statement(card(balance: 0), paid, today: date(2026, 10, 3)).daysUntilDue)
+    }
+
     func testLateFeeEstimateIsOnePercentCappedAndZeroBeforeDue() {
         let small = [txn("a", .expense, 1_000_000, date(2026, 9, 10))]
         XCTAssertEqual(statement(card(balance: 1_000_000), small, today: date(2026, 10, 5)).estimatedLateFee, 0)

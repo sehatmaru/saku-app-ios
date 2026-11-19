@@ -26,6 +26,7 @@ final class AppDataCache {
         var cardDueTotal: Double = 0
         var upcomingBillsTotal: Double = 0
         var overdueBills: [OverdueCardBill] = []
+var dueSoonBills: [OverdueCardBill] = []
     }
 
     struct BudgetState {

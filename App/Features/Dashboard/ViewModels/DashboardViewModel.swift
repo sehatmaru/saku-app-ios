@@ -29,6 +29,11 @@ final class DashboardViewModel: ObservableObject {
     @Published var cardDueTotal: Double = 0
     /// Cards whose last statement is past due and still owed, the longest overdue first.
     @Published var overdueBills: [OverdueCardBill] = []
+    /// Bills still owed that fall due within `dueSoonDays` (H-3 and closer), nearest first.
+    @Published var dueSoonBills: [OverdueCardBill] = []
+    static let dueSoonDays = 3
+    /// What Beranda's "Sudah kamu bayar?" card shows: the late bills first, then the ones about to fall due.
+    var billBannerBills: [OverdueCardBill] { overdueBills + dueSoonBills }
     /// Subscriptions charged to cash, bank or e-wallet from today to month end.
     @Published var upcomingBillsTotal: Double = 0
     @Published var isLoading = false
@@ -136,6 +141,7 @@ final class DashboardViewModel: ObservableObject {
             health = cached.health
             cardDueTotal = cached.cardDueTotal
             overdueBills = cached.overdueBills
+            dueSoonBills = cached.dueSoonBills
             upcomingBillsTotal = cached.upcomingBillsTotal
             loadedUserId = userId
             hasLoadedOnce = true
@@ -191,6 +197,10 @@ final class DashboardViewModel: ObservableObject {
                 .filter { $0.1.status == .overdue }
                 .map { OverdueCardBill(card: $0.0, statement: $0.1) }
                 .sorted { $0.statement.daysOverdue > $1.statement.daysOverdue }
+            dueSoonBills = billed
+                .filter { ($0.1.daysUntilDue ?? .max) <= Self.dueSoonDays }
+                .map { OverdueCardBill(card: $0.0, statement: $0.1) }
+                .sorted { ($0.statement.daysUntilDue ?? 0) < ($1.statement.daysUntilDue ?? 0) }
             let cardIds = Set(cards.map(\.id))
             let todayStart = calendar.startOfDay(for: Date())
             upcomingBillsTotal = activeSubs
@@ -277,7 +287,8 @@ final class DashboardViewModel: ObservableObject {
                 health: health,
                 cardDueTotal: cardDueTotal,
                 upcomingBillsTotal: upcomingBillsTotal,
-                overdueBills: overdueBills
+                overdueBills: overdueBills,
+                dueSoonBills: dueSoonBills
             ), for: userId)
             loadedUserId = userId
             hasLoadedOnce = true

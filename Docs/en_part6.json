@@ -1,4 +1,8 @@
 {
+"%@ jatuh tempo hari ini": "%@ is due today",
+"Tagihan %@ jatuh tempo hari ini": "%@ bill is due today",
+"%@ H-%lld": "%@ D-%lld",
+"Tagihan %@ H-%lld": "%@ bill D-%lld",
   "Transaksi baru": "New transactions",
   "Budget hampir habis": "Budget nearly used up",
   "Sisa budget terlihat jelas.": "See what's left in every budget.",

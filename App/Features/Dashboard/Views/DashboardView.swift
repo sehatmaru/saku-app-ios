@@ -288,8 +288,8 @@ struct DashboardView: View {
                             }
                         }
                         .id(homePreview.kind)
-                    } else if !viewModel.overdueBills.isEmpty {
-                        OverdueBillBanner(bills: viewModel.overdueBills, isBalanceVisible: isBalanceVisible) { bill in
+                    } else if !viewModel.billBannerBills.isEmpty {
+                        OverdueBillBanner(bills: viewModel.billBannerBills, isBalanceVisible: isBalanceVisible) { bill in
                             homePath.append(HomeRoute.card(bill.card.id))
                         }
                     }

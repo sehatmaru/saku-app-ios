@@ -87,6 +87,7 @@ extension CreditStatement {
         minimumDue = max(Self.minimumFloor, amount * Self.minimumShare)
         interestIfMinimum = (amount - minimumDue) * Self.monthlyInterest
         self.daysOverdue = daysOverdue
+        daysUntilDue = nil
         bestPurchaseDate = due.addingTimeInterval(-19 * day)
         bestPurchaseDueDate = due.addingTimeInterval(30 * day)
     }

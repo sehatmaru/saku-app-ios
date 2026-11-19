@@ -141,6 +141,16 @@
         }
       }
     },
+    "%@ H-%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ D-%lld"
+          }
+        }
+      }
+    },
     "%@ akan dihapus dari daftar dompet.": {
       "localizations": {
         "en": {
@@ -367,6 +377,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ shown again"
+          }
+        }
+      }
+    },
+    "%@ jatuh tempo hari ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is due today"
           }
         }
       }
@@ -20723,6 +20743,16 @@
         }
       }
     },
+    "Tagihan %@ H-%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bill D-%lld"
+          }
+        }
+      }
+    },
     "Tagihan %@ jatuh tempo %@": {
       "localizations": {
         "en": {
@@ -20749,6 +20779,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your %@ bill is due tomorrow. Pay in full to avoid interest."
+          }
+        }
+      }
+    },
+    "Tagihan %@ jatuh tempo hari ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bill is due today"
           }
         }
       }
