@@ -25,8 +25,16 @@ struct MergeWizardView: View {
     @State private var isMoving = false
     @State private var result: MoveResult?
     @State private var notice: String?
+    /// The wallets that go; nil until the first preview says which exist. Only the merge mode has the choice.
+    @State private var picked: Set<String>?
+    @State private var copies = false
 
     private var isRescue: Bool { if case .rescue = mode { true } else { false } }
+    /// Nil when every wallet goes, so the server gets no list and answers like before.
+    private var accountsArg: [String]? {
+        guard let picked, let all = preview?.accounts, picked.count < all.count else { return nil }
+        return Array(picked)
+    }
 
     /// Shared Workspaces that take records: not read-only, not waiting to be deleted.
     private var targets: [Workspace] { store.shared.filter { !$0.isReadOnly && $0.daysUntilDeletion == nil } }
@@ -102,13 +110,14 @@ struct MergeWizardView: View {
                         statRow("list.bullet", L("%lld transaksi", preview.transactions))
                     }
                     .padding(.top, 16)
+                    if !isRescue && !preview.accounts.isEmpty { chooser(preview) }
                     if load == .limit {
                         warning(L("%@ sudah hampir penuh. Batas dompet gratis Workspace mengikuti Pemilik, jadi %lld dompet uang tidak muat. Kurangi dompet dulu atau minta Pemilik berlangganan Plus.", preview.targetName, preview.moneyAfter))
                     }
                     warning(isRescue ? L("Budget, preferensi kategori, dan draf tidak ikut pindah.")
-                            : L("Seluruh riwayatmu akan terlihat semua anggota %@. Tidak bisa dibatalkan.", preview.targetName))
+                            : L("Seluruh riwayat dompet yang kamu pilih akan terlihat semua anggota %@. Tidak bisa dibatalkan.", preview.targetName))
                     if !isRescue {
-                        warning(L("Data yang sudah pindah tetap ada di %@ meski nanti kamu keluar atau dikeluarkan. Budget, preferensi kategori, awal periode, dan draf tidak ikut.", preview.targetName))
+                        warning(L("Data yang sudah masuk tetap ada di %@ meski nanti kamu keluar atau dikeluarkan. Budget, preferensi kategori, awal periode, dan draf tidak ikut.", preview.targetName))
                     }
                 }
             }
@@ -159,11 +168,13 @@ struct MergeWizardView: View {
 
     private var confirm: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(isRescue ? L("Bawa data ke Workspace Pribadi?") : L("Gabungkan ke %@?", destinationName)).font(.app(22, weight: .bold)).tracking(-0.3)
+            Text(isRescue ? L("Bawa data ke Workspace Pribadi?") : copies ? L("Salin ke %@?", destinationName) : L("Pindahkan ke %@?", destinationName)).font(.app(22, weight: .bold)).tracking(-0.3)
             if let preview {
-                Text(L("%lld dompet dan %lld transaksi pindah. Semua atau tidak sama sekali.", preview.wallets, preview.transactions))
+                Text(copies ? L("%lld dompet dan %lld transaksi disalin. Semua atau tidak sama sekali.", preview.wallets, preview.transactions)
+                     : L("%lld dompet dan %lld transaksi pindah. Semua atau tidak sama sekali.", preview.wallets, preview.transactions))
                     .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2).padding(.top, 6)
                 warning(isRescue ? L("Setelah pindah, datanya ada di Workspace Pribadi-mu dan tidak ikut terhapus bersama %@.", preview.targetName)
+                        : copies ? L("Salinannya terlihat semua anggota %@ dan tidak bisa dibatalkan. Workspace Pribadi-mu tidak berubah.", preview.targetName)
                         : L("Seluruh riwayat ini terlihat semua anggota %@ dan tidak bisa dibatalkan.", preview.targetName))
             }
             if let notice { Text(notice).font(.app(14)).foregroundStyle(Color.appError).padding(.top, 12) }
@@ -173,11 +184,59 @@ struct MergeWizardView: View {
     private var done: some View {
         VStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill").font(.system(size: 56)).foregroundStyle(Color.appPrimary).padding(.top, 40)
-            Text(L("Sudah pindah")).font(.app(22, weight: .semibold)).tracking(-0.3)
+            Text(copies ? L("Sudah disalin") : L("Sudah pindah")).font(.app(22, weight: .semibold)).tracking(-0.3)
             Text(L("%lld dompet dan %lld transaksi sekarang ada di %@.", result?.wallets ?? 0, result?.transactions ?? 0, destinationName))
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center).lineSpacing(3)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// Which wallets, and move or copy. Both are the person's call (K39).
+    private func chooser(_ preview: MovePreview) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("Dompet yang dibawa")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.top, 20)
+            ForEach(preview.accounts) { wallet in
+                Button { toggle(wallet.id) } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: picked?.contains(wallet.id) == true ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 22)).foregroundStyle(picked?.contains(wallet.id) == true ? Color.appPrimary : Color.appTextTertiary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(wallet.name).font(.app(16, weight: .medium)).lineLimit(1)
+                            Text(L("%lld transaksi", wallet.transactions)).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                        }
+                        Spacer(minLength: 8)
+                    }
+                    .frame(minHeight: 56).contentShape(Rectangle())
+                }
+                .buttonStyle(RowPressStyle())
+            }
+            Text(L("Cara membawa")).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary).padding(.top, 16)
+            modeRow(L("Pindahkan"), detail: L("Dompet dan riwayatnya keluar dari Workspace Pribadi."), copy: false)
+            modeRow(L("Salin"), detail: L("Workspace Pribadi tetap utuh. %@ mendapat salinannya.", preview.targetName), copy: true)
+        }
+    }
+
+    private func modeRow(_ title: String, detail: String, copy: Bool) -> some View {
+        Button { copies = copy } label: {
+            HStack(spacing: 12) {
+                Image(systemName: copies == copy ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22)).foregroundStyle(copies == copy ? Color.appPrimary : Color.appTextTertiary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.app(16, weight: .medium))
+                    Text(detail).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2).multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 8)
+            }
+            .frame(minHeight: 56).contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+    }
+
+    private func toggle(_ id: String) {
+        guard var next = picked else { return }
+        if next.contains(id) { next.remove(id) } else { next.insert(id) }
+        picked = next
+        Task { await reload() }
     }
 
     private func statRow(_ icon: String, _ text: String) -> some View {
@@ -208,7 +267,7 @@ struct MergeWizardView: View {
             SmartSheetFooter(primary: L("Lanjut"), isEnabled: mappingComplete, secondary: L("Kembali"),
                              onPrimary: { step = .confirm }, onSecondary: { back() })
         case .confirm:
-            SmartSheetFooter(primary: isRescue ? L("Bawa data saya") : L("Gabungkan"), isBusy: isMoving, secondary: L("Kembali"),
+            SmartSheetFooter(primary: isRescue ? L("Bawa data saya") : copies ? L("Salin") : L("Pindahkan"), isBusy: isMoving, secondary: L("Kembali"),
                              onPrimary: { Task { await move() } }, onSecondary: { back() })
         case .done:
             SmartSheetFooter(primary: L("Selesai"), onPrimary: { dismiss() })
@@ -230,8 +289,9 @@ struct MergeWizardView: View {
         guard let space = spaceId else { load = .failed; return }
         load = .loading
         do {
-            let fresh = try await store.movePreview(rescue: isRescue, space: space)
+            let fresh = try await store.movePreview(rescue: isRescue, space: space, accounts: accountsArg)
             preview = fresh
+            if picked == nil, !fresh.accounts.isEmpty { picked = Set(fresh.accounts.filter(\.selected).map(\.id)) }
             // the answers follow the fresh suggestions; a category the person already chose keeps the choice if it still exists
             var next: [String: String] = [:]
             for category in fresh.needsMapping {
@@ -250,7 +310,7 @@ struct MergeWizardView: View {
         notice = nil
         defer { isMoving = false }
         do {
-            result = try await store.moveApply(rescue: isRescue, space: space, map: choice)
+            result = try await store.moveApply(rescue: isRescue, space: space, map: choice, accounts: accountsArg, copy: copies)
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             step = .done
         } catch let error as WorkspaceError {

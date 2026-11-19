@@ -91,6 +91,7 @@ struct WorkspaceSettingsView: View {
     @State private var confirmsDelete = false
     @State private var isDeleting = false
     @State private var showsRescue = false
+    @State private var showsBring = false
 
     private var workspace: Workspace? { store.spaces.first { $0.id == workspaceId } }
 
@@ -111,6 +112,16 @@ struct WorkspaceSettingsView: View {
                     .padding(.horizontal, 24)
                     if !workspace.isPersonal {
                         WorkspaceMembersSection(workspace: workspace).padding(.horizontal, 24)
+                    }
+                    // any member may bring their own wallets in, moved or copied (K39)
+                    if !workspace.isPersonal && !workspace.isReadOnly && workspace.daysUntilDeletion == nil {
+                        Button { showsBring = true } label: {
+                            Text(L("Bawa data pribadi saya ke sini"))
+                                .font(.app(16, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
+                                .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).contentShape(Rectangle())
+                        }
+                        .buttonStyle(RowPressStyle())
+                        .padding(.horizontal, 24)
                     }
                     if workspace.isOwner && !workspace.isPersonal { deleteRow(workspace) }
                     // K42: a member can still bring their own wallets out while the Workspace waits to be deleted
@@ -147,6 +158,7 @@ struct WorkspaceSettingsView: View {
         .sheet(isPresented: $showsEdit) {
             if let workspace { EditWorkspaceSheet(workspace: workspace) }
         }
+        .sheet(isPresented: $showsBring) { MergeWizardView(mode: .merge(target: workspaceId)) }
         .sheet(isPresented: $showsRescue) { MergeWizardView(mode: .rescue(space: workspaceId)) }
         .sheet(isPresented: $showsPayday) {
             PaydaySheet(context: .settings) { day in

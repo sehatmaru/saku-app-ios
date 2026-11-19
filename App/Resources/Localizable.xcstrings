@@ -1173,6 +1173,16 @@
         }
       }
     },
+    "%lld dompet dan %lld transaksi disalin. Semua atau tidak sama sekali.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld wallets and %lld transactions are copied. All or nothing."
+          }
+        }
+      }
+    },
     "%lld dompet dan %lld transaksi pindah. Semua atau tidak sama sekali.": {
       "localizations": {
         "en": {
@@ -3853,6 +3863,26 @@
         }
       }
     },
+    "Bawa data pribadi saya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring my personal data"
+          }
+        }
+      }
+    },
+    "Bawa data pribadi saya ke sini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring my personal data here"
+          }
+        }
+      }
+    },
     "Bawa data saya": {
       "localizations": {
         "en": {
@@ -6353,6 +6383,16 @@
         }
       }
     },
+    "Cara membawa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to bring them"
+          }
+        }
+      }
+    },
     "Cara memulai": {
       "localizations": {
         "en": {
@@ -7643,6 +7683,16 @@
         }
       }
     },
+    "Data yang sudah masuk tetap ada di %@ meski nanti kamu keluar atau dikeluarkan. Budget, preferensi kategori, awal periode, dan draf tidak ikut.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data that has come in stays in %@ even if you leave or are removed later. Budgets, category preferences, period start, and drafts don't come along."
+          }
+        }
+      }
+    },
     "Data yang sudah pindah tetap ada di %@ meski nanti kamu keluar atau dikeluarkan. Budget, preferensi kategori, awal periode, dan draf tidak ikut.": {
       "localizations": {
         "en": {
@@ -8693,6 +8743,16 @@
         }
       }
     },
+    "Dompet dan riwayatnya keluar dari Workspace Pribadi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The wallets and their history leave your Personal Workspace."
+          }
+        }
+      }
+    },
     "Dompet dihapus": {
       "localizations": {
         "en": {
@@ -8849,6 +8909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Archived wallets are kept here, with their history."
+          }
+        }
+      }
+    },
+    "Dompet yang dibawa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets to bring"
           }
         }
       }
@@ -18883,12 +18953,32 @@
         }
       }
     },
+    "Pindahkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move"
+          }
+        }
+      }
+    },
     "Pindahkan begitu gajian masuk.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Move it as soon as pay arrives."
+          }
+        }
+      }
+    },
+    "Pindahkan ke %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to %@?"
           }
         }
       }
@@ -20203,6 +20293,16 @@
         }
       }
     },
+    "Salin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy"
+          }
+        }
+      }
+    },
     "Salin dari Workspace Pribadi": {
       "localizations": {
         "en": {
@@ -20213,12 +20313,32 @@
         }
       }
     },
+    "Salin ke %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy to %@?"
+          }
+        }
+      }
+    },
     "Salin kode": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Copy code"
+          }
+        }
+      }
+    },
+    "Salinannya terlihat semua anggota %@ dan tidak bisa dibatalkan. Workspace Pribadi-mu tidak berubah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The copy is visible to every member of %@ and can't be undone. Your Personal Workspace doesn't change."
           }
         }
       }
@@ -20629,6 +20749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Everyone you invite will see the whole history"
+          }
+        }
+      }
+    },
+    "Seluruh riwayat dompet yang kamu pilih akan terlihat semua anggota %@. Tidak bisa dibatalkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The full history of the wallets you pick will be visible to every member of %@. This can't be undone."
           }
         }
       }
@@ -22419,6 +22549,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deleted: you deleted this budget, but it is shown because it was active in this period."
+          }
+        }
+      }
+    },
+    "Sudah disalin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
           }
         }
       }
@@ -26301,6 +26441,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Personal Workspace"
+          }
+        }
+      }
+    },
+    "Workspace Pribadi tetap utuh. %@ mendapat salinannya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Personal Workspace stays as it is. %@ gets a copy."
           }
         }
       }

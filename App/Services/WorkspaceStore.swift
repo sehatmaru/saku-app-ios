@@ -239,18 +239,22 @@ final class WorkspaceStore: ObservableObject {
     }
 
     /// K39/K42: what moving would bring (counts, limit check, category suggestions). `rescue` reads a Workspace in its grace period.
-    func movePreview(rescue: Bool, space: UUID) async throws -> MovePreview {
+    /// `accounts` limits it to those wallets; nil means every wallet (and the argument is not sent, so an older server still answers).
+    func movePreview(rescue: Bool, space: UUID, accounts: [String]? = nil) async throws -> MovePreview {
+        struct Params: Encodable, Sendable { let p_target: UUID; let p_accounts: [String]? }
         do {
-            let params = rescue ? ["p_space": space] : ["p_target": space]
-            return try await SupabaseSDK.client.rpc(rescue ? "rescue_preview" : "merge_preview", params: params).execute().value
+            if rescue { return try await SupabaseSDK.client.rpc("rescue_preview", params: ["p_space": space]).execute().value }
+            return try await SupabaseSDK.client.rpc("merge_preview", params: Params(p_target: space, p_accounts: accounts)).execute().value
         } catch { throw WorkspaceError(error) }
     }
 
     /// Moves it all or nothing (A6, A7). `map` sends each source category to a destination category id or "new".
-    func moveApply(rescue: Bool, space: UUID, map: [String: String]) async throws -> MoveResult {
-        struct Params: Encodable, Sendable { let p_space: UUID?, p_target: UUID?, p_map: [String: String] }
+    /// `accounts` picks the wallets (nil = all) and `copy` leaves the personal ones where they are.
+    func moveApply(rescue: Bool, space: UUID, map: [String: String], accounts: [String]? = nil, copy: Bool = false) async throws -> MoveResult {
+        struct Params: Encodable, Sendable { let p_space: UUID?, p_target: UUID?, p_map: [String: String], p_accounts: [String]?, p_copy: Bool? }
         do {
-            let params = Params(p_space: rescue ? space : nil, p_target: rescue ? nil : space, p_map: map)
+            let params = Params(p_space: rescue ? space : nil, p_target: rescue ? nil : space, p_map: map,
+                                p_accounts: rescue ? nil : accounts, p_copy: rescue || !copy ? nil : true)
             let result: MoveResult = try await SupabaseSDK.client.rpc(rescue ? "rescue_from_deleting_space" : "merge_personal_into_space", params: params).execute().value
             await load()
             reloadApp()
@@ -399,10 +403,33 @@ struct MovePreview: Decodable, Equatable {
     let moneyAfter: Int, investmentAfter: Int
     let source: [Source]
     let destination: [Destination]
+    /// Every wallet of Workspace Pribadi, picked or not (empty on a server older than M13).
+    let accounts: [Wallet]
+
+    struct Wallet: Decodable, Equatable, Identifiable {
+        let id: String, name: String, type: String
+        let icon: String?, color: String?
+        let archived: Bool, transactions: Int, selected: Bool
+    }
 
     enum CodingKeys: String, CodingKey {
         case targetName = "target_name", canCreate = "can_create", wallets, cards, transactions
-        case limitOk = "limit_ok", moneyAfter = "money_after", investmentAfter = "investment_after", source, destination
+        case limitOk = "limit_ok", moneyAfter = "money_after", investmentAfter = "investment_after", source, destination, accounts
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        targetName = try c.decode(String.self, forKey: .targetName)
+        canCreate = try c.decode(Bool.self, forKey: .canCreate)
+        wallets = try c.decode(Int.self, forKey: .wallets)
+        cards = try c.decode(Int.self, forKey: .cards)
+        transactions = try c.decode(Int.self, forKey: .transactions)
+        limitOk = try c.decode(Bool.self, forKey: .limitOk)
+        moneyAfter = try c.decode(Int.self, forKey: .moneyAfter)
+        investmentAfter = try c.decode(Int.self, forKey: .investmentAfter)
+        source = try c.decode([Source].self, forKey: .source)
+        destination = try c.decode([Destination].self, forKey: .destination)
+        accounts = try c.decodeIfPresent([Wallet].self, forKey: .accounts) ?? []
     }
 
     /// Categories that a moved record uses: these need an answer before the move (A7).

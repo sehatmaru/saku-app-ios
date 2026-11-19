@@ -2081,5 +2081,20 @@
   "Workspace ini tidak bisa diisi lagi, jadi catatanmu disimpan sebagai draf. Cek di Konfirmasi transaksi.": "This Workspace can't take new records, so your entry was saved as a draft. Check it under Konfirmasi transaksi.",
   "Kamu belum bisa menambah catatan di sini. Catatan yang sudah ada tetap bisa dilihat.": "You can't add records here yet. Existing records stay visible.",
   "Kategori dan budget Workspace ini hanya diatur oleh Pemilik. Kamu tetap bisa melihatnya.": "Only the Owner sets up categories and budgets in this Workspace. You can still view them.",
-  "Perubahan tadi terlihat oleh semua anggota Workspace ini.": "Every member of this Workspace can see that change."
+  "Perubahan tadi terlihat oleh semua anggota Workspace ini.": "Every member of this Workspace can see that change.",
+  "Dompet yang dibawa": "Wallets to bring",
+  "Cara membawa": "How to bring them",
+  "Pindahkan": "Move",
+  "Dompet dan riwayatnya keluar dari Workspace Pribadi.": "The wallets and their history leave your Personal Workspace.",
+  "Salin": "Copy",
+  "Workspace Pribadi tetap utuh. %@ mendapat salinannya.": "Your Personal Workspace stays as it is. %@ gets a copy.",
+  "Seluruh riwayat dompet yang kamu pilih akan terlihat semua anggota %@. Tidak bisa dibatalkan.": "The full history of the wallets you pick will be visible to every member of %@. This can't be undone.",
+  "Data yang sudah masuk tetap ada di %@ meski nanti kamu keluar atau dikeluarkan. Budget, preferensi kategori, awal periode, dan draf tidak ikut.": "Data that has come in stays in %@ even if you leave or are removed later. Budgets, category preferences, period start, and drafts don't come along.",
+  "Salin ke %@?": "Copy to %@?",
+  "Pindahkan ke %@?": "Move to %@?",
+  "%lld dompet dan %lld transaksi disalin. Semua atau tidak sama sekali.": "%lld wallets and %lld transactions are copied. All or nothing.",
+  "Salinannya terlihat semua anggota %@ dan tidak bisa dibatalkan. Workspace Pribadi-mu tidak berubah.": "The copy is visible to every member of %@ and can't be undone. Your Personal Workspace doesn't change.",
+  "Sudah disalin": "Copied",
+  "Bawa data pribadi saya ke sini": "Bring my personal data here",
+  "Bawa data pribadi saya": "Bring my personal data"
 }

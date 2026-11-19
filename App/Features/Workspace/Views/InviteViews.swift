@@ -312,7 +312,7 @@ struct JoinWorkspaceSheet: View {
                 .padding(.top, 14)
             }
             // K39: the offer to bring history, once, right after joining
-            Button(L("Gabungkan Workspace Pribadi saya")) { mergeTarget = id; showsMerge = true }
+            Button(L("Bawa data pribadi saya")) { mergeTarget = id; showsMerge = true }
                 .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary).frame(minHeight: 44).padding(.top, 6)
         }
         .frame(maxWidth: .infinity)
