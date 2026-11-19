@@ -21,6 +21,8 @@ struct PlusStatusView: View {
     /// What the free plan allows: Dompet, Kategori, Budget (and Bantuan AI while it uses sample numbers).
     private var limits: [(String, String)] {
         var list = [(L("Dompet uang aktif"), "\(FreeLimits.moneyWallets)"), (L("Kategori pengeluaran"), "\(FreeLimits.expenseCategories)"), (L("Budget"), "\(FreeLimits.budgets)")]
+        // K37: free people own one shared Workspace, Plus any number
+        if WorkspaceStore.shared.showsSwitcher { list.insert((L("Workspace bersama"), "1"), at: 0) }
         // AI help is counted on the server, which is not built yet: sample numbers, for test builds only
         if showsAI { list.append((L("Bantuan AI per bulan"), "\(AIQuota.sample.total)")) }
         return list

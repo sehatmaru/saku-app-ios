@@ -81,6 +81,16 @@
         }
       }
     },
+    " · %lld kartu kredit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · %lld credit cards"
+          }
+        }
+      }
+    },
     " · hari ke-%lld dari %lld": {
       "localizations": {
         "en": {
@@ -131,6 +141,16 @@
         }
       }
     },
+    "%@ (kamu)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (you)"
+          }
+        }
+      }
+    },
     "%@ - %@ tercatat!": {
       "localizations": {
         "en": {
@@ -151,12 +171,32 @@
         }
       }
     },
+    "%@ ada di daftar Workspace-mu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is in your Workspace list."
+          }
+        }
+      }
+    },
     "%@ akan dihapus dari daftar dompet.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ will be removed from your wallet list."
+          }
+        }
+      }
+    },
+    "%@ akan dihapus. Dompet yang kamu buat dan semua transaksinya pindah ke Workspace Pribadi-mu. Dompet anggota lain tetap di sana.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ will be deleted. The wallets you made and all their transactions move to your Personal Workspace. Other members' wallets stay there."
           }
         }
       }
@@ -321,6 +361,16 @@
         }
       }
     },
+    "%@ dikeluarkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ was removed"
+          }
+        }
+      }
+    },
     "%@ dilewati karena belum lengkap. Tetap ada di sini untuk dicek.": {
       "localizations": {
         "en": {
@@ -347,6 +397,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ renews in 3 days for %@. Cancel before then if you no longer use it."
+          }
+        }
+      }
+    },
+    "%@ dipindah ke %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ moved to %@"
           }
         }
       }
@@ -387,6 +447,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ is due today"
+          }
+        }
+      }
+    },
+    "%@ langsung tersembunyi dari semua anggota dan dihapus permanen setelah 7 hari, dengan semua datanya. Selama itu kamu bisa membatalkannya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is hidden from every member right away and deleted for good after 7 days, with all its data. You can cancel until then."
           }
         }
       }
@@ -501,6 +571,16 @@
         }
       }
     },
+    "%@ pindah dengan saldo terakhir, tanpa riwayat. Dompet lama diarsipkan. Pindah ini satu arah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ moves with its latest balance and no history. The old wallet is archived. Moving is one way."
+          }
+        }
+      }
+    },
     "%@ pos terbesar": {
       "localizations": {
         "en": {
@@ -551,6 +631,16 @@
         }
       }
     },
+    "%@ sekarang Pemilik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is now the Owner"
+          }
+        }
+      }
+    },
     "%@ senilai Rp%@ masuk ke Total aset, bukan pengeluaran.": {
       "localizations": {
         "en": {
@@ -567,6 +657,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ is ready. Set its value anytime with Update value."
+          }
+        }
+      }
+    },
+    "%@ sudah ada di daftar Workspace-mu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is now in your Workspace list."
+          }
+        }
+      }
+    },
+    "%@ sudah ada di daftar Workspace-mu. %lld dompet ikut pindah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is in your Workspace list. %lld wallets moved too."
+          }
+        }
+      }
+    },
+    "%@ sudah dibuat, tapi dompet belum bisa dipindah karena batas dompet gratis. Tidak ada yang berubah di dompetmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ was created, but the wallets could not move because of the free wallet limit. Nothing changed in your wallets."
+          }
+        }
+      }
+    },
+    "%@ sudah hampir penuh. Batas dompet gratis Workspace mengikuti Pemilik, jadi %lld dompet uang tidak muat. Kurangi dompet dulu atau minta Pemilik berlangganan Plus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is nearly full. The free wallet limit follows the Owner, so %lld money wallets do not fit. Reduce wallets first or ask the Owner to subscribe to Plus."
           }
         }
       }
@@ -631,6 +761,26 @@
         }
       }
     },
+    "%@ · Baca saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Read only"
+          }
+        }
+      }
+    },
+    "%@ · Hanya Pemilik yang bisa mengubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Only the Owner can change this"
+          }
+        }
+      }
+    },
     "%@ · Investasi": {
       "localizations": {
         "en": {
@@ -647,6 +797,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ · Smart Tracker"
+          }
+        }
+      }
+    },
+    "%@ · disembunyikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · hidden"
           }
         }
       }
@@ -833,6 +993,16 @@
         }
       }
     },
+    "%lld catatan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld records"
+          }
+        }
+      }
+    },
     "%lld catatan disimpan": {
       "localizations": {
         "en": {
@@ -943,6 +1113,26 @@
         }
       }
     },
+    "%lld dari 5": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of 5"
+          }
+        }
+      }
+    },
+    "%lld dari 5 anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of 5 members"
+          }
+        }
+      }
+    },
     "%lld dipakai": {
       "localizations": {
         "en": {
@@ -979,6 +1169,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld wallets"
+          }
+        }
+      }
+    },
+    "%lld dompet dan %lld transaksi pindah. Semua atau tidak sama sekali.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld wallets and %lld transactions move. All or nothing."
+          }
+        }
+      }
+    },
+    "%lld dompet dan %lld transaksi sekarang ada di %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld wallets and %lld transactions are now in %@."
           }
         }
       }
@@ -1289,6 +1499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld becomes unlimited"
+          }
+        }
+      }
+    },
+    "%lld orang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld people"
           }
         }
       }
@@ -1863,6 +2083,16 @@
         }
       }
     },
+    "2 anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 members"
+          }
+        }
+      }
+    },
     "2 dari 4": {
       "localizations": {
         "en": {
@@ -2133,6 +2363,16 @@
         }
       }
     },
+    "Ajak pasangan, keluarga, atau rekan usaha. Setiap catatan menunjukkan siapa yang mencatat. Workspace Pribadi-mu tetap milikmu sendiri.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invite a partner, family, or business partner. Every record shows who made it. Your Personal Workspace stays yours alone."
+          }
+        }
+      }
+    },
     "Ajak teman": {
       "localizations": {
         "en": {
@@ -2179,6 +2419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "End of month"
+          }
+        }
+      }
+    },
+    "Akses Workspace hilang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace access lost"
           }
         }
       }
@@ -2239,6 +2489,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Turn on AI for Smart Tracker"
+          }
+        }
+      }
+    },
+    "Aktifkan Plus lagi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn Plus back on"
           }
         }
       }
@@ -2413,6 +2673,26 @@
         }
       }
     },
+    "Akunmu sedang dalam masa penghapusan, jadi belum bisa membuat undangan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account is waiting to be deleted, so you cannot make invites right now."
+          }
+        }
+      }
+    },
+    "Akunmu sedang dalam proses penghapusan, jadi belum bisa memindahkan data.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account is being deleted, so data cannot be moved yet."
+          }
+        }
+      }
+    },
     "Akunmu sudah memakai satu kode. Satu akun hanya bisa memakai satu kode.": {
       "localizations": {
         "en": {
@@ -2549,6 +2829,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Analytics"
+          }
+        }
+      }
+    },
+    "Anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Members"
+          }
+        }
+      }
+    },
+    "Anggota · %lld dari 5": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Members · %lld of 5"
+          }
+        }
+      }
+    },
+    "Anggota · %lld orang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Member · %lld people"
           }
         }
       }
@@ -2863,12 +3173,52 @@
         }
       }
     },
+    "Awal periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period start"
+          }
+        }
+      }
+    },
+    "Awal periode Workspace ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace's period start"
+          }
+        }
+      }
+    },
     "Awal periode budget": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Budget period start"
+          }
+        }
+      }
+    },
+    "Awal periode disimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period start saved"
+          }
+        }
+      }
+    },
+    "Awal periode disimpan, berlaku untuk semua anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period start saved, applies to every member"
           }
         }
       }
@@ -2923,6 +3273,16 @@
         }
       }
     },
+    "Baca saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read only"
+          }
+        }
+      }
+    },
     "Baca teks, suara, dan gambar dengan AI": {
       "localizations": {
         "en": {
@@ -2949,6 +3309,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Part"
+          }
+        }
+      }
+    },
+    "Bagikan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share"
           }
         }
       }
@@ -2989,6 +3359,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Share code"
+          }
+        }
+      }
+    },
+    "Bagikan kode ini. Siapa pun yang punya kodenya bisa bergabung sampai Workspace berisi 5 anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share this code. Anyone who has it can join until the Workspace has 5 members."
           }
         }
       }
@@ -3353,6 +3733,26 @@
         }
       }
     },
+    "Batas dompet gratis di %@ sudah penuh.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free wallet limit in %@ is full."
+          }
+        }
+      }
+    },
+    "Batas dompet gratis di %@ terlampaui, jadi tidak ada yang dipindah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free wallet limit in %@ was exceeded, so nothing moved."
+          }
+        }
+      }
+    },
     "Batas gratis": {
       "localizations": {
         "en": {
@@ -3439,6 +3839,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cap spending per category. You'll see what's left in every period."
+          }
+        }
+      }
+    },
+    "Bawa data ke Workspace Pribadi?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring your data to your Personal Workspace?"
+          }
+        }
+      }
+    },
+    "Bawa data saya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring my data"
+          }
+        }
+      }
+    },
+    "Bawa data saya ke Workspace Pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring my data to my Personal Workspace"
+          }
+        }
+      }
+    },
+    "Bawa dompetmu keluar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring your wallets out"
           }
         }
       }
@@ -3619,6 +4059,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Shopping"
+          }
+        }
+      }
+    },
+    "Belanja bulanan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly groceries"
           }
         }
       }
@@ -4213,6 +4663,16 @@
         }
       }
     },
+    "Belum berhasil. Periksa koneksi lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Didn't work. Check your connection and try again."
+          }
+        }
+      }
+    },
     "Belum bisa beralih ke akun itu. Kamu masih di akun tamu dan datamu utuh. Coba lagi nanti.": {
       "localizations": {
         "en": {
@@ -4223,12 +4683,52 @@
         }
       }
     },
+    "Belum bisa bergabung. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not join yet. Try again."
+          }
+        }
+      }
+    },
+    "Belum bisa keluar. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not leave yet. Try again."
+          }
+        }
+      }
+    },
     "Belum bisa menautkan akun. Cek koneksimu lalu coba lagi. Datamu tidak berubah.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Couldn't link the account. Check your connection and try again. Your data hasn't changed."
+          }
+        }
+      }
+    },
+    "Belum bisa mengeluarkan. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not remove yet. Try again."
+          }
+        }
+      }
+    },
+    "Belum bisa menyerahkan. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not hand over yet. Try again."
           }
         }
       }
@@ -4683,6 +5183,16 @@
         }
       }
     },
+    "Berlaku untuk semua anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies to every member"
+          }
+        }
+      }
+    },
     "Berulang": {
       "localizations": {
         "en": {
@@ -4873,6 +5383,36 @@
         }
       }
     },
+    "Buat Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create Workspace"
+          }
+        }
+      }
+    },
+    "Buat Workspace untuk pasangan, keluarga, atau usaha. Setiap catatan menunjukkan siapa yang mencatat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make a Workspace for a partner, family, or business. Every record shows who made it."
+          }
+        }
+      }
+    },
+    "Buat baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create new"
+          }
+        }
+      }
+    },
     "Buat budget": {
       "localizations": {
         "en": {
@@ -4969,6 +5509,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Create category “%@”"
+          }
+        }
+      }
+    },
+    "Buat kode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create code"
+          }
+        }
+      }
+    },
+    "Buat kode baru": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new code"
+          }
+        }
+      }
+    },
+    "Buat kode baru untuk mengundang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new code to invite people"
+          }
+        }
+      }
+    },
+    "Buat kode baru?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new code?"
           }
         }
       }
@@ -5243,6 +5823,16 @@
         }
       }
     },
+    "Budget, preferensi kategori, dan draf tidak ikut pindah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budgets, category preferences, and drafts do not move."
+          }
+        }
+      }
+    },
     "Buka **%@**, lalu nyalakan **Automation**.": {
       "localizations": {
         "en": {
@@ -5433,6 +6023,46 @@
         }
       }
     },
+    "Buka Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Workspace"
+          }
+        }
+      }
+    },
+    "Buka Workspace ini dulu untuk mengubah awal periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this Workspace first to change the period start"
+          }
+        }
+      }
+    },
+    "Buka Workspace ini dulu untuk mengubah tanggal gajian": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this Workspace first to change the payday"
+          }
+        }
+      }
+    },
+    "Buka Workspace ini saat app dijalankan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this Workspace when the app starts"
+          }
+        }
+      }
+    },
     "Buka dengan Saku Plus": {
       "localizations": {
         "en": {
@@ -5449,6 +6079,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open wallet"
+          }
+        }
+      }
+    },
+    "Buka saat app dijalankan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open when the app starts"
           }
         }
       }
@@ -5653,6 +6293,26 @@
         }
       }
     },
+    "Cabut kode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoke code"
+          }
+        }
+      }
+    },
+    "Cabut kode?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoke the code?"
+          }
+        }
+      }
+    },
     "Cabut persetujuan": {
       "localizations": {
         "en": {
@@ -5819,6 +6479,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cashflow, last 5 months"
+          }
+        }
+      }
+    },
+    "Catat bersama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record together"
+          }
+        }
+      }
+    },
+    "Catat bersama, tetap rapi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record together, stay tidy."
           }
         }
       }
@@ -6123,12 +6803,72 @@
         }
       }
     },
+    "Catat uang bersama di Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep money together in Workspace"
+          }
+        }
+      }
+    },
     "Catatan": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Note"
+          }
+        }
+      }
+    },
+    "Catatan %@ tetap di Workspace dan ditandai mantan anggota. Data yang dia bawa ke sini lewat gabung dengan riwayat juga tetap di Workspace. Semua kode undangan yang aktif dicabut, jadi dia perlu kode baru untuk masuk lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@'s records stay in the Workspace and are marked as a former member. Data they brought here by merging with history also stays. Every active invite code is revoked, so they need a new code to join again."
+          }
+        }
+      }
+    },
+    "Catatan %@ tetap di Workspace dan ditandai mantan anggota. Dia perlu kode baru untuk masuk lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@'s records stay in the Workspace, marked as a former member. They need a new code to join again."
+          }
+        }
+      }
+    },
+    "Catatan ini sudah dihapus oleh anggota lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This record was already deleted by another member."
+          }
+        }
+      }
+    },
+    "Catatan mereka tetap di Workspace ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Their records stay in this Workspace."
+          }
+        }
+      }
+    },
+    "Catatanmu tetap di Workspace dan ditandai mantan anggota. Kamu perlu kode baru untuk masuk lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your records stay in the Workspace, marked as a former member. You need a new code to join again."
           }
         }
       }
@@ -6403,6 +7143,16 @@
         }
       }
     },
+    "Contoh: Rumah, Liburan Bali, Usaha": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: Home, Bali Trip, Business"
+          }
+        }
+      }
+    },
     "Contoh: “makan siang 45rb pakai BCA”": {
       "localizations": {
         "en": {
@@ -6449,6 +7199,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fairly healthy"
+          }
+        }
+      }
+    },
+    "Daftar Workspace belum bisa dimuat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Workspace list could not be loaded."
+          }
+        }
+      }
+    },
+    "Daftar anggota belum bisa dimuat. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The member list could not be loaded. Try again."
+          }
+        }
+      }
+    },
+    "Daftar standar, tanpa kategori buatanmu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The standard list, without the categories you made."
           }
         }
       }
@@ -6859,6 +7639,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Data above the limit stays safe and keeps working. Only new additions are held back."
+          }
+        }
+      }
+    },
+    "Data yang sudah pindah tetap ada di %@ meski nanti kamu keluar atau dikeluarkan. Budget, preferensi kategori, awal periode, dan draf tidak ikut.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moved data stays in %@ even if you leave or are removed later. Budgets, category preferences, period start, and drafts do not move."
           }
         }
       }
@@ -7293,12 +8083,52 @@
         }
       }
     },
+    "Dibuka saat app dijalankan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens when the app starts"
+          }
+        }
+      }
+    },
+    "Dicatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added by"
+          }
+        }
+      }
+    },
     "Dicatat Smart Tracker · periksa dulu": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Recorded by Smart Tracker · check first"
+          }
+        }
+      }
+    },
+    "Dicatat oleh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded by"
+          }
+        }
+      }
+    },
+    "Dicatat oleh %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added by %@"
           }
         }
       }
@@ -7359,6 +8189,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deleted as soon as the draft is made"
+          }
+        }
+      }
+    },
+    "Dihapus dalam %lld hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted in %lld days"
           }
         }
       }
@@ -7603,6 +8443,26 @@
         }
       }
     },
+    "Disimpan ke %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved to %@"
+          }
+        }
+      }
+    },
+    "Disimpan sebagai draf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved as a draft"
+          }
+        }
+      }
+    },
     "Ditagih %@": {
       "localizations": {
         "en": {
@@ -7713,6 +8573,16 @@
         }
       }
     },
+    "Diubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changed by"
+          }
+        }
+      }
+    },
     "Diversifikasi": {
       "localizations": {
         "en": {
@@ -7793,6 +8663,16 @@
         }
       }
     },
+    "Dompet belum bisa dipindah. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The wallet could not be moved. Try again."
+          }
+        }
+      }
+    },
     "Dompet dan budget selalu disertakan lengkap.": {
       "localizations": {
         "en": {
@@ -7859,6 +8739,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallet added"
+          }
+        }
+      }
+    },
+    "Dompet ikut pindah dengan saldo terakhir, tanpa riwayat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets move with their latest balance, without history."
+          }
+        }
+      }
+    },
+    "Dompet ini masih punya transaksi, jadi tidak bisa dihapus. Arsipkan saja.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This wallet still has transactions, so it can't be deleted. Archive it instead."
           }
         }
       }
@@ -8089,6 +8989,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Draft ignored"
+          }
+        }
+      }
+    },
+    "Draf disimpan ke": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drafts are saved to"
           }
         }
       }
@@ -8393,6 +9303,16 @@
         }
       }
     },
+    "Filter anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter by member"
+          }
+        }
+      }
+    },
     "Filter lanjutan": {
       "localizations": {
         "en": {
@@ -8483,6 +9403,16 @@
         }
       }
     },
+    "Foto menggantikan ikon. Hanya Owner yang bisa mengubahnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The photo replaces the icon. Only the Owner can change it."
+          }
+        }
+      }
+    },
     "Foto profil diperbarui": {
       "localizations": {
         "en": {
@@ -8529,6 +9459,116 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retake"
+          }
+        }
+      }
+    },
+    "Gabung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Join"
+          }
+        }
+      }
+    },
+    "Gabung dengan kode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Join with a code"
+          }
+        }
+      }
+    },
+    "Gabung ke Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Join a Workspace"
+          }
+        }
+      }
+    },
+    "Gabung ke Workspace %@ di Saku. Kode undangan: %@. Berlaku sampai %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Join the Workspace %@ on Saku. Invite code: %@. Valid until %@."
+          }
+        }
+      }
+    },
+    "Gabung ke Workspace perlu akun.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Joining a Workspace needs an account."
+          }
+        }
+      }
+    },
+    "Gabung workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Join workspace"
+          }
+        }
+      }
+    },
+    "Gabungkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge"
+          }
+        }
+      }
+    },
+    "Gabungkan Workspace Pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge Personal Workspace"
+          }
+        }
+      }
+    },
+    "Gabungkan Workspace Pribadi saya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge my Personal Workspace"
+          }
+        }
+      }
+    },
+    "Gabungkan dengan riwayat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge with history"
+          }
+        }
+      }
+    },
+    "Gabungkan ke %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge into %@?"
           }
         }
       }
@@ -9383,6 +10423,26 @@
         }
       }
     },
+    "Hanya Pemilik yang bisa membuat kategori baru. Pilih kategori %@ untuk setiap kategori di bawah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the Owner can create categories. Pick a %@ category for each one below."
+          }
+        }
+      }
+    },
+    "Hanya Pemilik yang bisa mengubah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the Owner can change this"
+          }
+        }
+      }
+    },
     "Hanya bulan ini": {
       "localizations": {
         "en": {
@@ -9409,6 +10469,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only this"
+          }
+        }
+      }
+    },
+    "Hanya kamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only you"
           }
         }
       }
@@ -9579,6 +10649,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete budget?"
+          }
+        }
+      }
+    },
+    "Hapus Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Workspace"
+          }
+        }
+      }
+    },
+    "Hapus Workspace?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Workspace?"
           }
         }
       }
@@ -10053,12 +11143,32 @@
         }
       }
     },
+    "Ikon dan warna": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon and color"
+          }
+        }
+      }
+    },
     "Ikon dan warna kategori bawaan tidak bisa diubah": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Built-in category icons and colors can't be changed"
+          }
+        }
+      }
+    },
+    "Ikon, warna, dan foto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon, color, and photo"
           }
         }
       }
@@ -10303,12 +11413,32 @@
         }
       }
     },
+    "Jadikan %@ Pemilik?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make %@ the Owner?"
+          }
+        }
+      }
+    },
     "Jadikan %@ utama?": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Make %@ the main wallet?"
+          }
+        }
+      }
+    },
+    "Jadikan Pemilik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make Owner"
           }
         }
       }
@@ -10873,6 +12003,16 @@
         }
       }
     },
+    "Kamu Pemilik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are the Owner"
+          }
+        }
+      }
+    },
     "Kamu akan keluar. Datamu tetap tersimpan.": {
       "localizations": {
         "en": {
@@ -10889,6 +12029,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "You'll sign in to %@ with its own data."
+          }
+        }
+      }
+    },
+    "Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You only have your Personal Workspace so far. Create a Workspace to track money together with others."
+          }
+        }
+      }
+    },
+    "Kamu belum bisa menambah catatan di sini. Catatan yang sudah ada tetap bisa dilihat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can't add records here yet. Existing records stay visible."
           }
         }
       }
@@ -10923,6 +12083,36 @@
         }
       }
     },
+    "Kamu keluar dari %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You left %@"
+          }
+        }
+      }
+    },
+    "Kamu langsung dapat Workspace Pribadi baru yang kosong. Perubahan ini tidak bisa dikembalikan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You get a new, empty Personal Workspace right away. This cannot be undone."
+          }
+        }
+      }
+    },
+    "Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You still own a Workspace with other members. Hand over ownership first in Profile, Workspace, then Members."
+          }
+        }
+      }
+    },
     "Kamu masih bisa batal kapan saja.": {
       "localizations": {
         "en": {
@@ -10949,6 +12139,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You're on the free plan."
+          }
+        }
+      }
+    },
+    "Kamu menjadi anggota biasa. %@ yang bisa mengundang, mengeluarkan anggota, dan mengubah Workspace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You become a regular member. %@ can invite, remove members, and change the Workspace."
           }
         }
       }
@@ -10993,6 +12193,36 @@
         }
       }
     },
+    "Kamu sudah bergabung": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have joined"
+          }
+        }
+      }
+    },
+    "Kamu sudah memiliki 1 Workspace. Berlangganan Plus untuk membuat lebih banyak.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You already own 1 Workspace. Subscribe to Plus to create more."
+          }
+        }
+      }
+    },
+    "Kamu sudah menjadi anggota Workspace ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are already a member of this Workspace."
+          }
+        }
+      }
+    },
     "Kamu sudah menyetujui": {
       "localizations": {
         "en": {
@@ -11019,6 +12249,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You can't use your own code."
+          }
+        }
+      }
+    },
+    "Kamu tidak lagi punya akses ke Workspace itu. Saku membuka Workspace utamamu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You no longer have access to that Workspace. Saku opened your main Workspace."
           }
         }
       }
@@ -11243,6 +12483,16 @@
         }
       }
     },
+    "Kategori awal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting categories"
+          }
+        }
+      }
+    },
     "Kategori baru": {
       "localizations": {
         "en": {
@@ -11263,12 +12513,62 @@
         }
       }
     },
+    "Kategori bawaan Saku": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saku's default categories"
+          }
+        }
+      }
+    },
+    "Kategori buatanmu ikut disalin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The categories you made are copied too."
+          }
+        }
+      }
+    },
+    "Kategori dan budget Workspace ini hanya diatur oleh Pemilik. Kamu tetap bisa melihatnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the Owner sets up categories and budgets in this Workspace. You can still view them."
+          }
+        }
+      }
+    },
     "Kategori dan dompet favoritmu": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Your favourite categories and wallets"
+          }
+        }
+      }
+    },
+    "Kategori dengan nama yang sama sudah dicocokkan. Sisanya dibuat baru di %@, atau kamu pilih kategori yang ada.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Categories with the same name are matched. The rest are created new in %@, or you pick an existing one."
+          }
+        }
+      }
+    },
+    "Kategori di Workspace ini berdiri sendiri. Mengubahnya tidak memengaruhi Workspace lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Categories in this Workspace stand on their own. Changing them does not affect other Workspaces."
           }
         }
       }
@@ -11389,6 +12689,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "To"
+          }
+        }
+      }
+    },
+    "Ke Workspace mana?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Into which Workspace?"
           }
         }
       }
@@ -11523,6 +12833,16 @@
         }
       }
     },
+    "Kelola uang bersama pasangan, keluarga, atau usaha": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage money with a partner, family, or business"
+          }
+        }
+      }
+    },
     "Keluar": {
       "localizations": {
         "en": {
@@ -11553,12 +12873,32 @@
         }
       }
     },
+    "Keluar dari %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave %@?"
+          }
+        }
+      }
+    },
     "Keluar dari Saku?": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sign out of Saku?"
+          }
+        }
+      }
+    },
+    "Keluar dari Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave Workspace"
           }
         }
       }
@@ -11579,6 +12919,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Out vs last period"
+          }
+        }
+      }
+    },
+    "Keluarkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "Keluarkan %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@?"
+          }
+        }
+      }
+    },
+    "Keluarkan dari Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from Workspace"
           }
         }
       }
@@ -12213,12 +13583,52 @@
         }
       }
     },
+    "Kode belum bisa dibuat. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The code could not be created. Try again."
+          }
+        }
+      }
+    },
+    "Kode belum bisa dicabut. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The code could not be revoked. Try again."
+          }
+        }
+      }
+    },
+    "Kode belum bisa dicek. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The code could not be checked. Try again."
+          }
+        }
+      }
+    },
     "Kode belum bisa diperiksa. Periksa koneksimu lalu coba lagi.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The code couldn't be checked. Check your connection and try again."
+          }
+        }
+      }
+    },
+    "Kode disalin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code copied"
           }
         }
       }
@@ -12273,6 +13683,26 @@
         }
       }
     },
+    "Kode sudah dicabut. Minta kode baru ke Pemilik.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This code was revoked. Ask the Owner for a new one."
+          }
+        }
+      }
+    },
+    "Kode sudah kedaluwarsa. Minta kode baru ke Pemilik.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This code has expired. Ask the Owner for a new one."
+          }
+        }
+      }
+    },
     "Kode tidak ditemukan. Periksa lagi atau kosongkan untuk melewati.": {
       "localizations": {
         "en": {
@@ -12283,12 +13713,42 @@
         }
       }
     },
+    "Kode tidak ditemukan. Periksa lagi kodenya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code not found. Check it again."
+          }
+        }
+      }
+    },
+    "Kode undangan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invite code"
+          }
+        }
+      }
+    },
     "Kode valid. Dipakai saat kamu menekan Lanjut.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Code is valid. It is used when you tap Continue."
+          }
+        }
+      }
+    },
+    "Kode yang lama langsung tidak berlaku.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The old code stops working right away."
           }
         }
       }
@@ -12329,6 +13789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallet breakdown"
+          }
+        }
+      }
+    },
+    "Koneksi terputus atau ada yang berubah. Coba lagi sebentar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection dropped or something changed. Try again in a moment."
           }
         }
       }
@@ -13303,6 +14773,16 @@
         }
       }
     },
+    "Listrik dan air": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Electricity and water"
+          }
+        }
+      }
+    },
     "Luar Saku": {
       "localizations": {
         "en": {
@@ -13443,6 +14923,16 @@
         }
       }
     },
+    "Makan malam": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dinner"
+          }
+        }
+      }
+    },
     "Makan · BCA · dari notifikasi": {
       "localizations": {
         "en": {
@@ -13479,6 +14969,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Max. 4 letters"
+          }
+        }
+      }
+    },
+    "Mantan anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Former member"
           }
         }
       }
@@ -13703,6 +15203,16 @@
         }
       }
     },
+    "Masukkan kode 8 karakter dari Pemilik Workspace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the 8-character code from the Workspace Owner."
+          }
+        }
+      }
+    },
     "Masukkan nama": {
       "localizations": {
         "en": {
@@ -13819,6 +15329,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Want a reminder?"
+          }
+        }
+      }
+    },
+    "Mau mulai dengan apa?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How do you want to start?"
           }
         }
       }
@@ -14483,12 +16003,32 @@
         }
       }
     },
+    "Mulai dari mana?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where to start?"
+          }
+        }
+      }
+    },
     "Mulai ditagih": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Billing starts"
+          }
+        }
+      }
+    },
+    "Mulai kosong": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start empty"
           }
         }
       }
@@ -14569,6 +16109,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Name & color"
+          }
+        }
+      }
+    },
+    "Nama Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace name"
           }
         }
       }
@@ -14678,7 +16228,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not now"
+            "value": "Maybe later"
           }
         }
       }
@@ -15863,12 +17413,42 @@
         }
       }
     },
+    "Pemilik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Owner"
+          }
+        }
+      }
+    },
+    "Pemilik: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Owner: %@"
+          }
+        }
+      }
+    },
     "Pemisah kolom": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Column separator"
+          }
+        }
+      }
+    },
+    "Pencatat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded by"
           }
         }
       }
@@ -15889,6 +17469,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Settings"
+          }
+        }
+      }
+    },
+    "Pengaturan Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace settings"
           }
         }
       }
@@ -16293,6 +17883,16 @@
         }
       }
     },
+    "Periksa koneksi internetmu lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your internet connection and try again."
+          }
+        }
+      }
+    },
     "Periksa koneksi internetmu lalu coba lagi. Pengaturanmu belum berubah.": {
       "localizations": {
         "en": {
@@ -16429,6 +18029,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your budget period and summary start on this date."
+          }
+        }
+      }
+    },
+    "Periode budget dan ringkasan mulai di tanggal ini. Boleh dikosongkan, Pemilik bisa mengaturnya nanti.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget and summary periods start on this day. You can leave it empty; the Owner can set it later."
           }
         }
       }
@@ -16773,6 +18383,16 @@
         }
       }
     },
+    "Perubahan tadi terlihat oleh semua anggota Workspace ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every member of this Workspace can see that change."
+          }
+        }
+      }
+    },
     "Perubahan tersimpan": {
       "localizations": {
         "en": {
@@ -16873,6 +18493,16 @@
         }
       }
     },
+    "Pilih Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a Workspace"
+          }
+        }
+      }
+    },
     "Pilih angka": {
       "localizations": {
         "en": {
@@ -16919,6 +18549,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose the app (for example GoPay or BCA), then choose Run Immediately."
+          }
+        }
+      }
+    },
+    "Pilih bagaimana Workspace baru ini dimulai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose how this new Workspace begins."
           }
         }
       }
@@ -17009,6 +18649,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose e-wallet"
+          }
+        }
+      }
+    },
+    "Pilih foto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose photo"
           }
         }
       }
@@ -17243,12 +18893,32 @@
         }
       }
     },
+    "Pindahkan ke Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to Workspace"
+          }
+        }
+      }
+    },
     "Pindahkan ke tabungan atau investasi begitu gajian masuk, sebelum dipakai belanja.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Move it to savings or investments as soon as your pay arrives, before it gets spent."
+          }
+        }
+      }
+    },
+    "Pindahkan semua dompet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move all wallets"
           }
         }
       }
@@ -17279,6 +18949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Platform"
+          }
+        }
+      }
+    },
+    "Plus Pemilik berakhir, jadi Workspace ini baca saja untuk semua anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Owner's Plus ended, so this Workspace is read-only for every member."
           }
         }
       }
@@ -17319,6 +18999,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plus stays open until %@. Update your payment method in the App Store."
+          }
+        }
+      }
+    },
+    "Plus-mu berakhir, jadi Workspace ini baca saja untuk semua anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Plus ended, so this Workspace is read-only for every member."
           }
         }
       }
@@ -17539,6 +19229,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Have a code from a friend?"
+          }
+        }
+      }
+    },
+    "Punya kode?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Have a code?"
           }
         }
       }
@@ -17793,6 +19493,16 @@
         }
       }
     },
+    "Ringkasan belum bisa dimuat. Periksa koneksi lalu coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The summary could not load. Check your connection and try again."
+          }
+        }
+      }
+    },
     "Ringkasan bulanan · siap dibagikan": {
       "localizations": {
         "en": {
@@ -17989,6 +19699,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Loss %@"
+          }
+        }
+      }
+    },
+    "Rumah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
           }
         }
       }
@@ -18483,6 +20203,16 @@
         }
       }
     },
+    "Salin dari Workspace Pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy from Personal Workspace"
+          }
+        }
+      }
+    },
     "Salin kode": {
       "localizations": {
         "en": {
@@ -18499,6 +20229,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Same"
+          }
+        }
+      }
+    },
+    "Samakan kategorinya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Match the categories"
           }
         }
       }
@@ -18659,6 +20399,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Before you switch"
+          }
+        }
+      }
+    },
+    "Sebelum lanjut": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before you continue"
           }
         }
       }
@@ -18873,12 +20623,42 @@
         }
       }
     },
+    "Seluruh riwayat akan terlihat anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everyone you invite will see the whole history"
+          }
+        }
+      }
+    },
+    "Seluruh riwayat ini terlihat semua anggota %@ dan tidak bisa dibatalkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This whole history is visible to every member of %@ and cannot be undone."
+          }
+        }
+      }
+    },
     "Seluruh riwayat transaksi": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Entire transaction history"
+          }
+        }
+      }
+    },
+    "Seluruh riwayatmu akan terlihat semua anggota %@. Tidak bisa dibatalkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your whole history will be visible to every member of %@. This cannot be undone."
           }
         }
       }
@@ -19013,6 +20793,16 @@
         }
       }
     },
+    "Semua anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All members"
+          }
+        }
+      }
+    },
     "Semua budget masih aman.": {
       "localizations": {
         "en": {
@@ -19099,6 +20889,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "All your wallets and budgets, on one screen."
+          }
+        }
+      }
+    },
+    "Semua dompet dan riwayat ikut jadi milik Workspace ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All wallets and history become part of this Workspace."
           }
         }
       }
@@ -19489,6 +21289,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "After you save a draft, Saku remembers your category and wallet for the same word."
+          }
+        }
+      }
+    },
+    "Setelah pindah, datanya ada di Workspace Pribadi-mu dan tidak ikut terhapus bersama %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After moving, the data is in your Personal Workspace and is not deleted with %@."
           }
         }
       }
@@ -20633,6 +22443,16 @@
         }
       }
     },
+    "Sudah pindah": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moved"
+          }
+        }
+      }
+    },
     "Sudah tercatat": {
       "localizations": {
         "en": {
@@ -21263,6 +23083,16 @@
         }
       }
     },
+    "Tambah workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add workspace"
+          }
+        }
+      }
+    },
     "Tambah, ubah, sembunyikan": {
       "localizations": {
         "en": {
@@ -21483,6 +23313,16 @@
         }
       }
     },
+    "Tanggal gajian Workspace ini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace's payday"
+          }
+        }
+      }
+    },
     "Tanggal gajian disimpan": {
       "localizations": {
         "en": {
@@ -21619,6 +23459,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No category"
+          }
+        }
+      }
+    },
+    "Tanpa nama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No name"
           }
         }
       }
@@ -21893,6 +23743,16 @@
         }
       }
     },
+    "Tempel dari papan klip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste from clipboard"
+          }
+        }
+      }
+    },
     "Tempo %@": {
       "localizations": {
         "en": {
@@ -22079,6 +23939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Locked"
+          }
+        }
+      }
+    },
+    "Terlalu banyak percobaan. Coba lagi satu jam lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Try again in an hour."
           }
         }
       }
@@ -22303,6 +24173,16 @@
         }
       }
     },
+    "Tetap di sini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stay here"
+          }
+        }
+      }
+    },
     "Tetap hapus": {
       "localizations": {
         "en": {
@@ -22423,6 +24303,16 @@
         }
       }
     },
+    "Tidak ada dompet atau transaksi yang bisa dipindah.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are no wallets or transactions to move."
+          }
+        }
+      }
+    },
     "Tidak ada dompet “%@”": {
       "localizations": {
         "en": {
@@ -22479,6 +24369,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No category “%@”"
+          }
+        }
+      }
+    },
+    "Tidak ada kode aktif": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No active code"
           }
         }
       }
@@ -22609,6 +24509,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No credit card debt."
+          }
+        }
+      }
+    },
+    "Tidak ada yang bisa bergabung dengan kode ini lagi. Anggota yang sudah masuk tetap di Workspace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nobody can join with this code any more. Members who are already in stay in the Workspace."
           }
         }
       }
@@ -23905,6 +25815,36 @@
         }
       }
     },
+    "Ubah Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Workspace"
+          }
+        }
+      }
+    },
+    "Ubah Workspace Pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert Personal Workspace"
+          }
+        }
+      }
+    },
+    "Ubah Workspace Pribadi saya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn my Personal Workspace into it"
+          }
+        }
+      }
+    },
     "Ubah budget hanya untuk bulan berjalan": {
       "localizations": {
         "en": {
@@ -24091,6 +26031,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Repeat, next %@"
+          }
+        }
+      }
+    },
+    "Undang anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invite members"
           }
         }
       }
@@ -24331,6 +26281,196 @@
           "stringUnit": {
             "state": "translated",
             "value": "Card color · type the name on the card"
+          }
+        }
+      }
+    },
+    "Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace"
+          }
+        }
+      }
+    },
+    "Workspace Pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal Workspace"
+          }
+        }
+      }
+    },
+    "Workspace Pribadi-mu berubah jadi %@. Semua dompet, catatan, budget, dan kategori di dalamnya bisa dilihat siapa pun yang kamu undang, termasuk catatan lama.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Personal Workspace becomes %@. Every wallet, record, budget and category in it can be seen by anyone you invite, old records included."
+          }
+        }
+      }
+    },
+    "Workspace Pribadi-mu sekarang jadi %@. Workspace Pribadi baru yang kosong sudah menunggumu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Personal Workspace is now %@. A new, empty Personal Workspace is waiting for you."
+          }
+        }
+      }
+    },
+    "Workspace aktif: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active Workspace: %@"
+          }
+        }
+      }
+    },
+    "Workspace baca saja tidak bisa dipilih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A read-only Workspace cannot be chosen"
+          }
+        }
+      }
+    },
+    "Workspace baru tanpa dompet dan catatan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new Workspace with no wallets or records."
+          }
+        }
+      }
+    },
+    "Workspace belum bisa dibuat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Workspace could not be created"
+          }
+        }
+      }
+    },
+    "Workspace bersama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared Workspace"
+          }
+        }
+      }
+    },
+    "Workspace default-mu sudah tidak tersedia. Saku membuka Workspace Pribadi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your default Workspace is no longer available. Saku opened your Personal Workspace."
+          }
+        }
+      }
+    },
+    "Workspace dibuat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace created"
+          }
+        }
+      }
+    },
+    "Workspace ini baca saja": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace is read-only"
+          }
+        }
+      }
+    },
+    "Workspace ini dihapus dalam %lld hari. Semua data ikut hilang.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace will be deleted in %lld days. All its data goes with it."
+          }
+        }
+      }
+    },
+    "Workspace ini sedang tidak menerima anggota baru.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace is not accepting new members right now."
+          }
+        }
+      }
+    },
+    "Workspace ini sudah penuh, maksimal 5 anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace is full, 5 members at most."
+          }
+        }
+      }
+    },
+    "Workspace ini tidak bisa diisi lagi, jadi catatanmu disimpan sebagai draf. Cek di Konfirmasi transaksi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Workspace can't take new records, so your entry was saved as a draft. Check it under Konfirmasi transaksi."
+          }
+        }
+      }
+    },
+    "Workspace saya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Workspaces"
+          }
+        }
+      }
+    },
+    "Workspace tanpa batas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited Workspaces"
+          }
+        }
+      }
+    },
+    "Workspace tujuan berubah. Tidak ada yang dipindah. Periksa lagi ringkasan dan kategorinya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The destination Workspace changed. Nothing moved. Check the summary and categories again."
           }
         }
       }
@@ -24831,6 +26971,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "quota used up"
+          }
+        }
+      }
+    },
+    "kamu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "you"
           }
         }
       }

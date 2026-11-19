@@ -51,7 +51,7 @@ final class ProfileViewModel: ObservableObject {
     }
 
     /// Centre-crops to a 512 px square and compresses (~50–100 KB), well under the 1 MB bucket limit.
-    private static func avatarJPEG(_ image: UIImage) -> Data? {
+    static func avatarJPEG(_ image: UIImage) -> Data? {
         let side = min(image.size.width, image.size.height)
         let format = UIGraphicsImageRendererFormat(); format.scale = 1
         let target = CGSize(width: 512, height: 512)

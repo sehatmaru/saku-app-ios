@@ -62,6 +62,9 @@ struct AccountListView: View {
     /// Shown as the main wallet at once while the change is saved.
     @State private var pendingDefaultID: String?
     @State private var archiving: Account?
+    /// K36: the wallet being moved to a shared Workspace, asking which one.
+    @State private var moving: Account?
+    @ObservedObject private var workspaceStore = WorkspaceStore.shared
     @State private var makingMain: Account?
     @State private var reminding: Account?
     /// Rolls the hero's numbers in; replayed when the page opens and when a card closes.
@@ -230,6 +233,12 @@ struct AccountListView: View {
                     archive(account)
                 }
             }
+            .sheet(item: $moving) { account in
+                WorkspaceChoiceSheet(
+                    title: L("Pindahkan ke Workspace"),
+                    message: L("%@ pindah dengan saldo terakhir, tanpa riwayat. Dompet lama diarsipkan. Pindah ini satu arah.", account.name),
+                    options: moveTargets.map { target in .init(title: target.displayName, workspace: target) { move(account, to: target) } })
+            }
             .sheet(item: $makingMain) { account in
                 MakeMainWalletSheet(name: account.name, previous: viewModel.accounts.first(where: \.isDefault)?.name) {
                     makingMain = nil
@@ -260,7 +269,9 @@ struct AccountListView: View {
                     if ok, let userId = authViewModel.currentUser?.id {
                         await syncAccountTransactions(userId: userId, forceRefresh: true)
                         // the next reminder counts from this update
-                        await NotificationManager.shared.resyncInvestmentReminders(accounts: viewModel.accounts, transactions: accountTransactions.values.flatMap { $0 })
+                        if ReminderSync.ownsReminders { await ReminderSync.run(userId: userId) } else {
+                            await NotificationManager.shared.resyncInvestmentReminders(accounts: viewModel.accounts, transactions: accountTransactions.values.flatMap { $0 })
+                        }
                     }
                     return ok
                 }
@@ -835,6 +846,7 @@ struct AccountListView: View {
                             value: reminder.title) { reminding = account }
                 }
                 listSection(L("Lainnya")) {
+                    moveRow(account)
                     listRow("archivebox", L("Arsipkan"), chevron: false) { archiving = account }
                     listRow("trash", L("Hapus dompet"), chevron: false, destructive: true) { deleting = account }
                 }
@@ -871,10 +883,39 @@ struct AccountListView: View {
             }
             listSection(L("Pengaturan")) { mainRow(account) }
             listSection(L("Lainnya")) {
+                moveRow(account)
                 listRow("archivebox", L("Arsipkan"), chevron: false) { archiving = account }
                 listRow("trash", L("Hapus dompet"), chevron: false, destructive: true) { deleting = account }
             }
         })
+    }
+
+    /// Shared Workspaces a wallet of Workspace Pribadi can move into (K36): not read-only, not waiting to be deleted.
+    private var moveTargets: [Workspace] {
+        guard workspaceStore.showsSwitcher, workspaceStore.activeIsPersonal else { return [] }
+        return workspaceStore.shared.filter { !$0.isReadOnly && $0.daysUntilDeletion == nil }
+    }
+
+    @ViewBuilder private func moveRow(_ account: Account) -> some View {
+        if !account.isCreditCard, !moveTargets.isEmpty {
+            listRow("arrow.right.square", L("Pindahkan ke Workspace"), chevron: false) { moving = account }
+        }
+    }
+
+    private func move(_ account: Account, to target: Workspace) {
+        closeDetail()
+        Task {
+            try? await Task.sleep(for: .milliseconds(600))
+            do {
+                try await workspaceStore.moveWallet(account.id, to: target)
+                NotificationCenter.default.post(name: .dataDidChange, object: nil)
+                ToastCenter.shared.show(L("%@ dipindah ke %@", account.name, target.displayName))
+            } catch let error as WorkspaceError {
+                ToastCenter.shared.show(error == .walletLimit
+                    ? L("Batas dompet gratis di %@ sudah penuh.", target.displayName)
+                    : L("Dompet belum bisa dipindah. Coba lagi."))
+            } catch { ToastCenter.shared.show(L("Dompet belum bisa dipindah. Coba lagi.")) }
+        }
     }
 
     private func subscriptionsRow(_ account: Account) -> some View {

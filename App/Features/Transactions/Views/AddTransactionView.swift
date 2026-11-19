@@ -1142,9 +1142,36 @@ struct AddTransactionView: View {
                 isSaving = false
             } catch {
                 isSaving = false
+                // K44: a new record refused because access is gone or the Workspace turned read-only is kept as a draft
+                if editing == nil, WorkspaceStore.isRejection(error) {
+                    // the draft first: reloading the Workspace list rebuilds the whole app and closes this screen
+                    saveAsDraft(amount: value, description: description)
+                    _ = await WorkspaceStore.shared.handleRejection(error, quiet: true)
+                    return
+                }
+                // A8 (7): another member deleted this record meanwhile
+                let text = String(describing: error)
+                if editing != nil, text.contains("PGRST116") || text.contains("transaction_not_found") || text.contains("0 rows") {
+                    errorMessage = L("Catatan ini sudah dihapus oleh anggota lain.")
+                    closesAfterAlert = true
+                    return
+                }
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    /// K44: nothing is typed twice. The draft has no wallet or category (they belonged to the Workspace we lost) and lands in the default Workspace.
+    private func saveAsDraft(amount: Double, description: String?) {
+        var draft = Draft()
+        draft.kind = isTransfer ? .transfer : (style.type == .income ? .income : .expense)
+        draft.amount = amount
+        draft.title = description ?? category?.name ?? ""
+        draft.date = date
+        DraftStore.shared.add([draft])
+        NotificationCenter.default.post(name: .dataDidChange, object: nil)
+        WorkspaceStore.shared.tell(.draftSaved)
+        dismiss()
     }
 
     private static func dayString(_ date: Date) -> String {

@@ -345,6 +345,7 @@ struct BudgetListView: View {
 
     /// Free accounts hold at most 7 budgets; existing ones are never removed.
     private func requestAdd(_ category: Category) {
+        guard WorkspaceStore.shared.requireOwner() else { return }
         if !plus.isPlus && viewModel.budgets.count >= FreeLimits.budgets { limitReason = .budgets } else { addTarget = AddTarget(category: category) }
     }
 

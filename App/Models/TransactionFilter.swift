@@ -8,6 +8,8 @@ struct TransactionFilter: Equatable {
     var dateTo: Date?
     /// Only transactions posted from recurring bills.
     var recurringOnly = false
+    /// Only what this member recorded (K17); a profile id.
+    var recorderId: String?
 
     var hasActiveFilters: Bool {
         !transactionTypes.isEmpty
@@ -16,6 +18,7 @@ struct TransactionFilter: Equatable {
             || dateFrom != nil
             || dateTo != nil
             || recurringOnly
+            || recorderId != nil
     }
 
     var activeFilterCount: Int {
@@ -25,6 +28,7 @@ struct TransactionFilter: Equatable {
         if !incomeCategoryIds.isEmpty { count += 1 }
         if dateFrom != nil || dateTo != nil { count += 1 }
         if recurringOnly { count += 1 }
+        if recorderId != nil { count += 1 }
         return count
     }
 
@@ -35,5 +39,6 @@ struct TransactionFilter: Equatable {
         dateFrom = nil
         dateTo = nil
         recurringOnly = false
+        recorderId = nil
     }
 }

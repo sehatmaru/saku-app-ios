@@ -17,7 +17,8 @@ enum CsvExport {
 
     /// Every transaction in `interval` (nil = everything), newest first.
     static func transactions(_ transactions: [Transaction], accounts: [Account], categories: [Category],
-                             interval: DateInterval? = nil, intervals: [DateInterval]? = nil, delimiter: Delimiter) -> String {
+                             interval: DateInterval? = nil, intervals: [DateInterval]? = nil, delimiter: Delimiter,
+                             recorders: [String: String]? = nil) -> String {
         let wallets = Dictionary(accounts.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         let names = Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         let rows = transactions
@@ -34,9 +35,10 @@ enum CsvExport {
                  text(wallets[txn.accountId] ?? ""),
                  text(txn.counterpartyAccountId.flatMap { wallets[$0] } ?? ""),
                  amount(txn.amount), text(txn.displayNote ?? "")]
+                + (recorders.map { names in [text(txn.recorderId.flatMap { names[$0.lowercased()] } ?? "")] } ?? [])
             }
-        return file([L("Tanggal"), L("Jenis"), L("Kategori"), L("Dompet"), L("Dompet tujuan"), L("Nominal"), L("Catatan")],
-                    rows, delimiter)
+        return file([L("Tanggal"), L("Jenis"), L("Kategori"), L("Dompet"), L("Dompet tujuan"), L("Nominal"), L("Catatan")]
+                    + (recorders == nil ? [] : [L("Pencatat")]), rows, delimiter)
     }
 
     /// Name, type, current balance and opening balance (US2).

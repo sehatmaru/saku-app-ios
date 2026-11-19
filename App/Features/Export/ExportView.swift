@@ -83,6 +83,8 @@ struct ExportView: View {
                 .font(.app(14))
             }
 
+            RecorderFilterRow(viewModel: viewModel)
+
             Text(L("Pemisah kolom")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
             HStack(spacing: 8) {
                 chip(L("Koma"), isSelected: delimiter == .comma) { delimiter = .comma }

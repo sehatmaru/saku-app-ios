@@ -207,8 +207,12 @@ final class DashboardViewModel: ObservableObject {
                 .filter { !cardIds.contains($0.accountId) }
                 .filter { sub in sub.nextBillingDateAsDate.map { $0 >= todayStart && $0 < periodEnd } ?? false }
                 .reduce(0) { $0 + $1.amount }
-            await NotificationManager.shared.resyncCardDue(cards: billed.map(\.0), statements: billed.map(\.1))
-            await NotificationManager.shared.resyncInvestmentReminders(accounts: fetchedAccounts, transactions: transactions)
+            if ReminderSync.ownsReminders {
+                await ReminderSync.run(userId: userId)
+            } else {
+                await NotificationManager.shared.resyncCardDue(cards: billed.map(\.0), statements: billed.map(\.1))
+                await NotificationManager.shared.resyncInvestmentReminders(accounts: fetchedAccounts, transactions: transactions)
+            }
 
             // Archived wallets leave the totals, same as on Dompet.
             balance = WealthSummary(accounts: activeAccounts).cash

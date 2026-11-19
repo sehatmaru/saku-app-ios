@@ -9,6 +9,8 @@ struct DashboardView: View {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
     @State private var isBalanceVisible = true
+    @State private var showsSwitcher = false
+    @ObservedObject private var workspaceStore = WorkspaceStore.shared
     @State private var showAddSheet = false
 @StateObject private var tabAvatar = TabAvatarCache()
 @ObservedObject private var draftStore = DraftStore.shared
@@ -205,7 +207,7 @@ struct DashboardView: View {
         TabView(selection: Binding(
             get: { selectedTab },
             set: { tab in
-                if tab == .add { showAddSheet = true } else { selectedTab = tab }
+                if tab == .add { if WorkspaceStore.shared.allowsWriting() { showAddSheet = true } } else { selectedTab = tab }
             }
         )) {
             mainTabs
@@ -231,7 +233,7 @@ struct DashboardView: View {
             .onChange(of: homePath.count) { _, count in if count == 0 { addsWalletOnOpen = false } }
         } label: { tabLabel(L("Beranda"), "house.fill") }
         Tab(value: AppTab.transactions) {
-            TransactionListView(isActive: selectedTab == .transactions) { showAddSheet = true }
+            TransactionListView(isActive: selectedTab == .transactions) { if WorkspaceStore.shared.allowsWriting() { showAddSheet = true } }
         } label: { tabLabel(L("Transaksi"), "list.bullet") }
         Tab(value: AppTab.add) {
             Color.clear
@@ -269,6 +271,7 @@ struct DashboardView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 homeHeader
+                WorkspaceStatusBanner()
 
                 if fullErrorMessage != nil {
                     // drawn over the page below, so it sits in the middle of the screen
@@ -346,14 +349,19 @@ struct DashboardView: View {
             // as tall as the 34 pt title of Transaksi, so the eye sits at the same height there
             ZStack(alignment: .leading) {
                 Text(" ").font(.app(34, weight: .bold)).hidden()
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(PaydayCycle.current.rangeLabel())
-                        .font(.app(17, weight: .semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(Color.appText)
-                    Text(L("%lld hari lagi", viewModel.daysLeftInPeriod))
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
+                if workspaceStore.showsSwitcher {
+                    // K12: the workspace takes the place of the period; the period stays on the cards below
+                    WorkspacePill { showsSwitcher = true }
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(PaydayCycle.current.rangeLabel())
+                            .font(.app(17, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(Color.appText)
+                        Text(L("%lld hari lagi", viewModel.daysLeftInPeriod))
+                            .font(.app(13))
+                            .foregroundStyle(Color.appTextSecondary)
+                    }
                 }
             }
             Spacer()
@@ -371,6 +379,12 @@ struct DashboardView: View {
         }
         .padding(.horizontal, 24)
         .padding(.top, 10)
+        .sheet(isPresented: $showsSwitcher) {
+            // the sheet has to be gone before the create flow can open over the app
+            WorkspaceSwitcherSheet(
+                onCreate: { Task { try? await Task.sleep(for: .milliseconds(400)); workspaceStore.requestCreate() } },
+                onJoin: { Task { try? await Task.sleep(for: .milliseconds(400)); workspaceStore.requestJoin() } })
+        }
     }
 
     /// 13a: labels stay, only the numbers shimmer.

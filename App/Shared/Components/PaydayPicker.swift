@@ -176,7 +176,7 @@ struct PaydaySheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(L("Tanggal gajian")).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
+                Text(WorkspaceStore.shared.paydayTitle).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
                 Text(L("Periode budget dan ringkasan mulai di tanggal ini."))
                     .font(.app(15)).foregroundStyle(Color.appTextSecondary)
             }

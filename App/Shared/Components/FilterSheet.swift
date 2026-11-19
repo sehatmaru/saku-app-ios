@@ -23,7 +23,8 @@ extension View {
 
     /// `showsMoreCue` adds a fade and a down arrow above the footer while there is more content below.
     /// `fullHeight` is for sheets that always open full: one `.large` detent, so the system slides it up from the bottom like any other sheet.
-    func filterSheet<Footer: View>(showsMoreCue: Bool = false, detent: Binding<PresentationDetent>? = nil, fullHeight: Bool = false, @ViewBuilder footer: () -> Footer) -> some View {
+    /// `atLeastMedium` keeps a short sheet from going below half the screen; a taller one still fits its content.
+    func filterSheet<Footer: View>(showsMoreCue: Bool = false, detent: Binding<PresentationDetent>? = nil, fullHeight: Bool = false, atLeastMedium: Bool = false, @ViewBuilder footer: () -> Footer) -> some View {
         let bar = footer()
         return ScrollView { self.reportHeight(SheetContentHeight.self) }
             .background(Color.appBackground)
@@ -31,7 +32,7 @@ extension View {
             .scrollIndicators(.hidden)
             .modifier(MoreCue(enabled: showsMoreCue))
             .pinnedFooter { bar }
-            .modifier(AdaptiveDetents(selection: detent, fullHeight: fullHeight))
+            .modifier(AdaptiveDetents(selection: detent, fullHeight: fullHeight, atLeastMedium: atLeastMedium))
     }
 
     /// The footer pinned at the bottom of a sheet, 24 pt from the screen edge and from the sides.
@@ -53,6 +54,14 @@ private struct PinnedFooter<Bar: View>: ViewModifier {
         _padding = State(initialValue: initial)
     }
 
+    /// With the keyboard up the inset is the keyboard's height, not the home indicator's: the buttons sit just above it.
+    /// A ramp, not a step: the inset grows frame by frame while the keyboard rises, and a jump in the gap made the buttons overshoot it.
+    private static func gap(below inset: CGFloat) -> CGFloat {
+        let home = 24 - min(inset, 34)
+        let ramp = min(max((inset - 34) / 66, 0), 1)
+        return home + (12 - home) * ramp
+    }
+
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -66,8 +75,8 @@ private struct PinnedFooter<Bar: View>: ViewModifier {
             .background {
                 GeometryReader { proxy in
                     Color.clear
-                        .onAppear { padding = 24 - proxy.safeAreaInsets.bottom }
-                        .onChange(of: proxy.safeAreaInsets.bottom) { _, bottom in padding = 24 - bottom }
+                        .onAppear { padding = Self.gap(below: proxy.safeAreaInsets.bottom) }
+                        .onChange(of: proxy.safeAreaInsets.bottom) { _, bottom in padding = Self.gap(below: bottom) }
                 }
             }
     }
@@ -134,6 +143,7 @@ private struct KeyboardUp: ViewModifier {
 private struct AdaptiveDetents: ViewModifier {
     let selection: Binding<PresentationDetent>?
     var fullHeight = false
+    var atLeastMedium = false
     @State private var content: CGFloat = 0
     @State private var footer: CGFloat = 0
     @State private var keyboard = false
@@ -142,7 +152,8 @@ private struct AdaptiveDetents: ViewModifier {
         guard content > 0 else { return nil }
         let safe = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
             .first?.keyWindow?.safeAreaInsets.bottom ?? 0
-        return .height(max(ceil(content + footer + safe), 200))
+        let floor = atLeastMedium ? (UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.screen.bounds.height ?? 0) / 2 : 200
+        return .height(max(ceil(content + footer + safe), floor))
     }
 
     @ViewBuilder func body(content view: Content) -> some View {

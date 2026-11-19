@@ -129,6 +129,11 @@ struct QuickResultSheet: View {
         }
         .font(.app(13)).foregroundStyle(Color.appTextSecondary)
         .padding(.horizontal, 24)
+        if let target = WorkspaceStore.shared.active, !target.isPersonal {
+            Label(L("Disimpan ke %@", target.displayName), systemImage: "person.2")
+                .font(.app(12)).foregroundStyle(Color.appTextSecondary)
+                .padding(.horizontal, 24).padding(.top, 6)
+        }
         if let why = drafts.first?.fallbackReason {
             Text(L("Dibaca tanpa AI · %@", why)).font(.app(12)).foregroundStyle(Color.appTextSecondary)
                 .padding(.horizontal, 24).padding(.top, 6)

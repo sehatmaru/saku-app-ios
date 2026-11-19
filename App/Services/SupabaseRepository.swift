@@ -4,7 +4,8 @@ import Supabase
 
 final class SupabaseRepository: @unchecked Sendable {
     static let shared = SupabaseRepository()
-    private let client = SupabaseSDK.client
+    /// Every table here belongs to a workspace, so each request carries the workspace header (RLS then scopes by workspace).
+    private let client = SupabaseSDK.space
 
     private init() {}
 
@@ -14,7 +15,6 @@ final class SupabaseRepository: @unchecked Sendable {
         try await client
             .from("accounts")
             .select()
-            .eq("user_id", value: userId)
             .is("deleted_at", value: nil)
             .order("created_at", ascending: true)
             .execute()
@@ -104,9 +104,9 @@ final class SupabaseRepository: @unchecked Sendable {
     /// How many wallets and transactions an account holds, for the guest switch question (Enhancement 3 US2).
     func dataCounts(userId: String) async throws -> (wallets: Int, transactions: Int) {
         async let wallets = client.from("accounts").select("id", head: true, count: .exact)
-            .eq("user_id", value: userId).is("deleted_at", value: nil).execute().count
+            .is("deleted_at", value: nil).execute().count
         async let transactions = client.from("transactions").select("id", head: true, count: .exact)
-            .eq("user_id", value: userId).is("deleted_at", value: nil).execute().count
+            .is("deleted_at", value: nil).execute().count
         return try await (wallets ?? 0, transactions ?? 0)
     }
 
@@ -123,7 +123,6 @@ final class SupabaseRepository: @unchecked Sendable {
             var query = client
                 .from("transactions")
                 .select()
-                .eq("user_id", value: userId)
                 .is("deleted_at", value: nil)
             if let from { query = query.gte("occurred_at", value: from.iso8601Formatted) }
             if let before { query = query.lt("occurred_at", value: before.iso8601Formatted) }
@@ -166,7 +165,7 @@ final class SupabaseRepository: @unchecked Sendable {
     /// The newest `updated_at` the user has, deleted rows included: where a later delta read starts from.
     func latestTransactionStamp(userId: String) async throws -> String? {
         let rows: [TransactionStamp] = try await client.from("transactions").select("id,updated_at,deleted_at")
-            .eq("user_id", value: userId).order("updated_at", ascending: false).limit(1).execute().value
+            .order("updated_at", ascending: false).limit(1).execute().value
         return rows.first?.cursor
     }
 
@@ -174,7 +173,7 @@ final class SupabaseRepository: @unchecked Sendable {
     /// nil when too much changed for one page; the caller then reads everything again.
     func transactionChanges(userId: String, since: String) async throws -> (live: [Transaction], deleted: Set<String>, cursor: String)? {
         let stamps: [TransactionStamp] = try await client.from("transactions").select("id,updated_at,deleted_at")
-            .eq("user_id", value: userId).gt("updated_at", value: since)
+            .gt("updated_at", value: since)
             .order("updated_at", ascending: true).limit(1000).execute().value
         guard stamps.count < 1000 else { return nil }
         guard let cursor = stamps.last?.cursor else { return ([], [], since) }
@@ -188,7 +187,6 @@ final class SupabaseRepository: @unchecked Sendable {
         let rows: [Transaction] = try await client
             .from("transactions")
             .select()
-            .eq("user_id", value: userId)
             .is("deleted_at", value: nil)
             .lt("occurred_at", value: before.iso8601Formatted)
             .order("occurred_at", ascending: false)
@@ -202,7 +200,6 @@ final class SupabaseRepository: @unchecked Sendable {
         try await client
             .from("transactions")
             .select()
-            .eq("user_id", value: userId)
             .or("primary_account_id.eq.\(accountId),counterparty_account_id.eq.\(accountId)")
             .is("deleted_at", value: nil)
             .order("occurred_at", ascending: false)
@@ -815,7 +812,6 @@ final class SupabaseRepository: @unchecked Sendable {
         var budgets: [Budget] = try await client
             .from("budgets")
             .select()
-            .eq("user_id", value: userId)
             .is("deleted_at", value: nil)
             .order("created_at", ascending: true)
             .execute()

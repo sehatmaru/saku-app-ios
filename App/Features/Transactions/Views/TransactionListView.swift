@@ -19,6 +19,7 @@ struct TransactionListView: View {
     @AppStorage("isBalanceVisible") private var isBalanceVisibleStorage = true
     @State private var isBalanceVisible = true
     @State private var filter = TransactionFilter()
+    @ObservedObject private var workspace = WorkspaceStore.shared
     @State private var expandedMonths: Set<String> = []
     /// Months where the user tapped "Tampilkan N lainnya".
     @State private var fullyShownMonths: Set<String> = []
@@ -401,6 +402,9 @@ struct TransactionListView: View {
                 FilterChip(title: L("Berulang"), isSelected: filter.recurringOnly) {
                     filter.recurringOnly.toggle()
                 }
+                if workspace.showsAttribution {
+                    MemberFilterMenu(members: workspace.activeMembers, selection: $filter.recorderId)
+                }
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 2)
@@ -451,7 +455,7 @@ struct TransactionListView: View {
     }
 
     private var filterButton: some View {
-        let count = filter.activeFilterCount - (filter.transactionTypes.isEmpty ? 0 : 1) - (filter.recurringOnly ? 1 : 0)
+        let count = filter.activeFilterCount - (filter.transactionTypes.isEmpty ? 0 : 1) - (filter.recurringOnly ? 1 : 0) - (filter.recorderId == nil ? 0 : 1)
         return Button {
             showAdvancedSearch = true
         } label: {
@@ -496,6 +500,10 @@ struct TransactionListView: View {
 
         if filter.recurringOnly {
             result = result.filter(\.isRecurring)
+        }
+
+        if let recorder = filter.recorderId {
+            result = result.filter { $0.recorderId == recorder }
         }
 
         if !filter.expenseCategoryIds.isEmpty {

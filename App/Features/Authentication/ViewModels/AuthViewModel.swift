@@ -353,7 +353,9 @@ final class AuthViewModel: ObservableObject {
             _ = try await SupabaseSDK.requestAccountDeletion(reason: reason?.rawValue, note: reason == .other ? String(note.prefix(AccountDeletion.noteLimit)) : nil)
         } catch {
             // the server's own message is technical and in English; nothing was changed, so just say so
-            errorMessage = L("Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.")
+            errorMessage = WorkspaceError(error) == .ownerMustTransfer
+                ? L("Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.")
+                : L("Permintaan belum terkirim dan akunmu belum berubah. Coba lagi sebentar lagi.")
             return false
         }
         await forgetAccountOnThisDevice()
@@ -378,6 +380,7 @@ final class AuthViewModel: ObservableObject {
         GIDSignIn.sharedInstance.signOut()
         NotificationManager.shared.cancelAll()
         AppDataCache.shared.clearAll()
+        SpaceStore.clear()
         PaydaySetting.day = nil
         PlusStore.shared.reset()
         PaydaySetting.schedule = []
@@ -540,6 +543,7 @@ final class AuthViewModel: ObservableObject {
     /// What lives on this device for one account: the agreement, drafts, what Saku learned, the Plus state, and
     /// the guest card's own counters.
     private func resetLocalAccountState() {
+        SpaceStore.clear()
         PaydaySetting.shifts = []
         SmartTrackerConsent.isGranted = false
         DraftStore.shared.reset()

@@ -59,6 +59,7 @@ enum SubscriptionBillingService {
     }
 
     static func resyncNotifications(userId: String) async {
+        if await ReminderSync.ownsReminders { await ReminderSync.run(userId: userId); return }
         do {
             let accounts = try await SupabaseRepository.shared.fetchAccounts(userId: userId).filter(\.isActive)
             guard !accounts.isEmpty else { return }

@@ -459,6 +459,7 @@ struct CategoryFormView: View {
 
     private func close(_ outcome: Outcome?) {
         onClose(outcome)
+        if outcome != nil { WorkspaceStore.shared.announceSharedChange() }
         dismiss()
     }
 

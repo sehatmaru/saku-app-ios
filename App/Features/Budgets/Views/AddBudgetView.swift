@@ -454,6 +454,7 @@ struct AddBudgetView: View {
             isDone = true
             try? await Task.sleep(for: .milliseconds(1400))
             onAdded(category)
+            WorkspaceStore.shared.announceSharedChange()
             dismiss()
         }
     }

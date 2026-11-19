@@ -32,6 +32,8 @@ extension Color {
     static let appBorder = Color(light: 0xD2D2D7, dark: 0x48484A)
     /// Search fields, round action buttons.
     static let appFill = Color(light: 0xF2F2F4, dark: 0x1C1C1E)
+    /// Boxes inside a sheet (invite code, info rows): grey on the white light sheet, lighter than the dark sheet.
+    static let appSheetField = Color(light: 0xF2F2F4, dark: 0x2C2C2E)
     /// Investment wallets: old gold on light, a brighter gold on dark (the panel behind white text stays #946200).
     static let appInvestment = Color(light: 0x946200, dark: 0xE0A93B)
     static let appInvestmentTint = Color(light: 0xFBF3E2, dark: 0x2A2415)

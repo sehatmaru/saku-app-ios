@@ -25,6 +25,13 @@ struct SakuApp: App {
 /// Picks the top-level screen: splash, dashboard, onboarding, or sign-in.
 struct RootView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @ObservedObject private var workspaceStore = WorkspaceStore.shared
+    @Environment(\.scenePhase) private var scenePhase
+    /// A new account or a switch of Workspace starts Beranda over.
+    private var dashboardIdentity: String {
+        let user: String = authViewModel.currentUser?.id ?? ""
+        return user + "-" + String(workspaceStore.epoch)
+    }
     @AppStorage("appTheme") private var appTheme: ThemeOption = .system
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @AppStorage("appLanguage") private var appLanguage = "id"
@@ -65,7 +72,7 @@ struct RootView: View {
             } else if authViewModel.isAuthenticated {
                 // another account (switched from a guest) starts Beranda over
                 DashboardView()
-                    .id(authViewModel.currentUser?.id)
+                    .id(dashboardIdentity)
                     .transition(.opacity)
             } else if !hasSeenOnboarding {
                 // the intro melts away while the sign-in screen rises
@@ -99,6 +106,14 @@ struct RootView: View {
         }
         .toastHost()
         .guestLinkDialogs()
+        .workspaceHost()
+        // someone may have removed this person from a Workspace, or handed it over, while the app was away
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, authViewModel.currentUser != nil { Task { await workspaceStore.load() } }
+        }
+        .task(id: authViewModel.currentUser?.id) {
+            if authViewModel.currentUser != nil { await workspaceStore.load() } else { workspaceStore.reset() }
+        }
         // a guest who saved their account is no longer a guest: AI and the rest open up
         .onChange(of: authViewModel.currentUser?.isGuest) { _, isGuest in DraftStore.shared.isGuest = isGuest == true }
         .task { await authViewModel.checkSession() }

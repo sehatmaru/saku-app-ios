@@ -206,6 +206,10 @@ final class AccountListViewModel: ObservableObject {
             return false
         } catch {
             print("❌ removeAccount failed: \(error)")
+            // A8 (8): the server refuses a wallet that still has transactions (another member may have recorded one)
+            if String(describing: error).contains("account_has_transactions") {
+                ToastCenter.shared.show(L("Dompet ini masih punya transaksi, jadi tidak bisa dihapus. Arsipkan saja."))
+            }
             return false
         }
     }

@@ -398,7 +398,7 @@ struct ExportSheet: View {
     /// The transactions file would hold no row (Enhancement 2 US2): the sheet says so before sharing.
     private var rangeIsEmpty: Bool {
         guard viewModel.isReady else { return false }
-        return !viewModel.transactions.contains { txn in
+        return !viewModel.scoped.contains { txn in
             selectedIntervals.map { $0.contains { txn.date >= $0.start && txn.date < $0.end } } ?? true
         }
     }
@@ -421,7 +421,7 @@ struct ExportSheet: View {
             pickerBody(list).filterSheet { pickerFooter(list) }
         }
         .sheet(isPresented: $showsPdfPreview) {
-            PdfPreviewView(summary: PdfReport.summary(transactions: viewModel.transactions, categories: viewModel.categories,
+            PdfPreviewView(summary: PdfReport.summary(transactions: viewModel.scoped, categories: viewModel.categories,
                                                       intervals: [reportPeriod]), periodLabel: periodLabel,
                            result: viewModel.reportModel(interval: reportPeriod, cycle: cycle, userName: "", isPrivate: false, isPreview: true).analysis)
         }
@@ -518,6 +518,7 @@ struct ExportSheet: View {
                 changeRow(rangeText) { picking = .csv }
                 Text(L("Dompet dan budget selalu disertakan lengkap.")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
             }
+            RecorderFilterRow(viewModel: viewModel)
 
         }
     }
@@ -548,6 +549,7 @@ struct ExportSheet: View {
                 Text(L("Periode laporan")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
                 changeRow(periodLabel) { picking = .pdf }
             }
+            RecorderFilterRow(viewModel: viewModel)
             Toggle(isOn: $hidesBalances) {
                 Text(L("Sembunyikan saldo dan nama dompet")).font(.app(15))
             }
@@ -604,7 +606,7 @@ struct ExportSheet: View {
                         }
                     }
                     ForEach(periods.indices, id: \.self) { index in
-                        let count = viewModel.transactions.filter { $0.date >= periods[index].interval.start && $0.date < periods[index].interval.end }.count
+                        let count = viewModel.scoped.filter { $0.date >= periods[index].interval.start && $0.date < periods[index].interval.end }.count
                         pickRow(periods[index].label, detail: L("%lld transaksi", count),
                                 isOn: list == .pdf ? pdfPeriodIndex == index : (!selectsAll && !usesCustomRange && selectedPeriods.contains(index))) {
                             if list == .pdf { pdfPeriodIndex = index; return }
@@ -682,9 +684,9 @@ struct ExportSheet: View {
         defer { isBuilding = false }
         let stamp = CsvExport.date(Date())
         let files: [(name: String, csv: String)] = [
-            ("saku-transaksi-\(stamp).csv", CsvExport.transactions(viewModel.transactions, accounts: viewModel.accounts,
+            ("saku-transaksi-\(stamp).csv", CsvExport.transactions(viewModel.scoped, accounts: viewModel.accounts,
                                                                     categories: viewModel.categories,
-                                                                    intervals: selectedIntervals, delimiter: .pipe)),
+                                                                    intervals: selectedIntervals, delimiter: .pipe, recorders: viewModel.recorderNames)),
             ("saku-dompet-\(stamp).csv", CsvExport.wallets(viewModel.accounts, delimiter: .pipe)),
             ("saku-budget-\(stamp).csv", CsvExport.budgets(viewModel.budgets, categories: viewModel.categories, delimiter: .pipe))
         ]
