@@ -136,7 +136,10 @@ struct WalletPickerSheet: View {
     private var recent: [Account] { recentIds.prefix(3).compactMap { id in accounts.first { $0.id == id } } }
     private var results: [Account] { accounts.filter { $0.name.localizedCaseInsensitiveContains(trimmed) } }
 
-    var body: some View {
+    /// Opens at half height, one drag from full, instead of fitting its content.
+    var body: some View { sheet.environment(\.fixedSheetDetents, true) }
+
+    private var sheet: some View {
         SelectionSheet(title: title, searchPrompt: L("Cari dompet"), query: $query, onDone: onDone) {
             if !trimmed.isEmpty {
                 if results.isEmpty {
@@ -295,7 +298,10 @@ struct CategoryPickerSheet: View {
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
 
-    var body: some View {
+    /// Opens at half height, one drag from full, instead of fitting its content.
+    var body: some View { sheet.environment(\.fixedSheetDetents, true) }
+
+    private var sheet: some View {
         SelectionSheet(title: title, searchPrompt: L("Cari kategori"), query: $query, onDone: onDone) {
             if !trimmed.isEmpty {
                 if results.isEmpty {
