@@ -314,10 +314,18 @@ struct CategoryPickerSheet: View {
         }
     }
 
+    /// The grid is lazy, and a lazy grid's content height is an estimate that changes as rows appear. The sheet fits
+    /// its height to that measurement, so the sheet and the estimate chased each other (random freezes). A known
+    /// height (every tile is `tileHeight`) takes the estimate out of the loop.
+    private static let tileHeight: CGFloat = 84
+    private static let tileSpacing: CGFloat = 10
+
     private func grid(_ items: [Category]) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+        let rows = CGFloat((items.count + 2) / 3)
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Self.tileSpacing), count: 3), spacing: Self.tileSpacing) {
             ForEach(items) { tile($0) }
         }
+        .frame(height: rows * Self.tileHeight + max(rows - 1, 0) * Self.tileSpacing, alignment: .top)
         .padding(.horizontal, 20)
     }
 
@@ -342,7 +350,7 @@ struct CategoryPickerSheet: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 11)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 84)
+            .frame(height: Self.tileHeight)
             .pickedTile(isOn, color: color, radius: 16)
             .contentShape(RoundedRectangle(cornerRadius: 16))
         }

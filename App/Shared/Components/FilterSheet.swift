@@ -162,8 +162,8 @@ private struct AdaptiveDetents: ViewModifier {
         } else {
             view
                 .modifier(KeyboardUp(up: $keyboard))
-                .onPreferenceChange(SheetContentHeight.self) { if !keyboard { content = $0 } }
-                .onPreferenceChange(SheetFooterHeight.self) { if !keyboard { footer = $0 } }
+                .onPreferenceChange(SheetContentHeight.self) { if !keyboard, abs($0 - content) >= 2 { content = $0 } }
+                .onPreferenceChange(SheetFooterHeight.self) { if !keyboard, abs($0 - footer) >= 2 { footer = $0 } }
                 .modifier(FitDetents(fit: adaptive, selection: selection))
         }
     }
@@ -200,7 +200,7 @@ private struct SheetScrollSlack: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onScrollGeometryChange(for: CGFloat.self) { $0.contentSize.height - $0.containerSize.height } action: { _, new in
-                if clip == nil || abs((clip ?? 0) - new) >= 1 { clip = new }
+                if clip == nil || abs((clip ?? 0) - new) >= 2 { clip = new }
             }
             .preference(key: SheetClipKey.self, value: clip)
     }
@@ -236,8 +236,8 @@ private struct SlackDetents: ViewModifier {
         } else {
         view
             .modifier(KeyboardUp(up: $keyboard))
-            .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { if !keyboard { total = $0 } }
-            .onPreferenceChange(SheetClipKey.self) { if !keyboard { clip = $0 } }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { if !keyboard, abs($0 - total) >= 2 { total = $0 } }
+            .onPreferenceChange(SheetClipKey.self) { if !keyboard, abs(($0 ?? 0) - (clip ?? 0)) >= 2 || clip == nil || $0 == nil { clip = $0 } }
             .modifier(FitDetents(fit: adaptive, selection: selection))
         }
     }
