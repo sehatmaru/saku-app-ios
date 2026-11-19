@@ -344,12 +344,14 @@ struct TransactionListView: View {
 
             HeroAmount(
                 value: net,
+                size: .hero,
                 prefix: net > 0 ? "+Rp" : net < 0 ? "−Rp" : "Rp",
                 color: hasNoTransactions ? .appTextTertiary : tone,
                 prefixColor: hasNoTransactions ? .appTextTertiary : net == 0 ? .appTextSecondary : tone,
                 isVisible: isBalanceVisible,
                 weight: .ultraLight
             )
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 8)
 
             if hasNoTransactions {
