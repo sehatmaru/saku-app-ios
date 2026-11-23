@@ -70,8 +70,9 @@ struct DashboardView: View {
             if let userId = authViewModel.currentUser?.id {
                 Task {
                     await SubscriptionBillingService.processDueBills(userId: userId)
-                    await SubscriptionBillingService.resyncNotifications(userId: userId)
                     await viewModel.loadDashboard(userId: userId)
+                    // after the screen has its data: this reads every Workspace when the person has shared ones
+                    await SubscriptionBillingService.resyncNotifications(userId: userId)
                 }
             }
         }

@@ -207,11 +207,15 @@ final class DashboardViewModel: ObservableObject {
                 .filter { !cardIds.contains($0.accountId) }
                 .filter { sub in sub.nextBillingDateAsDate.map { $0 >= todayStart && $0 < periodEnd } ?? false }
                 .reduce(0) { $0 + $1.amount }
-            if ReminderSync.ownsReminders {
-                await ReminderSync.run(userId: userId)
-            } else {
-                await NotificationManager.shared.resyncCardDue(cards: billed.map(\.0), statements: billed.map(\.1))
-                await NotificationManager.shared.resyncInvestmentReminders(accounts: fetchedAccounts, transactions: transactions)
+            // Reminders are background work (the shared-Workspace sync alone reads every Workspace): Beranda must not wait for them.
+            let billedCards = billed.map(\.0), billedStatements = billed.map(\.1)
+            Task {
+                if ReminderSync.ownsReminders {
+                    await ReminderSync.run(userId: userId)
+                } else {
+                    await NotificationManager.shared.resyncCardDue(cards: billedCards, statements: billedStatements)
+                    await NotificationManager.shared.resyncInvestmentReminders(accounts: fetchedAccounts, transactions: transactions)
+                }
             }
 
             // Archived wallets leave the totals, same as on Dompet.
