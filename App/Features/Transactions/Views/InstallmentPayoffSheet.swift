@@ -81,6 +81,7 @@ struct InstallmentPayoffSheet: View {
         .onAppear {
             wallet = wallet ?? wallets.first
             category = category ?? categories.first { $0.systemKey == "expense_bills_subscriptions" }
+                ?? categories.first { $0.type == .expense && $0.name == "Tagihan & Langganan" }
         }
         .sheet(item: $pickerKind) { kind in
             switch kind {
