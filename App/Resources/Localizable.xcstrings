@@ -2653,6 +2653,26 @@
         }
       }
     },
+    "Akun gratis bisa membuat 1 Workspace. Plus tanpa batas.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A free account can create 1 Workspace. Plus is unlimited."
+          }
+        }
+      }
+    },
+    "Akun gratis bisa membuat 1 Workspace; Plus tanpa batas. Bergabung ke Workspace orang lain tidak dibatasi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A free account can create 1 Workspace; Plus is unlimited. Joining someone else's Workspace has no limit."
+          }
+        }
+      }
+    },
     "Akun tamu belum bisa memakai kode ajak.": {
       "localizations": {
         "en": {
@@ -2903,6 +2923,16 @@
         }
       }
     },
+    "Anggota yang keluar: catatannya tetap di Workspace, ditandai \"Mantan anggota\".": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When a member leaves, their transactions stay in the Workspace, marked \"Former member\"."
+          }
+        }
+      }
+    },
     "Anggota · %lld dari 5": {
       "localizations": {
         "en": {
@@ -2959,6 +2989,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Between wallets"
+          }
+        }
+      }
+    },
+    "Apa itu Workspace?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is a Workspace?"
           }
         }
       }
@@ -3223,6 +3263,16 @@
         }
       }
     },
+    "Atur nanti": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set later"
+          }
+        }
+      }
+    },
     "Atur uang tanpa ribet.": {
       "localizations": {
         "en": {
@@ -3239,6 +3289,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rules"
+          }
+        }
+      }
+    },
+    "Aturan singkat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick rules"
           }
         }
       }
@@ -8563,6 +8623,16 @@
         }
       }
     },
+    "Dikonfirmasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmed"
+          }
+        }
+      }
+    },
     "Dipakai untuk": {
       "localizations": {
         "en": {
@@ -9099,6 +9169,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wallets · %lld accounts"
+          }
+        }
+      }
+    },
+    "Dompet, catatan, dan budget dipakai bersama anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallets, transactions, and budgets are shared with members."
           }
         }
       }
@@ -10689,6 +10769,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Only the Owner can change this"
+          }
+        }
+      }
+    },
+    "Hanya Pemilik yang mengundang, mengeluarkan anggota, mengatur kategori, budget, dan menghapus Workspace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the Owner can invite and remove members, manage categories and budgets, and delete the Workspace."
           }
         }
       }
@@ -12543,6 +12633,16 @@
         }
       }
     },
+    "Kamu yang mengatur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are in charge"
+          }
+        }
+      }
+    },
     "Kamu yang pegang kendali.": {
       "localizations": {
         "en": {
@@ -13819,6 +13919,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your finances are healthy. Keep up these habits."
+          }
+        }
+      }
+    },
+    "Keuanganmu tetap pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your finances stay private"
           }
         }
       }
@@ -15293,6 +15403,16 @@
         }
       }
     },
+    "Maksimal 5 anggota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up to 5 members"
+          }
+        }
+      }
+    },
     "Mantan anggota": {
       "localizations": {
         "en": {
@@ -15883,6 +16003,16 @@
         }
       }
     },
+    "Membatalkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelling"
+          }
+        }
+      }
+    },
     "Membatalkan…": {
       "localizations": {
         "en": {
@@ -16049,6 +16179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Typing is always unlimited. Some amounts are limited."
+          }
+        }
+      }
+    },
+    "Menghapus Workspace punya masa tunggu 7 hari sebelum data hilang permanen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting a Workspace has a 7-day waiting period before the data is permanently removed."
           }
         }
       }
@@ -20093,6 +20233,16 @@
         }
       }
     },
+    "Ruang bersama untuk mencatat uang dengan orang terdekat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A shared space to track money with the people closest to you."
+          }
+        }
+      }
+    },
     "Rugi": {
       "localizations": {
         "en": {
@@ -21253,6 +21403,16 @@
         }
       }
     },
+    "Semua anggota boleh menambah, mengubah, dan menghapus catatan. Kategori dan budget hanya diatur Pemilik.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every member can add, edit, and delete transactions. Only the Owner manages categories and budgets."
+          }
+        }
+      }
+    },
     "Semua budget masih aman.": {
       "localizations": {
         "en": {
@@ -21959,6 +22119,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ready to share"
+          }
+        }
+      }
+    },
+    "Siap dibuat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready to create."
           }
         }
       }
@@ -23383,12 +23553,32 @@
         }
       }
     },
+    "Tahan 1,2 detik. Lepas untuk membatalkan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold for 1.2 seconds. Release to cancel."
+          }
+        }
+      }
+    },
     "Tahan pengeluaran yang tidak wajib supaya budget cukup sampai akhir periode.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Hold back non-essential spending so the budget lasts until the end of the period."
+          }
+        }
+      }
+    },
+    "Tahan untuk konfirmasi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold to confirm"
           }
         }
       }
@@ -24493,6 +24683,16 @@
         }
       }
     },
+    "Termasuk kamu sebagai Pemilik.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Including you as the Owner."
+          }
+        }
+      }
+    },
     "Terpakai": {
       "localizations": {
         "en": {
@@ -25073,12 +25273,32 @@
         }
       }
     },
+    "Tidak bisa dibatalkan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't be undone"
+          }
+        }
+      }
+    },
     "Tidak bisa diubah": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Can't be changed"
+          }
+        }
+      }
+    },
+    "Tidak bisa membatalkan. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't cancel. Try again."
           }
         }
       }
@@ -26245,6 +26465,16 @@
         }
       }
     },
+    "Uang bersama, satu tempat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared money, one place"
+          }
+        }
+      }
+    },
     "Uang fisik di dompet atau celengan": {
       "localizations": {
         "en": {
@@ -26851,6 +27081,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your Personal Workspace stays as it is. %@ gets a copy."
+          }
+        }
+      }
+    },
+    "Workspace Pribadi tidak terlihat anggota lain.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Personal Workspace is not visible to other members."
           }
         }
       }
