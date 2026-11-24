@@ -560,6 +560,7 @@ final class SupabaseRepository: @unchecked Sendable {
         if !Self.atomicMissing {
             do {
                 try await client.rpc("delete_transaction_atomic", params: ["p_id": AnyJSON.string(id)]).execute()
+                await reopenInstallment(settledBy: id)
                 if txn.startsPeriod == true { await refreshShiftsAndAnnounce() }
                 return
             } catch { if !Self.noteMissing(error) { throw error } }
@@ -583,8 +584,16 @@ final class SupabaseRepository: @unchecked Sendable {
             .execute()
         // an installment plan goes with its purchase
         _ = try? await client.from("card_installments").delete().eq("transaction_id", value: id).execute()
+        await reopenInstallment(settledBy: id)
         // deleting an early salary that moved the period brings the usual period back (K4)
         if txn.startsPeriod == true { await refreshShiftsAndAnnounce() }
+    }
+
+    /// Deleting the transfer of a "paid" early payoff takes the payoff back, so the installment bills again.
+    private func reopenInstallment(settledBy transferId: String) async {
+        _ = try? await client.from("card_installments").update([
+            "settled_on": AnyJSON.null, "settle_mode": AnyJSON.null, "settle_transfer_id": AnyJSON.null,
+        ] as [String: AnyJSON]).eq("settle_transfer_id", value: transferId).execute()
     }
 
     private func refreshShiftsAndAnnounce() async {
