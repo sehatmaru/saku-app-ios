@@ -195,12 +195,7 @@ struct AccountListView: View {
                 }
                 .detailPage()
             }
-            .refreshable {
-                guard let userId = authViewModel.currentUser?.id else { return }
-                await viewModel.loadAccounts(userId: userId, forceRefresh: true)
-                await syncAccountTransactions(userId: userId, forceRefresh: true)
-                await syncCategories(userId: userId)
-            }
+            .refreshable { await refreshWallets() }
             .onAppear {
                 isBalanceVisible = isBalanceVisibleStorage
                 if startsAdding { showAddWallet = true }
@@ -772,6 +767,7 @@ struct AccountListView: View {
                                 .padding(.bottom, 122)
                         }
                     }
+                    .refreshable { await refreshWallets() }
                     .scrollIndicators(.hidden)
                     .scrollBounceBehavior(.always)
                     .scrollPosition($detailScrollPosition)
@@ -1228,6 +1224,14 @@ struct AccountListView: View {
             await syncAccountTransactions(userId: userId, forceRefresh: true)
             await syncCategories(userId: userId)
         }
+    }
+
+    /// Pull to refresh on the wallet list and on an open wallet's detail.
+    private func refreshWallets() async {
+        guard let userId = authViewModel.currentUser?.id else { return }
+        await viewModel.loadAccounts(userId: userId, forceRefresh: true)
+        await syncAccountTransactions(userId: userId, forceRefresh: true)
+        await syncCategories(userId: userId)
     }
 
     private func syncAccountTransactions(userId: String, forceRefresh: Bool = false) async {
