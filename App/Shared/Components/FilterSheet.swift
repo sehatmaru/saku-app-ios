@@ -223,6 +223,10 @@ private struct SlackDetents: ViewModifier {
     @State private var total: CGFloat = 0
     @State private var clip: CGFloat?
     @State private var keyboard = false
+    /// Measurement updates so far. Lazy content (LazyVGrid) can keep changing its estimated height, so the sheet resizes,
+    /// which changes the estimate again, and the main thread never leaves the sheet's layout (watchdog kill). Past a
+    /// few legitimate updates the sheet gives up fitting and uses the fixed half/full detents.
+    @State private var updates = 0
     @Environment(\.fixedSheetDetents) private var fixed
 
     private var adaptive: PresentationDetent? {
@@ -231,13 +235,13 @@ private struct SlackDetents: ViewModifier {
     }
 
     @ViewBuilder func body(content view: Content) -> some View {
-        if fixed {
+        if fixed || updates > 10 {
             view.presentationDetents([.medium, .large])
         } else {
         view
             .modifier(KeyboardUp(up: $keyboard))
-            .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { if !keyboard, abs($0 - total) >= 2 { total = $0 } }
-            .onPreferenceChange(SheetClipKey.self) { if !keyboard, abs(($0 ?? 0) - (clip ?? 0)) >= 2 || clip == nil || $0 == nil { clip = $0 } }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { if !keyboard, abs($0 - total) >= 2 { total = $0; updates += 1 } }
+            .onPreferenceChange(SheetClipKey.self) { if !keyboard, abs(($0 ?? 0) - (clip ?? 0)) >= 2 || clip == nil || $0 == nil { clip = $0; updates += 1 } }
             .modifier(FitDetents(fit: adaptive, selection: selection))
         }
     }

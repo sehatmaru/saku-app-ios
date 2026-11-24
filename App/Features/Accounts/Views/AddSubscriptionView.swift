@@ -497,6 +497,7 @@ struct AddSubscriptionView: View {
         }
         .background(Color.appBackground)
         .adaptiveSheet()
+        .environment(\.fixedSheetDetents, true)
         .background(Color.appBackground)
     }
 
