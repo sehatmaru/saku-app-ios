@@ -367,10 +367,6 @@ struct ProfileView: View {
             if workspaceStore.showsSwitcher {
                 NavigationLink(destination: WorkspaceListView().detailPage()) {
                     row(icon: "person.2", title: L("Workspace")) {
-                        Text(workspaceStore.active?.displayName ?? L("Workspace Pribadi"))
-                            .font(.app(15))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .lineLimit(1)
                         chevron
                     }
                     .contentShape(Rectangle())
@@ -380,7 +376,7 @@ struct ProfileView: View {
 
             NavigationLink(destination: CategoriesView()) {
                 row(icon: "square.grid.2x2", title: L("Kategori"),
-                    subtitle: sharedSpaceName.map { workspaceStore.canEditActive ? $0 : L("%@ · Hanya Pemilik yang bisa mengubah", $0) }) {
+                    subtitle: isSharedSpace && !workspaceStore.canEditActive ? L("Hanya Pemilik yang bisa mengubah") : nil) {
                     chevron
                 }
                 .contentShape(Rectangle())
@@ -389,7 +385,7 @@ struct ProfileView: View {
 
             Button { if canEditPayday { showsPayday = true } } label: {
                 row(icon: "calendar", title: workspaceStore.showsSwitcher ? workspaceStore.paydayTitle : L("Tanggal gajian"),
-                    subtitle: sharedSpaceName.map { canEditPayday ? $0 : L("%@ · Hanya Pemilik yang bisa mengubah", $0) }) {
+                    subtitle: isSharedSpace && !canEditPayday ? L("Hanya Pemilik yang bisa mengubah") : nil) {
                     Text(paydayDay == 0 ? L("Belum diatur") : "\(paydayDay)")
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
@@ -403,20 +399,33 @@ struct ProfileView: View {
             .animation(.settle(0.4), value: paydayDay)
 
             if let pending = pendingPayday {
-                HStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Color.appPrimary)
                     Text(L("Gajian pindah ke tanggal %lld mulai %@.", pending.day, PaydayCycle.dayMonth.string(from: pending.from)))
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
+                        .font(.app(14))
+                        .foregroundStyle(Color.appText)
+                        .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 8)
                     if isCancellingPayday {
                         ProgressView()
                     } else {
-                        Button(L("Batalkan")) { cancelPendingPayday() }
-                            .font(.app(13, weight: .semibold))
-                            .foregroundStyle(Color.appPrimary)
+                        Button { cancelPendingPayday() } label: {
+                            Text(L("Batalkan"))
+                                .font(.app(14, weight: .semibold))
+                                .foregroundStyle(Color.appPrimary)
+                                .padding(.horizontal, 14)
+                                .frame(minHeight: 36)
+                                .background(Color.appBackground, in: Capsule())
+                        }
+                        .buttonStyle(PressScaleStyle())
                     }
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 14)
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
+                .padding(.vertical, 6)
             }
 
             NavigationLink(destination: SmartTrackerSettingsView().detailPage()) {
@@ -445,10 +454,9 @@ struct ProfileView: View {
         }
     }
 
-    /// K34: what changes here applies to everyone in the open Workspace, so it is named; Workspace Pribadi needs no label.
-    private var sharedSpaceName: String? {
-        guard workspaceStore.showsSwitcher, let active = workspaceStore.active, !active.isPersonal else { return nil }
-        return active.displayName
+    private var isSharedSpace: Bool {
+        guard workspaceStore.showsSwitcher, let active = workspaceStore.active else { return false }
+        return !active.isPersonal
     }
 
     /// K33: only the Owner changes the payday; members see it.
