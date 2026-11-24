@@ -398,36 +398,6 @@ struct ProfileView: View {
             .buttonStyle(RowPressStyle())
             .animation(.settle(0.4), value: paydayDay)
 
-            if let pending = pendingPayday {
-                HStack(spacing: 12) {
-                    Image(systemName: "calendar.badge.clock")
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.appPrimary)
-                    Text(L("Gajian pindah ke tanggal %lld mulai %@.", pending.day, PaydayCycle.dayMonth.string(from: pending.from)))
-                        .font(.app(14))
-                        .foregroundStyle(Color.appText)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 8)
-                    if isCancellingPayday {
-                        ProgressView()
-                    } else {
-                        Button { cancelPendingPayday() } label: {
-                            Text(L("Batalkan"))
-                                .font(.app(14, weight: .semibold))
-                                .foregroundStyle(Color.appPrimary)
-                                .padding(.horizontal, 14)
-                                .frame(minHeight: 36)
-                                .background(Color.appBackground, in: Capsule())
-                        }
-                        .buttonStyle(PressScaleStyle())
-                    }
-                }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 14)
-                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
-                .padding(.vertical, 6)
-            }
-
             NavigationLink(destination: SmartTrackerSettingsView().detailPage()) {
                 row(icon: "sparkles", title: L("Smart tracker")) {
                     chevron
@@ -450,6 +420,23 @@ struct ProfileView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(RowPressStyle())
+            }
+
+            if let pending = pendingPayday {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(L("Gajian pindah ke tanggal %lld mulai %@.", pending.day, PaydayCycle.dayMonth.string(from: pending.from)))
+                        .font(.app(13))
+                        .foregroundStyle(Color.appTextSecondary)
+                    if isCancellingPayday {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button(L("Batalkan")) { cancelPendingPayday() }
+                            .font(.app(13, weight: .semibold))
+                            .foregroundStyle(Color.appPrimary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 10)
             }
         }
     }
