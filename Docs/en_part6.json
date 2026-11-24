@@ -2096,5 +2096,11 @@
   "Salinannya terlihat semua anggota %@ dan tidak bisa dibatalkan. Workspace Pribadi-mu tidak berubah.": "The copy is visible to every member of %@ and can't be undone. Your Personal Workspace doesn't change.",
   "Sudah disalin": "Copied",
   "Bawa data pribadi saya ke sini": "Bring my personal data here",
-  "Bawa data pribadi saya": "Bring my personal data"
+  "Bawa data pribadi saya": "Bring my personal data",
+"Kapan tanggal baru mulai berlaku?": "When does the new date start?",
+"Gajian pindah ke tanggal %lld. Pilih hasilnya untuk periode berjalan.": "Payday moves to day %lld. Choose the result for the running period.",
+"Berlaku untuk semua anggota Workspace ini.": "Applies to every member of this Workspace.",
+"Berikutnya": "Next",
+"Berikutnya kamu memilih kapan tanggal baru mulai berlaku, dengan rentang tanggal hasilnya.": "Next you choose when the new date starts, with the resulting date ranges.",
+"Berikutnya kamu memilih kapan tanggal baru mulai berlaku. Perubahan ini berlaku untuk semua anggota Workspace.": "Next you choose when the new date starts. This change applies to every Workspace member."
 }

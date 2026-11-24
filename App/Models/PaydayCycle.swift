@@ -77,6 +77,11 @@ struct PaydayCycle: Equatable {
         guard !schedule.isEmpty else { return naivePeriod(containing: day, payday: self.day, calendar: calendar) }
         let index = schedule.lastIndex { $0.from <= day } ?? 0
         let entry = schedule[index]
+        // "Perpanjang periode ini": the next change removes the old boundary, so the period ending where it takes effect
+        // starts on `extendsFrom` instead of at the old payday.
+        if index + 1 < schedule.count, let from = schedule[index + 1].extendsFrom, day >= from {
+            return DateInterval(start: from, end: schedule[index + 1].from)
+        }
         let naive = naivePeriod(containing: day, payday: entry.day, calendar: calendar)
         // The first period under a new payday starts where the change takes effect; the one before
         // a pending change ends there. Either can be shorter or longer than a normal month.
@@ -147,6 +152,8 @@ struct PaydayCycle: Equatable {
 struct PaydayEntry: Codable, Equatable {
     let day: Int
     let from: Date
+    /// Set when the user extended the running period: the period that ends at `from` starts on this date.
+    var extendsFrom: Date? = nil
 }
 
 /// The payday mirrored on the device so period math needs no network. The profile row is

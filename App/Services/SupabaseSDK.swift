@@ -101,7 +101,8 @@ enum SupabaseSDK {
     private struct PaydayChangeRow: Decodable {
         let paydayDay: Int
         let effectiveFrom: String
-        enum CodingKeys: String, CodingKey { case paydayDay = "payday_day", effectiveFrom = "effective_from" }
+        let extendsFrom: String?
+        enum CodingKeys: String, CodingKey { case paydayDay = "payday_day", effectiveFrom = "effective_from", extendsFrom = "extends_from" }
     }
 
     /// Mirrors `payday_changes` on the device. Keeps the old schedule when offline.
@@ -112,7 +113,9 @@ enum SupabaseSDK {
         format.dateFormat = "yyyy-MM-dd"
         format.locale = Locale(identifier: "en_US_POSIX")
         PaydaySetting.schedule = rows.compactMap { row in
-            format.date(from: row.effectiveFrom).map { PaydayEntry(day: row.paydayDay, from: $0) }
+            format.date(from: row.effectiveFrom).map {
+                PaydayEntry(day: row.paydayDay, from: $0, extendsFrom: row.extendsFrom.flatMap(format.date(from:)))
+            }
         }
     }
 
@@ -154,9 +157,11 @@ enum SupabaseSDK {
     /// Saves the payday (1–31). The server decides when it takes effect (now for early corrections,
     /// else the end of the running period) and returns that date.
     @discardableResult
-    static func updatePayday(day: Int) async throws -> Date {
+    static func updatePayday(day: Int, from: Date? = nil) async throws -> Date {
         let day = min(max(day, 1), 31)
-        let effective: String = try await space.rpc("set_payday", params: ["p_day": day]).execute().value
+        var params: [String: AnyJSON] = ["p_day": .integer(day)]
+        if let from { params["p_from"] = .string(paydayDateFormat.string(from: from)) }
+        let effective: String = try await space.rpc("set_payday", params: params).execute().value
         PaydaySetting.day = day
         await refreshPaydaySchedule()
         await refreshPaydayShifts()
@@ -164,6 +169,31 @@ enum SupabaseSDK {
         format.dateFormat = "yyyy-MM-dd"
         format.locale = Locale(identifier: "en_US_POSIX")
         return format.date(from: effective) ?? Date()
+    }
+
+    private static var paydayDateFormat: DateFormatter {
+        let format = DateFormatter()
+        format.dateFormat = "yyyy-MM-dd"
+        format.locale = Locale(identifier: "en_US_POSIX")
+        return format
+    }
+
+    private struct PaydayChoiceRow: Decodable {
+        let kind: String
+        let effectiveFrom: String
+        let extendsFrom: String?
+        let isDefault: Bool
+        enum CodingKeys: String, CodingKey { case kind, effectiveFrom = "effective_from", extendsFrom = "extends_from", isDefault = "is_default" }
+    }
+
+    /// When the picked day could take effect today. Empty: nothing to choose, `updatePayday(day:)` applies it as it always did.
+    static func paydayChoices(day: Int) async throws -> [PaydayChoice] {
+        let rows: [PaydayChoiceRow] = try await space.rpc("payday_options", params: ["p_day": day]).execute().value
+        let format = paydayDateFormat
+        return rows.compactMap { row in
+            guard let kind = PaydayChoice.Kind(rawValue: row.kind), let from = format.date(from: row.effectiveFrom) else { return nil }
+            return PaydayChoice(kind: kind, from: from, extendsFrom: row.extendsFrom.flatMap(format.date(from:)), isDefault: row.isDefault)
+        }
     }
 
     /// Drops a payday change that has not taken effect yet.

@@ -40,9 +40,9 @@ extension PaydayCycle {
 
 /// Saves the payday on the signed-in user's profile and reloads everything period-based.
 @MainActor
-private func savePayday(_ day: Int) async -> Bool {
+private func savePayday(_ day: Int, from: Date? = nil) async -> Bool {
     do {
-        try await SupabaseSDK.updatePayday(day: day)
+        try await SupabaseSDK.updatePayday(day: day, from: from)
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
         return true
     } catch {
@@ -159,11 +159,16 @@ struct PaydaySheet: View {
     /// Called just before a changed day is saved, so the screen behind can hold still until the sheet is gone.
     let onWillSave: () -> Void
 
+    private enum Step { case day, choice }
+
     @Environment(\.dismiss) private var dismiss
     @State private var selection: Int?
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var didFinish = false
+    @State private var step = Step.day
+    @State private var options: [PaydayOption] = []
+    @State private var chosen: Date?
     @AppStorage("memberSince") private var memberSince: Double = Date().timeIntervalSince1970
 
     init(context: PaydayContext, onDone: @escaping (Int?) -> Void, onWillSave: @escaping () -> Void = {}) {
@@ -175,6 +180,30 @@ struct PaydaySheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if step == .day { dayStep } else { choiceStep }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.app(13))
+                    .foregroundStyle(Color.appError)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 10)
+            }
+        }
+        .disabled(isSaving)
+        .filterSheet {
+            if step == .day {
+                SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Nanti saja"), onPrimary: done, onSecondary: { dismiss() })
+            } else {
+                SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Kembali"), onPrimary: saveChoice,
+                                 onSecondary: { errorMessage = nil; step = .day })
+            }
+        }
+        .onDisappear { if !didFinish { onDone(nil) } }
+    }
+
+    private var dayStep: some View {
+        VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(WorkspaceStore.shared.paydayTitle).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
                 Text(L("Periode budget dan ringkasan mulai di tanggal ini."))
@@ -182,25 +211,13 @@ struct PaydaySheet: View {
             }
             .padding(.horizontal, 24).padding(.top, 20)
 
-            // the running period stays as is; the next one follows the picked day: two plain rows, like the lists in the other sheets
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(L("Periode berjalan")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                    Spacer(minLength: 8)
-                    Text(PaydayCycle.current.rangeLabel())
-                        .font(.app(17, weight: .medium)).monospacedDigit().foregroundStyle(Color.appText)
-                }
-                .padding(.vertical, 12)
-                Divider().overlay(Color.appBorder.opacity(0.5))
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(L("Periode berikutnya")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                    Spacer(minLength: 8)
-                    Text(nextPeriodLabel)
-                        .font(.app(17, weight: .semibold)).monospacedDigit().foregroundStyle(Color.appPrimary)
-                        .contentTransition(.numericText())
-                }
-                .padding(.vertical, 12)
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(L("Periode berjalan")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                Spacer(minLength: 8)
+                Text(PaydayCycle.current.rangeLabel())
+                    .font(.app(17, weight: .medium)).monospacedDigit().foregroundStyle(Color.appText)
             }
+            .padding(.vertical, 12)
             .padding(.horizontal, 24).padding(.top, 14)
 
             PaydayDayPicker(selection: $selection)
@@ -213,63 +230,114 @@ struct PaydaySheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 24).padding(.top, 16)
+        }
+    }
 
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.app(13))
-                    .foregroundStyle(Color.appError)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 10)
+    private var choiceStep: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L("Kapan tanggal baru mulai berlaku?")).font(.app(22, weight: .bold)).tracking(-0.3).foregroundStyle(Color.appText)
+                Text(L("Gajian pindah ke tanggal %lld. Pilih hasilnya untuk periode berjalan.", selection ?? 0))
+                    .font(.app(15)).foregroundStyle(Color.appTextSecondary)
+            }
+            .padding(.horizontal, 24).padding(.top, 20)
+
+            VStack(spacing: 10) {
+                ForEach(options) { optionRow($0) }
+            }
+            .padding(.horizontal, 24).padding(.top, 16)
+
+            if !WorkspaceStore.shared.activeIsPersonal {
+                Text(L("Berlaku untuk semua anggota Workspace ini."))
+                    .font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                    .padding(.horizontal, 24).padding(.top, 14)
             }
         }
-        .disabled(isSaving)
-        .filterSheet {
-            SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Nanti saja"), onPrimary: done, onSecondary: { dismiss() })
+    }
+
+    private func optionRow(_ option: PaydayOption) -> some View {
+        let on = chosen == option.id
+        return Button {
+            chosen = option.id
+            UISelectionFeedbackGenerator().selectionChanged()
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 10) {
+                    periodLine(L("Periode berjalan"), option.running, option)
+                    periodLine(L("Berikutnya"), option.next, option)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(on ? Color.appPrimary : Color.appBorder)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(on ? Color.appFill : .clear, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(on ? Color.appPrimary : Color.appBorder, lineWidth: on ? 1.5 : 1))
+            .contentShape(Rectangle())
         }
-        .onDisappear { if !didFinish { onDone(nil) } }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    private var isChanged: Bool {
-        (selection ?? PaydaySetting.day) != PaydaySetting.day
+    private func periodLine(_ title: String, _ period: DateInterval, _ option: PaydayOption) -> some View {
+        let last = Calendar.current.date(byAdding: .day, value: -1, to: period.end) ?? period.end
+        let range = PaydayCycle.dayMonth.string(from: period.start) + " – " + PaydayCycle.dayMonth.string(from: last)
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            Text(range + " · " + L("%lld hari", option.days(period)))
+                .font(.app(16, weight: .medium)).monospacedDigit().foregroundStyle(Color.appText)
+        }
     }
 
-    /// "25 Okt – 24 Nov": what the next period looks like once the picked day takes over.
-    private var nextPeriodLabel: String {
-        let day = selection ?? PaydaySetting.day ?? 1
-        let current = PaydayCycle.current.period(containing: Date())
-        let next = PaydayCycle(day: day).period(containing: current.end)
-        let end = Calendar.current.date(byAdding: .day, value: -1, to: next.end) ?? next.end
-        return PaydayCycle.dayMonth.string(from: next.start) + " – " + PaydayCycle.dayMonth.string(from: end)
-    }
-
-    /// What saving does. The server decides the real date; this mirrors its rule for the copy
-    /// (a correction applies now for a new account, else at the end of the running period).
+    /// Saving asks the server how the new day can start; with only one possible result there is nothing to ask.
     private var changeNote: String {
         let cycle = PaydayCycle.current
         guard let day = selection, day != PaydaySetting.day, !cycle.schedule.isEmpty,
               Date().timeIntervalSince1970 - memberSince > 7 * 86_400 else {
             return L("Periode budget dan ringkasan bulan ini langsung mengikuti tanggal baru.")
         }
-        let period = cycle.period(containing: Date())
-        return L("Perubahan ini berlaku mulai %@. Periode berjalan (%@ - %@) tetap memakai tanggal gajian lama supaya angka bulan ini dan bulan-bulan lalu tidak berubah.",
-                 PaydayCycle.dayMonth.string(from: period.end), PaydayCycle.dayMonth.string(from: period.start),
-                 cycle.lastDayLabel())
+        return WorkspaceStore.shared.activeIsPersonal
+            ? L("Berikutnya kamu memilih kapan tanggal baru mulai berlaku, dengan rentang tanggal hasilnya.")
+            : L("Berikutnya kamu memilih kapan tanggal baru mulai berlaku. Perubahan ini berlaku untuk semua anggota Workspace.")
     }
 
     private func done() {
         guard let day = selection, day != PaydaySetting.day else { dismiss(); return }
         isSaving = true
         errorMessage = nil
-        onWillSave()
         Task {
-            if await savePayday(day) {
-                didFinish = true
-                dismiss()
-                onDone(day)
-            } else {
+            // no answer (offline, older server): save the way it always was, the server picks the date
+            let choices = (try? await SupabaseSDK.paydayChoices(day: day)) ?? []
+            let found = PaydayOption.options(for: choices, day: day)
+            if found.count > 1 {
+                options = found
+                chosen = (found.first { $0.isDefault } ?? found[0]).id
                 isSaving = false
-                errorMessage = L("Gagal menyimpan tanggal gajian. Coba lagi.")
+                step = .choice
+            } else {
+                await save(day, from: found.first?.choice.from)
             }
+        }
+    }
+
+    private func saveChoice() {
+        guard let day = selection, let option = options.first(where: { $0.id == chosen }) else { return }
+        isSaving = true
+        errorMessage = nil
+        Task { await save(day, from: option.choice.from) }
+    }
+
+    @MainActor private func save(_ day: Int, from: Date?) async {
+        onWillSave()
+        if await savePayday(day, from: from) {
+            didFinish = true
+            dismiss()
+            onDone(day)
+        } else {
+            isSaving = false
+            errorMessage = L("Gagal menyimpan tanggal gajian. Coba lagi.")
         }
     }
 }

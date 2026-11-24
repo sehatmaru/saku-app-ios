@@ -75,4 +75,87 @@ final class PaydayCycleTests: XCTestCase {
         XCTAssertEqual(cycle.period(containing: date(2026, 12, 1), calendar: calendar).start, day(2026, 12, 1))
         XCTAssertEqual(cycle.period(offset: -1, from: date(2026, 11, 27), calendar: calendar), running)
     }
+
+    // MARK: - Ganti tanggal di tengah periode (PRD Ganti Tanggal Periode, TC1-TC10)
+
+    private func periods(_ cycle: PaydayCycle, from start: Date, count: Int) -> [(Date, Date)] {
+        var out: [(Date, Date)] = []
+        var probe = start
+        for _ in 0..<count {
+            let p = cycle.period(containing: probe, calendar: calendar)
+            out.append((p.start, p.end))
+            probe = p.end
+        }
+        return out
+    }
+
+    private func change(day newDay: Int, from: Date, extendsFrom: Date? = nil, shifts: [Date] = []) -> PaydayCycle {
+        PaydayCycle(day: newDay, schedule: [
+            PaydayEntry(day: 30, from: day(1970, 1, 1)),
+            PaydayEntry(day: newDay, from: from, extendsFrom: extendsFrom),
+        ], shifts: shifts)
+    }
+
+    private func assertPeriods(_ cycle: PaydayCycle, _ expected: [(Date, Date)], file: StaticString = #filePath, line: UInt = #line) {
+        let got = periods(cycle, from: day(2026, 10, 30), count: expected.count)
+        XCTAssertEqual(got.map(\.0), expected.map(\.0), file: file, line: line)
+        XCTAssertEqual(got.map(\.1), expected.map(\.1), file: file, line: line)
+    }
+
+    func testTC1StartOnTheNewDate() {
+        assertPeriods(change(day: 25, from: day(2026, 11, 25)),
+                      [(day(2026, 10, 30), day(2026, 11, 25)), (day(2026, 11, 25), day(2026, 12, 25)), (day(2026, 12, 25), day(2027, 1, 25))])
+    }
+
+    func testTC2AfterThisPeriod() {
+        assertPeriods(change(day: 25, from: day(2026, 11, 30)),
+                      [(day(2026, 10, 30), day(2026, 11, 30)), (day(2026, 11, 30), day(2026, 12, 25)), (day(2026, 12, 25), day(2027, 1, 25))])
+    }
+
+    func testTC3ExtendTheRunningPeriod() {
+        assertPeriods(change(day: 20, from: day(2026, 12, 20), extendsFrom: day(2026, 10, 30)),
+                      [(day(2026, 10, 30), day(2026, 12, 20)), (day(2026, 12, 20), day(2027, 1, 20))])
+        // a day inside the stretch that the old boundary used to cut
+        XCTAssertEqual(change(day: 20, from: day(2026, 12, 20), extendsFrom: day(2026, 10, 30))
+            .period(containing: date(2026, 12, 5), calendar: calendar).start, day(2026, 10, 30))
+    }
+
+    func testTC4ShortPeriodFirst() {
+        assertPeriods(change(day: 20, from: day(2026, 11, 30)),
+                      [(day(2026, 10, 30), day(2026, 11, 30)), (day(2026, 11, 30), day(2026, 12, 20)), (day(2026, 12, 20), day(2027, 1, 20))])
+    }
+
+    func testTC5StartToday() {
+        assertPeriods(change(day: 20, from: day(2026, 11, 24)),
+                      [(day(2026, 10, 30), day(2026, 11, 24)), (day(2026, 11, 24), day(2026, 12, 20)), (day(2026, 12, 20), day(2027, 1, 20))])
+    }
+
+    func testTC8CancelGoesBackToTheOldPeriods() {
+        let cycle = PaydayCycle(day: 30, schedule: [PaydayEntry(day: 30, from: day(1970, 1, 1))])
+        assertPeriods(cycle, [(day(2026, 10, 30), day(2026, 11, 30)), (day(2026, 11, 30), day(2026, 12, 30))])
+    }
+
+    func testTC9MonthEndClipping() {
+        // payday 31 from 28 Feb: the first period runs 28 Feb - 30 Mar, then the 31st of a 31-day month
+        let cycle = PaydayCycle(day: 31, schedule: [
+            PaydayEntry(day: 20, from: day(1970, 1, 1)),
+            PaydayEntry(day: 31, from: day(2027, 2, 28)),
+        ])
+        let p = cycle.period(containing: date(2027, 3, 5), calendar: calendar)
+        XCTAssertEqual(p.start, day(2027, 2, 28))
+        XCTAssertEqual(p.end, day(2027, 3, 31))
+    }
+
+    func testTC10ShiftNeitherEmptiesNorOverlapsPeriods() {
+        // early salary on 20 Nov moves the 30 Nov boundary; a payday change after it must leave a clean chain
+        for cycle in [change(day: 25, from: day(2026, 11, 25), shifts: [day(2026, 11, 20)]),
+                      change(day: 20, from: day(2026, 12, 20), extendsFrom: day(2026, 10, 30), shifts: [day(2026, 11, 20)]),
+                      change(day: 20, from: day(2026, 11, 24), shifts: [day(2026, 11, 20)])] {
+            let chain = periods(cycle, from: day(2026, 10, 30), count: 5)
+            for (a, b) in zip(chain, chain.dropFirst()) {
+                XCTAssertGreaterThan(a.1, a.0)
+                XCTAssertEqual(a.1, b.0)
+            }
+        }
+    }
 }

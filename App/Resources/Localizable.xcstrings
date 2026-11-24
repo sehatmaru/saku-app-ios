@@ -5173,6 +5173,36 @@
         }
       }
     },
+    "Berikutnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
+          }
+        }
+      }
+    },
+    "Berikutnya kamu memilih kapan tanggal baru mulai berlaku, dengan rentang tanggal hasilnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next you choose when the new date starts, with the resulting date ranges."
+          }
+        }
+      }
+    },
+    "Berikutnya kamu memilih kapan tanggal baru mulai berlaku. Perubahan ini berlaku untuk semua anggota Workspace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next you choose when the new date starts. This change applies to every Workspace member."
+          }
+        }
+      }
+    },
     "Berjalan": {
       "localizations": {
         "en": {
@@ -5219,6 +5249,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Applies to every member"
+          }
+        }
+      }
+    },
+    "Berlaku untuk semua anggota Workspace ini.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies to every member of this Workspace."
           }
         }
       }
@@ -9973,6 +10013,16 @@
         }
       }
     },
+    "Gajian pindah ke tanggal %lld. Pilih hasilnya untuk periode berjalan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payday moves to day %lld. Choose the result for the running period."
+          }
+        }
+      }
+    },
     "Gajian tiap tanggal %lld": {
       "localizations": {
         "en": {
@@ -12369,6 +12419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "When do I spend most?"
+          }
+        }
+      }
+    },
+    "Kapan tanggal baru mulai berlaku?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When does the new date start?"
           }
         }
       }
