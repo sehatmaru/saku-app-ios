@@ -659,7 +659,6 @@ struct AccountListView: View {
                         investmentPill: investmentPill(for: account)
                     )
                     .frame(height: cardHeight)
-                    .opacity(isOverlayOn ? 0 : 1)
                     .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.space)).minY } action: { [cardTops] top in
                         cardTops.values[account.id] = top
                     }
@@ -670,6 +669,9 @@ struct AccountListView: View {
                     .accessibilityHint(L("Buka dompet"))
                 }
             }
+            // Not 0: a fully transparent layer isn't rendered, so every card (two shadows each) was drawn for the first time
+            // in the frame the overlay closed, a 75 ms stall that grows with the number of wallets.
+            .opacity(isOverlayOn ? 0.001 : 1)
         }
         .padding(.horizontal, 24)
         .padding(.top, group.type == groups.first?.type ? 12 : 26)
