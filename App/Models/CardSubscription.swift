@@ -14,6 +14,8 @@ struct CardSubscription: Identifiable, Codable {
     let updatedAt: String?
     /// Price before the last edit; set only when the amount changed.
     var previousAmount: Double? = nil
+    /// The transaction this bill was made from (Enhancement "Cicilan dan berulang setelah transaksi"); nil for older bills.
+    var sourceTransactionId: String? = nil
 
     enum Frequency: String, Codable {
         case monthly, yearly
@@ -32,6 +34,7 @@ struct CardSubscription: Identifiable, Codable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case previousAmount = "previous_amount"
+        case sourceTransactionId = "source_transaction_id"
     }
 
     /// How much the price went up at the last edit; nil when it didn't.

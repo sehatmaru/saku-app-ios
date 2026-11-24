@@ -801,6 +801,16 @@
         }
       }
     },
+    "%@ · dilunasi, masuk tagihan %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · paid off, billed %@"
+          }
+        }
+      }
+    },
     "%@ · disembunyikan": {
       "localizations": {
         "en": {
@@ -1059,6 +1069,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld of %lld"
+          }
+        }
+      }
+    },
+    "%lld dari %lld bagian belum ditagih": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld parts not billed yet"
+          }
+        }
+      }
+    },
+    "%lld dari %lld bagian sudah ditagih, jadi cicilan tidak bisa dimatikan atau diganti tenornya. Untuk menyelesaikannya lebih cepat, pakai Lunasi lebih cepat di Cicilan berjalan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld parts are already billed, so the installment can't be turned off or given a new term. To finish it sooner, use Pay off early in Running installments."
           }
         }
       }
@@ -2093,6 +2123,16 @@
         }
       }
     },
+    "12 bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "12 months"
+          }
+        }
+      }
+    },
     "2 anggota": {
       "localizations": {
         "en": {
@@ -2139,6 +2179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "2. Pick a trigger"
+          }
+        }
+      }
+    },
+    "24 bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24 months"
           }
         }
       }
@@ -3123,6 +3173,16 @@
         }
       }
     },
+    "Atur berulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage recurring"
+          }
+        }
+      }
+    },
     "Atur budget": {
       "localizations": {
         "en": {
@@ -3669,6 +3729,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel subscription"
+          }
+        }
+      }
+    },
+    "Batalkan pelunasan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel payoff"
           }
         }
       }
@@ -5279,6 +5349,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tomorrow, %@, %@ is charged for 1 year of Saku Plus."
+          }
+        }
+      }
+    },
+    "Biaya pelunasan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payoff fee"
+          }
+        }
+      }
+    },
+    "Biaya pelunasan cicilan: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installment payoff fee: %@"
           }
         }
       }
@@ -7069,6 +7159,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Running installments: %lld"
+          }
+        }
+      }
+    },
+    "Cicilan ini dilunasi dan masuk tagihan berikutnya. Batalkan pelunasannya di Cicilan berjalan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This installment is being paid off and goes into the next statement. Cancel the payoff in Running installments."
+          }
+        }
+      }
+    },
+    "Cicilan ini sudah dilunasi dari dompet pada %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This installment was paid off from a wallet on %@."
+          }
+        }
+      }
+    },
+    "Cicilan sudah dilunasi, tapi biayanya gagal dicatat. Catat manual sebagai pengeluaran kartu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The installment is paid off, but its fee could not be recorded. Add it by hand as a card expense."
           }
         }
       }
@@ -9693,6 +9813,16 @@
         }
       }
     },
+    "Gagal melunasi cicilan. Coba lagi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not pay off the installment. Try again."
+          }
+        }
+      }
+    },
     "Gagal mematikan AI": {
       "localizations": {
         "en": {
@@ -11563,6 +11693,26 @@
         }
       }
     },
+    "Jadikan berulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make recurring"
+          }
+        }
+      }
+    },
+    "Jadikan cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make installment"
+          }
+        }
+      }
+    },
     "Jadikan dompet utama": {
       "localizations": {
         "en": {
@@ -12649,6 +12799,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saku's default categories"
+          }
+        }
+      }
+    },
+    "Kategori biaya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fee category"
           }
         }
       }
@@ -14273,6 +14433,16 @@
         }
       }
     },
+    "Langsung dibayar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay now"
+          }
+        }
+      }
+    },
     "Lanjut": {
       "localizations": {
         "en": {
@@ -14973,12 +15143,32 @@
         }
       }
     },
+    "Lunasi cicilan lebih cepat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay off installment early"
+          }
+        }
+      }
+    },
     "Lunasi cicilan sekarang?": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Settle the installment now?"
+          }
+        }
+      }
+    },
+    "Lunasi lebih cepat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pay off early"
           }
         }
       }
@@ -15323,6 +15513,16 @@
         }
       }
     },
+    "Masuk tagihan berikutnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Into the next statement"
+          }
+        }
+      }
+    },
     "Masuk untuk menyimpan data dengan aman dan membukanya di perangkat lain.": {
       "localizations": {
         "en": {
@@ -15429,6 +15629,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Turn off Smart Tracker?"
+          }
+        }
+      }
+    },
+    "Matikan berulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off recurring"
+          }
+        }
+      }
+    },
+    "Matikan cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off installment"
           }
         }
       }
@@ -17269,6 +17489,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Make sure your credit card bill is paid on time."
+          }
+        }
+      }
+    },
+    "Pelunasan cicilan: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installment payoff: %@"
           }
         }
       }
@@ -19793,6 +20023,16 @@
         }
       }
     },
+    "Rp%@ per bulan, bagian pertama ditagih %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp%@ a month, the first part is billed %@."
+          }
+        }
+      }
+    },
     "Rp%@/bulan · mulai tagihan %@": {
       "localizations": {
         "en": {
@@ -21893,6 +22133,16 @@
         }
       }
     },
+    "Sisa %@ ditagih sekaligus pada %@. Saldo kartu tetap. Bisa dibatalkan sampai tanggal itu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The remaining %@ is billed at once on %@. The card balance stays. You can cancel until then."
+          }
+        }
+      }
+    },
     "Sisa %@ kena bunga sekitar %@/bulan": {
       "localizations": {
         "en": {
@@ -22059,6 +22309,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Left this month"
+          }
+        }
+      }
+    },
+    "Sisa cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remaining installment"
           }
         }
       }
@@ -22999,6 +23259,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This bill must be paid before the due date."
+          }
+        }
+      }
+    },
+    "Tagihan itu sudah dibayar lunas. Pembayarannya menjadi kelebihan bayar Rp%@ yang memotong tagihan cicilan berikutnya.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That statement is already paid in full. The payment becomes an overpayment of Rp%@ that reduces the next installment statement."
           }
         }
       }
@@ -24079,6 +24349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open"
+          }
+        }
+      }
+    },
+    "Tercatat pembayaran kartu %@ hari ini dari dompet pilihan. Saldo kartu dan dompet turun.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A card payment of %@ is recorded today from the wallet you pick. The card balance and the wallet go down."
           }
         }
       }
@@ -25411,6 +25691,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "This transaction +Rp%@"
+          }
+        }
+      }
+    },
+    "Transaksi ini sudah berulang. Matikan berulangnya dulu untuk membuatnya cicilan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This transaction already repeats. Turn the recurring off first to make it an installment."
+          }
+        }
+      }
+    },
+    "Transaksi ini sudah cicilan. Cicilan dan berulang tidak bisa digabung.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This transaction is already an installment. Installments and recurring can't be combined."
+          }
+        }
+      }
+    },
+    "Transaksi ini sudah masuk tagihan yang tercetak. Cicilan dihitung mulai %@; tagihan yang sudah tercetak tidak ditulis ulang, sisa yang harus dibayar berkurang Rp%@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This transaction is already on a printed statement. The installment counts from %@; the printed statement is not rewritten, and what is left to pay goes down by Rp%@."
+          }
+        }
+      }
+    },
+    "Transaksi ini tidak dicatat ulang. Tagihan berulang dicatat otomatis mulai tanggal itu, tanpa tagihan mundur.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This transaction is not recorded again. The recurring bill is recorded automatically from that date, with no back-dated bills."
           }
         }
       }

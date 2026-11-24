@@ -197,6 +197,12 @@ struct CreditStatement {
         return calendar.date(byAdding: .hour, value: 12, to: day) ?? day
     }
 
+    /// The last cut-off before today: what the card has already billed runs up to it.
+    static func lastCutoff(card: Account, today: Date = Date(), calendar: Calendar = .current) -> Date {
+        let cycle = Cycle(card: card, calendar: calendar)
+        return cycle.lastCutoff(before: calendar.startOfDay(for: today))
+    }
+
     /// The statement a purchase made on `date` lands on, and when that's due.
     static func billing(forPurchaseOn date: Date, card: Account, calendar: Calendar = .current) -> (statement: Date, due: Date) {
         let cycle = Cycle(card: card, calendar: calendar)

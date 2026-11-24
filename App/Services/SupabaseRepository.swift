@@ -604,18 +604,27 @@ final class SupabaseRepository: @unchecked Sendable {
             .value
     }
 
-    func createSubscription(accountId: String, name: String, amount: Double, frequency: CardSubscription.Frequency, nextBillingDate: String?, categoryId: String?, note: String?) async throws -> CardSubscription {
-        try await client
+    /// The recurring bill made from this transaction, if any.
+    func fetchSubscription(sourceTransactionId: String) async throws -> CardSubscription? {
+        let rows: [CardSubscription] = try await client.from("card_subscriptions").select()
+            .eq("source_transaction_id", value: sourceTransactionId).limit(1).execute().value
+        return rows.first
+    }
+
+    func createSubscription(accountId: String, name: String, amount: Double, frequency: CardSubscription.Frequency, nextBillingDate: String?, categoryId: String?, note: String?, sourceTransactionId: String? = nil) async throws -> CardSubscription {
+        var values: [String: AnyJSON] = [
+            "account_id": AnyJSON.string(accountId),
+            "name": AnyJSON.string(name),
+            "amount": AnyJSON.double(amount),
+            "frequency": AnyJSON.string(frequency.rawValue),
+            "next_billing_date": nextBillingDate.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "category_id": categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
+            "note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
+        ]
+        if let sourceTransactionId { values["source_transaction_id"] = AnyJSON.string(sourceTransactionId) }
+        return try await client
             .from("card_subscriptions")
-            .insert([
-                "account_id": AnyJSON.string(accountId),
-                "name": AnyJSON.string(name),
-                "amount": AnyJSON.double(amount),
-                "frequency": AnyJSON.string(frequency.rawValue),
-                "next_billing_date": nextBillingDate.map { AnyJSON.string($0) } ?? AnyJSON.null,
-                "category_id": categoryId.map { AnyJSON.string($0) } ?? AnyJSON.null,
-                "note": note.map { AnyJSON.string($0) } ?? AnyJSON.null,
-            ] as [String: AnyJSON])
+            .insert(values)
             .select()
             .single()
             .execute()
@@ -669,15 +678,15 @@ final class SupabaseRepository: @unchecked Sendable {
     }
 
     /// Spreads a card purchase over `months` statements.
-    func createInstallment(accountId: String, transactionId: String, months: Int) async throws {
-        try await client
-            .from("card_installments")
-            .insert([
-                "account_id": AnyJSON.string(accountId),
-                "transaction_id": AnyJSON.string(transactionId),
-                "months": AnyJSON.integer(months),
-            ] as [String: AnyJSON])
-            .execute()
+    /// `startsFrom` ("yyyy-MM-dd") is the conversion date for a purchase that already sits on a closed statement.
+    func createInstallment(accountId: String, transactionId: String, months: Int, startsFrom: String? = nil) async throws {
+        var values: [String: AnyJSON] = [
+            "account_id": AnyJSON.string(accountId),
+            "transaction_id": AnyJSON.string(transactionId),
+            "months": AnyJSON.integer(months),
+        ]
+        if let startsFrom { values["starts_from"] = AnyJSON.string(startsFrom) }
+        try await client.from("card_installments").insert(values).execute()
     }
 
     /// A new tenor for a running plan; the purchase itself is untouched.
@@ -686,9 +695,25 @@ final class SupabaseRepository: @unchecked Sendable {
             .eq("id", value: id).execute()
     }
 
-    /// Settling early drops the plan: what is still unbilled lands on the next statement in one piece.
-    func settleInstallment(id: String) async throws {
+    /// Turning the installment off (only while no part has been billed): the purchase bills as a normal expense again.
+    func deleteInstallment(id: String) async throws {
         try await client.from("card_installments").delete().eq("id", value: id).execute()
+    }
+
+    /// Records an early payoff. `transferId` is the wallet-to-card transfer of the "paid" mode.
+    func settleInstallment(id: String, on day: String, mode: CardInstallment.SettleMode, transferId: String? = nil) async throws {
+        try await client.from("card_installments").update([
+            "settled_on": AnyJSON.string(day),
+            "settle_mode": AnyJSON.string(mode.rawValue),
+            "settle_transfer_id": transferId.map { AnyJSON.string($0) } ?? AnyJSON.null,
+        ] as [String: AnyJSON]).eq("id", value: id).execute()
+    }
+
+    /// Takes back a payoff that goes into the next statement, until that cut-off.
+    func undoInstallmentSettlement(id: String) async throws {
+        try await client.from("card_installments").update([
+            "settled_on": AnyJSON.null, "settle_mode": AnyJSON.null, "settle_transfer_id": AnyJSON.null,
+        ] as [String: AnyJSON]).eq("id", value: id).execute()
     }
 
     // MARK: - Categories

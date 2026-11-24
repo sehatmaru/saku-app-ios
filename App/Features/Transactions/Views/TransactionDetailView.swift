@@ -21,6 +21,10 @@ struct TransactionDetailView: View {
     @State private var categoryBudget: Budget?
     /// The 0% plan this card purchase is split into, if any.
     @State private var installment: CardInstallment?
+    /// The recurring bill made from this transaction (Enhancement "Cicilan dan berulang setelah transaksi"), if any.
+    @State private var subscription: CardSubscription?
+    @State private var planKind: TransactionPlanSheet.Kind?
+    @State private var payoffItem: RunningInstallment?
     @State private var isEntered = false
 
     @State private var showsForm = false
@@ -34,6 +38,11 @@ struct TransactionDetailView: View {
         self.onUpdate = onUpdate
         _txn = State(initialValue: transaction)
         _accounts = State(initialValue: accounts)
+    }
+
+    private struct PlanSheetID: Identifiable {
+        let kind: TransactionPlanSheet.Kind
+        var id: Int { kind == .installment ? 0 : 1 }
     }
 
     private var style: TransactionStyle { .of(txn.type) }
@@ -56,6 +65,7 @@ struct TransactionDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         rows
+                        planActions
                         impact
                             .padding(.horizontal, 24)
                             .padding(.top, 16)
@@ -98,6 +108,18 @@ struct TransactionDetailView: View {
             // Leaving during the undo window still deletes.
             if pendingDelete != nil { finishDelete(now: true) }
         }
+        .sheet(item: Binding(get: { planKind.map(PlanSheetID.init) }, set: { planKind = $0?.kind })) { id in
+            if let account, let userId = authViewModel.currentUser?.id {
+                TransactionPlanSheet(kind: id.kind, txn: txn, account: account, category: category, plan: installment,
+                                     subscription: subscription, userId: userId, onDone: { Task { await loadContext() } })
+            }
+        }
+        .sheet(item: $payoffItem) { item in
+            if let card = account, let userId = authViewModel.currentUser?.id {
+                InstallmentPayoffSheet(item: item, card: card, wallets: accounts.filter { $0.isActive && !$0.isCreditCard && !$0.isInvestment },
+                                       categories: categories, userId: userId, onDone: { Task { await loadContext() } })
+            }
+        }
         .fullScreenCover(isPresented: $showsForm) {
             if let userId = authViewModel.currentUser?.id {
                 AddTransactionView(categories: categories, accounts: accounts, userId: userId, onSave: {},
@@ -135,6 +157,48 @@ struct TransactionDetailView: View {
         } else {
             installment = nil
         }
+        subscription = txn.type == .expense ? (try? await SupabaseRepository.shared.fetchSubscription(sourceTransactionId: txn.id)) ?? nil : nil
+    }
+
+    // MARK: - Installment and recurring from here (C1)
+
+    private var runningPlan: RunningInstallment? {
+        guard let installment else { return nil }
+        return RunningInstallments.compute(installments: [installment], transactions: [txn], accounts: accounts, periodEnd: Date()).first
+    }
+
+    /// "Jadikan cicilan" / "Jadikan berulang", or the way to manage what is already set. Only when C2 allows it.
+    @ViewBuilder private var planActions: some View {
+        if isEditable, txn.type == .expense, !isDeleted {
+            let canInstall = account?.isCreditCard == true
+            VStack(spacing: 0) {
+                if installment != nil {
+                    action(L("Kelola cicilan"), "calendar.badge.clock") { planKind = .installment }
+                    if let running = runningPlan, running.settlement == nil, running.remainingParts > 0 {
+                        action(L("Lunasi lebih cepat"), "checkmark.circle") { payoffItem = running }
+                    }
+                } else if subscription != nil {
+                    action(L("Atur berulang"), "repeat") { planKind = .recurring }
+                } else if !txn.isRecurring {
+                    if canInstall { action(L("Jadikan cicilan"), "calendar.badge.clock") { planKind = .installment } }
+                    action(L("Jadikan berulang"), "repeat") { planKind = .recurring }
+                }
+            }
+            .padding(.horizontal, 24).padding(.top, 8)
+        }
+    }
+
+    private func action(_ title: String, _ icon: String, _ run: @escaping () -> Void) -> some View {
+        Button(action: run) {
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.system(size: 17)).foregroundStyle(Color.appPrimary).frame(width: 24)
+                Text(title).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+            }
+            .frame(height: 50).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// Takes the edited transaction back from the form and refreshes the context.

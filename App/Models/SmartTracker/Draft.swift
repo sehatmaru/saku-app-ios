@@ -51,6 +51,10 @@ struct Draft: Identifiable, Codable, Hashable {
     var imageId: UUID?
     /// An early salary: nil = the user has not been asked yet, true = start the period on this date, false = keep it.
     var startsPeriod: Bool?
+    /// 0% installment months chosen on the draft (card expenses only); applied when the draft is confirmed.
+    var installmentMonths: Int?
+    /// Also a recurring bill; applied when the draft is confirmed. Excludes an installment.
+    var repeatFrequency: CardSubscription.Frequency?
 
     var expiresAt: Date { Calendar.current.date(byAdding: .day, value: 30, to: createdAt) ?? createdAt }
 

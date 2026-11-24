@@ -54,6 +54,14 @@ struct AddTransactionView: View {
     @State private var history: [Transaction] = []
     /// 0% installment months for a new card expense; 0 means none.
     @State private var installmentMonths = 0
+    /// Ubah: the installment and recurring bill this transaction already has (Enhancement "Cicilan dan berulang setelah transaksi").
+    @State private var editPlan: CardInstallment?
+    @State private var editSubscription: CardSubscription?
+    @State private var editPlanKind: TransactionPlanSheet.Kind?
+    private struct EditPlanID: Identifiable {
+        let kind: TransactionPlanSheet.Kind
+        var id: Int { kind == .installment ? 0 : 1 }
+    }
     /// The expense saved but its installment didn't; closing after the alert avoids a duplicate on retry.
     @State private var closesAfterAlert = false
     /// Hidden flags and order for the category picker.
@@ -157,6 +165,14 @@ struct AddTransactionView: View {
         .background(Color.appBackground)
         .onAppear(perform: setUp)
         .task { await loadBudgetData() }
+        .task { await loadEditPlans() }
+        .sheet(item: Binding(get: { editPlanKind.map(EditPlanID.init) }, set: { editPlanKind = $0?.kind })) { id in
+            if let editing, let acct = accounts.first(where: { $0.id == editing.accountId }) {
+                TransactionPlanSheet(kind: id.kind, txn: editing, account: acct, category: categories.first { $0.id == editing.categoryId },
+                                     plan: editPlan, subscription: editSubscription, userId: userId,
+                                     onDone: { Task { await loadEditPlans() }; onSave() })
+            }
+        }
         .task { await loadPreferences() }
         .alert("Gagal menyimpan", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("OK", role: .cancel) { if closesAfterAlert { dismiss() } }
@@ -743,6 +759,7 @@ struct AddTransactionView: View {
                         sub: planMonths > 0 ? planText(card: account) : nil, index: 1)
                 }
             }
+            if let editing, editing.type == .expense, !isTransfer { editPlanRows(for: editing) }
             row(.date, label: L("Tanggal"), value: dateValue, icon: "calendar", iconColor: .appTextSecondary, index: 2)
 
             HStack(spacing: 12) {
@@ -781,6 +798,33 @@ struct AddTransactionView: View {
         }
         .buttonStyle(.plain)
         .rise(isEntered, y: 14, delay: 0.2 + Double(index) * 0.06, fade: 0.4, move: 0.5)
+    }
+
+    /// Ubah: Cicilan (card expenses) and Berulang, with what is set now. They open the same sheet as Detail transaksi and save on their own.
+    @ViewBuilder private func editPlanRows(for editing: Transaction) -> some View {
+        if accounts.first(where: { $0.id == editing.accountId })?.isCreditCard == true {
+            Button { editPlanKind = .installment } label: {
+                DetailRow(label: L("Cicilan"), value: editPlan.map { L("%lld bulan", $0.months) } ?? L("Tidak"),
+                          icon: "calendar.badge.clock", iconColor: .appTextSecondary, showsChevron: true, height: rowHeight)
+            }
+            .buttonStyle(.plain)
+        }
+        if !editing.isRecurring {
+            Button { editPlanKind = .recurring } label: {
+                DetailRow(label: L("Berulang"), value: editSubscription.map { $0.isActive ? ($0.frequency == .yearly ? L("Tiap tahun") : L("Tiap bulan")) : L("Tidak") } ?? L("Tidak"),
+                          icon: "repeat", iconColor: .appTextSecondary, showsChevron: true, height: rowHeight)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func loadEditPlans() async {
+        guard let editing, editing.type == .expense else { return }
+        let card = accounts.first { $0.id == editing.accountId }
+        if card?.isCreditCard == true {
+            editPlan = (try? await SupabaseRepository.shared.fetchInstallments(accountIds: [editing.accountId]))?.first { $0.transactionId == editing.id }
+        }
+        editSubscription = (try? await SupabaseRepository.shared.fetchSubscription(sourceTransactionId: editing.id)) ?? nil
     }
 
     private var rowHeight: CGFloat { isCompact ? 46 : 48 }

@@ -60,7 +60,7 @@ final class TransactionListViewModel: ObservableObject {
     /// The same installments by the id of their purchase, for the list rows.
     var runningByTransaction: [String: RunningInstallment] { running.byTransaction }
 
-    private func refreshInstallments() async {
+    func refreshInstallments() async {
         let ids = accounts.filter(\.isCreditCard).map(\.id)
         guard !ids.isEmpty else { installments = []; return }
         if let fetched = try? await SupabaseRepository.shared.fetchInstallments(accountIds: ids) { installments = fetched }
@@ -89,8 +89,16 @@ final class TransactionListViewModel: ObservableObject {
     func changeInstallment(id: String, months: Int?) async -> Bool {
         do {
             if let months { try await SupabaseRepository.shared.updateInstallmentMonths(id: id, months: months) }
-            else { try await SupabaseRepository.shared.settleInstallment(id: id) }
+            else { try await SupabaseRepository.shared.deleteInstallment(id: id) }
         } catch { return false }
+        await refreshInstallments()
+        NotificationCenter.default.post(name: .dataDidChange, object: nil)
+        return true
+    }
+
+    /// Takes back a payoff that goes into the next statement. Returns whether it saved.
+    func undoPayoff(id: String) async -> Bool {
+        do { try await SupabaseRepository.shared.undoInstallmentSettlement(id: id) } catch { return false }
         await refreshInstallments()
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
         return true

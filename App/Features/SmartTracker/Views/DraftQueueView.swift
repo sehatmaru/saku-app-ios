@@ -1033,6 +1033,15 @@ struct DraftQueueView: View {
             result.append(Field(label: L("Ke dompet"), value: target?.name ?? "", icon: "arrow.right", isMissing: target == nil, kind: .target, wallet: target))
         }
         result.append(Field(label: L("Tanggal"), value: Self.dateLabel(d.date), icon: "calendar", isMissing: false, kind: .date))
+        // C1/C2: an installment only for a card expense, a recurring bill only for an expense, never both
+        if d.kind == .expense {
+            if wallet?.isCreditCard == true {
+                result.append(Field(label: L("Cicilan"), value: d.installmentMonths.map { L("%lld bulan", $0) } ?? L("Tidak"),
+                                    icon: "calendar.badge.clock", isMissing: false, kind: .installment))
+            }
+            result.append(Field(label: L("Berulang"), value: d.repeatFrequency.map { $0 == .yearly ? L("Tiap tahun") : L("Tiap bulan") } ?? L("Tidak"),
+                                icon: "repeat", isMissing: false, kind: .repeats))
+        }
         return result
     }
 

@@ -10,7 +10,12 @@ struct RunningInstallmentsBanner: View {
     var onOpen: (String) -> Void = { _ in }
     /// Plan id and a new tenor, or nil to settle now; true when it saved.
     var onChange: (String, Int?) async -> Bool = { _, _ in false }
+    /// Opens the early-payoff sheet (the installments sheet closes first).
+    var onPayoff: (RunningInstallment) -> Void = { _ in }
+    /// Takes back a payoff that goes into the next statement.
+    var onUndoPayoff: (RunningInstallment) async -> Bool = { _ in false }
     @State private var showsSheet = false
+    @State private var pendingPayoff: RunningInstallment?
     /// Opened only once the sheet is gone; navigating while it is still dismissing is lost.
     @State private var pendingOpen: String?
 
@@ -36,11 +41,15 @@ struct RunningInstallmentsBanner: View {
         .padding(.horizontal, 24).padding(.top, 0).padding(.bottom, 20)
         .sheet(isPresented: $showsSheet, onDismiss: {
             if let id = pendingOpen { pendingOpen = nil; onOpen(id) }
+            if let item = pendingPayoff { pendingPayoff = nil; onPayoff(item) }
         }) {
             RunningInstallmentsSheet(items: items, isBalanceVisible: isBalanceVisible, onOpen: { id in
                 pendingOpen = id
                 showsSheet = false
-            }, onChange: onChange)
+            }, onChange: onChange, onPayoff: { item in
+                pendingPayoff = item
+                showsSheet = false
+            }, onUndoPayoff: onUndoPayoff)
         }
     }
 }
@@ -51,7 +60,8 @@ struct RunningInstallmentsSheet: View {
     let isBalanceVisible: Bool
     var onOpen: (String) -> Void = { _ in }
     var onChange: (String, Int?) async -> Bool = { _, _ in false }
-    @State private var settling: RunningInstallment?
+    var onPayoff: (RunningInstallment) -> Void = { _ in }
+    var onUndoPayoff: (RunningInstallment) async -> Bool = { _ in false }
     @State private var failed = false
     @Environment(\.dismiss) private var dismiss
     @State private var showsAll = false
@@ -91,12 +101,6 @@ struct RunningInstallmentsSheet: View {
         }
         .environment(\.fixedSheetDetents, true)
         .background(Color.appBackground)
-        .confirmDialog(isPresented: Binding(get: { settling != nil }, set: { if !$0 { settling = nil } }),
-                       icon: "checkmark.circle", title: L("Lunasi cicilan sekarang?"),
-                       message: L("Sisa cicilan masuk sekaligus ke tagihan berikutnya. Ini hanya mengubah cara Saku menagih, bukan pembayaran ke bank."),
-                       confirmTitle: L("Lunasi"), cancelTitle: L("Tidak jadi")) {
-            if let item = settling { Task { if await onChange(item.id, nil) == false { failed = true }; settling = nil } }
-        }
         .confirmDialog(isPresented: $failed, icon: "exclamationmark.triangle", title: L("Gagal menyimpan"),
                        message: L("Cicilan belum berubah. Coba lagi."), confirmTitle: nil, cancelTitle: L("Tutup"))
     }
@@ -106,10 +110,19 @@ struct RunningInstallmentsSheet: View {
             Button { onOpen(item.transactionId) } label: { rowContent(item) }
                 .buttonStyle(RowPressStyle())
             Menu {
-                ForEach([3, 6, 12, 24].filter { $0 > item.billedParts && $0 != item.months }, id: \.self) { months in
-                    Button(L("Ubah tenor ke %lld bulan", months)) { Task { if await onChange(item.id, months) == false { failed = true } } }
+                // the tenor only changes while no part has been billed (C4); after that the way out is an early payoff
+                if item.billedNow == 0, item.settlement == nil {
+                    ForEach([3, 6, 12, 24].filter { $0 != item.months }, id: \.self) { months in
+                        Button(L("Ubah tenor ke %lld bulan", months)) { Task { if await onChange(item.id, months) == false { failed = true } } }
+                    }
                 }
-                Button(L("Lunasi sekarang")) { settling = item }
+                if let settlement = item.settlement {
+                    if settlement.mode == .nextStatement {
+                        Button(L("Batalkan pelunasan")) { Task { if await onUndoPayoff(item) == false { failed = true } } }
+                    }
+                } else if item.remainingParts > 0 {
+                    Button(L("Lunasi lebih cepat")) { onPayoff(item) }
+                }
             } label: {
                 Image(systemName: "ellipsis").font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.appTextSecondary).frame(width: 44, height: 44)
@@ -123,7 +136,8 @@ struct RunningInstallmentsSheet: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title).font(.app(16)).lineLimit(1)
-                Text(L("%@ · lunas %@", item.cardName, Self.endLabel(item.endDate)))
+                Text(item.settlement.map { L("%@ · dilunasi, masuk tagihan %@", item.cardName, PaydayCycle.dayMonth.string(from: $0.billingDate)) }
+                     ?? L("%@ · lunas %@", item.cardName, Self.endLabel(item.endDate)))
                     .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
             }
             Spacer(minLength: 8)

@@ -400,9 +400,34 @@ final class DraftStore: ObservableObject {
             created = try await repo.createTransfer(primaryAccountId: accountId, counterpartyAccountId: counterparty, amount: amount,
                                               description: draft.savedTitle, note: nil, date: draft.date)
         }
+        if draft.kind == .expense { await applyPlans(of: draft, to: created, account: account) }
         discard(draft.id)
         NotificationCenter.default.post(name: .dataDidChange, object: nil)
         return created.id
+    }
+
+    /// The installment or recurring bill chosen on the draft, set now that the transaction exists (TC9). The expense is saved
+    /// either way: a plan that fails stays off and the user can add it from Detail transaksi.
+    private func applyPlans(of draft: Draft, to created: Transaction, account: Account?) async {
+        let repo = SupabaseRepository.shared
+        if let months = draft.installmentMonths, let account, account.isCreditCard {
+            let from = InstallmentConversion.startsFrom(purchaseDate: created.date, card: account)
+            do { try await repo.createInstallment(accountId: account.id, transactionId: created.id, months: months, startsFrom: from) }
+            catch { print("❌ draft installment failed: \(error)") }
+        }
+        if let frequency = draft.repeatFrequency, let account {
+            let calendar = Calendar.current
+            let component: Calendar.Component = frequency == .yearly ? .year : .month
+            let today = calendar.startOfDay(for: Date())
+            var next = calendar.startOfDay(for: created.date)
+            repeat { next = calendar.date(byAdding: component, value: 1, to: next) ?? next } while next < today
+            do {
+                let bill = try await repo.createSubscription(accountId: account.id, name: draft.savedTitle ?? "Tagihan", amount: created.amount,
+                                                             frequency: frequency, nextBillingDate: CardInstallment.dateOnly.string(from: next),
+                                                             categoryId: draft.categoryId, note: nil, sourceTransactionId: created.id)
+                await NotificationManager.shared.schedule(for: bill)
+            } catch { print("❌ draft recurring bill failed: \(error)") }
+        }
     }
 
     /// Saves a draft that was never queued (the quick result sheet): same as `save`, nothing to remove from the queue.

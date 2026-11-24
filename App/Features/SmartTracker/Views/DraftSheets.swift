@@ -12,7 +12,7 @@ extension Draft {
 /// The picker sheets of one draft field, the same ones Tambah transaksi uses (tipe, kategori, dompet, tanggal,
 /// nominal). Shared by Konfirmasi transaksi and the Catat cepat result sheet.
 struct DraftFieldSheet: View {
-    enum Kind { case type, category, wallet, target, date, amount }
+    enum Kind { case type, category, wallet, target, date, amount, installment, repeats }
 
     let draft: Draft
     let kind: Kind
@@ -26,6 +26,26 @@ struct DraftFieldSheet: View {
         content
             // Kategori, Dompet and Tanggal open half height and drag up to full; Tipe and Nominal fit their content.
             .environment(\.fixedSheetDetents, kind != .type && kind != .amount)
+    }
+
+    /// A short list of options; picking one applies it and closes.
+    private func choiceSheet(_ title: String, options: [(Int, String)], selected: Int, pick: @escaping (Int) -> Void) -> some View {
+        PickerSheet(title: title, actionTitle: nil, onDone: close) {
+            VStack(spacing: 0) {
+                ForEach(options, id: \.0) { value, label in
+                    Button { pick(value); close() } label: {
+                        HStack {
+                            Text(label).font(.app(17)).foregroundStyle(Color.appText)
+                            Spacer(minLength: 8)
+                            if value == selected { Image(systemName: "checkmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.appPrimary) }
+                        }
+                        .frame(height: 52).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 24)
+        }
     }
 
     @ViewBuilder private var content: some View {
@@ -67,6 +87,22 @@ struct DraftFieldSheet: View {
                 DayPicker(selected: draft.date, color: .stGreen) { day in
                     edit { $0.date = Self.keepingTime(of: $0.date, on: day) }
                     close()
+                }
+            }
+        case .installment:
+            choiceSheet(L("Cicilan 0%"), options: [(0, L("Tidak")), (3, L("3 bulan")), (6, L("6 bulan")), (12, L("12 bulan")), (24, L("24 bulan"))],
+                        selected: draft.installmentMonths ?? 0) { months in
+                edit { d in
+                    d.installmentMonths = months == 0 ? nil : months
+                    if months > 0 { d.repeatFrequency = nil }
+                }
+            }
+        case .repeats:
+            choiceSheet(L("Berulang"), options: [(0, L("Tidak")), (1, L("Tiap bulan")), (2, L("Tiap tahun"))],
+                        selected: draft.repeatFrequency == .monthly ? 1 : draft.repeatFrequency == .yearly ? 2 : 0) { value in
+                edit { d in
+                    d.repeatFrequency = value == 1 ? .monthly : value == 2 ? .yearly : nil
+                    if value > 0 { d.installmentMonths = nil }
                 }
             }
         case .amount:

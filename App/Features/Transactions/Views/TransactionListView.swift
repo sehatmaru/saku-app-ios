@@ -30,6 +30,7 @@ struct TransactionListView: View {
     @State private var hasInitialExpanded = false
     /// The purchase behind a tapped running installment.
     @State private var openedInstallment: Transaction?
+    @State private var payoffItem: RunningInstallment?
     /// Swiped away and waiting out the Urungkan window; the delete runs when it ends.
     @State private var hiddenIds: Set<String> = []
     @State private var deleteTasks: [String: Task<Void, Never>] = [:]
@@ -89,7 +90,9 @@ struct TransactionListView: View {
                         if !running.isEmpty, !isSearching {
                             RunningInstallmentsBanner(items: running, isBalanceVisible: isBalanceVisible, onOpen: { id in
                                 openedInstallment = viewModel.allTransactions.first { $0.id == id }
-                            }, onChange: { id, months in await viewModel.changeInstallment(id: id, months: months) })
+                            }, onChange: { id, months in await viewModel.changeInstallment(id: id, months: months) },
+                            onPayoff: { payoffItem = $0 },
+                            onUndoPayoff: { await viewModel.undoPayoff(id: $0.id) })
                             .flatRow()
                         }
 
@@ -169,6 +172,14 @@ struct TransactionListView: View {
                     }
                 }
                 .animation(.easeInOut(duration: 0.2), value: showBackToTop)
+                .sheet(item: $payoffItem) { item in
+                    if let card = viewModel.accounts.first(where: { $0.id == item.accountId }), let userId = authViewModel.currentUser?.id {
+                        InstallmentPayoffSheet(item: item, card: card,
+                                               wallets: viewModel.accounts.filter { $0.isActive && !$0.isCreditCard && !$0.isInvestment },
+                                               categories: viewModel.categories, userId: userId,
+                                               onDone: { Task { await viewModel.refreshInstallments() } })
+                    }
+                }
                 .sheet(isPresented: $showAdvancedSearch) {
                     AdvancedSearchView(filter: $filter, categories: viewModel.categories)
                         .adaptiveSheet()
