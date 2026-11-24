@@ -607,7 +607,7 @@ final class SupabaseRepository: @unchecked Sendable {
     /// The recurring bill made from this transaction, if any.
     func fetchSubscription(sourceTransactionId: String) async throws -> CardSubscription? {
         let rows: [CardSubscription] = try await client.from("card_subscriptions").select()
-            .eq("source_transaction_id", value: sourceTransactionId).limit(1).execute().value
+            .eq("source_transaction_id", value: sourceTransactionId).eq("is_active", value: true).limit(1).execute().value
         return rows.first
     }
 

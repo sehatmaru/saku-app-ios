@@ -109,9 +109,9 @@ struct TransactionPlanSheet: View {
             ForEach(Self.tenors, id: \.self) { value in
                 let on = months == value
                 Button { months = value } label: {
-                    Text(L("%lld bulan", value)).font(.app(15, weight: .medium))
+                    Text(L("%lld bulan", value)).font(.app(14, weight: .medium)).lineLimit(1).minimumScaleFactor(0.8)
                         .foregroundStyle(on ? Color.appBackground : Color.appText)
-                        .padding(.horizontal, 14).frame(height: 38)
+                        .padding(.horizontal, 12).frame(height: 38)
                         .background(on ? Color.appText : .clear, in: Capsule())
                         .overlay(Capsule().strokeBorder(on ? .clear : Color.appBorder, lineWidth: 1))
                 }
