@@ -1701,7 +1701,8 @@ struct ArchivedWalletsView: View {
                     WalletCard(account: account, showsStripAmount: !isOpen && index != group.accounts.count - 1,
                                isBalanceVisible: isBalanceVisible)
                         .frame(height: 216)
-                        .opacity(0.55)
+                        // A wash of the page colour, not .opacity: stacked cards must not show through each other.
+                        .overlay(RoundedRectangle(cornerRadius: 22).fill(Color.appBackground.opacity(0.45)).allowsHitTesting(false))
                         .overlay(alignment: .topTrailing) {
                             if isOpen { restoreButton(account) }
                         }
