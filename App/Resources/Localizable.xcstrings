@@ -18353,12 +18353,32 @@
         }
       }
     },
+    "Periode berjalan berakhir %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The running period ends %@"
+          }
+        }
+      }
+    },
     "Periode berjalan berakhir sehari sebelumnya. Periode baru mulai di tanggal ini.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The running period ends the day before. The new period starts on this date."
+          }
+        }
+      }
+    },
+    "Periode berjalan mulai %@, berakhir %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The running period starts %@ and ends %@"
           }
         }
       }

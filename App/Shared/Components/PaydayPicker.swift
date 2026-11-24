@@ -246,12 +246,6 @@ struct PaydaySheet: View {
                 ForEach(options) { optionRow($0) }
             }
             .padding(.horizontal, 24).padding(.top, 16)
-
-            if !WorkspaceStore.shared.activeIsPersonal {
-                Text(L("Berlaku untuk semua anggota Workspace ini."))
-                    .font(.app(14)).foregroundStyle(Color.appTextSecondary)
-                    .padding(.horizontal, 24).padding(.top, 14)
-            }
         }
     }
 
@@ -262,9 +256,11 @@ struct PaydaySheet: View {
             UISelectionFeedbackGenerator().selectionChanged()
         } label: {
             HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 10) {
-                    periodLine(L("Periode berjalan"), option.running, option)
-                    periodLine(L("Berikutnya"), option.next, option)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(rangeText(option.next)).font(.app(17, weight: .medium)).monospacedDigit().foregroundStyle(Color.appText)
+                        + Text(" · " + L("%lld hari", option.days(option.next))).font(.app(17)).foregroundStyle(Color.appTextSecondary)
+                    Text(runningNote(option))
+                        .font(.app(14)).monospacedDigit().foregroundStyle(Color.appTextSecondary)
                 }
                 Spacer(minLength: 8)
                 Image(systemName: on ? "checkmark.circle.fill" : "circle")
@@ -281,14 +277,17 @@ struct PaydaySheet: View {
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    private func periodLine(_ title: String, _ period: DateInterval, _ option: PaydayOption) -> some View {
+    /// Options that end the running period the same day differ only in when it started, so then that is shown too.
+    private func runningNote(_ option: PaydayOption) -> String {
+        let end = PaydayCycle.dayMonth.string(from: Calendar.current.date(byAdding: .day, value: -1, to: option.running.end) ?? option.running.end)
+        let twin = options.contains { $0.id != option.id && $0.running.end == option.running.end && $0.next == option.next }
+        return twin ? L("Periode berjalan mulai %@, berakhir %@", PaydayCycle.dayMonth.string(from: option.running.start), end)
+                    : L("Periode berjalan berakhir %@", end)
+    }
+
+    private func rangeText(_ period: DateInterval) -> String {
         let last = Calendar.current.date(byAdding: .day, value: -1, to: period.end) ?? period.end
-        let range = PaydayCycle.dayMonth.string(from: period.start) + " – " + PaydayCycle.dayMonth.string(from: last)
-        return VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-            Text(range + " · " + L("%lld hari", option.days(period)))
-                .font(.app(16, weight: .medium)).monospacedDigit().foregroundStyle(Color.appText)
-        }
+        return PaydayCycle.dayMonth.string(from: period.start) + " – " + PaydayCycle.dayMonth.string(from: last)
     }
 
     /// Saving asks the server how the new day can start; with only one possible result there is nothing to ask.

@@ -1141,6 +1141,8 @@
   "Total periode": "Period total",
   "Hari terboros": "Biggest day",
   "Tanpa pengeluaran": "No spending",
+"Periode berjalan berakhir %@": "The running period ends %@",
+"Periode berjalan mulai %@, berakhir %@": "The running period starts %@ and ends %@",
   "%lld hari": "%lld days",
   "Tren %lld periode": "%lld-period trend",
   "Keluar vs periode lalu": "Out vs last period",
