@@ -74,12 +74,15 @@ struct CreditStatement {
         // Everything that moved the debt after the cut-off, so we can rewind to it.
         var changeSince = 0.0
         var paidSince = 0.0
+        // A wallet-to-card transfer that paid an installment off early is not a payment of the last bill.
+        let payoffTransfers = Set(installments.compactMap(\.settleTransferId))
         for txn in transactions where txn.date >= boundary {
             let effect = Self.debtEffect(of: txn, on: card.id)
             changeSince += effect
             // A balance adjustment made after the cut-off is debt the next statement bills; one dated
             // on the cut-off day or before (see `lastCutoffNoon`) is part of the statement itself.
             if txn.type == .adjustment, txn.accountId == card.id { changeSince += txn.delta ?? 0 }
+            if payoffTransfers.contains(txn.id) { continue }
             if txn.type == .transfer, txn.counterpartyAccountId == card.id { paidSince += txn.amount }
             if txn.type == .cardPayment, txn.accountId == card.id { paidSince += txn.amount }
         }
@@ -88,19 +91,37 @@ struct CreditStatement {
         // Installment parts the statement hasn't reached yet stay out of what was billed.
         let purchases = Dictionary(transactions.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var unbilledParts = 0.0
+        // Debt an early payoff from a wallet already settled: unbilled at the cut-off, but no longer owed.
+        var paidOffUnbilled = 0.0
         // This period's installment purchases sit in `changeSince` in full; only their first part is billed next.
         var deferredNow = 0.0
         var nextParts = 0.0
         for installment in installments where installment.accountId == card.id && installment.months > 0 {
             guard let purchase = purchases[installment.transactionId], purchase.type == .expense, purchase.accountId == card.id else { continue }
-            let part = purchase.amount / Double(installment.months)
-            if purchase.date >= boundary {
-                deferredNow += purchase.amount - part
+            let n = installment.months
+            let reference = installment.reference(purchaseDate: purchase.date)
+            let billed = cycle.cutoffsReached(from: reference, through: last, cap: n)
+            let left = CardInstallment.remaining(of: purchase.amount, months: n, billed: billed)
+            let inThisPeriod = purchase.date >= boundary
+
+            if let settle = installment.settlement {
+                // Everything left is billed on the first cut-off on or after the payoff day; a payoff paid from a
+                // wallet takes it off the bill instead.
+                let firstCutoff = cycle.cutoff(monthAfter: cycle.lastCutoff(before: calendar.startOfDay(for: settle.day)))
+                if firstCutoff <= last || left == 0 { continue }
+                if inThisPeriod { continue }
+                switch settle.mode {
+                case .nextStatement: unbilledParts += left; nextParts += left
+                case .paid: paidOffUnbilled += left
+                }
                 continue
             }
-            let billed = cycle.cutoffsReached(from: purchase.date, through: last, cap: installment.months)
-            unbilledParts += part * Double(installment.months - billed)
-            if billed < installment.months { nextParts += part }
+            if inThisPeriod {
+                deferredNow += purchase.amount - CardInstallment.part(1, of: purchase.amount, months: n)
+                continue
+            }
+            unbilledParts += left
+            if billed < n { nextParts += CardInstallment.part(billed + 1, of: purchase.amount, months: n) }
         }
         installmentsToCome = unbilledParts + deferredNow
 
@@ -110,7 +131,7 @@ struct CreditStatement {
             unbilledOpening = card.openingBalance
         }
 
-        let billedAmount = max(0, balanceAtCutoff - unbilledParts - unbilledOpening)
+        let billedAmount = max(0, balanceAtCutoff - unbilledParts - paidOffUnbilled - unbilledOpening)
         statementAmount = billedAmount
         paid = paidSince
         remaining = max(0, billedAmount - paidSince)
@@ -197,7 +218,7 @@ struct CreditStatement {
     static func partBillings(of installment: CardInstallment, purchaseDate: Date, card: Account,
                              calendar: Calendar = .current) -> [Date] {
         let cycle = Cycle(card: card, calendar: calendar)
-        var cutoff = cycle.cutoff(monthAfter: cycle.lastCutoff(before: calendar.startOfDay(for: purchaseDate)))
+        var cutoff = cycle.cutoff(monthAfter: cycle.lastCutoff(before: calendar.startOfDay(for: installment.reference(purchaseDate: purchaseDate))))
         var dates: [Date] = []
         for _ in 0..<max(installment.months, 1) {
             dates.append(cutoff)
@@ -211,7 +232,7 @@ struct CreditStatement {
                             today: Date = Date(), calendar: Calendar = .current) -> Int {
         let cycle = Cycle(card: card, calendar: calendar)
         let last = cycle.lastCutoff(before: calendar.startOfDay(for: today))
-        return cycle.cutoffsReached(from: purchaseDate, through: last, cap: installment.months)
+        return cycle.cutoffsReached(from: installment.reference(purchaseDate: purchaseDate), through: last, cap: installment.months)
     }
 
     // MARK: Billing cycles

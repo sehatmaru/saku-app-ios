@@ -277,4 +277,62 @@ extension CreditStatementTests {
         XCTAssertEqual(cycles[1].paid, 300_000)
         XCTAssertEqual(cycles[1].charged, 1_000_000)
     }
+
+    // MARK: - Cicilan setelah transaksi (PRD Cicilan Berulang Setelah Transaksi, TC2-TC4, TC13-TC15)
+    // Card here cuts off on the 17th, due on the 3rd.
+
+    private func card17(_ balance: Double) -> Account {
+        Account(id: "card", name: "BCA Visa", type: .credit, icon: nil, isArchived: false, isDefault: false,
+                openingBalance: 0, currentBalance: balance, creditLimit: 50_000_000, dueDate: "3", statementDay: 17)
+    }
+
+    func testTC2ConvertingAfterTheBillTookTheWholePurchaseOffIt() {
+        let buy = txn("tv", .expense, 6_000_000, date(2026, 11, 5))
+        let plan = CardInstallment(id: "i", accountId: "card", transactionId: "tv", months: 6, startsFrom: "2026-11-24")
+        let now = statement(card17(6_000_000), [buy], installments: [plan], today: date(2026, 11, 24))
+        XCTAssertEqual(now.remaining, 0)
+        XCTAssertEqual(now.currentPeriod, 1_000_000)
+        XCTAssertEqual(now.unbilled, 6_000_000)
+        let dec = statement(card17(6_000_000), [buy], installments: [plan], today: date(2026, 12, 18))
+        XCTAssertEqual(dec.statementAmount, 1_000_000)
+    }
+
+    func testTC4PartsAddUpToTheAmount() {
+        XCTAssertEqual((1...3).map { CardInstallment.part($0, of: 1_000_000, months: 3) }, [333_333, 333_333, 333_334])
+    }
+
+    func testTC13PayoffIntoTheNextStatement() {
+        let buy = txn("tv", .expense, 6_000_000, date(2026, 11, 5))
+        var plan = CardInstallment(id: "i", accountId: "card", transactionId: "tv", months: 6, startsFrom: "2026-11-24")
+        plan.settledOn = "2027-02-05"
+        plan.settleMode = "next_statement"
+        let before = statement(card17(6_000_000), [buy], installments: [plan], today: date(2027, 2, 5))
+        XCTAssertEqual(before.currentPeriod, 4_000_000)
+        XCTAssertEqual(before.remaining, 2_000_000)
+        let after = statement(card17(6_000_000), [buy], installments: [plan], today: date(2027, 2, 18))
+        XCTAssertEqual(after.statementAmount, 6_000_000)
+        XCTAssertEqual(after.currentPeriod, 0)
+    }
+
+    func testTC14PayoffFromAWalletLeavesTheLastBillAlone() {
+        let buy = txn("tv", .expense, 6_000_000, date(2026, 11, 5))
+        let payoff = txn("pay1", .transfer, 4_000_000, date(2027, 2, 5), from: "bca", to: "card")
+        var plan = CardInstallment(id: "i", accountId: "card", transactionId: "tv", months: 6, startsFrom: "2026-11-24")
+        plan.settledOn = "2027-02-05"
+        plan.settleMode = "paid"
+        plan.settleTransferId = "pay1"
+        let s = statement(card17(2_000_000), [buy, payoff], installments: [plan], today: date(2027, 2, 5))
+        XCTAssertEqual(s.remaining, 2_000_000)
+        XCTAssertEqual(s.paid, 0)
+        XCTAssertEqual(s.currentPeriod, 0)
+        XCTAssertEqual(statement(card17(2_000_000), [buy, payoff], installments: [plan], today: date(2027, 2, 18)).statementAmount, 2_000_000)
+    }
+
+    func testTC15CancellingThePayoffGoesBackToOneShareAMonth() {
+        let buy = txn("tv", .expense, 6_000_000, date(2026, 11, 5))
+        let plan = CardInstallment(id: "i", accountId: "card", transactionId: "tv", months: 6, startsFrom: "2026-11-24")
+        let s = statement(card17(6_000_000), [buy], installments: [plan], today: date(2027, 2, 5))
+        XCTAssertEqual(s.currentPeriod, 1_000_000)
+        XCTAssertEqual(s.unbilled, 4_000_000)
+    }
 }

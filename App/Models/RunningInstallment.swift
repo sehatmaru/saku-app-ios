@@ -26,7 +26,19 @@ struct RunningInstallment: Identifiable, Equatable {
     /// The cut-off the last part is billed on: when the installment is paid off.
     let endDate: Date
 
+    /// An early payoff already chosen: the day, how, and the statement that bills the rest (next-statement mode).
+    struct Settlement: Equatable {
+        let day: Date
+        let mode: CardInstallment.SettleMode
+        let billingDate: Date
+    }
+    let settlement: Settlement?
+    let plan: CardInstallment
+
     var remainingParts: Int { months - billedParts }
+
+    /// S = A - round(A / n) x b: what an early payoff settles (C8).
+    var remainingAmount: Double { CardInstallment.remaining(of: total, months: months, billed: billedNow) }
 
     /// Parts whose cut-off has already passed today; `billedParts` counts to the end of the period instead.
     /// Rows and the detail page show this one so they agree.
@@ -45,13 +57,22 @@ enum RunningInstallments {
                   purchase.date <= periodEnd else { return nil }
             let billed = CreditStatement.billedParts(of: plan, purchaseDate: purchase.date, card: card, today: periodEnd, calendar: calendar)
             guard billed < plan.months else { return nil }
-            let billings = CreditStatement.partBillings(of: plan, purchaseDate: purchase.date, card: card, calendar: calendar)
+            var billings = CreditStatement.partBillings(of: plan, purchaseDate: purchase.date, card: card, calendar: calendar)
+            var settlement: RunningInstallment.Settlement?
+            if let settle = plan.settlement {
+                // paid from a wallet: over from that day; into the next statement: over once that cut-off has passed
+                let cutoff = CreditStatement.billing(forPurchaseOn: settle.day, card: card, calendar: calendar).statement
+                if settle.mode == .paid ? settle.day <= periodEnd : cutoff <= periodEnd { return nil }
+                if settle.mode == .nextStatement { billings = Array(billings.prefix(billed)) + [cutoff] }
+                settlement = .init(day: settle.day, mode: settle.mode, billingDate: cutoff)
+            }
             return RunningInstallment(id: plan.id, transactionId: purchase.id, accountId: plan.accountId,
                                       title: purchase.displayNote ?? L("Pembelian cicilan"), cardName: card.name, cardIcon: card.icon,
-                                      months: plan.months, billedParts: billed, monthly: purchase.amount / Double(plan.months),
+                                      months: plan.months, billedParts: billed, monthly: CardInstallment.part(1, of: purchase.amount, months: plan.months),
                                       total: purchase.amount, purchaseDate: purchase.date, billingDates: billings,
                                       firstBillingDate: billed == 0 ? billings.first : nil,
-                                      endDate: billings.last ?? CreditStatement.finalBillingDate(purchaseOn: purchase.date, months: plan.months, card: card, calendar: calendar))
+                                      endDate: billings.last ?? CreditStatement.finalBillingDate(purchaseOn: purchase.date, months: plan.months, card: card, calendar: calendar),
+                                      settlement: settlement, plan: plan)
         }
         .sorted { $0.purchaseDate > $1.purchaseDate }
     }
