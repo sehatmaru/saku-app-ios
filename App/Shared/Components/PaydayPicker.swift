@@ -193,7 +193,7 @@ struct PaydaySheet: View {
         .disabled(isSaving)
         .filterSheet {
             if step == .day {
-                SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Nanti saja"), onPrimary: done, onSecondary: { dismiss() })
+                SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Tutup"), onPrimary: done, onSecondary: { dismiss() })
             } else {
                 SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Kembali"), onPrimary: saveChoice,
                                  onSecondary: { errorMessage = nil; step = .day })
