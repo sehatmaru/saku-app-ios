@@ -495,7 +495,13 @@ struct CategoryFormView: View {
             do {
                 if type == .expense {
                     if amount > 0, let budget {
-                        if budget.amount != amount || budget.name != name {
+                        // A new amount goes through set_budget_amount so Budget history records it from this period on.
+                        if budget.amount != amount {
+                            try await repo.setBudgetAmount(
+                                budgetId: budget.id, amount: amount, kind: "base",
+                                from: PaydayCycle.current.period(containing: Date()).start, to: nil)
+                        }
+                        if budget.name != name {
                             _ = try await repo.updateBudget(
                                 id: budget.id, name: name, amount: amount, periodUnit: budget.periodUnit,
                                 periodInterval: budget.periodInterval, startDate: budget.startDate,
