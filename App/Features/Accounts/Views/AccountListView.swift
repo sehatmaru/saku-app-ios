@@ -1120,7 +1120,7 @@ struct AccountListView: View {
                 Image(systemName: isMain ? "star.fill" : "star").font(.system(size: 20))
                     .foregroundStyle(isMain ? Color.appPrimary : Color.appTextSecondary).frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(isMain ? L("Dompet utama") : L("Jadikan dompet utama")).font(.app(17)).foregroundStyle(Color.appText)
+                    Text(isMain ? L("Dompet default") : L("Jadikan dompet default")).font(.app(17)).foregroundStyle(Color.appText)
                     if !isMain {
                         Text("Dipilih otomatis saat mencatat transaksi").font(.app(13)).foregroundStyle(Color.appTextSecondary)
                     }
@@ -1585,7 +1585,7 @@ struct WalletCard: View {
     }
 }
 
-/// Gold "Utama" pill on the main wallet's card.
+/// Gold "Default" pill on the main wallet's card.
 struct MainWalletBadge: View {
     /// Star only, for a strip with little room.
     var compact = false
@@ -1593,14 +1593,14 @@ struct MainWalletBadge: View {
     var body: some View {
         HStack(spacing: 3) {
             Image(systemName: "star.fill").font(.system(size: 9, weight: .bold))
-            if !compact { Text("Utama").font(.app(11, weight: .semibold)) }
+            if !compact { Text("Default").font(.app(11, weight: .semibold)) }
         }
         .foregroundStyle(Color(hex: "3D2E00"))
         .padding(.horizontal, compact ? 5.5 : 7)
         .frame(height: 20)
         .background(Color(hex: "F5B301"), in: Capsule())
         .fixedSize()
-        .accessibilityLabel("Dompet utama")
+        .accessibilityLabel("Dompet default")
     }
 }
 
@@ -1783,7 +1783,7 @@ private struct ArchiveWalletSheet: View {
     }
 }
 
-/// "Jadikan <dompet> utama?": names the wallet that stops being the main one.
+/// "Jadikan <dompet> default?": names the wallet that stops being the main one.
 private struct MakeMainWalletSheet: View {
     let name: String
     let previous: String?
@@ -1791,10 +1791,10 @@ private struct MakeMainWalletSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        SmartSheet(tone: .neutral, icon: "star", title: L("Jadikan %@ utama?", name),
-                   message: previous.map { L("Transaksi baru memilih dompet ini lebih dulu. %@ tidak lagi jadi dompet utama.", $0) }
+        SmartSheet(tone: .neutral, icon: "star", title: L("Jadikan %@ default?", name),
+                   message: previous.map { L("Transaksi baru memilih dompet ini lebih dulu. %@ tidak lagi jadi dompet default.", $0) }
                        ?? L("Transaksi baru memilih dompet ini lebih dulu.")) {
-            SmartSheetFooter(primary: L("Jadikan utama"), secondary: L("Batal"), onPrimary: onConfirm) { dismiss() }
+            SmartSheetFooter(primary: L("Jadikan default"), secondary: L("Batal"), onPrimary: onConfirm) { dismiss() }
         }
     }
 }

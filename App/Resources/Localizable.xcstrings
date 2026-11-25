@@ -1973,6 +1973,16 @@
         }
       }
     },
+    ", default": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", default"
+          }
+        }
+      }
+    },
     ", jatuh tempo": {
       "localizations": {
         "en": {
@@ -1999,16 +2009,6 @@
           "stringUnit": {
             "state": "translated",
             "value": ", turn it off."
-          }
-        }
-      }
-    },
-    ", utama": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": ", main"
           }
         }
       }
@@ -6343,16 +6343,6 @@
         }
       }
     },
-    "Buka Workspace ini saat app dijalankan": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open this Workspace when the app starts"
-          }
-        }
-      }
-    },
     "Buka dengan Saku Plus": {
       "localizations": {
         "en": {
@@ -6369,16 +6359,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open wallet"
-          }
-        }
-      }
-    },
-    "Buka saat app dijalankan": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open when the app starts"
           }
         }
       }
@@ -8063,6 +8043,16 @@
         }
       }
     },
+    "Default": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default"
+          }
+        }
+      }
+    },
     "Default Workspace": {
       "localizations": {
         "en": {
@@ -9073,6 +9063,16 @@
         }
       }
     },
+    "Dompet default": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default wallet"
+          }
+        }
+      }
+    },
     "Dompet dihapus": {
       "localizations": {
         "en": {
@@ -9209,16 +9209,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Active money wallets"
-          }
-        }
-      }
-    },
-    "Dompet utama": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Main wallet"
           }
         }
       }
@@ -11873,12 +11863,22 @@
         }
       }
     },
-    "Jadikan %@ utama?": {
+    "Jadikan %@ default?": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Make %@ the main wallet?"
+            "value": "Make %@ the default wallet?"
+          }
+        }
+      }
+    },
+    "Jadikan Default Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make this the Default Workspace"
           }
         }
       }
@@ -11913,12 +11913,22 @@
         }
       }
     },
-    "Jadikan dompet utama": {
+    "Jadikan default": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Make main wallet"
+            "value": "Make default"
+          }
+        }
+      }
+    },
+    "Jadikan dompet default": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make default wallet"
           }
         }
       }
@@ -11929,16 +11939,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Make this a recurring bill"
-          }
-        }
-      }
-    },
-    "Jadikan utama": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Make main"
           }
         }
       }
@@ -26185,12 +26185,12 @@
         }
       }
     },
-    "Transaksi baru memilih dompet ini lebih dulu. %@ tidak lagi jadi dompet utama.": {
+    "Transaksi baru memilih dompet ini lebih dulu. %@ tidak lagi jadi dompet default.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New transactions pick this wallet first. %@ stops being the main wallet."
+            "value": "New transactions pick this wallet first. %@ stops being the default wallet."
           }
         }
       }
@@ -27251,16 +27251,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Undo"
-          }
-        }
-      }
-    },
-    "Utama": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Main"
           }
         }
       }

@@ -304,7 +304,7 @@ struct EditWalletView: View {
                         } else {
                             HStack(spacing: 5) {
                                 Image(systemName: "star.fill").font(.system(size: 11))
-                                Text("Utama").font(.app(12))
+                                Text("Default").font(.app(12))
                             }
                             .foregroundStyle(.white.opacity(0.85))
                             .padding(.bottom, 5)
@@ -424,11 +424,11 @@ struct EditWalletView: View {
                 amountRow(L("Saldo saat ini"), value: cur.balance, action: L("Sesuaikan"), field: .balance)
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Dompet utama").font(.app(16))
+                        Text("Dompet default").font(.app(16))
                         Text("Dipilih otomatis saat mencatat transaksi").font(.app(13)).foregroundStyle(Color.appTextSecondary)
                     }
                     Spacer(minLength: 0)
-                    Toggle("Dompet utama", isOn: $cur.isDefault)
+                    Toggle("Dompet default", isOn: $cur.isDefault)
                         .labelsHidden()
                         .tint(Color.appPrimary)
                 }

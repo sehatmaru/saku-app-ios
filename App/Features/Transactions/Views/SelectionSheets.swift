@@ -92,7 +92,7 @@ private func emptyResult(_ text: String) -> some View {
 // MARK: - Wallets
 
 /// Wallet sheet: the last three used as big tiles, then everything grouped Bank / E-wallet / Tunai /
-/// Kartu kredit. The picked one gets a ring and a tick wherever it shows; the main wallet says "Utama".
+/// Kartu kredit. The picked one gets a ring and a tick wherever it shows; the main wallet says "Default".
 struct WalletPickerSheet: View {
     let title: String
     let accounts: [Account]
@@ -257,12 +257,12 @@ struct WalletPickerSheet: View {
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(PressScaleStyle())
-        .accessibilityLabel(account.name + (account.id == mainId ? L(", utama") : ""))
+        .accessibilityLabel(account.name + (account.id == mainId ? L(", default") : ""))
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     private var mainBadge: some View {
-        Text("Utama")
+        Text("Default")
             .font(.app(10, weight: .semibold))
             .foregroundStyle(Color.appPrimary)
             .padding(.horizontal, 4)

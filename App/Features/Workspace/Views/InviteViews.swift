@@ -305,7 +305,7 @@ struct JoinWorkspaceSheet: View {
                 .font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
             if wasFirst {
                 Toggle(isOn: $opensAtLaunch) {
-                    Text(L("Buka Workspace ini saat app dijalankan")).font(.app(16)).foregroundStyle(Color.appText)
+                    Text(L("Jadikan Default Workspace")).font(.app(16)).foregroundStyle(Color.appText)
                 }
                 .tint(Color.appPrimary)
                 .frame(minHeight: 48)

@@ -644,7 +644,7 @@ struct AddWalletView: View {
             if step == .balance && !isInvestment {
                 Toggle(isOn: $isDefault) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Jadikan dompet utama").font(.app(16))
+                        Text("Jadikan dompet default").font(.app(16))
                         Text("Dipilih otomatis saat mencatat transaksi")
                             .font(.app(13))
                             .foregroundStyle(Color.appTextSecondary)

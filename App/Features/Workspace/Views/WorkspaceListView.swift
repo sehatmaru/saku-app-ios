@@ -296,7 +296,7 @@ struct WorkspaceSettingsView: View {
         } label: {
             HStack(spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(L("Buka saat app dijalankan")).font(.app(16)).foregroundStyle(Color.appText)
+                    Text(L("Default Workspace")).font(.app(16)).foregroundStyle(Color.appText)
                     if blocked {
                         Text(L("Workspace baca saja tidak bisa dipilih")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
                     }

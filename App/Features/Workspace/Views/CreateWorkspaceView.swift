@@ -608,7 +608,7 @@ struct CreateWorkspaceView: View {
             inviteTicket.padding(.top, 28)
             if store.shared.count == 1 {
                 Toggle(isOn: $opensAtLaunch) {
-                    Text(L("Buka Workspace ini saat app dijalankan")).font(.app(15)).foregroundStyle(Color.appText)
+                    Text(L("Jadikan Default Workspace")).font(.app(15)).foregroundStyle(Color.appText)
                 }
                 .tint(Color.appPrimary)
                 .padding(.top, 20)
