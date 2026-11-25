@@ -2016,6 +2016,8 @@
   "Belum berhasil. Periksa koneksi lalu coba lagi.": "Didn't work. Check your connection and try again.",
   "Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.": "You still own a Workspace with other members. Hand over ownership first in Profile, Workspace, then Members.",
   "Punya kode?": "Have a code?",
+"Punya kode undangan?": "Have an invite code?",
+"Gabung ke Workspace orang lain": "Join someone else's Workspace",
   "Awal periode": "Period start",
   "Awal periode disimpan": "Period start saved",
   "Awal periode Workspace ini": "This Workspace's period start",

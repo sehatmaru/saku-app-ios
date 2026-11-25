@@ -26,6 +26,7 @@ struct WorkspaceListView: View {
                         NavigationLink(destination: WorkspaceSettingsView(workspaceId: workspace.id).detailPage()) { row(workspace) }
                             .buttonStyle(RowPressStyle())
                     }
+                    joinRow
                     if !deleting.isEmpty { deletingCard }
                     if store.shared.isEmpty {
                         Text(L("Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain."))
@@ -38,14 +39,33 @@ struct WorkspaceListView: View {
         }
         .background(Color.appBackground)
         .safeAreaInset(edge: .bottom) {
-            SmartSheetFooter(primary: L("Tambah workspace"), secondary: L("Gabung"),
-                             onPrimary: { store.requestCreate() }, onSecondary: { store.requestJoin() })
+            SmartSheetFooter(primary: L("Tambah workspace"), onPrimary: { store.requestCreate() })
                 .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 12)
                 .background(Color.appBackground)
         }
         .navigationTitle(L("Workspace"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.load() }
+    }
+
+    private var joinRow: some View {
+        Button { store.requestJoin() } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "number")
+                    .font(.system(size: 20, weight: .bold)).foregroundStyle(Color.appPrimary)
+                    .frame(width: 48, height: 48)
+                    .background(Color.appPrimary.opacity(0.12), in: RoundedRectangle(cornerRadius: 48 * 0.29, style: .continuous))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(L("Punya kode undangan?")).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText)
+                    Text(L("Gabung ke Workspace orang lain")).font(.app(14)).foregroundStyle(Color.appTextSecondary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+            }
+            .frame(minHeight: 68).padding(.horizontal, 24).contentShape(Rectangle())
+        }
+        .buttonStyle(RowPressStyle())
+        .padding(.top, 28)
     }
 
     private func label(_ text: String) -> some View {

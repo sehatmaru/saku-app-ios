@@ -9903,6 +9903,16 @@
         }
       }
     },
+    "Gabung ke Workspace orang lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Join someone else's Workspace"
+          }
+        }
+      }
+    },
     "Gabung ke Workspace perlu akun.": {
       "localizations": {
         "en": {
@@ -20019,6 +20029,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Have a code from a friend?"
+          }
+        }
+      }
+    },
+    "Punya kode undangan?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Have an invite code?"
           }
         }
       }
