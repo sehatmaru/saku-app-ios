@@ -356,7 +356,7 @@ struct ProfileView: View {
 
             if workspaceStore.showsSwitcher {
                 NavigationLink(destination: WorkspaceListView().detailPage()) {
-                    row(icon: "building.2", title: L("Workspace")) {
+                    row(icon: "building.2", title: L("Workspace"), workspace: workspaceStore.active) {
                         chevron
                     }
                     .contentShape(Rectangle())
@@ -558,12 +558,16 @@ struct ProfileView: View {
             .padding(.bottom, 4)
     }
 
-    private func row<Trailing: View>(icon: String, title: String, subtitle: String? = nil, isDestructive: Bool = false, @ViewBuilder trailing: () -> Trailing) -> some View {
+    private func row<Trailing: View>(icon: String, title: String, subtitle: String? = nil, isDestructive: Bool = false, workspace: Workspace? = nil, @ViewBuilder trailing: () -> Trailing) -> some View {
         HStack(spacing: 14) {
-            Image(systemName: icon)
-                .font(.system(size: 19))
-                .foregroundStyle(isDestructive ? Color.appError : Color.appTextSecondary)
-                .frame(width: 24)
+            if let workspace {
+                WorkspaceBadge(workspace, size: 24).frame(width: 24)
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 19))
+                    .foregroundStyle(isDestructive ? Color.appError : Color.appTextSecondary)
+                    .frame(width: 24)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.app(16))
