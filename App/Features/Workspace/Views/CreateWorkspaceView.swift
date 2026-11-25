@@ -9,7 +9,7 @@ struct CreateWorkspaceView: View {
     /// The server said the free plan is full (K29): the Plus offer opens over Beranda once this closes.
     let onLimit: () -> Void
 
-    private enum Step: Int, CaseIterable { case intro, start, name, look, categories, payday, warning, done }
+    private enum Step: Int, CaseIterable { case intro, start, name, look, categories, payday, warning, done, fail, limit }
     /// K38: how the new Workspace begins. `convert` turns Workspace Pribadi itself into it, with its history.
     private enum Start { case empty, convert, moveAll }
 
@@ -28,11 +28,16 @@ struct CreateWorkspaceView: View {
     @State private var copiesCategories = false
     @State private var paydayDay: Int?
     @State private var isSaving = false
-    @State private var failed = false
+    @State private var nameError = false
+    @State private var nameShake = 0
+    @State private var holdShake = 0
+    @Namespace private var colorNS
     @State private var created: Workspace?
     @State private var opensAtLaunch = false
     @State private var bump = false
-    @State private var showsInvite = false
+    @State private var invite: WorkspaceInvite?
+    @State private var inviteFailed = false
+    @State private var codeCopied = false
     @State private var rulesOpen = false
     @State private var introShown = false
     @State private var holdProgress: CGFloat = 0
@@ -53,14 +58,13 @@ struct CreateWorkspaceView: View {
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var isDone: Bool { step == .done }
-    private var showsProgress: Bool { !isDone && step != .intro }
+    private var showsProgress: Bool { ![.done, .intro, .fail, .limit].contains(step) }
     private var stepIndex: Int { isDone ? questionSteps.count : questionSteps.firstIndex(of: step) ?? 0 }
 
     private var isValid: Bool {
         switch step {
         case .name: !trimmedName.isEmpty
         case .look: icon != nil || photo != nil
-        case .warning: holdConfirmed
         default: true
         }
     }
@@ -91,12 +95,6 @@ struct CreateWorkspaceView: View {
         .animation(.settle(0.42), value: step)
         .onChange(of: step) { _, value in nameFocused = value == .name }
         .interactiveDismissDisabled(isSaving)
-        .sheet(isPresented: $showsInvite) { if let created { InviteSheet(workspace: created) } }
-        .alert(L("Workspace belum bisa dibuat"), isPresented: $failed) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(L("Koneksi terputus atau ada yang berubah. Coba lagi sebentar."))
-        }
     }
 
     // MARK: Chrome (same as Tambah dompet)
@@ -117,8 +115,8 @@ struct CreateWorkspaceView: View {
                             .frame(width: 32, height: 32)
                     }
                     .accessibilityLabel(L("Kembali"))
-                    .opacity(step != .start && step != .intro && !isDone ? 1 : 0)
-                    .allowsHitTesting(step != .start && step != .intro && !isDone && !isSaving)
+                    .opacity(showsProgress && step != .start ? 1 : 0)
+                    .allowsHitTesting(showsProgress && step != .start && !isSaving)
                 }
                 Spacer()
                 Text("\(stepIndex + 1)/\(questionSteps.count)")
@@ -140,13 +138,14 @@ struct CreateWorkspaceView: View {
 
     private var title: String {
         switch step {
-        case .intro, .start: L("Tambah workspace")
-        case .name: L("Nama Workspace")
-        case .look: L("Ikon, warna, dan foto")
-        case .categories: L("Kategori awal")
-        case .payday: L("Awal periode")
-        case .warning: L("Sebelum lanjut")
+        case .intro, .start: L("Workspace baru")
+        case .name: L("Nama")
+        case .look: L("Tampilan")
+        case .categories: L("Kategori")
+        case .payday: L("Periode")
+        case .warning: L("Konfirmasi")
         case .done: L("Selesai")
+        case .fail, .limit: ""
         }
     }
 
@@ -179,6 +178,8 @@ struct CreateWorkspaceView: View {
         case .categories: categoriesStep
         case .payday: paydayStep
         case .done: doneStep
+        case .fail: noticeStep(icon: "exclamationmark.triangle", tint: Color.appError, title: L("Workspace belum bisa dibuat"), text: L("Ada gangguan saat menyimpan. Datamu aman dan belum berubah. Coba lagi sebentar lagi."))
+        case .limit: noticeStep(icon: "crown", tint: Color.appPrimary, title: L("Kuota Workspace gratis terpakai"), text: L("Akun gratis bisa membuat 1 Workspace. Dengan Plus kamu bisa membuat tanpa batas. Bergabung ke Workspace orang lain tetap tidak dibatasi."))
         }
     }
 
@@ -206,102 +207,334 @@ struct CreateWorkspaceView: View {
         L("Menghapus Workspace punya masa tunggu 7 hari sebelum data hilang permanen."),
     ] }
 
+    /// The big left-aligned heading every step opens with.
+    private func header(_ title: String, _ subtitle: String, size: CGFloat = 30) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.app(size, weight: .bold)).tracking(-0.3)
+            Text(subtitle).font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func infoNote(_ text: Text) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "info.circle").font(.system(size: 17)).foregroundStyle(Color.appPrimary)
+            text.font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+        }
+    }
+
     private var introStep: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(L("Apa itu Workspace?"))
-                .font(.app(28, weight: .bold)).tracking(-0.4)
-            Text(L("Ruang bersama untuk mencatat uang dengan orang terdekat."))
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                .padding(.top, 6)
-            VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 18) {
+            header(L("Apa itu Workspace?"), L("Ruang bersama untuk mencatat uang dengan orang terdekat."))
+                .opacity(introShown ? 1 : 0).offset(y: introShown ? 0 : 12)
+                .animation(.settle(0.3), value: introShown)
+            VStack(alignment: .leading, spacing: 16) {
                 ForEach(Array(introPoints.enumerated()), id: \.offset) { index, point in
                     HStack(alignment: .top, spacing: 14) {
                         Image(systemName: point.icon)
-                            .font(.system(size: 18))
+                            .font(.system(size: 20))
                             .foregroundStyle(Color.appPrimaryText)
                             .frame(width: 40, height: 40)
                             .background(Color.appPrimary.opacity(0.12), in: Circle())
                             .scaleEffect(introShown ? 1 : 0.9)
-                            .animation(.easeOut(duration: 0.25).delay(0.06 * Double(index)), value: introShown)
+                            .animation(.easeOut(duration: 0.25).delay(0.06 * Double(index) + 0.06), value: introShown)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(point.title).font(.app(16, weight: .semibold))
-                            Text(point.text).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+                            Text(point.text).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineSpacing(1)
                         }
                     }
                     .opacity(introShown ? 1 : 0)
                     .offset(y: introShown ? 0 : 12)
-                    .animation(.settle(0.3).delay(0.06 * Double(index)), value: introShown)
+                    .animation(.settle(0.3).delay(0.06 * Double(index) + 0.06), value: introShown)
                 }
             }
-            .padding(.top, 24)
-
-            Button {
-                withAnimation(.settle(0.32)) { rulesOpen.toggle() }
-            } label: {
-                HStack {
-                    Text(L("Aturan singkat")).font(.app(15, weight: .semibold))
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 13, weight: .semibold))
-                        .rotationEffect(.degrees(rulesOpen ? 180 : 0))
+            VStack(spacing: 0) {
+                Button {
+                    withAnimation(.settle(0.32)) { rulesOpen.toggle() }
+                } label: {
+                    HStack {
+                        Text(L("Aturan singkat")).font(.app(15, weight: .semibold))
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Color.appTextSecondary)
+                            .rotationEffect(.degrees(rulesOpen ? 180 : 0))
+                    }
+                    .foregroundStyle(Color.appText)
+                    .padding(.horizontal, 16)
+                    .frame(minHeight: 48)
+                    .contentShape(Rectangle())
                 }
-                .foregroundStyle(Color.appText)
-                .frame(minHeight: 48)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 18)
-            .accessibilityAddTraits(.isButton)
-            Rectangle().fill(Color.appDivider).frame(height: 1)
-            if rulesOpen {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(introRules, id: \.self) { rule in
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Circle().fill(Color.appTextTertiary).frame(width: 5, height: 5)
-                            Text(rule).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+                .buttonStyle(.plain)
+                if rulesOpen {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(introRules, id: \.self) { rule in
+                            HStack(alignment: .top, spacing: 10) {
+                                Circle().fill(Color.appPrimary).frame(width: 5, height: 5).padding(.top, 7)
+                                Text(rule).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineSpacing(1)
+                            }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16).padding(.bottom, 14)
+                    .transition(.opacity)
                 }
-                .padding(.top, 12)
-                .transition(.opacity.combined(with: .offset(y: -6)))
             }
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "info.circle").font(.system(size: 16)).foregroundStyle(Color.appTextSecondary)
-                Text(L("Akun gratis bisa membuat 1 Workspace. Plus tanpa batas."))
-                    .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-            }
-            .padding(.top, 16)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .opacity(introShown ? 1 : 0).offset(y: introShown ? 0 : 12)
+            .animation(.settle(0.3).delay(0.3), value: introShown)
+            infoNote(Text(L("Akun gratis bisa membuat 1 Workspace.") + " ") + Text("Plus").fontWeight(.semibold).foregroundColor(Color.appText) + Text(" " + L("tanpa batas.")))
+                .opacity(introShown ? 1 : 0).offset(y: introShown ? 0 : 12)
+                .animation(.settle(0.3).delay(0.36), value: introShown)
         }
         .onAppear { withAnimation { introShown = true } }
     }
 
     private var startStep: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(L("Mau mulai dengan apa?"))
-                .font(.app(22, weight: .bold)).tracking(-0.3)
-            Text(L("Pilih bagaimana Workspace baru ini dimulai."))
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                .padding(.top, 6)
-            VStack(spacing: 10) {
-                choiceCard(L("Mulai kosong"), L("Workspace baru tanpa dompet dan catatan."), icon: "plus.circle", on: start == .empty, weight: .primary) { start = .empty }
-                choiceCard(L("Ubah Workspace Pribadi saya"), L("Semua dompet dan riwayat ikut jadi milik Workspace ini."), icon: "arrow.triangle.2.circlepath", on: start == .convert, weight: .outlined, tag: L("Tidak bisa dibatalkan")) { start = .convert }
-                choiceCard(L("Pindahkan semua dompet"), L("Dompet ikut pindah dengan saldo terakhir, tanpa riwayat."), icon: "wallet.bifold", on: start == .moveAll, weight: .plain) { start = .moveAll }
+        VStack(alignment: .leading, spacing: 16) {
+            header(L("Mau mulai dengan apa?"), L("Kamu bisa mengundang anggota setelah Workspace dibuat."))
+            VStack(spacing: 12) {
+                choiceCard(L("Mulai kosong"), L("Workspace baru tanpa dompet. Tambahkan sendiri nanti."), icon: "plus.circle", on: start == .empty, weight: .primary) { start = .empty }
+                choiceCard(L("Ubah Workspace Pribadi saya"), L("Semua dompet dan riwayat transaksi menjadi milik Workspace ini."), icon: "arrow.triangle.2.circlepath", on: start == .convert, weight: .outlined) { start = .convert }
+                choiceCard(L("Pindahkan semua dompet"), L("Hanya saldo dompet yang dipindah, tanpa riwayat."), icon: "wallet.bifold", on: start == .moveAll, weight: .plain) { start = .moveAll }
             }
-            .padding(.top, 16)
+        }
+    }
+
+    // MARK: Badge
+
+    private var initial: String { trimmedName.first.map { String($0).uppercased() } ?? "" }
+
+    /// The wizard's rounded-square badge: colour, an initial or the chosen icon, or the picked photo.
+    private func wizardBadge(size: CGFloat, showsInitial: Bool) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.29, style: .continuous).fill(WorkspaceStyle.color(color))
+            if showsInitial {
+                if initial.isEmpty {
+                    Image(systemName: "person.2.fill").font(.system(size: size * 0.4)).foregroundStyle(.white.opacity(0.9))
+                } else {
+                    Text(initial).font(.app(size * 0.45, weight: .bold)).foregroundStyle(.white)
+                }
+            } else if let icon {
+                Image(systemName: icon).font(.system(size: size * 0.47)).foregroundStyle(.white)
+                    .id(icon).transition(.scale(scale: 0.8).combined(with: .opacity))
+            } else {
+                Image(systemName: "person.2.fill").font(.system(size: size * 0.4)).foregroundStyle(.white.opacity(0.9))
+            }
+            if let photo {
+                Image(uiImage: photo).resizable().scaledToFill()
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.29, style: .continuous))
+        .scaleEffect(bump ? 1.09 : 1)
+        .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.38), value: bump)
+        .animation(.easeOut(duration: 0.3), value: color)
+        .animation(.easeOut(duration: 0.2), value: icon)
+    }
+
+    private var nameStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            wizardBadge(size: 76, showsInitial: true)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 4)
+            header(L("Beri nama Workspace"), L("Contoh: Rumah, Liburan Bali, Usaha."), size: 28)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    TextField("", text: $name, prompt: Text(L("Nama Workspace")).foregroundStyle(Color.appTextTertiary))
+                        .font(.app(17))
+                        .tint(.appPrimary)
+                        .submitLabel(.next)
+                        .focused($nameFocused)
+                        .frame(maxHeight: .infinity)
+                        .onChange(of: name) { _, value in
+                            if value.count > Self.nameLimit { name = String(value.prefix(Self.nameLimit)) }
+                            if nameError && !trimmedName.isEmpty { withAnimation(.easeOut(duration: 0.2)) { nameError = false } }
+                            if !value.isEmpty { bumpOnce() }
+                        }
+                        .onSubmit { next() }
+                    Text("\(name.count)/\(Self.nameLimit)")
+                        .font(.app(13)).monospacedDigit().foregroundStyle(Color.appTextSecondary)
+                        .opacity(name.count >= 30 ? 1 : 0)
+                        .animation(.easeOut(duration: 0.2), value: name.count >= 30)
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 54)
+                .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(nameError ? Color.appError : (nameFocused ? Color.appPrimary : .clear), lineWidth: 1.5))
+                .modifier(ShakeEffect(shakes: CGFloat(nameShake)))
+                if nameError {
+                    Text(L("Nama Workspace wajib diisi.")).font(.app(13)).foregroundStyle(Color.appError)
+                        .transition(.opacity)
+                }
+            }
+        }
+    }
+
+    private var lookStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            wizardBadge(size: 84, showsInitial: false)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 2)
+            if lookMode == .photo {
+                WorkspacePhotoPanel(imageUrl: nil, photo: $photo, removed: $photoRemoved)
+                lookRow(icon: "square.grid.2x2", title: L("Pakai ikon"), subtitle: L("Pilih dari daftar ikon")) { lookMode = .icon }
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(L("Ikon")).font(.app(15, weight: .semibold))
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
+                        ForEach(CategoryCatalog.visibleIcons(expanded: showsAllIcons), id: \.self) { symbol in
+                            let isOn = symbol == icon
+                            Button { pick { icon = symbol } } label: {
+                                Image(systemName: symbol)
+                                    .font(.system(size: 21))
+                                    .foregroundStyle(isOn ? WorkspaceStyle.color(color) : Color.appTextSecondary)
+                                    .frame(maxWidth: .infinity).frame(height: 44)
+                                    .background(isOn ? WorkspaceStyle.color(color).opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 12))
+                                    .animation(.easeOut(duration: 0.2), value: isOn)
+                            }
+                            .buttonStyle(PressScaleStyle())
+                            .accessibilityLabel(symbol)
+                            .accessibilityAddTraits(isOn ? .isSelected : [])
+                        }
+                    }
+                    Button {
+                        withAnimation(.settle(0.36)) { showsAllIcons.toggle() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(showsAllIcons ? L("Lebih sedikit") : L("Lihat semua ikon"))
+                            Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold))
+                                .rotationEffect(.degrees(showsAllIcons ? 180 : 0))
+                        }
+                        .font(.app(15, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(minHeight: 44)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(L("Warna")).font(.app(15, weight: .semibold))
+                    HStack(spacing: 0) {
+                        ForEach(WalletIcon.presetColors, id: \.name) { preset in
+                            let isOn = preset.name == color
+                            Button { pick { color = preset.name } } label: {
+                                ZStack {
+                                    if isOn {
+                                        Circle().strokeBorder(Color.appText, lineWidth: 2)
+                                            .frame(width: 38, height: 38)
+                                            .matchedGeometryEffect(id: "ring", in: colorNS)
+                                    }
+                                    Circle().fill(preset.color).frame(width: 28, height: 28)
+                                }
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: color)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(L("Warna %@", preset.name))
+                            .accessibilityAddTraits(isOn ? .isSelected : [])
+                        }
+                    }
+                }
+                lookRow(icon: "photo", title: L("Pakai foto"), subtitle: L("Opsional")) { lookMode = .photo }
+            }
+        }
+    }
+
+    private func lookRow(icon: String, title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.system(size: 20)).foregroundStyle(Color.appTextSecondary).frame(width: 26)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title).font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
+                    Text(subtitle).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Color.appTextTertiary)
+            }
+            .padding(.horizontal, 16)
+            .frame(minHeight: 56)
+            .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressScaleStyle())
+    }
+
+    private var categoriesStep: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            header(L("Kategori awal"), L("Pilih titik awal untuk kategori Workspace ini."))
+            VStack(spacing: 12) {
+                choiceCard(L("Kategori bawaan Saku"), L("Mulai dengan daftar kategori standar."), icon: "square.grid.2x2", on: !copiesCategories, weight: .filled) { copiesCategories = false }
+                choiceCard(L("Salin dari Workspace Pribadi"), L("Pakai kategori yang sudah kamu buat."), icon: "doc.on.doc", on: copiesCategories, weight: .filled) { copiesCategories = true }
+            }
+            infoNote(Text(L("Kategori tiap Workspace berdiri sendiri. Mengubahnya di sini tidak memengaruhi Workspace lain.")))
+        }
+    }
+
+    private enum CardWeight { case primary, outlined, plain, filled }
+
+    /// One option card: a leading icon, title and subtitle, and a check circle that draws in when chosen.
+    private func choiceCard(_ title: String, _ subtitle: String, icon: String, on: Bool, weight: CardWeight, action: @escaping () -> Void) -> some View {
+        let big = weight == .primary
+        return Button {
+            UISelectionFeedbackGenerator().selectionChanged()
+            withAnimation(.settle(0.3)) { action() }
+        } label: {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: big ? 26 : weight == .plain ? 21 : 23))
+                    .foregroundStyle(on && weight != .filled ? Color.appPrimary : Color.appTextSecondary)
+                    .frame(width: 30)
+                    .padding(.top, 1)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(.app(weight == .filled ? 17 : big ? 18 : 16, weight: .semibold)).foregroundStyle(Color.appText)
+                    Text(subtitle).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineSpacing(1)
+                }
+                Spacer(minLength: 8)
+                ZStack {
+                    Circle().fill(on ? Color.appPrimary : .clear)
+                    Circle().strokeBorder(on ? Color.appPrimary : Color.appBorder, lineWidth: 1.5)
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
+                        .scaleEffect(on ? 1 : 0.4).opacity(on ? 1 : 0)
+                }
+                .frame(width: 24, height: 24)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, big ? 20 : weight == .plain ? 12 : 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(weight == .primary || weight == .filled ? Color.appFill : .clear, in: RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(on ? Color.appPrimary : (weight == .outlined ? Color.appBorder : .clear), lineWidth: 1.5))
+            .opacity(on ? 1 : 0.55)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressScaleStyle())
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private var paydayStep: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            header(L("Awal periode"), L("Tanggal gajian atau awal bulan anggaranmu. Opsional, Pemilik bisa mengaturnya nanti."))
+            PaydayDayPicker(selection: $paydayDay)
+                .padding(.horizontal, -24)
         }
     }
 
     private var warningStep: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(L("Seluruh riwayat akan terlihat anggota"))
-                .font(.app(22, weight: .bold)).tracking(-0.3)
-            Text(L("Workspace Pribadi-mu berubah jadi %@. Semua dompet, catatan, budget, dan kategori di dalamnya bisa dilihat siapa pun yang kamu undang, termasuk catatan lama.", trimmedName))
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                .padding(.top, 6)
-            Text(L("Kamu langsung dapat Workspace Pribadi baru yang kosong. Perubahan ini tidak bisa dikembalikan."))
-                .font(.app(15, weight: .semibold)).foregroundStyle(Color.appText).lineSpacing(2)
-                .padding(.top, 14)
-            holdToConfirm.padding(.top, 24)
+        VStack(alignment: .leading, spacing: 16) {
+            header(L("Sebelum lanjut"), L("Workspace Pribadi kamu akan diubah menjadi Workspace bersama."))
+            VStack(alignment: .leading, spacing: 14) {
+                warnRow("eye", L("Seluruh riwayat terlihat"), L("oleh anggota yang kamu undang."))
+                warnRow("arrow.uturn.backward", L("Tidak bisa dibatalkan."), L("Setelah dibuat, Workspace tidak bisa dikembalikan menjadi pribadi."))
+                warnRow("person", L("Kamu mendapat Workspace Pribadi baru"), L("yang masih kosong."))
+            }
+            holdToConfirm
+        }
+    }
+
+    private func warnRow(_ icon: String, _ bold: String, _ rest: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon).font(.system(size: 20)).frame(width: 26)
+            (Text(bold).fontWeight(.semibold) + Text(" " + rest).foregroundColor(Color.appTextSecondary))
+                .font(.app(15)).lineSpacing(2)
         }
     }
 
@@ -309,22 +542,23 @@ struct CreateWorkspaceView: View {
     private var holdToConfirm: some View {
         VStack(spacing: 8) {
             ZStack {
-                RoundedRectangle(cornerRadius: 26).fill(Color.appFill)
+                RoundedRectangle(cornerRadius: 28).fill(Color.appFill)
                 GeometryReader { geo in
-                    RoundedRectangle(cornerRadius: 26).fill(Color.appPrimary)
+                    Rectangle().fill(Color.appPrimary)
                         .frame(width: geo.size.width * (holdConfirmed ? 1 : holdProgress))
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 26))
-                RoundedRectangle(cornerRadius: 26).strokeBorder(holdConfirmed ? Color.appPrimary : Color.appBorder, lineWidth: 1.5)
+                .clipShape(RoundedRectangle(cornerRadius: 28))
+                RoundedRectangle(cornerRadius: 28).strokeBorder(holdConfirmed ? Color.appPrimary : Color.appBorder, lineWidth: 1.5)
                 HStack(spacing: 8) {
-                    Image(systemName: holdConfirmed ? "checkmark" : "hand.tap")
+                    Image(systemName: holdConfirmed ? "checkmark" : "hand.tap").font(.system(size: 15, weight: .bold))
                     Text(holdConfirmed ? L("Dikonfirmasi") : L("Tahan untuk konfirmasi"))
                 }
                 .font(.app(16, weight: .semibold))
                 .foregroundStyle(holdConfirmed || holdProgress > 0.55 ? Color.white : Color.appText)
             }
-            .frame(height: 52)
+            .frame(height: 56)
             .contentShape(Rectangle())
+            .modifier(ShakeEffect(shakes: CGFloat(holdShake)))
             .onLongPressGesture(minimumDuration: 1.2, maximumDistance: 60, perform: {
                 guard !holdConfirmed else { return }
                 holdConfirmed = true
@@ -341,195 +575,124 @@ struct CreateWorkspaceView: View {
         }
     }
 
-    private var nameStep: some View {
-        VStack(spacing: 10) {
-            preview
-            TextField("", text: $name, prompt: Text(L("Nama Workspace")).foregroundStyle(Color.appTextTertiary))
-                .font(.app(26, weight: .bold))
-                .tracking(-0.3)
-                .multilineTextAlignment(.center)
-                .tint(.appPrimary)
-                .submitLabel(.next)
-                .focused($nameFocused)
-                .frame(height: 36)
-                .onChange(of: name) { _, value in if value.count > Self.nameLimit { name = String(value.prefix(Self.nameLimit)) } }
-                .onSubmit { if isValid { next() } }
-            Text(L("Contoh: Rumah, Liburan Bali, Usaha"))
-                .frame(maxWidth: .infinity)
-                .overlay(alignment: .trailing) {
-                    Text("\(name.count)/\(Self.nameLimit)").monospacedDigit()
-                        .opacity(name.count >= 30 ? 1 : 0)
-                        .animation(.easeOut(duration: 0.2), value: name.count >= 30)
-                }
-                .font(.app(13))
-            .foregroundStyle(Color.appTextSecondary)
-            .frame(height: 20)
+    /// Failure and free-limit screens: a round icon, a heading, and one paragraph.
+    private func noticeStep(icon: String, tint: Color, title: String, text: String) -> some View {
+        VStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 38))
+                .foregroundStyle(tint)
+                .frame(width: 88, height: 88)
+                .background(tint.opacity(0.12), in: Circle())
+                .modifier(ShakeEffect(shakes: CGFloat(nameShake)))
+                .padding(.top, 60)
+            Text(title).font(.app(26, weight: .bold)).multilineTextAlignment(.center)
+            Text(text).font(.app(15)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center).lineSpacing(2)
         }
-    }
-
-    private var lookStep: some View {
-        VStack(spacing: 10) {
-            preview
-            Text(trimmedName)
-                .font(.app(26, weight: .bold)).tracking(-0.3)
-                .lineLimit(1).minimumScaleFactor(0.7)
-                .frame(height: 36)
-            WorkspaceLookModePicker(mode: $lookMode)
-            if lookMode == .photo {
-                WorkspacePhotoPanel(imageUrl: nil, photo: $photo, removed: $photoRemoved)
-            } else {
-            VStack(spacing: 4) {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 6), spacing: 4) {
-                    ForEach(CategoryCatalog.visibleIcons(expanded: showsAllIcons), id: \.self) { symbol in
-                        let isOn = symbol == icon
-                        Button { pick { icon = symbol } } label: {
-                            Circle()
-                                .fill(isOn ? WorkspaceStyle.color(color).opacity(0.14) : .clear)
-                                .frame(width: 44, height: 44)
-                                .overlay {
-                                    Image(systemName: symbol)
-                                        .font(.system(size: 21))
-                                        .foregroundStyle(isOn ? WorkspaceStyle.color(color) : Color.appTextSecondary)
-                                }
-                                .animation(.easeInOut(duration: 0.18), value: isOn)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(symbol)
-                        .accessibilityAddTraits(isOn ? .isSelected : [])
-                    }
-                }
-                Button(showsAllIcons ? L("Lebih sedikit") : L("Lihat semua ikon")) {
-                    withAnimation(.settle(0.36)) { showsAllIcons.toggle() }
-                }
-                .font(.app(13, weight: .semibold))
-                .foregroundStyle(Color.appPrimary)
-                .frame(maxWidth: .infinity, minHeight: 36)
-                Rectangle().fill(Color.appDivider).frame(height: 1).padding(.horizontal, 10)
-                HStack(spacing: 0) {
-                    ForEach(WalletIcon.presetColors, id: \.name) { preset in
-                        let isOn = preset.name == color
-                        Button { pick { color = preset.name } } label: {
-                            Circle()
-                                .fill(preset.color)
-                                .frame(width: 24, height: 24)
-                                .padding(3)
-                                .overlay { Circle().stroke(preset.color, lineWidth: 2).opacity(isOn ? 1 : 0) }
-                                .animation(.timingCurve(0.3, 1.6, 0.5, 1, duration: 0.36), value: isOn)
-                                .frame(maxWidth: .infinity, minHeight: 44)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(L("Warna %@", preset.name))
-                        .accessibilityAddTraits(isOn ? .isSelected : [])
-                    }
-                }
-            }
-            .padding(.horizontal, 6)
-            .padding(.top, 8)
-            }
-        }
-    }
-
-    private var categoriesStep: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(L("Mulai dari mana?"))
-                .font(.app(22, weight: .bold)).tracking(-0.3)
-            Text(L("Kategori di Workspace ini berdiri sendiri. Mengubahnya tidak memengaruhi Workspace lain."))
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                .padding(.top, 6)
-            VStack(spacing: 0) {
-                choiceCard(L("Kategori bawaan Saku"), L("Daftar standar, tanpa kategori buatanmu."), icon: "square.grid.2x2", on: !copiesCategories, weight: .outlined) { copiesCategories = false }
-                choiceCard(L("Salin dari Workspace Pribadi"), L("Kategori buatanmu ikut disalin."), icon: "doc.on.doc", on: copiesCategories, weight: .outlined) { copiesCategories = true }
-            }
-            .padding(.top, 16)
-        }
-    }
-
-    private enum CardWeight { case primary, outlined, plain }
-
-    /// One option card: a leading icon, title and subtitle, and a check circle that draws in when chosen.
-    private func choiceCard(_ title: String, _ subtitle: String, icon: String, on: Bool, weight: CardWeight, tag: String? = nil, action: @escaping () -> Void) -> some View {
-        Button {
-            UISelectionFeedbackGenerator().selectionChanged()
-            withAnimation(.settle(0.3)) { action() }
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: icon)
-                    .font(.system(size: weight == .primary ? 26 : 22))
-                    .foregroundStyle(on ? Color.appPrimary : Color.appTextSecondary)
-                    .frame(width: 32)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.app(weight == .primary ? 18 : 16, weight: .semibold)).foregroundStyle(Color.appText)
-                    Text(subtitle).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(1)
-                    if let tag {
-                        Label(tag, systemImage: "lock")
-                            .font(.app(12, weight: .semibold))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .padding(.top, 4)
-                    }
-                }
-                Spacer(minLength: 8)
-                ZStack {
-                    Circle().fill(on ? Color.appPrimary : .clear)
-                    Circle().strokeBorder(on ? Color.appPrimary : Color.appBorder, lineWidth: 1.5)
-                    Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
-                        .scaleEffect(on ? 1 : 0.4).opacity(on ? 1 : 0)
-                }
-                .frame(width: 24, height: 24)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, weight == .primary ? 20 : weight == .outlined ? 16 : 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(weight == .primary ? Color.appFill : .clear, in: RoundedRectangle(cornerRadius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(on ? Color.appPrimary : (weight == .outlined ? Color.appBorder : .clear), lineWidth: 1.5))
-            .opacity(on ? 1 : 0.7)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PressScaleStyle())
-        .accessibilityAddTraits(on ? .isSelected : [])
-    }
-
-    private var paydayStep: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(L("Awal periode Workspace ini"))
-                .font(.app(22, weight: .bold)).tracking(-0.3)
-            Text(L("Periode budget dan ringkasan mulai di tanggal ini. Boleh dikosongkan, Pemilik bisa mengaturnya nanti."))
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                .padding(.top, 6)
-            PaydayDayPicker(selection: $paydayDay)
-                .padding(.horizontal, -24)
-                .padding(.top, 12)
-        }
+        .frame(maxWidth: .infinity)
+        .onAppear { withAnimation(.linear(duration: 0.28)) { nameShake += 1 } }
     }
 
     private var doneStep: some View {
-        VStack(spacing: 6) {
-            ZStack {
-                Circle().stroke(WorkspaceStyle.color(color), lineWidth: 2)
-                    .frame(width: 96, height: 96)
-                    .scaleEffect(donePop ? 1.6 : 1).opacity(donePop ? 0 : 0.35)
-                    .animation(.easeOut(duration: 0.9).delay(0.15), value: donePop)
-                WorkspaceBadge(icon: icon, color: color, size: 96, image: photo)
+        VStack(spacing: 0) {
+            VStack(spacing: 8) {
+                wizardBadge(size: 72, showsInitial: false)
                     .scaleEffect(donePop ? 1 : 0.6).opacity(donePop ? 1 : 0)
-                    .animation(.spring(response: 0.45, dampingFraction: 0.6), value: donePop)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.6), value: donePop)
+                    .onAppear { donePop = true }
+                Text(L("Workspace dibuat")).font(.app(26, weight: .bold)).padding(.top, 6)
+                Text(doneMessage)
+                    .font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                    .multilineTextAlignment(.center).lineSpacing(2)
             }
-            .padding(.top, 24).padding(.bottom, 10)
-            .onAppear { donePop = true }
-            Text(L("Workspace dibuat")).font(.app(22, weight: .semibold)).tracking(-0.3)
-            Text(doneMessage)
-                .font(.app(15)).foregroundStyle(Color.appTextSecondary)
-                .multilineTextAlignment(.center).lineSpacing(3)
+            .padding(.top, 24)
+            inviteTicket.padding(.top, 28)
             if store.shared.count == 1 {
                 Toggle(isOn: $opensAtLaunch) {
-                    Text(L("Buka Workspace ini saat app dijalankan"))
-                        .font(.app(16)).foregroundStyle(Color.appText)
+                    Text(L("Buka Workspace ini saat app dijalankan")).font(.app(15)).foregroundStyle(Color.appText)
                 }
                 .tint(Color.appPrimary)
-                .frame(minHeight: 48)
                 .padding(.top, 20)
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// The live invitation code as a ticket: code on top, Salin and Bagikan below a dashed tear line.
+    private var inviteTicket: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 6) {
+                Text(L("Undang anggota dengan kode")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                Group {
+                    if let invite {
+                        Text(InviteCode.grouped(invite.code))
+                            .font(.system(size: 32, weight: .bold, design: .monospaced)).tracking(2)
+                            .foregroundStyle(Color.appText).minimumScaleFactor(0.7).lineLimit(1)
+                            .textSelection(.enabled)
+                    } else if inviteFailed {
+                        Button(L("Muat ulang kode")) { Task { await loadInvite() } }
+                            .font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                    } else {
+                        ProgressView()
+                    }
+                }
+                .frame(height: 44)
+                Text(invite?.expiryDate.map { L("Berlaku sampai %@", Self.expiryFormat.string(from: $0)) } ?? " ")
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 20).padding(.bottom, 8)
+            HStack(spacing: 0) {
+                ticketAction(codeCopied ? L("Tersalin") : L("Salin"), icon: codeCopied ? "checkmark" : "doc.on.doc") { copyCode() }
+                if let invite {
+                    ShareLink(item: shareText(invite)) { ticketLabel(L("Bagikan"), icon: "square.and.arrow.up") }
+                        .buttonStyle(RowPressStyle())
+                } else {
+                    ticketLabel(L("Bagikan"), icon: "square.and.arrow.up").opacity(0.4)
+                }
+            }
+        }
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .task { await loadInvite() }
+    }
+
+    private func ticketLabel(_ title: String, icon: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).font(.system(size: 16))
+            Text(title).font(.app(15, weight: .semibold))
+        }
+        .foregroundStyle(Color.appText)
+        .frame(maxWidth: .infinity).frame(height: 52)
+        .contentShape(Rectangle())
+    }
+
+    private func ticketAction(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) { ticketLabel(title, icon: icon) }
+            .buttonStyle(RowPressStyle())
+            .disabled(invite == nil)
+            .opacity(invite == nil ? 0.4 : 1)
+    }
+
+    private func copyCode() {
+        guard let invite else { return }
+        UIPasteboard.general.string = InviteCode.grouped(invite.code)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        withAnimation(.easeOut(duration: 0.2)) { codeCopied = true }
+        Task { try? await Task.sleep(for: .seconds(2)); withAnimation { codeCopied = false } }
+    }
+
+    private func shareText(_ invite: WorkspaceInvite) -> String {
+        let until = invite.expiryDate.map { Self.expiryFormat.string(from: $0) } ?? ""
+        return L("Gabung ke Workspace %@ di Saku. Kode undangan: %@. Berlaku sampai %@.", trimmedName, InviteCode.grouped(invite.code), until)
+    }
+
+    private static let expiryFormat: DateFormatter = {
+        let f = DateFormatter(); f.dateStyle = .long; f.timeStyle = .none; f.locale = Locale.current; return f
+    }()
+
+    private func loadInvite() async {
+        guard let created, invite == nil else { return }
+        inviteFailed = false
+        do { invite = try await store.invite(for: created) } catch { inviteFailed = true }
     }
 
     private var doneMessage: String {
@@ -541,30 +704,26 @@ struct CreateWorkspaceView: View {
 
     // MARK: Buttons
 
+    /// The shared button group (Docs/DesignSystem): a text button 1 : the pill 3.
     private var buttons: some View {
-        VStack(spacing: 4) {
-            if isDone {
-                // the PRD asks the next screen to offer inviting right away
-                HStack(spacing: 12) {
-                    secondaryButton(L("Buka Workspace")) { finish(open: true) }
-                    primaryButton(L("Undang anggota")) { showsInvite = true }
-                }
-                Button(L("Tetap di sini")) { finish(open: false) }
-                    .font(.app(15, weight: .semibold))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .frame(height: 40)
-            } else if step == .intro {
-                HStack(spacing: 12) {
-                    secondaryButton(L("Batal")) { dismiss() }
-                    primaryButton(L("Mulai")) { next() }
-                }
-            } else if step == .payday {
-                HStack(spacing: 12) {
-                    secondaryButton(L("Atur nanti")) { paydayDay = nil; next() }
-                    primaryButton(L("Tambah workspace")) { next() }
-                }
-            } else {
-                primaryButton(step == questionSteps.last ? (start == .convert ? L("Ubah Workspace Pribadi") : L("Tambah workspace")) : L("Lanjut"), enabled: isValid) { next() }
+        Group {
+            switch step {
+            case .done:
+                SmartSheetFooter(primary: L("Buka Workspace"), onPrimary: { finish(open: true) })
+            case .intro:
+                SmartSheetFooter(primary: L("Mulai"), secondary: L("Batal"), onPrimary: { next() }, onSecondary: { dismiss() })
+            case .payday:
+                SmartSheetFooter(primary: L("Tambah workspace"), isBusy: isSaving, secondary: L("Atur nanti"),
+                                 onPrimary: { next() }, onSecondary: { paydayDay = nil; next() })
+            case .fail:
+                SmartSheetFooter(primary: L("Coba lagi"), isBusy: isSaving, secondary: L("Tutup"),
+                                 onPrimary: { Task { await save() } }, onSecondary: { dismiss() })
+            case .limit:
+                SmartSheetFooter(primary: L("Lihat Plus"), secondary: L("Tidak sekarang"),
+                                 onPrimary: { dismiss(); onLimit() }, onSecondary: { dismiss() })
+            default:
+                SmartSheetFooter(primary: step == questionSteps.last ? (start == .convert ? L("Ubah Workspace Pribadi") : L("Tambah workspace")) : L("Lanjut"),
+                                 isBusy: isSaving, onPrimary: { next() })
             }
         }
         .padding(.horizontal, 24)
@@ -573,37 +732,16 @@ struct CreateWorkspaceView: View {
         .background(Color.appBackground)
     }
 
-    private func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.app(17, weight: .semibold))
-                .foregroundStyle(Color.appText)
-                .frame(maxWidth: .infinity).frame(height: 52)
-                .background(Color.appFill, in: Capsule())
-        }
-        .buttonStyle(PressScaleStyle())
-        .disabled(isSaving)
-    }
-
-    private func primaryButton(_ title: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            ZStack {
-                if isSaving { ProgressView().tint(.white) }
-                else { Text(title).font(.app(17, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8) }
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity).frame(height: 52)
-            .background(enabled ? Color.appPrimary : Color(light: 0xC7C7CC, dark: 0x48484A), in: Capsule())
-            .animation(.easeInOut(duration: 0.26), value: enabled)
-        }
-        .buttonStyle(PressScaleStyle())
-        .disabled(!enabled || isSaving)
-    }
-
     // MARK: Actions
 
     private func pick(_ change: () -> Void) {
         change()
+        bump = true
+        Task { try? await Task.sleep(for: .milliseconds(180)); bump = false }
+    }
+
+    private func bumpOnce() {
+        guard !bump else { return }
         bump = true
         Task { try? await Task.sleep(for: .milliseconds(180)); bump = false }
     }
@@ -616,14 +754,32 @@ struct CreateWorkspaceView: View {
 
     private func next() {
         if step == .intro { forward = true; step = .start; return }
+        if step == .name && trimmedName.isEmpty {
+            withAnimation(.easeOut(duration: 0.2)) { nameError = true }
+            withAnimation(.linear(duration: 0.28)) { nameShake += 1 }
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            return
+        }
+        if step == .warning && !holdConfirmed {
+            withAnimation(.linear(duration: 0.28)) { holdShake += 1 }
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            return
+        }
+        if step == .look && lookMode == .photo && photo == nil {
+            withAnimation(.linear(duration: 0.28)) { holdShake += 1 }
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            return
+        }
         guard let at = questionSteps.firstIndex(of: step) else { return }
         if at == questionSteps.count - 1 { Task { await save() }; return }
         forward = true
         step = questionSteps[at + 1]
+        if step == .look, lookMode == .icon, icon == nil, photo == nil { icon = CategoryCatalog.visibleIcons(expanded: false).first }
     }
 
     private func save() async {
-        guard icon != nil || photo != nil, !isSaving else { return }
+        guard !isSaving else { return }
+        guard icon != nil || photo != nil else { forward = true; step = .fail; return }
         let icon = icon ?? "person.2.fill"
         isSaving = true
         defer { isSaving = false }
@@ -645,11 +801,11 @@ struct CreateWorkspaceView: View {
             step = .done
         } catch let error as WorkspaceError {
             switch error {
-            case .limit: dismiss(); onLimit()
+            case .limit: forward = true; step = .limit
             case .guest: dismiss()
-            case .ownerDeleting, .ownerMustTransfer, .walletLimit, .notMovable, .readOnly, .mapInvalid, .other: failed = true
+            case .ownerDeleting, .ownerMustTransfer, .walletLimit, .notMovable, .readOnly, .mapInvalid, .other: forward = true; step = .fail
             }
-        } catch { failed = true }
+        } catch { forward = true; step = .fail }
     }
 
     private func finish(open: Bool) {
@@ -661,3 +817,5 @@ struct CreateWorkspaceView: View {
         }
     }
 }
+
+
