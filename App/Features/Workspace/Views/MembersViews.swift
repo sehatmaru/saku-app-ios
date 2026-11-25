@@ -36,12 +36,12 @@ struct WorkspaceMembersSection: View {
             if workspace.isOwner {
                 Button { showsInvite = true } label: {
                     HStack(spacing: 14) {
-                        Image(systemName: "person.badge.plus").font(.system(size: 17, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                            .frame(width: 40, height: 40).background(Color.appFill, in: Circle())
-                        Text(L("Undang anggota")).font(.app(16, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                        Image(systemName: "person.badge.plus").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.appPrimary)
+                            .frame(width: 32, height: 32).background(Color.appFill, in: Circle())
+                        Text(L("Undang anggota")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimary)
                         Spacer(minLength: 8)
                     }
-                    .frame(minHeight: 60).contentShape(Rectangle())
+                    .frame(minHeight: 48).contentShape(Rectangle())
                 }
                 .buttonStyle(RowPressStyle())
             }
@@ -110,20 +110,20 @@ struct WorkspaceMembersSection: View {
             avatar(member)
             VStack(alignment: .leading, spacing: 2) {
                 Text(member.isMe ? L("%@ (kamu)", member.name) : member.name)
-                    .font(.app(16, weight: .semibold)).foregroundStyle(Color.appText).lineLimit(1)
+                    .font(.app(15, weight: .semibold)).foregroundStyle(Color.appText).lineLimit(1)
                 Text(member.isFormer ? L("Mantan anggota") : member.isOwner ? L("Pemilik") : L("Anggota"))
-                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                    .font(.app(12)).foregroundStyle(Color.appTextSecondary)
             }
             Spacer(minLength: 8)
             if workspace.isOwner, !member.isMe, !member.isFormer {
                 Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
         }
-        .frame(minHeight: 60)
+        .frame(minHeight: 48)
         .contentShape(Rectangle())
     }
 
-    private func avatar(_ member: WorkspaceMember) -> some View { MemberAvatar(member: member, size: 40) }
+    private func avatar(_ member: WorkspaceMember) -> some View { MemberAvatar(member: member, size: 32) }
 
     private func load() async {
         do { members = try await store.members(of: workspace); failed = false } catch { failed = true }
