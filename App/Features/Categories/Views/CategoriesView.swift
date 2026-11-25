@@ -13,6 +13,7 @@ struct CategoriesView: View {
     @State private var form: FormItem?
     @State private var limitReason: PlusReason?
     @ObservedObject private var plus = PlusStore.shared
+    @ObservedObject private var workspaceStore = WorkspaceStore.shared
     private let loadsOnAppear: Bool
 
     init() {
@@ -43,6 +44,7 @@ struct CategoriesView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
+            if workspaceStore.showsSwitcher && !workspaceStore.canEditActive { ownerOnlyNote }
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     if model.isLoading {
@@ -93,6 +95,19 @@ struct CategoriesView: View {
     private func add() {
         guard WorkspaceStore.shared.requireOwner() else { return }
         if atLimit(type) { limitReason = .categories(type) } else { form = FormItem(id: "new-\(type.rawValue)", mode: .new(type)) }
+    }
+
+    /// A member opens the list to look and to pick categories; only the Owner edits it.
+    private var ownerOnlyNote: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "lock").font(.system(size: 17)).foregroundStyle(Color.appTextSecondary)
+            Text(L("Kategori diatur Pemilik Workspace. Kamu bisa melihat dan memakainya."))
+                .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .background(Color.appFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 24).padding(.top, 12)
     }
 
     // MARK: - Header

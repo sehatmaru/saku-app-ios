@@ -23,6 +23,7 @@ struct ProfileView: View {
     @State private var showsPayday = false
 @ObservedObject private var workspaceStore = WorkspaceStore.shared
     @State private var isCancellingPayday = false
+    @State private var cancelPaydayFailed = false
     @State private var isPaydayFlashing = false
     /// Mirrors PaydaySetting.day (0 = not set) so the row updates when the payday changes.
     @AppStorage("paydayDay") private var paydayDay = 0
@@ -86,21 +87,10 @@ struct ProfileView: View {
                         }
                     }
                     VStack(alignment: .leading, spacing: 0) {
-                        // guests take no part in referrals: no menu, no code (K6)
-                        if authViewModel.currentUser?.isGuest == false {
-                            NavigationLink(destination: ReferralView().detailPage()) {
-                                row(icon: "person.2", title: L("Ajak teman"),
-                                    subtitle: plus.isPlus ? L("Bagikan kodemu ke teman") : L("Dapat +10 bantuan AI per teman")) { chevron }
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(RowPressStyle())
-                            .stEnter(2)
-                        }
-                        Rectangle().fill(Color.appDivider).frame(height: 1)
-                            .padding(.top, 14).stEnter(2)
                         dataSection.stEnter(3)
-                        appearanceSection.stEnter(4)
-                        logoutButton.stEnter(6)
+                        featureSection.stEnter(4)
+                        appearanceSection.stEnter(5)
+                        accountSection.stEnter(6)
                         Text(authViewModel.currentUser?.isGuest == true
                              ? L("Saku versi %@", appVersion)
                              : L("Bergabung sejak %@ · Saku versi %@", memberSinceDate, appVersion))
@@ -362,11 +352,11 @@ struct ProfileView: View {
     /// and subtitles that only repeated the value are gone.
     private var dataSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionCaption(L("Data"))
+            sectionCaption(workspaceStore.showsSwitcher ? L("Workspace") : L("Data"))
 
             if workspaceStore.showsSwitcher {
                 NavigationLink(destination: WorkspaceListView().detailPage()) {
-                    row(icon: "person.2", title: L("Workspace")) {
+                    row(icon: "building.2", title: L("Workspace")) {
                         chevron
                     }
                     .contentShape(Rectangle())
@@ -375,8 +365,7 @@ struct ProfileView: View {
             }
 
             NavigationLink(destination: CategoriesView()) {
-                row(icon: "square.grid.2x2", title: L("Kategori"),
-                    subtitle: isSharedSpace && !workspaceStore.canEditActive ? L("Hanya Pemilik yang bisa mengubah") : nil) {
+                row(icon: "square.grid.2x2", title: L("Kategori")) {
                     chevron
                 }
                 .contentShape(Rectangle())
@@ -384,8 +373,7 @@ struct ProfileView: View {
             .buttonStyle(RowPressStyle())
 
             Button { if canEditPayday { showsPayday = true } } label: {
-                row(icon: "calendar", title: workspaceStore.showsSwitcher ? workspaceStore.paydayTitle : L("Tanggal gajian"),
-                    subtitle: isSharedSpace && !canEditPayday ? L("Hanya Pemilik yang bisa mengubah") : nil) {
+                row(icon: "calendar", title: workspaceStore.showsSwitcher ? workspaceStore.paydayTitle : L("Tanggal gajian")) {
                     Text(paydayDay == 0 ? L("Belum diatur") : "\(paydayDay)")
                         .font(.app(15))
                         .foregroundStyle(Color.appTextSecondary)
@@ -398,8 +386,79 @@ struct ProfileView: View {
             .buttonStyle(RowPressStyle())
             .animation(.settle(0.4), value: paydayDay)
 
+            if let pending = pendingPayday {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(L("Gajian pindah ke tanggal %lld mulai %@.", pending.day, PaydayCycle.dayMonth.string(from: pending.from)))
+                            .font(.app(13))
+                            .foregroundStyle(Color.appTextSecondary)
+                        if isCancellingPayday {
+                            HStack(spacing: 4) {
+                                ProgressView().controlSize(.mini)
+                                Text(L("Membatalkan")).font(.app(13, weight: .semibold))
+                            }
+                            .foregroundStyle(Color.appTextTertiary)
+                        } else {
+                            Button(L("Batalkan")) { cancelPendingPayday() }
+                                .font(.app(13, weight: .semibold))
+                                .foregroundStyle(Color.appPrimary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    if cancelPaydayFailed {
+                        Text(L("Tidak bisa membatalkan. Coba lagi."))
+                            .font(.app(13)).foregroundStyle(Color.appError)
+                    }
+                }
+                .padding(.top, 10)
+                .transition(.opacity)
+            }
+        }
+        .animation(.settle(0.3), value: pendingPayday != nil)
+    }
+
+    /// K33: only the Owner changes the payday; members see it.
+    private var canEditPayday: Bool { !workspaceStore.showsSwitcher || workspaceStore.canEditActive }
+
+    private var pendingPayday: PaydayEntry? {
+        _ = paydaySchedule
+        return PaydayCycle.current.pending
+    }
+
+    private func cancelPendingPayday() {
+        isCancellingPayday = true
+        cancelPaydayFailed = false
+        Task {
+            do { try await SupabaseSDK.cancelPendingPayday() } catch { cancelPaydayFailed = true }
+            isCancellingPayday = false
+            NotificationCenter.default.post(name: .dataDidChange, object: nil)
+        }
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Color.appTextTertiary)
+    }
+
+    private var featureSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionCaption(L("Fitur"))
+
             NavigationLink(destination: SmartTrackerSettingsView().detailPage()) {
                 row(icon: "sparkles", title: L("Smart tracker")) {
+                    chevron
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RowPressStyle())
+
+
+            Button { showsHomeBalance = true } label: {
+                row(icon: "house", title: L("Total saldo")) {
+                    Text(homeBalanceMode == HomeBalanceMode.all.rawValue ? L("Kas + aset") : L("Kas saja"))
+                        .font(.app(15))
+                        .foregroundStyle(Color.appTextSecondary)
                     chevron
                 }
                 .contentShape(Rectangle())
@@ -414,6 +473,24 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
 
+        }
+    }
+
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionCaption(L("Akun"))
+
+            // guests take no part in referrals: no menu, no code (K6)
+            if authViewModel.currentUser?.isGuest == false {
+                NavigationLink(destination: ReferralView().detailPage()) {
+                    row(icon: "person.2", title: L("Ajak teman"),
+                        subtitle: plus.isPlus ? L("Bagikan kodemu ke teman") : L("Dapat +10 bantuan AI per teman")) { chevron }
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(RowPressStyle())
+                
+            }
+
             if PlusStore.isInternalBuild {
                 NavigationLink(destination: TestMenuView().detailPage()) {
                     row(icon: "hammer", title: "Menu uji") { chevron }
@@ -422,51 +499,8 @@ struct ProfileView: View {
                 .buttonStyle(RowPressStyle())
             }
 
-            if let pending = pendingPayday {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(L("Gajian pindah ke tanggal %lld mulai %@.", pending.day, PaydayCycle.dayMonth.string(from: pending.from)))
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
-                    if isCancellingPayday {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Button(L("Batalkan")) { cancelPendingPayday() }
-                            .font(.app(13, weight: .semibold))
-                            .foregroundStyle(Color.appPrimary)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(.top, 10)
-            }
+            logoutButton
         }
-    }
-
-    private var isSharedSpace: Bool {
-        guard workspaceStore.showsSwitcher, let active = workspaceStore.active else { return false }
-        return !active.isPersonal
-    }
-
-    /// K33: only the Owner changes the payday; members see it.
-    private var canEditPayday: Bool { !workspaceStore.showsSwitcher || workspaceStore.canEditActive }
-
-    private var pendingPayday: PaydayEntry? {
-        _ = paydaySchedule
-        return PaydayCycle.current.pending
-    }
-
-    private func cancelPendingPayday() {
-        isCancellingPayday = true
-        Task {
-            try? await SupabaseSDK.cancelPendingPayday()
-            isCancellingPayday = false
-            NotificationCenter.default.post(name: .dataDidChange, object: nil)
-        }
-    }
-
-    private var chevron: some View {
-        Image(systemName: "chevron.right")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Color.appTextTertiary)
     }
 
     private var appearanceSection: some View {
@@ -495,16 +529,6 @@ struct ProfileView: View {
             }
             .buttonStyle(RowPressStyle())
 
-            Button { showsHomeBalance = true } label: {
-                row(icon: "house", title: L("Total saldo")) {
-                    Text(homeBalanceMode == HomeBalanceMode.all.rawValue ? L("Kas + aset") : L("Kas saja"))
-                        .font(.app(15))
-                        .foregroundStyle(Color.appTextSecondary)
-                    chevron
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(RowPressStyle())
         }
     }
 
