@@ -370,6 +370,7 @@ struct WorkspaceChoiceSheet: View {
         var icon: String?
         var workspace: Workspace?
         var destructive = false
+        var subtitle: String?
         let action: () -> Void
     }
 
@@ -397,8 +398,13 @@ struct WorkspaceChoiceSheet: View {
                                     .foregroundStyle(option.destructive ? Color.appError : Color.appTextSecondary)
                                     .frame(width: 36, height: 36).background(Color.appFill, in: Circle())
                             }
-                            Text(option.title).font(.app(16, weight: .medium))
-                                .foregroundStyle(option.destructive ? Color.appError : Color.appText)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(option.title).font(.app(16, weight: .medium))
+                                    .foregroundStyle(option.destructive ? Color.appError : Color.appText)
+                                if let subtitle = option.subtitle {
+                                    Text(subtitle).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                                }
+                            }
                             Spacer(minLength: 8)
                         }
                         .frame(minHeight: 56).contentShape(Rectangle())

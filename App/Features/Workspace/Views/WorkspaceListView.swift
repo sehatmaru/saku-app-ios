@@ -157,7 +157,7 @@ struct WorkspaceListView: View {
 struct WorkspaceSettingsView: View {
     let workspaceId: UUID
     @ObservedObject private var store = WorkspaceStore.shared
-    @State private var showsEdit = false
+    @State private var editing: EditWorkspaceSheet.Field?
     @State private var showsPayday = false
     @State private var confirmsDelete = false
     @State private var isDeleting = false
@@ -173,8 +173,8 @@ struct WorkspaceSettingsView: View {
                     header(workspace)
                     VStack(spacing: 0) {
                         if !workspace.isPersonal {
-                            row(L("Nama"), value: workspace.displayName, editable: workspace.isOwner) { showsEdit = true }
-                            row(L("Ikon, warna, dan foto"), editable: workspace.isOwner, trailing: { WorkspaceBadge(workspace, size: 28) }) { showsEdit = true }
+                            row(L("Nama"), value: workspace.displayName, editable: workspace.isOwner) { editing = .name }
+                            row(L("Ikon, warna, dan foto"), editable: workspace.isOwner, trailing: { WorkspaceBadge(workspace, size: 28) }) { editing = .look }
                         }
                         row(WorkspaceStore.paydayTitle(shared: !workspace.isPersonal), value: workspace.paydayDay.map { "\($0)" } ?? L("Belum diatur"),
                             editable: workspace.isOwner) { editPayday(workspace) }
@@ -185,28 +185,18 @@ struct WorkspaceSettingsView: View {
                         WorkspaceMembersSection(workspace: workspace).padding(.horizontal, 24)
                     }
                     // any member may bring their own wallets in, moved or copied (K39)
-                    if !workspace.isPersonal && !workspace.isReadOnly && workspace.daysUntilDeletion == nil {
-                        Button { showsBring = true } label: {
-                            Text(L("Bawa data pribadi saya ke sini"))
-                                .font(.app(16, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
-                                .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).contentShape(Rectangle())
-                        }
-                        .buttonStyle(RowPressStyle())
-                        .padding(.horizontal, 24)
+                    let canBring = !workspace.isPersonal && !workspace.isReadOnly && workspace.daysUntilDeletion == nil
+                    let canRescue = !workspace.isOwner && !workspace.isPersonal && workspace.daysUntilDeletion != nil
+                    let canDelete = workspace.isOwner && !workspace.isPersonal
+                    if canBring || canRescue || canDelete { sectionLabel(L("Lainnya")) }
+                    if canBring {
+                        actionRow(L("Bawa data pribadi saya ke sini"), sub: L("Pindahkan atau salin dompet pribadi")) { showsBring = true }
                     }
-                    if workspace.isOwner && !workspace.isPersonal { deleteRow(workspace) }
                     // K42: a member can still bring their own wallets out while the Workspace waits to be deleted
-                    if !workspace.isOwner && !workspace.isPersonal, let days = workspace.daysUntilDeletion {
-                        Text(L("Dihapus dalam %lld hari", days)).font(.app(13)).foregroundStyle(Color.appError)
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 14)
-                        Button { showsRescue = true } label: {
-                            Text(L("Bawa data saya ke Workspace Pribadi"))
-                                .font(.app(16, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
-                                .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).contentShape(Rectangle())
-                        }
-                        .buttonStyle(RowPressStyle())
-                        .padding(.horizontal, 24)
+                    if canRescue, let days = workspace.daysUntilDeletion {
+                        actionRow(L("Bawa data saya ke Workspace Pribadi"), sub: L("Dihapus dalam %lld hari", days)) { showsRescue = true }
                     }
+                    if canDelete { deleteRow(workspace) }
                     if !workspace.isOwner {
                         Text(L("Hanya Pemilik yang bisa mengubah"))
                             .font(.app(13)).foregroundStyle(Color.appTextSecondary)
@@ -226,8 +216,8 @@ struct WorkspaceSettingsView: View {
             guard let workspace else { return }
             Task { await delete(workspace) }
         }
-        .sheet(isPresented: $showsEdit) {
-            if let workspace { EditWorkspaceSheet(workspace: workspace) }
+        .sheet(item: $editing) { field in
+            if let workspace { EditWorkspaceSheet(workspace: workspace, field: field) }
         }
         .sheet(isPresented: $showsBring) { MergeWizardView(mode: .merge(target: workspaceId)) }
         .sheet(isPresented: $showsRescue) { MergeWizardView(mode: .rescue(space: workspaceId)) }
@@ -240,26 +230,33 @@ struct WorkspaceSettingsView: View {
         }
     }
 
-    /// K21: delete with 7 days of grace, or take it back while the days run.
-    private func deleteRow(_ workspace: Workspace) -> some View {
-        let waiting = workspace.daysUntilDeletion != nil
-        return Button {
-            if waiting { Task { await cancelDeletion(workspace) } } else { confirmsDelete = true }
-        } label: {
-            HStack {
-                Text(waiting ? L("Batalkan penghapusan") : L("Hapus Workspace"))
-                    .font(.app(16, weight: .medium))
-                    .foregroundStyle(waiting ? Color.appPrimaryText : Color.appError)
-                Spacer(minLength: 8)
-                if let days = workspace.daysUntilDeletion {
-                    Text(L("Dihapus dalam %lld hari", days)).font(.app(13)).foregroundStyle(Color.appError)
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text).font(.app(13, weight: .semibold)).foregroundStyle(Color.appTextSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 2)
+    }
+
+    private func actionRow(_ title: String, sub: String, destructive: Bool = false, subIsError: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.app(16, weight: .medium)).foregroundStyle(destructive ? Color.appError : Color.appText)
+                    Text(sub).font(.app(13)).foregroundStyle(subIsError ? Color.appError : Color.appTextSecondary)
                 }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
             }
-            .frame(minHeight: 52)
-            .contentShape(Rectangle())
+            .frame(minHeight: 60).contentShape(Rectangle())
         }
         .buttonStyle(RowPressStyle())
-        .padding(.horizontal, 24).padding(.top, 12)
+        .padding(.horizontal, 24)
+    }
+
+    /// K21: delete with 7 days of grace, or take it back while the days run.
+    private func deleteRow(_ workspace: Workspace) -> some View {
+        if let days = workspace.daysUntilDeletion {
+            return actionRow(L("Batalkan penghapusan"), sub: L("Dihapus dalam %lld hari", days), subIsError: true) { Task { await cancelDeletion(workspace) } }
+        }
+        return actionRow(L("Hapus Workspace"), sub: L("Dihapus permanen setelah 7 hari"), destructive: true) { confirmsDelete = true }
     }
 
     private func delete(_ workspace: Workspace) async {
@@ -310,26 +307,23 @@ struct WorkspaceSettingsView: View {
 
     private func defaultRow(_ workspace: Workspace) -> some View {
         let blocked = workspace.isReadOnly || workspace.daysUntilDeletion != nil
-        return Button {
-            guard !workspace.isDefault else { return }
-            Task { try? await store.setDefault(workspace) }
-        } label: {
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L("Default Workspace")).font(.app(16)).foregroundStyle(Color.appText)
-                    if blocked {
-                        Text(L("Workspace baca saja tidak bisa dipilih")).font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                    }
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "checkmark")
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(Color.appPrimary)
-                    .opacity(workspace.isDefault ? 1 : 0)
+        return HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L("Default Workspace")).font(.app(16)).foregroundStyle(Color.appText)
+                Text(blocked ? L("Workspace baca saja tidak bisa dipilih") : L("Dibuka saat app dijalankan"))
+                    .font(.app(13)).foregroundStyle(Color.appTextSecondary)
             }
-            .frame(minHeight: 52)
-            .contentShape(Rectangle())
+            Spacer(minLength: 8)
+            Toggle("", isOn: Binding(
+                get: { workspace.isDefault },
+                set: { on in
+                    if on { Task { try? await store.setDefault(workspace); ToastCenter.shared.show(L("%@ jadi Default Workspace", workspace.displayName)) } }
+                    else { ToastCenter.shared.show(L("Pilih Workspace lain untuk mengganti default")) }
+                }))
+                .labelsHidden().tint(.appPrimary)
+                .accessibilityLabel(L("Default Workspace"))
         }
-        .buttonStyle(RowPressStyle())
+        .frame(minHeight: 60)
         .disabled(blocked)
         .opacity(blocked ? 0.5 : 1)
     }
@@ -343,7 +337,9 @@ struct WorkspaceSettingsView: View {
 
 /// Ubah nama, ikon, dan warna (Owner only, `update_space`).
 struct EditWorkspaceSheet: View {
+    enum Field: Identifiable { case name, look; var id: Self { self } }
     let workspace: Workspace
+    let field: Field
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = WorkspaceStore.shared
     @State private var name: String
@@ -356,8 +352,9 @@ struct EditWorkspaceSheet: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
 
-    init(workspace: Workspace) {
+    init(workspace: Workspace, field: Field) {
         self.workspace = workspace
+        self.field = field
         _name = State(initialValue: workspace.displayName)
         _icon = State(initialValue: workspace.icon ?? "person.2.fill")
         _color = State(initialValue: workspace.color ?? "hijau")
@@ -368,28 +365,25 @@ struct EditWorkspaceSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(L("Ubah Workspace"))
+            Text(field == .name ? L("Nama Workspace") : L("Ikon, warna, dan foto"))
                 .font(.app(22, weight: .bold)).tracking(-0.3)
                 .padding(.horizontal, 24).padding(.top, 20)
-            VStack(spacing: 10) {
-                WorkspaceBadge(icon: icon, color: color, size: 72, imageUrl: photoRemoved ? nil : workspace.imageUrl, image: photo)
+            if field == .name {
                 TextField("", text: $name, prompt: Text(L("Nama Workspace")).foregroundStyle(Color.appTextTertiary))
-                    .font(.app(26, weight: .bold)).tracking(-0.3)
-                    .multilineTextAlignment(.center).tint(.appPrimary)
-                    .frame(height: 36)
+                    .font(.app(17)).tint(.appPrimary)
+                    .padding(.horizontal, 16).frame(height: 56)
+                    .background(Color.appFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(.horizontal, 24).padding(.top, 16)
                     .onChange(of: name) { _, value in if value.count > 40 { name = String(value.prefix(40)) } }
-                    .toolbar {
-                        ToolbarItemGroup(placement: .keyboard) {
-                            Spacer()
-                            Button(L("Selesai")) { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
-                                .font(.app(17, weight: .semibold))
-                        }
-                    }
+                Text(errorMessage ?? L("Terlihat oleh semua anggota."))
+                    .font(.app(13)).foregroundStyle(errorMessage == nil ? Color.appTextSecondary : Color.appError)
+                    .padding(.horizontal, 24).padding(.top, 8)
+            } else {
+                WorkspaceBadge(icon: icon, color: color, size: 72, imageUrl: photoRemoved ? nil : workspace.imageUrl, image: photo)
+                    .frame(maxWidth: .infinity).padding(.top, 16)
                 if let errorMessage {
-                    Text(errorMessage).font(.app(13)).foregroundStyle(Color.appError)
+                    Text(errorMessage).font(.app(13)).foregroundStyle(Color.appError).padding(.horizontal, 24).padding(.top, 8)
                 }
-            }
-            .padding(.horizontal, 24).padding(.top, 16)
             WorkspaceLookModePicker(mode: $lookMode).padding(.horizontal, 24).padding(.top, 8)
             if lookMode == .photo {
                 WorkspacePhotoPanel(imageUrl: workspace.imageUrl, photo: $photo, removed: $photoRemoved).padding(.horizontal, 24)
@@ -434,6 +428,7 @@ struct EditWorkspaceSheet: View {
                 }
             }
             .padding(.horizontal, 30).padding(.top, 12)
+            }
             }
         }
         .disabled(isSaving)

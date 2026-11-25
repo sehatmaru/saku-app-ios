@@ -441,6 +441,16 @@
         }
       }
     },
+    "%@ jadi Default Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is now the Default Workspace"
+          }
+        }
+      }
+    },
     "%@ jatuh tempo hari ini": {
       "localizations": {
         "en": {
@@ -7153,6 +7163,16 @@
         }
       }
     },
+    "Catatannya tetap di sini": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Their entries stay here"
+          }
+        }
+      }
+    },
     "Cek": {
       "localizations": {
         "en": {
@@ -8569,6 +8589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Permanently deleted on %@. After that your data can't be recovered."
+          }
+        }
+      }
+    },
+    "Dihapus permanen setelah 7 hari": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted permanently after 7 days"
           }
         }
       }
@@ -12569,6 +12599,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You earned %lld out of 100 points."
+          }
+        }
+      }
+    },
+    "Kamu jadi anggota biasa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You become a regular member"
           }
         }
       }
@@ -19263,6 +19303,16 @@
         }
       }
     },
+    "Pilih Workspace lain untuk mengganti default": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick another Workspace to change the default"
+          }
+        }
+      }
+    },
     "Pilih angka": {
       "localizations": {
         "en": {
@@ -19669,6 +19719,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Move"
+          }
+        }
+      }
+    },
+    "Pindahkan atau salin dompet pribadi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move or copy your personal wallets"
           }
         }
       }
@@ -24979,6 +25039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld days late"
+          }
+        }
+      }
+    },
+    "Terlihat oleh semua anggota.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visible to all members."
           }
         }
       }

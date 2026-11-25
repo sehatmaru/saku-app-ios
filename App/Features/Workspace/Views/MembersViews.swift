@@ -67,9 +67,9 @@ struct WorkspaceMembersSection: View {
         .task(id: workspace.id) { await load() }
         .sheet(isPresented: $showsInvite, onDismiss: { Task { await load() } }) { InviteSheet(workspace: workspace) }
         .sheet(item: $picked) { member in
-            WorkspaceChoiceSheet(title: member.name, options: [
-                .init(title: L("Jadikan Pemilik"), icon: "key.fill") { asking = .transfer(member) },
-                .init(title: L("Keluarkan dari Workspace"), icon: "person.fill.xmark", destructive: true) { asking = .remove(member) }
+            WorkspaceChoiceSheet(title: member.name, message: L("Anggota"), options: [
+                .init(title: L("Jadikan Pemilik"), icon: "key.fill", subtitle: L("Kamu jadi anggota biasa")) { asking = .transfer(member) },
+                .init(title: L("Keluarkan dari Workspace"), icon: "person.fill.xmark", destructive: true, subtitle: L("Catatannya tetap di sini")) { asking = .remove(member) }
             ])
         }
         .confirmDialog(isPresented: Binding(get: { if case .remove = asking { true } else { false } }, set: { if !$0 { asking = nil } }),
