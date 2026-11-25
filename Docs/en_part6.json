@@ -2209,5 +2209,7 @@
   "Dihapus permanen setelah 7 hari": "Deleted permanently after 7 days",
   "Jadikan Default Workspace?": "Make it the Default Workspace?",
   "%@ terbuka pertama saat Saku dijalankan.": "%@ opens first when Saku starts.",
-  "%@ terbuka pertama saat Saku dijalankan. Default sebelumnya: %@.": "%@ opens first when Saku starts. Previous default: %@."
+  "%@ terbuka pertama saat Saku dijalankan. Default sebelumnya: %@.": "%@ opens first when Saku starts. Previous default: %@.",
+  "Atur cicilan": "Set installment",
+  "Buat berulang": "Set recurring"
 }

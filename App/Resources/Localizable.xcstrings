@@ -3323,6 +3323,16 @@
         }
       }
     },
+    "Atur cicilan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set installment"
+          }
+        }
+      }
+    },
     "Atur dompet dulu": {
       "localizations": {
         "en": {
@@ -5729,6 +5739,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Create new"
+          }
+        }
+      }
+    },
+    "Buat berulang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set recurring"
           }
         }
       }
