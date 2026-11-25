@@ -3,6 +3,10 @@ import SwiftUI
 /// Profil → Workspace: the list of the person's Workspaces (the default one carries a tag) and the way to make or join one (K33).
 struct WorkspaceListView: View {
     @ObservedObject private var store = WorkspaceStore.shared
+    @State private var showsDeleting = false
+
+    private var active: [Workspace] { store.spaces.filter { $0.daysUntilDeletion == nil } }
+    private var deleting: [Workspace] { store.spaces.filter { $0.daysUntilDeletion != nil } }
 
     var body: some View {
         ScrollView {
@@ -11,33 +15,27 @@ struct WorkspaceListView: View {
                     failure.padding(.horizontal, 24).padding(.top, 8)
                 } else {
                     label(L("Workspace saya"))
-                    ForEach(store.spaces) { workspace in
-                        NavigationLink(destination: WorkspaceSettingsView(workspaceId: workspace.id).detailPage()) {
-                            WorkspaceRow(workspace: workspace) {
-                                HStack(spacing: 10) {
-                                    if workspace.isDefault { defaultTag }
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(Color.appTextTertiary)
-                                }
-                            }
-                            .padding(.horizontal, 24)
-                        }
-                        .buttonStyle(RowPressStyle())
+                    ForEach(active) { workspace in
+                        NavigationLink(destination: WorkspaceSettingsView(workspaceId: workspace.id).detailPage()) { row(workspace) }
+                            .buttonStyle(RowPressStyle())
                     }
-                    label(L("Kelola"))
-                    actionRow("plus", L("Tambah workspace")) { store.requestCreate() }
-                    actionRow("number", L("Gabung workspace")) { store.requestJoin() }
+                    if !deleting.isEmpty { deletingCard }
                     if store.shared.isEmpty {
                         Text(L("Kamu baru punya Workspace Pribadi. Buat Workspace untuk mencatat keuangan bersama orang lain."))
                             .font(.app(13)).foregroundStyle(Color.appTextSecondary).lineSpacing(2)
-                            .padding(.horizontal, 24).padding(.top, 8)
+                            .padding(.horizontal, 24).padding(.top, 12)
                     }
                 }
             }
             .padding(.bottom, 24)
         }
         .background(Color.appBackground)
+        .safeAreaInset(edge: .bottom) {
+            SmartSheetFooter(primary: L("Tambah workspace"), secondary: L("Gabung"),
+                             onPrimary: { store.requestCreate() }, onSecondary: { store.requestJoin() })
+                .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 12)
+                .background(Color.appBackground)
+        }
         .navigationTitle(L("Workspace"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.load() }
@@ -48,28 +46,75 @@ struct WorkspaceListView: View {
             .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 2)
     }
 
-    private var defaultTag: some View {
-        Text(L("Utama")).font(.app(12, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
-            .padding(.horizontal, 10).frame(height: 24)
-            .background(Color.appPrimary.opacity(0.14), in: Capsule())
+    private func secondLine(_ workspace: Workspace) -> String {
+        var line = workspace.isPersonal ? L("Hanya kamu") : workspace.isOwner ? L("Pemilik") : L("Anggota · %lld orang", workspace.memberCount)
+        if workspace.isReadOnly { line += " · " + L("Baca saja") }
+        else if workspace.isDefault { line += " · " + L("Utama") }
+        return line
     }
 
-    private func actionRow(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: symbol)
-                    .font(.system(size: 17)).foregroundStyle(Color.appTextSecondary)
-                    .frame(width: 40, height: 40)
-                Text(title).font(.app(16)).foregroundStyle(Color.appText)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+    private func row(_ workspace: Workspace) -> some View {
+        HStack(spacing: 14) {
+            WorkspaceBadge(workspace, size: 48)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(workspace.displayName).font(.app(16, weight: .semibold)).foregroundStyle(Color.appText).lineLimit(1)
+                Text(secondLine(workspace)).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
             }
-            .frame(minHeight: 56)
-            .padding(.horizontal, 24)
-            .contentShape(Rectangle())
+            Spacer(minLength: 8)
+            if workspace.isDefault && !workspace.isReadOnly {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .heavy)).foregroundStyle(.white)
+                    .frame(width: 22, height: 22).background(Color.appPrimary, in: Circle())
+            } else {
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+            }
         }
-        .buttonStyle(RowPressStyle())
+        .frame(minHeight: 68)
+        .padding(.horizontal, 24)
+        .contentShape(Rectangle())
+    }
+
+    /// Workspaces waiting out their 7 days sit in one quiet card instead of filling the list.
+    private var deletingCard: some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation(.settle(0.3)) { showsDeleting.toggle() }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "clock").font(.system(size: 17)).foregroundStyle(Color.appError)
+                        .frame(width: 36, height: 36).background(Color.appError.opacity(0.09), in: Circle())
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(L("%lld Workspace akan dihapus", deleting.count)).font(.app(15, weight: .semibold)).foregroundStyle(Color.appText)
+                        Text(deleting.map(\.displayName).joined(separator: ", ")).font(.app(13)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.down").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.appTextTertiary)
+                        .rotationEffect(.degrees(showsDeleting ? 180 : 0))
+                }
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if showsDeleting {
+                ForEach(deleting) { workspace in
+                    NavigationLink(destination: WorkspaceSettingsView(workspaceId: workspace.id).detailPage()) {
+                        HStack(spacing: 12) {
+                            WorkspaceBadge(workspace, size: 36)
+                            Text(workspace.displayName).font(.app(15)).foregroundStyle(Color.appText).lineLimit(1)
+                            Spacer(minLength: 8)
+                            Text(L("Dihapus dalam %lld hari", workspace.daysUntilDeletion ?? 0))
+                                .font(.app(12, weight: .semibold)).foregroundStyle(Color.appError)
+                        }
+                        .frame(minHeight: 52)
+                        .padding(.horizontal, 16)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(RowPressStyle())
+                }
+            }
+        }
+        .background(Color.appError.opacity(0.09), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(.horizontal, 24).padding(.top, 20)
     }
 
     private var failure: some View {

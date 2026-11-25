@@ -921,6 +921,16 @@
         }
       }
     },
+    "%lld Workspace akan dihapus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Workspaces will be deleted"
+          }
+        }
+      }
+    },
     "%lld aktif": {
       "localizations": {
         "en": {

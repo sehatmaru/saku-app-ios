@@ -2196,5 +2196,6 @@
   "Undang anggota dengan kode": "Invite members with the code",
   "Fitur": "Features",
   "Akun": "Account",
-  "Kategori diatur Pemilik Workspace. Kamu bisa melihat dan memakainya.": "Categories are managed by the Workspace Owner. You can view and use them."
+  "Kategori diatur Pemilik Workspace. Kamu bisa melihat dan memakainya.": "Categories are managed by the Workspace Owner. You can view and use them.",
+  "%lld Workspace akan dihapus": "%lld Workspaces will be deleted"
 }
