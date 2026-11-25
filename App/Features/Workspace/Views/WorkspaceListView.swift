@@ -174,7 +174,6 @@ struct WorkspaceSettingsView: View {
                     VStack(spacing: 0) {
                         if !workspace.isPersonal {
                             row(L("Nama"), value: workspace.displayName, editable: workspace.isOwner) { editing = .name }
-                            row(L("Ikon, warna, dan foto"), editable: workspace.isOwner, trailing: { WorkspaceBadge(workspace, size: 28) }) { editing = .look }
                         }
                         row(WorkspaceStore.paydayTitle(shared: !workspace.isPersonal), value: workspace.paydayDay.map { "\($0)" } ?? L("Belum diatur"),
                             editable: workspace.isOwner) { editPayday(workspace) }
@@ -275,7 +274,21 @@ struct WorkspaceSettingsView: View {
 
     private func header(_ workspace: Workspace) -> some View {
         VStack(spacing: 10) {
-            WorkspaceBadge(workspace, size: 72)
+            Button { editing = .look } label: {
+                WorkspaceBadge(workspace, size: 72)
+                    .overlay(alignment: .bottomTrailing) {
+                        if workspace.isOwner && !workspace.isPersonal {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
+                                .frame(width: 26, height: 26).background(Color.appPrimary, in: Circle())
+                                .overlay { Circle().stroke(Color.appBackground, lineWidth: 2) }
+                                .offset(x: 6, y: 6)
+                        }
+                    }
+            }
+            .buttonStyle(PressScaleStyle())
+            .disabled(!(workspace.isOwner && !workspace.isPersonal))
+            .accessibilityLabel(L("Ikon, warna, dan foto"))
             Text(workspace.displayName)
                 .font(.app(22, weight: .bold)).tracking(-0.3)
                 .multilineTextAlignment(.center)
