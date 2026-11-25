@@ -217,6 +217,7 @@ struct DraftQueueView: View {
     @State private var expandedSource: Set<UUID> = []
     @State private var viewingImage: DraftImageItem?
     @State private var sourceSheet: DraftImageItem?
+@State private var noticeItem: DraftImageItem?
     @State private var dragging = false
     @State private var exiting: UUID?
     @State private var exitDir: CGFloat = 0
@@ -381,6 +382,9 @@ struct DraftQueueView: View {
         .plusOffer($plusReason)
         .sheet(item: $sheet) { item in sheetContent(item) }
         .fullScreenCover(item: $viewingImage) { DraftImageViewer(id: $0.id) }
+        .sheet(item: $noticeItem) { item in
+            if let d = store.drafts.first(where: { $0.id == item.id }) { noticeSheet(d) }
+        }
         .sheet(item: $sourceSheet) { item in
             if let d = store.drafts.first(where: { $0.id == item.id }) { sourceSheetContent(d) }
         }
@@ -575,9 +579,6 @@ struct DraftQueueView: View {
 
                 optionChips(d)
                 chips(d)
-                if let note = d.note {
-                    Label(note, systemImage: "eye").font(.app(13)).foregroundStyle(Color.stWarn).padding(.top, 8)
-                }
                 if let failure {
                     Label {
                         Text(failure.isOffline ? L("Gagal menyimpan.") : L("Gagal menyimpan:")).fontWeight(.semibold).foregroundStyle(Color.stDangerText)
@@ -832,32 +833,53 @@ struct DraftQueueView: View {
         .accessibilityValue(value ?? "")
     }
 
-    /// Short flags under the rows: looks like another draft, about to expire.
+    private struct Notice: Identifiable { let id = UUID(); let icon: String; let short: String; let tint: Color; let title: String; let detail: String }
+
+    private func notices(_ d: Draft) -> [Notice] {
+        var out: [Notice] = []
+        if let n = d.duplicateNote {
+            out.append(Notice(icon: "doc.on.doc", short: L("Mirip"), tint: Color.stWarn, title: L("Mirip transaksi lain"), detail: n))
+        }
+        if let n = d.note {
+            out.append(Notice(icon: "eye", short: L("Perlu dicek"), tint: Color.stWarn, title: L("Perlu dicek"), detail: n))
+        }
+        if let days = Calendar.current.dateComponents([.day], from: Date(), to: d.expiresAt).day.map({ max($0, 1) }), days <= 3 {
+            out.append(Notice(icon: "hourglass", short: L("%lld hari", days), tint: Color.appTextSecondary, title: L("Dibuang otomatis"),
+                              detail: L("Draf ini dibuang dalam %lld hari jika tidak diproses.", days)))
+        }
+        return out
+    }
+
+    /// One row of state flags (similar, needs a look, expiring). Tap opens the details.
     @ViewBuilder private func chips(_ d: Draft) -> some View {
-        let days = Calendar.current.dateComponents([.day], from: Date(), to: d.expiresAt).day.map { max($0, 1) }
-        let expiring = (days ?? 99) <= 3
-        if d.duplicateNote != nil || expiring {
-            HStack(spacing: 6) {
-                if let note = d.duplicateNote {
-                    chip("doc.on.doc", L("Mirip"), tint: Color.stWarn, label: L("Mirip transaksi lain.") + " " + note)
+        let items = notices(d)
+        if !items.isEmpty {
+            Button { if !swiping { noticeItem = DraftImageItem(id: d.id) } } label: {
+                HStack(spacing: 14) {
+                    ForEach(items) { n in
+                        HStack(spacing: 5) {
+                            Image(systemName: n.icon).font(.system(size: 12, weight: .bold)).foregroundStyle(n.tint)
+                            Text(n.short).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Color.appTextTertiary)
                 }
-                if expiring, let days {
-                    chip("hourglass", L("%lld hari", days), tint: Color.appTextSecondary, label: L("Dibuang otomatis dalam %lld hari", days))
-                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .padding(.top, 8)
+            .buttonStyle(.plain)
+            .padding(.top, 4)
+            .accessibilityLabel(items.map(\.title).joined(separator: ", "))
         }
     }
 
-    private func chip(_ icon: String, _ text: String, tint: Color, label: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 12, weight: .bold)).foregroundStyle(tint)
-            Text(text).font(.app(12, weight: .medium)).foregroundStyle(Color.appText)
+    private func noticeSheet(_ d: Draft) -> some View {
+        let items = notices(d)
+        return SmartSheet(tone: .neutral, icon: items.first?.icon ?? "info.circle", title: L("Yang perlu kamu tahu"),
+                          promises: items.map { SmartPromise(icon: $0.icon, title: $0.title, detail: $0.detail) }) {
+            SmartSheetFooter(primary: L("Mengerti"), onPrimary: { noticeItem = nil })
         }
-        .padding(.horizontal, 10).frame(height: 32)
-        .background(Color.appFill, in: Capsule())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
     }
 
     /// The source of a draft: the picture it was read from (full height) or the words it was made from (as tall as the text).
