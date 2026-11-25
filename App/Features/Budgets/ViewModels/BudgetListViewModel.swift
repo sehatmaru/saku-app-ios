@@ -70,6 +70,10 @@ final class BudgetListViewModel: ObservableObject {
     }
 
     func loadBudgets(userId: String, forceRefresh: Bool = false) async {
+        if forceRefresh {
+            isRefreshing = false
+            isLoading = false
+        }
         guard !isLoading, !isRefreshing else { return }
 
         if !forceRefresh, hasLoadedOnce, loadedUserId == userId {

@@ -105,6 +105,10 @@ final class TransactionListViewModel: ObservableObject {
     }
 
     func loadTransactions(userId: String, forceRefresh: Bool = false) async {
+        if forceRefresh {
+            isRefreshing = false
+            isLoading = false
+        }
         guard !isLoading, !isRefreshing else { return }
         let store = TransactionStore.shared
 

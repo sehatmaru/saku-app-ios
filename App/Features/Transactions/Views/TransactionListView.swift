@@ -133,7 +133,7 @@ struct TransactionListView: View {
                 .scrollDismissesKeyboard(.immediately)
                 .refreshable {
                     guard let userId = authViewModel.currentUser?.id else { return }
-                    await viewModel.loadTransactions(userId: userId, forceRefresh: true)
+                    await runRefresh { await viewModel.loadTransactions(userId: userId, forceRefresh: true) }
                 }
                 .onAppear { expandInitialMonths(); isBalanceVisible = isBalanceVisibleStorage }
                 .onChange(of: isBalanceVisibleStorage) { _, newValue in isBalanceVisible = newValue }

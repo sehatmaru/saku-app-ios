@@ -100,7 +100,7 @@ struct BudgetListView: View {
             // before the sheets below: a sheet inherits what is applied outside it, and must not get pull-to-refresh
             .refreshable {
                 guard let userId = authViewModel.currentUser?.id else { return }
-                await viewModel.loadBudgets(userId: userId, forceRefresh: true)
+                await runRefresh { await viewModel.loadBudgets(userId: userId, forceRefresh: true) }
             }
             .fullScreenCover(item: $addTarget) { target in
                 if let userId = authViewModel.currentUser?.id {

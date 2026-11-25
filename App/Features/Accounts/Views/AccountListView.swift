@@ -195,7 +195,7 @@ struct AccountListView: View {
                 }
                 .detailPage()
             }
-            .refreshable { await refreshWallets() }
+            .refreshable { await runRefresh { await refreshWallets() } }
             .onAppear {
                 isBalanceVisible = isBalanceVisibleStorage
                 if startsAdding { showAddWallet = true }
@@ -767,7 +767,7 @@ struct AccountListView: View {
                                 .padding(.bottom, 122)
                         }
                     }
-                    .refreshable { await refreshWallets() }
+                    .refreshable { await runRefresh { await refreshWallets() } }
                     .scrollIndicators(.hidden)
                     .scrollBounceBehavior(.always)
                     .scrollPosition($detailScrollPosition)

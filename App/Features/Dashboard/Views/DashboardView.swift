@@ -82,7 +82,7 @@ struct DashboardView: View {
         .onReceive(NotificationCenter.default.publisher(for: .dataDidChange)) { _ in
             if let userId = authViewModel.currentUser?.id {
                 Task {
-                    await viewModel.loadDashboard(userId: userId, forceRefresh: true)
+                    await runRefresh { await viewModel.loadDashboard(userId: userId, forceRefresh: true) }
                 }
             }
         }
