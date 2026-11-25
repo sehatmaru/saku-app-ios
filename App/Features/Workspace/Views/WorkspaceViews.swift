@@ -28,7 +28,7 @@ struct WorkspaceBadge: View {
 
     var body: some View {
         ZStack {
-            Circle().fill(WorkspaceStyle.color(color))
+            RoundedRectangle(cornerRadius: size * 0.29, style: .continuous).fill(WorkspaceStyle.color(color))
             Image(systemName: icon ?? "person.2.fill")
                 .font(.system(size: size * 0.45))
                 .foregroundStyle(.white)
@@ -39,7 +39,7 @@ struct WorkspaceBadge: View {
             }
         }
         .frame(width: size, height: size)
-        .clipShape(Circle())
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.29, style: .continuous))
         .accessibilityHidden(true)
     }
 }
