@@ -2206,5 +2206,8 @@
   "Catatannya tetap di sini": "Their entries stay here",
   "Terlihat oleh semua anggota.": "Visible to all members.",
   "Pindahkan atau salin dompet pribadi": "Move or copy your personal wallets",
-  "Dihapus permanen setelah 7 hari": "Deleted permanently after 7 days"
+  "Dihapus permanen setelah 7 hari": "Deleted permanently after 7 days",
+  "Jadikan Default Workspace?": "Make it the Default Workspace?",
+  "%@ terbuka pertama saat Saku dijalankan.": "%@ opens first when Saku starts.",
+  "%@ terbuka pertama saat Saku dijalankan. Default sebelumnya: %@.": "%@ opens first when Saku starts. Previous default: %@."
 }

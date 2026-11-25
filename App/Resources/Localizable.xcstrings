@@ -731,6 +731,26 @@
         }
       }
     },
+    "%@ terbuka pertama saat Saku dijalankan.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ opens first when Saku starts."
+          }
+        }
+      }
+    },
+    "%@ terbuka pertama saat Saku dijalankan. Default sebelumnya: %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ opens first when Saku starts. Previous default: %@."
+          }
+        }
+      }
+    },
     "%@ tersimpan": {
       "localizations": {
         "en": {
@@ -11919,6 +11939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Make this the Default Workspace"
+          }
+        }
+      }
+    },
+    "Jadikan Default Workspace?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make it the Default Workspace?"
           }
         }
       }

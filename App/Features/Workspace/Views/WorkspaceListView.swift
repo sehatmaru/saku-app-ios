@@ -160,6 +160,7 @@ struct WorkspaceSettingsView: View {
     @State private var editing: EditWorkspaceSheet.Field?
     @State private var showsPayday = false
     @State private var confirmsDelete = false
+    @State private var confirmsDefault = false
     @State private var isDeleting = false
     @State private var showsRescue = false
     @State private var showsBring = false
@@ -196,12 +197,6 @@ struct WorkspaceSettingsView: View {
                         actionRow(L("Bawa data saya ke Workspace Pribadi"), sub: L("Dihapus dalam %lld hari", days)) { showsRescue = true }
                     }
                     if canDelete { deleteRow(workspace) }
-                    if !workspace.isOwner {
-                        Text(L("Hanya Pemilik yang bisa mengubah"))
-                            .font(.app(13)).foregroundStyle(Color.appTextSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 24).padding(.top, 12)
-                    }
                 }
                 .padding(.bottom, 24)
             }
@@ -214,6 +209,15 @@ struct WorkspaceSettingsView: View {
                        confirmTitle: L("Hapus"), isBusy: isDeleting) {
             guard let workspace else { return }
             Task { await delete(workspace) }
+        }
+        .confirmDialog(isPresented: $confirmsDefault, icon: "checkmark.circle", title: L("Jadikan Default Workspace?"),
+                       message: defaultMessage, confirmTitle: L("Jadikan default")) {
+            guard let workspace else { return }
+            confirmsDefault = false
+            Task {
+                try? await store.setDefault(workspace)
+                ToastCenter.shared.show(L("%@ jadi Default Workspace", workspace.displayName))
+            }
         }
         .sheet(item: $editing) { field in
             if let workspace { EditWorkspaceSheet(workspace: workspace, field: field) }
@@ -318,6 +322,14 @@ struct WorkspaceSettingsView: View {
         .disabled(!editable)
     }
 
+    private var defaultMessage: String {
+        let name = workspace?.displayName ?? ""
+        guard let old = store.spaces.first(where: { $0.isDefault && !$0.isReadOnly && $0.daysUntilDeletion == nil && $0.id != workspaceId }) else {
+            return L("%@ terbuka pertama saat Saku dijalankan.", name)
+        }
+        return L("%@ terbuka pertama saat Saku dijalankan. Default sebelumnya: %@.", name, old.displayName)
+    }
+
     private func defaultRow(_ workspace: Workspace) -> some View {
         let blocked = workspace.isReadOnly || workspace.daysUntilDeletion != nil
         return HStack(spacing: 12) {
@@ -330,7 +342,7 @@ struct WorkspaceSettingsView: View {
             Toggle("", isOn: Binding(
                 get: { workspace.isDefault },
                 set: { on in
-                    if on { Task { try? await store.setDefault(workspace); ToastCenter.shared.show(L("%@ jadi Default Workspace", workspace.displayName)) } }
+                    if on { confirmsDefault = true }
                     else { ToastCenter.shared.show(L("Pilih Workspace lain untuk mengganti default")) }
                 }))
                 .labelsHidden().tint(.appPrimary)

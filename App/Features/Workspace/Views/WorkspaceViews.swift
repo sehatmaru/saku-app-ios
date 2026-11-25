@@ -83,8 +83,6 @@ struct WorkspacePhotoPanel: View {
                     .font(.app(15, weight: .semibold)).foregroundStyle(Color.appError)
                     .frame(height: 36)
             }
-            Text(L("Foto menggantikan ikon. Hanya Owner yang bisa mengubahnya."))
-                .font(.app(13)).foregroundStyle(Color.appTextSecondary).multilineTextAlignment(.center)
         }
         .padding(.horizontal, 6).padding(.top, 14)
         .onChange(of: item) { _, picked in
