@@ -2197,5 +2197,6 @@
   "Fitur": "Features",
   "Akun": "Account",
   "Kategori diatur Pemilik Workspace. Kamu bisa melihat dan memakainya.": "Categories are managed by the Workspace Owner. You can view and use them.",
-  "%lld Workspace akan dihapus": "%lld Workspaces will be deleted"
+  "%lld Workspace akan dihapus": "%lld Workspaces will be deleted",
+  "Default Workspace": "Default Workspace"
 }

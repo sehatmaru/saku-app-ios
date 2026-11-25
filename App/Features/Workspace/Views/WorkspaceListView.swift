@@ -6,6 +6,8 @@ struct WorkspaceListView: View {
     @State private var showsDeleting = false
 
     private var active: [Workspace] { store.spaces.filter { $0.daysUntilDeletion == nil } }
+    private var defaultSpace: Workspace? { active.first { $0.isDefault && !$0.isReadOnly } }
+    private var others: [Workspace] { active.filter { $0.id != defaultSpace?.id } }
     private var deleting: [Workspace] { store.spaces.filter { $0.daysUntilDeletion != nil } }
 
     var body: some View {
@@ -14,8 +16,13 @@ struct WorkspaceListView: View {
                 if store.loadFailed && store.spaces.isEmpty {
                     failure.padding(.horizontal, 24).padding(.top, 8)
                 } else {
-                    label(L("Workspace saya"))
-                    ForEach(active) { workspace in
+                    if let defaultSpace {
+                        label(L("Default Workspace"))
+                        NavigationLink(destination: WorkspaceSettingsView(workspaceId: defaultSpace.id).detailPage()) { row(defaultSpace) }
+                            .buttonStyle(RowPressStyle())
+                    }
+                    label(defaultSpace == nil ? L("Workspace saya") : L("Lainnya"))
+                    ForEach(others) { workspace in
                         NavigationLink(destination: WorkspaceSettingsView(workspaceId: workspace.id).detailPage()) { row(workspace) }
                             .buttonStyle(RowPressStyle())
                     }
@@ -49,7 +56,6 @@ struct WorkspaceListView: View {
     private func secondLine(_ workspace: Workspace) -> String {
         var line = workspace.isPersonal ? L("Hanya kamu") : workspace.isOwner ? L("Pemilik") : L("Anggota · %lld orang", workspace.memberCount)
         if workspace.isReadOnly { line += " · " + L("Baca saja") }
-        else if workspace.isDefault { line += " · " + L("Utama") }
         return line
     }
 
@@ -61,7 +67,7 @@ struct WorkspaceListView: View {
                 Text(secondLine(workspace)).font(.app(14)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
             }
             Spacer(minLength: 8)
-            if workspace.isDefault && !workspace.isReadOnly {
+            if workspace.id == defaultSpace?.id {
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .heavy)).foregroundStyle(.white)
                     .frame(width: 22, height: 22).background(Color.appPrimary, in: Circle())

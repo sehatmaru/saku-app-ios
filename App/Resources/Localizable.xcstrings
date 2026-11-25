@@ -8063,6 +8063,16 @@
         }
       }
     },
+    "Default Workspace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default Workspace"
+          }
+        }
+      }
+    },
     "Dengan Plus": {
       "localizations": {
         "en": {
