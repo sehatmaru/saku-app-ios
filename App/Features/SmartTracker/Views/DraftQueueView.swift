@@ -579,18 +579,6 @@ struct DraftQueueView: View {
 
                 optionChips(d)
                 chips(d)
-                if let failure {
-                    Label {
-                        Text(failure.isOffline ? L("Gagal menyimpan.") : L("Gagal menyimpan:")).fontWeight(.semibold).foregroundStyle(Color.stDangerText)
-                            + Text(" " + (failure.isOffline ? L("Kamu sedang offline. Draf tetap aman di sini, coba lagi saat tersambung.") : failure.message))
-                            .foregroundStyle(Color.appTextSecondary)
-                    } icon: { Image(systemName: failure.isOffline ? "wifi.slash" : "exclamationmark.triangle").foregroundStyle(Color.stDangerText) }
-                        .font(.app(13))
-                        .padding(.horizontal, 12).padding(.vertical, 10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.stDangerBg, in: RoundedRectangle(cornerRadius: 12))
-                        .padding(.top, 8)
-                }
                 if aiOn && aiOut && d.reader != .ai {
                     Button { plusReason = .aiHelp } label: {
                         Text(L("Coba Saku Plus untuk AI tanpa batas")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
@@ -837,6 +825,11 @@ struct DraftQueueView: View {
 
     private func notices(_ d: Draft) -> [Notice] {
         var out: [Notice] = []
+        if let f = failures[d.id] {
+            out.append(Notice(icon: f.isOffline ? "wifi.slash" : "exclamationmark.triangle", short: L("Gagal menyimpan"), tint: Color.stDangerText,
+                              title: L("Gagal menyimpan"),
+                              detail: f.isOffline ? L("Kamu sedang offline. Draf tetap aman di sini, coba lagi saat tersambung.") : f.message))
+        }
         if let n = d.duplicateNote {
             out.append(Notice(icon: "doc.on.doc", short: L("Mirip"), tint: Color.stWarn, title: L("Mirip transaksi lain"), detail: n))
         }
@@ -859,7 +852,7 @@ struct DraftQueueView: View {
                     ForEach(items) { n in
                         HStack(spacing: 5) {
                             Image(systemName: n.icon).font(.system(size: 12, weight: .bold)).foregroundStyle(n.tint)
-                            Text(n.short).font(.app(13)).foregroundStyle(Color.appTextSecondary)
+                            Text(n.short).font(.app(13)).foregroundStyle(n.tint == Color.stDangerText ? Color.stDangerText : Color.appTextSecondary)
                         }
                     }
                     Spacer(minLength: 0)
