@@ -51,6 +51,8 @@ skills-lock.json
 
 # Local product source
 PRD.md
+HANDOFF.md
+PROMPTS.md
 
 # macOS
 .DS_Store
@@ -77,3 +79,9 @@ build/
 
 # Local MCP server config
 .mcp.json
+
+# antislop setup (local tooling, not committed)
+.opencode/
+AGENTS.md
+anti-slop/
+.hermes/
