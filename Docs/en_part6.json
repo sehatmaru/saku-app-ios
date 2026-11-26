@@ -2016,8 +2016,8 @@
   "Belum berhasil. Periksa koneksi lalu coba lagi.": "Didn't work. Check your connection and try again.",
   "Kamu masih Pemilik Workspace yang punya anggota lain. Serahkan kepemilikannya dulu di Profil, Workspace, lalu Anggota.": "You still own a Workspace with other members. Hand over ownership first in Profile, Workspace, then Members.",
   "Punya kode?": "Have a code?",
-"Punya kode undangan?": "Have an invite code?",
-"Gabung ke Workspace orang lain": "Join someone else's Workspace",
+  "Punya kode undangan?": "Have an invite code?",
+  "Gabung ke Workspace orang lain": "Join someone else's Workspace",
   "Awal periode": "Period start",
   "Awal periode disimpan": "Period start saved",
   "Awal periode Workspace ini": "This Workspace's period start",
@@ -2211,5 +2211,10 @@
   "%@ terbuka pertama saat Saku dijalankan.": "%@ opens first when Saku starts.",
   "%@ terbuka pertama saat Saku dijalankan. Default sebelumnya: %@.": "%@ opens first when Saku starts. Previous default: %@.",
   "Atur cicilan": "Set installment",
-  "Buat berulang": "Set recurring"
+  "Buat berulang": "Set recurring",
+  "Mirip transaksi lain": "Looks like another transaction",
+  "Perlu dicek": "Needs a look",
+  "Yang perlu kamu tahu": "Worth knowing",
+  "Dibuang otomatis": "Discarded automatically",
+  "Draf ini dibuang dalam %lld hari jika tidak diproses.": "This draft is discarded in %lld days if not handled."
 }

@@ -8453,6 +8453,16 @@
         }
       }
     },
+    "Dibuang otomatis": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discarded automatically"
+          }
+        }
+      }
+    },
     "Dibuang otomatis dalam %lld hari": {
       "localizations": {
         "en": {
@@ -9479,6 +9489,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Drafts are gone for good and nothing is recorded as a transaction."
+          }
+        }
+      }
+    },
+    "Draf ini dibuang dalam %lld hari jika tidak diproses.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This draft is discarded in %lld days if not handled."
           }
         }
       }
@@ -16663,6 +16683,16 @@
         }
       }
     },
+    "Mirip transaksi lain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looks like another transaction"
+          }
+        }
+      }
+    },
     "Mirip transaksi lain.": {
       "localizations": {
         "en": {
@@ -19139,6 +19169,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Needs work"
+          }
+        }
+      }
+    },
+    "Perlu dicek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs a look"
           }
         }
       }
@@ -27861,6 +27901,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Costing you the most: %@, %lld points short."
+          }
+        }
+      }
+    },
+    "Yang perlu kamu tahu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worth knowing"
           }
         }
       }
