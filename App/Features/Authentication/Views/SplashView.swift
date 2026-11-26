@@ -33,6 +33,7 @@ struct SplashView: View {
             .offset(y: -40)
         }
         .task {
+            LaunchLog.mark("splash start") // TEMP-LAUNCH-LOG
             let start = ContinuousClock.now
             let steps: [(ms: Int, run: @MainActor () -> Void)] = [
                 (0, { pocketIn = true }),
@@ -45,9 +46,12 @@ struct SplashView: View {
             ]
             for step in steps {
                 try? await Task.sleep(until: start + .milliseconds(step.ms), clock: .continuous)
+                LaunchLog.mark("splash animation \(step.ms)") // TEMP-LAUNCH-LOG
                 step.run()
             }
+            LaunchLog.mark("splash minimum display wait") // TEMP-LAUNCH-LOG
             try? await Task.sleep(until: start + .milliseconds(1000), clock: .continuous)
+            LaunchLog.mark("splash end") // TEMP-LAUNCH-LOG
             onComplete()
         }
     }

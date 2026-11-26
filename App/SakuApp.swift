@@ -6,6 +6,10 @@ struct SakuApp: App {
     @StateObject private var authViewModel = AuthViewModel()
     @Environment(\.scenePhase) private var scenePhase
 
+    init() {
+        LaunchLog.begin() // TEMP-LAUNCH-LOG
+    }
+
     var body: some Scene {
         // Keep this closure free of state reads: SwiftUI may re-run it on its async
         // render thread during animations, which trips Swift 6's main-actor check.
@@ -116,7 +120,10 @@ struct RootView: View {
         }
         // a guest who saved their account is no longer a guest: AI and the rest open up
         .onChange(of: authViewModel.currentUser?.isGuest) { _, isGuest in DraftStore.shared.isGuest = isGuest == true }
-        .task { await authViewModel.checkSession() }
+        .task { // TEMP-LAUNCH-LOG
+            LaunchLog.mark("root checkSession task") // TEMP-LAUNCH-LOG
+            await authViewModel.checkSession() // TEMP-LAUNCH-LOG
+        }
         .preferredColorScheme(appTheme.colorScheme)
         .environment(\.locale, AppLanguage.locale)
         .id(appLanguage)

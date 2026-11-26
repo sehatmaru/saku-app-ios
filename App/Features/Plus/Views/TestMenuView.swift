@@ -28,6 +28,13 @@ struct TestMenuView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
+                header("Desain")
+                NavigationLink(destination: DesignGalleryView().detailPage()) {
+                    Text(verbatim: "Galeri komponen").font(.app(16)).foregroundStyle(Color.appText)
+                        .frame(maxWidth: .infinity, alignment: .leading).frame(minHeight: 44)
+                }
+                .buttonStyle(RowPressStyle())
+
                 header("Saku Plus")
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
