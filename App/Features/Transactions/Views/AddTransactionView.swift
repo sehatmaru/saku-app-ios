@@ -152,7 +152,7 @@ struct AddTransactionView: View {
             if activeAccounts.isEmpty {
                 VStack(spacing: 0) {
                     HStack {
-                        Button("Tutup") { dismiss() }
+                        Button("Batal") { dismiss() }
                         Spacer()
                     }
                     .padding(20)
@@ -267,7 +267,7 @@ struct AddTransactionView: View {
         VStack(spacing: 0) {
             ZStack {
                 HStack {
-                    Button("Tutup") { dismiss() }
+                    Button("Batal") { dismiss() }
                         .font(.app(17))
                     Spacer()
                     repeatControl
