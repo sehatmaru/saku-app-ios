@@ -96,21 +96,7 @@ struct TransactionDetailView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbar {
-            // Same ↻ as the add page, in the top corner: set or change the recurring bill. A card's installment excludes it.
-            if isEditable, txn.type == .expense, !isDeleted, !txn.isRecurring, installment == nil {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { planKind = .recurring } label: {
-                        if let next = subscription?.nextBillingDateAsDate {
-                            Label(TransactionDates.dayMonth.string(from: next), systemImage: "repeat").font(.app(14, weight: .semibold)).monospacedDigit()
-                        } else {
-                            Image(systemName: "repeat").fontWeight(.bold)
-                        }
-                    }
-                    .accessibilityLabel(L("Ulangi"))
-                }
-            }
-        }
+        .toolbar { repeatToolbar }
         .hidesTabBarWhilePushed()
         .toolbarColorScheme(.dark, for: .navigationBar)
         .tint(.white)
@@ -205,6 +191,38 @@ struct TransactionDetailView: View {
             }
             .padding(.horizontal, installment != nil ? 24 : 0)
         }
+    }
+
+    @ToolbarContentBuilder private var repeatToolbar: some ToolbarContent {
+        if isEditable, txn.type == .expense, !isDeleted, !txn.isRecurring, installment == nil {
+            if #available(iOS 26.0, *) {
+                ToolbarItem(placement: .topBarTrailing) { repeatButton.id(subscription?.id ?? "none") }
+                    .sharedBackgroundVisibility(.hidden)
+            } else {
+                ToolbarItem(placement: .topBarTrailing) { repeatButton.id(subscription?.id ?? "none") }
+            }
+        }
+    }
+
+    /// The ↻ in the top corner like the add page: set or change the recurring bill, a white pill with the next date once it is on.
+    /// A card's installment excludes it. One view shape either way, so the navigation bar redraws it when the bill changes.
+    private var repeatButton: some View {
+        let next = subscription?.nextBillingDateAsDate
+        return Button { planKind = .recurring } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "repeat").font(.system(size: next == nil ? 17 : 14, weight: .bold))
+                Text(next.map { TransactionDates.dayMonth.string(from: $0) } ?? "")
+                    .font(.app(14, weight: .semibold)).monospacedDigit()
+                    .frame(width: next == nil ? 0 : nil)
+                    .opacity(next == nil ? 0 : 1)
+            }
+            .foregroundStyle(next == nil ? Color.white : style.color)
+            .padding(.horizontal, next == nil ? 0 : 12)
+            .frame(minWidth: next == nil ? 36 : 0, minHeight: next == nil ? 36 : 32, maxHeight: next == nil ? 36 : 32)
+            .background(next == nil ? Color.white.opacity(0.2) : Color.white, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L("Ulangi"))
     }
 
     /// Same row as Cicilan / Berulang on the add page: label, "Tidak" while off, chevron.
