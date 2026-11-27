@@ -3,8 +3,6 @@ import SwiftUI
 /// Manual entry: a coloured panel you swipe to change type (red expense, green income,
 /// blue transfer), form rows below, and a numpad with Simpan. For expenses the panel
 /// shows the day's remaining budget shrinking as you type.
-///
-/// Pass `editing` to reopen an existing transaction prefilled; Simpan then updates it.
 struct AddTransactionView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -18,8 +16,6 @@ struct AddTransactionView: View {
     var initialAccount: Account?
     /// Starts a transfer as "Setor ke aset" or "Tarik dari aset" (the wallet given as `initialAccount` is the investment one).
     var initialAssetMode: AssetMode?
-    var editing: Transaction?
-    var onUpdated: ((Transaction) -> Void)?
 
     /// A transfer into or out of an investment wallet; nil is a plain transfer between wallets.
     enum AssetMode: Equatable { case deposit, withdraw }
@@ -54,14 +50,6 @@ struct AddTransactionView: View {
     @State private var history: [Transaction] = []
     /// 0% installment months for a new card expense; 0 means none.
     @State private var installmentMonths = 0
-    /// Ubah: the installment and recurring bill this transaction already has (Enhancement "Cicilan dan berulang setelah transaksi").
-    @State private var editPlan: CardInstallment?
-    @State private var editSubscription: CardSubscription?
-    @State private var editPlanKind: TransactionPlanSheet.Kind?
-    private struct EditPlanID: Identifiable {
-        let kind: TransactionPlanSheet.Kind
-        var id: Int { kind == .installment ? 0 : 1 }
-    }
     /// The expense saved but its installment didn't; closing after the alert avoids a duplicate on retry.
     @State private var closesAfterAlert = false
     /// Hidden flags and order for the category picker.
@@ -94,7 +82,6 @@ struct AddTransactionView: View {
     private var isTransfer: Bool { style.type == .transfer }
     /// Editing keeps a transfer a transfer, and expense/income on their side of the carousel.
     private var allowedTypes: ClosedRange<Int> {
-        if let editing { return editing.type == .transfer ? 2...2 : 0...1 }
         if locksType, let i = Self.types.firstIndex(where: { $0.type == initialType }) { return i...i }
         return 0...2
     }
@@ -105,7 +92,7 @@ struct AddTransactionView: View {
     private var cashWallets: [Account] { activeAccounts.filter { !$0.isInvestment && !$0.isCreditCard } }
     private var investmentWallets: [Account] { activeAccounts.filter(\.isInvestment) }
     private var panelColor: Color { isTransfer && assetMode != nil ? .appInvestmentPanel : style.color }
-    private var showsAssetModes: Bool { isTransfer && hasInvestments && editing == nil }
+    private var showsAssetModes: Bool { isTransfer && hasInvestments }
     /// Expense and income can't sit on an investment wallet; a transfer's source depends on its mode.
     private var sourceAccounts: [Account] {
         guard isTransfer else { return WalletRules.spendingSources(activeAccounts) }
@@ -130,21 +117,15 @@ struct AddTransactionView: View {
     }
     private var isCardExpense: Bool { style.type == .expense && account?.isCreditCard == true }
     /// The plan that will actually be saved: only new card expenses can be split.
-    private var planMonths: Int { isCardExpense && editing == nil ? installmentMonths : 0 }
-    private static let installmentOptions = [0, 3, 6, 12, 24]
+    private var planMonths: Int { isCardExpense ? installmentMonths : 0 }
     /// New expenses can become a recurring bill, unless they're already split into installments.
-    private var canRepeat: Bool { style.type == .expense && editing == nil && planMonths == 0 }
+    private var canRepeat: Bool { style.type == .expense && planMonths == 0 }
     private var repeatToSave: CardSubscription.Frequency? { canRepeat ? repeatFrequency : nil }
     private var categoryKind: CategoryType { style.type == .income ? .income : .expense }
-    /// The picker's categories in the user's order, without hidden ones and Penyesuaian Saldo;
-    /// a hidden one stays only when the transaction being edited already uses it.
+    /// The picker's categories in the user's order, without hidden ones and Penyesuaian Saldo.
     private var typeCategories: [Category] {
         let lists = categories.filter { $0.type == categoryKind && !CategoryCatalog.isSystem($0) }.arranged(by: preferences)
-        var shown = lists.shown
-        if let id = editing?.categoryId, let kept = lists.hidden.first(where: { $0.id == id }) {
-            shown.append(kept)
-        }
-        return shown
+        return lists.shown
     }
 
     var body: some View {
@@ -165,14 +146,6 @@ struct AddTransactionView: View {
         .background(Color.appBackground)
         .onAppear(perform: setUp)
         .task { await loadBudgetData() }
-        .task { await loadEditPlans() }
-        .sheet(item: Binding(get: { editPlanKind.map(EditPlanID.init) }, set: { editPlanKind = $0?.kind })) { id in
-            if let editing, let acct = accounts.first(where: { $0.id == editing.accountId }) {
-                TransactionPlanSheet(kind: id.kind, txn: editing, account: acct, category: categories.first { $0.id == editing.categoryId },
-                                     plan: editPlan, subscription: editSubscription, userId: userId,
-                                     onDone: { Task { await loadEditPlans() }; onSave() })
-            }
-        }
         .task { await loadPreferences() }
         .alert("Gagal menyimpan", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("OK", role: .cancel) { if closesAfterAlert { dismiss() } }
@@ -210,16 +183,7 @@ struct AddTransactionView: View {
 
     private func setUp() {
         guard account == nil else { return }
-        if let editing {
-            typeIndex = Self.types.firstIndex { $0.type == editing.type } ?? 0
-            amount = Int(editing.amount)
-            category = categories.first { $0.id == editing.categoryId }
-            account = accounts.first { $0.id == editing.accountId }
-            target = accounts.first { $0.id == editing.counterpartyAccountId }
-            date = editing.date
-            note = editing.description ?? ""
-            if account?.isInvestment == true { assetMode = .withdraw } else if target?.isInvestment == true { assetMode = .deposit }
-        } else if let mode = initialAssetMode, let wallet = initialAccount, wallet.isInvestment {
+        if let mode = initialAssetMode, let wallet = initialAccount, wallet.isInvestment {
             typeIndex = Self.types.firstIndex { $0.type == .transfer } ?? 0
             assetMode = mode
             account = mode == .withdraw ? wallet : cashWallets.first ?? activeAccounts.first { !$0.isInvestment }
@@ -244,8 +208,7 @@ struct AddTransactionView: View {
         async let budgets = SupabaseRepository.shared.fetchBudgets(userId: userId)
         async let transactions = TransactionStore.shared.fetchAll(userId: userId)
         monthlyBudget = ((try? await budgets) ?? []).filter(\.isActive).reduce(0) { $0 + $1.amount }
-        // The transaction being edited is re-counted with its new amount as you type.
-        let all = ((try? await transactions) ?? []).filter { $0.id != editing?.id }
+        let all = (try? await transactions) ?? []
         history = all
         expenses = all.filter { $0.type == .expense }
     }
@@ -274,10 +237,6 @@ struct AddTransactionView: View {
                 }
                 if allowedTypes.count > 1 {
                     typeDots
-                } else if editing != nil {
-                    Text("Edit transaksi")
-                        .font(.app(13))
-                        .opacity(0.75)
                 }
             }
             .frame(height: isCompact ? 40 : 44)
@@ -460,9 +419,7 @@ struct AddTransactionView: View {
     /// "Saldo X jadi Rp…" while typing, "Saldo X sekarang Rp…" once saved.
     private func incomeMessage(done: Bool) -> String {
         guard let account else { return "" }
-        // When editing, the saved amount is already in the balance.
-        let saved = editing?.type == .income && editing?.accountId == account.id ? editing?.amount ?? 0 : 0
-        let next = account.balance - saved + Double(amount)
+        let next = account.balance + Double(amount)
         let money = (next < 0 ? "−Rp" : "Rp") + next.formattedAsDigits()
         return done ? L("Saldo %@ sekarang %@", account.name, money) : L("Saldo %@ jadi %@", account.name, money)
     }
@@ -562,7 +519,7 @@ struct AddTransactionView: View {
     // MARK: - Repeat (Ulangi)
 
     /// Only new expenses can repeat; a card's installment excludes it.
-    private var showsRepeat: Bool { style.type == .expense && editing == nil }
+    private var showsRepeat: Bool { style.type == .expense }
 
     private static let repeatOptions: [(CardSubscription.Frequency?, String)] = [(nil, "Tidak"), (.monthly, "Tiap bulan"), (.yearly, "Tiap tahun")]
 
@@ -677,13 +634,12 @@ struct AddTransactionView: View {
                     categoryMark: category, isPlaceholder: category == nil, index: 0)
                 row(.account, label: L("Dompet"), value: account?.name ?? L("Pilih"), wallet: account,
                     sub: isCardExpense && planMonths == 0 ? account.map(billingText) : nil, index: 1)
-                if isCardExpense, let account, editing == nil {
+                if isCardExpense, let account {
                     row(.installment, label: L("Cicilan"), value: installmentMonths == 0 ? L("Tidak") : L("%lld bulan", installmentMonths),
                         icon: "calendar.badge.clock", iconColor: .appTextSecondary,
                         sub: planMonths > 0 ? planText(card: account) : nil, index: 1)
                 }
             }
-            if let editing, editing.type == .expense, !isTransfer { editPlanRows(for: editing) }
             row(.date, label: L("Tanggal"), value: dateValue, icon: "calendar", iconColor: .appTextSecondary, index: 2)
 
             HStack(spacing: 12) {
@@ -724,33 +680,6 @@ struct AddTransactionView: View {
         .rise(isEntered, y: 14, delay: 0.2 + Double(index) * 0.06, fade: 0.4, move: 0.5)
     }
 
-    /// Ubah: Cicilan (card expenses) and Berulang, with what is set now. They open the same sheet as Detail transaksi and save on their own.
-    @ViewBuilder private func editPlanRows(for editing: Transaction) -> some View {
-        if accounts.first(where: { $0.id == editing.accountId })?.isCreditCard == true {
-            Button { editPlanKind = .installment } label: {
-                DetailRow(label: L("Cicilan"), value: editPlan.map { L("%lld bulan", $0.months) } ?? L("Tidak"),
-                          icon: "calendar.badge.clock", iconColor: .appTextSecondary, showsChevron: true, height: rowHeight)
-            }
-            .buttonStyle(.plain)
-        }
-        if !editing.isRecurring {
-            Button { editPlanKind = .recurring } label: {
-                DetailRow(label: L("Berulang"), value: editSubscription.map { $0.isActive ? ($0.frequency == .yearly ? L("Tiap tahun") : L("Tiap bulan")) : L("Tidak") } ?? L("Tidak"),
-                          icon: "repeat", iconColor: .appTextSecondary, showsChevron: true, height: rowHeight)
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private func loadEditPlans() async {
-        guard let editing, editing.type == .expense else { return }
-        let card = accounts.first { $0.id == editing.accountId }
-        if card?.isCreditCard == true {
-            editPlan = (try? await SupabaseRepository.shared.fetchInstallments(accountIds: [editing.accountId]))?.first { $0.transactionId == editing.id }
-        }
-        editSubscription = (try? await SupabaseRepository.shared.fetchSubscription(sourceTransactionId: editing.id)) ?? nil
-    }
-
     private var rowHeight: CGFloat { isCompact ? 46 : 48 }
 
     private var nextRepeatDate: Date { repeatDate(repeatFrequency ?? .monthly) }
@@ -769,7 +698,7 @@ struct AddTransactionView: View {
 
     private func billingText(card: Account) -> String {
         // A card declines what its limit can't hold; Saku still records it, but says so.
-        if editing == nil, let available = card.availableCredit, amount > 0, Double(amount) > max(available, 0) {
+        if let available = card.availableCredit, amount > 0, Double(amount) > max(available, 0) {
             return L("Melebihi sisa limit %@", max(available, 0).formattedAsCurrency())
         }
         let billing = CreditStatement.billing(forPurchaseOn: date, card: card)
@@ -845,6 +774,10 @@ struct AddTransactionView: View {
             }
         case .account, .target:
             walletSheet(kind)
+        case .installment:
+            InstallmentChoiceSheet(selected: installmentMonths,
+                                   onSelect: { months in withAnimation(.settle(0.3)) { installmentMonths = months } },
+                                   onDone: { sheet = nil })
         default:
             optionSheet(kind)
         }
@@ -913,16 +846,14 @@ struct AddTransactionView: View {
 
     @ViewBuilder
     private func optionSheet(_ kind: PickerKind) -> some View {
-        PickerSheet(title: sheetTitle(kind), actionTitle: kind == .installment ? L("Selesai") : nil, onDone: { sheet = nil }) {
+        PickerSheet(title: sheetTitle(kind), actionTitle: nil, onDone: { sheet = nil }) {
             switch kind {
-            case .category, .account, .target:
+            case .category, .account, .target, .installment:
                 EmptyView()
             case .date:
                 DayPicker(selected: date, color: style.color) { day in
                     pick(.date) { date = keepingTime(of: date, on: day) }
                 }
-            case .installment:
-                installmentChips
             }
         }
     }
@@ -935,34 +866,6 @@ struct AddTransactionView: View {
         case .date: L("Tanggal")
         case .installment: L("Cicilan 0%")
         }
-    }
-
-    private var installmentChips: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                ForEach(Self.installmentOptions, id: \.self) { months in
-                    let isOn = months == installmentMonths
-                    Button {
-                        withAnimation(.settle(0.3)) { installmentMonths = months }
-                    } label: {
-                        Text(months == 0 ? L("Tidak") : L("%lld bulan", months))
-                            .font(.app(15, weight: .medium))
-                            .foregroundStyle(isOn ? Color.appBackground : Color.appText)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .background(isOn ? Color.appText : Color.appFill, in: Capsule())
-                    }
-                    .buttonStyle(PressScaleStyle())
-                    .accessibilityAddTraits(isOn ? .isSelected : [])
-                }
-            }
-            Text("Seluruh nominal langsung memakai limit kartu, tapi tiap tagihan hanya menagih satu bagian.")
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 12)
-        .padding(.bottom, 24)
     }
 
     /// Picking the other side of a transfer swaps the two wallets; picking an investment wallet turns it into
@@ -1038,7 +941,7 @@ struct AddTransactionView: View {
             return
         }
         // an early salary: the user says whether the new period starts on its date before anything is saved
-        if editing == nil, !isTransfer, startsPeriod == nil, EarlySalary.applies(type: style.type, category: category, date: date) {
+        if !isTransfer, startsPeriod == nil, EarlySalary.applies(type: style.type, category: category, date: date) {
             showsPeriodChoice = true
             return
         }
@@ -1049,14 +952,7 @@ struct AddTransactionView: View {
         isSaving = true
         Task {
             do {
-                if let editing {
-                    let updated = try await SupabaseRepository.shared.updateTransaction(
-                        id: editing.id, accountId: account.id, counterpartyAccountId: isTransfer ? target?.id : nil,
-                        categoryId: isTransfer ? nil : category?.id, amount: value, type: style.type,
-                        description: description, note: editing.note, date: date
-                    )
-                    onUpdated?(updated)
-                } else if isTransfer, let target {
+                if isTransfer, let target {
                     _ = try await SupabaseRepository.shared.createTransfer(
                         primaryAccountId: account.id, counterpartyAccountId: target.id,
                         amount: value, description: description, note: nil, date: date
@@ -1111,17 +1007,10 @@ struct AddTransactionView: View {
             } catch {
                 isSaving = false
                 // K44: a new record refused because access is gone or the Workspace turned read-only is kept as a draft
-                if editing == nil, WorkspaceStore.isRejection(error) {
+                if WorkspaceStore.isRejection(error) {
                     // the draft first: reloading the Workspace list rebuilds the whole app and closes this screen
                     saveAsDraft(amount: value, description: description)
                     _ = await WorkspaceStore.shared.handleRejection(error, quiet: true)
-                    return
-                }
-                // A8 (7): another member deleted this record meanwhile
-                let text = String(describing: error)
-                if editing != nil, text.contains("PGRST116") || text.contains("transaction_not_found") || text.contains("0 rows") {
-                    errorMessage = L("Catatan ini sudah dihapus oleh anggota lain.")
-                    closesAfterAlert = true
                     return
                 }
                 errorMessage = error.localizedDescription
@@ -1177,11 +1066,10 @@ struct AddTransactionView: View {
             footnote = transferFootnote(from: account, value: value)
         }
         let title: String
-        switch (editing == nil, assetMode) {
-        case (true, .deposit?): title = L("Setor ke aset tersimpan")
-        case (true, .withdraw?): title = L("Tarik dari aset tersimpan")
-        case (true, nil): title = L("%@ tersimpan", style.label)
-        default: title = L("Perubahan tersimpan")
+        switch assetMode {
+        case .deposit?: title = L("Setor ke aset tersimpan")
+        case .withdraw?: title = L("Tarik dari aset tersimpan")
+        case nil: title = L("%@ tersimpan", style.label)
         }
         return DoneSummary(title: title, detail: detail, footnote: footnote)
     }

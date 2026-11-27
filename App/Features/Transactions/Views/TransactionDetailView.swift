@@ -40,6 +40,7 @@ struct TransactionDetailView: View {
     @State private var draftRepeat: CardSubscription.Frequency?
     @State private var draftMonths = 0
     @State private var showsRepeatSheet = false
+    @State private var showsInstallmentSheet = false
     @State private var dragX: CGFloat = 0
     @State private var sheet: PickerKind?
     @State private var preferences: [CategoryPreference] = []
@@ -156,9 +157,13 @@ struct TransactionDetailView: View {
         .sheet(item: Binding(get: { planKind.map(PlanSheetID.init) }, set: { planKind = $0?.kind })) { id in
             if let savedAccount, let userId = authViewModel.currentUser?.id {
                 TransactionPlanSheet(kind: id.kind, txn: txn, account: savedAccount, category: categories.first { $0.id == txn.categoryId }, plan: installment,
-                                     subscription: nil, userId: userId, onDone: {},
-                                     heldMonths: draftMonths > 0 ? draftMonths : nil, onHold: { draftMonths = $0 ?? 0 })
+                                     subscription: nil, userId: userId, onDone: {})
             }
+        }
+        .sheet(isPresented: $showsInstallmentSheet) {
+            InstallmentChoiceSheet(selected: draftMonths,
+                                   onSelect: { months in withAnimation(.settle(0.3)) { draftMonths = months } },
+                                   onDone: { showsInstallmentSheet = false })
         }
         .sheet(isPresented: $showsRepeatSheet) {
             RepeatChoiceSheet(selected: draftRepeat, amount: Double(amount), accountName: account?.name,
@@ -220,9 +225,15 @@ struct TransactionDetailView: View {
     private func openInstallment() {
         if draftRepeat != nil {
             ToastCenter.shared.show(L("Matikan berulangnya dulu untuk membuatnya cicilan."), icon: .error)
+        } else if let installment, !installment.isUntouchedByBilling(billed: billedParts(of: installment)) {
+            planKind = .installment   // part of it is billed: only the explanation
         } else {
-            planKind = .installment
+            showsInstallmentSheet = true
         }
+    }
+
+    private func billedParts(of plan: CardInstallment) -> Int {
+        savedAccount.map { CreditStatement.billedParts(of: plan, purchaseDate: txn.date, card: $0) } ?? 0
     }
 
     /// "Lunasi lebih cepat" for a running installment; setting or changing it is the chip under the amount.

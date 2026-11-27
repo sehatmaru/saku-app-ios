@@ -29,25 +29,6 @@ struct DraftFieldSheet: View {
     }
 
     /// A short list of options; picking one applies it and closes.
-    private func choiceSheet(_ title: String, options: [(Int, String)], selected: Int, pick: @escaping (Int) -> Void) -> some View {
-        PickerSheet(title: title, actionTitle: nil, onDone: close) {
-            VStack(spacing: 0) {
-                ForEach(options, id: \.0) { value, label in
-                    Button { pick(value); close() } label: {
-                        HStack {
-                            Text(label).font(.app(17)).foregroundStyle(Color.appText)
-                            Spacer(minLength: 8)
-                            if value == selected { Image(systemName: "checkmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.appPrimary) }
-                        }
-                        .frame(height: 52).contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 24)
-        }
-    }
-
     @ViewBuilder private var content: some View {
         switch kind {
         case .type:
@@ -90,13 +71,12 @@ struct DraftFieldSheet: View {
                 }
             }
         case .installment:
-            choiceSheet(L("Cicilan 0%"), options: [(0, L("Tidak")), (3, L("3 bulan")), (6, L("6 bulan")), (12, L("12 bulan")), (24, L("24 bulan"))],
-                        selected: draft.installmentMonths ?? 0) { months in
+            InstallmentChoiceSheet(selected: draft.installmentMonths ?? 0, onSelect: { months in
                 edit { d in
                     d.installmentMonths = months == 0 ? nil : months
                     if months > 0 { d.repeatFrequency = nil }
                 }
-            }
+            }, onDone: close)
         case .repeats:
             RepeatChoiceSheet(selected: draft.repeatFrequency, amount: draft.amount ?? 0,
                               date: { RepeatChoiceSheet.nextDate(from: draft.date, $0) },

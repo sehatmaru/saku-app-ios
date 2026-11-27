@@ -15,9 +15,6 @@ struct TransactionPlanSheet: View {
     let subscription: CardSubscription?
     let userId: String
     let onDone: () -> Void
-    /// Detail transaksi holds an installment until Simpan: the sheet hands the tenor back (nil = off) instead of saving it.
-    var heldMonths: Int?
-    var onHold: ((Int?) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @State private var months = 6
@@ -207,7 +204,7 @@ struct TransactionPlanSheet: View {
     @ViewBuilder private var footer: some View {
         if conflict != nil || (kind == .installment && isLocked) {
             SmartSheetFooter(primary: L("Mengerti"), onPrimary: { dismiss() })
-        } else if (kind == .installment && (plan != nil || heldMonths != nil)) || (kind == .recurring && subscription != nil) {
+        } else if (kind == .installment && plan != nil) || (kind == .recurring && subscription != nil) {
             VStack(spacing: 4) {
                 SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, onPrimary: save)
                 Button(kind == .installment ? L("Matikan cicilan") : L("Matikan berulang"), role: .destructive, action: turnOff)
@@ -220,7 +217,6 @@ struct TransactionPlanSheet: View {
 
     private func load() async {
         if let plan { months = plan.months }
-        if let heldMonths, heldMonths > 0 { months = heldMonths }
         if let subscription {
             frequency = subscription.frequency
             nextDate = subscription.nextBillingDateAsDate.map { max($0, today) } ?? today
@@ -254,7 +250,6 @@ struct TransactionPlanSheet: View {
 
     private func save() {
         guard !isSaving else { return }
-        if kind == .installment, let onHold { onHold(months); dismiss(); return }
         isSaving = true
         errorMessage = nil
         let repo = SupabaseRepository.shared
@@ -285,7 +280,6 @@ struct TransactionPlanSheet: View {
 
     private func turnOff() {
         guard !isSaving else { return }
-        if kind == .installment, let onHold { onHold(nil); dismiss(); return }
         isSaving = true
         let repo = SupabaseRepository.shared
         Task {
