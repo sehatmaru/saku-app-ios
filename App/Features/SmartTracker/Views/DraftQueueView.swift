@@ -866,11 +866,18 @@ struct DraftQueueView: View {
         return out
     }
 
-    private func noticeSheet(_ d: Draft) -> some View {
+    /// One flag: its own title and a sentence. Several: a short list. No body block for a single flag.
+    @ViewBuilder private func noticeSheet(_ d: Draft) -> some View {
         let items = notices(d)
-        return SmartSheet(tone: .neutral, icon: items.first?.icon ?? "info.circle", title: L("Yang perlu kamu tahu"),
-                          promises: items.map { SmartPromise(icon: $0.icon, title: $0.title, detail: $0.detail) }) {
-            SmartSheetFooter(primary: L("Mengerti"), onPrimary: { noticeItem = nil })
+        if items.count == 1, let n = items.first {
+            SmartSheet(tone: n.tint == Color.stDangerText ? .destructive : .neutral, icon: n.icon, title: n.title, message: n.detail) {
+                SmartSheetFooter(primary: L("Mengerti"), onPrimary: { noticeItem = nil })
+            }
+        } else {
+            SmartSheet(tone: .neutral, icon: "exclamationmark.triangle.fill", title: L("Yang perlu kamu tahu"),
+                       promises: items.map { SmartPromise(icon: $0.icon, title: $0.title, detail: $0.detail) }) {
+                SmartSheetFooter(primary: L("Mengerti"), onPrimary: { noticeItem = nil })
+            }
         }
     }
 
