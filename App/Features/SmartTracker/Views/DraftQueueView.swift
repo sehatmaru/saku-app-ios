@@ -578,7 +578,6 @@ struct DraftQueueView: View {
                 .frame(height: 48)
 
                 optionChips(d)
-                chips(d)
                 if aiOn && aiOut && d.reader != .ai {
                     Button { plusReason = .aiHelp } label: {
                         Text(L("Coba Saku Plus untuk AI tanpa batas")).font(.app(15, weight: .semibold)).foregroundStyle(Color.appPrimaryText)
@@ -792,17 +791,40 @@ struct DraftQueueView: View {
     /// rows short: "Atur …" while empty, the chosen value once set.
     @ViewBuilder private func optionChips(_ d: Draft) -> some View {
         let wallet = store.accounts.first { $0.id == d.accountId }
-        if d.kind == .expense {
-            HStack(spacing: 8) {
-                if wallet?.isCreditCard == true {
-                    optionChip(d, kind: .installment, icon: "calendar.badge.clock", empty: L("Atur cicilan"),
-                               value: d.installmentMonths.map { L("%lld bulan", $0) })
+        let flags = notices(d)
+        if d.kind == .expense || !flags.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(flags) { noticeChip(d, $0) }
+                    if d.kind == .expense {
+                        if wallet?.isCreditCard == true {
+                            optionChip(d, kind: .installment, icon: "calendar.badge.clock", empty: L("Atur cicilan"),
+                                       value: d.installmentMonths.map { L("%lld bulan", $0) })
+                        }
+                        optionChip(d, kind: .repeats, icon: "repeat", empty: L("Buat berulang"),
+                                   value: d.repeatFrequency.map { $0 == .yearly ? L("Tiap tahun") : L("Tiap bulan") })
+                    }
                 }
-                optionChip(d, kind: .repeats, icon: "repeat", empty: L("Buat berulang"),
-                           value: d.repeatFrequency.map { $0 == .yearly ? L("Tiap tahun") : L("Tiap bulan") })
             }
+            .scrollBounceBehavior(.basedOnSize)
             .padding(.top, 12)
         }
+    }
+
+    /// A state flag (failed, similar, needs a look, expiring). Tap opens the details sheet.
+    private func noticeChip(_ d: Draft, _ n: Notice) -> some View {
+        Button { if !swiping { noticeItem = DraftImageItem(id: d.id) } } label: {
+            HStack(spacing: 6) {
+                Image(systemName: n.icon).font(.system(size: 13, weight: .semibold)).foregroundStyle(n.tint)
+                Text(n.short).font(.app(14, weight: .medium)).lineLimit(1)
+                    .foregroundStyle(n.tint == Color.stDangerText ? Color.stDangerText : Color.appText)
+            }
+            .padding(.horizontal, 14).frame(height: 36)
+            .background(Color.appFill, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+        .accessibilityLabel(n.title)
     }
 
     private func optionChip(_ d: Draft, kind: DraftFieldSheet.Kind, icon: String, empty: String, value: String?) -> some View {
@@ -841,30 +863,6 @@ struct DraftQueueView: View {
                               detail: L("Draf ini dibuang dalam %lld hari jika tidak diproses.", days)))
         }
         return out
-    }
-
-    /// One row of state flags (similar, needs a look, expiring). Tap opens the details.
-    @ViewBuilder private func chips(_ d: Draft) -> some View {
-        let items = notices(d)
-        if !items.isEmpty {
-            Button { if !swiping { noticeItem = DraftImageItem(id: d.id) } } label: {
-                HStack(spacing: 14) {
-                    ForEach(items) { n in
-                        HStack(spacing: 5) {
-                            Image(systemName: n.icon).font(.system(size: 12, weight: .bold)).foregroundStyle(n.tint)
-                            Text(n.short).font(.app(13)).foregroundStyle(n.tint == Color.stDangerText ? Color.stDangerText : Color.appTextSecondary)
-                        }
-                    }
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Color.appTextTertiary)
-                }
-                .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 4)
-            .accessibilityLabel(items.map(\.title).joined(separator: ", "))
-        }
     }
 
     private func noticeSheet(_ d: Draft) -> some View {
