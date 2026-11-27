@@ -331,7 +331,7 @@ struct DraftQueueView: View {
     /// Height of each draft's source text at full length, measured so the head can grow to fit it.
     @State private var wordsHeights: [UUID: CGFloat] = [:]
     private static var cardWidth: CGFloat { UIScreen.main.bounds.width }
-    private static var baseCardHeight: CGFloat { min(580, max(500, UIScreen.main.bounds.height - 300)) }
+    private static var baseCardHeight: CGFloat { min(600, max(500, UIScreen.main.bounds.height - 280)) }
 
     /// Bumped when Simpan is tapped on a draft that lacks something; the missing rows shake and flash.
     @State private var nudges: [UUID: Int] = [:]
@@ -858,7 +858,7 @@ struct DraftQueueView: View {
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Color.appTextTertiary)
                 }
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
