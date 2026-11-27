@@ -73,4 +73,8 @@ struct SetupWelcome: Equatable {
     var budgetTotal: Double
     var joinedPlus: Bool
     var plusUntil: Date?
+    /// For the summary rows on the welcome screen.
+    var walletNames: [String] = []
+    var expenseCategories = 0
+    var incomeCategories = 0
 }

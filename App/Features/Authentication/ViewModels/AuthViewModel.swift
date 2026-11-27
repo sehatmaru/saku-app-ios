@@ -319,7 +319,10 @@ final class AuthViewModel: ObservableObject {
         return SetupWelcome(name: setup.name, wallets: setup.wallets.count,
                             categories: OnboardingCategory.all.count - setup.hiddenCategoryKeys.count,
                             paydayDay: setup.paydayDay, budgetTotal: budgetTotal,
-                            joinedPlus: joinedPlus, plusUntil: joinedPlus ? PlusStore.shared.entitlement.until : nil)
+                            joinedPlus: joinedPlus, plusUntil: joinedPlus ? PlusStore.shared.entitlement.until : nil,
+                            walletNames: setup.wallets.map(\.name),
+                            expenseCategories: OnboardingCategory.expense.filter { !setup.hiddenCategoryKeys.contains($0.key) }.count,
+                            incomeCategories: OnboardingCategory.income.filter { !setup.hiddenCategoryKeys.contains($0.key) }.count)
     }
 
     /// One monthly budget per category that was given an amount; a retry skips the ones already saved.

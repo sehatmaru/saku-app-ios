@@ -250,17 +250,21 @@ struct SetupOnboardingView: View {
     }
 
     private var savingScreen: some View {
-        VStack(spacing: 18) {
-            HStack(spacing: 4) {
-                ForEach(0..<4, id: \.self) { index in
-                    PulsingSegment(delay: Double(index) * 0.15)
-                }
-            }
-            .frame(width: 120)
-            Text("Menyimpan setup").font(.app(17)).foregroundStyle(Color.appTextSecondary)
+        // Same layout as the top of SetupWelcomeView, which continues from here.
+        VStack(spacing: 0) {
+            SetupSavingHeader(saved: false)
+                .padding(.horizontal, 24).padding(.top, 64)
+            SetupSummaryList(rows: savingRows)
+                .padding(.horizontal, 24).padding(.top, 28)
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBackground)
+    }
+
+    private var savingRows: [SetupSummaryRow] {
+        SetupSummaryRow.rows(wallets: setup.wallets.map(\.name), expense: selectedExpenseCount,
+                             income: selectedIncomeCount, paydayDay: payday)
     }
 
     private var failedScreen: some View {
@@ -857,20 +861,6 @@ private struct GuestWallet: Identifiable {
     ]
 
     static let all = groups.flatMap(\.items)
-}
-
-/// One of the four bars on the saving screen, fading in and out.
-private struct PulsingSegment: View {
-    let delay: Double
-    @State private var lit = false
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 2).fill(Color.appPrimary)
-            .frame(height: 4)
-            .opacity(lit ? 1 : 0.25)
-            .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(delay), value: lit)
-            .onAppear { lit = true }
-    }
 }
 
 /// The red cross on the failure screen, shaking once.

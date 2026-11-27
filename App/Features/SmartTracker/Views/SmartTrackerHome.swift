@@ -522,8 +522,6 @@ struct QuickInput: Identifiable {
 extension Notification.Name {
     /// Asks the Beranda button to open the Catat cepat bar ("Catat sekarang" in an empty Konfirmasi transaksi).
     static let openSmartTrackerBar = Notification.Name("openSmartTrackerBar")
-    /// "Catat pengeluaran pertamamu" on the welcome screen: Beranda opens where the first entry is made.
-    static let openFirstEntry = Notification.Name("openFirstEntry")
 }
 
 /// Pages that cover the bottom of the screen (Konfirmasi transaksi, its sheets, Smart Tracker settings) hide the

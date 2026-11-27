@@ -2228,5 +2228,15 @@
   "Pilih kategori dulu.": "Pick a category first.",
   "Nominal Rp%@": "Amount Rp%@",
   "Cicilan %lld bulan": "%lld-month installment",
-  "%@ · diubah %@": "%@ · edited by %@"
+  "%@ · diubah %@": "%@ · edited by %@",
+  "Menyimpan setup-mu": "Saving your setup",
+  "Setup tersimpan": "Setup saved",
+  "Jawabanmu masih ada di iPhone ini sampai selesai.": "Your answers stay on this iPhone until it's done.",
+  "Menyiapkan halaman utamamu.": "Getting your home page ready.",
+  "Tgl %@": "Day %@",
+  "Tanggal mulai periode": "Period start date",
+  "Periode anggaranmu mulai tiap akhir bulan": "Your budget period starts at the end of every month",
+  "Periode anggaranmu mulai tiap tanggal %lld": "Your budget period starts on day %lld of every month",
+  "Periode anggaranmu mulai tanggal 1": "Your budget period starts on day 1",
+  "%lld pengeluaran dan %lld pemasukan": "%lld expense and %lld income"
 }

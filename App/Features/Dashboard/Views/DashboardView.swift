@@ -117,7 +117,6 @@ struct DashboardView: View {
         }
         .plusOffer($trialEndedOffer)
         .onChange(of: viewModel.overdueBills.map(\.id)) { _, _ in openPendingRecord() }
-        .onReceive(NotificationCenter.default.publisher(for: .openFirstEntry)) { _ in openFirstEntry() }
         .fullScreenCover(isPresented: $showAddSheet) {
             if let userId = authViewModel.currentUser?.id {
                 AddTransactionView(
@@ -163,16 +162,6 @@ struct DashboardView: View {
         notificationRouter.opensDrafts = false
         DraftStore.shared.ingestSharedText()
         openDraftsPage()
-    }
-
-    /// "Catat pengeluaran pertamamu": opens the Smart Tracker bar.
-    private func openFirstEntry() {
-        selectedTab = .home
-        if viewModel.hasLoadedOnce {
-            NotificationCenter.default.post(name: .openSmartTrackerBar, object: nil)
-        } else {
-            SmartButtonGate.shared.opensBarOnShow = true
-        }
     }
 
     /// A value reminder was tapped: Dompet opens on the Beranda stack and shows Perbarui nilai there.

@@ -1603,6 +1603,16 @@
         }
       }
     },
+    "%lld pengeluaran dan %lld pemasukan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld expense and %lld income"
+          }
+        }
+      }
+    },
     "%lld periode": {
       "localizations": {
         "en": {
@@ -12263,6 +12273,16 @@
         }
       }
     },
+    "Jawabanmu masih ada di iPhone ini sampai selesai.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your answers stay on this iPhone until it's done."
+          }
+        }
+      }
+    },
     "Jeda": {
       "localizations": {
         "en": {
@@ -16593,6 +16613,16 @@
         }
       }
     },
+    "Menyiapkan halaman utamamu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting your home page ready."
+          }
+        }
+      }
+    },
     "Menyiapkan…": {
       "localizations": {
         "en": {
@@ -16604,6 +16634,16 @@
       }
     },
     "Menyimpan setup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving your setup"
+          }
+        }
+      }
+    },
+    "Menyimpan setup-mu": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -18859,6 +18899,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Period %@"
+          }
+        }
+      }
+    },
+    "Periode anggaranmu mulai tanggal 1": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your budget period starts on day 1"
+          }
+        }
+      }
+    },
+    "Periode anggaranmu mulai tiap akhir bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your budget period starts at the end of every month"
+          }
+        }
+      }
+    },
+    "Periode anggaranmu mulai tiap tanggal %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your budget period starts on day %lld of every month"
           }
         }
       }
@@ -22643,6 +22713,16 @@
         }
       }
     },
+    "Setup tersimpan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setup saved"
+          }
+        }
+      }
+    },
     "Sheet %lld": {
       "localizations": {
         "en": {
@@ -24583,6 +24663,16 @@
         }
       }
     },
+    "Tanggal mulai periode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period start date"
+          }
+        }
+      }
+    },
     "Tanggal sendiri": {
       "localizations": {
         "en": {
@@ -25459,6 +25549,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Keep deleting"
+          }
+        }
+      }
+    },
+    "Tgl %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day %@"
           }
         }
       }

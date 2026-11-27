@@ -35,35 +35,25 @@ final class SetupOnboardingTests: XCTestCase {
         XCTAssertEqual(n.elapsed, 11)
     }
 
-    // US5: the welcome screen
-    private func tiles(_ welcome: SetupWelcome) -> [SetupWelcomeView.Tile] {
-        SetupWelcomeView(welcome: welcome, onOpen: { _ in }).tiles
+    // US5: the welcome screen rows
+    private func rows(payday: Int? = 25, wallets: [String] = ["BNC", "Tunai"]) -> [SetupSummaryRow] {
+        SetupSummaryRow.rows(wallets: wallets, expense: 7, income: 4, paydayDay: payday)
     }
 
-    private func welcome(payday: Int? = 25, budget: Double = 0, plus: Bool = false) -> SetupWelcome {
-        SetupWelcome(name: "Dina", wallets: 2, categories: 9, paydayDay: payday, budgetTotal: budget, joinedPlus: plus, plusUntil: nil)
+    func testSummaryRowsCountWalletsCategoriesAndPayday() {
+        let r = rows()
+        XCTAssertEqual(r.count, 3)
+        XCTAssertEqual(r[0].number, 2)
+        XCTAssertEqual(r[0].detail, "BNC, Tunai")
+        XCTAssertEqual(r[1].number, 11)
+        XCTAssertEqual(r[2].number, 25)
+        XCTAssertEqual(r[2].count(25), "Tgl 25")
     }
 
-    func testWelcomeTilesCountWalletsCategoriesAndPayday() {
-        let t = tiles(welcome())
-        XCTAssertEqual(t.count, 3)
-        XCTAssertEqual(t[0], .init(number: 2, text: "", label: "dompet"))
-        XCTAssertEqual(t[1], .init(number: 9, text: "", label: "kategori"))
-        XCTAssertEqual(t[2], .init(number: 25, text: "", label: "tanggal gajian"))
-    }
-
-    func testWelcomePaydayTileForTheSpecialChoicesAndSkipping() {
-        XCTAssertEqual(tiles(welcome(payday: 31))[2].text, "Akhir")
-        XCTAssertEqual(tiles(welcome(payday: 1))[2].text, "Tgl 1")
-        XCTAssertEqual(tiles(welcome(payday: nil))[2].text, "Tgl 1", "skipped reads as the 1st")
-    }
-
-    func testWelcomeShowsABudgetTileOnlyWhenOneWasSet() {
-        XCTAssertEqual(tiles(welcome()).count, 3)
-        let t = tiles(welcome(budget: 3_500_000))
-        XCTAssertEqual(t.count, 4)
-        XCTAssertEqual(t[3].text, "Rp3,5 jt")
-        XCTAssertEqual(t[3].label, "budget per periode")
+    func testSummaryPaydayRowForTheSpecialChoicesAndSkipping() {
+        XCTAssertEqual(rows(payday: 31)[2].text, "Akhir bulan")
+        XCTAssertEqual(rows(payday: 1)[2].text, "Tgl 1")
+        XCTAssertEqual(rows(payday: nil)[2].text, "Tgl 1", "skipped reads as the 1st")
     }
 
     // the setup that is applied
