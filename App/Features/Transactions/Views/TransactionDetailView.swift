@@ -99,11 +99,13 @@ struct TransactionDetailView: View {
                 panel
                 if isEditingAmount {
                     amountSummary
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     Spacer(minLength: 0)
                     AmountPad(color: .appPrimary, isEnabled: amount > 0, onPress: press,
                               onSave: { withAnimation(.settle(0.3)) { isEditingAmount = false } }, title: "Selesai")
                         .padding(.horizontal, 12)
                         .padding(.bottom, 4)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
@@ -120,6 +122,7 @@ struct TransactionDetailView: View {
                     .scrollIndicators(.hidden)
                     .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
                     .scrollDismissesKeyboard(.interactively)
+                    .transition(.opacity)
                 }
             }
             .opacity(isDeleted ? 0.3 : 1)
@@ -130,8 +133,11 @@ struct TransactionDetailView: View {
                 footer
                     .opacity(isDeleted ? 0.3 : 1)
                     .allowsHitTesting(!isDeleted)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .animation(.settle(0.35), value: isDirty)
+        .animation(.settle(0.3), value: noteFocused)
         .background(Color.appBackground)
         .confirmDialog(isPresented: $isConfirmingDelete, icon: "trash", destructive: true,
                        title: L("Hapus transaksi ini?"), message: deleteSubtitle,
@@ -457,11 +463,16 @@ struct TransactionDetailView: View {
                         chip("repeat", draftRepeat.map {
                             ($0 == .yearly ? L("Tiap tahun") : L("Tiap bulan")) + " · " + TransactionDates.dayMonth.string(from: RepeatChoiceSheet.nextDate(from: date, $0))
                         }, empty: L("Buat berulang")) { openRepeat() }
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
                     }
                     if canInstall {
                         chip("calendar.badge.clock", draftMonths > 0 ? L("Cicilan %lld bulan", draftMonths) : nil, empty: L("Atur cicilan")) { openInstallment() }
+                            .transition(.scale(scale: 0.85).combined(with: .opacity))
                     }
                 }
+                .animation(.settle(0.3), value: draftType)
+                .animation(.settle(0.3), value: draftRepeat)
+                .animation(.settle(0.3), value: draftMonths)
                 .padding(.horizontal, 24)
                 .frame(minWidth: UIScreen.main.bounds.width)
             }
@@ -492,6 +503,7 @@ struct TransactionDetailView: View {
             HStack(spacing: 6) {
                 Image(systemName: icon).font(.system(size: 13, weight: .semibold))
                 Text(value ?? empty).font(.app(14, weight: value == nil ? .medium : .semibold)).lineLimit(1)
+                    .contentTransition(.opacity)
             }
             .foregroundStyle(value == nil ? Color.white : style.color)
             .padding(.horizontal, 14)
@@ -622,6 +634,7 @@ struct TransactionDetailView: View {
                 pickRow(.account, label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 2)
                 if let installment, draftMonths > 0, let card = savedAccount {
                     installmentRow(installment, months: draftMonths, card: card)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
             pickRow(.date, label: L("Tanggal"), value: TransactionDates.long(date, withYear: false), icon: "calendar", index: 3)
@@ -630,6 +643,8 @@ struct TransactionDetailView: View {
                     .rise(isEntered, y: 12, delay: 0.5, fade: 0.4, move: 0.5)
             }
         }
+        .animation(.settle(0.35), value: draftType)
+        .animation(.settle(0.35), value: draftMonths)
     }
 
     /// "Judul": the note, typed in place.
@@ -671,6 +686,8 @@ struct TransactionDetailView: View {
             sheet = kind
         } label: {
             DetailRow(label: label, value: value, wallet: wallet, categoryMark: categoryMark, icon: icon, showsChevron: canChange, height: 50, isPlaceholder: isPlaceholder, showsSeparator: false)
+                .contentTransition(.opacity)
+                .animation(.settle(0.25), value: value)
         }
         .buttonStyle(.plain)
         .disabled(!canChange)
