@@ -93,12 +93,10 @@ struct TransactionDetailView: View {
         .confirmDialog(isPresented: $isConfirmingDelete, icon: "trash", destructive: true,
                        title: L("Hapus transaksi ini?"), message: deleteSubtitle,
                        confirmTitle: L("Hapus")) { isConfirmingDelete = false; startDelete() }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbar { repeatToolbar }
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
+        .background(KeepSwipeBack())
         .hidesTabBarWhilePushed()
-        .toolbarColorScheme(.dark, for: .navigationBar)
         .tint(.white)
         .task {
             try? await Task.sleep(for: .milliseconds(150))
@@ -193,36 +191,29 @@ struct TransactionDetailView: View {
         }
     }
 
-    @ToolbarContentBuilder private var repeatToolbar: some ToolbarContent {
+    /// The ↻ in the top corner, built like the add page: a glass circle, or a white pill with the next date once the bill is on.
+    /// A card's installment excludes it.
+    @ViewBuilder private var repeatControl: some View {
         if isEditable, txn.type == .expense, !isDeleted, !txn.isRecurring, installment == nil {
-            if #available(iOS 26.0, *) {
-                ToolbarItem(placement: .topBarTrailing) { repeatButton.id(subscription?.id ?? "none") }
-                    .sharedBackgroundVisibility(.hidden)
-            } else {
-                ToolbarItem(placement: .topBarTrailing) { repeatButton.id(subscription?.id ?? "none") }
+            Button { planKind = .recurring } label: {
+                if let next = subscription?.nextBillingDateAsDate {
+                    Label(TransactionDates.dayMonth.string(from: next), systemImage: "repeat")
+                        .font(.app(14, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(style.color)
+                        .padding(.horizontal, 12)
+                        .frame(height: 32)
+                        .background(.white, in: Capsule())
+                } else {
+                    Image(systemName: "repeat")
+                        .font(.system(size: 17, weight: .bold))
+                        .frame(width: 36, height: 36)
+                        .background(.white.opacity(0.2), in: Circle())
+                }
             }
+            .buttonStyle(PressScaleStyle())
+            .accessibilityLabel(L("Ulangi"))
         }
-    }
-
-    /// The ↻ in the top corner like the add page: set or change the recurring bill, a white pill with the next date once it is on.
-    /// A card's installment excludes it. One view shape either way, so the navigation bar redraws it when the bill changes.
-    private var repeatButton: some View {
-        let next = subscription?.nextBillingDateAsDate
-        return Button { planKind = .recurring } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "repeat").font(.system(size: next == nil ? 13 : 14, weight: .bold))
-                Text(next.map { TransactionDates.dayMonth.string(from: $0) } ?? "")
-                    .font(.app(14, weight: .semibold)).monospacedDigit()
-                    .frame(width: next == nil ? 0 : nil)
-                    .opacity(next == nil ? 0 : 1)
-            }
-            .foregroundStyle(next == nil ? Color.white : style.color)
-            .padding(.horizontal, next == nil ? 0 : 12)
-            .frame(minWidth: next == nil ? 36 : 0, minHeight: next == nil ? 36 : 32, maxHeight: next == nil ? 36 : 32)
-            .background(next == nil ? Color.white.opacity(0.2) : Color.white, in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(L("Ulangi"))
     }
 
     /// Same row as Cicilan / Berulang on the add page: label, "Tidak" while off, chevron.
@@ -257,6 +248,14 @@ struct TransactionDetailView: View {
 
     private var panel: some View {
         VStack(spacing: 0) {
+            HStack {
+                Button("Tutup") { dismiss() }.font(.app(17))
+                Spacer()
+                repeatControl
+            }
+            .frame(height: 44)
+            .padding(.horizontal, 20)
+
             Label(typeLabel, systemImage: typeIcon)
                 .font(.app(13, weight: .semibold))
                 .labelStyle(PillLabelStyle())
@@ -293,7 +292,6 @@ struct TransactionDetailView: View {
         .rise(isEntered, y: 14, fade: 0.5, move: 0.6)
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
         .padding(.bottom, 28)
         .background {
             UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32)
@@ -651,4 +649,17 @@ private struct PillLabelStyle: LabelStyle {
             configuration.title
         }
     }
+}
+
+/// A page with its own header hides the system bar, which also switches the edge-swipe back off: turn it back on.
+private struct KeepSwipeBack: UIViewControllerRepresentable {
+    final class Host: UIViewController {
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            navigationController?.interactivePopGestureRecognizer?.delegate = nil
+            navigationController?.interactivePopGestureRecognizer?.isEnabled = true
+        }
+    }
+    func makeUIViewController(context: Context) -> Host { Host() }
+    func updateUIViewController(_ uiViewController: Host, context: Context) {}
 }
