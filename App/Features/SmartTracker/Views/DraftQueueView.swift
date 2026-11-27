@@ -854,13 +854,13 @@ struct DraftQueueView: View {
                               detail: f.isOffline ? L("Kamu sedang offline. Draf tetap aman di sini, coba lagi saat tersambung.") : f.message))
         }
         if let n = d.duplicateNote {
-            out.append(Notice(icon: "doc.on.doc", short: L("Mirip"), tint: Color.stWarn, title: L("Mirip transaksi lain"), detail: n))
+            out.append(Notice(icon: "exclamationmark.triangle.fill", short: L("Mirip"), tint: Color.stWarn, title: L("Mirip transaksi lain"), detail: n))
         }
         if let n = d.note {
-            out.append(Notice(icon: "eye", short: L("Perlu dicek"), tint: Color.stWarn, title: L("Perlu dicek"), detail: n))
+            out.append(Notice(icon: "exclamationmark.triangle.fill", short: L("Perlu dicek"), tint: Color.stWarn, title: L("Perlu dicek"), detail: n))
         }
         if let days = Calendar.current.dateComponents([.day], from: Date(), to: d.expiresAt).day.map({ max($0, 1) }), days <= 3 {
-            out.append(Notice(icon: "hourglass", short: L("%lld hari", days), tint: Color.stWarn, title: L("Dibuang otomatis"),
+            out.append(Notice(icon: "exclamationmark.triangle.fill", short: L("%lld hari", days), tint: Color.stWarn, title: L("Dibuang otomatis"),
                               detail: L("Draf ini dibuang dalam %lld hari jika tidak diproses.", days)))
         }
         return out
