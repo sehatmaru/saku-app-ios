@@ -97,7 +97,6 @@ final class AuthViewModel: ObservableObject {
     }
 
     func splashAnimationFinished() {
-        LaunchLog.mark("splash callback") // TEMP-LAUNCH-LOG
         splashAnimationDone = true
         dismissSplashIfReady()
     }
@@ -106,43 +105,28 @@ final class AuthViewModel: ObservableObject {
         // RootView's .task can run again (e.g. language change re-creates the view): check only once.
         guard !sessionCheckStarted else { return }
         sessionCheckStarted = true
-        LaunchLog.mark("checkSession start") // TEMP-LAUNCH-LOG
         do {
-            LaunchLog.mark("auth session start") // TEMP-LAUNCH-LOG
             let session = try await SupabaseSDK.client.auth.session
-            LaunchLog.mark("auth session end") // TEMP-LAUNCH-LOG
-            LaunchLog.mark("profile bootstrap start") // TEMP-LAUNCH-LOG
             try await fetchProfileAndSetUser(authUserId: session.user.id, email: session.user.email ?? "", displayName: session.user.userMetadata["full_name"]?.stringValue ?? session.user.userMetadata["name"]?.stringValue)
-            LaunchLog.mark("profile bootstrap end") // TEMP-LAUNCH-LOG
         } catch is CancellationError {
             isAuthenticated = false
-            LaunchLog.mark("checkSession cancelled") // TEMP-LAUNCH-LOG
         } catch {
             isAuthenticated = false
-            LaunchLog.mark("checkSession error") // TEMP-LAUNCH-LOG
         }
         sessionChecked = true
-        LaunchLog.mark("checkSession complete") // TEMP-LAUNCH-LOG
         dismissSplashIfReady()
     }
 
     /// Turns an auth user into the app's user: profile, avatar, deletion state, and whether setup is needed.
     private func fetchProfileAndSetUser(authUserId: UUID, email: String, displayName: String?) async throws {
         var profile: UserProfile
-        LaunchLog.mark("profile request start") // TEMP-LAUNCH-LOG
-        let fetched = try? await SupabaseSDK.fetchProfile(authUserId: authUserId) // TEMP-LAUNCH-LOG
-        LaunchLog.mark("profile request end") // TEMP-LAUNCH-LOG
-        if let existing = fetched {
+        if let existing = try? await SupabaseSDK.fetchProfile(authUserId: authUserId) {
             if existing.displayName == nil, let displayName {
-                LaunchLog.mark("profile name update start") // TEMP-LAUNCH-LOG
                 try await SupabaseSDK.updateProfile(id: existing.id, displayName: displayName)
-                LaunchLog.mark("profile name update end") // TEMP-LAUNCH-LOG
             }
             profile = existing
         } else {
-            LaunchLog.mark("profile upsert start") // TEMP-LAUNCH-LOG
             profile = try await SupabaseSDK.upsertProfile(authUserId: authUserId, displayName: displayName ?? email)
-            LaunchLog.mark("profile upsert end") // TEMP-LAUNCH-LOG
         }
         currentUser = User(
             id: profile.id.uuidString,
@@ -152,25 +136,17 @@ final class AuthViewModel: ObservableObject {
             defaultCurrencyCode: profile.defaultCurrencyCode,
             avatarURL: profile.avatarUrl
         )
-        LaunchLog.mark("current user set") // TEMP-LAUNCH-LOG
-        LaunchLog.mark("avatar load start") // TEMP-LAUNCH-LOG
         await loadAvatar()
-        LaunchLog.mark("avatar load end") // TEMP-LAUNCH-LOG
-        LaunchLog.mark("guest clear start") // TEMP-LAUNCH-LOG
         await clearAbandonedMarkIfGuest()
-        LaunchLog.mark("guest clear end") // TEMP-LAUNCH-LOG
         if let raw = profile.deletionScheduledFor, let date = AccountDeletion.parse(raw) {
             pendingDeletion = date
             needsSetup = false
             return
         }
-        LaunchLog.mark("setup state start") // TEMP-LAUNCH-LOG
         await resolveSetupState(authUserId: authUserId, profileId: profile.id)
-        LaunchLog.mark("setup state end") // TEMP-LAUNCH-LOG
         withAnimation(.easeInOut(duration: 0.4)) {
             isAuthenticated = true
         }
-        LaunchLog.mark("authenticated") // TEMP-LAUNCH-LOG
     }
 
     /// Setup is the last step before a new account has any data. When the app is closed
@@ -179,12 +155,9 @@ final class AuthViewModel: ObservableObject {
     private func resolveSetupState(authUserId: UUID, profileId: UUID) async {
         if OnboardingProgress.isComplete(authUserId: authUserId) {
             needsSetup = false
-            LaunchLog.mark("setup state cached") // TEMP-LAUNCH-LOG
             return
         }
-        LaunchLog.mark("setup accounts start") // TEMP-LAUNCH-LOG
         let accounts = try? await SupabaseRepository.shared.fetchAccounts(userId: profileId.uuidString)
-        LaunchLog.mark("setup accounts end") // TEMP-LAUNCH-LOG
         if accounts?.isEmpty == false {
             // An existing account on a new device has wallets: setup already happened.
             OnboardingProgress.markComplete(authUserId: authUserId)
@@ -596,18 +569,10 @@ final class AuthViewModel: ObservableObject {
     /// Fetches the photo behind `currentUser.avatarURL`; the URL changes on every upload, so caching is safe.
     func loadAvatar() async {
         guard let string = currentUser?.avatarURL, let url = URL(string: string),
-              !string.isEmpty else {
+              let (data, _) = try? await URLSession.shared.data(from: url) else {
             avatarImage = nil
-            LaunchLog.mark("avatar skipped") // TEMP-LAUNCH-LOG
             return
         }
-        LaunchLog.mark("avatar request start") // TEMP-LAUNCH-LOG
-        guard let (data, _) = try? await URLSession.shared.data(from: url) else { // TEMP-LAUNCH-LOG
-            avatarImage = nil // TEMP-LAUNCH-LOG
-            LaunchLog.mark("avatar request failed") // TEMP-LAUNCH-LOG
-            return // TEMP-LAUNCH-LOG
-        } // TEMP-LAUNCH-LOG
         avatarImage = UIImage(data: data)
-        LaunchLog.mark("avatar request end") // TEMP-LAUNCH-LOG
     }
 }
