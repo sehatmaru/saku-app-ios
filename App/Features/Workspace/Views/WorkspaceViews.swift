@@ -253,7 +253,8 @@ struct WorkspaceHost: ViewModifier {
                 guard !Task.isCancelled else { return }
                 UserDefaults.standard.set(true, forKey: Self.newsKey)
                 showsNews = true
-                if let profileId = authViewModel.currentUser?.id { await SupabaseSDK.markWorkspaceNewsSeen(profileId: profileId) }
+                // its own Task: the view's .task may be cancelled right after the sheet opens, and that would drop the save
+                if let profileId = authViewModel.currentUser?.id { Task { await SupabaseSDK.markWorkspaceNewsSeen(profileId: profileId) } }
             }
             .sheet(isPresented: $showsNews) {
                 WorkspaceNewsSheet { showsNews = false; store.requestCreate() }
