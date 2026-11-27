@@ -2223,10 +2223,11 @@
   "Buang": "Discard",
   "Sebelumnya": "Before",
   "Saldo %@ setelahnya": "%@ balance after",
-  "%@ · diubah %@": "%@ · edited by %@",
   "sisa Rp%@": "Rp%@ left",
   "lewat Rp%@": "Rp%@ over",
   "Nominal belum diisi.": "Enter an amount.",
   "Pilih kategori dulu.": "Pick a category first.",
-  "Nominal Rp%@": "Amount Rp%@"
+  "Nominal Rp%@": "Amount Rp%@",
+  "Dicatat oleh %@ · diubah %@": "Recorded by %@ · edited by %@",
+  "Cicilan %lld bulan": "%lld-month installment"
 }

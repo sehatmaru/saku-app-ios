@@ -35,6 +35,12 @@ struct TransactionDetailView: View {
     @State private var date = Date()
     @State private var note = ""
     @State private var isEditingAmount = false
+    /// The type being edited (expense or income can switch), and the installment / recurring bill waiting for Simpan.
+    @State private var draftType: Transaction.TransactionType
+    @State private var draftRepeat: CardSubscription.Frequency?
+    @State private var draftMonths = 0
+    @State private var showsRepeatSheet = false
+    @State private var dragX: CGFloat = 0
     @State private var sheet: PickerKind?
     @State private var preferences: [CategoryPreference] = []
     @State private var isSaving = false
@@ -57,6 +63,7 @@ struct TransactionDetailView: View {
         self.onUpdate = onUpdate
         _txn = State(initialValue: transaction)
         _accounts = State(initialValue: accounts)
+        _draftType = State(initialValue: transaction.type)
         _amount = State(initialValue: Int(transaction.amount))
         _categoryId = State(initialValue: transaction.categoryId)
         _accountId = State(initialValue: transaction.accountId)
@@ -70,14 +77,14 @@ struct TransactionDetailView: View {
         var id: Int { kind == .installment ? 0 : 1 }
     }
 
-    private var style: TransactionStyle { .of(txn.type) }
+    private var style: TransactionStyle { .of(draftType) }
     private var category: Category? { categories.first { $0.id == categoryId } }
     private var account: Account? { accounts.first { $0.id == accountId } }
     private var counterparty: Account? { accounts.first { $0.id == targetId } }
     /// The wallet the saved transaction sits on: installments and bills belong to it, not to a draft pick.
     private var savedAccount: Account? { accounts.first { $0.id == txn.accountId } }
-    private var isTransfer: Bool { txn.type == .transfer }
-    private var isAdjustment: Bool { txn.type == .adjustment }
+    private var isTransfer: Bool { draftType == .transfer }
+    private var isAdjustment: Bool { draftType == .adjustment }
     /// A transfer into a card pays its bill: debt goes down, not an expense.
     private var isBillPayment: Bool { isTransfer && counterparty?.isCreditCard == true }
     private var typeLabel: String { isBillPayment ? L("Bayar tagihan") : style.label }
@@ -118,7 +125,7 @@ struct TransactionDetailView: View {
             .allowsHitTesting(!isDeleted)
             .animation(.easeInOut(duration: 0.4), value: isDeleted)
 
-            if !isEditingAmount, !noteFocused {
+            if !isEditingAmount, !noteFocused, isDirty {
                 footer
                     .opacity(isDeleted ? 0.3 : 1)
                     .allowsHitTesting(!isDeleted)
@@ -149,8 +156,15 @@ struct TransactionDetailView: View {
         .sheet(item: Binding(get: { planKind.map(PlanSheetID.init) }, set: { planKind = $0?.kind })) { id in
             if let savedAccount, let userId = authViewModel.currentUser?.id {
                 TransactionPlanSheet(kind: id.kind, txn: txn, account: savedAccount, category: categories.first { $0.id == txn.categoryId }, plan: installment,
-                                     subscription: subscription, userId: userId, onDone: { Task { await loadContext() } })
+                                     subscription: nil, userId: userId, onDone: {},
+                                     heldMonths: draftMonths > 0 ? draftMonths : nil, onHold: { draftMonths = $0 ?? 0 })
             }
+        }
+        .sheet(isPresented: $showsRepeatSheet) {
+            RepeatChoiceSheet(selected: draftRepeat, amount: Double(amount), accountName: account?.name,
+                              date: { RepeatChoiceSheet.nextDate(from: date, $0) },
+                              onSelect: { value in withAnimation(.settle(0.3)) { draftRepeat = value } },
+                              onDone: { showsRepeatSheet = false })
         }
         .sheet(item: $payoffItem) { item in
             if let card = savedAccount, let userId = authViewModel.currentUser?.id {
@@ -188,6 +202,8 @@ struct TransactionDetailView: View {
             installment = nil
         }
         subscription = txn.type == .expense ? (try? await SupabaseRepository.shared.fetchSubscription(sourceTransactionId: txn.id)) ?? nil : nil
+        draftMonths = savedMonths
+        draftRepeat = savedRepeat
     }
 
     // MARK: - Installment and recurring from here (C1)
@@ -197,43 +213,44 @@ struct TransactionDetailView: View {
         return RunningInstallments.compute(installments: [installment], transactions: [txn], accounts: accounts, periodEnd: Date()).first
     }
 
-    /// "Jadikan cicilan" / "Jadikan berulang", or the way to manage what is already set. Only when C2 allows it.
-    @ViewBuilder private var planActions: some View {
-        if isEditable, txn.type == .expense, !isDeleted {
-            let canInstall = savedAccount?.isCreditCard == true
-            VStack(spacing: 0) {
-                if installment != nil {
-                    action(L("Kelola cicilan"), "calendar.badge.clock") { planKind = .installment }
-                    if let running = runningPlan, running.settlement == nil, running.remainingParts > 0 {
-                        action(L("Lunasi lebih cepat"), "checkmark.circle") { payoffItem = running }
-                    }
-                } else if !txn.isRecurring, subscription == nil, canInstall {
-                    planRow(L("Cicilan"), "calendar.badge.clock") { planKind = .installment }
-                }
-            }
-            .padding(.horizontal, installment != nil ? 24 : 0)
+    private var savedMonths: Int { installment?.months ?? 0 }
+    private var savedRepeat: CardSubscription.Frequency? { subscription?.isActive == true ? subscription?.frequency : nil }
+
+    /// The two exclude each other (C2): turn the other off first.
+    private func openInstallment() {
+        if draftRepeat != nil {
+            ToastCenter.shared.show(L("Matikan berulangnya dulu untuk membuatnya cicilan."), icon: .error)
+        } else {
+            planKind = .installment
         }
     }
 
-    /// The ↻ in the top corner, built like the add page: a glass circle, or a white pill with the next date once the bill is on.
-    /// A card's installment excludes it.
-    @ViewBuilder private var repeatControl: some View {
-        if isEditable, txn.type == .expense, !isDeleted, !txn.isRecurring, installment == nil {
-            Button { planKind = .recurring } label: {
-                if let next = subscription?.nextBillingDateAsDate {
-                    Label(TransactionDates.dayMonth.string(from: next), systemImage: "repeat")
-                        .font(.app(14, weight: .semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(style.color)
-                        .padding(.horizontal, 12)
-                        .frame(height: 32)
-                        .background(.white, in: Capsule())
-                } else {
-                    Image(systemName: "repeat")
-                        .font(.system(size: 17, weight: .bold))
-                        .frame(width: 36, height: 36)
-                        .background(.white.opacity(0.2), in: Circle())
+    /// "Cicilan" on a card expense, or the way to manage what is already set. Changes wait for Simpan.
+    @ViewBuilder private var planActions: some View {
+        if isEditable, draftType == .expense, !isDeleted {
+            let canInstall = savedAccount?.isCreditCard == true
+            VStack(spacing: 0) {
+                if installment != nil, draftMonths > 0 {
+                    action(L("Kelola cicilan"), "calendar.badge.clock") { openInstallment() }
+                    if let running = runningPlan, running.settlement == nil, running.remainingParts > 0 {
+                        action(L("Lunasi lebih cepat"), "checkmark.circle") { payoffItem = running }
+                    }
+                } else if !txn.isRecurring, canInstall {
+                    planRow(L("Cicilan"), "calendar.badge.clock", value: draftMonths > 0 ? L("%lld bulan", draftMonths) : L("Tidak")) { openInstallment() }
                 }
+            }
+            .padding(.horizontal, installment != nil && draftMonths > 0 ? 24 : 0)
+        }
+    }
+
+    /// The ↻ in the top corner, a glass circle like the add page; what is set shows as a chip under the amount.
+    @ViewBuilder private var repeatControl: some View {
+        if isEditable, draftType == .expense, !isDeleted, !txn.isRecurring, draftMonths == 0 {
+            Button { showsRepeatSheet = true } label: {
+                Image(systemName: "repeat")
+                    .font(.system(size: 17, weight: .bold))
+                    .frame(width: 36, height: 36)
+                    .background(.white.opacity(0.2), in: Circle())
             }
             .buttonStyle(PressScaleStyle())
             .accessibilityLabel(L("Ulangi"))
@@ -241,9 +258,9 @@ struct TransactionDetailView: View {
     }
 
     /// Same row as Cicilan / Berulang on the add page: label, "Tidak" while off, chevron.
-    private func planRow(_ label: String, _ icon: String, _ run: @escaping () -> Void) -> some View {
+    private func planRow(_ label: String, _ icon: String, value: String, _ run: @escaping () -> Void) -> some View {
         Button(action: run) {
-            DetailRow(label: label, value: L("Tidak"), icon: icon, showsChevron: true, height: 50)
+            DetailRow(label: label, value: value, icon: icon, showsChevron: true, height: 50, showsSeparator: false)
         }
         .buttonStyle(.plain)
     }
@@ -263,52 +280,64 @@ struct TransactionDetailView: View {
 
     // MARK: - Panel
 
+    private static let types = TransactionStyle.entryTypes
+    private var typeIndex: Int { Self.types.firstIndex { $0.type == draftType } ?? 0 }
+    /// Expense and income switch by swiping the panel, like the add page; any other type keeps its label.
+    private var canSwitchType: Bool { canChange && (txn.type == .expense || txn.type == .income) }
+    private let switchable = 0...1
+
     private var panel: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button("Tutup") { close() }.font(.app(17))
-                Spacer()
-                repeatControl
+            ZStack {
+                HStack {
+                    Button("Tutup") { close() }.font(.app(17))
+                    Spacer()
+                    repeatControl
+                }
+                if canSwitchType { typeDots }
             }
             .frame(height: 44)
             .padding(.horizontal, 20)
+            .zIndex(1)
 
-            HStack(spacing: 8) {
+            if canSwitchType {
+                typeCarousel.padding(.top, 4)
+            } else {
                 Label(typeLabel, systemImage: typeIcon)
                     .font(.app(13, weight: .semibold))
                     .labelStyle(PillLabelStyle())
                     .padding(.horizontal, 12)
                     .frame(height: 28)
                     .background(.white.opacity(0.18), in: Capsule())
-                attributionChip
             }
 
-            Button {
+            HStack(alignment: .top, spacing: 4) {
+                Text(amountSign + "Rp")
+                    .font(.app(22))
+                    .opacity(0.75)
+                    .padding(.top, 8)
+                Text((isAdjustment ? abs(signedAdjustment) : Double(amount)).formattedAsDigits())
+                    .font(.app(56, weight: .light))
+                    .tracking(-2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .contentTransition(.numericText())
+            }
+            .monospacedDigit()
+            .padding(.horizontal, 24)
+            .contentShape(Rectangle())
+            // a tap, not a Button: a swipe that starts on the amount still switches the type
+            .onTapGesture {
+                guard canChange else { return }
                 noteFocused = false
                 withAnimation(.settle(0.3)) { isEditingAmount = true }
-            } label: {
-                HStack(alignment: .top, spacing: 4) {
-                    Text(amountSign + "Rp")
-                        .font(.app(22))
-                        .opacity(0.75)
-                        .padding(.top, 8)
-                    Text((isAdjustment ? abs(signedAdjustment) : Double(amount)).formattedAsDigits())
-                        .font(.app(56, weight: .light))
-                        .tracking(-2)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .contentTransition(.numericText())
-                }
-                .monospacedDigit()
-                .padding(.horizontal, 24)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .disabled(!canChange)
             .padding(.top, 10)
+            .accessibilityElement()
             .accessibilityLabel(L("Nominal Rp%@", amount.formatted()))
+            .accessibilityAddTraits(canChange ? .isButton : [])
 
-            if !isEditingAmount { heroImpact }
+            if !isEditingAmount { heroChips }
         }
         .rise(isEntered, y: 14, fade: 0.5, move: 0.6)
         .foregroundStyle(.white)
@@ -317,8 +346,75 @@ struct TransactionDetailView: View {
         .background {
             UnevenRoundedRectangle(bottomLeadingRadius: 32, bottomTrailingRadius: 32)
                 .fill(style.color)
+                .animation(.easeInOut(duration: 0.45), value: draftType)
                 .ignoresSafeArea(edges: .top)
         }
+        .contentShape(Rectangle())
+        .gesture(typeSwipe, including: canSwitchType ? .all : .subviews)
+    }
+
+    /// The add page's type strip: the current type large, its neighbour faded, sliding as you swipe.
+    private var typeCarousel: some View {
+        GeometryReader { geo in
+            let itemWidth: CGFloat = 180
+            HStack(spacing: 0) {
+                ForEach(Self.types.indices, id: \.self) { i in
+                    let isCurrent = i == typeIndex
+                    HStack(spacing: 8) {
+                        Image(systemName: Self.types[i].icon).font(.system(size: 17, weight: .bold))
+                        Text(Self.types[i].label)
+                    }
+                    .font(.app(22, weight: .bold))
+                    .frame(width: itemWidth, height: 44)
+                    .opacity(isCurrent ? 1 : switchable.contains(i) ? 0.45 : 0.15)
+                    .scaleEffect(isCurrent ? 1 : 0.8)
+                    .animation(.settle(0.38), value: typeIndex)
+                    .contentShape(Rectangle())
+                    .onTapGesture { setType(i) }
+                    .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
+                }
+            }
+            .offset(x: (geo.size.width - itemWidth) / 2 - CGFloat(typeIndex) * itemWidth + dragX)
+        }
+        .frame(height: 44)
+        .clipped()
+    }
+
+    private var typeSwipe: some Gesture {
+        DragGesture(minimumDistance: 6)
+            .onChanged { value in
+                var dx = value.translation.width
+                if (typeIndex == switchable.lowerBound && dx > 0) || (typeIndex == switchable.upperBound && dx < 0) { dx *= 0.3 }
+                dragX = dx
+            }
+            .onEnded { _ in
+                let dx = dragX
+                let next = dx < -40 ? typeIndex + 1 : dx > 40 ? typeIndex - 1 : typeIndex
+                withAnimation(.settle(0.46)) { dragX = 0 }
+                setType(min(max(next, switchable.lowerBound), switchable.upperBound))
+            }
+    }
+
+    private var typeDots: some View {
+        HStack(spacing: 6) {
+            ForEach(Self.types.indices, id: \.self) { i in
+                Capsule()
+                    .fill(.white)
+                    .frame(width: i == typeIndex ? 18 : 6, height: 6)
+                    .opacity(i == typeIndex ? 1 : 0.5)
+            }
+        }
+        .animation(.settle(0.3), value: typeIndex)
+        .accessibilityHidden(true)
+    }
+
+    /// The category belongs to the old type, so it is cleared; the other kinds of plan do not apply to income.
+    private func setType(_ index: Int) {
+        guard switchable.contains(index), index != typeIndex else { return }
+        noteFocused = false
+        withAnimation(.settle(0.46)) { draftType = Self.types[index].type }
+        categoryId = nil
+        if draftType != .expense { draftRepeat = nil; draftMonths = 0 }
     }
 
     private var amountSign: String {
@@ -334,7 +430,7 @@ struct TransactionDetailView: View {
     private var isDirty: Bool {
         guard canChange else { return false }
         let saved = (txn.description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return Int(txn.amount) != amount || categoryId != txn.categoryId || accountId != txn.accountId
+        return draftType != txn.type || draftRepeat != savedRepeat || draftMonths != savedMonths || Int(txn.amount) != amount || categoryId != txn.categoryId || accountId != txn.accountId
             || (isTransfer && targetId != txn.counterpartyAccountId) || abs(date.timeIntervalSince(txn.date)) >= 1
             || note.trimmingCharacters(in: .whitespacesAndNewlines) != saved
     }
@@ -344,12 +440,20 @@ struct TransactionDetailView: View {
     }
 
     private func resetDraft(to saved: Transaction) {
+        draftType = saved.type
+        draftRepeat = savedRepeat
+        draftMonths = savedMonths
         amount = Int(saved.amount)
         categoryId = saved.categoryId
         accountId = saved.accountId
         targetId = saved.counterpartyAccountId
         date = saved.date
         note = saved.description ?? ""
+    }
+
+    /// Batal: the rows go back to what is saved and the page stays.
+    private func discardDraft() {
+        withAnimation(.settle(0.3)) { resetDraft(to: txn) }
     }
 
     private func press(_ key: String) {
@@ -360,16 +464,56 @@ struct TransactionDetailView: View {
     /// What the draft would do to the wallets, as a transaction that is not saved.
     private var draftTxn: Transaction {
         Transaction(id: txn.id, accountId: accountId ?? txn.accountId, counterpartyAccountId: isTransfer ? targetId : nil, categoryId: categoryId,
-                    amount: Double(amount), type: txn.type, description: txn.description, note: txn.note, date: date, delta: txn.delta)
+                    amount: Double(amount), type: draftType, description: txn.description, note: txn.note, date: date, delta: txn.delta)
     }
 
     // MARK: - Hero
 
-    /// Who recorded it (K17); "· diubah" and the editor when someone else changed it last (K24).
+    @ViewBuilder private var heroChips: some View {
+        if hasChips {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    attributionChip
+                    if let draftRepeat {
+                        chip("repeat", (draftRepeat == .yearly ? L("Tiap tahun") : L("Tiap bulan")) + " · "
+                             + TransactionDates.dayMonth.string(from: RepeatChoiceSheet.nextDate(from: date, draftRepeat))) { showsRepeatSheet = true }
+                    }
+                    if draftMonths > 0 {
+                        chip("calendar.badge.clock", L("Cicilan %lld bulan", draftMonths)) { openInstallment() }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .frame(minWidth: UIScreen.main.bounds.width)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .padding(.top, 14)
+        }
+    }
+
+    private var hasChips: Bool {
+        (workspace.showsAttribution && workspace.member(txn.recorderId) != nil) || draftRepeat != nil || draftMonths > 0
+    }
+
+    private func chip(_ icon: String, _ text: String, _ run: @escaping () -> Void) -> some View {
+        Button(action: run) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 12, weight: .bold))
+                Text(text).font(.app(13, weight: .semibold)).lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 28)
+            .background(.white.opacity(0.18), in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(PressScaleStyle())
+        .disabled(!canChange)
+    }
+
+    /// Who recorded it (K17), and who changed it last when that is someone else (K24).
     @ViewBuilder private var attributionChip: some View {
         if workspace.showsAttribution, let by = workspace.member(txn.recorderId) {
             let editor = workspace.member(txn.updatedBy)
-            let name = editor.map { $0.id != by.id ? L("%@ · diubah %@", by.name, $0.name) : by.name } ?? by.name
+            let name = editor.map { $0.id != by.id ? L("Dicatat oleh %@ · diubah %@", by.name, $0.name) : L("Dicatat oleh %@", by.name) } ?? L("Dicatat oleh %@", by.name)
             HStack(spacing: 6) {
                 MemberAvatar(member: by, size: 20)
                 Text(name).font(.app(13, weight: .semibold)).lineLimit(1)
@@ -381,59 +525,6 @@ struct TransactionDetailView: View {
         }
     }
 
-    /// One line (two for a transfer) under the amount: the category budget, or the balance afterwards.
-    private var heroImpact: some View {
-        VStack(spacing: 8) {
-            switch txn.type {
-            case .expense:
-                if let b = draftBudget { budgetLine(b) }
-            case .income:
-                if let account { line(L("Saldo %@ setelahnya", account.name), rupiah(projected(account))) }
-            case .transfer:
-                ForEach([account, counterparty].compactMap { $0 }, id: \.id) { line($0.name, rupiah(projected($0))) }
-                Text(isBillPayment ? L("Bayar tagihan kartu kredit bukan pengeluaran, jadi tidak memengaruhi budget.") : L("Transfer antar dompet tidak memengaruhi budget."))
-                    .font(.app(12)).opacity(0.75).multilineTextAlignment(.center)
-            case .adjustment, .cardPayment:
-                if let text = savedImpactText { Text(text).font(.app(13, weight: .medium)) }
-            }
-        }
-        .monospacedDigit()
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-    }
-
-    private func line(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label).font(.app(13, weight: .medium)).lineLimit(1)
-            Spacer(minLength: 12)
-            Text(value).font(.app(13, weight: .medium)).lineLimit(1)
-        }
-    }
-
-    private func budgetLine(_ b: BudgetImpact) -> some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text(L("Budget %@", b.name)).font(.app(13, weight: .medium)).lineLimit(1)
-                Spacer(minLength: 12)
-                Text(b.left < 0 ? L("lewat Rp%@", (-b.left).abbreviatedRupiah()) : L("sisa Rp%@", b.left.abbreviatedRupiah()))
-                    .font(.app(13, weight: b.left < 0 ? .bold : .medium))
-            }
-            heroBar(b)
-        }
-    }
-
-    /// 30 segments: white up to what is used, the rest a faint track. Past the budget the fill turns dark.
-    private func heroBar(_ b: BudgetImpact) -> some View {
-        let filled = Int((min(1, b.used / b.cap) * 30).rounded())
-        return HStack(spacing: 2) {
-            ForEach(0..<30, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(i < filled ? (b.left < 0 ? Color.black.opacity(0.4) : Color.white) : Color.white.opacity(0.28))
-            }
-        }
-        .frame(height: 8)
-    }
-
     struct BudgetImpact {
         let name: String
         let cap: Double
@@ -443,27 +534,10 @@ struct TransactionDetailView: View {
 
     /// The category's budget with this transaction counted at its draft amount and category.
     private var draftBudget: BudgetImpact? {
-        guard txn.type == .expense, let id = categoryId, let budget = activeBudgets.first(where: { $0.categoryId == id }), budget.amount > 0 else { return nil }
+        guard draftType == .expense, let id = categoryId, let budget = activeBudgets.first(where: { $0.categoryId == id }), budget.amount > 0 else { return nil }
         var spent = budget.spentInCurrentPeriod(transactions: allTransactions)
         if txn.categoryId == id { spent = max(0, spent - txn.amount) }
         return BudgetImpact(name: category?.name ?? budget.name, cap: budget.amount, used: spent + Double(amount))
-    }
-
-    /// A wallet's balance with the saved transaction taken out and the draft put in.
-    private func projected(_ wallet: Account) -> Double {
-        let flags = Dictionary(accounts.map { ($0.id, $0.isCreditCard) }, uniquingKeysWith: { first, _ in first })
-        func effect(_ t: Transaction) -> Double {
-            SupabaseRepository.balanceEffects(of: t, isCredit: flags).filter { $0.0 == wallet.id }.reduce(0) { $0 + $1.1 }
-        }
-        return wallet.balance - effect(txn) + effect(draftTxn)
-    }
-
-    /// Adjustments and card payments keep the plain sentence.
-    private var savedImpactText: String? {
-        guard let account = savedAccount else { return nil }
-        if txn.type == .cardPayment { return L("Tagihan turun Rp%@", txn.amount.formattedAsDigits()) }
-        let change = (signedAdjustment < 0 ? "−Rp" : "+Rp") + abs(signedAdjustment).formattedAsDigits()
-        return account.name + " · " + L("Penyesuaian %@", change)
     }
 
     /// While the keypad is open: what it was, what changed and what is left of the budget.
@@ -534,7 +608,7 @@ struct TransactionDetailView: View {
 
     /// The picker's categories in the user's order; a hidden one stays when this transaction already uses it.
     private var typeCategories: [Category] {
-        let kind: CategoryType = txn.type == .income ? .income : .expense
+        let kind: CategoryType = draftType == .income ? .income : .expense
         let lists = categories.filter { $0.type == kind && !CategoryCatalog.isSystem($0) }.arranged(by: preferences)
         var shown = lists.shown
         if let id = txn.categoryId, let kept = lists.hidden.first(where: { $0.id == id }) { shown.append(kept) }
@@ -550,10 +624,10 @@ struct TransactionDetailView: View {
             } else if isAdjustment {
                 pickRow(.account, label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 1)
             } else {
-                pickRow(.category, label: L("Kategori"), value: category?.name ?? "—", categoryMark: category, index: 1)
+                pickRow(.category, label: L("Kategori"), value: category?.name ?? L("Belum dipilih"), categoryMark: category, isPlaceholder: category == nil, index: 1)
                 pickRow(.account, label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 2)
-                if let installment, let card = savedAccount {
-                    installmentRow(installment, card: card)
+                if let installment, draftMonths > 0, let card = savedAccount {
+                    installmentRow(installment, months: draftMonths, card: card)
                 }
             }
             pickRow(.date, label: L("Tanggal"), value: TransactionDates.long(date, withYear: false), icon: "calendar", index: 3)
@@ -597,12 +671,12 @@ struct TransactionDetailView: View {
     }
 
     private func pickRow(_ kind: PickerKind, label: String, value: String, wallet: Account? = nil, categoryMark: Category? = nil,
-                         icon: String? = nil, index: Int) -> some View {
+                         icon: String? = nil, isPlaceholder: Bool = false, index: Int) -> some View {
         Button {
             noteFocused = false
             sheet = kind
         } label: {
-            DetailRow(label: label, value: value, wallet: wallet, categoryMark: categoryMark, icon: icon, showsChevron: canChange, height: 50, showsSeparator: false)
+            DetailRow(label: label, value: value, wallet: wallet, categoryMark: categoryMark, icon: icon, showsChevron: canChange, height: 50, isPlaceholder: isPlaceholder, showsSeparator: false)
         }
         .buttonStyle(.plain)
         .disabled(!canChange)
@@ -610,15 +684,15 @@ struct TransactionDetailView: View {
     }
 
     /// "Cicilan 6 bulan · Rp…/bulan" and how many parts the statements have billed so far.
-    private func installmentRow(_ plan: CardInstallment, card: Account) -> some View {
+    private func installmentRow(_ plan: CardInstallment, months: Int, card: Account) -> some View {
         let billed = CreditStatement.billedParts(of: plan, purchaseDate: txn.date, card: card)
-        let monthly = txn.amount / Double(max(1, plan.months))
+        let monthly = txn.amount / Double(max(1, months))
         return VStack(alignment: .leading, spacing: 0) {
-            DetailRow(label: L("Cicilan"), value: L("%lld bulan · Rp%@/bulan", plan.months, monthly.formattedAsDigits()),
+            DetailRow(label: L("Cicilan"), value: L("%lld bulan · Rp%@/bulan", months, monthly.formattedAsDigits()),
                       icon: "calendar.badge.clock", height: 50, showsSeparator: false)
             VStack(alignment: .leading, spacing: 8) {
-                SegmentBar(value: Double(billed) / Double(max(1, plan.months)), count: plan.months, height: 6, spacing: 3)
-                Text("\(billed) dari \(plan.months) sudah ditagih")
+                SegmentBar(value: Double(billed) / Double(max(1, months)), count: months, height: 6, spacing: 3)
+                Text("\(billed) dari \(months) sudah ditagih")
                     .font(.app(13))
                     .foregroundStyle(Color.appTextSecondary)
                     .monospacedDigit()
@@ -741,15 +815,16 @@ struct TransactionDetailView: View {
             do {
                 let updated = try await SupabaseRepository.shared.updateTransaction(
                     id: txn.id, accountId: account.id, counterpartyAccountId: isTransfer ? targetId : nil,
-                    categoryId: isTransfer ? nil : categoryId, amount: Double(amount), type: txn.type,
+                    categoryId: isTransfer ? nil : categoryId, amount: Double(amount), type: draftType,
                     description: trimmed.isEmpty ? nil : trimmed, note: txn.note, date: date)
+                try await applyPlans(to: updated, wallet: account)
                 txn = updated
-                resetDraft(to: updated)
                 isSaving = false
                 onUpdate?(updated)
                 NotificationCenter.default.post(name: .dataDidChange, object: nil)
                 ToastCenter.shared.show(L("Perubahan tersimpan"), icon: .success)
                 await loadContext()
+                resetDraft(to: updated)
             } catch is CancellationError {
                 isSaving = false
             } catch {
@@ -766,26 +841,46 @@ struct TransactionDetailView: View {
         }
     }
 
-    // MARK: - Footer
-
-    /// Only Tutup until something changes; then Batal and Simpan, 1:3.
-    private var footer: some View {
-        Group {
-            if isDirty {
-                SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Batal"),
-                                 onPrimary: save, onSecondary: { isConfirmingDiscard = true })
-            } else {
-                Button { dismiss() } label: {
-                    Text(L("Tutup"))
-                        .font(.app(17, weight: .semibold))
-                        .foregroundStyle(Color.appText)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.appFill, in: Capsule())
+    /// The installment and the recurring bill held until Simpan: written now, after the transaction itself.
+    private func applyPlans(to updated: Transaction, wallet: Account) async throws {
+        let repo = SupabaseRepository.shared
+        if draftRepeat != savedRepeat {
+            if let frequency = draftRepeat {
+                await NotificationManager.shared.requestPermissionIfNeeded()
+                let day = CardInstallment.dateOnly.string(from: RepeatChoiceSheet.nextDate(from: updated.date, frequency))
+                let bill: CardSubscription
+                if let existing = subscription {
+                    bill = try await repo.updateSubscription(id: existing.id, name: existing.name, amount: existing.amount, frequency: frequency,
+                                                             nextBillingDate: day, isActive: true, categoryId: existing.categoryId, note: existing.note)
+                } else {
+                    bill = try await repo.createSubscription(accountId: wallet.id, name: updated.displayNote ?? category?.name ?? "Tagihan", amount: updated.amount,
+                                                             frequency: frequency, nextBillingDate: day, categoryId: updated.categoryId, note: nil, sourceTransactionId: updated.id)
                 }
-                .buttonStyle(PressScaleStyle())
+                await NotificationManager.shared.schedule(for: bill)
+            } else if let existing = subscription {
+                _ = try await repo.updateSubscription(id: existing.id, name: existing.name, amount: existing.amount, frequency: existing.frequency,
+                                                      nextBillingDate: existing.nextBillingDate, isActive: false, categoryId: existing.categoryId, note: existing.note)
+                await NotificationManager.shared.cancel(for: existing)
             }
         }
+        if draftMonths != savedMonths {
+            if draftMonths == 0 {
+                if let installment { try await repo.deleteInstallment(id: installment.id) }
+            } else if let installment {
+                try await repo.updateInstallmentMonths(id: installment.id, months: draftMonths)
+            } else {
+                try await repo.createInstallment(accountId: wallet.id, transactionId: updated.id, months: draftMonths,
+                                                 startsFrom: InstallmentConversion.startsFrom(purchaseDate: updated.date, card: wallet))
+            }
+        }
+    }
+
+    // MARK: - Footer
+
+    /// Shown once something changed. Batal puts the rows back and stays on the page.
+    private var footer: some View {
+        SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Batal"),
+                         onPrimary: save, onSecondary: discardDraft)
         .padding(.horizontal, 24)
         .padding(.bottom, Self.footerBottomPadding)
         .background(alignment: .bottom) {

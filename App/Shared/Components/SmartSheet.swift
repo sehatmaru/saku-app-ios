@@ -153,6 +153,7 @@ struct SmartSheetFooter: View {
                     Button(action: onSecondary) {
                         Text(secondary).font(.app(16, weight: .medium)).foregroundStyle(Color.appTextSecondary)
                             .lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity).frame(height: 50)
+                            .contentShape(Rectangle())
                     }
                     .opacity(isBusy ? 0.35 : 1)
                     Button(action: onPrimary) {

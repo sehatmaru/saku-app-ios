@@ -851,16 +851,6 @@
         }
       }
     },
-    "%@ · diubah %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ · edited by %@"
-          }
-        }
-      }
-    },
     "%@ · lunas %@": {
       "localizations": {
         "en": {
@@ -7303,6 +7293,16 @@
         }
       }
     },
+    "Cicilan %lld bulan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld-month installment"
+          }
+        }
+      }
+    },
     "Cicilan %lld dari %lld": {
       "localizations": {
         "en": {
@@ -8579,6 +8579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Added by %@"
+          }
+        }
+      }
+    },
+    "Dicatat oleh %@ · diubah %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded by %@ · edited by %@"
           }
         }
       }
