@@ -96,6 +96,15 @@ struct TransactionDetailView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            // Same ↻ as the add page, in the top corner: set or change the recurring bill. A card's installment excludes it.
+            if isEditable, txn.type == .expense, !isDeleted, !txn.isRecurring, installment == nil {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { planKind = .recurring } label: { Image(systemName: "repeat").fontWeight(.bold) }
+                        .accessibilityLabel(L("Ulangi"))
+                }
+            }
+        }
         .hidesTabBarWhilePushed()
         .toolbarColorScheme(.dark, for: .navigationBar)
         .tint(.white)
@@ -177,14 +186,11 @@ struct TransactionDetailView: View {
                     if let running = runningPlan, running.settlement == nil, running.remainingParts > 0 {
                         action(L("Lunasi lebih cepat"), "checkmark.circle") { payoffItem = running }
                     }
-                } else if subscription != nil {
-                    action(L("Atur berulang"), "repeat") { planKind = .recurring }
-                } else if !txn.isRecurring {
-                    if canInstall { planRow(L("Cicilan"), "calendar.badge.clock") { planKind = .installment } }
-                    planRow(L("Berulang"), "repeat") { planKind = .recurring }
+                } else if subscription == nil, !txn.isRecurring, canInstall {
+                    planRow(L("Cicilan"), "calendar.badge.clock") { planKind = .installment }
                 }
             }
-            .padding(.horizontal, installment != nil || subscription != nil ? 24 : 0)
+            .padding(.horizontal, installment != nil ? 24 : 0)
         }
     }
 
