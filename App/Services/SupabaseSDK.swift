@@ -22,6 +22,7 @@ enum SupabaseSDK {
         PaydaySetting.day = profile.paydayDay
         HomeBalanceSetting.mode = profile.homeBalanceMode
         await syncSmartTrackerConsent(profile)
+        if profile.workspaceNewsSeenAt != nil { UserDefaults.standard.set(true, forKey: workspaceNewsKey) }
         await refreshPaydaySchedule()
         await refreshPaydayShifts()
         await PlusStore.shared.apply(profile)
@@ -63,6 +64,19 @@ enum SupabaseSDK {
     /// Uses a friend's code (a real account only, once, never its own). Throws the server's plain error code.
     static func redeemReferralCode(_ code: String) async throws {
         try await client.rpc("redeem_referral_code", params: ["p_code": AnyJSON.string(code)]).execute()
+    }
+
+    /// Device mirror of `user_profiles.workspace_news_seen_at`: the server value switches it on, it never switches it off.
+    static let workspaceNewsKey = "workspaceNewsSeen"
+
+    /// Saves that the "Baru" Workspace sheet was shown. Quiet on failure: the device flag still stops a repeat.
+    static func markWorkspaceNewsSeen(profileId: String) async {
+        guard let id = UUID(uuidString: profileId) else { return }
+        _ = try? await client
+            .from("user_profiles")
+            .update(["workspace_news_seen_at": AnyJSON.string(ISO8601DateFormatter().string(from: Date()))] as [String: AnyJSON])
+            .eq("id", value: id)
+            .execute()
     }
 
     /// The profile decides. If this device agreed but saving failed earlier, the agreement is saved now.
@@ -294,6 +308,8 @@ struct UserProfile: Codable, Identifiable {
     var isTester: Bool? = nil
     /// The workspace opened at launch: the person's Workspace Pribadi until shared workspaces exist.
     var defaultSpaceId: UUID? = nil
+    /// When the one-time "Baru" Workspace sheet was shown; nil until then (new accounts start with a value).
+    var workspaceNewsSeenAt: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -312,6 +328,7 @@ struct UserProfile: Codable, Identifiable {
         case plusPlan = "plus_plan"
         case isTester = "is_tester"
         case defaultSpaceId = "default_space_id"
+        case workspaceNewsSeenAt = "workspace_news_seen_at"
     }
 }
 

@@ -242,7 +242,7 @@ struct WorkspaceHost: ViewModifier {
     @State private var showsWizard = false
     @State private var showsJoin = false
     @State private var showsNews = false
-    private static let newsKey = "workspaceNewsSeen"
+    private static let newsKey = SupabaseSDK.workspaceNewsKey
 
     func body(content: Content) -> some View {
         content
@@ -253,6 +253,7 @@ struct WorkspaceHost: ViewModifier {
                 guard !Task.isCancelled else { return }
                 UserDefaults.standard.set(true, forKey: Self.newsKey)
                 showsNews = true
+                if let profileId = authViewModel.currentUser?.id { await SupabaseSDK.markWorkspaceNewsSeen(profileId: profileId) }
             }
             .sheet(isPresented: $showsNews) {
                 WorkspaceNewsSheet { showsNews = false; store.requestCreate() }
