@@ -24,6 +24,8 @@ struct TransactionPlanSheet: View {
     @State private var cardInstallments: [CardInstallment] = []
     @State private var isSaving = false
     @State private var errorMessage: String?
+    /// The recurring bill as it stands in this sheet: set from the transaction, then kept up to date as choices are saved.
+    @State private var currentBill: CardSubscription?
 
     private static let tenors = [3, 6, 12, 24]
     private let calendar = Calendar.current
@@ -50,6 +52,52 @@ struct TransactionPlanSheet: View {
     }
 
     var body: some View {
+        if kind == .recurring && conflict == nil { recurringSheet } else { planBody }
+    }
+
+    /// Tagihan berulang: the same sheet as Tambah transaksi. A choice is saved right away.
+    private var recurringSheet: some View {
+        RepeatChoiceSheet(selected: currentBill?.isActive == true ? currentBill?.frequency : nil, amount: txn.amount, accountName: account.name,
+                          date: { RepeatChoiceSheet.nextDate(from: txn.date, $0) },
+                          isBusy: isSaving,
+                          onSelect: { choose($0) }, onDone: { dismiss() })
+            .task { currentBill = subscription }
+    }
+
+    private func choose(_ value: CardSubscription.Frequency?) {
+        guard !isSaving else { return }
+        if value == nil && currentBill?.isActive != true { return }
+        if let value, currentBill?.isActive == true, currentBill?.frequency == value { return }
+        isSaving = true
+        let repo = SupabaseRepository.shared
+        Task {
+            do {
+                if let value {
+                    await NotificationManager.shared.requestPermissionIfNeeded()
+                    let date = Self.dayString(RepeatChoiceSheet.nextDate(from: txn.date, value))
+                    let bill: CardSubscription
+                    if let existing = currentBill {
+                        bill = try await repo.updateSubscription(id: existing.id, name: existing.name, amount: existing.amount, frequency: value,
+                                                                 nextBillingDate: date, isActive: true, categoryId: existing.categoryId, note: existing.note)
+                    } else {
+                        bill = try await repo.createSubscription(accountId: account.id, name: txn.displayNote ?? category?.name ?? "Tagihan", amount: txn.amount,
+                                                                 frequency: value, nextBillingDate: date, categoryId: category?.id, note: nil, sourceTransactionId: txn.id)
+                    }
+                    await NotificationManager.shared.schedule(for: bill)
+                    currentBill = bill
+                } else if let existing = currentBill {
+                    currentBill = try await repo.updateSubscription(id: existing.id, name: existing.name, amount: existing.amount, frequency: existing.frequency,
+                                                                    nextBillingDate: existing.nextBillingDate, isActive: false, categoryId: existing.categoryId, note: existing.note)
+                    await NotificationManager.shared.cancel(for: existing)
+                }
+                isSaving = false
+                onDone()
+                NotificationCenter.default.post(name: .dataDidChange, object: nil)
+            } catch { isSaving = false }
+        }
+    }
+
+    private var planBody: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(kind == .installment ? L("Cicilan 0%") : L("Tagihan berulang")).font(.app(22, weight: .bold)).tracking(-0.3)

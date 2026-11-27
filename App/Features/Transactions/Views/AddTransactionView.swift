@@ -648,81 +648,11 @@ struct AddTransactionView: View {
         }
     }
 
-    /// Bottom sheet from the ↻ icon (Pengingat Tagihan 4b): pick Tidak / Tiap bulan / Tiap tahun,
-    /// see the next date, then Selesai.
+    /// Bottom sheet from the ↻ icon (Pengingat Tagihan 4b): pick Tidak / Tiap bulan / Tiap tahun.
     private var repeatSheet: some View {
-        PickerSheet(title: L("Tagihan berulang"), actionTitle: L("Tutup"), onDone: { showsRepeatMenu = false }) {
-            VStack(alignment: .leading, spacing: 0) {
-                VStack(spacing: 0) {
-                    ForEach(Self.repeatOptions, id: \.1) { option, title in
-                        Button {
-                            withAnimation(.settle(0.3)) { repeatFrequency = option }
-                        } label: {
-                            HStack(spacing: 12) {
-                                Text(L(title)).font(.app(16, weight: .medium)).foregroundStyle(Color.appText)
-                                Spacer()
-                                if let option {
-                                    Text(repeatMenuDate(option))
-                                        .font(.app(14))
-                                        .monospacedDigit()
-                                        .foregroundStyle(Color.appTextSecondary)
-                                }
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(Color.appPrimary)
-                                    .opacity(option == repeatFrequency ? 1 : 0)
-                                    .frame(width: 16)
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 52)
-                            .rowSeparator()
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(RowPressStyle())
-                        .accessibilityAddTraits(option == repeatFrequency ? .isSelected : [])
-                    }
-                }
-                .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 14))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-
-                if let frequency = repeatFrequency {
-                    HStack(spacing: 12) {
-                        Image(systemName: "calendar")
-                            .font(.system(size: 18))
-                            .foregroundStyle(Color.appTextSecondary)
-                            .frame(width: 38, height: 38)
-                            .background(Color.appBackground, in: Circle())
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Tagihan berikutnya")
-                                .font(.app(12))
-                                .foregroundStyle(Color.appTextTertiary)
-                            Text(Self.longDate.string(from: repeatDate(frequency)))
-                                .font(.app(17, weight: .semibold))
-                                .foregroundStyle(Color.appText)
-                            Text("−Rp" + Double(amount).formattedAsDigits() + (account.map { " · " + $0.name } ?? ""))
-                                .font(.app(13))
-                                .monospacedDigit()
-                                .foregroundStyle(Color.appTextSecondary)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color(light: 0xF7F7F8, dark: 0x1C1C1E), in: RoundedRectangle(cornerRadius: 16))
-                    .padding(.top, 14)
-                    .transition(.opacity)
-                }
-
-                Text("Dicatat otomatis sebagai pengeluaran saat kamu membuka Saku di tanggal itu. Tidak bisa digabung dengan Cicilan 0%.")
-                    .font(.app(13))
-                    .foregroundStyle(Color.appTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 12)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 4)
-            .padding(.bottom, 24)
-        }
+        RepeatChoiceSheet(selected: repeatFrequency, amount: Double(amount), accountName: account?.name, date: repeatDate,
+                          onSelect: { value in withAnimation(.settle(0.3)) { repeatFrequency = value } },
+                          onDone: { showsRepeatMenu = false })
     }
 
     private static var longDate: DateFormatter {
@@ -730,12 +660,6 @@ struct AddTransactionView: View {
         f.locale = AppLanguage.locale
         f.dateFormat = "EEEE, d MMM yyyy"
         return f
-    }
-
-    private func repeatMenuDate(_ frequency: CardSubscription.Frequency) -> String {
-        let date = repeatDate(frequency)
-        return frequency == .yearly ? TransactionDates.dayMonth.string(from: date) + " " + String(calendar.component(.year, from: date))
-            : TransactionDates.dayMonth.string(from: date)
     }
 
     // MARK: - Rows

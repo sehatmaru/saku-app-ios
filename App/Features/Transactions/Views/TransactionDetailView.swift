@@ -100,8 +100,14 @@ struct TransactionDetailView: View {
             // Same ↻ as the add page, in the top corner: set or change the recurring bill. A card's installment excludes it.
             if isEditable, txn.type == .expense, !isDeleted, !txn.isRecurring, installment == nil {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { planKind = .recurring } label: { Image(systemName: "repeat").fontWeight(.bold) }
-                        .accessibilityLabel(L("Ulangi"))
+                    Button { planKind = .recurring } label: {
+                        if let next = subscription?.nextBillingDateAsDate {
+                            Label(TransactionDates.dayMonth.string(from: next), systemImage: "repeat").font(.app(14, weight: .semibold)).monospacedDigit()
+                        } else {
+                            Image(systemName: "repeat").fontWeight(.bold)
+                        }
+                    }
+                    .accessibilityLabel(L("Ulangi"))
                 }
             }
         }
@@ -186,7 +192,14 @@ struct TransactionDetailView: View {
                     if let running = runningPlan, running.settlement == nil, running.remainingParts > 0 {
                         action(L("Lunasi lebih cepat"), "checkmark.circle") { payoffItem = running }
                     }
-                } else if subscription == nil, !txn.isRecurring, canInstall {
+                } else if let subscription {
+                    Button { planKind = .recurring } label: {
+                        DetailRow(label: L("Berulang"), value: (subscription.frequency == .yearly ? L("Tiap tahun") : L("Tiap bulan"))
+                                  + (subscription.nextBillingDateAsDate.map { " · " + TransactionDates.dayMonth.string(from: $0) } ?? ""),
+                                  icon: "repeat", showsChevron: true, height: 50)
+                    }
+                    .buttonStyle(.plain)
+                } else if !txn.isRecurring, canInstall {
                     planRow(L("Cicilan"), "calendar.badge.clock") { planKind = .installment }
                 }
             }

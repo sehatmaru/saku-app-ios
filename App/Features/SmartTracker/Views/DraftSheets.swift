@@ -98,13 +98,14 @@ struct DraftFieldSheet: View {
                 }
             }
         case .repeats:
-            choiceSheet(L("Berulang"), options: [(0, L("Tidak")), (1, L("Tiap bulan")), (2, L("Tiap tahun"))],
-                        selected: draft.repeatFrequency == .monthly ? 1 : draft.repeatFrequency == .yearly ? 2 : 0) { value in
-                edit { d in
-                    d.repeatFrequency = value == 1 ? .monthly : value == 2 ? .yearly : nil
-                    if value > 0 { d.installmentMonths = nil }
-                }
-            }
+            RepeatChoiceSheet(selected: draft.repeatFrequency, amount: draft.amount ?? 0,
+                              date: { RepeatChoiceSheet.nextDate(from: draft.date, $0) },
+                              onSelect: { value in
+                                  edit { d in
+                                      d.repeatFrequency = value
+                                      if value != nil { d.installmentMonths = nil }
+                                  }
+                              }, onDone: close)
         case .amount:
             DraftAmountSheet(amount: Int(draft.amount ?? 0)) { value in
                 edit { d in
