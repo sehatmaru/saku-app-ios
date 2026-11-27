@@ -180,12 +180,20 @@ struct TransactionDetailView: View {
                 } else if subscription != nil {
                     action(L("Atur berulang"), "repeat") { planKind = .recurring }
                 } else if !txn.isRecurring {
-                    if canInstall { action(L("Jadikan cicilan"), "calendar.badge.clock") { planKind = .installment } }
-                    action(L("Jadikan berulang"), "repeat") { planKind = .recurring }
+                    if canInstall { planRow(L("Cicilan"), "calendar.badge.clock") { planKind = .installment } }
+                    planRow(L("Berulang"), "repeat") { planKind = .recurring }
                 }
             }
-            .padding(.horizontal, 24).padding(.top, 8)
+            .padding(.horizontal, installment != nil || subscription != nil ? 24 : 0)
         }
+    }
+
+    /// Same row as Cicilan / Berulang on the add page: label, "Tidak" while off, chevron.
+    private func planRow(_ label: String, _ icon: String, _ run: @escaping () -> Void) -> some View {
+        Button(action: run) {
+            DetailRow(label: label, value: L("Tidak"), icon: icon, showsChevron: true, height: 50)
+        }
+        .buttonStyle(.plain)
     }
 
     private func action(_ title: String, _ icon: String, _ run: @escaping () -> Void) -> some View {
