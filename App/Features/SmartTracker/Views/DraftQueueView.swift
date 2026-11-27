@@ -218,6 +218,9 @@ struct DraftQueueView: View {
     @State private var viewingImage: DraftImageItem?
     @State private var sourceSheet: DraftImageItem?
 @State private var noticeItem: DraftImageItem?
+    /// The chip row is wider than the card and a finger is on it: the row scrolls, the cards must stay put.
+    @State private var chipsOverflow = false
+    @State private var chipTouch = false
     @State private var dragging = false
     @State private var exiting: UUID?
     @State private var exitDir: CGFloat = 0
@@ -228,7 +231,7 @@ struct DraftQueueView: View {
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 20, coordinateSpace: .global)
             .onChanged { value in
-                guard items.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
+                guard !chipTouch, items.count > 1, abs(value.translation.width) > abs(value.translation.height) else { return }
                 // the first draft cannot be pulled right, the last one cannot be pulled left
                 swiping = true
                 if (stackPosition == 0 && value.translation.width > 0) || (stackPosition == items.count - 1 && value.translation.width < 0) {
@@ -807,6 +810,10 @@ struct DraftQueueView: View {
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
+            .onScrollGeometryChange(for: Bool.self) { $0.contentSize.width > $0.containerSize.width + 1 } action: { _, over in chipsOverflow = over }
+            .simultaneousGesture(DragGesture(minimumDistance: 0)
+                .onChanged { _ in if chipsOverflow { chipTouch = true } }
+                .onEnded { _ in chipTouch = false })
             .padding(.top, 12)
         }
     }
