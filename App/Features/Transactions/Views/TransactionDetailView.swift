@@ -47,6 +47,8 @@ struct TransactionDetailView: View {
     @State private var isSaving = false
     @State private var isConfirmingDiscard = false
     @State private var errorMessage: String?
+    @State private var shakeX: CGFloat = 0
+    @State private var categoryShakeX: CGFloat = 0
     @State private var closesAfterAlert = false
     @FocusState private var noteFocused: Bool
 
@@ -314,6 +316,8 @@ struct TransactionDetailView: View {
             }
             .monospacedDigit()
             .padding(.horizontal, 24)
+            .offset(x: shakeX)
+            .animation(.easeOut(duration: 0.06), value: shakeX)
             .contentShape(Rectangle())
             // a tap, not a Button: a swipe that starts on the amount still switches the type
             .onTapGesture {
@@ -690,6 +694,8 @@ struct TransactionDetailView: View {
             DetailRow(label: label, value: value, wallet: wallet, categoryMark: categoryMark, icon: icon, showsChevron: canChange, height: 50, isPlaceholder: isPlaceholder, showsSeparator: false)
                 .contentTransition(.opacity)
                 .animation(.settle(0.25), value: value)
+                .offset(x: kind == .category ? categoryShakeX : 0)
+                .animation(.easeOut(duration: 0.06), value: categoryShakeX)
         }
         .buttonStyle(.plain)
         .disabled(!canChange)
@@ -805,11 +811,21 @@ struct TransactionDetailView: View {
 
     // MARK: - Save
 
+    /// Same wobble as the add page: the field that blocks Simpan shakes instead of an alert.
+    private func shake(_ offset: Binding<CGFloat>) {
+        Task {
+            for x in [-10, 9, -6, 4, 0] as [CGFloat] {
+                offset.wrappedValue = x
+                try? await Task.sleep(for: .milliseconds(60))
+            }
+        }
+    }
+
     private func save() {
         guard isDirty, !isSaving else { return }
-        guard amount > 0 else { errorMessage = L("Nominal belum diisi."); return }
+        guard amount > 0 else { shake($shakeX); return }
         guard let account else { return }
-        guard isTransfer || categoryId != nil else { errorMessage = L("Pilih kategori dulu."); return }
+        guard isTransfer || categoryId != nil else { shake($categoryShakeX); return }
         if isTransfer, targetId == nil || targetId == account.id {
             errorMessage = L("Pilih dompet tujuan yang berbeda.")
             return
@@ -820,6 +836,7 @@ struct TransactionDetailView: View {
             if Double(amount) > available {
                 let money = "Rp" + available.formattedAsDigits()
                 errorMessage = assetMode == .withdraw ? L("Melebihi nilai %@ %@", account.name, money) : L("Melebihi saldo %@ %@", account.name, money)
+                shake($shakeX)
                 return
             }
         }
