@@ -4,7 +4,7 @@ import SwiftUI
 /// below, then what the transaction did to the budget or balances. Delete asks first and
 /// can be undone for a few seconds.
 ///
-/// Edit reopens the add form prefilled with this transaction.
+/// Every row edits in place: changes wait in the draft fields until Simpan.
 struct TransactionDetailView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @ObservedObject private var workspace = WorkspaceStore.shared
@@ -17,8 +17,8 @@ struct TransactionDetailView: View {
     @State private var txn: Transaction
     @State private var accounts: [Account]
     @State private var monthTransactions: [Transaction] = []
-    @State private var monthlyBudget: Double = 0
-    @State private var categoryBudget: Budget?
+    @State private var activeBudgets: [Budget] = []
+    @State private var allTransactions: [Transaction] = []
     /// The 0% plan this card purchase is split into, if any.
     @State private var installment: CardInstallment?
     /// The recurring bill made from this transaction (Enhancement "Cicilan dan berulang setelah transaksi"), if any.
@@ -27,7 +27,26 @@ struct TransactionDetailView: View {
     @State private var payoffItem: RunningInstallment?
     @State private var isEntered = false
 
-    @State private var showsForm = false
+    // Draft: what the rows show; `txn` stays the saved version until Simpan.
+    @State private var amount = 0
+    @State private var categoryId: String?
+    @State private var accountId: String?
+    @State private var targetId: String?
+    @State private var date = Date()
+    @State private var note = ""
+    @State private var isEditingAmount = false
+    @State private var sheet: PickerKind?
+    @State private var preferences: [CategoryPreference] = []
+    @State private var isSaving = false
+    @State private var isConfirmingDiscard = false
+    @State private var errorMessage: String?
+    @State private var closesAfterAlert = false
+    @FocusState private var noteFocused: Bool
+
+    enum PickerKind: String, Identifiable {
+        case category, account, target, date
+        var id: String { rawValue }
+    }
 
     @State private var isConfirmingDelete = false
     @State private var pendingDelete: Task<Void, Never>?
@@ -38,6 +57,12 @@ struct TransactionDetailView: View {
         self.onUpdate = onUpdate
         _txn = State(initialValue: transaction)
         _accounts = State(initialValue: accounts)
+        _amount = State(initialValue: Int(transaction.amount))
+        _categoryId = State(initialValue: transaction.categoryId)
+        _accountId = State(initialValue: transaction.accountId)
+        _targetId = State(initialValue: transaction.counterpartyAccountId)
+        _date = State(initialValue: transaction.date)
+        _note = State(initialValue: transaction.description ?? "")
     }
 
     private struct PlanSheetID: Identifiable {
@@ -46,9 +71,11 @@ struct TransactionDetailView: View {
     }
 
     private var style: TransactionStyle { .of(txn.type) }
-    private var category: Category? { categories.first { $0.id == txn.categoryId } }
-    private var account: Account? { accounts.first { $0.id == txn.accountId } }
-    private var counterparty: Account? { accounts.first { $0.id == txn.counterpartyAccountId } }
+    private var category: Category? { categories.first { $0.id == categoryId } }
+    private var account: Account? { accounts.first { $0.id == accountId } }
+    private var counterparty: Account? { accounts.first { $0.id == targetId } }
+    /// The wallet the saved transaction sits on: installments and bills belong to it, not to a draft pick.
+    private var savedAccount: Account? { accounts.first { $0.id == txn.accountId } }
     private var isTransfer: Bool { txn.type == .transfer }
     private var isAdjustment: Bool { txn.type == .adjustment }
     /// A transfer into a card pays its bill: debt goes down, not an expense.
@@ -62,29 +89,37 @@ struct TransactionDetailView: View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
                 panel
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        rows
-                        planActions
-                        impact
-                            .padding(.horizontal, 24)
-                            .padding(.top, 16)
+                if isEditingAmount {
+                    amountSummary
+                    Spacer(minLength: 0)
+                    AmountPad(color: .appPrimary, isEnabled: amount > 0, onPress: press,
+                              onSave: { withAnimation(.settle(0.3)) { isEditingAmount = false } }, title: "Selesai")
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 4)
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            rows
+                            planActions
+                            others
+                        }
+                        .padding(.top, 12)
+                        .padding(.bottom, 96)
+                        // exactly as wide as the screen: a long note or amount can no longer make the detail scroll sideways
+                        .containerRelativeFrame(.horizontal)
                     }
-                    .padding(.top, 12)
-                    .padding(.bottom, 96)
-                    // exactly as wide as the screen: a long note or amount can no longer make the detail scroll sideways
-                    .containerRelativeFrame(.horizontal)
+                    .sheetScrollSlack()
+                    .scrollIndicators(.hidden)
+                    .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+                    .scrollDismissesKeyboard(.interactively)
                 }
-                .sheetScrollSlack()
-                .scrollIndicators(.hidden)
-                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             }
             .opacity(isDeleted ? 0.3 : 1)
             .allowsHitTesting(!isDeleted)
             .animation(.easeInOut(duration: 0.4), value: isDeleted)
 
-            if isEditable {
-                deleteButton
+            if !isEditingAmount, !noteFocused {
+                footer
                     .opacity(isDeleted ? 0.3 : 1)
                     .allowsHitTesting(!isDeleted)
             }
@@ -93,6 +128,9 @@ struct TransactionDetailView: View {
         .confirmDialog(isPresented: $isConfirmingDelete, icon: "trash", destructive: true,
                        title: L("Hapus transaksi ini?"), message: deleteSubtitle,
                        confirmTitle: L("Hapus")) { isConfirmingDelete = false; startDelete() }
+        .confirmDialog(isPresented: $isConfirmingDiscard, icon: "arrow.uturn.backward", destructive: true,
+                       title: L("Buang perubahan?"), message: L("Perubahan yang belum disimpan akan hilang."),
+                       confirmTitle: L("Buang")) { isConfirmingDiscard = false; dismiss() }
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .background(KeepSwipeBack())
@@ -103,28 +141,27 @@ struct TransactionDetailView: View {
             isEntered = true
         }
         .task { await loadContext() }
+        .task { preferences = (try? await SupabaseRepository.shared.fetchCategoryPreferences()) ?? [] }
         .onDisappear {
             // Leaving during the undo window still deletes.
             if pendingDelete != nil { finishDelete(now: true) }
         }
         .sheet(item: Binding(get: { planKind.map(PlanSheetID.init) }, set: { planKind = $0?.kind })) { id in
-            if let account, let userId = authViewModel.currentUser?.id {
-                TransactionPlanSheet(kind: id.kind, txn: txn, account: account, category: category, plan: installment,
+            if let savedAccount, let userId = authViewModel.currentUser?.id {
+                TransactionPlanSheet(kind: id.kind, txn: txn, account: savedAccount, category: categories.first { $0.id == txn.categoryId }, plan: installment,
                                      subscription: subscription, userId: userId, onDone: { Task { await loadContext() } })
             }
         }
         .sheet(item: $payoffItem) { item in
-            if let card = account, let userId = authViewModel.currentUser?.id {
+            if let card = savedAccount, let userId = authViewModel.currentUser?.id {
                 InstallmentPayoffSheet(item: item, card: card, wallets: accounts.filter { $0.isActive && !$0.isCreditCard && !$0.isInvestment },
                                        categories: categories, userId: userId, onDone: { Task { await loadContext() } })
             }
         }
-        .fullScreenCover(isPresented: $showsForm) {
-            if let userId = authViewModel.currentUser?.id {
-                AddTransactionView(categories: categories, accounts: accounts, userId: userId, onSave: {},
-                                   editing: txn, onUpdated: { applied($0) })
-            }
-        }
+        .sheet(item: $sheet) { pickerSheet($0) }
+        .alert("Gagal menyimpan", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+            Button("OK", role: .cancel) { if closesAfterAlert { dismiss() } }
+        } message: { Text(errorMessage ?? "") }
     }
 
     // MARK: - Data
@@ -142,15 +179,9 @@ struct TransactionDetailView: View {
         monthTransactions = allTransactions.filter {
             PaydayCycle.current.contains($0.date, periodOf: txn.date, calendar: calendar)
         }
-        let active = ((try? await budgets) ?? []).filter(\.isActive)
-        monthlyBudget = active.reduce(0) { $0 + $1.amount }
-        if var budget = active.first(where: { $0.categoryId == txn.categoryId && txn.type == .expense }) {
-            budget.spent = budget.spentInCurrentPeriod(transactions: allTransactions)
-            categoryBudget = budget
-        } else {
-            categoryBudget = nil
-        }
-        if txn.type == .expense, let card = account, card.isCreditCard {
+        activeBudgets = ((try? await budgets) ?? []).filter(\.isActive)
+        self.allTransactions = allTransactions
+        if txn.type == .expense, let card = savedAccount, card.isCreditCard {
             installment = (try? await SupabaseRepository.shared.fetchInstallments(accountIds: [card.id]))?
                 .first { $0.transactionId == txn.id }
         } else {
@@ -169,21 +200,14 @@ struct TransactionDetailView: View {
     /// "Jadikan cicilan" / "Jadikan berulang", or the way to manage what is already set. Only when C2 allows it.
     @ViewBuilder private var planActions: some View {
         if isEditable, txn.type == .expense, !isDeleted {
-            let canInstall = account?.isCreditCard == true
+            let canInstall = savedAccount?.isCreditCard == true
             VStack(spacing: 0) {
                 if installment != nil {
                     action(L("Kelola cicilan"), "calendar.badge.clock") { planKind = .installment }
                     if let running = runningPlan, running.settlement == nil, running.remainingParts > 0 {
                         action(L("Lunasi lebih cepat"), "checkmark.circle") { payoffItem = running }
                     }
-                } else if let subscription {
-                    Button { planKind = .recurring } label: {
-                        DetailRow(label: L("Berulang"), value: (subscription.frequency == .yearly ? L("Tiap tahun") : L("Tiap bulan"))
-                                  + (subscription.nextBillingDateAsDate.map { " · " + TransactionDates.dayMonth.string(from: $0) } ?? ""),
-                                  icon: "repeat", showsChevron: true, height: 50)
-                    }
-                    .buttonStyle(.plain)
-                } else if !txn.isRecurring, canInstall {
+                } else if !txn.isRecurring, subscription == nil, canInstall {
                     planRow(L("Cicilan"), "calendar.badge.clock") { planKind = .installment }
                 }
             }
@@ -237,57 +261,54 @@ struct TransactionDetailView: View {
         .buttonStyle(.plain)
     }
 
-    /// Takes the edited transaction back from the form and refreshes the context.
-    private func applied(_ updated: Transaction) {
-        txn = updated
-        onUpdate?(updated)
-        Task { await loadContext() }
-    }
-
     // MARK: - Panel
 
     private var panel: some View {
         VStack(spacing: 0) {
             HStack {
-                Button("Tutup") { dismiss() }.font(.app(17))
+                Button("Tutup") { close() }.font(.app(17))
                 Spacer()
                 repeatControl
             }
             .frame(height: 44)
             .padding(.horizontal, 20)
 
-            Label(typeLabel, systemImage: typeIcon)
-                .font(.app(13, weight: .semibold))
-                .labelStyle(PillLabelStyle())
-                .padding(.horizontal, 12)
-                .frame(height: 28)
-                .background(.white.opacity(0.18), in: Capsule())
-
-            HStack(alignment: .top, spacing: 4) {
-                Text(amountSign + "Rp")
-                    .font(.app(22))
-                    .opacity(0.75)
-                    .padding(.top, 8)
-                Text((isAdjustment ? abs(signedAdjustment) : txn.amount).formattedAsDigits())
-                    .font(.app(56, weight: .light))
-                    .tracking(-2)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .contentTransition(.numericText())
+            HStack(spacing: 8) {
+                Label(typeLabel, systemImage: typeIcon)
+                    .font(.app(13, weight: .semibold))
+                    .labelStyle(PillLabelStyle())
+                    .padding(.horizontal, 12)
+                    .frame(height: 28)
+                    .background(.white.opacity(0.18), in: Capsule())
+                attributionChip
             }
-            .monospacedDigit()
-            .padding(.horizontal, 24)
-            .padding(.top, 10)
 
-            Text(title)
-                .font(.app(17, weight: .semibold))
-                .lineLimit(1)
+            Button {
+                noteFocused = false
+                withAnimation(.settle(0.3)) { isEditingAmount = true }
+            } label: {
+                HStack(alignment: .top, spacing: 4) {
+                    Text(amountSign + "Rp")
+                        .font(.app(22))
+                        .opacity(0.75)
+                        .padding(.top, 8)
+                    Text((isAdjustment ? abs(signedAdjustment) : Double(amount)).formattedAsDigits())
+                        .font(.app(56, weight: .light))
+                        .tracking(-2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .contentTransition(.numericText())
+                }
+                .monospacedDigit()
                 .padding(.horizontal, 24)
-                .padding(.top, 10)
-            Text(TransactionDates.long(txn.date))
-                .font(.app(13))
-                .opacity(0.8)
-                .padding(.top, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!canChange)
+            .padding(.top, 10)
+            .accessibilityLabel(L("Nominal Rp%@", amount.formatted()))
+
+            if !isEditingAmount { heroImpact }
         }
         .rise(isEntered, y: 14, fade: 0.5, move: 0.6)
         .foregroundStyle(.white)
@@ -304,67 +325,288 @@ struct TransactionDetailView: View {
         isAdjustment ? (signedAdjustment < 0 ? "−" : "+") : style.sign
     }
 
-    private var title: String {
-        if let note = txn.recurringName ?? txn.displayNote { return note }
-        if isTransfer { return "\(account?.name ?? "?") → \(counterparty?.name ?? "?")" }
-        return category?.name ?? style.label
+    /// Balance adjustments and card payments have no rows to edit; so does a Workspace you can only read.
+    private var canEdit: Bool { !isAdjustment && txn.type != .cardPayment }
+    private var canChange: Bool { isEditable && canEdit && !isDeleted }
+
+    // MARK: - Draft
+
+    private var isDirty: Bool {
+        guard canChange else { return false }
+        let saved = (txn.description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return Int(txn.amount) != amount || categoryId != txn.categoryId || accountId != txn.accountId
+            || (isTransfer && targetId != txn.counterpartyAccountId) || abs(date.timeIntervalSince(txn.date)) >= 1
+            || note.trimmingCharacters(in: .whitespacesAndNewlines) != saved
     }
 
-    /// Balance adjustments and card payments have no form to edit them in.
-    private var canEdit: Bool { !isAdjustment && txn.type != .cardPayment }
+    private func close() {
+        if isDirty { isConfirmingDiscard = true } else { dismiss() }
+    }
+
+    private func resetDraft(to saved: Transaction) {
+        amount = Int(saved.amount)
+        categoryId = saved.categoryId
+        accountId = saved.accountId
+        targetId = saved.counterpartyAccountId
+        date = saved.date
+        note = saved.description ?? ""
+    }
+
+    private func press(_ key: String) {
+        guard let next = NumberPad.apply(key, to: amount) else { return }
+        withAnimation(.snappy(duration: 0.2)) { amount = next }
+    }
+
+    /// What the draft would do to the wallets, as a transaction that is not saved.
+    private var draftTxn: Transaction {
+        Transaction(id: txn.id, accountId: accountId ?? txn.accountId, counterpartyAccountId: isTransfer ? targetId : nil, categoryId: categoryId,
+                    amount: Double(amount), type: txn.type, description: txn.description, note: txn.note, date: date, delta: txn.delta)
+    }
+
+    // MARK: - Hero
+
+    /// Who recorded it (K17); "· diubah" and the editor when someone else changed it last (K24).
+    @ViewBuilder private var attributionChip: some View {
+        if workspace.showsAttribution, let by = workspace.member(txn.recorderId) {
+            let editor = workspace.member(txn.updatedBy)
+            let name = editor.map { $0.id != by.id ? L("%@ · diubah %@", by.name, $0.name) : by.name } ?? by.name
+            HStack(spacing: 6) {
+                MemberAvatar(member: by, size: 20)
+                Text(name).font(.app(13, weight: .semibold)).lineLimit(1)
+            }
+            .padding(.leading, 4)
+            .padding(.trailing, 12)
+            .frame(height: 28)
+            .background(.white.opacity(0.18), in: Capsule())
+        }
+    }
+
+    /// One line (two for a transfer) under the amount: the category budget, or the balance afterwards.
+    private var heroImpact: some View {
+        VStack(spacing: 8) {
+            switch txn.type {
+            case .expense:
+                if let b = draftBudget { budgetLine(b) }
+            case .income:
+                if let account { line(L("Saldo %@ setelahnya", account.name), rupiah(projected(account))) }
+            case .transfer:
+                ForEach([account, counterparty].compactMap { $0 }, id: \.id) { line($0.name, rupiah(projected($0))) }
+                Text(isBillPayment ? L("Bayar tagihan kartu kredit bukan pengeluaran, jadi tidak memengaruhi budget.") : L("Transfer antar dompet tidak memengaruhi budget."))
+                    .font(.app(12)).opacity(0.75).multilineTextAlignment(.center)
+            case .adjustment, .cardPayment:
+                if let text = savedImpactText { Text(text).font(.app(13, weight: .medium)) }
+            }
+        }
+        .monospacedDigit()
+        .padding(.horizontal, 24)
+        .padding(.top, 16)
+    }
+
+    private func line(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).font(.app(13, weight: .medium)).lineLimit(1)
+            Spacer(minLength: 12)
+            Text(value).font(.app(13, weight: .medium)).lineLimit(1)
+        }
+    }
+
+    private func budgetLine(_ b: BudgetImpact) -> some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text(L("Budget %@", b.name)).font(.app(13, weight: .medium)).lineLimit(1)
+                Spacer(minLength: 12)
+                Text(b.left < 0 ? L("lewat Rp%@", (-b.left).abbreviatedRupiah()) : L("sisa Rp%@", b.left.abbreviatedRupiah()))
+                    .font(.app(13, weight: b.left < 0 ? .bold : .medium))
+            }
+            heroBar(b)
+        }
+    }
+
+    /// 30 segments: white up to what is used, the rest a faint track. Past the budget the fill turns dark.
+    private func heroBar(_ b: BudgetImpact) -> some View {
+        let filled = Int((min(1, b.used / b.cap) * 30).rounded())
+        return HStack(spacing: 2) {
+            ForEach(0..<30, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(i < filled ? (b.left < 0 ? Color.black.opacity(0.4) : Color.white) : Color.white.opacity(0.28))
+            }
+        }
+        .frame(height: 8)
+    }
+
+    struct BudgetImpact {
+        let name: String
+        let cap: Double
+        let used: Double
+        var left: Double { cap - used }
+    }
+
+    /// The category's budget with this transaction counted at its draft amount and category.
+    private var draftBudget: BudgetImpact? {
+        guard txn.type == .expense, let id = categoryId, let budget = activeBudgets.first(where: { $0.categoryId == id }), budget.amount > 0 else { return nil }
+        var spent = budget.spentInCurrentPeriod(transactions: allTransactions)
+        if txn.categoryId == id { spent = max(0, spent - txn.amount) }
+        return BudgetImpact(name: category?.name ?? budget.name, cap: budget.amount, used: spent + Double(amount))
+    }
+
+    /// A wallet's balance with the saved transaction taken out and the draft put in.
+    private func projected(_ wallet: Account) -> Double {
+        let flags = Dictionary(accounts.map { ($0.id, $0.isCreditCard) }, uniquingKeysWith: { first, _ in first })
+        func effect(_ t: Transaction) -> Double {
+            SupabaseRepository.balanceEffects(of: t, isCredit: flags).filter { $0.0 == wallet.id }.reduce(0) { $0 + $1.1 }
+        }
+        return wallet.balance - effect(txn) + effect(draftTxn)
+    }
+
+    /// Adjustments and card payments keep the plain sentence.
+    private var savedImpactText: String? {
+        guard let account = savedAccount else { return nil }
+        if txn.type == .cardPayment { return L("Tagihan turun Rp%@", txn.amount.formattedAsDigits()) }
+        let change = (signedAdjustment < 0 ? "−Rp" : "+Rp") + abs(signedAdjustment).formattedAsDigits()
+        return account.name + " · " + L("Penyesuaian %@", change)
+    }
+
+    /// While the keypad is open: what it was, what changed and what is left of the budget.
+    private var amountSummary: some View {
+        let diff = Double(amount) - txn.amount
+        return VStack(spacing: 16) {
+            HStack {
+                Text(L("Sebelumnya")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                Text("Rp" + txn.amount.formattedAsDigits()).font(.app(16, weight: .medium))
+            }
+            HStack {
+                Text(L("Selisih")).font(.app(15)).foregroundStyle(Color.appTextSecondary)
+                Spacer()
+                Text((diff < 0 ? "−Rp" : "+Rp") + abs(diff).formattedAsDigits()).font(.app(16, weight: .medium))
+            }
+            if let b = draftBudget {
+                VStack(spacing: 10) {
+                    HStack {
+                        Text(L("Budget %@", b.name)).font(.app(15)).foregroundStyle(Color.appTextSecondary).lineLimit(1)
+                        Spacer(minLength: 12)
+                        Text(b.left < 0 ? L("lewat Rp%@", (-b.left).abbreviatedRupiah()) : L("sisa Rp%@", b.left.abbreviatedRupiah()))
+                            .font(.app(16, weight: .medium))
+                    }
+                    let filled = Int((min(1, b.used / b.cap) * 30).rounded())
+                    HStack(spacing: 2) {
+                        ForEach(0..<30, id: \.self) { i in
+                            RoundedRectangle(cornerRadius: 1).fill(i < filled ? style.color : Color.appDivider)
+                        }
+                    }
+                    .frame(height: 8)
+                }
+            }
+        }
+        .monospacedDigit()
+        .padding(.horizontal, 24)
+        .padding(.top, 20)
+    }
 
     // MARK: - Rows
 
+    private var activeAccounts: [Account] { accounts.filter(\.isActive).sorted { $0.isDefault && !$1.isDefault } }
+    private var cashWallets: [Account] { activeAccounts.filter { !$0.isInvestment && !$0.isCreditCard } }
+    private var investmentWallets: [Account] { activeAccounts.filter(\.isInvestment) }
+
+    /// A transfer to or from an investment wallet keeps that side locked to the right kind of wallet.
+    private enum AssetMode { case deposit, withdraw }
+    private var assetMode: AssetMode? {
+        if savedAccount?.isInvestment == true { return .withdraw }
+        if accounts.first(where: { $0.id == txn.counterpartyAccountId })?.isInvestment == true { return .deposit }
+        return nil
+    }
+    private var sourceAccounts: [Account] {
+        guard isTransfer else { return WalletRules.spendingSources(activeAccounts) }
+        switch assetMode {
+        case .deposit: return cashWallets
+        case .withdraw: return investmentWallets
+        case nil: return activeAccounts
+        }
+    }
+    private var targetAccounts: [Account] {
+        switch assetMode {
+        case .deposit: return investmentWallets
+        case .withdraw: return cashWallets
+        case nil: return WalletRules.transferTargets(from: account, in: activeAccounts)
+        }
+    }
+
+    /// The picker's categories in the user's order; a hidden one stays when this transaction already uses it.
+    private var typeCategories: [Category] {
+        let kind: CategoryType = txn.type == .income ? .income : .expense
+        let lists = categories.filter { $0.type == kind && !CategoryCatalog.isSystem($0) }.arranged(by: preferences)
+        var shown = lists.shown
+        if let id = txn.categoryId, let kept = lists.hidden.first(where: { $0.id == id }) { shown.append(kept) }
+        return shown
+    }
+
     private var rows: some View {
         VStack(spacing: 0) {
+            noteRow
             if isTransfer {
-                row(label: L("Dari"), value: account?.name ?? "—", wallet: account, index: 0)
-                row(label: L("Ke"), value: counterparty?.name ?? "—", wallet: counterparty, index: 1)
+                pickRow(.account, label: L("Dari"), value: account?.name ?? "—", wallet: account, index: 1)
+                pickRow(.target, label: L("Ke"), value: counterparty?.name ?? "—", wallet: counterparty, index: 2)
             } else if isAdjustment {
-                row(label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 0)
+                pickRow(.account, label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 1)
             } else {
-                row(label: L("Kategori"), value: category?.name ?? "—", categoryMark: category, index: 0)
-                row(label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 1)
-                if let installment, let card = account {
+                pickRow(.category, label: L("Kategori"), value: category?.name ?? "—", categoryMark: category, index: 1)
+                pickRow(.account, label: L("Dompet"), value: account?.name ?? "—", wallet: account, index: 2)
+                if let installment, let card = savedAccount {
                     installmentRow(installment, card: card)
                 }
             }
-            row(label: L("Tanggal"), value: TransactionDates.long(txn.date, withYear: false), icon: "calendar", index: 2)
+            pickRow(.date, label: L("Tanggal"), value: TransactionDates.long(date, withYear: false), icon: "calendar", index: 3)
             if txn.isRecurring {
-                row(label: L("Sumber"), value: L("Tagihan berulang · otomatis"), icon: "repeat", index: 2)
-            }
-            row(label: L("Catatan"), value: txn.description?.isEmpty == false ? txn.description! : "—", icon: "square.and.pencil", index: 3)
-            if workspace.showsAttribution, let by = workspace.member(txn.recorderId) {
-                memberRow(label: L("Dicatat"), member: by, sub: nil, index: 4)
-                if let editor = workspace.member(txn.updatedBy), editor.id != by.id {
-                    let when = Workspace.parseTimestamp(txn.updatedAtRaw ?? "").map { TransactionDates.long($0, withYear: false) }
-                    memberRow(label: L("Diubah"), member: editor, sub: when, index: 5)
-                }
+                DetailRow(label: L("Sumber"), value: L("Tagihan berulang · otomatis"), icon: "repeat", height: 50, showsSeparator: false)
+                    .rise(isEntered, y: 12, delay: 0.5, fade: 0.4, move: 0.5)
             }
         }
     }
 
-    /// Who recorded or last changed it (K17, K24): the photo, the name and, for a change, when.
-    private func memberRow(label: String, member: WorkspaceMember, sub: String?, index: Int) -> some View {
+    /// "Judul": the note, typed in place.
+    private var noteRow: some View {
         HStack(spacing: 12) {
-            Text(label).font(.app(15)).foregroundStyle(Color.appTextSecondary).frame(width: 76, alignment: .leading)
-            MemberAvatar(member: member, size: 24)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(member.name).font(.app(16, weight: .medium)).foregroundStyle(Color.appText).lineLimit(1)
-                if let sub { Text(sub).font(.app(12)).foregroundStyle(Color.appTextSecondary) }
+            Text(L("Judul"))
+                .font(.app(15))
+                .foregroundStyle(Color.appTextSecondary)
+                .frame(width: 76, alignment: .leading)
+            if canChange {
+                TextField(L("Tambah judul"), text: $note)
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                    .submitLabel(.done)
+                    .focused($noteFocused)
+                    .onSubmit { noteFocused = false }
+            } else {
+                Text(note.isEmpty ? "—" : note)
+                    .font(.app(16, weight: .medium))
+                    .foregroundStyle(Color.appText)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color(light: 0xC7C7CC, dark: 0x48484A))
+                .opacity(canChange ? 1 : 0)
         }
         .frame(height: 50)
         .padding(.leading, 24)
         .padding(.trailing, 20)
-        .rowSeparator()
-        .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
+        .rise(isEntered, y: 12, delay: 0.18, fade: 0.4, move: 0.5)
     }
 
-    private func row(label: String, value: String, wallet: Account? = nil, categoryMark: Category? = nil, icon: String? = nil, index: Int) -> some View {
-        DetailRow(label: label, value: value, wallet: wallet, categoryMark: categoryMark, icon: icon, height: 50)
-            .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
+    private func pickRow(_ kind: PickerKind, label: String, value: String, wallet: Account? = nil, categoryMark: Category? = nil,
+                         icon: String? = nil, index: Int) -> some View {
+        Button {
+            noteFocused = false
+            sheet = kind
+        } label: {
+            DetailRow(label: label, value: value, wallet: wallet, categoryMark: categoryMark, icon: icon, showsChevron: canChange, height: 50, showsSeparator: false)
+        }
+        .buttonStyle(.plain)
+        .disabled(!canChange)
+        .rise(isEntered, y: 12, delay: 0.18 + Double(index) * 0.06, fade: 0.4, move: 0.5)
     }
 
     /// "Cicilan 6 bulan · Rp…/bulan" and how many parts the statements have billed so far.
@@ -373,7 +615,7 @@ struct TransactionDetailView: View {
         let monthly = txn.amount / Double(max(1, plan.months))
         return VStack(alignment: .leading, spacing: 0) {
             DetailRow(label: L("Cicilan"), value: L("%lld bulan · Rp%@/bulan", plan.months, monthly.formattedAsDigits()),
-                      icon: "calendar.badge.clock", height: 50)
+                      icon: "calendar.badge.clock", height: 50, showsSeparator: false)
             VStack(alignment: .leading, spacing: 8) {
                 SegmentBar(value: Double(billed) / Double(max(1, plan.months)), count: plan.months, height: 6, spacing: 3)
                 Text("\(billed) dari \(plan.months) sudah ditagih")
@@ -383,189 +625,167 @@ struct TransactionDetailView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
-            .rowSeparator()
         }
         .rise(isEntered, y: 12, delay: 0.3, fade: 0.4, move: 0.5)
     }
 
-    // MARK: - Impact
-
-    private struct ImpactItem: Identifiable {
-        let label: String
-        let value: String
-        var valueColor: Color = .appText
-        /// Segments already used before this transaction, and after it; nil hides the bar.
-        var ticks: (before: Int, after: Int, color: Color)?
-        let sub: String
-        var id: String { label }
-    }
-
-    private var impact: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(txn.type == .expense ? L("Dampak ke budget") : L("Dampak ke saldo"))
-                .font(.app(13))
-                .foregroundStyle(Color.appTextSecondary)
-            ForEach(impactItems) { item in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline, spacing: 12) {
-                        Text(item.label).font(.app(15, weight: .medium))
-                        Spacer(minLength: 0)
-                        Text(item.value)
-                            .font(.app(15))
-                            .foregroundStyle(item.valueColor)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    if let ticks = item.ticks {
-                        HStack(spacing: 2) {
-                            ForEach(0..<30, id: \.self) { i in
-                                let filled = isEntered ? (i < ticks.before ? Color.appText : i < ticks.after ? ticks.color : Color.appDivider) : Color.appDivider
-                                RoundedRectangle(cornerRadius: 1)
-                                    .fill(filled)
-                                    .animation(.easeInOut(duration: 0.2).delay(0.3 + Double(i) * 0.014), value: isEntered)
-                            }
-                        }
-                        .frame(height: 8)
-                    }
-                    Text(item.sub)
-                        .font(.app(13))
-                        .foregroundStyle(Color.appTextSecondary)
-                }
-                .monospacedDigit()
-                .foregroundStyle(Color.appText)
-                .padding(.vertical, 12)
-                .rowSeparator()
-            }
-            if let note = impactNote {
-                Label(note, systemImage: "info.circle")
-                    .font(.app(13))
+    /// "Lainnya": delete, a red row like "Hapus Workspace".
+    @ViewBuilder private var others: some View {
+        if isEditable {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(L("Lainnya"))
+                    .font(.app(13, weight: .semibold))
                     .foregroundStyle(Color.appTextSecondary)
-                    .padding(.top, 12)
-            }
-        }
-        .rise(isEntered, y: 16, delay: 0.42, fade: 0.5, move: 0.6)
-    }
-
-    private var impactItems: [ImpactItem] {
-        switch txn.type {
-        case .expense: return budgetItems
-        case .income:
-            var items = account.map { [balanceItem($0, sub: L("Transaksi ini +Rp%@", txn.amount.formattedAsDigits()))] } ?? []
-            items.append(cashflowItem)
-            return items
-        case .transfer:
-            return [account, counterparty].compactMap { $0 }.map { balanceItem($0, sub: transferSub(for: $0)) }
-        case .adjustment:
-            let change = (signedAdjustment < 0 ? "−Rp" : "+Rp") + abs(signedAdjustment).formattedAsDigits()
-            return account.map { [balanceItem($0, sub: L("Penyesuaian %@", change))] } ?? []
-        case .cardPayment:
-            return account.map { [balanceItem($0, sub: L("Tagihan turun Rp%@", txn.amount.formattedAsDigits()))] } ?? []
-        }
-    }
-
-    /// Wording follows what the transfer did to each side: a card's balance is debt, so money
-    /// into it lowers the bill and cash out of it raises the bill.
-    private func transferSub(for wallet: Account) -> String {
-        let isCredit = Dictionary(accounts.map { ($0.id, $0.isCreditCard) }, uniquingKeysWith: { first, _ in first })
-        let effect = SupabaseRepository.balanceEffects(of: txn, isCredit: isCredit)
-            .filter { $0.0 == wallet.id }.reduce(0) { $0 + $1.1 }
-        let amount = "Rp" + abs(effect).formattedAsDigits()
-        if wallet.isCreditCard { return effect < 0 ? L("Tagihan turun %@", amount) : L("Tagihan naik %@", amount) }
-        return effect < 0 ? L("Keluar %@", amount) : L("Masuk %@", amount)
-    }
-
-    private var impactNote: String? {
-        switch txn.type {
-        case .transfer where isBillPayment: L("Bayar tagihan kartu kredit bukan pengeluaran, jadi tidak memengaruhi budget.")
-        case .transfer: L("Transfer antar dompet tidak memengaruhi budget.")
-        case .expense where budgetItems.isEmpty: L("Belum ada budget untuk transaksi ini.")
-        default: nil
-        }
-    }
-
-    private func balanceItem(_ account: Account, sub: String) -> ImpactItem {
-        ImpactItem(label: account.isCreditCard ? L("Tagihan %@", account.name) : L("Saldo %@", account.name),
-                   value: L("%@ sekarang", rupiah(account.balance)), sub: sub)
-    }
-
-    private var cashflowItem: ImpactItem {
-        let income = monthTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
-        let expense = monthTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
-        let net = income - expense
-        return ImpactItem(label: L("Net cashflow %@", Self.monthName.string(from: txn.date)),
-                          value: (net < 0 ? "−Rp" : "+Rp") + abs(net).formattedAsDigits(),
-                          valueColor: net < 0 ? .appError : .appPrimary,
-                          sub: L("Masuk Rp%@ · keluar Rp%@", income.abbreviatedRupiah(), expense.abbreviatedRupiah()))
-    }
-
-    /// Daily budget (this month's budgets ÷ days) and the category's own budget, each with
-    /// what was used before this transaction and what it added.
-    private var budgetItems: [ImpactItem] {
-        var items: [ImpactItem] = []
-        let calendar = Calendar.current
-        let amount = txn.amount
-        if monthlyBudget > 0 {
-            let days = Double(calendar.range(of: .day, in: .month, for: txn.date)?.count ?? 30)
-            let daily = monthlyBudget / days
-            let daySpent = monthTransactions
-                .filter { $0.type == .expense && calendar.isDate($0.date, inSameDayAs: txn.date) }
-                .reduce(0) { $0 + $1.amount }
-            let used = max(0, daySpent - amount)
-            let left = daily - daySpent
-            items.append(ImpactItem(
-                label: L("Budget %@", TransactionDates.dayShort(txn.date)),
-                value: left < 0 ? L("Lewat Rp%@", (-left).formattedAsDigits()) : L("Sisa Rp%@", left.formattedAsDigits()),
-                valueColor: left < 0 ? .appError : .appTextSecondary,
-                ticks: Self.ticks(used: used, amount: amount, cap: daily),
-                sub: L("Rp%@ + Rp%@ ini, dari Rp%@", used.formattedAsDigits(), amount.formattedAsDigits(), daily.formattedAsDigits())
-            ))
-        }
-        if let budget = categoryBudget, budget.amount > 0 {
-            let used = max(0, budget.spent - amount)
-            let left = budget.amount - budget.spent
-            let ratio = budget.spent / budget.amount
-            items.append(ImpactItem(
-                label: category?.name ?? budget.name,
-                value: left < 0 ? L("Lewat Rp%@", (-left).formattedAsDigits()) : L("Sisa Rp%@", left.formattedAsDigits()),
-                valueColor: ratio > 1 ? .appError : ratio >= 0.75 ? .appWarning : .appTextSecondary,
-                ticks: Self.ticks(used: used, amount: amount, cap: budget.amount),
-                sub: L("%lld%% terpakai · %lld hari lagi di %@", Int((ratio * 100).rounded()), Int(budget.daysRemaining), Self.monthName.string(from: Date()))
-            ))
-        }
-        return items
-    }
-
-    /// Black for spending before this transaction, then this transaction in green, orange or red.
-    private static func ticks(used: Double, amount: Double, cap: Double) -> (Int, Int, Color) {
-        let ratio = (used + amount) / cap
-        let hot: Color = ratio > 1 ? .appError : ratio >= 0.75 ? .appWarning : .appPrimary
-        let before = Int((min(1, used / cap) * 30).rounded())
-        let after = Int((min(1, (used + amount) / cap) * 30).rounded())
-        return (before, after, hot)
-    }
-
-    // MARK: - Delete
-
-    private var deleteButton: some View {
-        HStack(spacing: 12) {
-            if canEdit {
-                Button { showsForm = true } label: {
-                    Image(systemName: "square.and.pencil").font(.system(size: 19, weight: .semibold))
-                        .foregroundStyle(Color.appBackground)
-                        .frame(width: 50, height: 50)
-                        .background(Color.appText, in: Circle())
-                }
-                .accessibilityLabel(L("Ubah"))
-            }
-            Button { isConfirmingDelete = true } label: {
-                Label("Hapus", systemImage: "trash")
-                    .font(.app(17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 22)
+                    .padding(.bottom, 4)
+                Button { isConfirmingDelete = true } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "trash").font(.system(size: 17)).frame(width: 24)
+                        Text(L("Hapus transaksi")).font(.app(16, weight: .medium))
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(light: 0xC7C7CC, dark: 0x48484A))
+                    }
+                    .foregroundStyle(Color.appError)
                     .frame(height: 50)
-                    .background(Color(hex: "D93636"), in: Capsule())
+                    .padding(.horizontal, 24)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
-        .buttonStyle(PressScaleStyle())
+    }
+
+    // MARK: - Pickers
+
+    @ViewBuilder private func pickerSheet(_ kind: PickerKind) -> some View {
+        switch kind {
+        case .category:
+            CategoryPickerSheet(title: L("Kategori"), categories: typeCategories, selectedId: categoryId, frequentIds: [],
+                                onDone: { sheet = nil }) { cat in
+                categoryId = cat.id
+                closeSheet()
+            }
+        case .account, .target:
+            WalletPickerSheet(title: kind == .target ? L("Ke dompet") : (isTransfer ? L("Dari dompet") : L("Dompet")),
+                              accounts: kind == .target ? targetAccounts : sourceAccounts,
+                              selectedId: kind == .target ? targetId : accountId,
+                              mainId: activeAccounts.first(where: \.isDefault)?.id, recentIds: [],
+                              onDone: { sheet = nil }, onPick: { acc in
+                choose(acc, for: kind)
+                closeSheet()
+            })
+        case .date:
+            PickerSheet(title: L("Tanggal"), actionTitle: nil, onDone: { sheet = nil }) {
+                DayPicker(selected: date, color: style.color) { day in
+                    date = keepingTime(of: date, on: day)
+                    closeSheet()
+                }
+            }
+        }
+    }
+
+    private func closeSheet() {
+        Task {
+            try? await Task.sleep(for: .milliseconds(200))
+            sheet = nil
+        }
+    }
+
+    /// Picking the other side of a transfer swaps the two wallets.
+    private func choose(_ acc: Account, for kind: PickerKind) {
+        if kind == .target {
+            if acc.id == accountId { accountId = targetId }
+            targetId = acc.id
+        } else {
+            if isTransfer, acc.id == targetId {
+                targetId = account.flatMap { WalletRules.canTransfer(from: acc, to: $0) ? $0.id : nil }
+                    ?? WalletRules.transferTargets(from: acc, in: activeAccounts).first?.id
+            }
+            accountId = acc.id
+        }
+    }
+
+    /// Moves `date` to `day` but keeps its time, so edits don't reset a recorded time to midnight.
+    private func keepingTime(of date: Date, on day: Date) -> Date {
+        let calendar = Calendar.current
+        let time = calendar.dateComponents([.hour, .minute, .second], from: date)
+        return calendar.date(bySettingHour: time.hour ?? 0, minute: time.minute ?? 0, second: time.second ?? 0, of: day) ?? day
+    }
+
+    // MARK: - Save
+
+    private func save() {
+        guard isDirty, !isSaving else { return }
+        guard amount > 0 else { errorMessage = L("Nominal belum diisi."); return }
+        guard let account else { return }
+        guard isTransfer || categoryId != nil else { errorMessage = L("Pilih kategori dulu."); return }
+        if isTransfer, targetId == nil || targetId == account.id {
+            errorMessage = L("Pilih dompet tujuan yang berbeda.")
+            return
+        }
+        // A transfer into or out of an asset cannot exceed what the source holds (the saved amount is already out of it).
+        if isTransfer, assetMode != nil {
+            let available = account.balance + (account.id == txn.accountId ? txn.amount : 0)
+            if Double(amount) > available {
+                let money = "Rp" + available.formattedAsDigits()
+                errorMessage = assetMode == .withdraw ? L("Melebihi nilai %@ %@", account.name, money) : L("Melebihi saldo %@ %@", account.name, money)
+                return
+            }
+        }
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        isSaving = true
+        Task {
+            do {
+                let updated = try await SupabaseRepository.shared.updateTransaction(
+                    id: txn.id, accountId: account.id, counterpartyAccountId: isTransfer ? targetId : nil,
+                    categoryId: isTransfer ? nil : categoryId, amount: Double(amount), type: txn.type,
+                    description: trimmed.isEmpty ? nil : trimmed, note: txn.note, date: date)
+                txn = updated
+                resetDraft(to: updated)
+                isSaving = false
+                onUpdate?(updated)
+                NotificationCenter.default.post(name: .dataDidChange, object: nil)
+                ToastCenter.shared.show(L("Perubahan tersimpan"), icon: .success)
+                await loadContext()
+            } catch is CancellationError {
+                isSaving = false
+            } catch {
+                isSaving = false
+                // A8 (7): another member deleted this record meanwhile
+                let text = String(describing: error)
+                if text.contains("PGRST116") || text.contains("transaction_not_found") || text.contains("0 rows") {
+                    errorMessage = L("Catatan ini sudah dihapus oleh anggota lain.")
+                    closesAfterAlert = true
+                    return
+                }
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    // MARK: - Footer
+
+    /// Only Tutup until something changes; then Batal and Simpan, 1:3.
+    private var footer: some View {
+        Group {
+            if isDirty {
+                SmartSheetFooter(primary: L("Simpan"), isBusy: isSaving, secondary: L("Batal"),
+                                 onPrimary: save, onSecondary: { isConfirmingDiscard = true })
+            } else {
+                Button { dismiss() } label: {
+                    Text(L("Tutup"))
+                        .font(.app(17, weight: .semibold))
+                        .foregroundStyle(Color.appText)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.appFill, in: Capsule())
+                }
+                .buttonStyle(PressScaleStyle())
+            }
+        }
         .padding(.horizontal, 24)
         .padding(.bottom, Self.footerBottomPadding)
         .background(alignment: .bottom) {
@@ -576,9 +796,11 @@ struct TransactionDetailView: View {
         }
     }
 
+    // MARK: - Delete
+
     private var deleteSubtitle: String {
         let amount = "Rp" + txn.amount.formattedAsDigits()
-        guard let account else { return L("Transaksi akan dihapus.") }
+        guard let account = savedAccount else { return L("Transaksi akan dihapus.") }
         let restored: Double
         switch txn.type {
         case .expense: restored = account.balance + (account.isCreditCard ? -txn.amount : txn.amount)
@@ -590,7 +812,7 @@ struct TransactionDetailView: View {
         case .cardPayment: restored = account.balance + txn.amount
         }
         let base = account.isCreditCard ? L("Tagihan %@ kembali jadi %@", account.name, rupiah(restored)) : L("Saldo %@ kembali jadi %@", account.name, rupiah(restored))
-        if txn.type == .expense, let name = category?.name, categoryBudget != nil {
+        if txn.type == .expense, let name = categories.first(where: { $0.id == txn.categoryId })?.name, activeBudgets.contains(where: { $0.categoryId == txn.categoryId }) {
             return L("%@ dan budget %@ bertambah %@.", base, name, amount)
         }
         return L("%@.", base)

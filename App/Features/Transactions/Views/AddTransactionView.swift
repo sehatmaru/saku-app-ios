@@ -1215,6 +1215,8 @@ struct DetailRow: View {
     /// Nothing chosen yet: the value reads grey.
     var isPlaceholder = false
     var placeholderColor: Color = .appTextTertiary
+    /// The hairline under the row; the detail page leaves it out.
+    var showsSeparator = true
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1269,7 +1271,9 @@ struct DetailRow: View {
         .frame(height: height)
         .padding(.leading, 24)
         .padding(.trailing, 20)
-        .rowSeparator()
+        .overlay(alignment: .bottom) {
+            if showsSeparator { Rectangle().fill(Color.appSeparator).frame(height: 1) }
+        }
         .contentShape(Rectangle())
     }
 }

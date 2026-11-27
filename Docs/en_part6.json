@@ -2216,5 +2216,17 @@
   "Perlu dicek": "Needs a look",
   "Yang perlu kamu tahu": "Worth knowing",
   "Dibuang otomatis": "Discarded automatically",
-  "Draf ini dibuang dalam %lld hari jika tidak diproses.": "This draft is discarded in %lld days if not handled."
+  "Draf ini dibuang dalam %lld hari jika tidak diproses.": "This draft is discarded in %lld days if not handled.",
+  "Tambah judul": "Add a title",
+  "Buang perubahan?": "Discard changes?",
+  "Perubahan yang belum disimpan akan hilang.": "Changes you haven't saved will be lost.",
+  "Buang": "Discard",
+  "Sebelumnya": "Before",
+  "Saldo %@ setelahnya": "%@ balance after",
+  "%@ · diubah %@": "%@ · edited by %@",
+  "sisa Rp%@": "Rp%@ left",
+  "lewat Rp%@": "Rp%@ over",
+  "Nominal belum diisi.": "Enter an amount.",
+  "Pilih kategori dulu.": "Pick a category first.",
+  "Nominal Rp%@": "Amount Rp%@"
 }

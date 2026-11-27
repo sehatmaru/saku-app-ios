@@ -851,6 +851,16 @@
         }
       }
     },
+    "%@ · diubah %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · edited by %@"
+          }
+        }
+      }
+    },
     "%@ · lunas %@": {
       "localizations": {
         "en": {
@@ -5709,6 +5719,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Referral bonus +%lld of max +40"
+          }
+        }
+      }
+    },
+    "Buang": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard"
+          }
+        }
+      }
+    },
+    "Buang perubahan?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard changes?"
           }
         }
       }
@@ -17303,6 +17333,16 @@
         }
       }
     },
+    "Nominal Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount Rp%@"
+          }
+        }
+      }
+    },
     "Nominal Rp%lld": {
       "localizations": {
         "en": {
@@ -17319,6 +17359,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The new amount is used from this period on. Past periods don't change."
+          }
+        }
+      }
+    },
+    "Nominal belum diisi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter an amount."
           }
         }
       }
@@ -19293,6 +19343,16 @@
         }
       }
     },
+    "Perubahan yang belum disimpan akan hilang.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes you haven't saved will be lost."
+          }
+        }
+      }
+    },
     "Pilih": {
       "localizations": {
         "en": {
@@ -19589,6 +19649,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose category"
+          }
+        }
+      }
+    },
+    "Pilih kategori dulu.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a category first."
           }
         }
       }
@@ -21013,6 +21083,16 @@
         }
       }
     },
+    "Saldo %@ setelahnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ balance after"
+          }
+        }
+      }
+    },
     "Saldo Awal": {
       "localizations": {
         "en": {
@@ -21419,6 +21499,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Before you continue"
+          }
+        }
+      }
+    },
+    "Sebelumnya": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before"
           }
         }
       }
@@ -24149,6 +24239,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Adding wallets, categories or budgets above the free limit."
+          }
+        }
+      }
+    },
+    "Tambah judul": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a title"
           }
         }
       }
@@ -28405,6 +28505,16 @@
         }
       }
     },
+    "lewat Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp%@ over"
+          }
+        }
+      }
+    },
     "lunas %@": {
       "localizations": {
         "en": {
@@ -28581,6 +28691,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "every year for %@"
+          }
+        }
+      }
+    },
+    "sisa Rp%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rp%@ left"
           }
         }
       }
