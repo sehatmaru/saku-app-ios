@@ -210,7 +210,7 @@ struct TransactionDetailView: View {
         let next = subscription?.nextBillingDateAsDate
         return Button { planKind = .recurring } label: {
             HStack(spacing: 6) {
-                Image(systemName: "repeat").font(.system(size: next == nil ? 17 : 14, weight: .bold))
+                Image(systemName: "repeat").font(.system(size: next == nil ? 13 : 14, weight: .bold))
                 Text(next.map { TransactionDates.dayMonth.string(from: $0) } ?? "")
                     .font(.app(14, weight: .semibold)).monospacedDigit()
                     .frame(width: next == nil ? 0 : nil)
