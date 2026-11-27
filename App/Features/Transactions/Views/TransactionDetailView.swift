@@ -113,6 +113,8 @@ struct TransactionDetailView: View {
                             planActions
                             others
                         }
+                        .animation(.settle(0.35), value: draftType)
+                        .animation(.settle(0.35), value: draftMonths)
                         .padding(.top, 12)
                         .padding(.bottom, 96)
                         // exactly as wide as the screen: a long note or amount can no longer make the detail scroll sideways
@@ -248,6 +250,8 @@ struct TransactionDetailView: View {
            let running = runningPlan, running.settlement == nil, running.remainingParts > 0 {
             action(L("Lunasi lebih cepat"), "checkmark.circle") { payoffItem = running }
                 .padding(.horizontal, 24)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+                .rise(isEntered, y: 12, delay: 0.42, fade: 0.4, move: 0.5)
         }
     }
 
@@ -643,8 +647,6 @@ struct TransactionDetailView: View {
                     .rise(isEntered, y: 12, delay: 0.5, fade: 0.4, move: 0.5)
             }
         }
-        .animation(.settle(0.35), value: draftType)
-        .animation(.settle(0.35), value: draftMonths)
     }
 
     /// "Judul": the note, typed in place.
@@ -740,6 +742,7 @@ struct TransactionDetailView: View {
                 }
                 .buttonStyle(.plain)
             }
+            .rise(isEntered, y: 12, delay: 0.48, fade: 0.4, move: 0.5)
         }
     }
 
