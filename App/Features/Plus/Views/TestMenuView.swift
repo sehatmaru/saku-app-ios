@@ -34,6 +34,12 @@ struct TestMenuView: View {
                         .frame(maxWidth: .infinity, alignment: .leading).frame(minHeight: 44)
                 }
                 .buttonStyle(RowPressStyle())
+                item("Layar sambutan setup (Plus jika paket aktif Plus)", selected: false) {
+                    authViewModel.welcome = SetupWelcome(
+                        name: "Rina", wallets: 3, categories: 11, paydayDay: 25, budgetTotal: 0, joinedPlus: plus.isPlus,
+                        plusUntil: plus.isPlus ? plus.entitlement.until : nil,
+                        walletNames: ["BNC", "BCA Visa", "Tunai"], expenseCategories: 7, incomeCategories: 4)
+                }
 
                 header("Saku Plus")
                 ScrollView(.horizontal, showsIndicators: false) {
