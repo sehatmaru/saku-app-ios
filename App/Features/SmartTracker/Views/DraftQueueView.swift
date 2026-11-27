@@ -813,14 +813,15 @@ struct DraftQueueView: View {
 
     /// A state flag (failed, similar, needs a look, expiring). Tap opens the details sheet.
     private func noticeChip(_ d: Draft, _ n: Notice) -> some View {
-        Button { if !swiping { noticeItem = DraftImageItem(id: d.id) } } label: {
+        let danger = n.tint == Color.stDangerText
+        return Button { if !swiping { noticeItem = DraftImageItem(id: d.id) } } label: {
             HStack(spacing: 6) {
-                Image(systemName: n.icon).font(.system(size: 13, weight: .semibold)).foregroundStyle(n.tint)
-                Text(n.short).font(.app(14, weight: .medium)).lineLimit(1)
-                    .foregroundStyle(n.tint == Color.stDangerText ? Color.stDangerText : Color.appText)
+                Image(systemName: n.icon).font(.system(size: 13, weight: .bold))
+                Text(n.short).font(.app(14, weight: .semibold)).lineLimit(1)
             }
+            .foregroundStyle(danger ? Color.stDangerText : Color.stWarn)
             .padding(.horizontal, 14).frame(height: 36)
-            .background(Color.appFill, in: Capsule())
+            .background(danger ? Color.stDangerBg : Color.stWarnBg, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(PressScaleStyle())
@@ -859,7 +860,7 @@ struct DraftQueueView: View {
             out.append(Notice(icon: "eye", short: L("Perlu dicek"), tint: Color.stWarn, title: L("Perlu dicek"), detail: n))
         }
         if let days = Calendar.current.dateComponents([.day], from: Date(), to: d.expiresAt).day.map({ max($0, 1) }), days <= 3 {
-            out.append(Notice(icon: "hourglass", short: L("%lld hari", days), tint: Color.appTextSecondary, title: L("Dibuang otomatis"),
+            out.append(Notice(icon: "hourglass", short: L("%lld hari", days), tint: Color.stWarn, title: L("Dibuang otomatis"),
                               detail: L("Draf ini dibuang dalam %lld hari jika tidak diproses.", days)))
         }
         return out
