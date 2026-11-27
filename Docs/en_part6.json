@@ -2004,7 +2004,6 @@
   "Filter anggota": "Filter by member",
   "Disimpan ke %@": "Saved to %@",
   "Draf disimpan ke": "Drafts are saved to",
-  "Dicatat oleh %@": "Added by %@",
   "Workspace ini dihapus dalam %lld hari. Semua data ikut hilang.": "This Workspace will be deleted in %lld days. All its data goes with it.",
   "Plus-mu berakhir, jadi Workspace ini baca saja untuk semua anggota.": "Your Plus ended, so this Workspace is read-only for every member.",
   "Plus Pemilik berakhir, jadi Workspace ini baca saja untuk semua anggota.": "The Owner's Plus ended, so this Workspace is read-only for every member.",
@@ -2228,6 +2227,6 @@
   "Nominal belum diisi.": "Enter an amount.",
   "Pilih kategori dulu.": "Pick a category first.",
   "Nominal Rp%@": "Amount Rp%@",
-  "Dicatat oleh %@ · diubah %@": "Recorded by %@ · edited by %@",
-  "Cicilan %lld bulan": "%lld-month installment"
+  "Cicilan %lld bulan": "%lld-month installment",
+  "%@ · diubah %@": "%@ · edited by %@"
 }

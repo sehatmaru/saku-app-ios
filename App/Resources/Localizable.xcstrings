@@ -851,6 +851,16 @@
         }
       }
     },
+    "%@ · diubah %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · edited by %@"
+          }
+        }
+      }
+    },
     "%@ · lunas %@": {
       "localizations": {
         "en": {
@@ -8569,26 +8579,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recorded by"
-          }
-        }
-      }
-    },
-    "Dicatat oleh %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Added by %@"
-          }
-        }
-      }
-    },
-    "Dicatat oleh %@ · diubah %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recorded by %@ · edited by %@"
           }
         }
       }

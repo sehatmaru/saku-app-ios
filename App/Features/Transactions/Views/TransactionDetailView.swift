@@ -225,44 +225,13 @@ struct TransactionDetailView: View {
         }
     }
 
-    /// "Cicilan" on a card expense, or the way to manage what is already set. Changes wait for Simpan.
+    /// "Lunasi lebih cepat" for a running installment; setting or changing it is the chip under the amount.
     @ViewBuilder private var planActions: some View {
-        if isEditable, draftType == .expense, !isDeleted {
-            let canInstall = savedAccount?.isCreditCard == true
-            VStack(spacing: 0) {
-                if installment != nil, draftMonths > 0 {
-                    action(L("Kelola cicilan"), "calendar.badge.clock") { openInstallment() }
-                    if let running = runningPlan, running.settlement == nil, running.remainingParts > 0 {
-                        action(L("Lunasi lebih cepat"), "checkmark.circle") { payoffItem = running }
-                    }
-                } else if !txn.isRecurring, canInstall {
-                    planRow(L("Cicilan"), "calendar.badge.clock", value: draftMonths > 0 ? L("%lld bulan", draftMonths) : L("Tidak")) { openInstallment() }
-                }
-            }
-            .padding(.horizontal, installment != nil && draftMonths > 0 ? 24 : 0)
+        if isEditable, draftType == .expense, !isDeleted, installment != nil, draftMonths > 0,
+           let running = runningPlan, running.settlement == nil, running.remainingParts > 0 {
+            action(L("Lunasi lebih cepat"), "checkmark.circle") { payoffItem = running }
+                .padding(.horizontal, 24)
         }
-    }
-
-    /// The ↻ in the top corner, a glass circle like the add page; what is set shows as a chip under the amount.
-    @ViewBuilder private var repeatControl: some View {
-        if isEditable, draftType == .expense, !isDeleted, !txn.isRecurring, draftMonths == 0 {
-            Button { showsRepeatSheet = true } label: {
-                Image(systemName: "repeat")
-                    .font(.system(size: 17, weight: .bold))
-                    .frame(width: 36, height: 36)
-                    .background(.white.opacity(0.2), in: Circle())
-            }
-            .buttonStyle(PressScaleStyle())
-            .accessibilityLabel(L("Ulangi"))
-        }
-    }
-
-    /// Same row as Cicilan / Berulang on the add page: label, "Tidak" while off, chevron.
-    private func planRow(_ label: String, _ icon: String, value: String, _ run: @escaping () -> Void) -> some View {
-        Button(action: run) {
-            DetailRow(label: label, value: value, icon: icon, showsChevron: true, height: 50, showsSeparator: false)
-        }
-        .buttonStyle(.plain)
     }
 
     private func action(_ title: String, _ icon: String, _ run: @escaping () -> Void) -> some View {
@@ -292,7 +261,6 @@ struct TransactionDetailView: View {
                 HStack {
                     Button("Tutup") { close() }.font(.app(17))
                     Spacer()
-                    repeatControl
                 }
                 if canSwitchType { typeDots }
             }
@@ -337,7 +305,7 @@ struct TransactionDetailView: View {
             .accessibilityLabel(L("Nominal Rp%@", amount.formatted()))
             .accessibilityAddTraits(canChange ? .isButton : [])
 
-            if !isEditingAmount { heroChips }
+            heroChips
         }
         .rise(isEntered, y: 14, fade: 0.5, move: 0.6)
         .foregroundStyle(.white)
@@ -474,12 +442,13 @@ struct TransactionDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     attributionChip
-                    if let draftRepeat {
-                        chip("repeat", (draftRepeat == .yearly ? L("Tiap tahun") : L("Tiap bulan")) + " · "
-                             + TransactionDates.dayMonth.string(from: RepeatChoiceSheet.nextDate(from: date, draftRepeat))) { showsRepeatSheet = true }
+                    if canRepeat {
+                        chip("repeat", draftRepeat.map {
+                            ($0 == .yearly ? L("Tiap tahun") : L("Tiap bulan")) + " · " + TransactionDates.dayMonth.string(from: RepeatChoiceSheet.nextDate(from: date, $0))
+                        }, empty: L("Buat berulang")) { openRepeat() }
                     }
-                    if draftMonths > 0 {
-                        chip("calendar.badge.clock", L("Cicilan %lld bulan", draftMonths)) { openInstallment() }
+                    if canInstall {
+                        chip("calendar.badge.clock", draftMonths > 0 ? L("Cicilan %lld bulan", draftMonths) : nil, empty: L("Atur cicilan")) { openInstallment() }
                     }
                 }
                 .padding(.horizontal, 24)
@@ -490,37 +459,51 @@ struct TransactionDetailView: View {
         }
     }
 
-    private var hasChips: Bool {
-        (workspace.showsAttribution && workspace.member(txn.recorderId) != nil) || draftRepeat != nil || draftMonths > 0
+    /// A recurring bill only for an expense that is not itself one; an installment only for a card expense.
+    private var canRepeat: Bool { isEditable && draftType == .expense && !isDeleted && !txn.isRecurring }
+    private var canInstall: Bool { canRepeat && savedAccount?.isCreditCard == true }
+
+    private func openRepeat() {
+        if draftMonths > 0 {
+            ToastCenter.shared.show(L("Matikan cicilan dulu"), icon: .error)
+        } else {
+            showsRepeatSheet = true
+        }
     }
 
-    private func chip(_ icon: String, _ text: String, _ run: @escaping () -> Void) -> some View {
+    private var hasChips: Bool {
+        (workspace.showsAttribution && workspace.member(txn.recorderId) != nil) || canRepeat
+    }
+
+    /// Like the draft cards: translucent while empty ("Buat berulang"), white with the value once set.
+    private func chip(_ icon: String, _ value: String?, empty: String, _ run: @escaping () -> Void) -> some View {
         Button(action: run) {
             HStack(spacing: 6) {
-                Image(systemName: icon).font(.system(size: 12, weight: .bold))
-                Text(text).font(.app(13, weight: .semibold)).lineLimit(1)
+                Image(systemName: icon).font(.system(size: 13, weight: .semibold))
+                Text(value ?? empty).font(.app(14, weight: value == nil ? .medium : .semibold)).lineLimit(1)
             }
-            .padding(.horizontal, 12)
-            .frame(height: 28)
-            .background(.white.opacity(0.18), in: Capsule())
+            .foregroundStyle(value == nil ? Color.white : style.color)
+            .padding(.horizontal, 14)
+            .frame(height: 36)
+            .background(value == nil ? Color.white.opacity(0.18) : Color.white, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(PressScaleStyle())
         .disabled(!canChange)
     }
 
-    /// Who recorded it (K17), and who changed it last when that is someone else (K24).
+    /// Who recorded it (K17): the photo and the name, plus the editor when someone else changed it last (K24).
     @ViewBuilder private var attributionChip: some View {
         if workspace.showsAttribution, let by = workspace.member(txn.recorderId) {
             let editor = workspace.member(txn.updatedBy)
-            let name = editor.map { $0.id != by.id ? L("Dicatat oleh %@ · diubah %@", by.name, $0.name) : L("Dicatat oleh %@", by.name) } ?? L("Dicatat oleh %@", by.name)
-            HStack(spacing: 6) {
-                MemberAvatar(member: by, size: 20)
-                Text(name).font(.app(13, weight: .semibold)).lineLimit(1)
+            let name = editor.map { $0.id != by.id ? L("%@ · diubah %@", by.name, $0.name) : by.name } ?? by.name
+            HStack(spacing: 8) {
+                MemberAvatar(member: by, size: 24)
+                Text(name).font(.app(14, weight: .semibold)).lineLimit(1)
             }
-            .padding(.leading, 4)
-            .padding(.trailing, 12)
-            .frame(height: 28)
+            .padding(.leading, 6)
+            .padding(.trailing, 14)
+            .frame(height: 36)
             .background(.white.opacity(0.18), in: Capsule())
         }
     }
