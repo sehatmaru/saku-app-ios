@@ -105,7 +105,7 @@ struct SetupWelcomeView: View {
     private var greeting: some View {
         VStack(alignment: .leading, spacing: 0) {
             if isPlus {
-                Words(text: L("Selamat datang di Plus, %@", shownName), size: 34, tracking: -0.5, spacing: 9, start: 0.1, step: 0.1)
+                Words(text: L("Selamat datang di Saku Plus, %@", shownName), size: 34, tracking: -0.5, spacing: 9, start: 0.1, step: 0.1)
             } else {
                 Words(text: L("Selamat datang, %@", shownName), size: 38, tracking: -0.6, spacing: 10, start: 0.1, step: 0.11)
                 Text("Sakumu sudah siap dipakai.")

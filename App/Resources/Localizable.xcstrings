@@ -21713,22 +21713,22 @@
         }
       }
     },
-    "Selamat datang di Plus, %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Welcome to Plus, %@"
-          }
-        }
-      }
-    },
     "Selamat datang di Saku Plus": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Welcome to Saku Plus"
+          }
+        }
+      }
+    },
+    "Selamat datang di Saku Plus, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Saku Plus, %@"
           }
         }
       }
