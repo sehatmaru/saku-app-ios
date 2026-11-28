@@ -2238,5 +2238,6 @@
   "Periode anggaranmu mulai tiap akhir bulan": "Your budget period starts at the end of every month",
   "Periode anggaranmu mulai tiap tanggal %lld": "Your budget period starts on day %lld of every month",
   "Periode anggaranmu mulai tanggal 1": "Your budget period starts on day 1",
-  "%lld pengeluaran dan %lld pemasukan": "%lld expense and %lld income"
+  "%lld pengeluaran dan %lld pemasukan": "%lld expense and %lld income",
+  "Analisis keuangan": "Financial analysis"
 }

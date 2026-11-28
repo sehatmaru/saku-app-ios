@@ -110,7 +110,7 @@ struct SetupSummaryList: View {
                         open = open == row.id ? nil : row.id
                     } label: { line(row, index: index) }
                     .buttonStyle(.plain)
-                    .disabled(!win || plus)
+                    .allowsHitTesting(win && !plus)
                     if open == row.id, !plus {
                         Text(row.detail)
                             .font(.app(14)).foregroundStyle(Color.white.opacity(0.85))

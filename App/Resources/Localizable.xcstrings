@@ -2973,6 +2973,16 @@
         }
       }
     },
+    "Analisis keuangan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Financial analysis"
+          }
+        }
+      }
+    },
     "Analisis otomatis dari catatanmu": {
       "localizations": {
         "en": {
